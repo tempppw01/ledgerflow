@@ -43,6 +43,7 @@ type BillSource = 'wechat' | 'alipay';
 const DEFAULT_QUICK_FILTERS: TransactionQuickFilters = {
   date: '',
   type: 'all',
+  status: 'all',
   category: '',
   account: '',
   amountMin: '',
@@ -57,6 +58,7 @@ const DEFAULT_QUICK_FILTERS: TransactionQuickFilters = {
 const DEFAULT_VISIBLE_COLUMNS: Record<TransactionColumnKey, boolean> = {
   date: true,
   type: true,
+  status: true,
   category: true,
   account: true,
   amount: true,
@@ -68,6 +70,7 @@ const DEFAULT_VISIBLE_COLUMNS: Record<TransactionColumnKey, boolean> = {
 const DEFAULT_COLUMN_ORDER: TransactionColumnKey[] = [
   'date',
   'type',
+  'status',
   'category',
   'account',
   'amount',
@@ -79,6 +82,7 @@ const DEFAULT_COLUMN_ORDER: TransactionColumnKey[] = [
 const COLUMN_OPTIONS: Array<{ key: TransactionColumnKey; label: string }> = [
   { key: 'date', label: '日期' },
   { key: 'type', label: '类型' },
+  { key: 'status', label: '交易状态' },
   { key: 'category', label: '分类' },
   { key: 'account', label: '账户' },
   { key: 'amount', label: '金额' },
@@ -495,6 +499,7 @@ export function TransactionsPage() {
   const quickFilteredRows = useMemo(() => {
     const dateFilter = quickFilters.date.trim().toLowerCase();
     const categoryFilter = quickFilters.category.trim();
+    const statusFilter = quickFilters.status;
     const accountFilter = quickFilters.account.trim().toLowerCase();
     const amountMinRaw = quickFilters.amountMin.trim();
     const amountMaxRaw = quickFilters.amountMax.trim();
@@ -516,6 +521,7 @@ export function TransactionsPage() {
     return mappedRows.filter((row) => {
       const dateText = formatDate(row.item.date).toLowerCase();
       const typePass = quickFilters.type === 'all' ? true : row.item.type === quickFilters.type;
+      const statusPass = statusFilter === 'all' ? true : row.item.status === statusFilter;
       const categoryPass = matchesCategoryQuickFilter(categoryFilter, row.item.categoryId);
       const accountPass = !accountFilter || row.accountName.toLowerCase().includes(accountFilter);
       const orderNoPass =
@@ -537,6 +543,7 @@ export function TransactionsPage() {
       return (
         (!dateFilter || dateText.includes(dateFilter)) &&
         typePass &&
+        statusPass &&
         categoryPass &&
         accountPass &&
         amountPass &&
@@ -560,6 +567,9 @@ export function TransactionsPage() {
           break;
         case 'type':
           compare = a.item.type.localeCompare(b.item.type);
+          break;
+        case 'status':
+          compare = (a.item.status || '').localeCompare(b.item.status || '', 'zh-CN');
           break;
         case 'category':
           compare = a.categoryName.localeCompare(b.categoryName, 'zh-CN');
@@ -982,6 +992,7 @@ export function TransactionsPage() {
   const hasQuickFilters =
     quickFilters.date.trim().length > 0 ||
     quickFilters.type !== 'all' ||
+    quickFilters.status !== 'all' ||
     quickFilters.category.trim().length > 0 ||
     quickFilters.account.trim().length > 0 ||
     quickFilters.amountMin.trim().length > 0 ||

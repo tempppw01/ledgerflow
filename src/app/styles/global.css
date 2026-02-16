@@ -1134,18 +1134,40 @@ tr:hover td {
 }
 
 .transaction-table-wrap thead th:not(.transaction-select-col) {
-  position: sticky;
+  position: relative;
 }
 
 .transaction-col-resizer {
   position: absolute;
   top: 0;
-  right: -5px;
-  width: 10px;
+  right: -6px;
+  width: 12px;
   height: 100%;
   cursor: col-resize;
   user-select: none;
   z-index: 2;
+}
+
+.transaction-col-resizer::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary) 36%, var(--color-border));
+  transform: translateX(-50%);
+  opacity: 0.7;
+  transition:
+    opacity var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.transaction-table-wrap thead th:hover .transaction-col-resizer::before,
+.transaction-table-wrap thead th:focus-within .transaction-col-resizer::before {
+  opacity: 1;
+  background: var(--color-primary);
 }
 
 .transaction-action-col {

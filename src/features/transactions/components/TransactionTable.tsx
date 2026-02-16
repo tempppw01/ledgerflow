@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { TransactionItem } from '../../../entities/transaction/types';
+import { TransactionItem, TransactionStatus } from '../../../entities/transaction/types';
 import { EMPTY_CATEGORY_FILTER_VALUE } from '../model/categoryQuickFilter';
 import { formatCurrency, formatDate } from '../../../shared/lib/format';
 import { EmptyState } from '../../../shared/ui/EmptyState';
@@ -11,6 +11,7 @@ const NOTE_MAX_LENGTH = 22;
 export type TransactionSortKey =
   | 'date'
   | 'type'
+  | 'status'
   | 'category'
   | 'account'
   | 'amount'
@@ -22,6 +23,7 @@ export type TransactionSortDirection = 'asc' | 'desc';
 export interface TransactionQuickFilters {
   date: string;
   type: 'all' | 'income' | 'expense' | 'budget' | 'repayment';
+  status: 'all' | TransactionStatus;
   category: string;
   account: string;
   amountMin: string;
@@ -58,9 +60,23 @@ export interface TransactionRowView {
   accountName: string;
 }
 
+const STATUS_LABELS: Record<TransactionStatus, string> = {
+  pending: '待处理',
+  completed: '已完成',
+  refunded: '已退款',
+  closed: '已关闭',
+  failed: '失败'
+};
+
+function formatStatus(status?: TransactionStatus): string {
+  if (!status) return '-';
+  return STATUS_LABELS[status] || status;
+}
+
 export type TransactionColumnKey =
   | 'date'
   | 'type'
+  | 'status'
   | 'category'
   | 'account'
   | 'amount'
@@ -181,6 +197,7 @@ export function TransactionTable({
   const columnOptions: Array<{ key: TransactionColumnKey; label: string }> = [
     { key: 'date', label: '日期' },
     { key: 'type', label: '类型' },
+    { key: 'status', label: '交易状态' },
     { key: 'category', label: '分类' },
     { key: 'account', label: '账户' },
     { key: 'amount', label: '金额' },
@@ -211,6 +228,8 @@ export function TransactionTable({
               : '支出';
       case 'category':
         return categoryName;
+      case 'status':
+        return formatStatus(item.status);
       case 'account':
         return accountName;
       case 'amount':
@@ -227,8 +246,8 @@ export function TransactionTable({
   };
 
   const textFilterKeyMap: Record<
-    Exclude<TransactionColumnKey, 'type'>,
-    Exclude<keyof TransactionQuickFilters, 'type'>
+    Exclude<TransactionColumnKey, 'type' | 'status'>,
+    Exclude<keyof TransactionQuickFilters, 'type' | 'status'>
   > = {
     date: 'date',
     category: 'category',
@@ -462,24 +481,42 @@ export function TransactionTable({
                   {bulkSelectionEnabled ? <th className="transaction-select-col" /> : null}
                   {orderedColumns.map((column) => {
                     if (!visibleColumns[column.key]) return null;
-                    if (column.key === 'type') {
+                    if (column.key === 'type' || column.key === 'status') {
                       return (
                         <th key={`filter-${column.key}`}>
                           <select
-                            aria-label="按类型筛选"
-                            value={quickFilters.type}
+                            aria-label={column.key === 'type' ? '按类型筛选' : '按交易状态筛选'}
+                            value={column.key === 'type' ? quickFilters.type : quickFilters.status}
                             onChange={(event) =>
-                              onQuickFilterChange(
-                                'type',
-                                event.target.value as TransactionQuickFilters['type']
-                              )
+                              column.key === 'type'
+                                ? onQuickFilterChange(
+                                    'type',
+                                    event.target.value as TransactionQuickFilters['type']
+                                  )
+                                : onQuickFilterChange(
+                                    'status',
+                                    event.target.value as TransactionQuickFilters['status']
+                                  )
                             }
                           >
-                            <option value="all">全部</option>
-                            <option value="income">收入</option>
-                            <option value="expense">支出</option>
-                            <option value="budget">预算</option>
-                            <option value="repayment">还款</option>
+                            {column.key === 'type' ? (
+                              <>
+                                <option value="all">全部</option>
+                                <option value="income">收入</option>
+                                <option value="expense">支出</option>
+                                <option value="budget">预算</option>
+                                <option value="repayment">还款</option>
+                              </>
+                            ) : (
+                              <>
+                                <option value="all">全部</option>
+                                <option value="pending">待处理</option>
+                                <option value="completed">已完成</option>
+                                <option value="refunded">已退款</option>
+                                <option value="closed">已关闭</option>
+                                <option value="failed">失败</option>
+                              </>
+                            )}
                           </select>
                         </th>
                       );
@@ -536,14 +573,14 @@ export function TransactionTable({
                             value={
                               quickFilters[
                                 textFilterKeyMap[
-                                  column.key as Exclude<TransactionColumnKey, 'type'>
+                                  column.key as Exclude<TransactionColumnKey, 'type' | 'status'>
                                 ]
                               ]
                             }
                             onChange={(event) => {
                               const filterKey =
                                 textFilterKeyMap[
-                                  column.key as Exclude<TransactionColumnKey, 'type'>
+                                  column.key as Exclude<TransactionColumnKey, 'type' | 'status'>
                                 ];
                               onQuickFilterChange(filterKey, event.target.value);
                             }}

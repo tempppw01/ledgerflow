@@ -34,6 +34,7 @@ describe('TransactionFilters', () => {
           visibleColumns={{
             date: true,
             type: true,
+            status: true,
             category: true,
             account: true,
             amount: true,
