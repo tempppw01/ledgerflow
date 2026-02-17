@@ -1,4 +1,5 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { LoadingSkeleton } from '../../shared/ui/LoadingSkeleton';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
 
 type FinanceNewsItem = {
@@ -10,7 +11,15 @@ type FinanceNewsItem = {
   summary?: string;
 };
 
-const FINANCE_NEWS_CACHE_KEY = 'ledgerflow.finance.news-cache.v1';
+type NewsCachePayload = {
+  updatedAt: string;
+  items: FinanceNewsItem[];
+};
+
+const FINANCE_NEWS_CACHE_KEY = 'ledgerflow.finance.news-cache.v2';
+const AUTO_REFRESH_INTERVAL_MS = 1000 * 60 * 15;
+const NEWS_ROW_HEIGHT = 92;
+const NEWS_VIEWPORT_HEIGHT = 420;
 
 const FINANCE_IDEAS = [
   '📌 每周固定 10 分钟复盘：本周最值得关注的 3 条财经事件是什么？',
@@ -98,36 +107,38 @@ async function fetchRssFeed(feedUrl: string, signal: AbortSignal): Promise<Finan
   return parseRssItems(xmlText, feedUrl);
 }
 
+function readNewsCache(): NewsCachePayload | null {
+  try {
+    const raw = window.localStorage.getItem(FINANCE_NEWS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as NewsCachePayload;
+    if (!Array.isArray(parsed.items)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 export function FinancePage() {
   const { rssSubscriptions, addRssSubscription, removeRssSubscription, toggleRssSubscription } =
     useAppPreferences();
-  const [news, setNews] = useState<FinanceNewsItem[]>(() => {
-    if (typeof window === 'undefined') return [];
-    const cachedRaw = window.localStorage.getItem(FINANCE_NEWS_CACHE_KEY);
-    if (!cachedRaw) return [];
-
-    try {
-      const parsed = JSON.parse(cachedRaw) as FinanceNewsItem[];
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : [];
-    } catch {
-      return [];
-    }
-  });
-  const [loading, setLoading] = useState(true);
+  const cached = typeof window === 'undefined' ? null : readNewsCache();
+  const [news, setNews] = useState<FinanceNewsItem[]>(cached?.items || []);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState('');
   const [feedTitle, setFeedTitle] = useState('');
   const [feedUrl, setFeedUrl] = useState('');
   const [activeNewsId, setActiveNewsId] = useState('');
+  const [scrollTop, setScrollTop] = useState(0);
 
   const enabledFeeds = useMemo(
     () => rssSubscriptions.filter((item) => item.enabled),
     [rssSubscriptions]
   );
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    async function loadFinanceNews() {
+  const loadFinanceNews = useCallback(
+    async (forceRefresh: boolean) => {
+      const controller = new AbortController();
       setLoading(true);
       setError('');
 
@@ -137,12 +148,13 @@ export function FinancePage() {
       }
 
       try {
+        const feedsToLoad = forceRefresh ? enabledFeeds : enabledFeeds.slice(0, 1);
         const loadedLists = await Promise.allSettled(
-          enabledFeeds.map((item) => fetchRssFeed(item.url, controller.signal))
+          feedsToLoad.map((item) => fetchRssFeed(item.url, controller.signal))
         );
         const merged = loadedLists
           .flatMap((result) => (result.status === 'fulfilled' ? result.value : []))
-          .slice(0, 20);
+          .slice(0, 80);
 
         const sorted = [...merged].sort((a, b) => {
           const aTime = Date.parse(a.publishedAt);
@@ -153,14 +165,13 @@ export function FinancePage() {
 
         if (sorted.length > 0) {
           setNews(sorted);
-          window.localStorage.setItem(FINANCE_NEWS_CACHE_KEY, JSON.stringify(sorted));
+          window.localStorage.setItem(
+            FINANCE_NEWS_CACHE_KEY,
+            JSON.stringify({ items: sorted, updatedAt: new Date().toISOString() })
+          );
           setActiveNewsId((current) => current || sorted[0].id);
         } else {
           setError('订阅源暂无可读内容，已展示上次缓存资讯。');
-        }
-
-        if (loadedLists.every((result) => result.status === 'rejected')) {
-          setError('RSS 订阅源暂不可用，已展示上次缓存资讯。');
         }
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {
@@ -169,11 +180,24 @@ export function FinancePage() {
       } finally {
         setLoading(false);
       }
-    }
 
-    loadFinanceNews();
-    return () => controller.abort();
-  }, [enabledFeeds]);
+      return () => controller.abort();
+    },
+    [enabledFeeds]
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const cache = readNewsCache();
+    const isFresh =
+      cache?.updatedAt &&
+      Date.now() - new Date(cache.updatedAt).getTime() < AUTO_REFRESH_INTERVAL_MS;
+    if (!isFresh) {
+      void loadFinanceNews(false);
+    } else {
+      setLoading(false);
+    }
+  }, [loadFinanceNews]);
 
   const dailyIdea = useMemo(() => {
     const day = new Date().getDate();
@@ -184,6 +208,13 @@ export function FinancePage() {
     () => news.find((item) => item.id === activeNewsId) || news[0] || null,
     [activeNewsId, news]
   );
+
+  const virtualStart = Math.max(0, Math.floor(scrollTop / NEWS_ROW_HEIGHT) - 4);
+  const virtualEnd = Math.min(
+    news.length,
+    virtualStart + Math.ceil(NEWS_VIEWPORT_HEIGHT / NEWS_ROW_HEIGHT) + 8
+  );
+  const visibleNews = news.slice(virtualStart, virtualEnd);
 
   function onAddFeed(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -200,7 +231,10 @@ export function FinancePage() {
     <div className="page-stack finance-page">
       <section className="card">
         <h2 style={{ marginTop: 0 }}>📰 金融资讯</h2>
-        <p className="muted">支持 RSS 订阅与阅读，便于按自己的信息源持续跟踪财经动态。</p>
+        <p className="muted">减少首次请求：优先读取缓存，仅在必要时拉取订阅源。</p>
+        <button type="button" onClick={() => void loadFinanceNews(true)} aria-label="刷新财经资讯">
+          手动刷新资讯
+        </button>
 
         <details className="card" style={{ padding: 12, marginBottom: 12 }}>
           <summary style={{ cursor: 'pointer', fontWeight: 600 }}>
@@ -213,13 +247,17 @@ export function FinancePage() {
                 value={feedTitle}
                 onChange={(event) => setFeedTitle(event.target.value)}
                 placeholder="订阅名称（可选）"
+                aria-label="订阅名称"
               />
               <input
                 value={feedUrl}
                 onChange={(event) => setFeedUrl(event.target.value)}
                 placeholder="https://example.com/feed.xml"
+                aria-label="订阅地址"
               />
-              <button type="submit">新增</button>
+              <button type="submit" aria-label="新增 RSS 订阅">
+                新增
+              </button>
             </form>
 
             <div
@@ -261,10 +299,18 @@ export function FinancePage() {
                     </p>
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                    <button type="button" onClick={() => toggleRssSubscription(item.id)}>
+                    <button
+                      type="button"
+                      onClick={() => toggleRssSubscription(item.id)}
+                      aria-label={`${item.enabled ? '停用' : '启用'} ${item.title}`}
+                    >
                       {item.enabled ? '停用' : '启用'}
                     </button>
-                    <button type="button" onClick={() => removeRssSubscription(item.id)}>
+                    <button
+                      type="button"
+                      onClick={() => removeRssSubscription(item.id)}
+                      aria-label={`删除订阅 ${item.title}`}
+                    >
                       删除
                     </button>
                   </div>
@@ -274,35 +320,55 @@ export function FinancePage() {
           </div>
         </details>
 
-        {loading ? <p className="muted">正在加载 RSS 资讯...</p> : null}
+        {loading ? <LoadingSkeleton lines={6} /> : null}
         {error ? <p className="muted">{error}</p> : null}
 
         {news.length === 0 ? (
           <p className="muted">暂无可展示的 RSS 缓存资讯，请检查订阅源后重试。</p>
         ) : (
-          <div style={{ display: 'grid', gap: 10 }}>
-            {news.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className="card"
-                onClick={() => setActiveNewsId(item.id)}
-                style={{
-                  padding: 12,
-                  textAlign: 'left',
-                  border:
-                    activeNews?.id === item.id
-                      ? '1px solid var(--color-primary, #2563eb)'
-                      : '1px solid var(--color-border)',
-                  background: 'transparent'
-                }}
-              >
-                <strong>{item.title}</strong>
-                <p className="muted" style={{ marginBottom: 0 }}>
-                  {item.source} · {item.publishedAt}
-                </p>
-              </button>
-            ))}
+          <div
+            style={{ height: NEWS_VIEWPORT_HEIGHT, overflowY: 'auto', position: 'relative' }}
+            onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
+          >
+            <div style={{ height: news.length * NEWS_ROW_HEIGHT, position: 'relative' }}>
+              {visibleNews.map((item, index) => {
+                const rowIndex = virtualStart + index;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className="card"
+                    onClick={() => setActiveNewsId(item.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'ArrowDown' && news[rowIndex + 1])
+                        setActiveNewsId(news[rowIndex + 1].id);
+                      if (event.key === 'ArrowUp' && news[rowIndex - 1])
+                        setActiveNewsId(news[rowIndex - 1].id);
+                    }}
+                    style={{
+                      position: 'absolute',
+                      top: rowIndex * NEWS_ROW_HEIGHT,
+                      left: 0,
+                      right: 0,
+                      height: NEWS_ROW_HEIGHT - 6,
+                      padding: 12,
+                      textAlign: 'left',
+                      border:
+                        activeNews?.id === item.id
+                          ? '1px solid var(--color-primary, #2563eb)'
+                          : '1px solid var(--color-border)',
+                      background: 'transparent'
+                    }}
+                    aria-label={`查看资讯 ${item.title}`}
+                  >
+                    <strong>{item.title}</strong>
+                    <p className="muted" style={{ marginBottom: 0 }}>
+                      {item.source} · {item.publishedAt}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
       </section>

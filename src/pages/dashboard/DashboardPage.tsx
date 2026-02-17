@@ -201,9 +201,9 @@ export function DashboardPage() {
   );
   const [draggingModule, setDraggingModule] = useState<DashboardModuleId | null>(null);
 
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
+  const todayDay = new Date().getDate();
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
   const monthly = transactions.filter((t) => {
     const d = new Date(t.date);
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
@@ -842,7 +842,7 @@ export function DashboardPage() {
       }));
     }
 
-    const nowPoint = new Date(currentYear, currentMonth, now.getDate());
+    const nowPoint = new Date(currentYear, currentMonth, todayDay);
     return Array.from({ length: 8 }).map((_, index) => {
       const offset = 7 - index;
       const end = new Date(nowPoint);
@@ -865,7 +865,7 @@ export function DashboardPage() {
         expense: weekExpense
       };
     });
-  }, [currentMonth, currentYear, now, recentMonths, transactions, trendGranularity]);
+  }, [currentMonth, currentYear, recentMonths, todayDay, transactions, trendGranularity]);
 
   const categoryExpensePie = useMemo(() => {
     const map = new Map<string, number>();

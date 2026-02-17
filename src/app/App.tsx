@@ -4,6 +4,7 @@ import { RouterProvider } from 'react-router-dom';
 import { router } from './router/router';
 import { useAppPreferences } from '../shared/store/useAppPreferences';
 import { useResolvedTheme } from '../shared/hooks/useResolvedTheme';
+import { initOfflineSyncQueue } from '../shared/lib/dataSync';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,6 +17,7 @@ const queryClient = new QueryClient({
 
 export function App() {
   const theme = useAppPreferences((s) => s.theme);
+  const highContrast = useAppPreferences((s) => s.highContrast);
   const resolvedTheme = useResolvedTheme(theme);
 
   /**
@@ -25,6 +27,14 @@ export function App() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', resolvedTheme);
   }, [resolvedTheme]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-contrast', highContrast ? 'high' : 'normal');
+  }, [highContrast]);
+
+  useEffect(() => {
+    initOfflineSyncQueue();
+  }, []);
 
   return (
     <div className="app-shell">

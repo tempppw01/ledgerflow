@@ -27,10 +27,12 @@ const DEFAULT_RSS_SUBSCRIPTIONS: RssSubscription[] = [
 
 interface AppPreferencesState {
   theme: AppTheme;
+  highContrast: boolean;
   rssSubscriptions: RssSubscription[];
   debts: DebtItem[];
   monthlyIncome: number;
   setTheme: (theme: AppTheme) => void;
+  setHighContrast: (enabled: boolean) => void;
   addRssSubscription: (payload: { title: string; url: string }) => { ok: boolean; reason?: string };
   removeRssSubscription: (id: string) => void;
   toggleRssSubscription: (id: string) => void;
@@ -62,10 +64,12 @@ export const useAppPreferences = create<AppPreferencesState>()(
   persist(
     (set) => ({
       theme: 'system',
+      highContrast: false,
       rssSubscriptions: DEFAULT_RSS_SUBSCRIPTIONS,
       debts: [],
       monthlyIncome: 0,
       setTheme: (theme) => set({ theme }),
+      setHighContrast: (enabled) => set({ highContrast: enabled }),
       setMonthlyIncome: (income) => set({ monthlyIncome: Number.isFinite(income) ? income : 0 }),
       addRssSubscription: ({ title, url }) => {
         const normalizedUrl = normalizeFeedUrl(url);

@@ -25,7 +25,33 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        cleanupOutdatedCaches: true,
+        navigateFallback: '/index.html',
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.destination === 'document',
+            handler: 'NetworkFirst',
+            options: { cacheName: 'pages-cache', networkTimeoutSeconds: 5 }
+          },
+          {
+            urlPattern: ({ request }) =>
+              request.destination === 'script' || request.destination === 'style',
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'asset-cache' }
+          },
+          {
+            urlPattern: ({ url }) =>
+              url.pathname.includes('/sync-change') || url.pathname.includes('/sync-local-data'),
+            handler: 'NetworkOnly',
+            options: {
+              backgroundSync: {
+                name: 'ledgerflow-sync-queue',
+                options: { maxRetentionTime: 24 * 60 }
+              }
+            }
+          }
+        ]
       }
     })
   ]

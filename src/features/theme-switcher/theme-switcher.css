@@ -1,3 +1,9 @@
+.theme-switcher-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .theme-switcher {
   display: inline-flex;
   gap: 4px;
@@ -25,9 +31,20 @@
   background: var(--color-bg-hover);
 }
 
-.theme-icon-btn.active {
+.theme-icon-btn.active,
+.theme-contrast-btn.active {
   border-color: var(--color-primary-border);
   background: var(--color-primary);
   color: #fff;
   box-shadow: var(--shadow-xs);
+}
+
+.theme-contrast-btn {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  height: 30px;
+  padding: 0 10px;
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  cursor: pointer;
 }

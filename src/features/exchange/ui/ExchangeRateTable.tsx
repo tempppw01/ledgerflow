@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { ExchangeRate } from '../model/types';
 import { getCurrencyFlag, getCurrencyName } from '../model/types';
+import { TableSkeleton } from '../../../shared/ui/TableSkeleton';
 
 interface ExchangeRateTableProps {
   rates: ExchangeRate[];
@@ -12,7 +13,9 @@ interface ExchangeRateTableProps {
   onRefresh: () => void;
 }
 
-const PAGE_SIZE = 20;
+const ROW_HEIGHT = 46;
+const VIEWPORT_HEIGHT = 420;
+const OVERSCAN = 6;
 
 const TREND_ICON: Record<NonNullable<ExchangeRate['trend']>, string> = {
   up: '⬆️',
@@ -43,7 +46,7 @@ export function ExchangeRateTable({
       return [];
     }
   });
-  const [page, setPage] = useState(1);
+  const [scrollTop, setScrollTop] = useState(0);
 
   const toggleFavorite = (code: string) => {
     setFavorites((prev) => {
@@ -58,7 +61,6 @@ export function ExchangeRateTable({
     (r) => r.code.toLowerCase().includes(keyword) || r.name.toLowerCase().includes(keyword)
   );
 
-  // 收藏置顶
   const sorted = [...filtered].sort((a, b) => {
     const aFav = favorites.includes(a.code) ? 0 : 1;
     const bFav = favorites.includes(b.code) ? 0 : 1;
@@ -66,104 +68,99 @@ export function ExchangeRateTable({
     return a.code.localeCompare(b.code);
   });
 
-  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const pageRows = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const totalHeight = sorted.length * ROW_HEIGHT;
+  const start = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
+  const end = Math.min(
+    sorted.length,
+    Math.ceil((scrollTop + VIEWPORT_HEIGHT) / ROW_HEIGHT) + OVERSCAN
+  );
+  const visibleRows = useMemo(() => sorted.slice(start, end), [end, sorted, start]);
 
   return (
     <div>
-      {/* 工具栏 */}
       <div className="exchange-toolbar">
         <input
           className="exchange-search"
           placeholder="搜索货币代码或名称…"
           value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
+          onChange={(e) => setSearch(e.target.value)}
+          aria-label="搜索货币"
         />
         <span className="exchange-meta">
           基准: {getCurrencyFlag(base)} {base} ({getCurrencyName(base)}){date ? ` · ${date}` : ''}
           {fromCache ? ' · 📦 缓存' : ''}
         </span>
-        <button onClick={onRefresh} disabled={loading} title="刷新汇率">
+        <button onClick={onRefresh} disabled={loading} title="刷新汇率" aria-label="刷新汇率">
           🔄 {loading ? '加载中…' : '刷新'}
         </button>
       </div>
 
-      {/* 错误提示 */}
       {error && (
         <div className="exchange-error">
           ⚠️ {error}
-          <button onClick={onRefresh} style={{ marginLeft: 8 }}>
+          <button onClick={onRefresh} style={{ marginLeft: 8 }} aria-label="重试刷新汇率">
             重试
           </button>
         </div>
       )}
 
-      {/* 表格 */}
-      <table className="exchange-table">
-        <thead>
-          <tr>
-            <th style={{ width: 40 }}>⭐</th>
-            <th>货币</th>
-            <th>货币名称</th>
-            <th style={{ textAlign: 'right' }}>汇率 (1 {base})</th>
-          </tr>
-        </thead>
-        <tbody>
-          {pageRows.length === 0 ? (
-            <tr>
-              <td
-                colSpan={4}
-                style={{ textAlign: 'center', padding: 24, color: 'var(--color-text-tertiary)' }}
-              >
-                {loading ? '加载中…' : '无匹配货币'}
-              </td>
-            </tr>
-          ) : (
-            pageRows.map((r) => (
-              <tr key={r.code} className={favorites.includes(r.code) ? 'exchange-row-fav' : ''}>
-                <td>
-                  <button
-                    className="exchange-fav-btn"
-                    onClick={() => toggleFavorite(r.code)}
-                    title={favorites.includes(r.code) ? '取消收藏' : '收藏'}
+      {loading ? (
+        <TableSkeleton rows={8} columns={4} />
+      ) : sorted.length === 0 ? (
+        <div className="exchange-empty">无匹配货币</div>
+      ) : (
+        <div className="exchange-virtual-table">
+          <div className="exchange-table-head" role="row">
+            <span>⭐</span>
+            <span>货币</span>
+            <span>货币名称</span>
+            <span style={{ textAlign: 'right' }}>汇率 (1 {base})</span>
+          </div>
+          <div
+            className="exchange-table-body"
+            style={{ height: VIEWPORT_HEIGHT }}
+            onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
+            role="list"
+            aria-label="汇率列表"
+            tabIndex={0}
+          >
+            <div style={{ height: totalHeight, position: 'relative' }}>
+              {visibleRows.map((r, index) => {
+                const rowIndex = start + index;
+                const top = rowIndex * ROW_HEIGHT;
+                const fav = favorites.includes(r.code);
+                return (
+                  <div
+                    key={r.code}
+                    className={`exchange-table-row ${fav ? 'exchange-row-fav' : ''}`}
+                    style={{ top, height: ROW_HEIGHT }}
+                    role="listitem"
                   >
-                    {favorites.includes(r.code) ? '⭐' : '☆'}
-                  </button>
-                </td>
-                <td className="mono-inline">
-                  {getCurrencyFlag(r.code)} {r.code}
-                </td>
-                <td>{r.name}</td>
-                <td style={{ textAlign: 'right' }} className="mono-inline">
-                  <span>{r.rate.toFixed(r.rate < 1 ? 6 : 4)}</span>
-                  {r.trend ? (
-                    <span className={`exchange-rate-trend exchange-rate-trend-${r.trend}`}>
-                      {TREND_ICON[r.trend]} {TREND_LABEL[r.trend]}
+                    <button
+                      className="exchange-fav-btn"
+                      onClick={() => toggleFavorite(r.code)}
+                      title={fav ? '取消收藏' : '收藏'}
+                      aria-label={`${fav ? '取消收藏' : '收藏'} ${r.code}`}
+                    >
+                      {fav ? '⭐' : '☆'}
+                    </button>
+                    <span className="mono-inline">
+                      {getCurrencyFlag(r.code)} {r.code}
                     </span>
-                  ) : null}
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-
-      {/* 分页 */}
-      {totalPages > 1 && (
-        <div className="exchange-pagination">
-          <button disabled={safePage <= 1} onClick={() => setPage(safePage - 1)}>
-            上一页
-          </button>
-          <span>
-            {safePage} / {totalPages}
-          </span>
-          <button disabled={safePage >= totalPages} onClick={() => setPage(safePage + 1)}>
-            下一页
-          </button>
+                    <span>{r.name}</span>
+                    <span style={{ textAlign: 'right' }} className="mono-inline">
+                      <span>{r.rate.toFixed(r.rate < 1 ? 6 : 4)}</span>
+                      {r.trend ? (
+                        <span className={`exchange-rate-trend exchange-rate-trend-${r.trend}`}>
+                          {TREND_ICON[r.trend]} {TREND_LABEL[r.trend]}
+                        </span>
+                      ) : null}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>
