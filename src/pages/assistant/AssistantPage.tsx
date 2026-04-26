@@ -44,6 +44,13 @@ import {
   enrichCreditItemsForConfirmation,
   mergeCreditItemsWithHistory
 } from './creditAssistantLogic';
+import {
+  ASSISTANT_ACTIVE_MODE_STORAGE_KEY,
+  ASSISTANT_MODE_CHANGED_EVENT,
+  getAssistantModeLabel,
+  readAssistantModeFromSessionStorage,
+  type AssistantMode
+} from '../../features/assistant/shared/assistantMode';
 
 function getModelDisplayLabel(modelId: string): string {
   const value = modelId.trim();
@@ -146,8 +153,6 @@ interface ChatHistoryItem {
   followUpPrompts?: string[];
   creditItems?: CreditExtractedItem[];
 }
-
-type AssistantMode = 'bookkeeping' | 'assistant' | 'credit';
 
 interface PresetQuestion {
   id: string;
@@ -763,7 +768,7 @@ function renderCreditField(label: string, value: string | undefined, meta?: Cred
 export function AssistantPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<AssistantMode>('assistant');
+  const [mode, setMode] = useState<AssistantMode>(() => readAssistantModeFromSessionStorage());
   const [isWideLayout, setIsWideLayout] = useState(() => readWideLayoutPreference());
   const baseUrl = useAiSettings((s) => s.baseUrl);
   const apiKey = useAiSettings((s) => s.apiKey);
@@ -820,6 +825,7 @@ export function AssistantPage() {
   const [loadingPresets, setLoadingPresets] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>(() => readChatHistory(mode));
   const [confirmingCreditId, setConfirmingCreditId] = useState<string | null>(null);
+  const [modelPickerSource, setModelPickerSource] = useState<'command' | 'toolbar' | null>(null);
   const memoryExtractionSignatureRef = useRef<Record<AssistantMode, string>>({
     bookkeeping: '',
     assistant: '',
@@ -882,6 +888,7 @@ export function AssistantPage() {
   const [duplicateReviewIndex, setDuplicateReviewIndex] = useState(0);
   const [overwriteEntryIds, setOverwriteEntryIds] = useState<string[]>([]);
   const [semanticPanelOpen, setSemanticPanelOpen] = useState(false);
+  const currentModeLabel = useMemo(() => getAssistantModeLabel(mode, t), [mode, t]);
 
   useEffect(() => {
     try {
@@ -1237,6 +1244,13 @@ export function AssistantPage() {
     [presetQuestions, isMobileView, mode]
   );
 
+  const hasCreditContextContent =
+    chatHistory.length > 0 ||
+    wb.imageDataUrls.length > 0 ||
+    wb.pdfDataUrls.length > 0 ||
+    wb.rawContent.trim().length > 0 ||
+    wb.textInput.trim().length > 0;
+
   const smartBehaviorCards = useMemo<SmartPresetCard[]>(
     () =>
       displayBehaviorQuestions.map((item) => {
@@ -1545,7 +1559,35 @@ export function AssistantPage() {
     submitPrompt(wb.textInput);
   };
 
+  const handleSelectModel = useCallback(
+    (nextModel: string) => {
+      setModel(nextModel);
+      if (modelPickerSource === 'command') {
+        const mentionPattern = /(^|\s)@([^\s@]*)$/;
+        const nextInput = wb.textInput.replace(
+          mentionPattern,
+          (_match, prefix) => `${prefix}@${getModelDisplayLabel(nextModel)} `
+        );
+        wb.setTextInput(nextInput);
+        requestAnimationFrame(() => {
+          wb.textareaRef.current?.focus();
+        });
+      }
+      setModelOpen(false);
+      setModelPickerSource(null);
+    },
+    [modelPickerSource, setModel, wb]
+  );
+
   const onInputKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (modelOpen && (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Escape')) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setModelOpen(false);
+        setModelPickerSource(null);
+      }
+      return;
+    }
     if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return;
     event.preventDefault();
     if (!wb.canRecognize || wb.status === 'recognizing') return;
@@ -1571,6 +1613,22 @@ export function AssistantPage() {
     // Defer to ensure DOM updated with latest value.
     requestAnimationFrame(syncTextareaHeight);
   }, [syncTextareaHeight, wb.textInput]);
+
+  useEffect(() => {
+    const commandMatch = /(^|\s)@([^\s@]*)$/.exec(wb.textInput);
+    if (commandMatch) {
+      if (!modelOpen || modelPickerSource !== 'command') {
+        setModelOpen(true);
+        setModelPickerSource('command');
+      }
+      return;
+    }
+
+    if (modelPickerSource === 'command') {
+      setModelOpen(false);
+      setModelPickerSource(null);
+    }
+  }, [modelOpen, modelPickerSource, wb.textInput]);
 
   // 非记账分析时，模型返回自由文本，解析 JSON 失败属于预期，不展示底部红条。
   const shouldShowError =
@@ -1828,6 +1886,16 @@ export function AssistantPage() {
   }, [loadPersonalizedQuestions]);
 
   useEffect(() => {
+    try {
+      window.sessionStorage.setItem(ASSISTANT_ACTIVE_MODE_STORAGE_KEY, mode);
+    } catch {
+      // ignore storage write errors
+    }
+
+    window.dispatchEvent(new CustomEvent(ASSISTANT_MODE_CHANGED_EVENT, { detail: { mode } }));
+  }, [mode]);
+
+  useEffect(() => {
     if (!hasInitializedModeHistoryRef.current) {
       hasInitializedModeHistoryRef.current = true;
       activeHistoryModeRef.current = mode;
@@ -1873,54 +1941,7 @@ export function AssistantPage() {
       <header className="chat-topbar">
         <div className="chat-topbar-left">
           <div className="chat-topbar-title-group">
-            <span className="chat-topbar-title">{t('assistant.ui.bookkeepingAssistant')}</span>
-            <div className="chat-model-selector">
-              <button
-                type="button"
-                className="chat-model-btn"
-                onClick={() => setModelOpen((v) => !v)}
-                aria-haspopup="listbox"
-              >
-                {getModelDisplayLabel(model || t('assistant.ui.selectModel'))}
-                <span className="chat-model-arrow">▼</span>
-              </button>
-
-              {modelOpen ? (
-                <div className="chat-model-dropdown" role="dialog" aria-label="模型列表">
-                  <div className="chat-model-dropdown-header">
-                    <button
-                      type="button"
-                      className="chat-model-fetch-btn"
-                      disabled={wb.loadingModels}
-                      onClick={() => void wb.handleLoadModels()}
-                    >
-                      {wb.loadingModels
-                        ? t('assistant.ui.loadingModels')
-                        : t('assistant.ui.refreshModels')}
-                    </button>
-                  </div>
-                  <div className="chat-model-list">
-                    {wb.models.length === 0 ? (
-                      <div className="chat-model-empty">{t('assistant.ui.emptyModels')}</div>
-                    ) : (
-                      wb.models.map((item: string) => (
-                        <button
-                          key={item}
-                          type="button"
-                          className={`chat-model-option ${item === model ? 'active' : ''}`}
-                          onClick={() => {
-                            setModel(item);
-                            setModelOpen(false);
-                          }}
-                        >
-                          {getModelDisplayLabel(item)}
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </div>
-              ) : null}
-            </div>
+            <span className="chat-topbar-title">{currentModeLabel}</span>
           </div>
         </div>
 
@@ -1930,7 +1951,7 @@ export function AssistantPage() {
             className={mode === 'bookkeeping' ? 'active' : ''}
             onClick={() => setMode('bookkeeping')}
           >
-            AI 记账
+            {t('assistant.ui.bookkeepingMode')}
           </button>
           <button
             type="button"
@@ -1944,7 +1965,7 @@ export function AssistantPage() {
             className={mode === 'credit' ? 'active' : ''}
             onClick={() => setMode('credit')}
           >
-            AI 信贷管家
+            {t('assistant.ui.creditMode')}
           </button>
         </div>
 
@@ -1968,36 +1989,6 @@ export function AssistantPage() {
             title={isWideLayout ? '切换为标准宽度' : '拉伸显示'}
           >
             {isWideLayout ? '↔' : '⤢'}
-          </button>
-          <button
-            type="button"
-            className="chat-icon-topbar-btn"
-            onClick={() => navigate('/transactions/new?quick=1')}
-            aria-label={t('assistant.ui.quickAdd')}
-            title={t('assistant.ui.quickAdd')}
-          >
-            ＋
-          </button>
-          <button
-            type="button"
-            className="chat-clear-btn"
-            aria-label={t('assistant.ui.clearContext')}
-            title={t('assistant.ui.clearContext')}
-            onClick={() => {
-              setChatHistory([]);
-              setStreamingPreviewMessage('');
-              setStreamingCommittedSegments([]);
-              setStreamingDraftSegment('');
-              wb.resetWorkbench();
-              try {
-                window.sessionStorage.removeItem(CHAT_HISTORY_CACHE_KEYS[activeHistoryModeRef.current]);
-              } catch {
-                // ignore storage write errors
-              }
-            }}
-            disabled={chatHistory.length === 0}
-          >
-            {isMobileView ? '清空' : t('assistant.ui.clearContext')}
           </button>
         </div>
       </header>
@@ -2032,36 +2023,24 @@ export function AssistantPage() {
                     <h2>💳 你好，我是你的 AI 信贷管家</h2>
                     <p>贷款、花呗、分期、信用账单都可以丢给我。我先帮你把“到底欠什么、先还什么、哪里还没补齐”讲明白。</p>
                   </div>
-                  <div className="chat-insight-section" aria-label="优先处理">
-                    <div className="chat-insight-section-head">
-                      <h3>🧭 优先处理</h3>
-                      <span>应还 / 待核对 / 风险点</span>
+                  {hasCreditContextContent ? (
+                    <div className="chat-insight-section" aria-label="优先处理">
+                      <div className="chat-insight-section-head">
+                        <h3>🧭 优先处理</h3>
+                        <span>应还 / 待核对 / 风险点</span>
+                      </div>
+                      <div className="chat-push-insights">
+                        <article className="chat-push-insight-item warning">
+                          <h4>先把本月应还摸清</h4>
+                          <p>你可以直接贴花呗、信用卡分期、消费贷截图，我先帮你提炼应还金额、还款日和剩余期数。</p>
+                        </article>
+                        <article className="chat-push-insight-item">
+                          <h4>把模糊负债说清楚</h4>
+                          <p>如果你只记得“大概有几笔分期”，也没关系，我会先帮你整理成待补充清单。</p>
+                        </article>
+                      </div>
                     </div>
-                    <div className="chat-push-insights">
-                      <article className="chat-push-insight-item warning">
-                        <h4>先把本月应还摸清</h4>
-                        <p>你可以直接贴花呗、信用卡分期、消费贷截图，我先帮你提炼应还金额、还款日和剩余期数。</p>
-                      </article>
-                      <article className="chat-push-insight-item">
-                        <h4>把模糊负债说清楚</h4>
-                        <p>如果你只记得“大概有几笔分期”，也没关系，我会先帮你整理成待补充清单。</p>
-                      </article>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="chat-assistant-layout-side">
-                  <div className="chat-insight-section" aria-label="信贷模式说明">
-                    <div className="chat-insight-section-head">
-                      <h3>📌 这个模式适合什么</h3>
-                      <span>识别 / 梳理 / 还款管理</span>
-                    </div>
-                    <div className="chat-auto-insight-block">
-                      <p><strong>可识别内容：</strong>花呗、白条、信用卡分期、消费贷、借款截图。</p>
-                      <p><strong>当前目标：</strong>先帮你提炼平台、应还、期数、还款日，再衔接还款管理页。</p>
-                      <p><strong>适合问法：</strong>“帮我看看这张账单该怎么整理”“哪些项目可能是分期”</p>
-                    </div>
-                  </div>
+                  ) : null}
                 </div>
               </div>
               <div className="chat-preset-list">
@@ -2959,48 +2938,135 @@ export function AssistantPage() {
         ) : null}
 
         <form className="chat-input-form" onSubmit={onSubmit}>
-          <button
-            type="button"
-            className="chat-upload-btn"
-            title="上传图片/PDF"
-            onClick={() => wb.fileInputRef.current?.click()}
-            disabled={wb.status === 'recognizing'}
-          >
-            ＋
-          </button>
+          <div className="chat-input-stack">
+            <div className="chat-input-toolbar">
+              <div className="chat-input-toolbar-left">
+                <div className="chat-model-selector chat-model-selector-inline">
+                  <button
+                    type="button"
+                    className="chat-model-icon-btn"
+                    onClick={() => {
+                      setModelOpen((prev) => {
+                        const next = !prev;
+                        setModelPickerSource(next ? 'toolbar' : null);
+                        return next;
+                      });
+                    }}
+                    aria-haspopup="listbox"
+                    aria-label={`当前模型：${getModelDisplayLabel(model || t('assistant.ui.selectModel'))}`}
+                    title={getModelDisplayLabel(model || t('assistant.ui.selectModel'))}
+                  >
+                    @
+                  </button>
+                  <span className="chat-model-inline-label">{getModelDisplayLabel(model || t('assistant.ui.selectModel'))}</span>
 
-          <div className="chat-input-main">
-            <textarea
-              ref={wb.textareaRef}
-              className="chat-input-textarea"
-              rows={1}
-              placeholder={inputPlaceholder(wb.status, wb.hasApiKey, mode, t)}
-              value={wb.textInput}
-              onChange={(e) => wb.setTextInput(e.target.value)}
-              onPaste={(e) => void wb.handlePasteImage(e)}
-              onKeyDown={onInputKeyDown}
+                  {modelOpen ? (
+                    <div
+                      className={`chat-model-dropdown ${modelPickerSource === 'command' ? 'is-command-open' : ''}`}
+                      role="dialog"
+                      aria-label="模型列表"
+                    >
+                      <div className="chat-model-dropdown-header">
+                        <button
+                          type="button"
+                          className="chat-model-fetch-btn"
+                          disabled={wb.loadingModels}
+                          onClick={() => void wb.handleLoadModels()}
+                        >
+                          {wb.loadingModels
+                            ? t('assistant.ui.loadingModels')
+                            : t('assistant.ui.refreshModels')}
+                        </button>
+                      </div>
+                      <div className="chat-model-list">
+                        {wb.models.length === 0 ? (
+                          <div className="chat-model-empty">{t('assistant.ui.emptyModels')}</div>
+                        ) : (
+                          wb.models.map((item: string) => (
+                            <button
+                              key={item}
+                              type="button"
+                              className={`chat-model-option ${item === model ? 'active' : ''}`}
+                              onClick={() => handleSelectModel(item)}
+                            >
+                              {getModelDisplayLabel(item)}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="chat-input-toolbar-btn"
+                aria-label={t('assistant.ui.clearContext')}
+                title={t('assistant.ui.clearContext')}
+                onClick={() => {
+                  setChatHistory([]);
+                  setStreamingPreviewMessage('');
+                  setStreamingCommittedSegments([]);
+                  setStreamingDraftSegment('');
+                  wb.resetWorkbench();
+                  try {
+                    window.sessionStorage.removeItem(CHAT_HISTORY_CACHE_KEYS[activeHistoryModeRef.current]);
+                  } catch {
+                    // ignore storage write errors
+                  }
+                }}
+                disabled={chatHistory.length === 0}
+              >
+                清空上下文
+              </button>
+            </div>
+
+            <div className="chat-input-row">
+              <button
+                type="button"
+                className="chat-upload-btn"
+                title="上传图片/PDF"
+                onClick={() => wb.fileInputRef.current?.click()}
+                disabled={wb.status === 'recognizing'}
+              >
+                ＋
+              </button>
+
+              <div className="chat-input-main">
+                <textarea
+                  ref={wb.textareaRef}
+                  className="chat-input-textarea"
+                  rows={1}
+                  placeholder={inputPlaceholder(wb.status, wb.hasApiKey, mode, t)}
+                  value={wb.textInput}
+                  onChange={(e) => wb.setTextInput(e.target.value)}
+                  onPaste={(e) => void wb.handlePasteImage(e)}
+                  onKeyDown={onInputKeyDown}
+                />
+              </div>
+
+              <button
+                type={wb.status === 'recognizing' ? 'button' : 'submit'}
+                className={`chat-send-btn ${wb.status === 'recognizing' ? 'chat-send-btn-stop' : ''}`}
+                title={wb.status === 'recognizing' ? '停止' : '发送'}
+                onClick={wb.status === 'recognizing' ? wb.stopRecognize : undefined}
+                disabled={wb.status !== 'recognizing' && !wb.canRecognize}
+              >
+                {wb.status === 'recognizing' ? '■' : '↑'}
+              </button>
+            </div>
+
+            <input
+              ref={wb.fileInputRef}
+              className="chat-file-input-hidden"
+              type="file"
+              accept="image/*,application/pdf"
+              title="上传账单图片或 PDF"
+              aria-label="上传账单图片或 PDF"
+              onChange={(e) => void wb.handleSetFile(e.target.files?.[0])}
             />
           </div>
-
-          <input
-            ref={wb.fileInputRef}
-            className="chat-file-input-hidden"
-            type="file"
-            accept="image/*,application/pdf"
-            title="上传账单图片或 PDF"
-            aria-label="上传账单图片或 PDF"
-            onChange={(e) => void wb.handleSetFile(e.target.files?.[0])}
-          />
-
-          <button
-            type={wb.status === 'recognizing' ? 'button' : 'submit'}
-            className={`chat-send-btn ${wb.status === 'recognizing' ? 'chat-send-btn-stop' : ''}`}
-            title={wb.status === 'recognizing' ? '停止' : '发送'}
-            onClick={wb.status === 'recognizing' ? wb.stopRecognize : undefined}
-            disabled={wb.status !== 'recognizing' && !wb.canRecognize}
-          >
-            {wb.status === 'recognizing' ? '■' : '↑'}
-          </button>
         </form>
       </section>
 

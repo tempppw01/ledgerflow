@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AssistantPage } from './AssistantPage';
 
 Object.defineProperty(window, 'matchMedia', {
@@ -37,7 +37,9 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => {
       const map: Record<string, string> = {
+        'assistant.ui.bookkeepingMode': 'AI 记账',
         'assistant.ui.assistantMode': 'AI 助手',
+        'assistant.ui.creditMode': 'AI 信贷管家',
         'assistant.ui.bookkeepingAssistant': 'AI 记账助手',
         'assistant.ui.qaAssistant': 'AI 助手',
         'assistant.ui.quickAdd': '快速记一笔',
@@ -62,6 +64,12 @@ vi.mock('react-i18next', () => ({
     }
   })
 }));
+
+beforeEach(() => {
+  navigateMock.mockReset();
+  useAssistantWorkbenchMock.mockReset();
+  window.sessionStorage.clear();
+});
 
 const aiSettingsMocks = vi.hoisted(() => {
   const setModelMock = vi.fn();
@@ -258,6 +266,65 @@ describe('AssistantPage', () => {
 
     expect(screen.getAllByRole('button', { name: 'AI 信贷管家' }).length).toBeGreaterThan(0);
     expect(await screen.findByText('梳理本月应还')).toBeInTheDocument();
+    expect(screen.queryByText('🧭 优先处理')).not.toBeInTheDocument();
+    expect(screen.queryByText('📌 这个模式适合什么')).not.toBeInTheDocument();
+  });
+
+  it('AI 信贷管家在有内容时才显示优先处理模块', async () => {
+    useAssistantWorkbenchMock.mockReturnValue({
+      ...createWorkbenchMock(),
+      textInput: '帮我看看这几笔分期'
+    });
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'AI 信贷管家' }));
+    });
+
+    expect(await screen.findByText('🧭 优先处理')).toBeInTheDocument();
+    expect(screen.getByText('先把本月应还摸清')).toBeInTheDocument();
+  });
+
+  it('顶部不再显示快捷记一笔，清空上下文改到输入工具条', async () => {
+    useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByRole('button', { name: '快速记一笔' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '清空上下文' })).toBeInTheDocument();
+  });
+
+  it('输入 @ 时应弹出模型列表并支持选中模型', async () => {
+    const workbench = {
+      ...createWorkbenchMock(),
+      textInput: '@',
+      setTextInput: vi.fn()
+    };
+    useAssistantWorkbenchMock.mockReturnValue(workbench);
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole('dialog', { name: '模型列表' })).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'gpt-test' }));
+    });
+
+    expect(aiSettingsMocks.setModelMock).toHaveBeenCalledWith('gpt-test');
+    expect(workbench.setTextInput).toHaveBeenCalledWith('@gpt-test ');
   });
 
   it('信贷识别结果应支持直接保存到还款管理', async () => {

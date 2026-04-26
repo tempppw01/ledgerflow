@@ -152,8 +152,10 @@
       "error": "Recognition failed. Please revise and retry."
     },
     "ui": {
+      "bookkeepingMode": "AI Bookkeeping",
       "bookkeepingAssistant": "AI Bookkeeping Assistant",
       "assistantMode": "AI Assistant",
+      "creditMode": "AI Credit Manager",
       "qaAssistant": "AI Q&A Assistant",
       "selectModel": "Select model",
       "loadingModels": "Loading...",

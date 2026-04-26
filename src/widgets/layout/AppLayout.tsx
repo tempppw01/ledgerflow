@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import {
+  ASSISTANT_MODE_CHANGED_EVENT,
+  getAssistantModeLabel,
+  readAssistantModeFromSessionStorage
+} from '../../features/assistant/shared/assistantMode';
 import { ThemeSwitcher } from '../../features/theme-switcher/ThemeSwitcher';
 import { formatCurrency } from '../../shared/lib/format';
 import { summarizeTransactions } from '../../shared/lib/transactionMetrics';
@@ -39,6 +44,9 @@ export function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px)').matches : false
+  );
+  const [assistantWorkspaceTitle, setAssistantWorkspaceTitle] = useState(() =>
+    getAssistantModeLabel(readAssistantModeFromSessionStorage(), t)
   );
 
   const navSections: Array<{ title: string; items: NavItem[] }> = useMemo(
@@ -126,6 +134,10 @@ export function AppLayout() {
       return t('nav.dashboard');
     }
 
+    if (pathname.startsWith('/assistant')) {
+      return assistantWorkspaceTitle;
+    }
+
     const navItems = navSections.flatMap((section) => section.items);
     const matchedItem = navItems.find((item) => {
       if (!item.to || item.to === '/') {
@@ -136,7 +148,7 @@ export function AppLayout() {
     });
 
     return matchedItem?.label ?? t('layout.workspaceTitle');
-  }, [location.pathname, navSections, t]);
+  }, [assistantWorkspaceTitle, location.pathname, navSections, t]);
 
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(navSections.map((section) => [section.title, true]))
@@ -153,6 +165,19 @@ export function AppLayout() {
       return next;
     });
   }, [navSections]);
+
+  useEffect(() => {
+    const syncAssistantWorkspaceTitle = () => {
+      setAssistantWorkspaceTitle(getAssistantModeLabel(readAssistantModeFromSessionStorage(), t));
+    };
+
+    syncAssistantWorkspaceTitle();
+    window.addEventListener(ASSISTANT_MODE_CHANGED_EVENT, syncAssistantWorkspaceTitle);
+
+    return () => {
+      window.removeEventListener(ASSISTANT_MODE_CHANGED_EVENT, syncAssistantWorkspaceTitle);
+    };
+  }, [t]);
 
   const draggingRef = useRef(false);
   const transactions = useFinanceStore((s) => s.transactions);

@@ -152,8 +152,10 @@
       "error": "识别失败，请调整描述后重试"
     },
     "ui": {
+      "bookkeepingMode": "AI 记账",
       "bookkeepingAssistant": "AI 记账助手",
       "assistantMode": "AI 助手",
+      "creditMode": "AI 信贷管家",
       "qaAssistant": "AI 问答助手",
       "selectModel": "选择模型",
       "loadingModels": "拉取中...",
