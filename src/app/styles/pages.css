@@ -1048,7 +1048,7 @@
 .about-block,
 .about-bullet-list {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .about-brand-mark {
@@ -1088,7 +1088,7 @@
 .about-block p,
 .about-bullet-list {
   margin: 0;
-  line-height: 1.8;
+  line-height: 1.55;
   color: var(--color-text-secondary);
 }
 
@@ -1124,7 +1124,7 @@
 
 .about-stat-card small {
   color: var(--color-text-tertiary);
-  line-height: 1.7;
+  line-height: 1.45;
 }
 
 .about-grid {
@@ -1162,6 +1162,7 @@
 
 .about-bullet-list {
   padding-left: 18px;
+  gap: 8px;
 }
 
 .about-version-actions {

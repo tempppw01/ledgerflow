@@ -166,7 +166,6 @@ export function AboutPage() {
             <span className="about-chip">Why</span>
           </div>
           <p>{t('about.why.p1')}</p>
-          <p>{t('about.why.p2')}</p>
         </section>
 
         <section className="about-block">
@@ -179,9 +178,6 @@ export function AboutPage() {
             <a href={APP_GITHUB_URL} target="_blank" rel="noreferrer">
               {APP_GITHUB_URL}
             </a>
-          </p>
-          <p className="about-muted-note">
-            如果你在意产品方向、更新节奏和细节打磨，这里会比冷冰冰的“关于”页更有温度。
           </p>
         </section>
       </section>
@@ -220,7 +216,6 @@ export function AboutPage() {
             <li>{t('about.privacy.l1')}</li>
             <li>{t('about.privacy.l2')}</li>
             <li>{t('about.privacy.l3')}</li>
-            <li>{t('about.privacy.l4')}</li>
           </ul>
         </section>
       </section>

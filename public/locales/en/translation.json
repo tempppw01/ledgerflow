@@ -192,8 +192,8 @@
     },
     "why": {
       "title": "Why We Built This",
-      "p1": "LedgerFlow is not only about recording transactions, but about helping you quickly understand where your money goes—even when you're busy. What you spent today, what's quietly increasing, and where to optimize should all be easy to get.",
-      "p2": "We want bookkeeping to feel natural instead of burdensome: input should be simple, analysis should be clear, and suggestions should be actionable. Even 30 seconds a day can make financial decisions calmer and better."
+      "p1": "LedgerFlow keeps bookkeeping light: capture quickly, see trends clearly, and keep actionable suggestions close.",
+      "p2": "Input stays simple, analysis stays clear, and advice stays actionable."
     },
     "principles": {
       "title": "Product Principles",
@@ -203,16 +203,16 @@
     },
     "value": {
       "title": "What You Get",
-      "l1": "AI Bookkeeping: create draft bills from one sentence or screenshot, reducing manual input.",
-      "l2": "AI Assistant: Q&A and reviews over historical transactions to quickly locate anomalies and trends.",
-      "l3": "Linked transaction + analytics view: move from details to trends in one flow for steadier budgeting decisions."
+      "l1": "Create draft bills from text or screenshots.",
+      "l2": "Ask and review around historical transactions.",
+      "l3": "Move from details to trends in one flow."
     },
     "privacy": {
       "title": "Privacy & Security Strategy",
-      "l1": "Storage: ledger data is stored in local browser storage by default; your device and browser are your first permission boundary.",
-      "l2": "Transport security: use HTTPS for AI service access to reduce API key/context leakage risk in transit.",
-      "l3": "Local-first: statistics, filtering, and most visualizations run locally; only required context is sent when you actively invoke AI.",
-      "l4": "Privacy tip: remove sensitive fields (phone/order IDs) from notes before export or sharing."
+      "l1": "Ledger data stays in browser storage by default.",
+      "l2": "Use HTTPS when connecting AI services.",
+      "l3": "Only send needed context when you invoke AI.",
+      "l4": "Clean sensitive notes before export."
     }
   },
   "dashboard": {
