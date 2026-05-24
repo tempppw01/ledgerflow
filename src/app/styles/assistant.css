@@ -28,10 +28,13 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .workspace-topbar + .content .chat-fullscreen {
   height: calc(100vh - var(--topbar-height));
+  height: calc(100dvh - var(--topbar-height));
 }
 
 /* ---------- Top Bar ---------- */
@@ -344,7 +347,8 @@
 .chat-messages-area {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-4);
+  min-height: 0;
+  padding: 0;
   background: var(--color-bg-subtle);
 }
 
@@ -360,15 +364,18 @@
 }
 
 .chat-messages-inner {
-  max-width: 780px;
+  width: 100%;
+  max-width: none;
+  min-height: 100%;
   margin: 0 auto;
+  padding: clamp(14px, 1.6vw, 24px);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
 }
 
 .chat-messages-inner.is-wide {
-  max-width: 1120px;
+  max-width: none;
 }
 
 /* ---------- Message Bubble ---------- */
@@ -586,10 +593,10 @@
 .chat-key-required {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: var(--space-4);
+  padding: 18px;
   text-align: center;
   background: var(--color-bg-elevated);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 .chat-key-required h3 {
@@ -643,8 +650,14 @@
 }
 
 @keyframes pulse-dot {
-  0%, 60%, 100% { opacity: 0.3; }
-  30% { opacity: 1; }
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+  }
+  30% {
+    opacity: 1;
+  }
 }
 
 /* ---------- Bill Preview ---------- */
@@ -830,13 +843,17 @@
 /* ---------- Assistant Panel Layout ---------- */
 .chat-assistant-panel {
   gap: var(--space-3);
+  min-height: max(520px, calc(100dvh - var(--topbar-height) - 188px));
+  margin-bottom: 0;
 }
 
 .chat-assistant-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 340px);
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.52fr);
   gap: var(--space-4);
-  align-items: start;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
 }
 
 .chat-assistant-layout-main,
@@ -844,11 +861,24 @@
   display: grid;
   gap: var(--space-3);
   align-content: start;
+  min-height: 0;
+}
+
+.chat-assistant-layout-main {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.chat-assistant-layout-side {
+  align-content: stretch;
 }
 
 .chat-insight-section {
   display: grid;
   gap: var(--space-2);
+}
+
+.chat-assistant-layout-main > .chat-insight-section {
+  align-content: start;
 }
 
 .chat-insight-section-head {
@@ -1712,7 +1742,9 @@
 }
 
 @keyframes chat-preview-shimmer {
-  to { left: 100%; }
+  to {
+    left: 100%;
+  }
 }
 
 .chat-skeleton-line {
@@ -1756,8 +1788,12 @@
 }
 
 @keyframes chat-skeleton-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* ---------- Credit Pending ---------- */
@@ -2227,7 +2263,8 @@
 .chat-input-bar {
   border-top: 1px solid var(--color-border);
   background: var(--color-bg);
-  padding: var(--space-2);
+  padding: 8px clamp(12px, 1.6vw, 24px);
+  flex-shrink: 0;
 }
 
 .chat-smart-command-row {
@@ -2391,7 +2428,8 @@
 
 .chat-input-form {
   display: block;
-  padding: 0 var(--space-2);
+  padding: 0;
+  width: 100%;
 }
 
 .chat-input-stack {
@@ -2444,7 +2482,7 @@
   display: flex;
   min-width: 0;
   overflow: hidden;
-  padding: 0 var(--space-2) var(--space-2);
+  padding: 0 0 var(--space-2);
 }
 
 .chat-input-main {
