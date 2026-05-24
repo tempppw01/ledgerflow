@@ -1557,7 +1557,6 @@ tr:hover td {
   }
 }
 
-
 @media (max-width: 640px) {
   .table-wrap,
   .transaction-table-wrap,
@@ -3991,7 +3990,9 @@ small.mono {
   flex-direction: column;
   justify-content: flex-end;
   gap: var(--space-4);
-  transition: max-width var(--transition-base), padding var(--transition-base);
+  transition:
+    max-width var(--transition-base),
+    padding var(--transition-base);
 }
 
 .chat-messages-inner.is-wide {
@@ -4467,7 +4468,9 @@ small.mono {
 .chat-assistant-layout-side {
   display: grid;
   gap: var(--space-3);
-  transition: gap var(--transition-base), transform var(--transition-base);
+  transition:
+    gap var(--transition-base),
+    transform var(--transition-base);
 }
 
 .chat-insight-section {
@@ -4508,7 +4511,9 @@ small.mono {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2);
-  transition: grid-template-columns var(--transition-base), gap var(--transition-base);
+  transition:
+    grid-template-columns var(--transition-base),
+    gap var(--transition-base);
 }
 
 .chat-overview-card {
@@ -6132,7 +6137,7 @@ small.mono {
 }
 
 input[type='date'],
-input[type="date"] {
+input[type='date'] {
   color-scheme: light;
   background: linear-gradient(
     180deg,
@@ -6144,7 +6149,7 @@ input[type="date"] {
 }
 
 input[type='date']::-webkit-calendar-picker-indicator,
-input[type="date"]::-webkit-calendar-picker-indicator {
+input[type='date']::-webkit-calendar-picker-indicator {
   cursor: pointer;
   border-radius: 8px;
   padding: 4px;
@@ -6153,13 +6158,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 input[type='date']:hover::-webkit-calendar-picker-indicator,
-input[type="date"]:hover::-webkit-calendar-picker-indicator {
+input[type='date']:hover::-webkit-calendar-picker-indicator {
   background: color-mix(in srgb, var(--color-primary-bg) 52%, transparent);
   opacity: 1;
 }
 
 input[type='date']:focus,
-input[type="date"]:focus {
+input[type='date']:focus {
   border-color: var(--color-primary-border);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 14%, transparent);
 }
@@ -6542,21 +6547,30 @@ input[type="date"]:focus {
     display: grid;
     gap: 12px;
     border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
-    background:
-      linear-gradient(135deg, color-mix(in srgb, var(--color-primary-bg) 70%, white 6%), var(--color-bg-elevated));
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-primary-bg) 70%, white 6%),
+      var(--color-bg-elevated)
+    );
     box-shadow: var(--shadow-sm);
   }
 
   .mobile-nav-insight-card.is-warning {
     border-color: color-mix(in srgb, var(--color-expense) 32%, var(--color-border-light));
-    background:
-      linear-gradient(135deg, color-mix(in srgb, var(--color-expense) 12%, white 8%), var(--color-bg-elevated));
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-expense) 12%, white 8%),
+      var(--color-bg-elevated)
+    );
   }
 
   .mobile-nav-insight-card.is-positive {
     border-color: color-mix(in srgb, var(--color-income) 30%, var(--color-border-light));
-    background:
-      linear-gradient(135deg, color-mix(in srgb, var(--color-income) 12%, white 8%), var(--color-bg-elevated));
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-income) 12%, white 8%),
+      var(--color-bg-elevated)
+    );
   }
 
   .mobile-nav-insight-card.is-focus {
@@ -7587,7 +7601,9 @@ body.categories-accounts-resizing {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: var(--space-2);
-  transition: grid-template-columns var(--transition-base), gap var(--transition-base);
+  transition:
+    grid-template-columns var(--transition-base),
+    gap var(--transition-base);
 }
 
 .account-card {
@@ -7744,7 +7760,11 @@ body.categories-accounts-resizing {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 2px var(--color-primary-bg);
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 72%),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-primary) 10%, transparent),
+      transparent 72%
+    ),
     var(--color-bg-elevated);
 }
 
@@ -7864,7 +7884,11 @@ body.categories-accounts-resizing {
   padding: 14px 16px 12px;
   border: 0;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 8%, transparent), transparent 70%),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-primary) 8%, transparent),
+      transparent 70%
+    ),
     transparent;
   text-align: left;
 }
@@ -8717,7 +8741,10 @@ body.categories-accounts-resizing {
   border-radius: var(--radius-md);
   padding: var(--space-3);
   background: var(--color-bg-subtle);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .help-link-card:hover {
@@ -8799,7 +8826,11 @@ body.categories-accounts-resizing {
   padding: 12px;
   border-radius: var(--radius-lg);
   border: 1px solid color-mix(in srgb, var(--color-primary) 22%, var(--color-border-light));
-  background: linear-gradient(180deg, color-mix(in srgb, var(--color-bg-elevated) 92%, var(--color-primary-bg)) 0%, var(--color-bg-elevated) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-bg-elevated) 92%, var(--color-primary-bg)) 0%,
+    var(--color-bg-elevated) 100%
+  );
   box-shadow: var(--shadow-xs);
 }
 
@@ -8998,8 +9029,6 @@ body.categories-accounts-resizing {
   font-size: var(--font-xs);
 }
 
-
-
 .chat-credit-card-head-meta {
   display: inline-flex;
   align-items: center;
@@ -9051,7 +9080,11 @@ body.categories-accounts-resizing {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 55%, #7c3aed));
+  background: linear-gradient(
+    90deg,
+    var(--color-primary),
+    color-mix(in srgb, var(--color-primary) 55%, #7c3aed)
+  );
   transition: width var(--transition-base);
 }
 
@@ -9173,7 +9206,8 @@ body.categories-accounts-resizing {
   gap: 10px;
   padding: 12px;
   border-radius: var(--radius-md);
-  border: 1px solid color-mix(in srgb, var(--color-info, var(--color-primary)) 26%, var(--color-border-light));
+  border: 1px solid
+    color-mix(in srgb, var(--color-info, var(--color-primary)) 26%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-primary-bg));
 }
 
@@ -9244,7 +9278,6 @@ body.categories-accounts-resizing {
   font-size: 12px;
   line-height: 1.55;
 }
-
 
 .chat-credit-diff-card {
   display: grid;
@@ -9350,7 +9383,12 @@ body.categories-accounts-resizing {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.08) 45%, transparent 100%);
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 45%,
+    transparent 100%
+  );
   transform: translateX(-100%);
   animation: creditPreviewSweep 1.8s ease-in-out infinite;
   pointer-events: none;
@@ -9369,7 +9407,12 @@ body.categories-accounts-resizing {
   display: inline-block;
   min-width: 96px;
   border-radius: var(--radius-sm);
-  background: linear-gradient(90deg, rgba(148, 163, 184, 0.16), rgba(148, 163, 184, 0.34), rgba(148, 163, 184, 0.16));
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.16),
+    rgba(148, 163, 184, 0.34),
+    rgba(148, 163, 184, 0.16)
+  );
   background-size: 200% 100%;
   color: transparent;
   animation: chat-skeleton-shimmer 1.25s linear infinite;
@@ -9388,7 +9431,12 @@ body.categories-accounts-resizing {
   min-width: 68px;
   min-height: 20px;
   border-radius: var(--radius-full);
-  background: linear-gradient(90deg, rgba(148, 163, 184, 0.16), rgba(148, 163, 184, 0.34), rgba(148, 163, 184, 0.16));
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.16),
+    rgba(148, 163, 184, 0.34),
+    rgba(148, 163, 184, 0.16)
+  );
   background-size: 200% 100%;
   color: transparent !important;
   animation: chat-skeleton-shimmer 1.25s linear infinite;
@@ -9469,7 +9517,11 @@ body.categories-accounts-resizing {
   padding: 8px 12px;
   font-size: var(--font-xs);
   line-height: 1.4;
-  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background 180ms ease;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
 }
 
 .chat-follow-up-chip:hover,
@@ -9571,7 +9623,6 @@ body.categories-accounts-resizing {
   gap: 6px;
   flex-shrink: 0;
 }
-
 
 .chat-reasoning-collapse {
   margin-top: 8px;
@@ -9777,7 +9828,9 @@ body.categories-accounts-resizing {
     var(--color-primary),
     color-mix(in srgb, var(--color-primary) 70%, white)
   );
-  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1), filter var(--transition-fast);
+  transition:
+    width 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    filter var(--transition-fast);
 }
 
 .dashboard-insight-progress p {
@@ -9835,7 +9888,9 @@ body.categories-accounts-resizing {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
   gap: var(--space-3);
-  transition: grid-template-columns var(--transition-base), gap var(--transition-base);
+  transition:
+    grid-template-columns var(--transition-base),
+    gap var(--transition-base);
 }
 
 .drawer-timeline-side {
@@ -10093,15 +10148,87 @@ body.categories-accounts-resizing {
   color: var(--color-text-secondary);
 }
 
+.smart-budget-setup-intro,
+.smart-budget-step-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 16px 18px;
+}
+
+.smart-budget-setup-intro-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.smart-budget-setup-intro-main h3,
+.smart-budget-step-intro h3 {
+  margin: 0;
+}
+
+.smart-budget-setup-kicker {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary-soft) 62%, transparent);
+  font-size: var(--font-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.smart-budget-setup-mini-steps,
+.smart-budget-step-intro-tip,
+.smart-budget-preview-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.smart-budget-preview-chips {
+  margin-bottom: var(--space-3);
+}
+
+.smart-budget-setup-mini-steps,
+.smart-budget-step-intro-tip {
+  justify-content: flex-end;
+}
+
+.smart-budget-setup-mini-steps span,
+.smart-budget-step-intro-tip span,
+.smart-budget-preview-chips span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+  background: color-mix(in srgb, var(--color-bg-subtle) 82%, var(--color-bg-elevated));
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 84%, transparent);
+  font-size: var(--font-xs);
+}
+
+.smart-budget-step-intro-tip strong {
+  color: var(--color-text);
+  font-size: var(--font-sm);
+}
+
 .smart-budget-panel-card {
   border-radius: 18px;
   border: 1px solid color-mix(in srgb, var(--color-border-light) 88%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-bg-elevated) 96%, white),
-      color-mix(in srgb, var(--color-bg-subtle) 92%, var(--color-bg-elevated))
-    );
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-bg-elevated) 96%, white),
+    color-mix(in srgb, var(--color-bg-subtle) 92%, var(--color-bg-elevated))
+  );
   box-shadow:
     0 10px 28px color-mix(in srgb, var(--color-text) 6%, transparent),
     inset 0 1px 0 color-mix(in srgb, white 68%, transparent);
@@ -10134,7 +10261,11 @@ body.categories-accounts-resizing {
 .smart-budget-mode-switch button.active {
   color: #fff;
   border-color: var(--color-primary);
-  background: linear-gradient(135deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 72%, #ffffff));
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    color-mix(in srgb, var(--color-primary) 72%, #ffffff)
+  );
 }
 
 .smart-budget-management {
@@ -10391,7 +10522,9 @@ body.categories-accounts-resizing {
   display: block;
   height: 100%;
   background: var(--color-success);
-  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1), filter var(--transition-fast);
+  transition:
+    width 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    filter var(--transition-fast);
 }
 
 .smart-budget-progress-track span.warn {
@@ -10434,16 +10567,17 @@ body.categories-accounts-resizing {
 .smart-budget-block {
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-lg);
-  padding: var(--space-4);
+  padding: 18px;
   background: var(--color-bg-subtle);
 }
 
 .smart-budget-block h3 {
-  margin-bottom: var(--space-2);
+  margin: 0 0 var(--space-3);
 }
 
 .smart-budget-block p {
   margin: 0 0 var(--space-3);
+  color: var(--color-text-secondary);
 }
 
 .smart-budget-choice-grid {
@@ -10455,10 +10589,12 @@ body.categories-accounts-resizing {
 .smart-budget-choice-card {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: var(--space-3);
+  padding: 13px 14px;
   background: var(--color-bg-elevated);
   display: grid;
-  gap: var(--space-1);
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
   cursor: pointer;
   transition:
     border-color 0.2s ease,
@@ -10514,6 +10650,7 @@ body.categories-accounts-resizing {
 
 .smart-budget-choice-card strong {
   font-size: var(--font-base);
+  line-height: 1.25;
 }
 
 .smart-budget-choice-card span {
@@ -10805,6 +10942,17 @@ body.categories-accounts-resizing {
     flex-direction: column;
   }
 
+  .smart-budget-setup-intro,
+  .smart-budget-step-intro {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .smart-budget-setup-mini-steps,
+  .smart-budget-step-intro-tip {
+    justify-content: flex-start;
+  }
+
   .smart-budget-stepper {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -10845,12 +10993,11 @@ body.categories-accounts-resizing {
 .card {
   border: 1px solid color-mix(in srgb, var(--color-border) 90%, transparent);
   border-radius: 18px;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-bg-elevated) 96%, white),
-      color-mix(in srgb, var(--color-bg-subtle) 90%, var(--color-bg-elevated))
-    );
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-bg-elevated) 96%, white),
+    color-mix(in srgb, var(--color-bg-subtle) 90%, var(--color-bg-elevated))
+  );
   padding: var(--space-4);
   box-shadow:
     0 8px 24px color-mix(in srgb, var(--color-text) 6%, transparent),
@@ -10954,12 +11101,11 @@ body.categories-accounts-resizing {
   padding: 16px;
   border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
   border-radius: 16px;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-bg-elevated) 96%, white 4%),
-      color-mix(in srgb, var(--color-primary-soft) 34%, var(--color-bg-elevated))
-    );
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-bg-elevated) 96%, white 4%),
+    color-mix(in srgb, var(--color-primary-soft) 34%, var(--color-bg-elevated))
+  );
   box-shadow: inset 0 1px 0 color-mix(in srgb, white 72%, transparent);
 }
 
@@ -11285,7 +11431,11 @@ body.categories-accounts-resizing {
 
 .finance-unit-input.is-filled > span {
   color: #fff;
-  background: linear-gradient(135deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 70%, #7c4dff));
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    color-mix(in srgb, var(--color-primary) 70%, #7c4dff)
+  );
   border-color: transparent;
   box-shadow: 0 6px 12px color-mix(in srgb, var(--color-primary) 22%, transparent);
 }
@@ -11647,12 +11797,11 @@ body.categories-accounts-resizing {
   padding: 16px;
   border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
   border-radius: 16px;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-bg-elevated) 96%, white 4%),
-      color-mix(in srgb, var(--color-primary-soft) 34%, var(--color-bg-elevated))
-    );
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-bg-elevated) 96%, white 4%),
+    color-mix(in srgb, var(--color-primary-soft) 34%, var(--color-bg-elevated))
+  );
   box-shadow: inset 0 1px 0 color-mix(in srgb, white 72%, transparent);
 }
 
@@ -11970,7 +12119,11 @@ body.categories-accounts-resizing {
 
 .finance-unit-input.is-filled > span {
   color: #fff;
-  background: linear-gradient(135deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 70%, #7c4dff));
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    color-mix(in srgb, var(--color-primary) 70%, #7c4dff)
+  );
   border-color: transparent;
   box-shadow: 0 6px 12px color-mix(in srgb, var(--color-primary) 22%, transparent);
 }
@@ -12599,7 +12752,9 @@ body.categories-accounts-resizing {
     align-items: flex-start;
   }
 
-  .finance-mobile-collapsible-section > .finance-collapsible-summary .finance-collapsible-summary-text {
+  .finance-mobile-collapsible-section
+    > .finance-collapsible-summary
+    .finance-collapsible-summary-text {
     flex: 1;
   }
 
@@ -12929,12 +13084,11 @@ body.categories-accounts-resizing {
   padding: 16px;
   border-radius: 18px;
   border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-bg-elevated) 96%, white),
-      color-mix(in srgb, var(--color-bg-subtle) 92%, var(--color-bg-elevated))
-    );
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-bg-elevated) 96%, white),
+    color-mix(in srgb, var(--color-bg-subtle) 92%, var(--color-bg-elevated))
+  );
   box-shadow:
     0 10px 28px color-mix(in srgb, var(--color-text) 6%, transparent),
     inset 0 1px 0 color-mix(in srgb, white 70%, transparent);
@@ -13013,7 +13167,11 @@ body.categories-accounts-resizing {
   padding: 14px 10px 10px;
   border-radius: 18px;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-bg-elevated) 98%, transparent), color-mix(in srgb, var(--color-bg-subtle) 94%, var(--color-bg-elevated))),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-bg-elevated) 98%, transparent),
+      color-mix(in srgb, var(--color-bg-subtle) 94%, var(--color-bg-elevated))
+    ),
     repeating-linear-gradient(
       to right,
       transparent 0,
@@ -13124,7 +13282,10 @@ body.categories-accounts-resizing {
 
 .dashboard-donut-segment {
   stroke-linecap: round;
-  transition: opacity 180ms ease, transform 180ms ease, filter 180ms ease;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    filter 180ms ease;
   transform-origin: 110px 110px;
   opacity: 0.78;
 }
@@ -13320,7 +13481,9 @@ body.categories-accounts-resizing {
   background: linear-gradient(90deg, var(--color-success), var(--color-primary));
   min-width: 8px;
   max-width: 100%;
-  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1), filter var(--transition-fast);
+  transition:
+    width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    filter var(--transition-fast);
 }
 
 .dashboard-net-row strong,
@@ -13537,7 +13700,6 @@ body.categories-accounts-resizing {
   }
 }
 
-
 .chat-msg-content-streaming {
   animation: chat-stream-fade 220ms ease;
   will-change: transform, opacity;
@@ -13559,7 +13721,12 @@ body.categories-accounts-resizing {
   height: 2px;
   margin-top: 6px;
   border-radius: 999px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-primary) 42%, transparent), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--color-primary) 42%, transparent),
+    transparent
+  );
   background-size: 180% 100%;
   animation: chat-stream-shimmer 1.3s linear infinite;
 }
@@ -13583,7 +13750,6 @@ body.categories-accounts-resizing {
     transform: translateY(0);
   }
 }
-
 
 @keyframes chat-stream-shimmer {
   0% {
@@ -13613,7 +13779,6 @@ body.categories-accounts-resizing {
 .global-memory-check input {
   margin: 2px 0 0;
 }
-
 
 .chat-semantic-drawer {
   width: min(520px, 94vw);

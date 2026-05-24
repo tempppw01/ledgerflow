@@ -111,11 +111,11 @@ function syncRecommendationWithExpenseCategories(
   };
 }
 
-const identityOptions: Array<{ value: UserIdentity; label: string; helper: string }> = [
-  { value: 'student', label: '学生', helper: '课程、成长和生活费通常占比较高。' },
-  { value: 'employee', label: '上班族', helper: '通勤、家庭与长期储蓄需要更平衡。' },
-  { value: 'freelancer', label: '自由职业者', helper: '收入波动较大，建议提高风险缓冲。' },
-  { value: 'other', label: '其他', helper: '系统会按通用支出结构推荐。' }
+const identityOptions: Array<{ value: UserIdentity; label: string }> = [
+  { value: 'student', label: '学生' },
+  { value: 'employee', label: '上班族' },
+  { value: 'freelancer', label: '自由职业者' },
+  { value: 'other', label: '其他' }
 ];
 
 const ratioQuickOptions = [0.2, 0.3, 0.4, 0.5];
@@ -124,32 +124,27 @@ const setupStepMeta = [
   {
     value: 1,
     short: '身份',
-    title: '选择你的阶段',
-    description: '先按你的生活状态套一个更接近现实的预算框架。'
+    title: '选择你的阶段'
   },
   {
     value: 2,
     short: '收入',
-    title: '填写月收入',
-    description: '这里用千为单位，输入更快，比如 8 代表 8000 元。'
+    title: '填写月收入'
   },
   {
     value: 3,
     short: '固定支出',
-    title: '填写固定支出',
-    description: '把房租、固定账单、长期订阅这类每月基本会发生的支出先锁定。'
+    title: '填写固定支出'
   },
   {
     value: 4,
     short: '储蓄比例',
-    title: '设定想先留多少钱',
-    description: '这个比例作用于可支配收入，决定你想先存下多少。'
+    title: '设定想先留多少钱'
   },
   {
     value: 5,
     short: '确认',
-    title: '检查并确认预算',
-    description: '确认后会自动进入预算管理，看本月执行和超支提醒。'
+    title: '检查并确认预算'
   }
 ] as const;
 
@@ -424,9 +419,13 @@ export function SmartBudgetPage() {
     [trackingRows]
   );
 
-  const summary = useMemo(
-    () =>
-      `身份：${getIdentityLabel(answers.identity)} · 月收入：${answers.monthlyIncomeK} 千 · 固定支出：${answers.monthlyFixedExpenseK} 千 · 储蓄比例：${Math.round(answers.savingsRatio * 100)}%`,
+  const summaryChips = useMemo(
+    () => [
+      { label: '身份', value: getIdentityLabel(answers.identity) },
+      { label: '收入', value: `${answers.monthlyIncomeK} 千` },
+      { label: '固定', value: `${answers.monthlyFixedExpenseK} 千` },
+      { label: '储蓄', value: `${Math.round(answers.savingsRatio * 100)}%` }
+    ],
     [answers]
   );
 
@@ -758,9 +757,7 @@ export function SmartBudgetPage() {
               <span className="smart-budget-header-badge is-draft">预算向导进行中</span>
             )}
           </div>
-          <p>
-            先用 4 个问题生成一版能落地的月预算，确认后再进入管理看板跟踪本月执行、预警和调整建议。
-          </p>
+          <p>回答 4 项，生成一版月预算；确认后再看执行和提醒。</p>
         </div>
       </header>
 
@@ -793,25 +790,14 @@ export function SmartBudgetPage() {
           aria-label="预算向导说明"
         >
           <div className="smart-budget-setup-intro-main">
-            <span className="smart-budget-setup-kicker">首次使用建议先完成一次向导</span>
-            <h3>1 分钟做完，先拿到一版可执行预算</h3>
-            <p>
-              你只需要提供身份、月收入、固定支出和想保留的储蓄比例。确认后，系统会自动生成分类预算并切到管理看板。
-            </p>
+            <span className="smart-budget-setup-kicker">快速向导</span>
+            <h3>4 个问题生成月预算</h3>
           </div>
-          <div className="smart-budget-setup-grid">
-            <article>
-              <strong>你要准备</strong>
-              <p>月收入、每月固定支出，以及一个你愿意先存下来的比例。</p>
-            </article>
-            <article>
-              <strong>你会得到</strong>
-              <p>固定支出、储蓄/投资、各消费分类的预算建议，还能继续手动微调。</p>
-            </article>
-            <article>
-              <strong>完成后能看</strong>
-              <p>本月执行率、超支分类、AI 建议和下月预算调整动作。</p>
-            </article>
+          <div className="smart-budget-setup-mini-steps" aria-label="需要填写的预算信息">
+            <span>身份</span>
+            <span>收入</span>
+            <span>固定支出</span>
+            <span>储蓄比例</span>
           </div>
         </section>
       )}
@@ -1150,11 +1136,14 @@ export function SmartBudgetPage() {
                 第 {step} / {setupStepMeta.length} 步
               </span>
               <h3>{currentStepMeta.title}</h3>
-              <p>{currentStepMeta.description}</p>
             </div>
             <div className="smart-budget-step-intro-tip">
-              <strong>当前已填写</strong>
-              <span>{summary}</span>
+              {summaryChips.map((item) => (
+                <span key={item.label}>
+                  {item.label}
+                  <strong>{item.value}</strong>
+                </span>
+              ))}
             </div>
           </section>
 
@@ -1172,8 +1161,7 @@ export function SmartBudgetPage() {
 
           {step === 1 ? (
             <div className="smart-budget-block">
-              <h3>问题 1：你目前的身份是？</h3>
-              <p>这一步只影响预算分配风格，不会限制你后面手动修改金额。</p>
+              <h3>你目前的身份是？</h3>
               <div className="smart-budget-choice-grid">
                 {identityOptions.map((item) => (
                   <label key={item.value} className="smart-budget-choice-card">
@@ -1185,7 +1173,6 @@ export function SmartBudgetPage() {
                       onChange={() => setAnswers((prev) => ({ ...prev, identity: item.value }))}
                     />
                     <strong>{item.label}</strong>
-                    <span>{item.helper}</span>
                   </label>
                 ))}
               </div>
@@ -1194,8 +1181,7 @@ export function SmartBudgetPage() {
 
           {step === 2 ? (
             <div className="smart-budget-block">
-              <h3>问题 2：你每月大概能到手多少？</h3>
-              <p>为了少输入，这里用千为单位填写。比如输入 8，系统会按 8000 元计算。</p>
+              <h3>每月大概到手多少？</h3>
               <div className="field">
                 <label htmlFor="income-k">当前换算：{incomePreview}</label>
                 <input
@@ -1214,8 +1200,7 @@ export function SmartBudgetPage() {
 
           {step === 3 ? (
             <div className="smart-budget-block">
-              <h3>问题 3：每月先锁定多少固定支出？</h3>
-              <p>包含房租/房贷、固定账单、长期订阅等刚性成本。这里同样按千为单位填写。</p>
+              <h3>每月固定支出多少？</h3>
               <div className="field">
                 <label htmlFor="fixed-expense-k">当前换算：{fixedExpensePreview}</label>
                 <input
@@ -1237,13 +1222,11 @@ export function SmartBudgetPage() {
 
           {step === 4 ? (
             <div className="smart-budget-block">
-              <h3>问题 4：每月想先存下多少可支配收入？</h3>
-              <p>
-                可支配收入 = 月收入 - 固定支出。你现在可支配的金额约为
-                <strong> {formatCurrency(savingsPreview.disposableIncome)}</strong>，
-                若按当前比例，优先留存约
-                <strong> {formatCurrency(savingsPreview.savingsAmount)}</strong>。
-              </p>
+              <h3>想先存下多少？</h3>
+              <div className="smart-budget-preview-chips">
+                <span>可支配 {formatCurrency(savingsPreview.disposableIncome)}</span>
+                <span>留存 {formatCurrency(savingsPreview.savingsAmount)}</span>
+              </div>
 
               <div className="smart-budget-ratio-options">
                 {ratioQuickOptions.map((ratio) => (
@@ -1282,8 +1265,8 @@ export function SmartBudgetPage() {
 
           {step === 5 && draftRecommendation ? (
             <div className="smart-budget-block">
-              <h3>月分类预算推荐（可确认保存）</h3>
-              <p>{summary}。确认后会自动切到预算管理页，继续看执行率和超支提醒。</p>
+              <h3>确认预算</h3>
+              <p>确认后进入管理看板。</p>
               <div className="smart-budget-result-grid">
                 <article className="smart-budget-stat-card">
                   <span>月收入</span>
