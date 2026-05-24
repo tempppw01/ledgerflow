@@ -40,7 +40,9 @@ const STATUS_CLASS: Record<SubscriptionStatus, string> = {
   paused: 'badge'
 };
 
-function toMonthlyAmount(item: Pick<SubscriptionItem, 'amount' | 'billingCycle' | 'customCycleDays'>) {
+function toMonthlyAmount(
+  item: Pick<SubscriptionItem, 'amount' | 'billingCycle' | 'customCycleDays'>
+) {
   const amount = Number(item.amount || 0);
   if (!Number.isFinite(amount) || amount <= 0) return 0;
   if (item.billingCycle === 'monthly') return amount;
@@ -186,7 +188,8 @@ export function SubscriptionsPage() {
         return;
       }
 
-      const defaultAccountId = accounts.find((item) => item.id === 'acc-card')?.id || accounts[0]?.id;
+      const defaultAccountId =
+        accounts.find((item) => item.id === 'acc-card')?.id || accounts[0]?.id;
       window.localStorage.setItem(SUBSCRIPTIONS_DEMO_SEEDED_KEY, '1');
       createDemoSubscriptions(defaultAccountId).forEach((item) => {
         addSubscription(item);
@@ -235,7 +238,8 @@ export function SubscriptionsPage() {
   );
 
   const attentionItems = useMemo(
-    () => rows.filter((item) => item.status === 'due-soon' || item.status === 'expired').slice(0, 6),
+    () =>
+      rows.filter((item) => item.status === 'due-soon' || item.status === 'expired').slice(0, 6),
     [rows]
   );
 
@@ -375,7 +379,9 @@ export function SubscriptionsPage() {
                   <div className="subscriptions-monthly-summary-list">
                     {monthlySummaryByCurrency.map((item) => (
                       <article key={item.currency} className="subscriptions-monthly-summary-card">
-                        <span className="subscriptions-monthly-summary-currency">{item.currency}</span>
+                        <span className="subscriptions-monthly-summary-currency">
+                          {item.currency}
+                        </span>
                         <strong>{formatMoneyByCurrency(item.amount, item.currency)}</strong>
                         <em>折算到每月</em>
                       </article>
@@ -402,7 +408,8 @@ export function SubscriptionsPage() {
                               : '日期未设置'}
                         </span>
                         <em>
-                          {STATUS_LABELS[item.status]} · {formatMoneyByCurrency(item.amount, item.currency)}
+                          {STATUS_LABELS[item.status]} ·{' '}
+                          {formatMoneyByCurrency(item.amount, item.currency)}
                         </em>
                       </article>
                     ))}
@@ -419,13 +426,17 @@ export function SubscriptionsPage() {
           <div className="subscriptions-panel-head">
             <div>
               <h3>{editingId ? '编辑订阅' : '新增订阅'}</h3>
-              <p className="muted">先录入基础信息，再补充账户、续费和备注，后续生成支出会更顺手。</p>
+              <p className="muted">
+                先录入基础信息，再补充账户、续费和备注，后续生成支出会更顺手。
+              </p>
             </div>
             <div className="subscriptions-form-preview">
               <span>折算月均</span>
               <strong>{formatMoneyByCurrency(formMonthlyPreview, form.currency || 'CNY')}</strong>
               <em>
-                {form.billingCycle === 'custom' ? '按自定义周期折算' : CYCLE_LABELS[form.billingCycle]}
+                {form.billingCycle === 'custom'
+                  ? '按自定义周期折算'
+                  : CYCLE_LABELS[form.billingCycle]}
               </em>
             </div>
           </div>
@@ -590,7 +601,9 @@ export function SubscriptionsPage() {
                 placeholder="可记录套餐说明、会员权益、卡号尾号等"
               />
             </label>
-            {error ? <p className="assistant-wb-issue error subscriptions-form-full">{error}</p> : null}
+            {error ? (
+              <p className="assistant-wb-issue error subscriptions-form-full">{error}</p>
+            ) : null}
             <div className="subscriptions-actions subscriptions-form-full">
               <button type="submit" className="primary">
                 {editingId ? '保存修改' : '新增订阅'}
@@ -627,61 +640,53 @@ export function SubscriptionsPage() {
           ) : (
             <div className="subscriptions-card-list">
               {rows.map((item) => {
-                const account = item.accountId ? accounts.find((row) => row.id === item.accountId) : null;
-                const monthlyAmount = toMonthlyAmount(item);
+                const account = item.accountId
+                  ? accounts.find((row) => row.id === item.accountId)
+                  : null;
+                const billingCycleText =
+                  item.billingCycle === 'custom'
+                    ? `每 ${item.customCycleDays || '—'} 天`
+                    : CYCLE_LABELS[item.billingCycle];
+                const nextDateText = item.renewalDate
+                  ? `${item.autoRenew ? '续费' : '提醒'} ${formatDate(item.renewalDate)}`
+                  : item.expireDate
+                    ? `到期 ${formatDate(item.expireDate)}`
+                    : '';
 
                 return (
                   <article key={item.id} className="subscriptions-card">
                     <div className="subscriptions-card-head">
                       <div className="subscriptions-card-title">
                         <h4>{item.name}</h4>
-                        {item.provider ? <p>{item.provider}</p> : <p>{KIND_LABELS[item.kind]}</p>}
+                        <p>
+                          {item.provider
+                            ? `${item.provider} · ${KIND_LABELS[item.kind]}`
+                            : KIND_LABELS[item.kind]}
+                        </p>
                       </div>
                       <div className="subscriptions-card-badges">
-                        <span className={STATUS_CLASS[item.status]}>{STATUS_LABELS[item.status]}</span>
-                        <span className="badge">{KIND_LABELS[item.kind]}</span>
-                        <span className="badge">{item.autoRenew ? '自动续费' : '手动续费'}</span>
+                        <span className={STATUS_CLASS[item.status]}>
+                          {STATUS_LABELS[item.status]}
+                        </span>
+                        {item.autoRenew ? <span className="badge">自动</span> : null}
                       </div>
                     </div>
 
-                    <div className="subscriptions-card-metrics">
-                      <article>
-                        <span>当前金额</span>
-                        <strong>{formatMoneyByCurrency(item.amount, item.currency)}</strong>
-                      </article>
-                      <article>
-                        <span>折算月均</span>
-                        <strong>{formatMoneyByCurrency(monthlyAmount, item.currency)}</strong>
-                      </article>
-                      <article>
-                        <span>扣费账户</span>
-                        <strong>{account?.name || '未指定'}</strong>
-                      </article>
+                    <div className="subscriptions-card-summary" aria-label="订阅摘要">
+                      <span className="subscriptions-card-amount">
+                        {formatMoneyByCurrency(item.amount, item.currency)}
+                        <small>/ {billingCycleText}</small>
+                      </span>
+                      {nextDateText ? <span>{nextDateText}</span> : null}
+                      {account ? <span>{account.name}</span> : null}
                     </div>
-
-                    <div className="subscriptions-card-meta">
-                      <div>
-                        <span>计费周期</span>
-                        <strong>
-                          {item.billingCycle === 'custom'
-                            ? `每 ${item.customCycleDays || '—'} 天`
-                            : CYCLE_LABELS[item.billingCycle]}
-                        </strong>
-                      </div>
-                      <div>
-                        <span>续费日</span>
-                        <strong>{item.renewalDate ? formatDate(item.renewalDate) : '未设置'}</strong>
-                      </div>
-                      <div>
-                        <span>到期日</span>
-                        <strong>{item.expireDate ? formatDate(item.expireDate) : '未设置'}</strong>
-                      </div>
-                    </div>
-
-                    {item.note ? <p className="subscriptions-card-note">{item.note}</p> : null}
 
                     <div className="subscriptions-actions-inline">
-                      <button type="button" className="primary" onClick={() => handleGenerateTransaction(item)}>
+                      <button
+                        type="button"
+                        className="primary"
+                        onClick={() => handleGenerateTransaction(item)}
+                      >
                         生成支出
                       </button>
                       <button
@@ -697,7 +702,11 @@ export function SubscriptionsPage() {
                       <button type="button" onClick={() => startEdit(item)}>
                         编辑
                       </button>
-                      <button type="button" className="danger" onClick={() => setPendingDeleteId(item.id)}>
+                      <button
+                        type="button"
+                        className="danger"
+                        onClick={() => setPendingDeleteId(item.id)}
+                      >
                         删除
                       </button>
                     </div>
@@ -712,7 +721,11 @@ export function SubscriptionsPage() {
       <ConfirmDialog
         open={Boolean(pendingDeleteItem)}
         title="移入回收站"
-        description={pendingDeleteItem ? `确认将“${pendingDeleteItem.name}”移入回收站吗？后续仍可在回收站恢复或彻底删除。` : ''}
+        description={
+          pendingDeleteItem
+            ? `确认将“${pendingDeleteItem.name}”移入回收站吗？后续仍可在回收站恢复或彻底删除。`
+            : ''
+        }
         confirmText="移入回收站"
         cancelText="取消"
         onCancel={() => setPendingDeleteId(null)}

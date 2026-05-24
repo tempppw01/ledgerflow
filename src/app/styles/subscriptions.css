@@ -282,21 +282,20 @@
 
 .subscriptions-card-list {
   display: grid;
-  gap: 14px;
+  gap: 10px;
 }
 
 .subscriptions-card {
   display: grid;
-  gap: 14px;
-  padding: 16px;
-  border-radius: 18px;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
   border: 1px solid color-mix(in srgb, var(--color-border-light) 88%, transparent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-bg-elevated) 96%, white 4%),
-      color-mix(in srgb, var(--color-bg-subtle) 94%, var(--color-bg-elevated))
-    );
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-bg-elevated) 96%, white 4%),
+    color-mix(in srgb, var(--color-bg-subtle) 94%, var(--color-bg-elevated))
+  );
 }
 
 .subscriptions-card-head {
@@ -309,13 +308,17 @@
 
 .subscriptions-card-title {
   display: grid;
-  gap: 4px;
+  gap: 3px;
+  min-width: 0;
 }
 
 .subscriptions-card-title p {
   margin: 0;
   color: var(--color-text-secondary);
   font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .subscriptions-card-badges {
@@ -325,45 +328,36 @@
   justify-content: flex-end;
 }
 
-.subscriptions-card-metrics {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.subscriptions-card-metrics article,
-.subscriptions-card-meta div {
-  display: grid;
-  gap: 4px;
-  padding: 12px;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--color-bg-subtle) 78%, var(--color-bg-elevated));
-  border: 1px solid color-mix(in srgb, var(--color-border-light) 84%, transparent);
-}
-
-.subscriptions-card-metrics span,
-.subscriptions-card-meta span {
-  font-size: 12px;
+.subscriptions-card-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
   color: var(--color-text-secondary);
+  font-size: 13px;
 }
 
-.subscriptions-card-metrics strong {
-  font-size: 20px;
-  line-height: 1.15;
+.subscriptions-card-summary span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  max-width: 100%;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 80%, var(--color-bg-elevated));
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 76%, transparent);
 }
 
-.subscriptions-card-meta {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.subscriptions-card-amount {
+  color: var(--color-text);
+  font-weight: 700;
 }
 
-.subscriptions-card-note {
-  margin: 0;
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--color-border-light) 84%, transparent);
-  background: color-mix(in srgb, var(--color-bg-subtle) 72%, var(--color-bg-elevated));
+.subscriptions-card-amount small {
+  margin-left: 4px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .subscriptions-actions-inline {
@@ -396,20 +390,13 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .subscriptions-card-metrics,
-  .subscriptions-card-meta {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .subscriptions-field-wide {
     grid-column: auto;
   }
 }
 
 @media (max-width: 760px) {
-  .subscriptions-form-grid,
-  .subscriptions-card-metrics,
-  .subscriptions-card-meta {
+  .subscriptions-form-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -434,5 +421,9 @@
 
   .subscriptions-card-badges {
     justify-content: flex-start;
+  }
+
+  .subscriptions-card-summary span {
+    min-height: 26px;
   }
 }
