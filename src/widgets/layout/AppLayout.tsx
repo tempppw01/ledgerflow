@@ -74,7 +74,6 @@ export function AppLayout() {
           { to: '/categories-accounts', label: t('nav.categoriesAccounts'), icon: '🗂️' },
           { to: '/balance-changes', label: '余额明细', icon: '📚' },
           { to: '/subscriptions', label: '订阅管理', icon: '🧾' },
-          { to: '/recycle-bin', label: '回收站', icon: '🗑️' },
           { to: '/repayment-management', label: t('nav.repayment'), icon: '💳' }
         ]
       },
@@ -84,6 +83,7 @@ export function AppLayout() {
           { to: '/help', label: '帮助', icon: '❓' },
           { to: '/settings', label: t('nav.settings'), icon: '⚙️' },
           { to: '/database-settings', label: t('nav.dbSettings'), icon: '🗄️' },
+          { to: '/recycle-bin', label: '回收站', icon: '🗑️' },
           { to: '/exchange', label: t('nav.exchange'), icon: '💱' },
           { to: '/salary-tools', label: '工资工具', icon: '💼' },
           { to: '/finance', label: t('nav.finance'), icon: '📰' },
@@ -108,7 +108,6 @@ export function AppLayout() {
           { label: '余额明细', icon: '📚', to: '/balance-changes' },
           { label: t('nav.smartBudget'), icon: '🧠', to: '/smart-budget' },
           { label: '全局记忆', icon: '🗃️', to: '/global-memory' },
-          { label: '回收站', icon: '🗑️', to: '/recycle-bin' },
           { label: t('nav.repayment'), icon: '💳', to: '/repayment-management' },
           { label: '工资工具', icon: '💼', to: '/salary-tools' },
           { label: t('nav.finance'), icon: '📰', to: '/finance' },
@@ -121,6 +120,7 @@ export function AppLayout() {
           { label: '帮助', icon: '❓', to: '/help' },
           { label: t('nav.settings'), icon: '⚙️', to: '/settings' },
           { label: t('nav.dbSettings'), icon: '🗄️', to: '/database-settings' },
+          { label: '回收站', icon: '🗑️', to: '/recycle-bin' },
           { label: t('nav.about'), icon: 'ℹ️', to: '/about' }
         ]
       }
@@ -207,7 +207,9 @@ export function AppLayout() {
   const monthTransactionCount = monthTransactions.length;
   const latestMonthTransaction = useMemo(
     () =>
-      [...monthTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0] ?? null,
+      [...monthTransactions].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      )[0] ?? null,
     [monthTransactions]
   );
   const isEnglish = i18n.language === 'en';
@@ -242,7 +244,9 @@ export function AppLayout() {
         tone: 'warning',
         icon: '⚠️',
         eyebrow: isEnglish ? 'Cash flow' : '资金提醒',
-        title: isEnglish ? `Monthly balance ${formatCurrency(monthBalance)}` : `本月结余 ${formatCurrency(monthBalance)}`,
+        title: isEnglish
+          ? `Monthly balance ${formatCurrency(monthBalance)}`
+          : `本月结余 ${formatCurrency(monthBalance)}`,
         description: isEnglish
           ? `You've logged ${monthTransactionCount} records this month. Check budget pressure before continuing.`
           : `本月已记录 ${monthTransactionCount} 笔，当前已经偏紧，先看看预算或高频支出会更稳。`,
@@ -256,7 +260,9 @@ export function AppLayout() {
         tone: 'focus',
         icon: '💸',
         eyebrow: isEnglish ? 'Income gap' : '记录提醒',
-        title: isEnglish ? `Expenses ${formatCurrency(monthExpense)}` : `本月支出 ${formatCurrency(monthExpense)}`,
+        title: isEnglish
+          ? `Expenses ${formatCurrency(monthExpense)}`
+          : `本月支出 ${formatCurrency(monthExpense)}`,
         description: isEnglish
           ? 'Expenses are already recorded, but income is still blank. Completing the flow will make monthly review clearer.'
           : '支出已经开始累积，但收入侧还是空白，补齐之后月度结余会更准确。',
@@ -285,7 +291,9 @@ export function AppLayout() {
       tone: 'positive',
       icon: '✨',
       eyebrow: isEnglish ? 'Latest update' : '最近更新',
-      title: isEnglish ? `${monthTransactionCount} records this month` : `本月已记录 ${monthTransactionCount} 笔`,
+      title: isEnglish
+        ? `${monthTransactionCount} records this month`
+        : `本月已记录 ${monthTransactionCount} 笔`,
       description: isEnglish
         ? latestSummary
           ? `${latestSummary}. Keep going or open the assistant for a quick review.`
@@ -305,7 +313,6 @@ export function AppLayout() {
     monthIncome,
     monthTransactionCount
   ]);
-
 
   useEffect(() => {
     const onMouseMove = (event: MouseEvent) => {
@@ -436,7 +443,6 @@ export function AppLayout() {
           </button>
         </div>
 
-
         <nav className="sidebar-nav">
           {navSections.map((section) => (
             <div key={section.title} className="sidebar-section">
@@ -478,7 +484,9 @@ export function AppLayout() {
                       to={item.to}
                       end={item.end}
                       className={({ isActive }) =>
-                        isActive ? 'sidebar-link active motion-pill-btn' : 'sidebar-link motion-pill-btn'
+                        isActive
+                          ? 'sidebar-link active motion-pill-btn'
+                          : 'sidebar-link motion-pill-btn'
                       }
                       title={item.label}
                     >
@@ -549,7 +557,9 @@ export function AppLayout() {
             <header className="mobile-nav-header mobile-nav-profile">
               <div>
                 <p className="mobile-nav-name">{t('layout.drawerUser')}</p>
-                <p className="mobile-nav-subtitle">{t('layout.drawerSubtitle', { today: todayLabel })}</p>
+                <p className="mobile-nav-subtitle">
+                  {t('layout.drawerSubtitle', { today: todayLabel })}
+                </p>
               </div>
               <button
                 type="button"
