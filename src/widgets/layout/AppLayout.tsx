@@ -29,6 +29,7 @@ type QuickEntry = {
 const SIDEBAR_COLLAPSED_WIDTH = 76;
 const SIDEBAR_MIN_WIDTH = 220;
 const SIDEBAR_MAX_WIDTH = 420;
+const APP_LOGO_URL = 'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/logo.webp';
 
 function truncateMobileInsightText(value: string, maxLength: number) {
   if (value.length <= maxLength) return value;
@@ -419,7 +420,8 @@ export function AppLayout() {
         <div className="sidebar-header">
           {!collapsed ? (
             <Link to="/" className="brand" title={t('layout.brand')}>
-              {t('layout.brand')}
+              <img className="brand-logo" src={APP_LOGO_URL} alt="" />
+              <span>{t('layout.brand')}</span>
             </Link>
           ) : null}
           <button
@@ -517,6 +519,7 @@ export function AppLayout() {
               ) : null}
               {collapsed && !isMobileViewport ? (
                 <div className="topbar-brand-copy compact">
+                  <img className="brand-logo compact" src={APP_LOGO_URL} alt="" />
                   <h1>{t('layout.brand')}</h1>
                   <span>{t('layout.workspaceTitle')}</span>
                 </div>

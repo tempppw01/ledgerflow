@@ -2,6 +2,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+const appLogoUrl = 'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/logo.webp';
+
 function manualChunks(id: string) {
   if (!id.includes('node_modules')) {
     return undefined;
@@ -40,7 +42,6 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['logo.png'],
       manifest: {
         name: 'LedgerFlow 记账软件',
         short_name: 'LedgerFlow',
@@ -50,9 +51,9 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: '/logo.png',
+            src: appLogoUrl,
             sizes: '720x720',
-            type: 'image/png',
+            type: 'image/webp',
             purpose: 'any maskable'
           }
         ]
