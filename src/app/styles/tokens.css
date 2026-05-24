@@ -193,25 +193,25 @@
 
 /* ---- 暗色模式 ---- */
 [data-theme='dark'] {
-  --color-bg: #020617;
-  --color-bg-elevated: #0f172a;
-  --color-bg-subtle: #111c33;
-  --color-bg-hover: #172338;
-  --color-bg-active: #1c2a42;
+  --color-bg: #111111;
+  --color-bg-elevated: #1a1a1a;
+  --color-bg-subtle: #202020;
+  --color-bg-hover: #2a2a2a;
+  --color-bg-active: #323232;
 
-  --color-text: #e5e7eb;
-  --color-text-secondary: #cbd5e1;
-  --color-text-tertiary: #94a3b8;
-  --color-text-placeholder: #64748b;
+  --color-text: #f0eeea;
+  --color-text-secondary: #cbc6bd;
+  --color-text-tertiary: #928c83;
+  --color-text-placeholder: #716b63;
 
-  --color-border: #1e293b;
-  --color-border-light: #243247;
-  --color-divider: #243247;
+  --color-border: #303030;
+  --color-border-light: #3a3a3a;
+  --color-divider: #383838;
 
-  --color-primary: #7b93f7;
-  --color-primary-hover: #6580f0;
-  --color-primary-bg: rgba(123, 147, 247, 0.12);
-  --color-primary-border: rgba(123, 147, 247, 0.28);
+  --color-primary: #f59e0b;
+  --color-primary-hover: #f97316;
+  --color-primary-bg: rgba(245, 158, 11, 0.13);
+  --color-primary-border: rgba(245, 158, 11, 0.34);
 
   --color-success: #4ade80;
   --color-success-bg: rgba(74, 222, 128, 0.12);
@@ -225,9 +225,9 @@
   --color-expense: #f87171;
 
   --gradient-app-bg:
-    radial-gradient(circle at 12% -8%, rgba(123, 147, 247, 0.18), transparent 34%),
-    radial-gradient(circle at 88% -10%, rgba(45, 212, 191, 0.1), transparent 28%),
-    linear-gradient(180deg, #020617 0%, #06101f 48%, #0b1222 100%);
+    radial-gradient(circle at 12% -8%, rgba(245, 158, 11, 0.13), transparent 34%),
+    radial-gradient(circle at 88% -10%, rgba(45, 212, 191, 0.08), transparent 28%),
+    linear-gradient(180deg, #111111 0%, #171717 48%, #141414 100%);
   --gradient-surface:
     linear-gradient(
       180deg,
@@ -242,12 +242,12 @@
       color-mix(in srgb, var(--color-bg-elevated) 82%, var(--color-bg)) 100%
     );
   --gradient-hero:
-    radial-gradient(circle at top right, color-mix(in srgb, var(--color-primary) 24%, transparent), transparent 48%),
-    radial-gradient(circle at left center, rgba(45, 212, 191, 0.1), transparent 48%),
+    radial-gradient(circle at top right, color-mix(in srgb, var(--color-primary) 20%, transparent), transparent 48%),
+    radial-gradient(circle at left center, rgba(45, 212, 191, 0.07), transparent 48%),
     linear-gradient(
       135deg,
       color-mix(in srgb, var(--color-bg-elevated) 88%, var(--color-primary-bg)) 0%,
-      color-mix(in srgb, var(--color-bg-elevated) 92%, rgba(15, 23, 42, 0.96)) 52%,
+      color-mix(in srgb, var(--color-bg-elevated) 92%, rgba(26, 26, 26, 0.96)) 52%,
       color-mix(in srgb, var(--color-bg-elevated) 84%, var(--color-primary-bg)) 100%
     );
   --gradient-accent-soft:
@@ -266,15 +266,15 @@
 
   /* ---- 兼容层：暗色模式下需要覆盖的值 ---- */
   --tooltip-bg: #e5e7eb;
-  --tooltip-text: #0f172a;
+  --tooltip-text: #171717;
 
   /* ---- 视觉增强：暗色模式覆盖 ---- */
-  --color-accent-cyan: #22d3ee;
-  --color-accent-cyan-bg: rgba(34, 211, 238, 0.12);
-  --color-accent-purple: #a78bfa;
-  --color-accent-purple-bg: rgba(167, 139, 250, 0.12);
+  --color-accent-cyan: #2dd4bf;
+  --color-accent-cyan-bg: rgba(45, 212, 191, 0.1);
+  --color-accent-purple: #c4b5fd;
+  --color-accent-purple-bg: rgba(196, 181, 253, 0.1);
   --color-accent-orange: #fb923c;
-  --color-accent-orange-bg: rgba(251, 146, 60, 0.12);
+  --color-accent-orange-bg: rgba(251, 146, 60, 0.14);
   --gradient-card-income: linear-gradient(135deg, color-mix(in srgb, var(--color-success) 12%, var(--color-bg-elevated)) 0%, var(--color-bg-elevated) 100%);
   --gradient-card-expense: linear-gradient(135deg, color-mix(in srgb, var(--color-danger) 10%, var(--color-bg-elevated)) 0%, var(--color-bg-elevated) 100%);
   --gradient-card-primary: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 12%, var(--color-bg-elevated)) 0%, var(--color-bg-elevated) 100%);
