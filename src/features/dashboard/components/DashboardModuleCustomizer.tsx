@@ -27,6 +27,7 @@ export function DashboardModuleCustomizer({
   onToggle
 }: DashboardModuleCustomizerProps) {
   const enabledCount = items.filter((item) => item.checked).length;
+  const shouldShowBadge = enabledCount > 0 && enabledCount < items.length;
 
   return (
     <section className="dashboard-module-customizer" aria-label={title}>
@@ -35,9 +36,11 @@ export function DashboardModuleCustomizer({
           <h4>{title}</h4>
           <p>{hint}</p>
         </div>
-        <span className="dashboard-module-customizer-badge">
-          {enabledCount}/{items.length} 已显示
-        </span>
+        {shouldShowBadge ? (
+          <span className="dashboard-module-customizer-badge">
+            {enabledCount}/{items.length} 已显示
+          </span>
+        ) : null}
       </div>
       <div className="dashboard-module-manage-list" aria-label="模块配置列表">
         {items.map((item) => (
