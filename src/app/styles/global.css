@@ -460,6 +460,7 @@ body {
    ============================================================ */
 .workspace {
   min-width: 0;
+  background: var(--color-bg);
 }
 
 .workspace-topbar {
@@ -656,6 +657,14 @@ body {
 
 .layout-shell.sidebar-is-collapsed .workspace-topbar {
   padding-left: var(--space-4);
+}
+
+.layout-shell.sidebar-is-collapsed .sidebar {
+  box-shadow: none;
+}
+
+.layout-shell.sidebar-is-collapsed .sidebar::after {
+  display: none;
 }
 
 .layout-shell.sidebar-is-collapsed .topbar-left {
