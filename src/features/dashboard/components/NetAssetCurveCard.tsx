@@ -35,7 +35,7 @@ export function NetAssetCurveCard({
   return (
     <article className="panel dashboard-unified-card" style={{ margin: 0 }}>
       <div className="dashboard-section-header dashboard-section-header-tight">
-        <h4>累计净资产曲线</h4>
+        <h4>资产进度条</h4>
       </div>
       <div className="dashboard-net-curve">
         {rows.map((item) => (
@@ -53,13 +53,15 @@ export function NetAssetCurveCard({
             </span>
             <i style={{ width: `${(item.value / maxValue) * 100}%` }} />
             <strong>{formatCurrency(item.value)}</strong>
-            <small className={item.delta >= 0 ? 'up' : 'down'}>{formatDeltaLabel(item.delta)}</small>
+            <small className={item.delta >= 0 ? 'up' : 'down'}>
+              {formatDeltaLabel(item.delta)}
+            </small>
           </button>
         ))}
       </div>
       {worstDropKey && typeof worstDropDelta === 'number' ? (
         <p className="dashboard-net-worst-hint">
-          最大回撤：{formatCurrency(worstDropDelta)}，可点击对应月份查看当月流水。
+          回撤最多：{formatCurrency(worstDropDelta)}，点月份可以翻当月流水。
         </p>
       ) : null}
     </article>

@@ -35,17 +35,17 @@ const DASHBOARD_MODULES_KEY = 'dashboard_custom_modules_v1';
 const DASHBOARD_INLINE_HELP_KEY = 'dashboard_inline_help_dismissed_v1';
 
 const DASHBOARD_MODULE_CATALOG = [
-  { id: 'dynamic-charts', label: '动态图表', description: '收支趋势、分类占比、净资产曲线' },
+  { id: 'dynamic-charts', label: '趋势雷达', description: '钱花在哪、占比多少，一眼扫完' },
   {
     id: 'anomaly-insights',
-    label: '异常与亮点',
-    description: 'AI + 本地模式识别消费异动和节省机会'
+    label: '省钱雷达',
+    description: '帮你捞出需要留意和做得不错的地方'
   },
-  { id: 'top-transactions', label: '支出排行', description: '展示本月金额较高的重点账目' },
+  { id: 'top-transactions', label: '大额账单', description: '本月最值得回看的几笔钱' },
   {
     id: 'history-compare',
-    label: '历史对比与画像',
-    description: '上月 / 季度 / 年度对比 + 消费行为画像'
+    label: '消费人设',
+    description: '把历史对比和本月消费风格放一起看'
   }
 ] as const;
 
@@ -1191,18 +1191,25 @@ export function DashboardPage() {
       .sort((a, b) => b.amount - a.amount)[0];
 
     return {
-      anomalies: anomalies.length ? anomalies : ['未发现明显异常消费激增，当前消费波动相对稳定。'],
+      anomalies: anomalies.length ? anomalies : ['今天账单挺稳，暂时没有异常波动。'],
       highlights: [
-        `本月日均支出约 ${formatCurrency(dayAvg)}，其中 ${lowerDays} 天低于均值 70%，节奏控制较稳。`,
+        `日均支出约 ${formatCurrency(dayAvg)}，有 ${lowerDays} 天属于轻量消费，节奏不错。`,
         ...(monthlyInsight?.highlights?.slice(0, 2) || [])
       ].slice(0, 3),
       supportFacts: [
-        `本月支出 ${formatCurrency(expense)}`,
-        `支出笔数 ${expenseRows.length} 笔`,
-        topExpenseCategory ? `重点分类 ${topExpenseCategory.name}` : ''
+        `本月花了 ${formatCurrency(expense)}`,
+        `已记 ${expenseRows.length} 笔`,
+        topExpenseCategory ? `花最多：${topExpenseCategory.name}` : ''
       ].filter(Boolean)
     };
-  }, [cashflowCategoryRows, categoryNameMap, expense, monthly, monthlyInsight?.highlights, transactions]);
+  }, [
+    cashflowCategoryRows,
+    categoryNameMap,
+    expense,
+    monthly,
+    monthlyInsight?.highlights,
+    transactions
+  ]);
 
   useEffect(() => {
     if (!cashflowCategoryRows.length) {
@@ -1567,15 +1574,16 @@ export function DashboardPage() {
             </div>
             {forecastError ? <p className="dashboard-future-tip">{forecastError}</p> : null}
 
-            <div
-              className="dashboard-forecast-chart"
-              aria-label="未来趋势动态图表"
-            >
+            <div className="dashboard-forecast-chart" aria-label="未来趋势动态图表">
               <div className="dashboard-forecast-summary-card">
                 <strong>{forecast?.summary || '点击“手动分析”生成未来趋势分析。'}</strong>
                 <span>改成柱状图后，可以更快看清历史走势和未来 3 个月预测。</span>
               </div>
-              <div className="dashboard-forecast-bars" role="list" aria-label="历史与未来趋势柱状图">
+              <div
+                className="dashboard-forecast-bars"
+                role="list"
+                aria-label="历史与未来趋势柱状图"
+              >
                 {chartData.map((item, index) => {
                   const klass =
                     index === currentIndex
@@ -1589,7 +1597,9 @@ export function DashboardPage() {
                       role="listitem"
                       className={`dashboard-forecast-bar-item ${klass}`.trim()}
                     >
-                      <span className="dashboard-forecast-bar-value">{formatCurrency(item.value)}</span>
+                      <span className="dashboard-forecast-bar-value">
+                        {formatCurrency(item.value)}
+                      </span>
                       <div className="dashboard-forecast-bar-track">
                         <i
                           className={item.value >= 0 ? 'is-positive' : 'is-negative'}

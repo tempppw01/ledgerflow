@@ -234,8 +234,8 @@
     },
     "ui": {
       "currentVersion": "Current version",
-      "welcome": "Welcome to LedgerFlow",
-      "welcomeSubtitle": "Your intelligent bookkeeping workspace is ready to go.",
+      "welcome": "LedgerFlow",
+      "welcomeSubtitle": "See where today’s money went, what’s left, and where you can save a little.",
       "gettingStartedTitle": "Getting started in 3 steps",
       "gettingStartedSubtitle": "Finish the flow first, then trend insights become more accurate",
       "step1": "① Add entries: record income/expense to build baseline data.",
@@ -248,15 +248,15 @@
       "shortcutAdd": "Add entry",
       "shortcutBudget": "Open budget",
       "shortcutSearch": "Quick search",
-      "corePanel": "Core asset dashboard",
-      "moduleCustomize": "Homepage module customization",
-      "moduleCustomizeHint": "Drag to reorder + toggle cards",
+      "corePanel": "Today’s Money Board",
+      "moduleCustomize": "Dashboard Cards",
+      "moduleCustomizeHint": "Arrange it your way",
       "emptyTitle": "No transaction records yet",
       "emptyDesc": "Start your first entry, or let AI assistant recognize your bill.",
       "findAssistant": "Open AI Assistant",
       "quickAdd": "Quick add",
-      "thisMonthTrend": "Monthly trend",
-      "futureTrend": "Future trend"
+      "thisMonthTrend": "Money Flow",
+      "futureTrend": "Next Month Preview"
     }
   },
   "transactions": {

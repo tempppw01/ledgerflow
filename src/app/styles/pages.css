@@ -91,12 +91,16 @@
 
 .dashboard-anomaly-summary-card {
   min-width: 0;
-  padding: 14px 16px;
+  padding: 14px;
   border-radius: 16px;
-  border: 1px solid var(--color-border);
-  background: color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-primary-bg));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-bg) 48%, var(--color-bg-elevated)),
+    var(--color-bg-elevated)
+  );
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .dashboard-anomaly-card-title {
@@ -113,10 +117,18 @@
 
 .dashboard-anomaly-list {
   margin: 0;
-  padding-left: 18px;
+  padding: 0;
+  list-style: none;
   color: var(--color-text-secondary);
   display: grid;
-  gap: 8px;
+  gap: 6px;
+}
+
+.dashboard-anomaly-list li {
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 86%, transparent);
+  line-height: 1.55;
 }
 
 .dashboard-anomaly-card-actions {

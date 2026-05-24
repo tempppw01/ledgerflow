@@ -2953,6 +2953,7 @@ small.mono {
   margin-bottom: var(--space-2);
 }
 
+.dashboard-section-header h3,
 .dashboard-section-header h4 {
   margin: 0;
   font-size: var(--font-base);

@@ -30,12 +30,12 @@ export function DashboardAnomalyInsights({
   return (
     <section className="panel" style={{ marginTop: 12 }}>
       <div className="dashboard-section-header">
-        <h4>异常与亮点概览</h4>
-        <span>只展示有数据支撑的重点判断</span>
+        <h4>今日财务雷达</h4>
+        <span>只捞最值得看的点</span>
       </div>
 
       {anomalyInsight.supportFacts.length > 0 ? (
-        <div className="dashboard-anomaly-facts" aria-label="异常亮点支撑数据">
+        <div className="dashboard-anomaly-facts" aria-label="今日财务雷达依据">
           {anomalyInsight.supportFacts.map((fact) => (
             <span key={fact} className="metric-chip">
               {fact}
@@ -46,7 +46,7 @@ export function DashboardAnomalyInsights({
 
       <div className="dashboard-anomaly-summary-grid">
         <article className="dashboard-anomaly-summary-card">
-          <p className="dashboard-anomaly-card-title">⚠️ 异常提醒</p>
+          <p className="dashboard-anomaly-card-title">🚦需要留意</p>
           <ul className="dashboard-anomaly-list">
             {anomalyInsight.anomalies.map((text) => (
               <li key={text}>{text}</li>
@@ -54,7 +54,7 @@ export function DashboardAnomalyInsights({
           </ul>
         </article>
         <article className="dashboard-anomaly-summary-card">
-          <p className="dashboard-anomaly-card-title">✨ 节省亮点</p>
+          <p className="dashboard-anomaly-card-title">✨做得不错</p>
           <ul className="dashboard-anomaly-list">
             {anomalyInsight.highlights.map((text) => (
               <li key={text}>{text}</li>
@@ -65,36 +65,36 @@ export function DashboardAnomalyInsights({
 
       <div className="dashboard-anomaly-toolbar">
         <button type="button" onClick={onNavigateToTransactions}>
-          查看关联账单
+          看账单明细
         </button>
         <button type="button" onClick={onNavigateToSmartBudget}>
-          去预算页收口
+          调一下预算
         </button>
       </div>
 
       {subscriptionAlerts.length > 0 ? (
         <div className="dashboard-subscription-alerts">
           <div className="dashboard-section-header">
-            <h4>订阅到期提醒</h4>
-            <span>{subscriptionAlerts.length} 项待处理</span>
+            <h4>订阅快到期</h4>
+            <span>{subscriptionAlerts.length} 个待处理</span>
           </div>
           <div className="dashboard-anomaly-summary-grid" role="list" aria-label="订阅到期提醒">
             {subscriptionAlerts.map((item) => (
               <article key={item.id} role="listitem" className="dashboard-anomaly-summary-card">
-                <p className="dashboard-anomaly-card-title">🧾 订阅提醒</p>
+                <p className="dashboard-anomaly-card-title">🧾 别忘了这笔</p>
                 <p className="dashboard-anomaly-card-text">
                   {item.name} ·{' '}
                   {item.expireDate || item.renewalDate
-                    ? `日期：${item.expireDate || item.renewalDate}`
+                    ? `到期/续费：${item.expireDate || item.renewalDate}`
                     : '未设置日期'}
                 </p>
                 <p className="dashboard-anomaly-card-text">
-                  {item.status === 'expired' ? '已到期' : '即将到期'} ·{' '}
+                  {item.status === 'expired' ? '已过期' : '快到了'} ·{' '}
                   {formatMoneyByCurrency(item.amount, item.currency)}
                 </p>
                 <div className="dashboard-anomaly-card-actions">
                   <button type="button" onClick={onNavigateToSubscriptions}>
-                    去处理
+                    去处理一下
                   </button>
                 </div>
               </article>

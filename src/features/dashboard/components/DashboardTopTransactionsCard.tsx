@@ -13,8 +13,8 @@ export function DashboardTopTransactionsCard({ items }: DashboardTopTransactions
   return (
     <div className="dashboard-core-top-list">
       <div className="dashboard-section-header">
-        <h4>重点账目</h4>
-        <span>金额 TOP {items.length}</span>
+        <h4>本月大额 TOP</h4>
+        <span>{items.length} 笔值得回看</span>
       </div>
       <div className="dashboard-top-list">
         {items.map((item, index) => (
@@ -23,7 +23,7 @@ export function DashboardTopTransactionsCard({ items }: DashboardTopTransactions
               <p className="dashboard-top-title">
                 {item.category || '未分类'} · {item.date}
               </p>
-              <p className="dashboard-top-note">{item.note || '无备注'}</p>
+              <p className="dashboard-top-note">{item.note || '没写备注'}</p>
             </div>
             <strong>{formatCurrency(item.amount)}</strong>
           </article>
