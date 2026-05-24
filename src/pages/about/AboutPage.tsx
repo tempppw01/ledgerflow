@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { APP_GITHUB_URL, APP_VERSION } from '../../shared/config/app';
+import { APP_GITHUB_URL, APP_LOGO_URL, APP_VERSION } from '../../shared/config/app';
 
 interface UpdateCheckResult {
   status: 'idle' | 'checking' | 'error' | 'up-to-date' | 'update-available';
@@ -41,11 +41,14 @@ export function AboutPage() {
   const handleCheckUpdate = async () => {
     setUpdateResult({ status: 'checking', message: t('about.update.checking') });
     try {
-      const response = await fetch('https://api.github.com/repos/tempppw01/ledgerflow/releases/latest', {
-        headers: {
-          Accept: 'application/vnd.github+json'
+      const response = await fetch(
+        'https://api.github.com/repos/tempppw01/ledgerflow/releases/latest',
+        {
+          headers: {
+            Accept: 'application/vnd.github+json'
+          }
         }
-      });
+      );
 
       if (!response.ok) {
         throw new Error(t('about.update.httpError', { status: response.status }));
@@ -90,14 +93,19 @@ export function AboutPage() {
     <section className="panel about-page">
       <header className="about-header about-hero-card">
         <div className="about-hero-copy">
-          <span className="about-eyebrow">LedgerFlow</span>
+          <div className="about-brand-mark" aria-label="LedgerFlow">
+            <img src={APP_LOGO_URL} alt="" />
+            <span>LedgerFlow</span>
+          </div>
           <h2>{t('about.title')}</h2>
           <p>
             把记账做得更轻，更稳，也更像一个你愿意反复打开的产品，而不是只在月底想起一次的工具。
           </p>
           <div className="about-version-actions">
             <button type="button" onClick={() => void handleCheckUpdate()}>
-              {updateResult.status === 'checking' ? t('about.update.checkingBtn') : t('about.update.check')}
+              {updateResult.status === 'checking'
+                ? t('about.update.checkingBtn')
+                : t('about.update.check')}
             </button>
             <a href={APP_GITHUB_URL} target="_blank" rel="noreferrer">
               {t('about.home.title')}
@@ -138,7 +146,9 @@ export function AboutPage() {
         {updateResult.message ? (
           <p className={`about-update-message ${updateResult.status}`}>{updateResult.message}</p>
         ) : (
-          <p className="about-muted-note">你可以手动检查最新版本，看看最近新增了哪些更顺手的改动。</p>
+          <p className="about-muted-note">
+            你可以手动检查最新版本，看看最近新增了哪些更顺手的改动。
+          </p>
         )}
         {updateResult.status === 'update-available' && updateResult.latestUrl ? (
           <p>
@@ -170,7 +180,9 @@ export function AboutPage() {
               {APP_GITHUB_URL}
             </a>
           </p>
-          <p className="about-muted-note">如果你在意产品方向、更新节奏和细节打磨，这里会比冷冰冰的“关于”页更有温度。</p>
+          <p className="about-muted-note">
+            如果你在意产品方向、更新节奏和细节打磨，这里会比冷冰冰的“关于”页更有温度。
+          </p>
         </section>
       </section>
 

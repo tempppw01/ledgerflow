@@ -7,6 +7,7 @@ import {
   readAssistantModeFromSessionStorage
 } from '../../features/assistant/shared/assistantMode';
 import { ThemeSwitcher } from '../../features/theme-switcher/ThemeSwitcher';
+import { APP_LOGO_URL } from '../../shared/config/app';
 import { formatCurrency } from '../../shared/lib/format';
 import { summarizeTransactions } from '../../shared/lib/transactionMetrics';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
@@ -29,7 +30,6 @@ type QuickEntry = {
 const SIDEBAR_COLLAPSED_WIDTH = 76;
 const SIDEBAR_MIN_WIDTH = 220;
 const SIDEBAR_MAX_WIDTH = 420;
-const APP_LOGO_URL = 'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/logo.webp';
 
 function truncateMobileInsightText(value: string, maxLength: number) {
   if (value.length <= maxLength) return value;

@@ -199,7 +199,12 @@
   border-radius: 14px;
   border: 1px solid var(--color-border-light);
   background:
-    linear-gradient(to top, color-mix(in srgb, var(--color-border) 32%, transparent) 1px, transparent 1px) center / 100% 50%,
+    linear-gradient(
+        to top,
+        color-mix(in srgb, var(--color-border) 32%, transparent) 1px,
+        transparent 1px
+      )
+      center / 100% 50%,
     color-mix(in srgb, var(--color-bg-elevated) 92%, var(--color-primary-bg));
   display: flex;
   align-items: center;
@@ -227,12 +232,21 @@
   bottom: auto;
   top: 50%;
   border-radius: 4px 4px 10px 10px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--color-danger) 78%, white 6%), var(--color-danger));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-danger) 78%, white 6%),
+    var(--color-danger)
+  );
 }
 
 .dashboard-forecast-bar-item.forecast .dashboard-forecast-bar-track {
   background:
-    linear-gradient(to top, color-mix(in srgb, var(--color-border) 32%, transparent) 1px, transparent 1px) center / 100% 50%,
+    linear-gradient(
+        to top,
+        color-mix(in srgb, var(--color-border) 32%, transparent) 1px,
+        transparent 1px
+      )
+      center / 100% 50%,
     color-mix(in srgb, var(--color-bg-elevated) 90%, var(--color-warning-bg));
 }
 
@@ -567,7 +581,9 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
-  transition: grid-template-columns var(--transition-base), gap var(--transition-base);
+  transition:
+    grid-template-columns var(--transition-base),
+    gap var(--transition-base);
 }
 
 .transaction-monthly-summary > div {
@@ -678,8 +694,11 @@
   padding: 14px;
   border-radius: var(--radius-lg);
   border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-primary-bg)), var(--color-bg-elevated));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-primary-bg)),
+    var(--color-bg-elevated)
+  );
 }
 
 .financial-analysis-market-head {
@@ -764,7 +783,12 @@
   border-radius: 14px;
   border: 1px solid var(--color-border-light);
   background:
-    linear-gradient(to top, color-mix(in srgb, var(--color-border) 28%, transparent) 1px, transparent 1px) center / 100% 50%,
+    linear-gradient(
+        to top,
+        color-mix(in srgb, var(--color-border) 28%, transparent) 1px,
+        transparent 1px
+      )
+      center / 100% 50%,
     var(--color-bg-subtle);
 }
 
@@ -784,7 +808,11 @@
   max-height: calc(50% - 8px);
   transform: translateX(-50%);
   border-radius: 10px 10px 4px 4px;
-  background: linear-gradient(180deg, var(--color-income), color-mix(in srgb, var(--color-income) 70%, var(--color-primary)));
+  background: linear-gradient(
+    180deg,
+    var(--color-income),
+    color-mix(in srgb, var(--color-income) 70%, var(--color-primary))
+  );
   bottom: 50%;
 }
 
@@ -792,7 +820,11 @@
   bottom: auto;
   top: 50%;
   border-radius: 4px 4px 10px 10px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--color-expense) 72%, white 6%), var(--color-expense));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-expense) 72%, white 6%),
+    var(--color-expense)
+  );
 }
 
 .financial-analysis-range-switcher button,
@@ -855,11 +887,13 @@
   font-size: var(--font-base);
 }
 
-.financial-analysis-profile-actions .financial-analysis-profile-action[aria-label='查看消费明细']::after {
+.financial-analysis-profile-actions
+  .financial-analysis-profile-action[aria-label='查看消费明细']::after {
   content: '查看消费明细';
 }
 
-.financial-analysis-profile-actions .financial-analysis-profile-action[aria-label='去 AI 助手']::after {
+.financial-analysis-profile-actions
+  .financial-analysis-profile-action[aria-label='去 AI 助手']::after {
   content: '去 AI 助手';
 }
 
@@ -995,8 +1029,16 @@
   border-radius: 22px;
   border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
   background:
-    radial-gradient(circle at top right, color-mix(in srgb, var(--color-primary) 16%, transparent), transparent 34%),
-    linear-gradient(180deg, color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-primary-bg)), var(--color-bg-elevated));
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--color-primary) 16%, transparent),
+      transparent 34%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-primary-bg)),
+      var(--color-bg-elevated)
+    );
 }
 
 .about-hero-copy,
@@ -1009,16 +1051,30 @@
   gap: 12px;
 }
 
-.about-eyebrow {
+.about-brand-mark {
   display: inline-flex;
+  align-items: center;
+  gap: 12px;
   width: fit-content;
-  padding: 6px 10px;
+  padding: 8px 14px 8px 8px;
   border-radius: 999px;
-  border: 1px solid var(--color-border-light);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 22%, var(--color-border));
   background: color-mix(in srgb, var(--color-bg-elevated) 90%, var(--color-primary-bg));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 60%, transparent);
+}
+
+.about-brand-mark img {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  object-fit: cover;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--color-text) 14%, transparent);
+}
+
+.about-brand-mark span {
   color: var(--color-primary);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -1269,6 +1325,8 @@
   display: none;
 }
 
-.financial-analysis-section:nth-of-type(2) .financial-analysis-two-col:last-of-type > article:last-child {
+.financial-analysis-section:nth-of-type(2)
+  .financial-analysis-two-col:last-of-type
+  > article:last-child {
   display: none;
 }
