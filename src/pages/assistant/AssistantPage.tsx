@@ -1559,6 +1559,17 @@ export function AssistantPage() {
     submitPrompt(wb.textInput);
   };
 
+  const openModelPicker = useCallback(
+    (source: 'command' | 'toolbar') => {
+      setModelOpen(true);
+      setModelPickerSource(source);
+      if (!wb.loadingModels) {
+        void wb.handleLoadModels();
+      }
+    },
+    [wb]
+  );
+
   const handleSelectModel = useCallback(
     (nextModel: string) => {
       setModel(nextModel);
@@ -1618,8 +1629,7 @@ export function AssistantPage() {
     const commandMatch = /(^|\s)@([^\s@]*)$/.exec(wb.textInput);
     if (commandMatch) {
       if (!modelOpen || modelPickerSource !== 'command') {
-        setModelOpen(true);
-        setModelPickerSource('command');
+        openModelPicker('command');
       }
       return;
     }
@@ -1628,7 +1638,7 @@ export function AssistantPage() {
       setModelOpen(false);
       setModelPickerSource(null);
     }
-  }, [modelOpen, modelPickerSource, wb.textInput]);
+  }, [modelOpen, modelPickerSource, openModelPicker, wb.textInput]);
 
   // 非记账分析时，模型返回自由文本，解析 JSON 失败属于预期，不展示底部红条。
   const shouldShowError =
@@ -2944,21 +2954,23 @@ export function AssistantPage() {
                 <div className="chat-model-selector chat-model-selector-inline">
                   <button
                     type="button"
-                    className="chat-model-icon-btn"
+                    className={`chat-model-trigger ${modelOpen ? 'is-open' : ''}`}
                     onClick={() => {
-                      setModelOpen((prev) => {
-                        const next = !prev;
-                        setModelPickerSource(next ? 'toolbar' : null);
-                        return next;
-                      });
+                      if (modelOpen && modelPickerSource === 'toolbar') {
+                        setModelOpen(false);
+                        setModelPickerSource(null);
+                        return;
+                      }
+                      openModelPicker('toolbar');
                     }}
                     aria-haspopup="listbox"
+                    aria-expanded={modelOpen}
                     aria-label={`当前模型：${getModelDisplayLabel(model || t('assistant.ui.selectModel'))}`}
                     title={getModelDisplayLabel(model || t('assistant.ui.selectModel'))}
                   >
-                    @
+                    <span className="chat-model-trigger-icon">@</span>
+                    <span className="chat-model-inline-label">{getModelDisplayLabel(model || t('assistant.ui.selectModel'))}</span>
                   </button>
-                  <span className="chat-model-inline-label">{getModelDisplayLabel(model || t('assistant.ui.selectModel'))}</span>
 
                   {modelOpen ? (
                     <div

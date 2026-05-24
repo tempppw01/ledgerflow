@@ -45,6 +45,9 @@ vi.mock('react-i18next', () => ({
         'assistant.ui.quickAdd': '快速记一笔',
         'assistant.ui.clearContext': '清空上下文',
         'assistant.ui.selectModel': '选择模型',
+        'assistant.ui.loadingModels': '加载中',
+        'assistant.ui.refreshModels': '刷新模型',
+        'assistant.ui.emptyModels': '暂无模型',
         'assistant.ui.needApiKeyTitle': '请先配置 API Key',
         'assistant.ui.needApiKeyDesc': '需要先配置模型能力',
         'assistant.ui.goSettings': '前往设置',
@@ -318,6 +321,7 @@ describe('AssistantPage', () => {
     );
 
     expect(await screen.findByRole('dialog', { name: '模型列表' })).toBeInTheDocument();
+    expect(workbench.handleLoadModels).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'gpt-test' }));
@@ -325,6 +329,24 @@ describe('AssistantPage', () => {
 
     expect(aiSettingsMocks.setModelMock).toHaveBeenCalledWith('gpt-test');
     expect(workbench.setTextInput).toHaveBeenCalledWith('@gpt-test ');
+  });
+
+  it('点击模型卡片时应自动刷新模型列表', async () => {
+    const workbench = createWorkbenchMock();
+    useAssistantWorkbenchMock.mockReturnValue(workbench);
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '当前模型：gpt-test' }));
+    });
+
+    expect(await screen.findByRole('dialog', { name: '模型列表' })).toBeInTheDocument();
+    expect(workbench.handleLoadModels).toHaveBeenCalledTimes(1);
   });
 
   it('信贷识别结果应支持直接保存到还款管理', async () => {
