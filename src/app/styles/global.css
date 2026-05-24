@@ -7893,6 +7893,16 @@ body.categories-accounts-resizing {
   text-align: left;
 }
 
+.settings-subpanel-title-button {
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
 .settings-subpanel-copy {
   display: grid;
   gap: 4px;
@@ -7914,6 +7924,7 @@ body.categories-accounts-resizing {
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 .settings-subpanel-chip {
@@ -7936,7 +7947,28 @@ body.categories-accounts-resizing {
   color: var(--color-primary);
 }
 
+.settings-subpanel-primary-action {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 44%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-bg-elevated));
+  color: var(--color-primary);
+  font-size: var(--font-xs);
+  font-weight: 800;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+.settings-subpanel-primary-action:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
 .settings-subpanel-arrow {
+  min-height: 30px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
   color: var(--color-text-secondary);
   font-size: var(--font-sm);
   font-weight: 700;

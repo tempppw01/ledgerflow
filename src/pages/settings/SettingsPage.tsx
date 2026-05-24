@@ -51,7 +51,6 @@ const RERANK_MODEL_PRESETS = [
   'cohere-rerank-3.5'
 ];
 
-
 const EMBEDDING_MODEL_KEYWORDS = [
   'embedding',
   'embeddings',
@@ -69,7 +68,11 @@ function isLikelyEmbeddingModelName(modelId: string): boolean {
 }
 
 function buildEmbeddingModelCandidates(remoteModels: string[]): string[] {
-  return mergeModelOptions('', EMBEDDING_MODEL_PRESETS, remoteModels.filter(isLikelyEmbeddingModelName));
+  return mergeModelOptions(
+    '',
+    EMBEDDING_MODEL_PRESETS,
+    remoteModels.filter(isLikelyEmbeddingModelName)
+  );
 }
 
 function getEmbeddingModelValidationMessage(modelId: string, candidates: string[]): string {
@@ -234,8 +237,8 @@ export function SettingsPage() {
     Boolean(embeddingChannel.enabled) &&
     Boolean(
       embeddingChannel.baseUrl.trim() ||
-        embeddingChannel.apiKey.trim() ||
-        embeddingChannel.model.trim()
+      embeddingChannel.apiKey.trim() ||
+      embeddingChannel.model.trim()
     );
   const selectedProviderPreset = useMemo(
     () =>
@@ -258,9 +261,9 @@ export function SettingsPage() {
         : '可先选择渠道商快速填充';
   const embeddingPanelHasContent = Boolean(
     embeddingChannel.enabled ||
-      embeddingChannel.baseUrl.trim() ||
-      embeddingChannel.apiKey.trim() ||
-      embeddingChannel.model.trim()
+    embeddingChannel.baseUrl.trim() ||
+    embeddingChannel.apiKey.trim() ||
+    embeddingChannel.model.trim()
   );
   const embeddingPanelStatus = embeddingOverrideActive
     ? currentLanguage === 'en'
@@ -274,10 +277,10 @@ export function SettingsPage() {
         ? 'Disabled'
         : '未启用';
   const embeddingEffectiveBaseUrl = embeddingOverrideActive
-    ? (embeddingChannel.baseUrl.trim() || baseUrl)
+    ? embeddingChannel.baseUrl.trim() || baseUrl
     : baseUrl;
   const embeddingEffectiveModel = embeddingOverrideActive
-    ? (embeddingChannel.model.trim() || embeddingModel.trim())
+    ? embeddingChannel.model.trim() || embeddingModel.trim()
     : embeddingModel.trim();
   const [embeddingPanelExpanded, setEmbeddingPanelExpanded] = useState(embeddingPanelHasContent);
   const embeddingPanelToggleText = embeddingPanelExpanded
@@ -321,35 +324,36 @@ export function SettingsPage() {
         setModelLoadError(t('settings.model.errorEmptyList'));
       }
     } catch (error) {
-      setModelLoadError(error instanceof Error ? error.message : t('settings.model.errorFetchFailed'));
+      setModelLoadError(
+        error instanceof Error ? error.message : t('settings.model.errorFetchFailed')
+      );
       setModelOptions([]);
     } finally {
       setModelLoading(false);
     }
   }, [apiKey, baseUrl, t]);
 
-
   const handleTestEmbeddingChannel = useCallback(async () => {
     const overrideActive =
       Boolean(embeddingChannel.enabled) &&
       Boolean(
         embeddingChannel.baseUrl.trim() ||
-          embeddingChannel.apiKey.trim() ||
-          embeddingChannel.model.trim()
+        embeddingChannel.apiKey.trim() ||
+        embeddingChannel.model.trim()
       );
 
-    const effectiveBaseUrl = overrideActive
-      ? (embeddingChannel.baseUrl.trim() || baseUrl)
-      : baseUrl;
-    const effectiveApiKey = overrideActive
-      ? (embeddingChannel.apiKey.trim() || apiKey)
-      : apiKey;
+    const effectiveBaseUrl = overrideActive ? embeddingChannel.baseUrl.trim() || baseUrl : baseUrl;
+    const effectiveApiKey = overrideActive ? embeddingChannel.apiKey.trim() || apiKey : apiKey;
     const effectiveModel = overrideActive
-      ? (embeddingChannel.model.trim() || embeddingModel.trim())
+      ? embeddingChannel.model.trim() || embeddingModel.trim()
       : embeddingModel.trim();
 
     if (!effectiveBaseUrl.trim()) {
-      setEmbeddingTestStatus({ loading: false, ok: false, message: '请先配置 AI 服务地址（baseUrl）。' });
+      setEmbeddingTestStatus({
+        loading: false,
+        ok: false,
+        message: '请先配置 AI 服务地址（baseUrl）。'
+      });
       return;
     }
     if (!effectiveModel.trim()) {
@@ -361,7 +365,11 @@ export function SettingsPage() {
       embeddingModelCandidates
     );
     if (modelValidationMessage) {
-      setEmbeddingTestStatus({ loading: false, ok: false, message: `测试前校验未通过：${modelValidationMessage}` });
+      setEmbeddingTestStatus({
+        loading: false,
+        ok: false,
+        message: `测试前校验未通过：${modelValidationMessage}`
+      });
       return;
     }
     if (!effectiveApiKey.trim()) {
@@ -401,7 +409,7 @@ export function SettingsPage() {
         message: `测试失败：${detail}`
       });
     }
-  }, [apiKey, baseUrl, embeddingChannel, embeddingModel]);
+  }, [apiKey, baseUrl, embeddingChannel, embeddingModel, embeddingModelCandidates]);
   const handleSelectModel = (setter: (value: string) => void, value: string) => {
     setter(value.trim());
     showSaveToast();
@@ -422,7 +430,11 @@ export function SettingsPage() {
           <label>{t('settings.baseUrl')}</label>
           <div className="settings-baseurl-row">
             <select
-              className={selectedProviderPreset ? 'settings-provider-select active' : 'settings-provider-select'}
+              className={
+                selectedProviderPreset
+                  ? 'settings-provider-select active'
+                  : 'settings-provider-select'
+              }
               value={providerPresetValue}
               onChange={(e) => {
                 const next = e.target.value;
@@ -437,7 +449,9 @@ export function SettingsPage() {
                   {item.label}
                 </option>
               ))}
-              {baseUrl.trim() && !selectedProviderPreset ? <option value="__custom__">自定义地址</option> : null}
+              {baseUrl.trim() && !selectedProviderPreset ? (
+                <option value="__custom__">自定义地址</option>
+              ) : null}
             </select>
             <input
               value={baseUrl}
@@ -532,7 +546,11 @@ export function SettingsPage() {
 
         <div className="field">
           <label>{t('settings.accent.label')}</label>
-          <div className="settings-accent-grid" role="radiogroup" aria-label={t('settings.accent.label')}>
+          <div
+            className="settings-accent-grid"
+            role="radiogroup"
+            aria-label={t('settings.accent.label')}
+          >
             {ACCENT_THEME_OPTIONS.map((option) => (
               <button
                 key={option.value}
@@ -553,8 +571,6 @@ export function SettingsPage() {
           <small>{t('settings.accent.hint')}</small>
         </div>
 
-
-
         <div className="settings-divider" />
 
         <div
@@ -562,32 +578,61 @@ export function SettingsPage() {
             embeddingOverrideActive ? 'is-active' : ''
           }`}
         >
-          <button
-            type="button"
-            className="settings-subpanel-toggle"
-            aria-expanded={embeddingPanelExpanded}
-            onClick={() => setEmbeddingPanelExpanded((current) => !current)}
-          >
-            <span className="settings-subpanel-copy">
-              <strong>{t('settings.embeddingChannel.title')}</strong>
-              <small>{t('settings.embeddingChannel.desc')}</small>
-            </span>
-            <span className="settings-subpanel-meta">
-              <span className={`settings-subpanel-chip ${embeddingOverrideActive ? 'is-active' : ''}`}>
-                {embeddingPanelStatus}
+          <div className="settings-subpanel-toggle">
+            <button
+              type="button"
+              className="settings-subpanel-title-button"
+              aria-expanded={embeddingPanelExpanded}
+              onClick={() => setEmbeddingPanelExpanded((current) => !current)}
+            >
+              <span className="settings-subpanel-copy">
+                <strong>{t('settings.embeddingChannel.title')}</strong>
+                <small>{t('settings.embeddingChannel.desc')}</small>
               </span>
-              <span className="settings-subpanel-arrow">{embeddingPanelToggleText}</span>
+            </button>
+            <span className="settings-subpanel-meta">
+              {embeddingChannel.enabled ? (
+                <span
+                  className={`settings-subpanel-chip ${embeddingOverrideActive ? 'is-active' : ''}`}
+                >
+                  {embeddingPanelStatus}
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  className="settings-subpanel-primary-action"
+                  onClick={() => {
+                    setEmbeddingChannel({ enabled: true });
+                    setEmbeddingPanelExpanded(true);
+                    showSaveToast();
+                  }}
+                >
+                  {currentLanguage === 'en' ? 'Enable channel' : '启用嵌入渠道'}
+                </button>
+              )}
+              <button
+                type="button"
+                className="settings-subpanel-arrow"
+                aria-expanded={embeddingPanelExpanded}
+                onClick={() => setEmbeddingPanelExpanded((current) => !current)}
+              >
+                {embeddingPanelToggleText}
+              </button>
             </span>
-          </button>
+          </div>
 
           <div className="settings-subpanel-summary">
             <span>
               {currentLanguage === 'en' ? 'Effective model' : '当前生效模型'}：
-              <strong>{embeddingEffectiveModel || (currentLanguage === 'en' ? 'Not set' : '未设置')}</strong>
+              <strong>
+                {embeddingEffectiveModel || (currentLanguage === 'en' ? 'Not set' : '未设置')}
+              </strong>
             </span>
             <span>
               Base URL：
-              <strong>{embeddingEffectiveBaseUrl || (currentLanguage === 'en' ? 'Not set' : '未设置')}</strong>
+              <strong>
+                {embeddingEffectiveBaseUrl || (currentLanguage === 'en' ? 'Not set' : '未设置')}
+              </strong>
             </span>
             <small>
               {currentLanguage === 'en'
@@ -600,7 +645,9 @@ export function SettingsPage() {
             <div className="settings-subpanel-body">
               <div className="settings-inline-grid settings-inline-grid--double">
                 <div className="field">
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                  <label
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+                  >
                     <input
                       type="checkbox"
                       checked={embeddingChannel.enabled}
@@ -683,9 +730,14 @@ export function SettingsPage() {
                     ? 'The global Embedding model below is used by default. Once override is enabled and any dedicated baseUrl / apiKey / model is filled in, this embedding channel takes precedence.'
                     : '默认优先使用下方全局 Embedding 模型；开启覆盖且填写了专用 baseUrl / apiKey / model 任一项后，会切到这套嵌入渠道配置。'}{' '}
                   {currentLanguage === 'en' ? 'Current effective model' : '当前实际生效的模型为'}{' '}
-                  <strong>{embeddingEffectiveModel || (currentLanguage === 'en' ? 'Not set' : '未设置')}</strong>
+                  <strong>
+                    {embeddingEffectiveModel || (currentLanguage === 'en' ? 'Not set' : '未设置')}
+                  </strong>
                   ，Base URL {currentLanguage === 'en' ? 'is' : '为'}{' '}
-                  <strong>{embeddingEffectiveBaseUrl || (currentLanguage === 'en' ? 'Not set' : '未设置')}</strong>。
+                  <strong>
+                    {embeddingEffectiveBaseUrl || (currentLanguage === 'en' ? 'Not set' : '未设置')}
+                  </strong>
+                  。
                 </div>
               </div>
 
