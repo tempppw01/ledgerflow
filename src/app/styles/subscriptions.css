@@ -4,13 +4,12 @@
 }
 
 .subscriptions-hero {
-  display: grid;
-  gap: 18px;
+  display: block;
 }
 
 .subscriptions-header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.72fr);
   gap: 16px;
   align-items: start;
 }
@@ -81,24 +80,26 @@
   background: color-mix(in srgb, var(--color-danger-bg) 58%, var(--color-bg-elevated));
 }
 
-.subscriptions-monthly-summary {
+.subscriptions-overview-stack {
   display: grid;
   gap: 12px;
+  min-width: 0;
 }
 
 .subscriptions-monthly-summary-list {
   display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
 .subscriptions-monthly-summary-card {
   display: grid;
-  gap: 6px;
-  padding: 14px;
+  gap: 5px;
+  padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--color-border-light) 88%, transparent);
   background: color-mix(in srgb, var(--color-bg-elevated) 86%, var(--color-primary-bg));
+  min-width: 0;
 }
 
 .subscriptions-monthly-summary-currency {
@@ -110,7 +111,7 @@
 }
 
 .subscriptions-monthly-summary-card strong {
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1.1;
 }
 
@@ -119,15 +120,19 @@
   font-style: normal;
 }
 
-.subscriptions-alerts {
+.subscriptions-compact-group {
   display: grid;
   gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 84%, transparent);
+  background: color-mix(in srgb, var(--color-bg-elevated) 72%, var(--color-bg-subtle));
 }
 
 .subscriptions-alert-list {
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
 .subscriptions-alert-card {
@@ -137,6 +142,14 @@
   border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--color-warning) 22%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-warning) 9%, var(--color-bg-elevated));
+  min-width: 0;
+}
+
+.subscriptions-alert-card strong,
+.subscriptions-alert-card span,
+.subscriptions-alert-card em {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .subscriptions-alert-card span,
@@ -364,6 +377,10 @@
 }
 
 @media (max-width: 1440px) {
+  .subscriptions-header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .subscriptions-main-grid {
     grid-template-columns: minmax(0, 1fr);
   }

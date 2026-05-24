@@ -363,52 +363,56 @@ export function SubscriptionsPage() {
               ) : null}
             </div>
           </div>
+
+          {monthlySummaryByCurrency.length > 0 || attentionItems.length > 0 ? (
+            <div className="subscriptions-overview-stack" aria-label="订阅快速概览">
+              {monthlySummaryByCurrency.length > 0 ? (
+                <div className="subscriptions-compact-group">
+                  <div className="dashboard-section-header">
+                    <h4>预计月度固定成本</h4>
+                    <span>按币种分组</span>
+                  </div>
+                  <div className="subscriptions-monthly-summary-list">
+                    {monthlySummaryByCurrency.map((item) => (
+                      <article key={item.currency} className="subscriptions-monthly-summary-card">
+                        <span className="subscriptions-monthly-summary-currency">{item.currency}</span>
+                        <strong>{formatMoneyByCurrency(item.amount, item.currency)}</strong>
+                        <em>折算到每月</em>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {attentionItems.length > 0 ? (
+                <div className="subscriptions-compact-group subscriptions-attention-compact">
+                  <div className="dashboard-section-header">
+                    <h4>待处理提醒</h4>
+                    <span>优先处理到期项</span>
+                  </div>
+                  <div className="subscriptions-alert-list">
+                    {attentionItems.map((item) => (
+                      <article key={`alert-${item.id}`} className="subscriptions-alert-card">
+                        <strong>{item.name}</strong>
+                        <span>
+                          {item.expireDate
+                            ? `到期：${formatDate(item.expireDate)}`
+                            : item.renewalDate
+                              ? `续费：${formatDate(item.renewalDate)}`
+                              : '日期未设置'}
+                        </span>
+                        <em>
+                          {STATUS_LABELS[item.status]} · {formatMoneyByCurrency(item.amount, item.currency)}
+                        </em>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
-
-        {monthlySummaryByCurrency.length > 0 ? (
-          <div className="subscriptions-monthly-summary">
-            <div className="dashboard-section-header">
-              <h4>预计月度固定成本</h4>
-              <span>按币种分组展示，避免错误合并</span>
-            </div>
-            <div className="subscriptions-monthly-summary-list">
-              {monthlySummaryByCurrency.map((item) => (
-                <article key={item.currency} className="subscriptions-monthly-summary-card">
-                  <span className="subscriptions-monthly-summary-currency">{item.currency}</span>
-                  <strong>{formatMoneyByCurrency(item.amount, item.currency)}</strong>
-                  <em>按当前订阅周期折算到每月</em>
-                </article>
-              ))}
-            </div>
-          </div>
-        ) : null}
       </section>
-
-      {attentionItems.length > 0 ? (
-        <section className="panel subscriptions-alerts">
-          <div className="dashboard-section-header">
-            <h4>待处理提醒</h4>
-            <span>优先处理即将到期与已到期项目</span>
-          </div>
-          <div className="subscriptions-alert-list">
-            {attentionItems.map((item) => (
-              <article key={`alert-${item.id}`} className="subscriptions-alert-card">
-                <strong>{item.name}</strong>
-                <span>
-                  {item.expireDate
-                    ? `到期：${formatDate(item.expireDate)}`
-                    : item.renewalDate
-                      ? `续费：${formatDate(item.renewalDate)}`
-                      : '日期未设置'}
-                </span>
-                <em>
-                  {STATUS_LABELS[item.status]} · {formatMoneyByCurrency(item.amount, item.currency)}
-                </em>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
 
       <div className="subscriptions-main-grid">
         <section className="panel subscriptions-form-panel">
