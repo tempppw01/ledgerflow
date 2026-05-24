@@ -713,7 +713,7 @@ body {
   padding: var(--space-5);
   margin-bottom: var(--space-4);
   box-shadow:
-    0 8px 24px color-mix(in srgb, var(--color-text) 7%, transparent),
+    var(--shadow-sm),
     inset 0 1px 0 color-mix(in srgb, white 68%, transparent);
   animation: surface-rise 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
   transition:
@@ -11041,8 +11041,15 @@ body.categories-accounts-resizing {
   );
   padding: var(--space-4);
   box-shadow:
-    0 8px 24px color-mix(in srgb, var(--color-text) 6%, transparent),
+    var(--shadow-sm),
     inset 0 1px 0 color-mix(in srgb, white 65%, transparent);
+}
+
+[data-theme='dark'] .panel,
+[data-theme='dark'] .card {
+  box-shadow:
+    var(--shadow-sm),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .surface-note {
