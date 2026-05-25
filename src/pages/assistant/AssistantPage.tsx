@@ -1659,6 +1659,14 @@ export function AssistantPage() {
                     </div>
                     <p>问账本、看趋势、做取舍，我来提炼重点和下一步。</p>
                   </div>
+                  {shouldShowAssistantIntroIllustration ? (
+                    <img
+                      className="chat-assistant-intro-illustration"
+                      src="https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/importing.svg"
+                      alt=""
+                      aria-hidden="true"
+                    />
+                  ) : null}
                 </div>
 
                 <div className="chat-assistant-layout-side">
@@ -1678,14 +1686,6 @@ export function AssistantPage() {
                   </div>
                 </div>
               </div>
-              {shouldShowAssistantIntroIllustration ? (
-                <img
-                  className="chat-assistant-intro-illustration"
-                  src="https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/importing.svg"
-                  alt=""
-                  aria-hidden="true"
-                />
-              ) : null}
             </section>
           )}
 
