@@ -949,13 +949,7 @@
   width: 58px;
   height: 58px;
   flex: 0 0 auto;
-  border: 1px solid color-mix(in srgb, var(--color-warning) 32%, var(--color-border));
-  border-radius: 18px;
-  background:
-    url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/calculator.svg') center / 82% no-repeat,
-    linear-gradient(135deg, color-mix(in srgb, var(--color-warning-bg) 82%, var(--color-bg-elevated)) 0%, var(--color-bg-elevated) 100%);
-  box-shadow: 0 12px 28px color-mix(in srgb, var(--color-warning) 16%, transparent);
-  transform: rotate(-4deg);
+  background: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/calculator.svg') center / contain no-repeat;
 }
 
 .chat-assistant-hero p {
