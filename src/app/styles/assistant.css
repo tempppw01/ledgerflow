@@ -857,6 +857,19 @@
   color: var(--color-text-tertiary);
 }
 
+.chat-bookkeeping-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 0.78fr) minmax(240px, 1fr);
+  align-items: center;
+  gap: var(--space-4);
+  min-height: 200px;
+}
+
+.chat-bookkeeping-copy {
+  display: grid;
+  gap: var(--space-2);
+}
+
 /* ---------- Assistant Panel Layout ---------- */
 .chat-assistant-panel {
   gap: var(--space-3);
@@ -887,6 +900,19 @@
 .chat-assistant-panel-qa .chat-assistant-layout-side,
 .chat-assistant-panel-qa .chat-insight-section {
   align-content: start;
+}
+
+.chat-credit-panel {
+  min-height: 0;
+}
+
+.chat-credit-panel .chat-assistant-layout {
+  grid-template-columns: minmax(0, 1fr);
+  flex: 0 0 auto;
+}
+
+.chat-credit-panel .chat-assistant-layout-main {
+  grid-template-rows: auto;
 }
 
 .chat-assistant-layout {
@@ -971,6 +997,18 @@
   max-height: 180px;
   object-fit: contain;
   margin: var(--space-2) 0 0 clamp(24px, 7vw, 92px);
+}
+
+.chat-bookkeeping-illustration {
+  width: min(360px, 92%);
+  max-height: 178px;
+  margin: 0 auto;
+}
+
+.chat-credit-illustration {
+  width: min(360px, 45vw);
+  max-height: 178px;
+  margin: var(--space-2) 0 0 22px;
 }
 
 .chat-assistant-hero p {
@@ -3135,6 +3173,11 @@
     padding: var(--space-3);
   }
 
+  .chat-bookkeeping-panel {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
   .chat-overview-grid,
   .chat-preset-list {
     grid-template-columns: 1fr;
@@ -3177,6 +3220,13 @@
 
   .chat-assistant-intro-illustration {
     width: min(220px, 72%);
+    max-height: 150px;
+    margin: var(--space-2) auto 0;
+  }
+
+  .chat-bookkeeping-illustration,
+  .chat-credit-illustration {
+    width: min(240px, 78%);
     max-height: 150px;
     margin: var(--space-2) auto 0;
   }

@@ -254,10 +254,28 @@ function createWorkbenchMock() {
 }
 
 describe('AssistantPage', () => {
+  it('AI 记账首屏应展示导入插画', async () => {
+    useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
+
+    const { container } = render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'AI 记账' }));
+    });
+
+    expect(screen.getByText(/本轮准备记账/)).toBeInTheDocument();
+    const bookkeepingIllustration = container.querySelector<HTMLImageElement>('.chat-bookkeeping-illustration');
+    expect(bookkeepingIllustration?.src).toContain('/ledgerflow/Illustrations/importing.svg');
+  });
+
   it('应支持切换到 AI 信贷管家并展示信贷首屏内容', async () => {
     useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
 
-    render(
+    const { container } = render(
       <MemoryRouter>
         <AssistantPage />
       </MemoryRouter>
@@ -268,7 +286,11 @@ describe('AssistantPage', () => {
     });
 
     expect(screen.getAllByRole('button', { name: 'AI 信贷管家' }).length).toBeGreaterThan(0);
-    expect(await screen.findByText('梳理本月应还')).toBeInTheDocument();
+    expect(await screen.findByText(/你好，我是你的 AI 信贷管家/)).toBeInTheDocument();
+    const creditIllustration = container.querySelector<HTMLImageElement>('.chat-credit-illustration');
+    expect(creditIllustration?.src).toContain('/ledgerflow/Illustrations/importing.svg');
+    expect(screen.queryByText('梳理本月应还')).not.toBeInTheDocument();
+    expect(screen.queryByText('识别花呗与分期')).not.toBeInTheDocument();
     expect(screen.queryByText('🧭 优先处理')).not.toBeInTheDocument();
     expect(screen.queryByText('📌 这个模式适合什么')).not.toBeInTheDocument();
   });

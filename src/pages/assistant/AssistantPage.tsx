@@ -152,12 +152,6 @@ interface ChatHistoryItem {
   creditItems?: CreditExtractedItem[];
 }
 
-interface PresetQuestion {
-  id: string;
-  label: string;
-  prompt: string;
-}
-
 interface PushInsight {
   id: string;
   title: string;
@@ -186,28 +180,8 @@ const CHAT_HISTORY_CACHE_KEYS: Record<AssistantMode, string> = {
   credit: 'ledgerflow.assistant.chatHistory.credit'
 };
 
-const CREDIT_SHORTCUT_SEEDS: PresetQuestion[] = [
-  {
-    id: 'credit-seed-1',
-    label: '梳理本月应还',
-    prompt: '请结合我现有账本与接下来可能到期的信用消费，帮我梳理本月应还项目、优先级和资金压力。'
-  },
-  {
-    id: 'credit-seed-2',
-    label: '识别花呗与分期',
-    prompt: '如果我贴出花呗、白条、信用卡分期或消费贷账单截图，请帮我提炼平台、应还金额、还款日、剩余期数和待补充信息。'
-  },
-  {
-    id: 'credit-seed-3',
-    label: '下周还款安排',
-    prompt: '请根据我的账本消费和信用账户情况，给我一份下周还款安排建议，按先后顺序列出。'
-  },
-  {
-    id: 'credit-seed-4',
-    label: '信贷风险排查',
-    prompt: '请从现金流、还款日集中度、可能遗漏的分期项目三个角度，帮我做一次信贷风险排查。'
-  }
-];
+const ASSISTANT_INTRO_ILLUSTRATION_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/importing.svg';
 
 function readWideLayoutPreference() {
   try {
@@ -1004,11 +978,6 @@ export function AssistantPage() {
     };
   }, [accounts, previousMonthKey, thisMonthKey, todayKey, transactions]);
 
-  const displayCreditShortcutQuestions = useMemo(
-    () => CREDIT_SHORTCUT_SEEDS.slice(0, isMobileView ? 1 : 2),
-    [isMobileView]
-  );
-
   const hasCreditContextContent =
     chatHistory.length > 0 ||
     wb.imageDataUrls.length > 0 ||
@@ -1016,8 +985,7 @@ export function AssistantPage() {
     wb.rawContent.trim().length > 0 ||
     wb.textInput.trim().length > 0;
 
-  const shouldShowAssistantIntroIllustration =
-    mode === 'assistant' && !chatHistory.some((item) => item.role === 'user');
+  const shouldShowIntroIllustration = !chatHistory.some((item) => item.role === 'user');
 
   const latestContextLabel = latestTransaction
     ? getTransactionDirection(latestTransaction) === 'inflow'
@@ -1593,14 +1561,24 @@ export function AssistantPage() {
           ) : null}
 
           {mode === 'bookkeeping' ? (
-            <section className="chat-kawaii-panel">
-              <div className="chat-kawaii-topline">今天 {todayLabel}</div>
-              <div className="chat-kawaii-amount">¥0.00</div>
-              <div className="chat-kawaii-sub">本轮准备记账 · 一句话也能生成账单，主打一个不拖延 ✨</div>
-              <div className="chat-kawaii-mascot" aria-hidden>
-                <span>૮₍ ˶•⤙•˶ ₎ა</span>
-                <small>来嘛来嘛，点我就能秒记账～我很快，你别怕。</small>
+            <section className="chat-kawaii-panel chat-bookkeeping-panel">
+              <div className="chat-bookkeeping-copy">
+                <div className="chat-kawaii-topline">今天 {todayLabel}</div>
+                <div className="chat-kawaii-amount">¥0.00</div>
+                <div className="chat-kawaii-sub">本轮准备记账 · 一句话也能生成账单，主打一个不拖延 ✨</div>
+                <div className="chat-kawaii-mascot" aria-hidden>
+                  <span>૮₍ ˶•⤙•˶ ₎ა</span>
+                  <small>来嘛来嘛，点我就能秒记账～我很快，你别怕。</small>
+                </div>
               </div>
+              {shouldShowIntroIllustration ? (
+                <img
+                  className="chat-assistant-intro-illustration chat-bookkeeping-illustration"
+                  src={ASSISTANT_INTRO_ILLUSTRATION_URL}
+                  alt=""
+                  aria-hidden="true"
+                />
+              ) : null}
             </section>
           ) : mode === 'credit' ? (
             <section className="chat-kawaii-panel chat-assistant-panel chat-credit-panel">
@@ -1610,6 +1588,14 @@ export function AssistantPage() {
                     <h2>💳 你好，我是你的 AI 信贷管家</h2>
                     <p>贷款、花呗、分期、信用账单都可以丢给我。我先帮你把“到底欠什么、先还什么、哪里还没补齐”讲明白。</p>
                   </div>
+                  {shouldShowIntroIllustration ? (
+                    <img
+                      className="chat-assistant-intro-illustration chat-credit-illustration"
+                      src={ASSISTANT_INTRO_ILLUSTRATION_URL}
+                      alt=""
+                      aria-hidden="true"
+                    />
+                  ) : null}
                   {hasCreditContextContent ? (
                     <div className="chat-insight-section" aria-label="优先处理">
                       <div className="chat-insight-section-head">
@@ -1630,23 +1616,6 @@ export function AssistantPage() {
                   ) : null}
                 </div>
               </div>
-              <div className="chat-preset-list">
-                {displayCreditShortcutQuestions.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className="chat-preset-item"
-                    onClick={() => submitPrompt(item.prompt)}
-                    disabled={wb.status === 'recognizing'}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-              <div className="chat-kawaii-mascot" aria-hidden>
-                <span>💳</span>
-                <small>别怕数字绕，你先把截图甩过来，我负责把“这笔到底算什么”翻译清楚。</small>
-              </div>
             </section>
           ) : (
             <section className="chat-kawaii-panel chat-assistant-panel chat-assistant-panel-qa">
@@ -1659,10 +1628,10 @@ export function AssistantPage() {
                     </div>
                     <p>问账本、看趋势、做取舍，我来提炼重点和下一步。</p>
                   </div>
-                  {shouldShowAssistantIntroIllustration ? (
+                  {shouldShowIntroIllustration ? (
                     <img
                       className="chat-assistant-intro-illustration"
-                      src="https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/importing.svg"
+                      src={ASSISTANT_INTRO_ILLUSTRATION_URL}
                       alt=""
                       aria-hidden="true"
                     />
