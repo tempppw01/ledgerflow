@@ -107,7 +107,7 @@ export function DashboardMonthlyTrendSummaryCard({
               ? '正在生成重点结论，请稍候。'
               : monthlyInsightStatus === 'done'
                 ? '分析完成，可以看分类和大额账单。'
-                : '点击右上角“重新分析”开始生成。'}
+                : '点击右上角“手动分析”开始生成。'}
         </p>
         {monthlyInsightError ? <p className="dashboard-ai-error">{monthlyInsightError}</p> : null}
       </div>

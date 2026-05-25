@@ -515,13 +515,6 @@ export function DashboardPage() {
     transactions.length
   ]);
 
-  useEffect(() => {
-    if (!transactions.length) return;
-    if (!apiKey.trim()) return;
-    if (monthlyInsightRequestToken > 0) return;
-    setMonthlyInsightRequestToken(1);
-  }, [apiKey, monthlyInsightRequestToken, transactions.length]);
-
   const handleRefreshForecast = () => {
     setForecastRequestToken((prev) => prev + 1);
   };
@@ -631,7 +624,7 @@ export function DashboardPage() {
       ? '分析中...'
       : monthlyInsightStatus === 'done'
         ? '重新分析'
-        : 'AI 待分析';
+        : '手动分析';
 
   const monthlyTurnover = useMemo(
     () => monthly.reduce((sum, item) => sum + Math.abs(toSafeNumber(item.amount, 0)), 0),
