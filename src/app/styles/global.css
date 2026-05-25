@@ -388,8 +388,16 @@ body {
   font-size: 16px;
   flex-shrink: 0;
   width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   line-height: 1;
+}
+
+.nav-image-icon {
+  object-fit: contain;
 }
 
 .sidebar-link-label {
@@ -2368,12 +2376,27 @@ small.mono {
   backdrop-filter: blur(6px);
 }
 
+.welcome-title-stack {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
 .welcome-greeting {
   margin: 0 0 var(--space-2) 0;
   font-size: clamp(28px, 4vw, 36px);
   font-weight: 800;
   line-height: 1.2;
   color: var(--color-text);
+}
+
+.welcome-data-illustration {
+  width: min(220px, 34vw);
+  max-height: 112px;
+  object-fit: contain;
+  margin: -2px 0 2px;
+  filter: drop-shadow(0 14px 26px color-mix(in srgb, var(--color-primary) 18%, transparent));
 }
 
 .welcome-subtitle {
@@ -2471,6 +2494,16 @@ small.mono {
 
 .welcome-banner.is-collapsed .welcome-highlight-grid strong {
   font-size: clamp(14px, 1.6vw, 18px);
+}
+
+.welcome-banner.is-collapsed .welcome-title-stack {
+  gap: 4px;
+}
+
+.welcome-banner.is-collapsed .welcome-data-illustration {
+  width: min(128px, 16vw);
+  max-height: 54px;
+  margin: -4px 0 0;
 }
 
 .welcome-banner.is-collapsed .welcome-actions button {
@@ -3376,6 +3409,7 @@ small.mono {
   .welcome-status-badge,
   .welcome-subtitle,
   .welcome-tip,
+  .welcome-data-illustration,
   .welcome-emoji {
     display: none;
   }
@@ -6686,6 +6720,12 @@ input[type='date']:focus {
 
   .mobile-nav-grid-item span {
     font-size: 18px;
+  }
+
+  .mobile-nav-grid-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
   }
 
   .mobile-nav-grid-item strong {

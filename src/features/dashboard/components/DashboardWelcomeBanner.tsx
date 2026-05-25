@@ -1,3 +1,4 @@
+import { DATA_INPUT_ILLUSTRATION_URL } from '../../../shared/config/brandAssets';
 import { formatCurrency } from '../../../shared/lib/format';
 
 export interface DashboardWelcomeBannerProps {
@@ -35,9 +36,18 @@ export function DashboardWelcomeBanner({
       {isExpanded ? (
         <div className="welcome-content">
           <div className="welcome-status-badge">今天也适合把账说清楚 ✨</div>
-          <h2 className="welcome-greeting">
-            {greeting}，{welcomeTitle}
-          </h2>
+          <div className="welcome-title-stack">
+            <h2 className="welcome-greeting">
+              {greeting}，{welcomeTitle}
+            </h2>
+            <img
+              className="welcome-data-illustration"
+              src={DATA_INPUT_ILLUSTRATION_URL}
+              alt=""
+              loading="lazy"
+              aria-hidden="true"
+            />
+          </div>
           <p className="welcome-subtitle">{welcomeSubtitle}</p>
           <div className="welcome-highlight-grid" aria-label="首页欢迎摘要">
             <article>
@@ -61,9 +71,21 @@ export function DashboardWelcomeBanner({
         </div>
       ) : (
         <div className="welcome-content welcome-content--compact">
-          <h2 className="welcome-greeting" style={{ marginBottom: 0, fontSize: 'clamp(18px, 2.5vw, 22px)' }}>
-            {greeting}，{welcomeTitle}
-          </h2>
+          <div className="welcome-title-stack">
+            <h2
+              className="welcome-greeting"
+              style={{ marginBottom: 0, fontSize: 'clamp(18px, 2.5vw, 22px)' }}
+            >
+              {greeting}，{welcomeTitle}
+            </h2>
+            <img
+              className="welcome-data-illustration"
+              src={DATA_INPUT_ILLUSTRATION_URL}
+              alt=""
+              loading="lazy"
+              aria-hidden="true"
+            />
+          </div>
           <div className="welcome-highlight-grid" aria-label="首页欢迎摘要">
             <article>
               <span>本月结余</span>

@@ -8,6 +8,7 @@ import {
 } from '../../features/assistant/shared/assistantMode';
 import { ThemeSwitcher } from '../../features/theme-switcher/ThemeSwitcher';
 import { APP_LOGO_URL } from '../../shared/config/app';
+import { CHAT_ICON_URL } from '../../shared/config/brandAssets';
 import { formatCurrency } from '../../shared/lib/format';
 import { summarizeTransactions } from '../../shared/lib/transactionMetrics';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
@@ -15,6 +16,7 @@ import { useFinanceStore } from '../../shared/store/useFinanceStore';
 type NavItem = {
   label: string;
   icon: string;
+  iconSrc?: string;
   to?: string;
   end?: boolean;
   disabled?: boolean;
@@ -23,6 +25,7 @@ type NavItem = {
 type QuickEntry = {
   label: string;
   icon: string;
+  iconSrc?: string;
   to: string;
   end?: boolean;
 };
@@ -34,6 +37,14 @@ const SIDEBAR_MAX_WIDTH = 420;
 function truncateMobileInsightText(value: string, maxLength: number) {
   if (value.length <= maxLength) return value;
   return `${value.slice(0, Math.max(0, maxLength - 1)).trim()}…`;
+}
+
+function renderNavIcon(item: { icon: string; iconSrc?: string }, className: string) {
+  if (item.iconSrc) {
+    return <img className={`${className} nav-image-icon`} src={item.iconSrc} alt="" />;
+  }
+
+  return <span className={className}>{item.icon}</span>;
 }
 
 export function AppLayout() {
@@ -55,7 +66,12 @@ export function AppLayout() {
       {
         title: t('nav.assistant'),
         items: [
-          { to: '/assistant', label: t('nav.assistantBookkeeping'), icon: '🤖' },
+          {
+            to: '/assistant',
+            label: t('nav.assistantBookkeeping'),
+            icon: '🤖',
+            iconSrc: CHAT_ICON_URL
+          },
           { to: '/smart-budget', label: t('nav.smartBudget'), icon: '🧠' },
           { to: '/global-memory', label: '全局记忆', icon: '🗃️' }
         ]
@@ -99,7 +115,12 @@ export function AppLayout() {
       {
         title: t('nav.commonFeatures'),
         items: [
-          { label: t('nav.assistantBookkeeping'), icon: '🤖', to: '/assistant' },
+          {
+            label: t('nav.assistantBookkeeping'),
+            icon: '🤖',
+            iconSrc: CHAT_ICON_URL,
+            to: '/assistant'
+          },
           { label: '财务分析', icon: '🧠', to: '/financial-analysis' },
           { label: '订阅管理', icon: '🧾', to: '/subscriptions' },
           { label: t('nav.transactions'), icon: '📋', to: '/transactions' },
@@ -470,7 +491,7 @@ export function AppLayout() {
                         className="sidebar-link disabled"
                         title={item.label}
                       >
-                        <span className="sidebar-link-icon">{item.icon}</span>
+                        {renderNavIcon(item, 'sidebar-link-icon')}
                         {collapsed ? null : (
                           <span className="sidebar-link-label">{item.label}</span>
                         )}
@@ -490,7 +511,7 @@ export function AppLayout() {
                       }
                       title={item.label}
                     >
-                      <span className="sidebar-link-icon">{item.icon}</span>
+                      {renderNavIcon(item, 'sidebar-link-icon')}
                       {collapsed ? null : <span className="sidebar-link-label">{item.label}</span>}
                     </NavLink>
                   );
@@ -614,7 +635,7 @@ export function AppLayout() {
                       className="mobile-nav-grid-item motion-pill-btn"
                       onClick={() => setMobileNavOpen(false)}
                     >
-                      <span>{item.icon}</span>
+                      {renderNavIcon(item, 'mobile-nav-grid-icon')}
                       <strong>{item.label}</strong>
                     </NavLink>
                   ))}
