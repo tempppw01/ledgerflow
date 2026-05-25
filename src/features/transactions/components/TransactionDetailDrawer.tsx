@@ -8,7 +8,7 @@ import {
 } from '../../../entities/transaction/types';
 import { formatCurrency, formatDateTime } from '../../../shared/lib/format';
 import { buildA4PrintBaseStyles, buildA4PrintSheetStyles } from '../../../shared/lib/printStyles';
-import { ALIPAY_LOGO_URL } from '../../../shared/config/brandAssets';
+import { ALIPAY_LOGO_URL, WECHAT_LOGO_URL } from '../../../shared/config/brandAssets';
 import {
   loadWebdavConfig,
   sanitizeWebdavConfig,
@@ -38,9 +38,14 @@ export type TransactionDetailSectionKey = 'base' | 'source' | 'note' | 'tags' | 
 type DetailMode = 'professional' | 'timeline';
 const DETAIL_MODE_STORAGE_KEY = 'ledgerflow.transactions.detailMode';
 const ALIPAY_ACCOUNT_PATTERN = /(支付宝|alipay)/i;
+const WECHAT_ACCOUNT_PATTERN = /(微信|wechat|weixin)/i;
 
 function isAlipayAccountName(name: string): boolean {
   return ALIPAY_ACCOUNT_PATTERN.test(name);
+}
+
+function isWechatAccountName(name: string): boolean {
+  return WECHAT_ACCOUNT_PATTERN.test(name);
 }
 
 function AlipayBrandIcon() {
@@ -56,14 +61,28 @@ function AlipayBrandIcon() {
   );
 }
 
+function WechatBrandIcon() {
+  return (
+    <img
+      className="wechat-icon"
+      src={WECHAT_LOGO_URL}
+      alt=""
+      width="16"
+      height="16"
+      aria-hidden="true"
+    />
+  );
+}
+
 function renderAccountLabel(accountName: string): ReactNode {
-  if (!isAlipayAccountName(accountName)) {
+  if (!isAlipayAccountName(accountName) && !isWechatAccountName(accountName)) {
     return accountName;
   }
 
   return (
     <span className="transaction-account-with-icon">
-      <AlipayBrandIcon />
+      {isAlipayAccountName(accountName) ? <AlipayBrandIcon /> : null}
+      {isWechatAccountName(accountName) ? <WechatBrandIcon /> : null}
       <span>{accountName}</span>
     </span>
   );
@@ -123,12 +142,20 @@ function isWebdavReady() {
 }
 
 function sanitizeAttachmentFileName(name: string): string {
-  return name.replace(/[\\/:*?"<>|\s]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'attachment';
+  return (
+    name
+      .replace(/[\\/:*?"<>|\s]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '') || 'attachment'
+  );
 }
 
 function buildAttachmentRemotePath(transaction: TransactionItem, file: File): string {
   const config = loadWebdavConfig();
-  const baseFolder = String(config.remoteFilePath || 'ledgerflow/backup.json').split('/').slice(0, -1).join('/');
+  const baseFolder = String(config.remoteFilePath || 'ledgerflow/backup.json')
+    .split('/')
+    .slice(0, -1)
+    .join('/');
   const ext = file.name.includes('.') ? file.name.split('.').pop() : '';
   const safeName = sanitizeAttachmentFileName(file.name.replace(/\.[^.]+$/, ''));
   const finalName = `${transaction.id}-${Date.now()}-${safeName}${ext ? `.${ext}` : ''}`;
@@ -141,7 +168,8 @@ function buildPrintStyles(): string {
       margin: '12mm',
       bodyBackground: '#ffffff',
       bodyColor: '#0f172a',
-      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif"
+      fontFamily:
+        "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif"
     })}
 
     ${buildA4PrintSheetStyles({
@@ -332,7 +360,10 @@ export function TransactionDetailDrawer({
     }
 
     if (!isWebdavReady()) {
-      onAttachmentUploadStatus?.('当前未完成 WebDAV 配置，请先去数据库 / WebDAV 设置页完成配置。', 'warning');
+      onAttachmentUploadStatus?.(
+        '当前未完成 WebDAV 配置，请先去数据库 / WebDAV 设置页完成配置。',
+        'warning'
+      );
       return;
     }
 
@@ -362,7 +393,10 @@ export function TransactionDetailDrawer({
 
   const triggerAttachmentSelect = () => {
     if (!isWebdavReady()) {
-      onAttachmentUploadStatus?.('当前未完成 WebDAV 配置，请先去数据库 / WebDAV 设置页完成配置。', 'warning');
+      onAttachmentUploadStatus?.(
+        '当前未完成 WebDAV 配置，请先去数据库 / WebDAV 设置页完成配置。',
+        'warning'
+      );
       return;
     }
     fileInputRef.current?.click();
@@ -843,7 +877,11 @@ export function TransactionDetailDrawer({
                 onChange={handleAttachmentSelect}
                 aria-label="上传附件"
               />
-              <button type="button" onClick={triggerAttachmentSelect} disabled={attachmentUploading}>
+              <button
+                type="button"
+                onClick={triggerAttachmentSelect}
+                disabled={attachmentUploading}
+              >
                 {attachmentUploading ? '上传中…' : '插入附件 / 上传附件'}
               </button>
               {transaction.attachments && transaction.attachments.length > 0 ? (
@@ -858,7 +896,9 @@ export function TransactionDetailDrawer({
                   ))}
                 </div>
               ) : (
-                <p className="muted" style={{ marginTop: 8 }}>暂无附件。</p>
+                <p className="muted" style={{ marginTop: 8 }}>
+                  暂无附件。
+                </p>
               )}
             </section>
           ) : null}

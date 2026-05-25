@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { TransactionTable, type TransactionColumnKey } from './TransactionTable';
-import { ALIPAY_LOGO_URL } from '../../../shared/config/brandAssets';
+import { ALIPAY_LOGO_URL, WECHAT_LOGO_URL } from '../../../shared/config/brandAssets';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -592,6 +592,20 @@ describe('TransactionTable', () => {
           },
           {
             item: {
+              id: 'tx-wechat',
+              date: '2026-03-14',
+              type: 'expense',
+              categoryId: 'cat-2',
+              accountId: 'acc-3',
+              amount: 18,
+              note: '奶茶',
+              tags: []
+            },
+            categoryName: '餐饮',
+            accountName: '微信'
+          },
+          {
+            item: {
               id: 'tx-expense',
               date: '2026-03-13',
               type: 'expense',
@@ -632,9 +646,11 @@ describe('TransactionTable', () => {
     );
 
     expect(screen.getByLabelText('收入')).toBeInTheDocument();
-    expect(screen.getByLabelText('支出')).toBeInTheDocument();
+    expect(screen.getAllByLabelText('支出').length).toBeGreaterThan(0);
     expect(document.querySelectorAll('.alipay-icon').length).toBeGreaterThan(0);
     expect(document.querySelector('.alipay-icon')).toHaveAttribute('src', ALIPAY_LOGO_URL);
+    expect(document.querySelectorAll('.wechat-icon').length).toBeGreaterThan(0);
+    expect(document.querySelector('.wechat-icon')).toHaveAttribute('src', WECHAT_LOGO_URL);
     expect(screen.getAllByLabelText('有附件').length).toBeGreaterThan(0);
   });
 

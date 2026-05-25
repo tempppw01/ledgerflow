@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { TransactionDetailDrawer } from './TransactionDetailDrawer';
-import { ALIPAY_LOGO_URL } from '../../../shared/config/brandAssets';
+import { ALIPAY_LOGO_URL, WECHAT_LOGO_URL } from '../../../shared/config/brandAssets';
 
 vi.mock('../../../shared/lib/backup', () => ({
   loadWebdavConfig: vi.fn(() => ({
@@ -101,6 +101,37 @@ describe('TransactionDetailDrawer', () => {
     expect(document.querySelectorAll('.alipay-icon').length).toBeGreaterThan(0);
     expect(document.querySelector('.alipay-icon')).toHaveAttribute('src', ALIPAY_LOGO_URL);
     expect(screen.getByText('最后修改')).toBeInTheDocument();
+  });
+
+  it('应在微信账户显示 OSS 微信图标', () => {
+    render(
+      <MemoryRouter>
+        <TransactionDetailDrawer
+          open
+          transaction={sample}
+          categoryName="餐饮"
+          accountName="微信"
+          source="manual"
+          onClose={() => undefined}
+          onCopyNote={() => undefined}
+          onCopyJson={() => undefined}
+          onShareBill={() => undefined}
+          onDelete={() => undefined}
+          onAiRecategorize={() => undefined}
+          visibleSections={{
+            base: true,
+            source: true,
+            note: true,
+            tags: true,
+            json: false
+          }}
+          onToggleSection={() => undefined}
+          onQuickAdd={() => undefined}
+        />
+      </MemoryRouter>
+    );
+
+    expect(document.querySelector('.wechat-icon')).toHaveAttribute('src', WECHAT_LOGO_URL);
   });
 
   it('应展示退款冲正关系，并可在时间轴模式显示关联原单', () => {

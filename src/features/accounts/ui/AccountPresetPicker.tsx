@@ -18,7 +18,12 @@ export function AccountPresetPicker({ presets, onSelect }: AccountPresetPickerPr
         >
           <span className="preset-icon">
             {preset.iconUrl ? (
-              <img className="account-preset-brand-icon alipay-icon" src={preset.iconUrl} alt="" aria-hidden="true" />
+              <img
+                className="account-preset-brand-icon"
+                src={preset.iconUrl}
+                alt=""
+                aria-hidden="true"
+              />
             ) : (
               preset.icon
             )}

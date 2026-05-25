@@ -14,11 +14,12 @@ import { formatCurrencyFixed2 } from '../../shared/lib/format';
 import { EmptyState } from '../../shared/ui/EmptyState';
 import { LoadingSkeleton } from '../../shared/ui/LoadingSkeleton';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
-import { ALIPAY_LOGO_URL } from '../../shared/config/brandAssets';
+import { ALIPAY_LOGO_URL, WECHAT_LOGO_URL } from '../../shared/config/brandAssets';
 import {
   getAccountDisplayIcon,
   getAccountTypeLabel,
-  isAlipayAccountName
+  isAlipayAccountName,
+  isWechatAccountName
 } from '../../features/accounts/model/accountTypes';
 import type { AccountType } from '../../features/accounts/model/accountTypes';
 import type { Category } from '../../entities/category/types';
@@ -766,7 +767,17 @@ export function CategoriesAccountsPage() {
                     <header className="account-card-head">
                       <span className="account-card-icon" aria-hidden="true">
                         {isAlipayAccountName(item.name) ? (
-                          <img className="account-card-brand-icon alipay-icon" src={ALIPAY_LOGO_URL} alt="" />
+                          <img
+                            className="account-card-brand-icon alipay-icon"
+                            src={ALIPAY_LOGO_URL}
+                            alt=""
+                          />
+                        ) : isWechatAccountName(item.name) ? (
+                          <img
+                            className="account-card-brand-icon wechat-icon"
+                            src={WECHAT_LOGO_URL}
+                            alt=""
+                          />
                         ) : (
                           getAccountDisplayIcon(item.name, item.type)
                         )}
@@ -791,7 +802,10 @@ export function CategoriesAccountsPage() {
                               placeholder="输入余额"
                               value={balanceValue}
                               onChange={(e) =>
-                                setEditingBalances((prev) => ({ ...prev, [item.id]: e.target.value }))
+                                setEditingBalances((prev) => ({
+                                  ...prev,
+                                  [item.id]: e.target.value
+                                }))
                               }
                               onKeyDown={(event) =>
                                 handleBalanceInputKeyDown(event, item.id, item.computedBalance)

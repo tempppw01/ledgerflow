@@ -1,5 +1,5 @@
 /** 账户类型枚举与预设模板 */
-import { ALIPAY_LOGO_URL } from '../../../shared/config/brandAssets';
+import { ALIPAY_LOGO_URL, WECHAT_LOGO_URL } from '../../../shared/config/brandAssets';
 
 /** 账户类型 */
 export type AccountType =
@@ -49,7 +49,7 @@ export interface AccountPreset {
 export const ACCOUNT_PRESETS: AccountPreset[] = [
   { name: '现金', type: 'cash', icon: '💵' },
   { name: '支付宝', type: 'virtual', icon: '📱', iconUrl: ALIPAY_LOGO_URL },
-  { name: '微信钱包', type: 'virtual', icon: '📱' },
+  { name: '微信钱包', type: 'virtual', icon: '📱', iconUrl: WECHAT_LOGO_URL },
   { name: '工商银行', type: 'debit', icon: '🏦' },
   { name: '招商银行', type: 'debit', icon: '🏦' },
   { name: '建设银行', type: 'debit', icon: '🏦' },
@@ -73,6 +73,13 @@ export function isAlipayAccountName(name: string): boolean {
   return normalized.includes('支付宝') || normalized.includes('alipay');
 }
 
+export function isWechatAccountName(name: string): boolean {
+  const normalized = name.trim().toLowerCase();
+  return (
+    normalized.includes('微信') || normalized.includes('wechat') || normalized.includes('weixin')
+  );
+}
+
 /** 根据账户名称 + 类型推断展示图标 */
 export function getAccountDisplayIcon(name: string, type?: AccountType): string {
   const normalized = name.trim().toLowerCase();
@@ -80,7 +87,7 @@ export function getAccountDisplayIcon(name: string, type?: AccountType): string 
   if (isAlipayAccountName(name)) {
     return ACCOUNT_TYPE_ICONS.virtual;
   }
-  if (normalized.includes('微信') || normalized.includes('wechat')) {
+  if (isWechatAccountName(name)) {
     return '🟩';
   }
   if (normalized.includes('云闪付')) {

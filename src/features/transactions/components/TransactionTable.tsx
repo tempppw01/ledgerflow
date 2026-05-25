@@ -6,14 +6,15 @@ import { formatCurrencyAuto, formatDate } from '../../../shared/lib/format';
 import { summarizeTransactions } from '../../../shared/lib/transactionMetrics';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { TableSkeleton } from '../../../shared/ui/TableSkeleton';
-import { ALIPAY_LOGO_URL } from '../../../shared/config/brandAssets';
+import { ALIPAY_LOGO_URL, WECHAT_LOGO_URL } from '../../../shared/config/brandAssets';
 
 const NOTE_MAX_LENGTH = 22;
 const DEFAULT_MIN_COLUMN_WIDTH = 90;
 const AMOUNT_COLUMN_MIN_WIDTH = 64;
 const ALIPAY_ACCOUNT_PATTERN = /(支付宝|alipay)/i;
 const WECHAT_ACCOUNT_PATTERN = /(微信|wechat|weixin)/i;
-const BANK_ACCOUNT_PATTERN = /(银行|bank|信用卡|储蓄卡|借记卡|icbc|abc|ccb|boc|cmb|psbc|交通银行|招商银行|建设银行|工商银行|农业银行|中国银行)/i;
+const BANK_ACCOUNT_PATTERN =
+  /(银行|bank|信用卡|储蓄卡|借记卡|icbc|abc|ccb|boc|cmb|psbc|交通银行|招商银行|建设银行|工商银行|农业银行|中国银行)/i;
 const TRANSACTION_SORT_ICON_BASE_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui';
 
@@ -43,7 +44,7 @@ function WechatBrandIcon() {
   return (
     <img
       className="wechat-icon"
-      src="https://brandlogos.net/wp-content/uploads/2018/10/wechat_pay_icon-logo_brandlogos.net_6qpmj.png"
+      src={WECHAT_LOGO_URL}
       alt=""
       width="16"
       height="16"
@@ -350,7 +351,12 @@ export function TransactionTable({
   bulkExportingPdf = false,
   bulkPrintTemplate = 'full',
   onBulkPrintTemplateChange,
-  bulkPrintFields = { includeAccount: true, includeNote: true, includeOrderNo: false, includeTags: false },
+  bulkPrintFields = {
+    includeAccount: true,
+    includeNote: true,
+    includeOrderNo: false,
+    includeTags: false
+  },
   onBulkPrintFieldsChange,
   categoryOptions,
   accountOptions,
@@ -554,11 +560,7 @@ export function TransactionTable({
     return grouped;
   }, [rows]);
 
-  const highExpenseThreshold = useMemo(
-    () => Math.max(expenseAverage * 2.2, 500),
-    [expenseAverage]
-  );
-
+  const highExpenseThreshold = useMemo(() => Math.max(expenseAverage * 2.2, 500), [expenseAverage]);
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
@@ -978,7 +980,8 @@ export function TransactionTable({
                             const badge = typeBadgeMap[item.type];
                             const isAiSource = item.source === 'ai';
                             const isHighExpense =
-                              item.type === 'expense' && Number(item.amount) >= highExpenseThreshold;
+                              item.type === 'expense' &&
+                              Number(item.amount) >= highExpenseThreshold;
                             const shouldShowAnomaly = isHighExpense && highExpenseThreshold > 0;
                             const anomalyHint = shouldShowAnomaly
                               ? `该笔金额明显高于当前均值（均值约 ${formatCurrencyAuto(expenseAverage)}）。建议检查是否重复记账。`
@@ -996,7 +999,9 @@ export function TransactionTable({
                                       {badge.short}
                                     </span>
                                     {isAiSource ? (
-                                      <span className="transaction-inline-tag transaction-inline-tag-ai">AI</span>
+                                      <span className="transaction-inline-tag transaction-inline-tag-ai">
+                                        AI
+                                      </span>
                                     ) : null}
                                     {repeatInfo ? (
                                       <span className="transaction-inline-tag" title={repeatTitle}>
@@ -1004,7 +1009,10 @@ export function TransactionTable({
                                       </span>
                                     ) : null}
                                     {shouldShowAnomaly ? (
-                                      <details className="transaction-inline-alert" onClick={(e) => e.stopPropagation()}>
+                                      <details
+                                        className="transaction-inline-alert"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
                                         <summary title="高于平均">!</summary>
                                         <div>
                                           <p>{anomalyHint}</p>
@@ -1040,7 +1048,11 @@ export function TransactionTable({
                               <td key={`${item.id}-${column.key}`}>
                                 <span title={note} className="transaction-note-with-attachment">
                                   <span>
-                                    {renderCellValue(column.key, { item, categoryName, accountName })}
+                                    {renderCellValue(column.key, {
+                                      item,
+                                      categoryName,
+                                      accountName
+                                    })}
                                   </span>
                                   {renderAttachmentIndicator(item.attachments?.length)}
                                 </span>
@@ -1081,9 +1093,11 @@ export function TransactionTable({
                     <td colSpan={visibleColumnCount} className="transaction-summary-amount">
                       汇总（当前页 {rows.length} 条）｜ 金额合计{' '}
                       {privacyMode ? maskAmount() : formatCurrencyAuto(pageSummary.overallTotal)} ｜
-                      收入 {privacyMode ? maskAmount() : formatCurrencyAuto(pageSummary.incomeTotal)} ｜
-                      支出 {privacyMode ? maskAmount() : formatCurrencyAuto(pageSummary.expenseTotal)}{' '}
-                      ｜ 净额 {privacyMode ? maskAmount() : formatCurrencyAuto(pageSummary.netTotal)}
+                      收入{' '}
+                      {privacyMode ? maskAmount() : formatCurrencyAuto(pageSummary.incomeTotal)} ｜
+                      支出{' '}
+                      {privacyMode ? maskAmount() : formatCurrencyAuto(pageSummary.expenseTotal)} ｜
+                      净额 {privacyMode ? maskAmount() : formatCurrencyAuto(pageSummary.netTotal)}
                     </td>
                   </tr>
                 </tfoot>
@@ -1147,15 +1161,21 @@ export function TransactionTable({
                         </strong>
                         <div className="transaction-mobile-badges">
                           {item.source === 'ai' ? (
-                            <span className="transaction-inline-tag transaction-inline-tag-ai">AI</span>
+                            <span className="transaction-inline-tag transaction-inline-tag-ai">
+                              AI
+                            </span>
                           ) : null}
                           {repeatInfo ? (
                             <span className="transaction-inline-tag" title={repeatTitle}>
                               本月{repeatLabel} {repeatInfo.count} 次
                             </span>
                           ) : null}
-                          {item.type === 'expense' && Number(item.amount) >= highExpenseThreshold ? (
-                            <span className="transaction-inline-tag transaction-inline-tag-warn" title="高于平均，建议检查是否重复记账。">
+                          {item.type === 'expense' &&
+                          Number(item.amount) >= highExpenseThreshold ? (
+                            <span
+                              className="transaction-inline-tag transaction-inline-tag-warn"
+                              title="高于平均，建议检查是否重复记账。"
+                            >
                               ! 高于平均
                             </span>
                           ) : null}
@@ -1209,7 +1229,10 @@ export function TransactionTable({
             className="row transaction-pagination"
             style={{ marginTop: 12, justifyContent: 'space-between' }}
           >
-            <small className="transaction-pagination-summary" style={{ color: 'var(--color-text-secondary)' }}>
+            <small
+              className="transaction-pagination-summary"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
               当前 {filteredTotal} 条 / 全部 {total} 条
             </small>
             <div className="transaction-pagination-controls">
@@ -1227,20 +1250,43 @@ export function TransactionTable({
                   ))}
                 </select>
               </label>
-              <small className="transaction-page-indicator" style={{ color: 'var(--color-text-secondary)' }}>
+              <small
+                className="transaction-page-indicator"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
                 第 {page} / {pages} 页
               </small>
               <div className="transaction-page-nav">
-                <button type="button" disabled={page === 1} onClick={onFirstPage} aria-label="第一页">
+                <button
+                  type="button"
+                  disabled={page === 1}
+                  onClick={onFirstPage}
+                  aria-label="第一页"
+                >
                   首页
                 </button>
-                <button type="button" disabled={page === 1} onClick={onPrevPage} aria-label="上一页">
+                <button
+                  type="button"
+                  disabled={page === 1}
+                  onClick={onPrevPage}
+                  aria-label="上一页"
+                >
                   上页
                 </button>
-                <button type="button" disabled={page === pages} onClick={onNextPage} aria-label="下一页">
+                <button
+                  type="button"
+                  disabled={page === pages}
+                  onClick={onNextPage}
+                  aria-label="下一页"
+                >
                   下页
                 </button>
-                <button type="button" disabled={page === pages} onClick={onLastPage} aria-label="最后一页">
+                <button
+                  type="button"
+                  disabled={page === pages}
+                  onClick={onLastPage}
+                  aria-label="最后一页"
+                >
                   末页
                 </button>
               </div>
