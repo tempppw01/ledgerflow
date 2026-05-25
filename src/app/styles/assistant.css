@@ -952,6 +952,14 @@
   background: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/calculator.svg') center / contain no-repeat;
 }
 
+.chat-assistant-intro-illustration {
+  display: block;
+  width: min(360px, 82%);
+  max-height: 260px;
+  object-fit: contain;
+  margin: var(--space-4) auto 0;
+}
+
 .chat-assistant-hero p {
   margin: 6px 0 0;
   font-size: var(--font-sm);
@@ -3144,6 +3152,12 @@
     width: 48px;
     height: 48px;
     border-radius: 16px;
+  }
+
+  .chat-assistant-intro-illustration {
+    width: min(280px, 88%);
+    max-height: 210px;
+    margin-top: var(--space-3);
   }
 
   .chat-assistant-hero p,

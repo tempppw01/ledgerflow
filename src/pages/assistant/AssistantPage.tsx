@@ -10,7 +10,6 @@ import {
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
-import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
 import {
   buildCreditAssistantMessageText,
   extractCreditStructuredItems,
@@ -38,7 +37,6 @@ import {
 } from '../../features/debt/model/debtMetrics';
 import type { DraftBillEntry } from '../../features/assistant/workbench/workbenchTypes';
 import type { TransactionItem } from '../../entities/transaction/types';
-import type { Category } from '../../entities/category/types';
 import {
   buildCreditFollowUpPrompts,
   enrichCreditItemsForConfirmation,
@@ -160,11 +158,6 @@ interface PresetQuestion {
   prompt: string;
 }
 
-interface SmartPresetCard extends PresetQuestion {
-  tag: string;
-  hint: string;
-}
-
 interface PushInsight {
   id: string;
   title: string;
@@ -186,28 +179,6 @@ interface DuplicateReviewPair {
   entry: DraftBillEntry;
   existing: TransactionItem;
 }
-
-const ANALYSIS_SHORTCUT_SEEDS = [
-  {
-    label: '最近1个月消费分析',
-    prompt:
-      '请结合我近30天账单，从总额、主要分类、异常波动和可优化动作四个角度做一份简洁分析，并给出3条可执行建议。'
-  },
-  {
-    label: '下个月还款预算',
-    prompt:
-      '基于我最近账单的固定支出和消费节奏，帮我制定下个月还款与现金流预算方案，包含保守/常规两档。'
-  },
-  {
-    label: '近3个月收支趋势',
-    prompt: '请按月对比我最近3个月的收入、支出和结余变化，指出趋势拐点，并说明最可能的影响因素。'
-  },
-  {
-    label: '大额支出识别',
-    prompt:
-      '请识别我最近3个月中金额异常偏高的支出，标注时间、分类、金额及可能原因，并给出下月规避策略。'
-  }
-];
 
 const CHAT_HISTORY_CACHE_KEYS: Record<AssistantMode, string> = {
   bookkeeping: 'ledgerflow.assistant.chatHistory.bookkeeping',
@@ -237,75 +208,6 @@ const CREDIT_SHORTCUT_SEEDS: PresetQuestion[] = [
     prompt: '请从现金流、还款日集中度、可能遗漏的分期项目三个角度，帮我做一次信贷风险排查。'
   }
 ];
-
-const PRESET_QUESTIONS_CACHE_KEY = 'ledgerflow.assistant.personalizedPresets.v1';
-const PRESET_QUESTIONS_CACHE_TTL_MS = 1000 * 60 * 60 * 6;
-
-interface CachedPresetQuestion {
-  label: string;
-  prompt: string;
-}
-
-interface PresetQuestionsCachePayload {
-  signature: string;
-  updatedAt: number;
-  questions: CachedPresetQuestion[];
-}
-
-function withPresetIds(questions: CachedPresetQuestion[], namespace: string): PresetQuestion[] {
-  return questions.map((item, index) => ({
-    id: `${namespace}-${index}`,
-    label: item.label,
-    prompt: item.prompt
-  }));
-}
-
-function buildPresetQuestionsSignature(transactions: TransactionItem[], categories: Category[]) {
-  const txSignature = transactions
-    .slice(-120)
-    .map((item) => `${item.date}|${item.type}|${item.amount}|${item.categoryId}|${item.note ?? ''}`)
-    .join('~');
-  const categorySignature = categories
-    .map((item) => `${item.id}:${item.name}`)
-    .sort()
-    .join('~');
-  return `${transactions.length}:${categories.length}:${categorySignature}:${txSignature}`;
-}
-
-function readPresetQuestionsCache(signature: string): CachedPresetQuestion[] | null {
-  try {
-    const raw = window.localStorage.getItem(PRESET_QUESTIONS_CACHE_KEY);
-    if (!raw) return null;
-    const payload = JSON.parse(raw) as PresetQuestionsCachePayload;
-    if (
-      !payload ||
-      payload.signature !== signature ||
-      Date.now() - payload.updatedAt > PRESET_QUESTIONS_CACHE_TTL_MS ||
-      !Array.isArray(payload.questions)
-    ) {
-      return null;
-    }
-    return payload.questions.filter(
-      (item): item is CachedPresetQuestion =>
-        Boolean(item) && typeof item.label === 'string' && typeof item.prompt === 'string'
-    );
-  } catch {
-    return null;
-  }
-}
-
-function writePresetQuestionsCache(signature: string, questions: CachedPresetQuestion[]) {
-  try {
-    const payload: PresetQuestionsCachePayload = {
-      signature,
-      updatedAt: Date.now(),
-      questions
-    };
-    window.localStorage.setItem(PRESET_QUESTIONS_CACHE_KEY, JSON.stringify(payload));
-  } catch {
-    // ignore storage write errors
-  }
-}
 
 function readWideLayoutPreference() {
   try {
@@ -363,78 +265,6 @@ function readChatHistory(mode: AssistantMode): ChatHistoryItem[] {
   } catch {
     return [];
   }
-}
-
-function toMonthKey(date: string) {
-  return date.slice(0, 7);
-}
-
-function truncateAssistantText(value: string, maxLength: number) {
-  if (value.length <= maxLength) return value;
-  return `${value.slice(0, Math.max(0, maxLength - 1)).trim()}…`;
-}
-
-function buildLocalPresetQuestions(transactions: TransactionItem[], categories: Category[]) {
-  const categoryMap = new Map(categories.map((item) => [item.id, item.name]));
-  const expenseRows = [...transactions]
-    .filter((item) => item.type === 'expense')
-    .sort((a, b) => +new Date(b.date) - +new Date(a.date));
-  const now = new Date();
-  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const lastMonth = `${now.getFullYear()}-${String(now.getMonth()).padStart(2, '0')}`;
-  const monthTotal = (month: string) =>
-    expenseRows
-      .filter((item) => toMonthKey(item.date) === month)
-      .reduce((sum, item) => sum + item.amount, 0);
-  const currentTotal = monthTotal(thisMonth);
-  const previousTotal = monthTotal(lastMonth);
-  const deltaPct = previousTotal > 0 ? ((currentTotal - previousTotal) / previousTotal) * 100 : 0;
-
-  const topCategory = Object.values(
-    expenseRows.reduce<Record<string, { name: string; amount: number }>>((acc, item) => {
-      const name = categoryMap.get(item.categoryId) || '其他';
-      if (!acc[name]) acc[name] = { name, amount: 0 };
-      acc[name].amount += item.amount;
-      return acc;
-    }, {})
-  ).sort((a, b) => b.amount - a.amount)[0];
-
-  const latest = expenseRows[0];
-  const generated = [
-    {
-      label: '本月波动拆解',
-      prompt:
-        currentTotal > 0
-          ? `请围绕本月支出¥${currentTotal.toFixed(2)}（较上月${deltaPct >= 0 ? '增加' : '减少'}${Math.abs(deltaPct).toFixed(1)}%）分析波动来源，并给出具体控费动作。`
-          : '我当前月度消费数据不完整，请先给我一套适用于首月记账的预算框架和执行步骤。'
-    },
-    {
-      label: '大头分类诊断',
-      prompt: topCategory
-        ? `请重点分析“${topCategory.name}”累计¥${topCategory.amount.toFixed(2)}的构成，识别高风险场景并给我可落地的替代方案。`
-        : '请先帮我补齐常用消费分类，并设计一套方便执行的分类记账规范。'
-    },
-    {
-      label: '最近消费复盘',
-      prompt: latest
-        ? `请基于我最近一笔“${latest.note || '未备注消费'}（¥${latest.amount.toFixed(2)}）”，检查是否存在重复记账、误分类或可优化开销。`
-        : '我还没有最新消费记录，请先给我一份从零开始的消费复盘清单。'
-    },
-    {
-      label: '7天小额拦截',
-      prompt:
-        '请统计我过去7天高频小额支出，按“可砍/可替代/保留”分类，并给出一周内可执行的缩减方案。'
-    },
-    {
-      label: '10%节流测算',
-      prompt: '如果本月非必要支出降低10%，请测算预计结余提升，并给我3条最值得优先执行的行动建议。'
-    }
-  ];
-
-  return [...ANALYSIS_SHORTCUT_SEEDS, ...generated]
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 8)
-    .map((item, index) => ({ id: `fallback-${index}`, ...item }));
 }
 
 type AssistantIntent = 'trend' | 'review' | 'planning' | 'decision' | 'risk' | 'category';
@@ -815,14 +645,12 @@ export function AssistantPage() {
   });
 
   const [modelOpen, setModelOpen] = useState(false);
-  const [presetQuestions, setPresetQuestions] = useState<PresetQuestion[]>([]);
   const [streamingPreviewMessage, setStreamingPreviewMessage] = useState('');
   const [streamingCommittedSegments, setStreamingCommittedSegments] = useState<string[]>([]);
   const [streamingDraftSegment, setStreamingDraftSegment] = useState('');
   const [isMobileView, setIsMobileView] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px)').matches : false
   );
-  const [loadingPresets, setLoadingPresets] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>(() => readChatHistory(mode));
   const [confirmingCreditId, setConfirmingCreditId] = useState<string | null>(null);
   const [modelPickerSource, setModelPickerSource] = useState<'command' | 'toolbar' | null>(null);
@@ -1176,78 +1004,9 @@ export function AssistantPage() {
     };
   }, [accounts, previousMonthKey, thisMonthKey, todayKey, transactions]);
 
-  const behaviorRecommendedQuestions = useMemo(() => {
-    const categoryNameMap = new Map(categories.map((item) => [item.id, item.name]));
-    const recentExpenses = [...transactions]
-      .filter((item) => item.type === 'expense')
-      .sort((a, b) => +new Date(b.date) - +new Date(a.date))
-      .slice(0, 25);
-    const topRecentCategory = Object.values(
-      recentExpenses.reduce<Record<string, { name: string; amount: number }>>((acc, item) => {
-        const name = categoryNameMap.get(item.categoryId) || '其他';
-        if (!acc[name]) acc[name] = { name, amount: 0 };
-        acc[name].amount += item.amount;
-        return acc;
-      }, {})
-    ).sort((a, b) => b.amount - a.amount)[0];
-
-    const fallback: PresetQuestion[] = [
-      {
-        id: 'behavior-fallback-1',
-        label: '本月支出压力点',
-        prompt: '请结合我最近账单，指出本月最容易超支的 3 个场景，并给出逐条控费动作。'
-      },
-      {
-        id: 'behavior-fallback-2',
-        label: '下周现金流提醒',
-        prompt: '请基于最近消费节奏，预测我下周资金压力，并给出可执行的预算分配建议。'
-      }
-    ];
-
-    if (!topRecentCategory) return fallback;
-
-    return [
-      {
-        id: 'behavior-top-category',
-        label: `重点看${topRecentCategory.name}`,
-        prompt: `请专项分析我最近在“${topRecentCategory.name}”上的支出结构，说明可立刻执行的降本动作。`
-      },
-      {
-        id: 'behavior-trend-check',
-        label: '最近行为趋势',
-        prompt: '请结合我最近 14 天消费，找出 2 个行为变化趋势，并说明对应的预算影响。'
-      }
-    ];
-  }, [categories, transactions]);
-
-  const creditBehaviorQuestions = useMemo(
-    () => [
-      {
-        id: 'credit-behavior-1',
-        label: '最近信贷压力点',
-        prompt: '请结合我最近账本，推测最可能形成信贷压力的消费场景，并提醒我哪些项目最值得核对是否分期。'
-      },
-      {
-        id: 'credit-behavior-2',
-        label: '优先核对清单',
-        prompt: '如果我要今晚就把贷款、花呗、分期情况摸清，请给我一个 3 步核对清单，按优先级列出。'
-      }
-    ],
-    []
-  );
-
-  const displayBehaviorQuestions = useMemo(
-    () =>
-      (mode === 'credit' ? creditBehaviorQuestions : behaviorRecommendedQuestions).slice(
-        0,
-        isMobileView ? 1 : 2
-      ),
-    [behaviorRecommendedQuestions, creditBehaviorQuestions, isMobileView, mode]
-  );
-
-  const displayPresetQuestions = useMemo(
-    () => (mode === 'credit' ? CREDIT_SHORTCUT_SEEDS : presetQuestions).slice(0, isMobileView ? 1 : 2),
-    [presetQuestions, isMobileView, mode]
+  const displayCreditShortcutQuestions = useMemo(
+    () => CREDIT_SHORTCUT_SEEDS.slice(0, isMobileView ? 1 : 2),
+    [isMobileView]
   );
 
   const hasCreditContextContent =
@@ -1257,85 +1016,8 @@ export function AssistantPage() {
     wb.rawContent.trim().length > 0 ||
     wb.textInput.trim().length > 0;
 
-  const smartBehaviorCards = useMemo<SmartPresetCard[]>(
-    () =>
-      displayBehaviorQuestions.map((item) => {
-        const text = `${item.label} ${item.prompt}`;
-        const latestDirectionLabel =
-          latestTransaction && getTransactionDirection(latestTransaction) === 'inflow' ? '最近收入' : '最近支出';
-        const latestNote = latestTransaction?.note?.trim()
-          ? truncateAssistantText(latestTransaction.note.trim(), isMobileView ? 12 : 18)
-          : '最近一笔';
-
-        if (/预算|节流|现金流|压力|控费/.test(text)) {
-          return {
-            ...item,
-            tag: '预算动作',
-            hint:
-              assistantOverview.todayNet < 0
-                ? '今天净流出偏高，先抓大头支出更有效。'
-                : truncateAssistantText(assistantOverview.riskAlert, isMobileView ? 24 : 34)
-          };
-        }
-
-        if (/趋势|波动|最近|7天|14|复盘/.test(text)) {
-          return {
-            ...item,
-            tag: '趋势追踪',
-            hint:
-              latestTransaction != null
-                ? `${latestDirectionLabel}「${latestNote}」适合继续往回追。`
-                : '最近账本更新后，这类问题会更容易看到变化。'
-          };
-        }
-
-        if (/餐饮|交通|住房|娱乐|订阅|分类|重点看/.test(text)) {
-          return {
-            ...item,
-            tag: '分类聚焦',
-            hint: truncateAssistantText(assistantOverview.monthlySummary, isMobileView ? 24 : 34)
-          };
-        }
-
-        return {
-          ...item,
-          tag: '动态建议',
-          hint:
-            assistantOverview.todayTodos.filter((todo) => (todo.count ?? 0) > 0).length > 0
-              ? '我按今天最值得处理的账本问题帮你挑了一条。'
-              : '这条建议会跟着最近账本变化自动更新。'
-        };
-      }),
-    [assistantOverview, displayBehaviorQuestions, isMobileView, latestTransaction]
-  );
-
-  const assistantMascotLine = useMemo(() => {
-    if (mode === 'credit') {
-      return wb.semanticRecallCacheMeta.exists
-        ? '把最近账单和截图丢给我，我会先把应还、待补和风险点拆成可执行顺序。'
-        : '先把信用账户补齐，我再继续盯到期日、最低还款和异常账单。';
-    }
-
-    if (mode === 'bookkeeping') {
-      return latestTransaction
-        ? `刚刚那笔「${truncateAssistantText(latestTransaction.note || '未备注', isMobileView ? 10 : 16)}」还能继续追问，我会顺手帮你补齐分类和备注。`
-        : '先随手记一笔真实流水，后面的分类、复盘和提醒都会更靠谱。';
-    }
-
-    const pendingTodos = assistantOverview.todayTodos.filter((item) => (item.count ?? 0) > 0);
-    if (pendingTodos.length > 0) {
-      return `${pendingTodos[0].label}待处理，我先帮你拆重点。`;
-    }
-
-    if (latestTransaction) {
-      return `可以从「${truncateAssistantText(
-        latestTransaction.note || '未备注',
-        isMobileView ? 12 : 18
-      )}」继续追问。`;
-    }
-
-    return '直接问账本，我来整理重点。';
-  }, [assistantOverview, isMobileView, latestTransaction, mode, wb.semanticRecallCacheMeta.exists]);
+  const shouldShowAssistantIntroIllustration =
+    mode === 'assistant' && !chatHistory.some((item) => item.role === 'user');
 
   const latestContextLabel = latestTransaction
     ? getTransactionDirection(latestTransaction) === 'inflow'
@@ -1790,117 +1472,6 @@ export function AssistantPage() {
     weekday: 'short'
   }).format(new Date());
 
-  const aiRequestContextRef = useRef({ baseUrl, apiKey, model });
-
-  useEffect(() => {
-    aiRequestContextRef.current = { baseUrl, apiKey, model };
-  }, [apiKey, baseUrl, model]);
-
-  const loadPersonalizedQuestions = useCallback(
-    async ({ forceRefresh = false }: { forceRefresh?: boolean } = {}) => {
-      const signature = buildPresetQuestionsSignature(transactions, categories);
-      const fallback = () => {
-        const local = buildLocalPresetQuestions(transactions, categories);
-        setPresetQuestions(local);
-        writePresetQuestionsCache(
-          signature,
-          local.map((item) => ({ label: item.label, prompt: item.prompt }))
-        );
-      };
-
-      if (!forceRefresh) {
-        const cached = readPresetQuestionsCache(signature);
-        if (cached) {
-          setPresetQuestions(withPresetIds(cached, 'preset-cache'));
-          return;
-        }
-      }
-
-      const {
-        baseUrl: currentBaseUrl,
-        apiKey: currentApiKey,
-        model: currentModel
-      } = aiRequestContextRef.current;
-
-      if (!currentApiKey || !currentModel) {
-        fallback();
-        return;
-      }
-
-      setLoadingPresets(true);
-      try {
-        const snapshot = transactions
-          .slice(-120)
-          .map((item) => ({
-            type: item.type,
-            amount: item.amount,
-            date: item.date,
-            note: item.note,
-            categoryId: item.categoryId
-          }))
-          .sort((a, b) => +new Date(b.date) - +new Date(a.date));
-        const categoryMap = categories.map((item) => ({ id: item.id, name: item.name }));
-        const randomSeed = `${Date.now()}-${Math.round(Math.random() * 1000)}`;
-        const reply = await sendAiChat({
-          baseUrl: currentBaseUrl,
-          apiKey: currentApiKey,
-          model: currentModel,
-          systemPrompt:
-            '你是记账系统中的数据分析助手。请基于用户账单快照一次性生成 4 条快捷提问。每条都要返回 label 和 prompt：label 供 UI 展示（8-16字，像按钮标题），prompt 是实际发送给模型的完整指令（更宽泛、包含分析目标与输出要求，不能与 label 相同）。仅返回 JSON 数组，格式：[{"label":"...","prompt":"..."}]，不要输出其他文本。',
-          messages: [
-            {
-              role: 'user',
-              text: `随机种子: ${randomSeed}
-分类映射: ${JSON.stringify(categoryMap)}
-最近账单: ${JSON.stringify(snapshot)}`
-            }
-          ]
-        });
-
-        const normalized = reply.content
-          .trim()
-          .replace(/^```json\s*/i, '')
-          .replace(/```$/, '');
-        const parsed = JSON.parse(normalized) as unknown;
-        if (!Array.isArray(parsed) || parsed.length < 2) {
-          fallback();
-          return;
-        }
-        const list = parsed
-          .filter(
-            (item): item is { label: string; prompt: string } =>
-              Boolean(item) &&
-              typeof item === 'object' &&
-              typeof (item as { label?: string }).label === 'string' &&
-              typeof (item as { prompt?: string }).prompt === 'string'
-          )
-          .map((item) => ({ label: item.label.trim(), prompt: item.prompt.trim() }))
-          .filter((item) => item.label && item.prompt && item.label !== item.prompt)
-          .slice(0, 4);
-
-        const nextQuestions =
-          list.length >= 2
-            ? [...ANALYSIS_SHORTCUT_SEEDS, ...list]
-            : buildLocalPresetQuestions(transactions, categories).map((item) => ({
-                label: item.label,
-                prompt: item.prompt
-              }));
-
-        setPresetQuestions(withPresetIds(nextQuestions, 'preset'));
-        writePresetQuestionsCache(signature, nextQuestions);
-      } catch {
-        fallback();
-      } finally {
-        setLoadingPresets(false);
-      }
-    },
-    [categories, transactions]
-  );
-
-  useEffect(() => {
-    void loadPersonalizedQuestions();
-  }, [loadPersonalizedQuestions]);
-
   useEffect(() => {
     try {
       window.sessionStorage.setItem(ASSISTANT_ACTIVE_MODE_STORAGE_KEY, mode);
@@ -2060,7 +1631,7 @@ export function AssistantPage() {
                 </div>
               </div>
               <div className="chat-preset-list">
-                {displayPresetQuestions.map((item) => (
+                {displayCreditShortcutQuestions.map((item) => (
                   <button
                     key={item.id}
                     type="button"
@@ -2107,47 +1678,14 @@ export function AssistantPage() {
                   </div>
                 </div>
               </div>
-              <div className="chat-preset-head">
-                <strong>智能场景提问</strong>
-                <button
-                  type="button"
-                  onClick={() => void loadPersonalizedQuestions({ forceRefresh: true })}
-                >
-                  {loadingPresets ? '生成中...' : '换一批'}
-                </button>
-              </div>
-              <div className="chat-preset-list chat-preset-list-smart">
-                {smartBehaviorCards.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className="chat-preset-item chat-preset-item-smart"
-                    onClick={() => submitPrompt(item.prompt)}
-                    disabled={wb.status === 'recognizing'}
-                  >
-                    <span className="chat-preset-item-tag">{item.tag}</span>
-                    <strong>{item.label}</strong>
-                    <small className="chat-preset-item-meta">{item.hint}</small>
-                  </button>
-                ))}
-              </div>
-              <div className="chat-preset-list">
-                {displayPresetQuestions.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className="chat-preset-item"
-                    onClick={() => submitPrompt(item.prompt)}
-                    disabled={wb.status === 'recognizing'}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-              <div className="chat-kawaii-mascot" aria-hidden>
-                <span>🧾</span>
-                <small>{assistantMascotLine}</small>
-              </div>
+              {shouldShowAssistantIntroIllustration ? (
+                <img
+                  className="chat-assistant-intro-illustration"
+                  src="https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/importing.svg"
+                  alt=""
+                  aria-hidden="true"
+                />
+              ) : null}
             </section>
           )}
 
