@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { fetchAiModels } from '../../features/assistant/api/openaiCompatibleClient';
 import { fetchEmbeddings } from '../../features/assistant/api/openaiEmbeddingClient';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
@@ -109,12 +108,7 @@ interface ModelSelectorProps {
   hint: string;
   value: string;
   presets: string[];
-  remoteModels: string[];
-  loading: boolean;
-  onRefresh: () => void;
   onChange: (value: string) => void;
-  loadingText: string;
-  refreshText: string;
 }
 
 function getModelDisplayLabel(modelId: string): string {
@@ -141,17 +135,9 @@ function ModelSelector({
   hint,
   value,
   presets,
-  remoteModels,
-  loading,
-  onRefresh,
-  onChange,
-  loadingText,
-  refreshText
+  onChange
 }: ModelSelectorProps) {
-  const options = useMemo(
-    () => mergeModelOptions(value, presets, remoteModels),
-    [value, presets, remoteModels]
-  );
+  const options = useMemo(() => mergeModelOptions(value, presets, []), [value, presets]);
 
   return (
     <div className="field settings-model-field">
@@ -165,14 +151,6 @@ function ModelSelector({
             </option>
           ))}
         </select>
-        <button
-          type="button"
-          className="settings-model-refresh"
-          onClick={onRefresh}
-          disabled={loading}
-        >
-          {loading ? loadingText : refreshText}
-        </button>
       </div>
     </div>
   );
@@ -216,18 +194,12 @@ export function SettingsPage() {
   const [masked, setMasked] = useState(true);
   const currentLanguage = i18n.resolvedLanguage?.startsWith('en') ? 'en' : 'zh';
   const [toastVisible, setToastVisible] = useState(false);
-  const [modelOptions, setModelOptions] = useState<string[]>([]);
-  const [modelLoading, setModelLoading] = useState(false);
-  const [modelLoadError, setModelLoadError] = useState('');
   const [embeddingTestStatus, setEmbeddingTestStatus] = useState<{
     loading: boolean;
     ok: boolean;
     message: string;
   }>({ loading: false, ok: false, message: '' });
-  const embeddingModelCandidates = useMemo(
-    () => buildEmbeddingModelCandidates(modelOptions),
-    [modelOptions]
-  );
+  const embeddingModelCandidates = useMemo(() => buildEmbeddingModelCandidates([]), []);
   const embeddingChannelModelValidation = useMemo(
     () => getEmbeddingModelValidationMessage(embeddingChannel.model, embeddingModelCandidates),
     [embeddingChannel.model, embeddingModelCandidates]
@@ -309,29 +281,6 @@ export function SettingsPage() {
       }
     };
   }, []);
-
-  const refreshModels = useCallback(async () => {
-    if (!baseUrl) {
-      setModelLoadError(t('settings.model.errorMissingBaseUrl'));
-      return;
-    }
-    setModelLoading(true);
-    setModelLoadError('');
-    try {
-      const remote = await fetchAiModels(baseUrl, apiKey);
-      setModelOptions(remote);
-      if (remote.length === 0) {
-        setModelLoadError(t('settings.model.errorEmptyList'));
-      }
-    } catch (error) {
-      setModelLoadError(
-        error instanceof Error ? error.message : t('settings.model.errorFetchFailed')
-      );
-      setModelOptions([]);
-    } finally {
-      setModelLoading(false);
-    }
-  }, [apiKey, baseUrl, t]);
 
   const handleTestEmbeddingChannel = useCallback(async () => {
     const overrideActive =
@@ -773,39 +722,23 @@ export function SettingsPage() {
             hint={t('settings.model.defaultHint')}
             value={model}
             presets={MODEL_PRESETS}
-            remoteModels={modelOptions}
-            loading={modelLoading}
-            onRefresh={() => void refreshModels()}
             onChange={(value) => handleSelectModel(setModel, value)}
-            loadingText={t('settings.model.refreshing')}
-            refreshText={t('settings.model.refresh')}
           />
           <ModelSelector
             label={t('settings.model.embeddingLabel')}
             hint={t('settings.model.embeddingHint')}
             value={embeddingModel}
             presets={EMBEDDING_MODEL_PRESETS}
-            remoteModels={modelOptions}
-            loading={modelLoading}
-            onRefresh={() => void refreshModels()}
             onChange={(value) => handleSelectModel(setEmbeddingModel, value)}
-            loadingText={t('settings.model.refreshing')}
-            refreshText={t('settings.model.refresh')}
           />
           <ModelSelector
             label={t('settings.model.rerankLabel')}
             hint={t('settings.model.rerankHint')}
             value={rerankModel}
             presets={RERANK_MODEL_PRESETS}
-            remoteModels={modelOptions}
-            loading={modelLoading}
-            onRefresh={() => void refreshModels()}
             onChange={(value) => handleSelectModel(setRerankModel, value)}
-            loadingText={t('settings.model.refreshing')}
-            refreshText={t('settings.model.refresh')}
           />
         </div>
-        {modelLoadError ? <p className="settings-model-error">{modelLoadError}</p> : null}
 
         <div className="settings-inline-grid settings-inline-grid--double">
           <div className="field">

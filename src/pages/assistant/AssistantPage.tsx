@@ -1149,6 +1149,12 @@ export function AssistantPage() {
       todayIncome,
       todayExpense,
       todayNet,
+      monthlyBriefs: [
+        { label: '支出', value: monthExpense > 0 ? `¥${monthExpense.toFixed(2)}` : '暂无' },
+        { label: '收入', value: monthIncome > 0 ? `¥${monthIncome.toFixed(2)}` : '暂无' },
+        { label: '结余', value: `¥${monthBalance.toFixed(2)}` },
+        { label: '建议', value: monthBalance >= 0 ? '继续记录' : '先控大额' }
+      ],
       monthlySummary:
         monthExpense > 0
           ? `本月消费 ¥${monthExpense.toFixed(2)}，主要建议聚焦高频小额与突发大额两类支出。`
@@ -2076,82 +2082,26 @@ export function AssistantPage() {
               <div className="chat-assistant-layout">
                 <div className="chat-assistant-layout-main">
                   <div className="chat-assistant-hero">
-                    <h2>AI 助手</h2>
+                    <div className="chat-assistant-title-row">
+                      <h2>AI 助手</h2>
+                      <span className="chat-assistant-hero-illustration" aria-hidden="true" />
+                    </div>
                     <p>问账本、看趋势、做取舍，我来提炼重点和下一步。</p>
                   </div>
-                  <div className="chat-insight-section" aria-label="今日要做">
-                    <div className="chat-insight-section-head">
-                      <h3>🗓 待处理</h3>
-                      <span>优先项</span>
-                    </div>
-                    {assistantOverview.todayTodos.filter((item) => (item.count ?? 0) > 0).length > 0 ? (
-                      <div className="chat-push-insights">
-                        {assistantOverview.todayTodos
-                          .filter((item) => (item.count ?? 0) > 0)
-                          .map((item) => (
-                            <button
-                              key={item.id}
-                              type="button"
-                              className={`chat-push-insight-item ${item.level === 'warning' ? 'warning' : ''}`}
-                              onClick={() => item.href && navigate(item.href)}
-                            >
-                              <div className="chat-push-insight-top">
-                                <h4>{item.label}</h4>
-                                {item.statusLabel ? (
-                                  <span className="chat-push-insight-tag">{item.statusLabel}</span>
-                                ) : null}
-                              </div>
-                              <p>{item.detail}</p>
-                            </button>
-                          ))}
-                      </div>
-                    ) : null}
-                  </div>
-
                 </div>
 
                 <div className="chat-assistant-layout-side">
                   <div className="chat-insight-section" aria-label="本月总结">
                     <div className="chat-insight-section-head">
-                      <h3>📈 本月概览</h3>
-                      <span>简版</span>
+                      <h3>📈 本月</h3>
+                      <span>一眼看懂</span>
                     </div>
-                    <div className="chat-auto-insight-block">
-                      <p>
-                        <strong>本月消费总结：</strong>
-                        {assistantOverview.monthlySummary}
-                      </p>
-                      <p>
-                        <strong>收入趋势变化：</strong>
-                        {assistantOverview.incomeTrend}
-                      </p>
-                      <p>
-                        <strong>异常支出提醒：</strong>
-                        {assistantOverview.abnormalReminder}
-                      </p>
-                    </div>
-                    <div className="chat-insight-list" aria-label="本月洞察列表">
-                      {assistantOverview.monthlyInsights.map((insight) => (
-                        <p key={insight}>💡 {insight}</p>
-                      ))}
-                      <p className="chat-risk-alert">⚠️ {assistantOverview.riskAlert}</p>
-                    </div>
-                  </div>
-
-                  <div className="chat-insight-section" aria-label="主动洞察推送">
-                    <div className="chat-insight-section-head">
-                      <h3>🧭 洞察</h3>
-                      <span>持续更新</span>
-                    </div>
-                    <div className="chat-push-insights" aria-label="主动洞察推送">
-                      {assistantOverview.pushInsights.map((item) => (
-                        <article
-                          key={item.id}
-                          className={`chat-push-insight-item ${item.level === 'warning' ? 'warning' : ''}`}
-                        >
-                          <h4>{item.title}</h4>
-                          <p>{item.detail}</p>
-                        </article>
+                    <div className="chat-auto-insight-block chat-auto-insight-block-brief">
+                      {assistantOverview.monthlyBriefs.map((item) => (
+                        <p key={item.label}>
+                          <span>{item.label}</span>
+                          <strong>{item.value}</strong>
+                        </p>
                       ))}
                     </div>
                   </div>

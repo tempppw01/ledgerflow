@@ -6,9 +6,7 @@ interface WorkbenchSettingsDrawerProps {
   memoryDays: number;
   memoryBackend: 'local' | 'redis';
   models: string[];
-  loadingModels: boolean;
   onClose: () => void;
-  onLoadModels: () => void;
   onChangeBaseUrl: (value: string) => void;
   onChangeApiKey: (value: string) => void;
   onChangeModel: (value: string) => void;
@@ -26,9 +24,7 @@ export function WorkbenchSettingsDrawer(props: WorkbenchSettingsDrawerProps) {
     memoryDays,
     memoryBackend,
     models,
-    loadingModels,
     onClose,
-    onLoadModels,
     onChangeBaseUrl,
     onChangeApiKey,
     onChangeModel,
@@ -77,20 +73,11 @@ export function WorkbenchSettingsDrawer(props: WorkbenchSettingsDrawerProps) {
 
           <div className="field">
             <span>模型</span>
-            <div className="assistant-wb-inline-actions">
-              <input
-                value={model}
-                onChange={(e) => onChangeModel(e.target.value)}
-                placeholder="gpt-4o-mini"
-              />
-              <button
-                type="button"
-                onClick={onLoadModels}
-                disabled={loadingModels || !apiKey.trim()}
-              >
-                {loadingModels ? '加载中...' : '拉取模型'}
-              </button>
-            </div>
+            <input
+              value={model}
+              onChange={(e) => onChangeModel(e.target.value)}
+              placeholder="gpt-4o-mini"
+            />
             {models.length > 0 ? (
               <div className="assistant-wb-model-chips">
                 {models.map((item) => (

@@ -871,22 +871,6 @@
   overflow: hidden;
 }
 
-.chat-assistant-panel-qa::before {
-  content: '';
-  position: absolute;
-  top: clamp(18px, 4vw, 44px);
-  right: clamp(16px, 5vw, 72px);
-  width: clamp(180px, 22vw, 320px);
-  aspect-ratio: 1;
-  background-image: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/calculator.svg');
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
-  opacity: 0.16;
-  pointer-events: none;
-  z-index: 0;
-}
-
 .chat-assistant-panel-qa > * {
   position: relative;
   z-index: 1;
@@ -944,11 +928,34 @@
   font-size: var(--font-xs);
 }
 
+.chat-assistant-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
 .chat-assistant-hero h2 {
   margin: 0;
   font-size: 24px;
   color: var(--color-text);
   margin-bottom: var(--space-2);
+}
+
+.chat-assistant-title-row h2 {
+  margin-bottom: 0;
+}
+
+.chat-assistant-hero-illustration {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--color-warning) 32%, var(--color-border));
+  border-radius: 18px;
+  background:
+    url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/calculator.svg') center / 82% no-repeat,
+    linear-gradient(135deg, color-mix(in srgb, var(--color-warning-bg) 82%, var(--color-bg-elevated)) 0%, var(--color-bg-elevated) 100%);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--color-warning) 16%, transparent);
+  transform: rotate(-4deg);
 }
 
 .chat-assistant-hero p {
@@ -989,6 +996,30 @@
 .chat-auto-insight-block:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
+}
+
+.chat-auto-insight-block-brief {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.chat-auto-insight-block-brief p {
+  margin: 0;
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-primary-bg) 42%, var(--color-bg));
+}
+
+.chat-auto-insight-block-brief span {
+  font-size: var(--font-xs);
+  color: var(--color-text-tertiary);
+}
+
+.chat-auto-insight-block-brief strong {
+  font-size: var(--font-sm);
+  color: var(--color-text);
 }
 
 /* ---------- Push Insights ---------- */
@@ -3081,13 +3112,6 @@
     padding: var(--space-3);
   }
 
-  .chat-assistant-panel-qa::before {
-    top: 18px;
-    right: -34px;
-    width: 172px;
-    opacity: 0.1;
-  }
-
   .chat-overview-grid,
   .chat-preset-list {
     grid-template-columns: 1fr;
@@ -3116,6 +3140,16 @@
 
   .chat-assistant-hero h2 {
     font-size: clamp(18px, 5.4vw, 22px);
+  }
+
+  .chat-assistant-title-row {
+    gap: var(--space-2);
+  }
+
+  .chat-assistant-hero-illustration {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
   }
 
   .chat-assistant-hero p,
