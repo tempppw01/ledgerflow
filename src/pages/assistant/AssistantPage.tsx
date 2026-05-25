@@ -2341,9 +2341,7 @@ export function AssistantPage() {
               <div className="chat-msg-body">
                 <div className="chat-msg-header">助手</div>
                 <div className="chat-typing">
-                  模型思考中<span className="dot1">.</span>
-                  <span className="dot2">.</span>
-                  <span className="dot3">.</span>
+                  模型思考中
                   <img
                     className="chat-typing-loader"
                     src="https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/load.gif"

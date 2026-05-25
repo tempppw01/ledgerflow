@@ -654,27 +654,14 @@
 .chat-typing {
   display: inline-flex;
   align-items: center;
-  gap: 1px;
+  gap: 8px;
   color: var(--color-text-tertiary);
   font-size: var(--font-sm);
 }
 
-.chat-typing .dot1,
-.chat-typing .dot2,
-.chat-typing .dot3 {
-  animation: pulse-dot 1.4s infinite;
-}
-.chat-typing .dot2 {
-  animation-delay: 0.2s;
-}
-.chat-typing .dot3 {
-  animation-delay: 0.4s;
-}
-
 .chat-typing-loader {
-  width: 22px;
-  height: 22px;
-  margin-left: 5px;
+  width: 52px;
+  height: 28px;
   object-fit: contain;
   flex: 0 0 auto;
 }
