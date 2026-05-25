@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { TransactionDetailDrawer } from './TransactionDetailDrawer';
+import { ALIPAY_LOGO_URL } from '../../../shared/config/brandAssets';
 
 vi.mock('../../../shared/lib/backup', () => ({
   loadWebdavConfig: vi.fn(() => ({
@@ -98,6 +99,7 @@ describe('TransactionDetailDrawer', () => {
 
     expect(screen.getByLabelText('支出')).toBeInTheDocument();
     expect(document.querySelectorAll('.alipay-icon').length).toBeGreaterThan(0);
+    expect(document.querySelector('.alipay-icon')).toHaveAttribute('src', ALIPAY_LOGO_URL);
     expect(screen.getByText('最后修改')).toBeInTheDocument();
   });
 

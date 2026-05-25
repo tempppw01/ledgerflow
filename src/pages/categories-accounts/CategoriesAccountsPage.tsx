@@ -14,9 +14,11 @@ import { formatCurrencyFixed2 } from '../../shared/lib/format';
 import { EmptyState } from '../../shared/ui/EmptyState';
 import { LoadingSkeleton } from '../../shared/ui/LoadingSkeleton';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
+import { ALIPAY_LOGO_URL } from '../../shared/config/brandAssets';
 import {
   getAccountDisplayIcon,
-  getAccountTypeLabel
+  getAccountTypeLabel,
+  isAlipayAccountName
 } from '../../features/accounts/model/accountTypes';
 import type { AccountType } from '../../features/accounts/model/accountTypes';
 import type { Category } from '../../entities/category/types';
@@ -763,7 +765,11 @@ export function CategoriesAccountsPage() {
                   <article key={item.id} className="account-card">
                     <header className="account-card-head">
                       <span className="account-card-icon" aria-hidden="true">
-                        {getAccountDisplayIcon(item.name, item.type)}
+                        {isAlipayAccountName(item.name) ? (
+                          <img className="account-card-brand-icon alipay-icon" src={ALIPAY_LOGO_URL} alt="" />
+                        ) : (
+                          getAccountDisplayIcon(item.name, item.type)
+                        )}
                       </span>
                       <div className="account-card-main">
                         <strong>{item.name}</strong>

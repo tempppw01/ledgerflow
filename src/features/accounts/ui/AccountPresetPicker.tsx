@@ -16,7 +16,13 @@ export function AccountPresetPicker({ presets, onSelect }: AccountPresetPickerPr
           onClick={() => onSelect(preset)}
           title={`快速添加: ${preset.name}`}
         >
-          <span className="preset-icon">{preset.icon}</span>
+          <span className="preset-icon">
+            {preset.iconUrl ? (
+              <img className="account-preset-brand-icon alipay-icon" src={preset.iconUrl} alt="" aria-hidden="true" />
+            ) : (
+              preset.icon
+            )}
+          </span>
           {preset.name}
         </button>
       ))}

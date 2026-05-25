@@ -2,10 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { AccountPresetPicker } from './AccountPresetPicker';
 import type { AccountPreset } from '../model/accountTypes';
+import { ALIPAY_LOGO_URL } from '../../../shared/config/brandAssets';
 
 const mockPresets: AccountPreset[] = [
   { name: '现金', type: 'cash', icon: '💵' },
-  { name: '支付宝', type: 'virtual', icon: '📱' },
+  { name: '支付宝', type: 'virtual', icon: '📱', iconUrl: ALIPAY_LOGO_URL },
   { name: '招商银行', type: 'debit', icon: '🏦' }
 ];
 
@@ -26,5 +27,6 @@ describe('AccountPresetPicker', () => {
     fireEvent.click(alipayBtn);
     expect(selected!.name).toBe('支付宝');
     expect(selected!.type).toBe('virtual');
+    expect(document.querySelector('.account-preset-brand-icon')).toHaveAttribute('src', ALIPAY_LOGO_URL);
   });
 });

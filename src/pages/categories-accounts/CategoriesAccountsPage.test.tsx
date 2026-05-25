@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CategoriesAccountsPage } from './CategoriesAccountsPage';
+import { ALIPAY_LOGO_URL } from '../../shared/config/brandAssets';
 
 const financeStoreMock = {
   state: {
@@ -64,6 +65,7 @@ describe('CategoriesAccountsPage', () => {
     );
 
     expect(screen.getAllByText('¥630.73')).toHaveLength(1);
+    expect(document.querySelector('.account-card-brand-icon')).toHaveAttribute('src', ALIPAY_LOGO_URL);
 
     await user.dblClick(screen.getByRole('button', { name: 'account-balance-display-acc-alipay' }));
 

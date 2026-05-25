@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { TransactionTable, type TransactionColumnKey } from './TransactionTable';
+import { ALIPAY_LOGO_URL } from '../../../shared/config/brandAssets';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -633,17 +634,23 @@ describe('TransactionTable', () => {
     expect(screen.getByLabelText('收入')).toBeInTheDocument();
     expect(screen.getByLabelText('支出')).toBeInTheDocument();
     expect(document.querySelectorAll('.alipay-icon').length).toBeGreaterThan(0);
+    expect(document.querySelector('.alipay-icon')).toHaveAttribute('src', ALIPAY_LOGO_URL);
     expect(screen.getAllByLabelText('有附件').length).toBeGreaterThan(0);
   });
 
   it('应为本月重复出现的收支展示角标，并忽略跨月与非收支类型', () => {
+    const now = new Date();
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonth = `${previousMonth.getFullYear()}-${String(previousMonth.getMonth() + 1).padStart(2, '0')}`;
+
     render(
       <TransactionTable
         rows={[
           {
             item: {
               id: 'tx-repeat-1',
-              date: '2026-04-03',
+              date: `${thisMonth}-03`,
               type: 'expense',
               categoryId: 'cat-1',
               accountId: 'acc-1',
@@ -657,7 +664,7 @@ describe('TransactionTable', () => {
           {
             item: {
               id: 'tx-repeat-2',
-              date: '2026-04-11',
+              date: `${thisMonth}-11`,
               type: 'expense',
               categoryId: 'cat-1',
               accountId: 'acc-1',
@@ -671,7 +678,7 @@ describe('TransactionTable', () => {
           {
             item: {
               id: 'tx-repeat-income-1',
-              date: '2026-04-05',
+              date: `${thisMonth}-05`,
               type: 'income',
               categoryId: 'cat-2',
               accountId: 'acc-1',
@@ -685,7 +692,7 @@ describe('TransactionTable', () => {
           {
             item: {
               id: 'tx-repeat-income-2',
-              date: '2026-04-15',
+              date: `${thisMonth}-15`,
               type: 'income',
               categoryId: 'cat-2',
               accountId: 'acc-1',
@@ -699,7 +706,7 @@ describe('TransactionTable', () => {
           {
             item: {
               id: 'tx-prev-month',
-              date: '2026-03-20',
+              date: `${lastMonth}-20`,
               type: 'expense',
               categoryId: 'cat-1',
               accountId: 'acc-1',
@@ -713,7 +720,7 @@ describe('TransactionTable', () => {
           {
             item: {
               id: 'tx-budget',
-              date: '2026-04-08',
+              date: `${thisMonth}-08`,
               type: 'budget',
               categoryId: 'cat-3',
               accountId: 'acc-1',

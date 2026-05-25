@@ -6,6 +6,7 @@ import { formatCurrencyAuto, formatDate } from '../../../shared/lib/format';
 import { summarizeTransactions } from '../../../shared/lib/transactionMetrics';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { TableSkeleton } from '../../../shared/ui/TableSkeleton';
+import { ALIPAY_LOGO_URL } from '../../../shared/config/brandAssets';
 
 const NOTE_MAX_LENGTH = 22;
 const DEFAULT_MIN_COLUMN_WIDTH = 90;
@@ -29,7 +30,7 @@ function AlipayBrandIcon() {
   return (
     <img
       className="alipay-icon"
-      src="https://play-lh.googleusercontent.com/quzvssC112NXIlt4YBkclEo7f9ZnhaNtZ5fvaCs_P19X7KL71DiUqd2ysR8ZHsTaRTY"
+      src={ALIPAY_LOGO_URL}
       alt=""
       width="16"
       height="16"

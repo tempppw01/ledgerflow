@@ -8,6 +8,7 @@ import {
 } from '../../../entities/transaction/types';
 import { formatCurrency, formatDateTime } from '../../../shared/lib/format';
 import { buildA4PrintBaseStyles, buildA4PrintSheetStyles } from '../../../shared/lib/printStyles';
+import { ALIPAY_LOGO_URL } from '../../../shared/config/brandAssets';
 import {
   loadWebdavConfig,
   sanitizeWebdavConfig,
@@ -46,7 +47,7 @@ function AlipayBrandIcon() {
   return (
     <img
       className="alipay-icon"
-      src="https://play-lh.googleusercontent.com/quzvssC112NXIlt4YBkclEo7f9ZnhaNtZ5fvaCs_P19X7KL71DiUqd2ysR8ZHsTaRTY"
+      src={ALIPAY_LOGO_URL}
       alt=""
       width="16"
       height="16"
