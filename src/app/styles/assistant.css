@@ -894,6 +894,32 @@
   margin-bottom: 0;
 }
 
+.chat-assistant-panel-qa {
+  position: relative;
+  overflow: hidden;
+}
+
+.chat-assistant-panel-qa::before {
+  content: '';
+  position: absolute;
+  top: clamp(18px, 4vw, 44px);
+  right: clamp(16px, 5vw, 72px);
+  width: clamp(180px, 22vw, 320px);
+  aspect-ratio: 1;
+  background-image: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/calculator.svg');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.16;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.chat-assistant-panel-qa > * {
+  position: relative;
+  z-index: 1;
+}
+
 .chat-assistant-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(360px, 0.52fr);
@@ -3081,6 +3107,13 @@
   .chat-kawaii-panel {
     border-radius: var(--radius-lg);
     padding: var(--space-3);
+  }
+
+  .chat-assistant-panel-qa::before {
+    top: 18px;
+    right: -34px;
+    width: 172px;
+    opacity: 0.1;
   }
 
   .chat-overview-grid,

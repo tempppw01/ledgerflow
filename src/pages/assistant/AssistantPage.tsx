@@ -1318,17 +1318,17 @@ export function AssistantPage() {
 
     const pendingTodos = assistantOverview.todayTodos.filter((item) => (item.count ?? 0) > 0);
     if (pendingTodos.length > 0) {
-      return `${pendingTodos[0].label}还没收口，我可以先陪你把这块讲明白，再看趋势。`;
+      return `${pendingTodos[0].label}待处理，我先帮你拆重点。`;
     }
 
     if (latestTransaction) {
-      return `最近一笔是「${truncateAssistantText(
+      return `可以从「${truncateAssistantText(
         latestTransaction.note || '未备注',
         isMobileView ? 12 : 18
-      )}」，从它往回追最容易看出这阵子的消费习惯。`;
+      )}」继续追问。`;
     }
 
-    return truncateAssistantText(assistantOverview.monthlySummary, isMobileView ? 28 : 42);
+    return '直接问账本，我来整理重点。';
   }, [assistantOverview, isMobileView, latestTransaction, mode, wb.semanticRecallCacheMeta.exists]);
 
   const latestContextLabel = latestTransaction
@@ -2072,17 +2072,17 @@ export function AssistantPage() {
               </div>
             </section>
           ) : (
-            <section className="chat-kawaii-panel chat-assistant-panel">
+            <section className="chat-kawaii-panel chat-assistant-panel chat-assistant-panel-qa">
               <div className="chat-assistant-layout">
                 <div className="chat-assistant-layout-main">
                   <div className="chat-assistant-hero">
-                    <h2>🤖 你好，我是你的财务助手</h2>
-                    <p>先看关键数据，再像聊天一样提问。我会尽量把复杂数字翻译成能马上动手的建议。</p>
+                    <h2>AI 助手</h2>
+                    <p>问账本、看趋势、做取舍，我来提炼重点和下一步。</p>
                   </div>
                   <div className="chat-insight-section" aria-label="今日要做">
                     <div className="chat-insight-section-head">
-                      <h3>🗓 今日要做</h3>
-                      <span>提醒 / 风险 / 待处理</span>
+                      <h3>🗓 待处理</h3>
+                      <span>优先项</span>
                     </div>
                     {assistantOverview.todayTodos.filter((item) => (item.count ?? 0) > 0).length > 0 ? (
                       <div className="chat-push-insights">
@@ -2113,8 +2113,8 @@ export function AssistantPage() {
                 <div className="chat-assistant-layout-side">
                   <div className="chat-insight-section" aria-label="本月总结">
                     <div className="chat-insight-section-head">
-                      <h3>📈 本月总结</h3>
-                      <span>趋势 / 对比 / 结构</span>
+                      <h3>📈 本月概览</h3>
+                      <span>简版</span>
                     </div>
                     <div className="chat-auto-insight-block">
                       <p>
@@ -2140,8 +2140,8 @@ export function AssistantPage() {
 
                   <div className="chat-insight-section" aria-label="主动洞察推送">
                     <div className="chat-insight-section-head">
-                      <h3>🧭 主动洞察</h3>
-                      <span>系统持续追踪</span>
+                      <h3>🧭 洞察</h3>
+                      <span>持续更新</span>
                     </div>
                     <div className="chat-push-insights" aria-label="主动洞察推送">
                       {assistantOverview.pushInsights.map((item) => (
@@ -2214,7 +2214,7 @@ export function AssistantPage() {
               <div className="chat-msg-content">
                 <p>
                   {mode === 'assistant'
-                    ? `今天 ${todayLabel}，我已经把重点线索铺在上面了。你尽管问，我来负责把账本里的脾气翻译成人话。`
+                    ? `今天 ${todayLabel}，直接问账本、预算或趋势，我先给重点。`
                     : mode === 'credit'
                       ? '把花呗、分期、贷款或信用账单交给我，我先帮你拆出应还金额、时间点和待补信息。'
                       : '输入一句话或贴截图，我会帮你快速生成可保存账单。能省几步就省几步。'}
