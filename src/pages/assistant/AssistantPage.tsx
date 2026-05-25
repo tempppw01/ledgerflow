@@ -2136,20 +2136,30 @@ export function AssistantPage() {
                   <button
                     type="button"
                     className="chat-icon-action-btn"
-                    onClick={() => removeMessage(item.id)}
-                    aria-label="删除消息"
-                    title="删除消息"
-                  >
-                    🗑️
-                  </button>
-                  <button
-                    type="button"
-                    className="chat-icon-action-btn"
                     onClick={() => copyMessage(item.text)}
                     aria-label="复制消息"
                     title="复制消息"
                   >
-                    📋
+                    <img
+                      className="chat-icon-action-img"
+                      src="https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/copy.svg"
+                      alt=""
+                      aria-hidden="true"
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    className="chat-icon-action-btn"
+                    onClick={() => removeMessage(item.id)}
+                    aria-label="删除消息"
+                    title="删除消息"
+                  >
+                    <img
+                      className="chat-icon-action-img"
+                      src="https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/trash.svg"
+                      alt=""
+                      aria-hidden="true"
+                    />
                   </button>
                   {item.role === 'user' ? (
                     <button
@@ -2160,7 +2170,12 @@ export function AssistantPage() {
                       aria-label="重新生成"
                       title="重新生成"
                     >
-                      ↻
+                      <img
+                        className="chat-icon-action-img"
+                        src="https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/rotate-ccw.svg"
+                        alt=""
+                        aria-hidden="true"
+                      />
                     </button>
                   ) : null}
                   {item.role === 'assistant' ? (
@@ -2172,7 +2187,12 @@ export function AssistantPage() {
                       aria-label="重新生成"
                       title="重新生成"
                     >
-                      ↻
+                      <img
+                        className="chat-icon-action-img"
+                        src="https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/rotate-ccw.svg"
+                        alt=""
+                        aria-hidden="true"
+                      />
                     </button>
                   ) : null}
                 </div>

@@ -2036,6 +2036,14 @@
   cursor: not-allowed;
 }
 
+.chat-icon-action-img {
+  width: 14px;
+  height: 14px;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+}
+
 /* ---------- Semantic Status ---------- */
 .chat-semantic-status-panel {
   margin-bottom: 8px;
