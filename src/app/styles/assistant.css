@@ -315,34 +315,6 @@
   bottom: calc(100% + 10px);
 }
 
-.chat-model-dropdown-header {
-  padding: var(--space-2);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.chat-model-fetch-btn {
-  width: 100%;
-  padding: 6px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg);
-  font-size: var(--font-xs);
-  cursor: pointer;
-  transition: all 150ms ease;
-  color: var(--color-text-secondary);
-}
-
-.chat-model-fetch-btn:hover:not(:disabled) {
-  background: var(--color-primary);
-  color: white;
-  border-color: var(--color-primary);
-}
-
-.chat-model-fetch-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .chat-model-list {
   max-height: 260px;
   overflow-y: auto;
@@ -3330,10 +3302,6 @@
   .chat-model-option {
     font-size: var(--font-xs);
   }
-  .chat-model-fetch-btn {
-    font-size: var(--font-xs);
-  }
-
   .chat-messages-inner {
     padding: var(--space-3) var(--space-2);
   }

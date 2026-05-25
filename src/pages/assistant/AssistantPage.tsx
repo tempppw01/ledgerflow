@@ -2978,21 +2978,13 @@ export function AssistantPage() {
                       role="dialog"
                       aria-label="模型列表"
                     >
-                      <div className="chat-model-dropdown-header">
-                        <button
-                          type="button"
-                          className="chat-model-fetch-btn"
-                          disabled={wb.loadingModels}
-                          onClick={() => void wb.handleLoadModels()}
-                        >
-                          {wb.loadingModels
-                            ? t('assistant.ui.loadingModels')
-                            : t('assistant.ui.refreshModels')}
-                        </button>
-                      </div>
                       <div className="chat-model-list">
                         {wb.models.length === 0 ? (
-                          <div className="chat-model-empty">{t('assistant.ui.emptyModels')}</div>
+                          <div className="chat-model-empty">
+                            {wb.loadingModels
+                              ? t('assistant.ui.loadingModels')
+                              : t('assistant.ui.emptyModels')}
+                          </div>
                         ) : (
                           wb.models.map((item: string) => (
                             <button
