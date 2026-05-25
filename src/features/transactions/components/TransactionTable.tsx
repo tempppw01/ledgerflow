@@ -13,6 +13,8 @@ const AMOUNT_COLUMN_MIN_WIDTH = 64;
 const ALIPAY_ACCOUNT_PATTERN = /(支付宝|alipay)/i;
 const WECHAT_ACCOUNT_PATTERN = /(微信|wechat|weixin)/i;
 const BANK_ACCOUNT_PATTERN = /(银行|bank|信用卡|储蓄卡|借记卡|icbc|abc|ccb|boc|cmb|psbc|交通银行|招商银行|建设银行|工商银行|农业银行|中国银行)/i;
+const TRANSACTION_SORT_ICON_BASE_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui';
 
 type AccountBrand = 'alipay' | 'wechat' | 'bank';
 
@@ -164,7 +166,24 @@ function truncateOrderNo(value: string): string {
   return `${value.slice(0, 8)}...${value.slice(-4)}`;
 }
 
-function sortIndicator(active: boolean, direction: TransactionSortDirection): string {
+function sortIndicator(
+  key: TransactionSortKey,
+  active: boolean,
+  direction: TransactionSortDirection
+) {
+  if (key === 'amount') {
+    const iconName =
+      active && direction === 'asc' ? 'arrow-down-narrow-wide' : 'arrow-down-wide-narrow';
+    return (
+      <img
+        className="transaction-sort-icon"
+        src={`${TRANSACTION_SORT_ICON_BASE_URL}/${iconName}.svg`}
+        alt=""
+        aria-hidden="true"
+      />
+    );
+  }
+
   if (!active) {
     return '⇅';
   }
@@ -734,7 +753,9 @@ export function TransactionTable({
                           onClick={() => onSortChange(column.key)}
                         >
                           {column.label}{' '}
-                          <span>{sortIndicator(sortKey === column.key, sortDirection)}</span>
+                          <span>
+                            {sortIndicator(column.key, sortKey === column.key, sortDirection)}
+                          </span>
                         </button>
                         <span
                           className="transaction-col-resizer"

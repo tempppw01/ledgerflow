@@ -1423,6 +1423,14 @@ tr:hover td {
   color: var(--color-primary);
 }
 
+.transaction-sort-icon {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  vertical-align: -2px;
+  object-fit: contain;
+}
+
 .transaction-filter-row th {
   border-bottom: 1px solid var(--color-border-light);
   padding-top: var(--space-2);
