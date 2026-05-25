@@ -12,6 +12,8 @@ type FinanceNewsItem = {
 };
 
 const FINANCE_NEWS_CACHE_KEY = 'ledgerflow.finance.news-cache.v1';
+const FINANCE_ILLUSTRATION_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/scrum-board.svg';
 
 function formatTimeLabel(value: string | undefined, t: (k: string) => string, language: string): string {
   if (!value) return t('finance.ui.justNow');
@@ -207,9 +209,17 @@ export function FinancePage() {
       <section className="card">
         <h2 style={{ marginTop: 0 }}>📰 {t('finance.ui.title')}</h2>
         <p className="muted">{t('finance.ui.subtitle')}</p>
-        <div className="finance-page-tip" role="note">
-          <strong>这里是市场资讯页</strong>
-          <p>只保留 RSS / 财经资讯阅读与订阅管理；如果你要使用工资计算、个税测算等工具，请前往左侧「工资工具」。</p>
+        <div className="finance-page-tip finance-page-tip-with-illustration" role="note">
+          <div className="finance-page-tip-copy">
+            <strong>这里是市场资讯页</strong>
+            <p>只保留 RSS / 财经资讯阅读与订阅管理；如果你要使用工资计算、个税测算等工具，请前往左侧「工资工具」。</p>
+          </div>
+          <img
+            className="finance-page-tip-illustration"
+            src={FINANCE_ILLUSTRATION_URL}
+            alt=""
+            aria-hidden="true"
+          />
         </div>
 
         <details className="card" style={{ padding: 12, marginBottom: 12 }}>

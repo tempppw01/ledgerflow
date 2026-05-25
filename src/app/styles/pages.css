@@ -275,10 +275,32 @@
   background: color-mix(in srgb, var(--color-bg-elevated) 92%, var(--color-primary-bg));
 }
 
+.finance-page-tip-with-illustration {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 240px);
+  align-items: center;
+  gap: var(--space-3);
+  padding: 12px 18px;
+  background:
+    radial-gradient(
+      circle at 90% 24%,
+      color-mix(in srgb, var(--color-primary-bg) 62%, transparent),
+      transparent 34%
+    ),
+    color-mix(in srgb, var(--color-bg-elevated) 92%, var(--color-primary-bg));
+}
+
 .finance-page-tip p {
   margin: 6px 0 0;
   color: var(--color-text-secondary);
   line-height: 1.7;
+}
+
+.finance-page-tip-illustration {
+  width: min(220px, 100%);
+  max-height: 96px;
+  justify-self: end;
+  object-fit: contain;
 }
 
 /* ============================================================
@@ -1242,6 +1264,20 @@
   .financial-analysis-ai-bar button,
   .about-version-actions > * {
     flex: 1 1 auto;
+  }
+
+  .finance-page-tip {
+    padding: 12px 14px;
+  }
+
+  .finance-page-tip-with-illustration {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-page-tip-illustration {
+    width: min(210px, 72%);
+    max-height: 88px;
+    justify-self: center;
   }
 
   .financial-analysis-market-board {
