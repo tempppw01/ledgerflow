@@ -102,11 +102,6 @@ export function AboutPage() {
             把记账做得更轻，更稳，也更像一个你愿意反复打开的产品，而不是只在月底想起一次的工具。
           </p>
           <div className="about-version-actions">
-            <button type="button" onClick={() => void handleCheckUpdate()}>
-              {updateResult.status === 'checking'
-                ? t('about.update.checkingBtn')
-                : t('about.update.check')}
-            </button>
             <a href={APP_GITHUB_URL} target="_blank" rel="noreferrer">
               {t('about.home.title')}
             </a>
@@ -115,30 +110,21 @@ export function AboutPage() {
             </a>
           </div>
         </div>
-
-        <div className="about-hero-side">
-          <article className="about-stat-card is-primary">
-            <span>{t('about.version.current')}</span>
-            <strong>v{APP_VERSION}</strong>
-            <small>持续迭代中的个人财务工作台</small>
-          </article>
-          <article className="about-stat-card">
-            <span>{t('about.principles.title')}</span>
-            <strong>3</strong>
-            <small>快速落地 / 看懂趋势 / 给出动作</small>
-          </article>
-          <article className="about-stat-card">
-            <span>{t('about.privacy.title')}</span>
-            <strong>Local First</strong>
-            <small>默认本地存储，主动调用 AI 时才发送必要上下文</small>
-          </article>
-        </div>
       </header>
 
       <section className="about-block about-version-card">
         <div className="about-block-head">
           <h3>{t('about.version.title')}</h3>
-          <span className="about-chip">版本与更新</span>
+          <button
+            type="button"
+            className="about-chip about-update-chip"
+            onClick={() => void handleCheckUpdate()}
+            disabled={updateResult.status === 'checking'}
+          >
+            {updateResult.status === 'checking'
+              ? t('about.update.checkingBtn')
+              : t('about.update.check')}
+          </button>
         </div>
         <p>
           {t('about.version.current')}：<strong>v{APP_VERSION}</strong>

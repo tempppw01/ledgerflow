@@ -1035,7 +1035,7 @@
 
 .about-hero-card {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.9fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
   padding: 20px;
   border-radius: 22px;
@@ -1054,7 +1054,6 @@
 }
 
 .about-hero-copy,
-.about-hero-side,
 .about-grid,
 .about-grid-3,
 .about-block,
@@ -1104,11 +1103,6 @@
   color: var(--color-text-secondary);
 }
 
-.about-hero-side {
-  align-content: start;
-}
-
-.about-stat-card,
 .about-block {
   min-width: 0;
   padding: 16px;
@@ -1118,25 +1112,8 @@
   box-shadow: var(--shadow-sm);
 }
 
-.about-stat-card.is-primary {
-  border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-border));
-  background: color-mix(in srgb, var(--color-bg-elevated) 90%, var(--color-primary-bg));
-}
-
-.about-stat-card span,
 .about-muted-note {
   color: var(--color-text-secondary);
-}
-
-.about-stat-card strong {
-  display: block;
-  font-size: clamp(24px, 3.2vw, 32px);
-  line-height: 1.2;
-}
-
-.about-stat-card small {
-  color: var(--color-text-tertiary);
-  line-height: 1.45;
 }
 
 .about-grid {
@@ -1163,6 +1140,7 @@
 .about-chip {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   padding: 6px 10px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-primary) 10%, var(--color-bg-elevated));
@@ -1170,6 +1148,27 @@
   color: var(--color-primary);
   font-size: 12px;
   font-weight: 600;
+}
+
+.about-update-chip {
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.about-update-chip:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-bg-elevated));
+}
+
+.about-update-chip:disabled {
+  cursor: wait;
+  opacity: 0.72;
 }
 
 .about-bullet-list {
@@ -1204,7 +1203,6 @@
   .financial-analysis-stat-grid.is-three,
   .financial-analysis-ai-columns,
   .financial-analysis-two-col,
-  .about-hero-card,
   .about-grid,
   .about-grid-3 {
     grid-template-columns: 1fr 1fr;

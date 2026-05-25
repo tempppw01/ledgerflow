@@ -622,9 +622,6 @@ export function AssistantPage() {
   const [streamingPreviewMessage, setStreamingPreviewMessage] = useState('');
   const [streamingCommittedSegments, setStreamingCommittedSegments] = useState<string[]>([]);
   const [streamingDraftSegment, setStreamingDraftSegment] = useState('');
-  const [isMobileView, setIsMobileView] = useState(() =>
-    typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px)').matches : false
-  );
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>(() => readChatHistory(mode));
   const [confirmingCreditId, setConfirmingCreditId] = useState<string | null>(null);
   const [modelPickerSource, setModelPickerSource] = useState<'command' | 'toolbar' | null>(null);
@@ -992,14 +989,6 @@ export function AssistantPage() {
       ? '最近收入'
       : '最近支出'
     : '最近一笔';
-
-  useEffect(() => {
-    const media = window.matchMedia('(max-width: 768px)');
-    const onChange = () => setIsMobileView(media.matches);
-    onChange();
-    media.addEventListener('change', onChange);
-    return () => media.removeEventListener('change', onChange);
-  }, []);
 
   // 每次状态或消息变化后，自动将视图滚动到底部，保持聊天体验。
   useEffect(() => {
