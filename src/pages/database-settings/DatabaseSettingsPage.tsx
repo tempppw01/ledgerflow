@@ -26,7 +26,8 @@ import { Toast, ToastVariant } from '../../shared/ui/Toast';
 
 type BillSource = 'wechat' | 'alipay';
 
-const MAX_BACKUP_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_BACKUP_FILE_SIZE_MB = 50;
+const MAX_BACKUP_FILE_SIZE_BYTES = MAX_BACKUP_FILE_SIZE_MB * 1024 * 1024;
 const MAX_BILL_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
 const BACKUP_ACCEPTED_MIME_TYPES = new Set(['application/json', 'text/json']);
@@ -48,7 +49,7 @@ function validateBackupFile(file: File): void {
   }
 
   if (file.size > MAX_BACKUP_FILE_SIZE_BYTES) {
-    throw new Error('备份导入失败：文件过大，请上传不超过 5MB 的 JSON 备份');
+    throw new Error(`备份导入失败：文件过大，请上传不超过 ${MAX_BACKUP_FILE_SIZE_MB}MB 的 JSON 备份`);
   }
 }
 
