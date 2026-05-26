@@ -441,6 +441,7 @@ describe('webdav backup version listing', () => {
     expect(versions).toHaveLength(2);
     expect(versions[0].remotePath).toBe('账本备份/2026 02 backup-2026-03-06_15-00-00.json');
     expect(versions[0].isLatest).toBe(true);
+    expect(versions[0].backupAt).toBe('2026-03-06T15:00:00.000Z');
     expect(versions[1].remotePath).toBe('账本备份/2026 02 backup-2026-03-05_11-22-33.json');
 
     vi.unstubAllGlobals();
@@ -475,7 +476,39 @@ describe('webdav backup version listing', () => {
     expect(versions[0].fileName).toBe('backup.json');
     expect(versions[0].label).toBe('2026-04-10 11:11:20 · 固定入口');
     expect(versions[0].isLatest).toBe(true);
+    expect(versions[0].backupAt).toBe('2026-04-10T11:11:20.000Z');
     expect(versions[1].label).toBe('2026-04-10 11:11:20');
+
+    vi.unstubAllGlobals();
+  });
+
+  it('固定 backup.json 无版本文件时，应读取 WebDAV 修改时间', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 207,
+      text: () =>
+        Promise.resolve(`<?xml version="1.0"?>
+          <d:multistatus xmlns:d="DAV:">
+            <d:response>
+              <d:href>/remote.php/dav/files/user/%E8%B4%A6%E6%9C%AC%E5%A4%87%E4%BB%BD/backup.json</d:href>
+              <d:propstat>
+                <d:prop>
+                  <d:getlastmodified>Tue, 26 May 2026 08:30:00 GMT</d:getlastmodified>
+                </d:prop>
+              </d:propstat>
+            </d:response>
+          </d:multistatus>`)
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const versions = await listWebdavBackupVersions({
+      ...baseConfig,
+      remoteFilePath: '账本备份/backup.json'
+    });
+
+    expect(versions).toHaveLength(1);
+    expect(versions[0].label).toBe('当前固定备份文件');
+    expect(versions[0].backupAt).toBe('2026-05-26T08:30:00.000Z');
 
     vi.unstubAllGlobals();
   });

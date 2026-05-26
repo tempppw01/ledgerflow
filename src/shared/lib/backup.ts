@@ -1001,10 +1001,62 @@ function extractVersionedBackupPathsFromXml(text: string, remoteFilePath: string
   return Array.from(new Set(matched));
 }
 
-async function listWebdavRemoteFiles(
+interface WebdavRemoteFileEntry {
+  remotePath: string;
+  updatedAt?: string;
+}
+
+function parseWebdavDate(value: string): string | undefined {
+  const date = new Date(extractHrefText(value));
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+  return date.toISOString();
+}
+
+function extractWebdavRemoteFileEntriesFromXml(
+  text: string,
+  endpoint: string,
+  remoteFilePath: string
+): WebdavRemoteFileEntry[] {
+  const responseMatches = Array.from(
+    text.matchAll(
+      /<(?:[A-Za-z0-9_-]+:)?response\b[^>]*>([\s\S]*?)<\/(?:[A-Za-z0-9_-]+:)?response>/gi
+    )
+  );
+
+  return responseMatches
+    .map((match): WebdavRemoteFileEntry | null => {
+      const body = match[1] || '';
+      const hrefMatch = body.match(
+        /<(?:[A-Za-z0-9_-]+:)?href\b[^>]*>([\s\S]*?)<\/(?:[A-Za-z0-9_-]+:)?href>/i
+      );
+      if (!hrefMatch) {
+        return null;
+      }
+
+      try {
+        const remotePath = resolveRemotePathFromHref(
+          extractHrefText(hrefMatch[1] || ''),
+          endpoint,
+          remoteFilePath
+        );
+        const updatedAtMatch = body.match(
+          /<(?:[A-Za-z0-9_-]+:)?getlastmodified\b[^>]*>([\s\S]*?)<\/(?:[A-Za-z0-9_-]+:)?getlastmodified>/i
+        );
+        const updatedAt = updatedAtMatch ? parseWebdavDate(updatedAtMatch[1] || '') : undefined;
+        return updatedAt ? { remotePath, updatedAt } : { remotePath };
+      } catch {
+        return null;
+      }
+    })
+    .filter((item): item is WebdavRemoteFileEntry => item !== null);
+}
+
+async function listWebdavRemoteFileEntries(
   config: BackupWebdavConfig,
   remoteFilePath: string
-): Promise<string[]> {
+): Promise<WebdavRemoteFileEntry[]> {
   const sanitized = sanitizeWebdavConfig(config);
   const { dir } = splitRemoteDirAndFile(remoteFilePath);
   const listTarget = dir || remoteFilePath;
@@ -1020,20 +1072,30 @@ async function listWebdavRemoteFiles(
   }
 
   const text = await response.text();
-  const matches = Array.from(text.matchAll(/<d:href>(.*?)<\/d:href>|<href>(.*?)<\/href>/g));
-  const paths = matches
-    .map((match) => extractHrefText(match[1] || match[2] || ''))
-    .map((href) => {
-      try {
-        return resolveRemotePathFromHref(href, sanitized.endpoint, remoteFilePath);
-      } catch {
-        return '';
-      }
-    })
-    .filter(Boolean);
+  const entries = extractWebdavRemoteFileEntriesFromXml(
+    text,
+    sanitized.endpoint,
+    remoteFilePath
+  );
 
   const fallbackPaths = extractVersionedBackupPathsFromXml(text, remoteFilePath);
-  return Array.from(new Set([...paths, ...fallbackPaths]));
+  const byPath = new Map<string, WebdavRemoteFileEntry>();
+  entries.forEach((entry) => byPath.set(entry.remotePath, entry));
+  fallbackPaths.forEach((remotePath) => {
+    if (!byPath.has(remotePath)) {
+      byPath.set(remotePath, { remotePath });
+    }
+  });
+
+  return Array.from(byPath.values());
+}
+
+async function listWebdavRemoteFiles(
+  config: BackupWebdavConfig,
+  remoteFilePath: string
+): Promise<string[]> {
+  const entries = await listWebdavRemoteFileEntries(config, remoteFilePath);
+  return entries.map((item) => item.remotePath);
 }
 
 async function deleteWebdavFile(config: BackupWebdavConfig, remoteFilePath: string): Promise<void> {
@@ -1062,6 +1124,8 @@ export interface WebdavBackupVersionItem {
   fileName: string;
   label: string;
   isLatest: boolean;
+  /** ISO time when it can be inferred from the versioned file name or WebDAV metadata. */
+  backupAt?: string;
 }
 
 function buildWebdavBackupVersionLabel(remotePath: string, baseRemoteFilePath: string): string {
@@ -1080,10 +1144,10 @@ function buildWebdavBackupVersionLabel(remotePath: string, baseRemoteFilePath: s
   return `${matched[1]}-${matched[2]}-${matched[3]} ${matched[4]}:${matched[5]}:${matched[6]}`;
 }
 
-function extractWebdavBackupVersionTimeLabel(
+function extractWebdavBackupVersionTime(
   remotePath: string,
   baseRemoteFilePath: string
-): string | null {
+): { label: string; backupAt: string } | null {
   const normalized = normalizeRemoteFilePath(remotePath);
   const { file: targetFile } = splitRemoteDirAndFile(baseRemoteFilePath);
   const fileName = normalized.split('/').pop() || normalized;
@@ -1096,7 +1160,17 @@ function extractWebdavBackupVersionTimeLabel(
   if (!matched) {
     return null;
   }
-  return `${matched[1]}-${matched[2]}-${matched[3]} ${matched[4]}:${matched[5]}:${matched[6]}`;
+  return {
+    label: `${matched[1]}-${matched[2]}-${matched[3]} ${matched[4]}:${matched[5]}:${matched[6]}`,
+    backupAt: `${matched[1]}-${matched[2]}-${matched[3]}T${matched[4]}:${matched[5]}:${matched[6]}.000Z`
+  };
+}
+
+function extractWebdavBackupVersionTimeLabel(
+  remotePath: string,
+  baseRemoteFilePath: string
+): string | null {
+  return extractWebdavBackupVersionTime(remotePath, baseRemoteFilePath)?.label || null;
 }
 
 export async function listWebdavBackupVersions(
@@ -1104,41 +1178,52 @@ export async function listWebdavBackupVersions(
 ): Promise<WebdavBackupVersionItem[]> {
   const sanitized = sanitizeWebdavConfig(config);
   try {
-    const files = await listWebdavRemoteFiles(sanitized, sanitized.remoteFilePath);
+    const files = await listWebdavRemoteFileEntries(sanitized, sanitized.remoteFilePath);
     const matched = files
-      .filter((item) => isBackupCandidateMatch(item, sanitized.remoteFilePath))
-      .sort((a, b) => b.localeCompare(a, 'en'));
+      .filter((item) => isBackupCandidateMatch(item.remotePath, sanitized.remoteFilePath))
+      .sort((a, b) => b.remotePath.localeCompare(a.remotePath, 'en'));
 
     if (matched.length === 0) {
+      const fixedEntry = files.find(
+        (item) => normalizeRemoteFilePath(item.remotePath) === sanitized.remoteFilePath
+      );
       return [
         {
           remotePath: sanitized.remoteFilePath,
           fileName: splitRemoteDirAndFile(sanitized.remoteFilePath).file,
           label: '当前固定备份文件',
-          isLatest: true
+          isLatest: true,
+          backupAt: fixedEntry?.updatedAt
         }
       ];
     }
 
     const latestVersioned = matched.find((item) =>
-      isVersionedBackupMatch(item, sanitized.remoteFilePath)
+      isVersionedBackupMatch(item.remotePath, sanitized.remoteFilePath)
     );
     const latestVersionedLabel = latestVersioned
-      ? extractWebdavBackupVersionTimeLabel(latestVersioned, sanitized.remoteFilePath)
+      ? extractWebdavBackupVersionTimeLabel(latestVersioned.remotePath, sanitized.remoteFilePath)
+      : null;
+    const latestVersionedTime = latestVersioned
+      ? extractWebdavBackupVersionTime(latestVersioned.remotePath, sanitized.remoteFilePath)
       : null;
 
     return matched.map((item, index) => {
-      const fileName = item.split('/').pop() || item;
-      const isFixedEntry = normalizeRemoteFilePath(item) === sanitized.remoteFilePath;
+      const fileName = item.remotePath.split('/').pop() || item.remotePath;
+      const isFixedEntry = normalizeRemoteFilePath(item.remotePath) === sanitized.remoteFilePath;
+      const versionTime = isFixedEntry
+        ? latestVersionedTime
+        : extractWebdavBackupVersionTime(item.remotePath, sanitized.remoteFilePath);
       return {
-        remotePath: item,
+        remotePath: item.remotePath,
         fileName,
         label: isFixedEntry
           ? latestVersionedLabel
             ? `${latestVersionedLabel} · 固定入口`
             : '当前固定备份文件'
-          : buildWebdavBackupVersionLabel(item, sanitized.remoteFilePath),
-        isLatest: index === 0
+          : buildWebdavBackupVersionLabel(item.remotePath, sanitized.remoteFilePath),
+        isLatest: index === 0,
+        backupAt: versionTime?.backupAt || item.updatedAt
       };
     });
   } catch {

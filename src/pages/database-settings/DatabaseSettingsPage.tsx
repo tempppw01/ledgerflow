@@ -1,4 +1,4 @@
-import { ChangeEvent, useMemo, useRef, useState } from 'react';
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { ConnectionConfigManager } from '../../features/connection-config/ui/ConnectionConfigManager';
 import {
   applyBillImportMode,
@@ -29,6 +29,7 @@ type BillSource = 'wechat' | 'alipay';
 const MAX_BACKUP_FILE_SIZE_MB = 50;
 const MAX_BACKUP_FILE_SIZE_BYTES = MAX_BACKUP_FILE_SIZE_MB * 1024 * 1024;
 const MAX_BILL_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const LAST_WEBDAV_BACKUP_KEY = 'ledgerflow-webdav-last-backup-v1';
 
 const BACKUP_ACCEPTED_MIME_TYPES = new Set(['application/json', 'text/json']);
 const BILL_ACCEPTED_EXTENSIONS = new Set(['.csv', '.txt', '.xlsx']);
@@ -62,6 +63,63 @@ function validateBillFile(file: File): void {
   if (file.size > MAX_BILL_FILE_SIZE_BYTES) {
     throw new Error('账单导入失败：文件过大，请上传不超过 10MB 的账单文件');
   }
+}
+
+function getWebdavBackupSignature(config: BackupWebdavConfig): string {
+  return [config.endpoint.trim(), config.username.trim(), config.remoteFilePath.trim()].join('|');
+}
+
+function isValidBackupTime(value: string): boolean {
+  return Boolean(value) && !Number.isNaN(new Date(value).getTime());
+}
+
+function readStoredLastWebdavBackupAt(config: BackupWebdavConfig): string {
+  try {
+    const raw = window.localStorage.getItem(LAST_WEBDAV_BACKUP_KEY);
+    if (!raw) return '';
+    const parsed = JSON.parse(raw) as { signature?: unknown; backupAt?: unknown };
+    const backupAt = typeof parsed.backupAt === 'string' ? parsed.backupAt : '';
+    if (parsed.signature !== getWebdavBackupSignature(config) || !isValidBackupTime(backupAt)) {
+      return '';
+    }
+    return backupAt;
+  } catch {
+    return '';
+  }
+}
+
+function writeStoredLastWebdavBackupAt(config: BackupWebdavConfig, backupAt: string): void {
+  if (!isValidBackupTime(backupAt)) return;
+
+  try {
+    window.localStorage.setItem(
+      LAST_WEBDAV_BACKUP_KEY,
+      JSON.stringify({
+        signature: getWebdavBackupSignature(config),
+        backupAt
+      })
+    );
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function getLatestWebdavBackupAt(versions: WebdavBackupVersionItem[]): string {
+  return (
+    versions.find((item) => item.isLatest && item.backupAt)?.backupAt ||
+    versions.find((item) => item.backupAt)?.backupAt ||
+    ''
+  );
+}
+
+function formatWebdavBackupTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  const pad = (input: number) => String(input).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(
+    date.getHours()
+  )}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
 export function DatabaseSettingsPage() {
@@ -98,6 +156,10 @@ export function DatabaseSettingsPage() {
   });
 
   const [webdav, setWebdav] = useState<BackupWebdavConfig>(() => loadWebdavConfig());
+  const [lastWebdavBackupAt, setLastWebdavBackupAt] = useState(() =>
+    readStoredLastWebdavBackupAt(loadWebdavConfig())
+  );
+  const [lastWebdavBackupLoading, setLastWebdavBackupLoading] = useState(false);
   const [clearBillsOpen, setClearBillsOpen] = useState(false);
   const [webdavRestoreDialogOpen, setWebdavRestoreDialogOpen] = useState(false);
   const [webdavRestoreVersions, setWebdavRestoreVersions] = useState<WebdavBackupVersionItem[]>([]);
@@ -124,6 +186,47 @@ export function DatabaseSettingsPage() {
   const showToast = (message: string, variant: ToastVariant) => {
     setToast({ visible: true, message, variant });
   };
+
+  useEffect(() => {
+    const config = loadWebdavConfig();
+    const storedBackupAt = readStoredLastWebdavBackupAt(config);
+    if (storedBackupAt) {
+      setLastWebdavBackupAt(storedBackupAt);
+    }
+
+    if (
+      !config.endpoint.trim() ||
+      !config.username.trim() ||
+      !config.password.trim() ||
+      !config.remoteFilePath.trim()
+    ) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    setLastWebdavBackupLoading(true);
+    listWebdavBackupVersions(config)
+      .then((versions) => {
+        if (cancelled) return;
+        const backupAt = getLatestWebdavBackupAt(versions);
+        if (backupAt) {
+          setLastWebdavBackupAt(backupAt);
+          writeStoredLastWebdavBackupAt(config, backupAt);
+        }
+      })
+      .catch(() => {
+        // 只用于展示最近备份时间，读取失败不打断设置页使用。
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLastWebdavBackupLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const showWebdavStatus = (message: string) => {
     setWebdavStatus(message);
@@ -234,6 +337,7 @@ export function DatabaseSettingsPage() {
 
   const handleSaveWebdavConfig = () => {
     saveWebdavConfig(webdav);
+    setLastWebdavBackupAt(readStoredLastWebdavBackupAt(webdav));
     showToast('WebDAV 配置已保存', 'success');
   };
 
@@ -288,6 +392,8 @@ export function DatabaseSettingsPage() {
         showWebdavStatus(stage);
       });
       saveWebdavConfig(webdav);
+      setLastWebdavBackupAt(payload.exportedAt);
+      writeStoredLastWebdavBackupAt(webdav, payload.exportedAt);
       showWebdavStatus('备份完成');
       showToast('WebDAV 备份成功', 'success');
     } catch (error) {
@@ -306,6 +412,11 @@ export function DatabaseSettingsPage() {
       setBusy(true);
       showWebdavStatus('拉取备份列表...');
       const versions = await listWebdavBackupVersions(webdav);
+      const backupAt = getLatestWebdavBackupAt(versions);
+      if (backupAt) {
+        setLastWebdavBackupAt(backupAt);
+        writeStoredLastWebdavBackupAt(webdav, backupAt);
+      }
       setWebdavRestoreVersions(versions);
       setSelectedRestorePath(versions[0]?.remotePath || '');
       setWebdavRestoreDialogOpen(true);
@@ -343,6 +454,12 @@ export function DatabaseSettingsPage() {
       window.setTimeout(() => setWebdavStatus(''), 2400);
     }
   };
+
+  const lastWebdavBackupText = lastWebdavBackupAt
+    ? formatWebdavBackupTime(lastWebdavBackupAt)
+    : lastWebdavBackupLoading
+      ? '读取中...'
+      : '暂无记录';
 
   return (
     <div>
@@ -466,7 +583,12 @@ export function DatabaseSettingsPage() {
           }}
         >
           <div>
-            <h3 style={{ margin: 0 }}>WebDAV 备份</h3>
+            <div className="row" style={{ gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
+              <h3 style={{ margin: 0 }}>WebDAV 备份</h3>
+              <span className="sync-tip" style={{ whiteSpace: 'nowrap' }}>
+                上次备份：{lastWebdavBackupText}
+              </span>
+            </div>
             <p className="sync-tip" style={{ margin: '6px 0 0' }}>
               用于远程备份与恢复，默认通过同源代理连接。
             </p>
