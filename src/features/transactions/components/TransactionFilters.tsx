@@ -68,7 +68,12 @@ export function TransactionFilters({
 }: TransactionFiltersProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const hasSecondaryFocus = bulkSelectionEnabled || privacyMode;
+  const hiddenColumnCount = columnOptions.reduce(
+    (count, option) => count + (visibleColumns[option.key] ? 0 : 1),
+    0
+  );
+  const advancedChangeCount =
+    (filters.source !== 'all' ? 1 : 0) + (hiddenColumnCount > 0 ? 1 : 0) + (importMode !== 'incremental' ? 1 : 0);
 
   useEffect(() => {
     if (!menuOpen) {
@@ -149,7 +154,7 @@ export function TransactionFilters({
           >
             <option value="all">全部时间</option>
             <option value="thisMonth">本月</option>
-            <option value="last3Months">最近三月</option>
+            <option value="last3Months">最近三个月</option>
             <option value="last30">最近 30 天</option>
             <option value="custom">自定义</option>
           </select>
@@ -166,7 +171,7 @@ export function TransactionFilters({
       {filters.datePreset === 'custom' ? (
         <div className="transaction-filters-custom-date-row">
           <div className="field" style={{ marginBottom: 0 }}>
-            <label htmlFor="tx-filter-date-from">开始日期</label>
+            <label htmlFor="tx-filter-date-from">筛选开始日期</label>
             <input
               id="tx-filter-date-from"
               aria-label="筛选开始日期"
@@ -189,11 +194,11 @@ export function TransactionFilters({
               }}
             >
               <img className="transaction-date-shortcut-icon" src={CALENDAR_ICON_URL} alt="" aria-hidden="true" />
-              日历开始
+              设为月初
             </button>
           </div>
           <div className="field" style={{ marginBottom: 0 }}>
-            <label htmlFor="tx-filter-date-to">结束日期</label>
+            <label htmlFor="tx-filter-date-to">筛选结束日期</label>
             <input
               id="tx-filter-date-to"
               aria-label="筛选结束日期"
@@ -216,7 +221,7 @@ export function TransactionFilters({
               }}
             >
               <img className="transaction-date-shortcut-icon" src={CALENDAR_ICON_URL} alt="" aria-hidden="true" />
-              日历结束
+              设为月末
             </button>
           </div>
         </div>
@@ -230,47 +235,55 @@ export function TransactionFilters({
         >
           {sidePanelVisible ? '收起洞察' : '查看洞察'}
         </button>
+
+        <div className="transaction-filters-quick-tools" role="group" aria-label="快捷开关">
+          <button
+            type="button"
+            className={`transaction-filter-trigger transaction-filter-trigger-compact ${bulkSelectionEnabled ? 'active' : ''}`}
+            onClick={onToggleBulkSelection}
+          >
+            {bulkSelectionEnabled ? '批量已开' : '批量操作'}
+          </button>
+          <button
+            type="button"
+            className={`transaction-filter-trigger transaction-filter-trigger-compact ${privacyMode ? 'active' : ''}`}
+            onClick={onTogglePrivacy}
+          >
+            {privacyMode ? '隐私已开' : '隐私模式'}
+          </button>
+        </div>
+
         <div ref={menuRef} className={`transaction-filter-popover ${menuOpen ? 'open' : ''}`}>
           <button
             type="button"
-            className={`transaction-filter-trigger ${menuOpen || hasSecondaryFocus ? 'active' : ''}`}
+            className={`transaction-filter-trigger ${menuOpen || advancedChangeCount > 0 ? 'active' : ''}`}
             onClick={() => setMenuOpen((prev) => !prev)}
             aria-haspopup="true"
             aria-expanded={menuOpen}
           >
-            更多筛选与操作
+            筛选设置
+            {advancedChangeCount > 0 ? (
+              <span className="transaction-filter-trigger-badge" aria-label={`已调整 ${advancedChangeCount} 项`}>
+                {advancedChangeCount}
+              </span>
+            ) : null}
           </button>
+
           {menuOpen ? (
             <div className="transaction-filter-popover-panel" role="group" aria-label="筛选与操作">
-              <p className="transaction-filter-section-title">快捷开关</p>
-              <div className="transaction-filter-actions-grid transaction-filter-actions-grid-inline">
-                <button
-                  type="button"
-                  className={bulkSelectionEnabled ? 'is-active' : ''}
-                  onClick={onToggleBulkSelection}
-                >
-                  {bulkSelectionEnabled ? '批量操作已开启' : '开启批量操作'}
-                </button>
-                <button
-                  type="button"
-                  className={privacyMode ? 'is-active' : ''}
-                  onClick={onTogglePrivacy}
-                >
-                  {privacyMode ? '关闭隐私模式' : '开启隐私模式'}
-                </button>
+              <div className="transaction-filter-popover-head">
+                <strong>筛选设置</strong>
+                <span>来源、列显示、导入整理都在这里</span>
               </div>
 
-              <div className="transaction-context-divider" />
-              <p className="transaction-filter-section-title">更多筛选</p>
+              <p className="transaction-filter-section-title">来源筛选</p>
               <div className="field" style={{ marginBottom: 0 }}>
                 <label htmlFor="tx-filter-source">来源</label>
                 <select
                   id="tx-filter-source"
                   aria-label="按来源筛选"
                   value={filters.source}
-                  onChange={(event) =>
-                    onSourceChange(event.target.value as TransactionSourceFilter)
-                  }
+                  onChange={(event) => onSourceChange(event.target.value as TransactionSourceFilter)}
                 >
                   <option value="all">全部来源</option>
                   <option value="manual">手工录入</option>
@@ -287,7 +300,12 @@ export function TransactionFilters({
 
               <div className="transaction-context-divider" />
               <details className="transaction-popover-section" open>
-                <summary className="transaction-filter-section-title">显示列</summary>
+                <summary className="transaction-filter-section-title">
+                  显示列
+                  {hiddenColumnCount > 0 ? (
+                    <span className="transaction-filter-inline-note">已隐藏 {hiddenColumnCount} 项</span>
+                  ) : null}
+                </summary>
                 <div className="transaction-column-check-grid">
                   {columnOptions.map((option) => (
                     <label key={`filter-col-${option.key}`}>
@@ -303,10 +321,10 @@ export function TransactionFilters({
               </details>
 
               <div className="transaction-context-divider" />
-              <details className="transaction-popover-section">
-                <summary className="transaction-filter-section-title">更多操作</summary>
+              <div className="transaction-popover-section">
+                <p className="transaction-filter-section-title">导入与整理</p>
                 <p className="surface-caption transaction-import-steps-caption">
-                  导入链路分三步：① 选择来源与模式 → ② 预检确认影响范围 → ③ 正式写入并生成导入报告。
+                  导入模式会影响重复流水的处理方式。
                 </p>
                 <div className="field" style={{ marginBottom: 8 }}>
                   <label htmlFor="tx-import-mode">账单导入模式</label>
@@ -321,21 +339,21 @@ export function TransactionFilters({
                     <option value="overwrite">覆盖（清空后导入）</option>
                   </select>
                 </div>
-                <div className="transaction-filter-actions-grid">
+                <div className="transaction-filter-actions-grid transaction-filter-actions-grid-inline transaction-filter-actions-grid-compact">
                   <button type="button" onClick={onExport}>
                     导出 CSV
                   </button>
+                  <button type="button" onClick={onCheckDuplicates}>
+                    检测重复
+                  </button>
                   <button type="button" onClick={onImportWechat}>
-                    导入微信账单
+                    导入微信
                   </button>
                   <button type="button" onClick={onImportAlipay}>
-                    导入支付宝账单
-                  </button>
-                  <button type="button" onClick={onCheckDuplicates}>
-                    检测重复账单
+                    导入支付宝
                   </button>
                 </div>
-              </details>
+              </div>
             </div>
           ) : null}
         </div>

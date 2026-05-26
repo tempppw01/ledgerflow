@@ -395,10 +395,18 @@
   position: relative;
 }
 
+.transaction-filters-quick-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
 .transaction-filter-trigger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   list-style: none;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
@@ -410,6 +418,24 @@
   cursor: pointer;
   transition: all var(--transition-fast);
   user-select: none;
+}
+
+.transaction-filter-trigger-compact {
+  padding-inline: 12px;
+}
+
+.transaction-filter-trigger-badge {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  color: var(--color-primary);
+  font-size: var(--font-xs);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .transaction-filter-trigger:hover {
@@ -445,6 +471,22 @@
   box-shadow: var(--shadow-md);
   max-height: min(72vh, 640px);
   overflow: auto;
+}
+
+.transaction-filter-popover-head {
+  display: grid;
+  gap: 4px;
+  margin-bottom: var(--space-3);
+}
+
+.transaction-filter-popover-head strong {
+  font-size: var(--font-base);
+  color: var(--color-text);
+}
+
+.transaction-filter-popover-head span {
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
 }
 
 .transaction-filter-section-title {
@@ -497,6 +539,14 @@
   color: var(--color-text-secondary);
 }
 
+.transaction-filter-inline-note {
+  margin-left: auto;
+  padding-left: var(--space-2);
+  font-size: var(--font-xs);
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+}
+
 @media (max-width: 900px) {
   .transaction-filters-primary-row {
     grid-template-columns: 1fr 1fr;
@@ -513,6 +563,14 @@
   .transaction-filter-trigger {
     flex: 1 1 calc(50% - 10px);
     justify-content: center;
+  }
+
+  .transaction-filters-quick-tools {
+    flex: 1 1 100%;
+  }
+
+  .transaction-filters-quick-tools .transaction-filter-trigger {
+    flex: 1 1 calc(50% - 10px);
   }
 
   .transaction-filter-popover {
@@ -577,6 +635,16 @@
     font-size: var(--font-sm);
   }
 
+  .transaction-filters-quick-tools {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .transaction-filters-quick-tools .transaction-filter-trigger {
+    width: 100%;
+  }
+
   .transaction-filter-popover {
     flex: 1 1 calc(50% - 6px);
   }
@@ -601,6 +669,11 @@
 
 .transaction-filter-actions-grid-inline {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.transaction-filter-actions-grid-compact > button {
+  min-height: 40px;
+  justify-content: center;
 }
 
 .transaction-filter-actions-grid > button {
