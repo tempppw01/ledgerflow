@@ -30,6 +30,7 @@ const MAX_BACKUP_FILE_SIZE_MB = 50;
 const MAX_BACKUP_FILE_SIZE_BYTES = MAX_BACKUP_FILE_SIZE_MB * 1024 * 1024;
 const MAX_BILL_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const LAST_WEBDAV_BACKUP_KEY = 'ledgerflow-webdav-last-backup-v1';
+const UNCATEGORIZED_CATEGORY_ID = '';
 
 const BACKUP_ACCEPTED_MIME_TYPES = new Set(['application/json', 'text/json']);
 const BILL_ACCEPTED_EXTENSIONS = new Set(['.csv', '.txt', '.xlsx']);
@@ -135,7 +136,6 @@ export function DatabaseSettingsPage() {
   const trashedSubscriptions = useFinanceStore((s) => s.trashedSubscriptions);
   const addTransaction = useFinanceStore((s) => s.addTransaction);
   const updateTransaction = useFinanceStore((s) => s.updateTransaction);
-  const addCategory = useFinanceStore((s) => s.addCategory);
   const addAccount = useFinanceStore((s) => s.addAccount);
   const replaceAllData = useFinanceStore((s) => s.replaceAllData);
   const clearAllAccountBills = useFinanceStore((s) => s.clearAllAccountBills);
@@ -233,12 +233,11 @@ export function DatabaseSettingsPage() {
   };
 
   const ensureDefaultRefs = (source?: BillSource) => {
-    const categoryId = categories[0]?.id || addCategory('默认分类');
     const fallbackAccountId = accounts[0]?.id || addAccount('默认账户', undefined, 0);
     const accountId = source
       ? resolveImportDefaultAccountId(accounts, source, fallbackAccountId)
       : fallbackAccountId;
-    return { categoryId, accountId };
+    return { categoryId: UNCATEGORIZED_CATEGORY_ID, accountId };
   };
 
   const handleExportJson = () => {

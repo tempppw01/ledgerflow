@@ -52,6 +52,24 @@ describe('parseBillCsvToTransactions', () => {
     expect(rows[0].amount).toBe(9.99);
   });
 
+  it('新导入账单默认保留为空分类，由交易列表显示为未分类', () => {
+    const csvText = [
+      '微信支付账单明细',
+      '交易时间,交易类型,交易对方,商品,收/支,金额(元),当前状态,交易单号,商户单号',
+      '2026-05-26 12:00:00,商户消费,美团外卖,午餐,支出,¥32.00,支付成功,5301000001,1000000001'
+    ].join('\n');
+
+    const rows = parseBillCsvToTransactions({
+      csvText,
+      source: 'wechat',
+      defaultCategoryId: '',
+      defaultAccountId: 'acc-wechat'
+    });
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0].categoryId).toBe('');
+  });
+
   it('应合并重复标题栏字段并保留完整信息', () => {
     const csvText = [
       '微信支付账单明细',
