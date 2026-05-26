@@ -59,8 +59,7 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-        globIgnores: ['**/assets/NotoSansSC-Regular-*.ttf']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
       }
     })
   ],

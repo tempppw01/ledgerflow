@@ -1,5 +1,6 @@
 import { formatCurrency, formatDate } from '../../../shared/lib/format';
 import { TransactionItem, TransactionType } from '../../../entities/transaction/types';
+import { PDF_CHINESE_FONT_URL } from '../../../shared/config/brandAssets';
 
 export type BulkPrintTemplate = 'full' | 'summary';
 
@@ -58,8 +59,7 @@ async function getPdfRuntime() {
 async function getCachedChineseFontBytes() {
   if (!cachedFontBytesPromise) {
     cachedFontBytesPromise = (async () => {
-      const fontModule = await import('../../../assets/NotoSansSC-Regular.ttf?url');
-      const fontResponse = await fetch(fontModule.default);
+      const fontResponse = await fetch(PDF_CHINESE_FONT_URL);
       if (!fontResponse.ok) {
         throw new Error('中文字体加载失败，请联网后重试。');
       }

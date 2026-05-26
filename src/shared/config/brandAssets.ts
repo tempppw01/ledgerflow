@@ -21,3 +21,6 @@ export const DATABASE_ICON_URL =
 
 export const ABOUT_HAPPY_ILLUSTRATION_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/happy.svg';
+
+export const PDF_CHINESE_FONT_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/fonts/NotoSansSC-Regular.ttf';
