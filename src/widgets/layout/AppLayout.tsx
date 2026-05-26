@@ -8,7 +8,7 @@ import {
 } from '../../features/assistant/shared/assistantMode';
 import { ThemeSwitcher } from '../../features/theme-switcher/ThemeSwitcher';
 import { APP_LOGO_URL } from '../../shared/config/app';
-import { CHAT_ICON_URL } from '../../shared/config/brandAssets';
+import { BRAIN_ICON_URL, CHAT_ICON_URL, DATABASE_ICON_URL } from '../../shared/config/brandAssets';
 import { formatCurrency } from '../../shared/lib/format';
 import { summarizeTransactions } from '../../shared/lib/transactionMetrics';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
@@ -72,7 +72,7 @@ export function AppLayout() {
             icon: '🤖',
             iconSrc: CHAT_ICON_URL
           },
-          { to: '/smart-budget', label: t('nav.smartBudget'), icon: '🧠' },
+          { to: '/smart-budget', label: t('nav.smartBudget'), icon: '🧠', iconSrc: BRAIN_ICON_URL },
           { to: '/global-memory', label: '全局记忆', icon: '🗃️' }
         ]
       },
@@ -98,7 +98,7 @@ export function AppLayout() {
         items: [
           { to: '/help', label: '帮助', icon: '❓' },
           { to: '/settings', label: t('nav.settings'), icon: '⚙️' },
-          { to: '/database-settings', label: t('nav.dbSettings'), icon: '🗄️' },
+          { to: '/database-settings', label: t('nav.dbSettings'), icon: '🗄️', iconSrc: DATABASE_ICON_URL },
           { to: '/recycle-bin', label: '回收站', icon: '🗑️' },
           { to: '/exchange', label: t('nav.exchange'), icon: '💱' },
           { to: '/salary-tools', label: '工资工具', icon: '💼' },
@@ -127,7 +127,7 @@ export function AppLayout() {
           { label: t('nav.dashboard'), icon: '📊', to: '/', end: true },
           { label: t('nav.categoriesAccounts'), icon: '🗂️', to: '/categories-accounts' },
           { label: '余额明细', icon: '📚', to: '/balance-changes' },
-          { label: t('nav.smartBudget'), icon: '🧠', to: '/smart-budget' },
+          { label: t('nav.smartBudget'), icon: '🧠', iconSrc: BRAIN_ICON_URL, to: '/smart-budget' },
           { label: '全局记忆', icon: '🗃️', to: '/global-memory' },
           { label: t('nav.repayment'), icon: '💳', to: '/repayment-management' },
           { label: '工资工具', icon: '💼', to: '/salary-tools' },
@@ -140,7 +140,7 @@ export function AppLayout() {
         items: [
           { label: '帮助', icon: '❓', to: '/help' },
           { label: t('nav.settings'), icon: '⚙️', to: '/settings' },
-          { label: t('nav.dbSettings'), icon: '🗄️', to: '/database-settings' },
+          { label: t('nav.dbSettings'), icon: '🗄️', iconSrc: DATABASE_ICON_URL, to: '/database-settings' },
           { label: '回收站', icon: '🗑️', to: '/recycle-bin' },
           { label: t('nav.about'), icon: 'ℹ️', to: '/about' }
         ]

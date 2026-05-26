@@ -336,6 +336,20 @@
   grid-template-columns: repeat(2, minmax(160px, 1fr));
 }
 
+.transaction-date-shortcut-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.transaction-date-shortcut-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
 .transaction-filters-secondary-row {
   margin-top: var(--space-2);
   display: flex;

@@ -7,6 +7,7 @@ import {
 } from '../hooks/useTransactionFilters';
 import { TransactionColumnKey } from './TransactionTable';
 import { BillImportMode } from '../../../shared/lib/billImport';
+import { CALENDAR_ICON_URL } from '../../../shared/config/brandAssets';
 
 interface TransactionFiltersProps {
   filters: TransactionFilterState;
@@ -187,6 +188,7 @@ export function TransactionFilters({
                 onDateFromChange(monthStart);
               }}
             >
+              <img className="transaction-date-shortcut-icon" src={CALENDAR_ICON_URL} alt="" aria-hidden="true" />
               日历开始
             </button>
           </div>
@@ -213,6 +215,7 @@ export function TransactionFilters({
                 onDateToChange(monthEnd);
               }}
             >
+              <img className="transaction-date-shortcut-icon" src={CALENDAR_ICON_URL} alt="" aria-hidden="true" />
               日历结束
             </button>
           </div>
