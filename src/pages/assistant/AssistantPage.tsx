@@ -620,6 +620,7 @@ export function AssistantPage() {
 
   const [modelOpen, setModelOpen] = useState(false);
   const [streamingPreviewMessage, setStreamingPreviewMessage] = useState('');
+  const [streamingPreviewReasoning, setStreamingPreviewReasoning] = useState('');
   const [streamingCommittedSegments, setStreamingCommittedSegments] = useState<string[]>([]);
   const [streamingDraftSegment, setStreamingDraftSegment] = useState('');
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>(() => readChatHistory(mode));
@@ -1158,12 +1159,15 @@ export function AssistantPage() {
       if (responseMode === 'bookkeeping' && wb.entries.length > 0) {
         return `这次我先帮你整理出了 ${wb.entries.length} 条可保存账单。你可以先核对、去重，再决定要不要落到账本。`;
       }
+      const fallbackFromReasoning = wb.rawReasoning
+        ? '模型已返回思考过程，但还没有输出正式回复。'
+        : '';
       if (responseMode === 'credit') {
-        return buildCreditAssistantMessageText(wb.rawContent);
+        return buildCreditAssistantMessageText(wb.rawContent) || fallbackFromReasoning;
       }
-      return wb.rawContent;
+      return wb.rawContent || fallbackFromReasoning;
     },
-    [wb.entries.length, wb.rawContent]
+    [wb.entries.length, wb.rawContent, wb.rawReasoning]
   );
 
   const submitPrompt = (prompt: string) => {
@@ -1291,8 +1295,9 @@ export function AssistantPage() {
 
   useEffect(() => {
     const responseMode = pendingRequestModeRef.current;
-    if (mode !== 'bookkeeping' && wb.status === 'recognizing') {
+    if (wb.status === 'recognizing') {
       setStreamingPreviewMessage(wb.rawContent);
+      setStreamingPreviewReasoning(wb.rawReasoning);
       const segments = splitStreamingSegments(wb.rawContent);
       setStreamingCommittedSegments(segments.committed);
       setStreamingDraftSegment(segments.draft);
@@ -1307,6 +1312,7 @@ export function AssistantPage() {
     setStreamingDraftSegment(flushedSegments.draft);
     lastAssistantRef.current[responseMode] = messageText;
     setStreamingPreviewMessage('');
+    setStreamingPreviewReasoning('');
     setStreamingCommittedSegments([]);
     setStreamingDraftSegment('');
     const usageText = wb.lastUsage
@@ -2174,11 +2180,20 @@ export function AssistantPage() {
             </article>
           ) : null}
 
-          {streamingPreviewMessage ? (
+          {streamingPreviewMessage || streamingPreviewReasoning ? (
             <article className="chat-msg">
               <div className="chat-msg-avatar">🤖</div>
               <div className="chat-msg-body">
                 <div className="chat-msg-header">助手（正在生成）</div>
+                {streamingPreviewReasoning ? (
+                  <details
+                    className="chat-reasoning-collapse chat-reasoning-collapse-stream"
+                    open={!streamingPreviewMessage}
+                  >
+                    <summary>模型思考过程（流式输出中）</summary>
+                    <pre>{streamingPreviewReasoning}</pre>
+                  </details>
+                ) : null}
                 {mode === 'credit' ? (() => {
                   const previewItems = extractStreamingCreditPreview(streamingPreviewMessage);
                   return previewItems.length > 0 ? (
@@ -2299,21 +2314,33 @@ export function AssistantPage() {
                     </div>
                   ) : renderCreditCardSkeleton(2);
                 })() : null}
-                <div className="chat-msg-content chat-msg-content-rich chat-msg-content-streaming">
-                  {streamingCommittedSegments.map((segment, index) => (
-                    <div key={`stream-segment-${index}`} className="chat-stream-segment">
-                      {renderMarkdownContent(segment)}
-                    </div>
-                  ))}
-                  {streamingDraftSegment ? (
-                    <div className="chat-stream-draft">{renderMarkdownContent(streamingDraftSegment)}</div>
-                  ) : null}
-                </div>
+                {streamingPreviewMessage ? (
+                  <div className="chat-msg-content chat-msg-content-rich chat-msg-content-streaming">
+                    {streamingCommittedSegments.map((segment, index) => (
+                      <div key={`stream-segment-${index}`} className="chat-stream-segment">
+                        {renderMarkdownContent(segment)}
+                      </div>
+                    ))}
+                    {streamingDraftSegment ? (
+                      <div className="chat-stream-draft">{renderMarkdownContent(streamingDraftSegment)}</div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="chat-stream-waiting">
+                    正在把思考整理成回复
+                    <img
+                      className="chat-typing-loader"
+                      src="https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/load.gif"
+                      alt=""
+                      aria-hidden="true"
+                    />
+                  </div>
+                )}
               </div>
             </article>
           ) : null}
 
-          {wb.status === 'recognizing' ? (
+          {wb.status === 'recognizing' && !streamingPreviewMessage && !streamingPreviewReasoning ? (
             <article className="chat-msg">
               <div className="chat-msg-avatar">🤖</div>
               <div className="chat-msg-body">

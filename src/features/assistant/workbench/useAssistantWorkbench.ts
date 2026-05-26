@@ -1,5 +1,5 @@
 import { ClipboardEvent, DragEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { fetchAiModels, sendAiChat, sendAiChatStream } from '../api/openaiCompatibleClient';
+import { fetchAiModels, sendAiChatStream } from '../api/openaiCompatibleClient';
 import type { Account } from '../../../entities/account/types';
 import type { Category } from '../../../entities/category/types';
 import type { TransactionItem } from '../../../entities/transaction/types';
@@ -526,33 +526,48 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
         semanticRecallContext: semanticRecallResult.semanticContext,
         globalMemoryContext: semanticRecallResult.globalMemoryContext
       });
-      if (isConversationalMode) {
-        let streamedContent = '';
-        await sendAiChatStream(
-          {
-            baseUrl: input.baseUrl,
-            apiKey: input.apiKey,
-            model: input.model,
-            systemPrompt: prompt,
-            messages: [
-              {
-                role: 'user',
-                text: cleanPrompt,
-                imageDataUrls: effectiveImageDataUrls,
-                pdfDataUrls: effectivePdfDataUrls
-              }
-            ],
-            signal: controller.signal
-          },
-          {
-            onDelta: (delta) => {
-              streamedContent += delta;
-              setRawContent(streamedContent);
+      let streamedContent = '';
+      let streamedReasoning = '';
+      const streamedReply = await sendAiChatStream(
+        {
+          baseUrl: input.baseUrl,
+          apiKey: input.apiKey,
+          model: input.model,
+          systemPrompt: prompt,
+          messages: [
+            {
+              role: 'user',
+              text: cleanPrompt,
+              imageDataUrls: effectiveImageDataUrls,
+              pdfDataUrls: effectivePdfDataUrls
             }
+          ],
+          signal: controller.signal
+        },
+        {
+          onDelta: (delta) => {
+            streamedContent += delta;
+            setRawContent(streamedContent);
+          },
+          onReasoningDelta: (delta) => {
+            streamedReasoning += delta;
+            setRawReasoning(streamedReasoning);
+          },
+          onDone: (content, reasoning) => {
+            streamedContent = content || streamedContent;
+            streamedReasoning = reasoning || streamedReasoning;
           }
-        );
-        setRawReasoning('');
-        setLastUsage(null);
+        }
+      );
+      const reply = {
+        content: streamedReply.content || streamedContent,
+        reasoning: streamedReply.reasoning || streamedReasoning
+      };
+      setRawContent(reply.content);
+      setRawReasoning(reply.reasoning || '');
+      setLastUsage(null);
+
+      if (isConversationalMode) {
         setEntries([]);
         setTextInput('');
         setImageDataUrls([]);
@@ -565,25 +580,6 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
         });
         return;
       }
-
-      const reply = await sendAiChat({
-        baseUrl: input.baseUrl,
-        apiKey: input.apiKey,
-        model: input.model,
-        systemPrompt: prompt,
-        messages: [
-          {
-            role: 'user',
-            text: cleanPrompt,
-            imageDataUrls: effectiveImageDataUrls,
-            pdfDataUrls: effectivePdfDataUrls
-          }
-        ],
-        signal: controller.signal
-      });
-      setRawContent(reply.content);
-      setRawReasoning(reply.reasoning || '');
-      setLastUsage(reply.usage || null);
 
       // 兼容两类场景：
       // - 记账：返回 JSON 可落库

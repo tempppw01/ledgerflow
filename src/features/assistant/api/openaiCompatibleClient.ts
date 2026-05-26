@@ -48,10 +48,15 @@ interface ChatUsage {
 interface ChatCompletionStreamChunk {
   choices?: Array<{
     delta?: {
-      content?: string;
+      content?: string | Array<{ type: 'text'; text: string }>;
+      reasoning_content?: string;
+      reasoning?: string;
+      reasoningContent?: string;
     };
     message?: {
       content?: string | Array<{ type: 'text'; text: string }>;
+      reasoning_content?: string;
+      reasoning?: string;
     };
   }>;
 }
@@ -133,10 +138,11 @@ export async function sendAiChatStream(
   input: ChatRequestInput,
   handlers: {
     onDelta: (delta: string) => void;
-    onDone?: (content: string) => void;
+    onReasoningDelta?: (delta: string) => void;
+    onDone?: (content: string, reasoning?: string) => void;
     onError?: (error: Error) => void;
   }
-): Promise<void> {
+): Promise<SendAiChatResult> {
   const outboundMessages: ChatMessageInput[] = [
     ...(input.systemPrompt ? [{ role: 'system' as const, text: input.systemPrompt }] : []),
     ...input.messages
@@ -173,6 +179,52 @@ export async function sendAiChatStream(
   const decoder = new TextDecoder('utf-8');
   let buffer = '';
   let fullText = '';
+  let fullReasoning = '';
+
+  const finish = () => {
+    const reasoning = fullReasoning.trim();
+    handlers.onDone?.(fullText, reasoning || undefined);
+    return { content: fullText, reasoning: reasoning || undefined };
+  };
+
+  const handleLine = (line: string) => {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('data:')) return false;
+    const payload = trimmed.replace(/^data:\s*/, '');
+    if (payload === '[DONE]') {
+      return true;
+    }
+
+    try {
+      const chunk = JSON.parse(payload) as ChatCompletionStreamChunk;
+      const first = chunk.choices?.[0];
+      const delta = first?.delta;
+      const deltaText = normalizeMessageContent(delta?.content);
+      const messageText = fullText ? '' : normalizeMessageContent(first?.message?.content);
+      const textPart = deltaText || messageText;
+      const reasoningPart =
+        delta?.reasoning_content ||
+        delta?.reasoning ||
+        delta?.reasoningContent ||
+        first?.message?.reasoning_content ||
+        first?.message?.reasoning ||
+        '';
+
+      if (reasoningPart) {
+        fullReasoning += reasoningPart;
+        handlers.onReasoningDelta?.(reasoningPart);
+      }
+
+      if (textPart) {
+        fullText += textPart;
+        handlers.onDelta(textPart);
+      }
+    } catch {
+      // ignore malformed chunk
+    }
+
+    return false;
+  };
 
   try {
     while (true) {
@@ -183,31 +235,16 @@ export async function sendAiChatStream(
       buffer = lines.pop() || '';
 
       for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith('data:')) continue;
-        const payload = trimmed.replace(/^data:\s*/, '');
-        if (payload === '[DONE]') {
-          handlers.onDone?.(fullText);
-          return;
-        }
-
-        try {
-          const chunk = JSON.parse(payload) as ChatCompletionStreamChunk;
-          const delta = chunk.choices?.[0]?.delta?.content || '';
-          if (delta) {
-            fullText += delta;
-            handlers.onDelta(delta);
-          }
-        } catch {
-          // ignore malformed chunk
-        }
+        if (handleLine(line)) return finish();
       }
     }
+
+    if (buffer.trim() && handleLine(buffer)) return finish();
   } finally {
     reader.releaseLock();
   }
 
-  handlers.onDone?.(fullText);
+  return finish();
 }
 
 interface ChatRequestInput {

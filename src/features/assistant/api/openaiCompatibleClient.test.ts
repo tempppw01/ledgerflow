@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { sendAiChat } from './openaiCompatibleClient';
+import { sendAiChat, sendAiChatStream } from './openaiCompatibleClient';
 
 describe('openaiCompatibleClient baseUrl validation', () => {
   beforeEach(() => {
@@ -98,6 +98,50 @@ describe('openaiCompatibleClient baseUrl validation', () => {
     expect(filePart?.file?.file_data).toBe('data:application/pdf;base64,ZmFrZS1wZGY=');
     expect(filePart?.file?.filename).toBe('attachment-1.pdf');
     expect(JSON.stringify(body)).not.toContain('file_url');
+
+    fetchMock.mockRestore();
+  });
+
+  it('streams reasoning_content before final text deltas', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        [
+          'data: {"choices":[{"delta":{"reasoning_content":"先判断场景"}}]}',
+          '',
+          'data: {"choices":[{"delta":{"content":"可以记一笔。"}}]}',
+          '',
+          'data: [DONE]',
+          ''
+        ].join('\n'),
+        { status: 200 }
+      )
+    );
+    const reasoning: string[] = [];
+    const content: string[] = [];
+    let doneContent = '';
+    let doneReasoning = '';
+
+    const result = await sendAiChatStream(
+      {
+        baseUrl: 'https://api.example.com/v1',
+        model: 'test-model',
+        messages: [{ role: 'user', text: 'hello' }]
+      },
+      {
+        onDelta: (delta) => content.push(delta),
+        onReasoningDelta: (delta) => reasoning.push(delta),
+        onDone: (text, thinking) => {
+          doneContent = text;
+          doneReasoning = thinking || '';
+        }
+      }
+    );
+
+    expect(reasoning).toEqual(['先判断场景']);
+    expect(content).toEqual(['可以记一笔。']);
+    expect(doneContent).toBe('可以记一笔。');
+    expect(doneReasoning).toBe('先判断场景');
+    expect(result).toMatchObject({ content: '可以记一笔。', reasoning: '先判断场景' });
 
     fetchMock.mockRestore();
   });

@@ -2184,6 +2184,24 @@
   word-break: break-all;
 }
 
+.chat-reasoning-collapse-stream {
+  margin: 0 0 var(--space-2);
+  background: color-mix(in srgb, var(--color-bg-subtle) 64%, var(--color-bg-elevated));
+}
+
+.chat-reasoning-collapse-stream[open] summary {
+  border-bottom: 1px dashed var(--color-border-light);
+}
+
+.chat-stream-waiting {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+}
+
 /* ---------- Disclaimer ---------- */
 .chat-disclaimer {
   margin: 0;
