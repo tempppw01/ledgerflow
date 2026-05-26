@@ -18,3 +18,6 @@ export const CALENDAR_ICON_URL =
 
 export const DATABASE_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/database.svg';
+
+export const ABOUT_HAPPY_ILLUSTRATION_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/happy.svg';

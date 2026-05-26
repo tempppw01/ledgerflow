@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { APP_GITHUB_URL, APP_LOGO_URL, APP_VERSION } from '../../shared/config/app';
+import { ABOUT_HAPPY_ILLUSTRATION_URL } from '../../shared/config/brandAssets';
 
 interface UpdateCheckResult {
   status: 'idle' | 'checking' | 'error' | 'up-to-date' | 'update-available';
@@ -109,6 +110,9 @@ export function AboutPage() {
               {t('about.version.viewReleases')}
             </a>
           </div>
+        </div>
+        <div className="about-hero-illustration" aria-hidden="true">
+          <img src={ABOUT_HAPPY_ILLUSTRATION_URL} alt="" loading="lazy" />
         </div>
       </header>
 

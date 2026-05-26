@@ -1071,7 +1071,8 @@
 
 .about-hero-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 260px);
+  align-items: center;
   gap: 18px;
   padding: 20px;
   border-radius: 22px;
@@ -1086,7 +1087,32 @@
       180deg,
       color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-primary-bg)),
       var(--color-bg-elevated)
-    );
+  );
+}
+
+.about-hero-illustration {
+  justify-self: end;
+  width: min(100%, 250px);
+  height: clamp(220px, 28vw, 280px);
+  display: grid;
+  place-items: center;
+  border-radius: 28px;
+  background:
+    radial-gradient(
+      circle at 32% 24%,
+      color-mix(in srgb, var(--color-primary) 18%, transparent),
+      transparent 42%
+    ),
+    color-mix(in srgb, var(--color-primary-bg) 72%, transparent);
+  overflow: hidden;
+}
+
+.about-hero-illustration img {
+  width: auto;
+  height: clamp(190px, 24vw, 240px);
+  max-width: 90%;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 28px color-mix(in srgb, var(--color-text) 14%, transparent));
 }
 
 .about-hero-copy,
@@ -1247,6 +1273,10 @@
   .about-hero-card {
     align-items: start;
   }
+
+  .about-hero-illustration {
+    width: min(100%, 220px);
+  }
 }
 
 @media (max-width: 680px) {
@@ -1278,6 +1308,11 @@
   .financial-analysis-ai-bar button,
   .about-version-actions > * {
     flex: 1 1 auto;
+  }
+
+  .about-hero-illustration {
+    justify-self: center;
+    width: min(78vw, 220px);
   }
 
   .finance-page-tip {
