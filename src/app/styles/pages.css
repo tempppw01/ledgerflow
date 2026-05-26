@@ -1113,7 +1113,7 @@
 .about-brand-mark img {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
+  border-radius: 50%;
   object-fit: cover;
   box-shadow: 0 8px 18px color-mix(in srgb, var(--color-text) 14%, transparent);
 }
