@@ -2459,14 +2459,6 @@ small.mono {
   min-width: 132px;
 }
 
-.welcome-emoji {
-  font-size: clamp(48px, 5vw, 64px);
-  line-height: 1;
-  flex-shrink: 0;
-  animation: welcome-float 3s ease-in-out infinite;
-  filter: drop-shadow(0 10px 24px color-mix(in srgb, var(--color-primary) 18%, transparent));
-}
-
 /* ── Welcome banner collapsed / expanded states ── */
 .welcome-banner.is-collapsed {
   padding: clamp(12px, 2vw, 18px) var(--space-5);
@@ -3409,8 +3401,7 @@ small.mono {
   .welcome-status-badge,
   .welcome-subtitle,
   .welcome-tip,
-  .welcome-data-illustration,
-  .welcome-emoji {
+  .welcome-data-illustration {
     display: none;
   }
   .welcome-greeting {

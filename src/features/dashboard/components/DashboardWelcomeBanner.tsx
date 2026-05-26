@@ -114,7 +114,6 @@ export function DashboardWelcomeBanner({
       >
         {isExpanded ? '▴' : '▾'}
       </button>
-      {isExpanded ? <div className="welcome-emoji">💰</div> : null}
     </section>
   );
 }
