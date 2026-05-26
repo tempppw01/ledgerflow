@@ -804,6 +804,7 @@
 }
 
 .chat-kawaii-amount {
+  font-family: var(--font-number);
   font-size: 38px;
   font-weight: 700;
   color: var(--color-primary);

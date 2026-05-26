@@ -321,9 +321,11 @@
 }
 
 .transaction-amount {
+  font-family: var(--font-number);
   font-weight: 600;
   text-align: right;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .transaction-amount.income {
@@ -367,7 +369,7 @@
 }
 
 .transaction-order-no {
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-size: 13px;
   color: var(--text-secondary);
   max-width: 120px;

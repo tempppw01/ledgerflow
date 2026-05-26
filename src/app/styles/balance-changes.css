@@ -169,10 +169,13 @@
 }
 
 .balance-change-group-stat strong {
+  font-family: var(--font-number);
   font-size: 14px;
+  font-variant-numeric: tabular-nums;
 }
 
 .balance-change-group-stat small {
+  font-family: var(--font-number);
   font-variant-numeric: tabular-nums;
 }
 
@@ -378,6 +381,7 @@
 }
 
 .balance-change-card-amount strong {
+  font-family: var(--font-number);
   font-size: 16px;
   line-height: 1.2;
   font-variant-numeric: tabular-nums;
@@ -453,6 +457,7 @@
 }
 
 .balance-change-flow strong {
+  font-family: var(--font-number);
   color: var(--color-text);
   font-size: 13px;
   font-variant-numeric: tabular-nums;

@@ -81,11 +81,13 @@
 }
 
 .dashboard-stat-value {
+  font-family: var(--font-number);
   font-size: 32px;
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 8px;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .dashboard-stat-label {
@@ -312,9 +314,11 @@
 }
 
 .dashboard-category-amount {
+  font-family: var(--font-number);
   font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .dashboard-category-percent {

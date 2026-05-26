@@ -91,6 +91,13 @@ button.danger:active:not(:disabled) {
    ============================================================ */
 
 /* 统一金额颜色样式 */
+.amount-income,
+.amount-expense,
+.amount-neutral,
+.balance-amount {
+  font-family: var(--font-number);
+}
+
 .amount-income {
   color: var(--color-income);
   font-weight: 700;

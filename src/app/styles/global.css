@@ -1880,6 +1880,7 @@ tr:hover td {
 }
 
 .transaction-amount-cell {
+  font-family: var(--font-number);
   text-align: right;
   font-size: var(--font-lg);
   font-weight: 700;
@@ -2163,6 +2164,7 @@ tr:hover td {
 }
 
 .transaction-summary-row .transaction-summary-amount {
+  font-family: var(--font-number);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -2184,8 +2186,10 @@ tr:hover td {
 }
 
 .transaction-task-item > strong {
+  font-family: var(--font-number);
   font-size: var(--font-lg);
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .transaction-task-item > span {
@@ -2194,6 +2198,7 @@ tr:hover td {
 }
 
 .transaction-task-item > small {
+  font-family: var(--font-number);
   color: var(--color-text-tertiary);
   font-variant-numeric: tabular-nums;
 }
@@ -2444,8 +2449,10 @@ small.mono {
 }
 
 .welcome-highlight-grid strong {
+  font-family: var(--font-number);
   font-size: clamp(18px, 2vw, 24px);
   color: var(--color-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .welcome-actions {
@@ -2638,10 +2645,12 @@ small.mono {
 
 .stat-value {
   display: block;
+  font-family: var(--font-number);
   font-size: clamp(1.55rem, 2.6vw, 2rem);
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
@@ -2791,11 +2800,13 @@ small.mono {
 
 .dashboard-summary-main-amount {
   display: inline;
+  font-family: var(--font-number);
   font-size: clamp(30px, 6.2vw, 42px);
   line-height: 1.1;
   letter-spacing: 0.01em;
   font-weight: 800;
   color: var(--color-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .dashboard-summary-main-amount.positive {
@@ -4447,10 +4458,12 @@ small.mono {
 }
 
 .chat-kawaii-amount {
+  font-family: var(--font-number);
   font-size: 38px;
   font-weight: 800;
   color: var(--color-text);
   letter-spacing: 0.5px;
+  font-variant-numeric: tabular-nums;
 }
 
 .chat-kawaii-sub {
@@ -5907,9 +5920,11 @@ small.mono {
 }
 
 .import-confirm-row-amount {
+  font-family: var(--font-number);
   font-size: 15px;
   font-weight: 700;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .import-confirm-row-amount.income {
@@ -6257,6 +6272,7 @@ input[type='date']:focus {
 }
 
 .quick-add-amount-display {
+  font-family: var(--font-number);
   font-size: clamp(28px, 5vw, 40px);
   font-weight: 700;
   text-align: right;
@@ -6265,6 +6281,7 @@ input[type='date']:focus {
   border: 1px solid var(--color-border-light);
   background: var(--color-bg-subtle);
   letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 .quick-add-row {
@@ -6365,7 +6382,9 @@ input[type='date']:focus {
 }
 
 .transaction-edit-amount-display {
+  font-family: var(--font-number);
   font-size: clamp(24px, 2.8vw, 36px);
+  font-variant-numeric: tabular-nums;
 }
 
 .transaction-edit-keypad .quick-add-key {
@@ -6373,6 +6392,7 @@ input[type='date']:focus {
 }
 
 .transaction-edit-calculator-screen {
+  font-family: var(--font-number);
   font-size: clamp(20px, 2.5vw, 32px);
   font-weight: 600;
   text-align: right;
@@ -6383,6 +6403,7 @@ input[type='date']:focus {
   margin-bottom: var(--space-2);
   overflow-x: auto;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .transaction-edit-calc-equal {
@@ -7749,10 +7770,12 @@ body.categories-accounts-resizing {
 }
 
 .account-card-balance {
+  font-family: var(--font-number);
   font-size: clamp(16px, 1.2vw, 22px);
   font-weight: 700;
   letter-spacing: 0;
   line-height: 1.1;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
   max-width: min(100%, 220px);
   overflow: hidden;
@@ -7792,7 +7815,9 @@ body.categories-accounts-resizing {
 .account-balance-input {
   width: 100%;
   min-width: 0;
+  font-family: var(--font-number);
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   min-height: 34px;
   padding: 6px 10px;
 }
@@ -10789,11 +10814,15 @@ body.categories-accounts-resizing {
 .smart-budget-table input[type='number'] {
   width: 100%;
   min-width: 120px;
+  font-family: var(--font-number);
+  font-variant-numeric: tabular-nums;
 }
 
 .smart-budget-delta {
   margin: var(--space-3) 0 0;
+  font-family: var(--font-number);
   font-size: var(--font-sm);
+  font-variant-numeric: tabular-nums;
 }
 
 .smart-budget-delta.balanced {

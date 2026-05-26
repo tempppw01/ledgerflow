@@ -349,8 +349,10 @@
 }
 
 .subscriptions-card-amount {
+  font-family: var(--font-number);
   color: var(--color-text);
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .subscriptions-card-amount small {
