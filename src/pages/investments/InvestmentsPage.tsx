@@ -514,24 +514,24 @@ export function InvestmentsPage() {
       <section className="panel investments-hero">
         <div className="investments-hero-copy">
           <span className="investments-kicker">投资理财</span>
-          <h2>把持仓、配置和理财目标放到一页看清</h2>
+          <h2>看清你的投资节奏和目标进度</h2>
           <p>
-            这页先专注在你自己的资产配置，不替你下判断，也不塞一堆行情噪音。先把真实持仓录进来，再看结构、风险和下一步。
+            把持仓、现金和理财目标放在一起，日常看一眼就知道现在走到哪一步，接下来该补哪一块。
           </p>
         </div>
         <div className="investments-tip-board" aria-label="投资理财页提示">
           <div className="investments-tip-item">
             <img src={INFO_ICON_URL} alt="" aria-hidden="true" />
             <div>
-              <strong>适合先做什么</strong>
-              <p>手动录持仓、设目标、看仓位和现金缓冲，不需要等券商直连。</p>
+              <strong>先从常用资产开始</strong>
+              <p>先记下你最常看的基金、股票或现金类资产，后面再慢慢补齐也没关系。</p>
             </div>
           </div>
           <div className="investments-tip-item">
             <img src={QUESTION_ICON_URL} alt="" aria-hidden="true" />
             <div>
-              <strong>这页不做什么</strong>
-              <p>不直接荐股，也不靠一堆专业黑话吓人，重点是让你更好做决定。</p>
+              <strong>把目标一起放进来</strong>
+              <p>金额、时间和优先级越清楚，越容易看懂当前进度和仓位分布。</p>
             </div>
           </div>
         </div>

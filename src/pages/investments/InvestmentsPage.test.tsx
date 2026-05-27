@@ -109,7 +109,8 @@ describe('InvestmentsPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('heading', { name: '把持仓、配置和理财目标放到一页看清' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '看清你的投资节奏和目标进度' })).toBeInTheDocument();
+    expect(screen.getByText('先从常用资产开始')).toBeInTheDocument();
     expect(screen.getByText('沪深 300 ETF')).toBeInTheDocument();
     expect(screen.getByText('6 个月应急金')).toBeInTheDocument();
     expect(screen.getByText('单一持仓占比偏高')).toBeInTheDocument();
