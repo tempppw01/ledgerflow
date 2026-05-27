@@ -24,9 +24,11 @@ import {
   webdavUploadBackup,
   sanitizeWebdavConfig
 } from '../../shared/lib/backup';
+import { BACKUP_ICON_URL, RESTORE_ICON_URL } from '../../shared/config/brandAssets';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { useGlobalMemoryStore } from '../../shared/store/useGlobalMemoryStore';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
+import { PasswordInput } from '../../shared/ui/PasswordInput';
 import { Toast, ToastVariant } from '../../shared/ui/Toast';
 
 type BillSource = 'wechat' | 'alipay';
@@ -619,13 +621,19 @@ export function DatabaseSettingsPage() {
             <div className="database-data-hub-actions">
               <button
                 type="button"
-                className="primary"
+                className="primary button-with-icon"
                 onClick={handleExportJson}
                 disabled={!hasHydrated || !canCreateBackup}
               >
+                <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
                 导出备份文件
               </button>
-              <button type="button" onClick={() => backupInputRef.current?.click()}>
+              <button
+                type="button"
+                className="button-with-icon"
+                onClick={() => backupInputRef.current?.click()}
+              >
+                <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
                 导入备份文件
               </button>
               <input
@@ -759,12 +767,13 @@ export function DatabaseSettingsPage() {
           </div>
           <div className="field" style={{ marginBottom: 0 }}>
             <label>密码</label>
-            <input
+            <PasswordInput
               title="WebDAV 密码"
               placeholder="请输入密码"
-              type="password"
               value={webdav.password}
               onChange={(e) => setWebdav((prev) => ({ ...prev, password: e.target.value }))}
+              showLabel="显示密码"
+              hideLabel="隐藏密码"
             />
           </div>
         </div>
@@ -828,13 +837,20 @@ export function DatabaseSettingsPage() {
           </button>
           <button
             type="button"
-            className="primary"
+            className="primary button-with-icon"
             onClick={() => void handleWebdavUpload()}
             disabled={busy || !canCreateBackup}
           >
+            <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
             立即备份
           </button>
-          <button type="button" onClick={() => void handleWebdavDownload()} disabled={busy}>
+          <button
+            type="button"
+            className="button-with-icon"
+            onClick={() => void handleWebdavDownload()}
+            disabled={busy}
+          >
+            <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
             恢复备份
           </button>
           {webdavStatus ? <span className="sync-tip">{webdavStatus}</span> : null}

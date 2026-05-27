@@ -5,6 +5,7 @@ import { fetchEmbeddings } from '../../features/assistant/api/openaiEmbeddingCli
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { AppAccentTheme } from '../../shared/types/app';
+import { PasswordInput } from '../../shared/ui/PasswordInput';
 import { Toast } from '../../shared/ui/Toast';
 
 const AI_PROVIDER_PRESETS = [
@@ -191,7 +192,6 @@ export function SettingsPage() {
   const setMemoryBackend = useAiSettings((s) => s.setMemoryBackend);
   const setBulkRecategorizeConcurrency = useAiSettings((s) => s.setBulkRecategorizeConcurrency);
 
-  const [masked, setMasked] = useState(true);
   const currentLanguage = i18n.resolvedLanguage?.startsWith('en') ? 'en' : 'zh';
   const [toastVisible, setToastVisible] = useState(false);
   const [embeddingTestStatus, setEmbeddingTestStatus] = useState<{
@@ -418,22 +418,16 @@ export function SettingsPage() {
 
         <div className="field">
           <label>{t('settings.apiKey')}</label>
-          <input
+          <PasswordInput
             value={apiKey}
             onChange={(e) => {
               setApiKey(e.target.value);
               showSaveToast();
             }}
             placeholder="sk-..."
-            type={masked ? 'password' : 'text'}
+            showLabel={t('settings.show')}
+            hideLabel={t('settings.hide')}
           />
-          <button
-            type="button"
-            onClick={() => setMasked((v) => !v)}
-            style={{ justifySelf: 'start' }}
-          >
-            {masked ? t('settings.show') : t('settings.hide')}
-          </button>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
             <input
               type="checkbox"
@@ -658,14 +652,15 @@ export function SettingsPage() {
                 <div className="field">
                   <label>{t('settings.embeddingChannel.apiKeyLabel')}</label>
                   <small>{t('settings.embeddingChannel.apiKeyHint')}</small>
-                  <input
+                  <PasswordInput
                     value={embeddingChannel.apiKey}
-                    type={masked ? 'password' : 'text'}
                     placeholder="sk-..."
                     onChange={(e) => {
                       setEmbeddingChannel({ apiKey: e.target.value });
                       showSaveToast();
                     }}
+                    showLabel={t('settings.show')}
+                    hideLabel={t('settings.hide')}
                   />
                 </div>
               </div>

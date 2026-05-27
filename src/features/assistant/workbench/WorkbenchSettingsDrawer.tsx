@@ -1,3 +1,5 @@
+import { PasswordInput } from '../../../shared/ui/PasswordInput';
+
 interface WorkbenchSettingsDrawerProps {
   open: boolean;
   baseUrl: string;
@@ -61,15 +63,16 @@ export function WorkbenchSettingsDrawer(props: WorkbenchSettingsDrawerProps) {
             />
           </label>
 
-          <label className="field">
-            <span>API Key</span>
-            <input
+          <div className="field">
+            <label>API Key</label>
+            <PasswordInput
               value={apiKey}
               onChange={(e) => onChangeApiKey(e.target.value)}
               placeholder="sk-..."
-              type="password"
+              showLabel="显示密钥"
+              hideLabel="隐藏密钥"
             />
-          </label>
+          </div>
 
           <div className="field">
             <span>模型</span>

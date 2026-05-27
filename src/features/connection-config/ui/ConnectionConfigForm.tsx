@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useDebugLogStore } from '../../../shared/store/useDebugLogStore';
+import { PasswordInput } from '../../../shared/ui/PasswordInput';
 import { getConnectionDefaults, getPortByType } from '../model/connectionDefaults';
 import { ConnectionFormValues, connectionFormSchema } from '../model/connectionFormSchema';
 import { parseConnectionString } from '../model/connectionString';
@@ -184,7 +185,12 @@ export function ConnectionConfigForm({
 
             <div className="field">
               <label title="密码仅用于连接，不会以明文持久化">密码</label>
-              <input type="password" {...form.register('password')} placeholder="请输入密码" />
+              <PasswordInput
+                {...form.register('password')}
+                placeholder="请输入密码"
+                showLabel="显示密码"
+                hideLabel="隐藏密码"
+              />
             </div>
           </div>
 

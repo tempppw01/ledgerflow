@@ -41,8 +41,11 @@ body {
 .layout-shell {
   --sidebar-width: 260px;
   min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   display: grid;
   grid-template-columns: var(--sidebar-width) 1fr;
+  overflow: hidden;
 }
 
 /* ============================================================
@@ -52,6 +55,7 @@ body {
   position: sticky;
   top: 0;
   height: 100vh;
+  height: 100dvh;
   border-right: 1px solid var(--color-border);
   background: var(--gradient-surface-muted);
   backdrop-filter: blur(8px);
@@ -407,6 +411,20 @@ body {
   object-fit: contain;
 }
 
+.button-with-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.button-with-icon img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
 .mobile-nav-profile-copy {
   display: flex;
   align-items: center;
@@ -489,7 +507,12 @@ body {
    ============================================================ */
 .workspace {
   min-width: 0;
+  min-height: 0;
+  height: 100vh;
+  height: 100dvh;
   background: var(--color-bg);
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .workspace-topbar {
@@ -7328,6 +7351,34 @@ body.exchange-resizing {
 
 .connection-inline-row input {
   flex: 1;
+}
+
+.password-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.password-input-row input {
+  width: 100%;
+}
+
+.password-input-toggle {
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-input-toggle-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
 }
 
 .connection-type-row {
