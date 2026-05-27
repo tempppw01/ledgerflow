@@ -202,6 +202,13 @@ body {
     0 8px 20px color-mix(in srgb, var(--color-primary) 16%, transparent);
 }
 
+.sidebar-collapse-icon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  display: block;
+}
+
 .text-income {
   color: var(--color-income);
 }

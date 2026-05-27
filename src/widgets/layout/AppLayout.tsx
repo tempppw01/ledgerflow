@@ -11,6 +11,8 @@ import { APP_LOGO_URL } from '../../shared/config/app';
 import {
   BRAIN_ICON_URL,
   CHAT_ICON_URL,
+  CHEVRONS_LEFT_RIGHT_ICON_URL,
+  CHEVRONS_RIGHT_LEFT_ICON_URL,
   CIRCLE_USER_ICON_URL,
   DATABASE_ICON_URL
 } from '../../shared/config/brandAssets';
@@ -465,7 +467,12 @@ export function AppLayout() {
               collapsed ? t('layout.toggleSidebarExpand') : t('layout.toggleSidebarCollapse')
             }
           >
-            {collapsed ? '»' : '«'}
+            <img
+              className="sidebar-collapse-icon"
+              src={collapsed ? CHEVRONS_LEFT_RIGHT_ICON_URL : CHEVRONS_RIGHT_LEFT_ICON_URL}
+              alt=""
+              aria-hidden="true"
+            />
           </button>
         </div>
 

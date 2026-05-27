@@ -34,6 +34,12 @@ export const MOON_ICON_URL =
 export const MONITOR_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/monitor.svg';
 
+export const CHEVRONS_RIGHT_LEFT_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/chevrons-right-left.svg';
+
+export const CHEVRONS_LEFT_RIGHT_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/chevrons-left-right.svg';
+
 export const DATA_INPUT_ILLUSTRATION_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/data-input.svg';
 
