@@ -1,20 +1,35 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Account } from '../../entities/account/types';
 import type {
+  InvestmentAiMessage,
   InvestmentCategory,
+  InvestmentFundAnalysis,
   InvestmentGoal,
   InvestmentGoalKind,
   InvestmentGoalPriority,
   InvestmentPosition,
-  InvestmentRiskLevel
+  InvestmentRiskLevel,
+  InvestmentWatchItem
 } from '../../entities/investment/types';
+import { sendAiChatStream } from '../../features/assistant/api/openaiCompatibleClient';
+import { renderMarkdownContent } from '../../features/assistant/ui/MarkdownRenderer';
 import { INFO_ICON_URL, QUESTION_ICON_URL } from '../../shared/config/brandAssets';
 import { formatCurrency, formatCurrencyAuto, formatDate } from '../../shared/lib/format';
+import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { EmptyState } from '../../shared/ui/EmptyState';
+import { Toast, type ToastVariant } from '../../shared/ui/Toast';
+import {
+  buildInvestmentAssistantPrompt,
+  createInvestmentAiMessage,
+  extractInvestmentAnalysis,
+  readImageAsDataUrl,
+  summarizeInvestmentAnalysis,
+  trimInvestmentAiMessages
+} from './investmentAi';
 
 const POSITION_CATEGORY_LABELS: Record<InvestmentCategory, string> = {
   cash: '现金理财',
@@ -83,8 +98,14 @@ type InvestmentAlert = {
 type ActionSuggestion = {
   label: string;
   hint: string;
-  to: string;
+  to?: string;
+  action?: 'open-ai';
 };
+
+const AI_LOADING_GIF_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/load.gif';
+const MAX_INVESTMENT_AI_IMAGES = 4;
+const MAX_INVESTMENT_AI_IMAGE_SIZE_MB = 6;
 
 function parseAmountInput(value: string): number {
   const numeric = Number(String(value || '').replace(/[^\d.-]/g, ''));
@@ -213,8 +234,8 @@ function buildActionSuggestions(params: {
       },
       {
         label: '带着配置去问 AI',
-        hint: '如果你想继续拆“该减哪里、该留哪里”，可以把当前持仓带去助手页。',
-        to: '/assistant'
+        hint: '直接在这页上传基金截图或提问，先拿到一轮分析再决定。',
+        action: 'open-ai'
       }
     ];
   }
@@ -222,8 +243,8 @@ function buildActionSuggestions(params: {
   return [
     {
       label: '继续跟进持仓配置',
-      hint: '把目标占比补完整，后面看偏离会更直观。',
-      to: '/assistant'
+      hint: '直接问一只基金值不值得继续跟，或者让 AI 帮你拆风险点。',
+      action: 'open-ai'
     },
     {
       label: '回交易页核对现金流',
@@ -233,12 +254,80 @@ function buildActionSuggestions(params: {
   ];
 }
 
+function createInvestmentChatMessageId(prefix: 'user' | 'assistant') {
+  return `investment-chat-${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function formatDateTimeLabel(value?: string) {
+  if (!value) return '';
+  try {
+    return new Date(value).toLocaleString('zh-CN', {
+      hour12: false,
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch {
+    return value;
+  }
+}
+
+function getAnalysisRiskLabel(riskLevel?: InvestmentFundAnalysis['riskLevel']) {
+  if (riskLevel === 'low') return '偏稳';
+  if (riskLevel === 'medium') return '均衡';
+  if (riskLevel === 'high') return '进取';
+  return '待判断';
+}
+
+function getAnalysisRiskClass(riskLevel?: InvestmentFundAnalysis['riskLevel']) {
+  if (riskLevel === 'low') return 'is-low';
+  if (riskLevel === 'medium') return 'is-medium';
+  if (riskLevel === 'high') return 'is-high';
+  return 'is-unknown';
+}
+
+function findMatchingWatchItem(
+  watchlist: InvestmentWatchItem[],
+  analysis?: InvestmentFundAnalysis | null
+) {
+  if (!analysis) return null;
+
+  const code = String(analysis.fundCode || '').trim().toLowerCase();
+  const name = String(analysis.fundName || '').trim().toLowerCase();
+
+  return (
+    watchlist.find((item) => {
+      const itemCode = String(item.code || '').trim().toLowerCase();
+      const itemName = String(item.name || '').trim().toLowerCase();
+      if (code && itemCode === code) return true;
+      return Boolean(name) && itemName === name;
+    }) || null
+  );
+}
+
+function buildWatchItemFromAnalysis(analysis: InvestmentFundAnalysis) {
+  return {
+    name: analysis.fundName || analysis.fundCode || '未命名基金',
+    code: analysis.fundCode || '',
+    platform: analysis.platform || '',
+    tags: analysis.watchTags,
+    note: analysis.note || analysis.summary,
+    lastVerdict: analysis.verdict,
+    lastSummary: analysis.summary,
+    lastRiskLevel: analysis.riskLevel,
+    lastAnalysisAt: new Date().toISOString()
+  };
+}
+
 export function InvestmentsPage() {
   const navigate = useNavigate();
   const accounts = useFinanceStore((state) => state.accounts);
   const transactions = useFinanceStore((state) => state.transactions);
   const positions = useAppPreferences((state) => state.investmentPositions);
   const goals = useAppPreferences((state) => state.investmentGoals);
+  const investmentWatchlist = useAppPreferences((state) => state.investmentWatchlist);
+  const persistedAiMessages = useAppPreferences((state) => state.investmentAiMessages);
   const debts = useAppPreferences((state) => state.debts);
   const monthlyIncome = useAppPreferences((state) => state.monthlyIncome);
   const addInvestmentPosition = useAppPreferences((state) => state.addInvestmentPosition);
@@ -247,6 +336,11 @@ export function InvestmentsPage() {
   const addInvestmentGoal = useAppPreferences((state) => state.addInvestmentGoal);
   const updateInvestmentGoal = useAppPreferences((state) => state.updateInvestmentGoal);
   const removeInvestmentGoal = useAppPreferences((state) => state.removeInvestmentGoal);
+  const upsertInvestmentWatchItem = useAppPreferences((state) => state.upsertInvestmentWatchItem);
+  const removeInvestmentWatchItem = useAppPreferences((state) => state.removeInvestmentWatchItem);
+  const setInvestmentAiMessages = useAppPreferences((state) => state.setInvestmentAiMessages);
+  const clearInvestmentAiMessages = useAppPreferences((state) => state.clearInvestmentAiMessages);
+  const { baseUrl, apiKey, model } = useAiSettings();
 
   const [positionForm, setPositionForm] = useState(POSITION_FORM_DEFAULT);
   const [goalForm, setGoalForm] = useState(GOAL_FORM_DEFAULT);
@@ -256,6 +350,22 @@ export function InvestmentsPage() {
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [pendingDeletePositionId, setPendingDeletePositionId] = useState<string | null>(null);
   const [pendingDeleteGoalId, setPendingDeleteGoalId] = useState<string | null>(null);
+  const [investmentAiMessages, setLocalInvestmentAiMessages] = useState<InvestmentAiMessage[]>(() =>
+    persistedAiMessages
+  );
+  const [investmentAiInput, setInvestmentAiInput] = useState('');
+  const [investmentAiImages, setInvestmentAiImages] = useState<string[]>([]);
+  const [investmentAiStatus, setInvestmentAiStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [investmentAiError, setInvestmentAiError] = useState('');
+  const [streamingContent, setStreamingContent] = useState('');
+  const [streamingReasoning, setStreamingReasoning] = useState('');
+  const [toast, setToast] = useState<{ visible: boolean; message: string; variant: ToastVariant }>({
+    visible: false,
+    message: '',
+    variant: 'success'
+  });
+  const aiFileInputRef = useRef<HTMLInputElement | null>(null);
+  const aiPanelRef = useRef<HTMLElement | null>(null);
 
   const activePositions = useMemo(
     () => positions.filter((item) => item.isActive),
@@ -406,6 +516,30 @@ export function InvestmentsPage() {
     [activePositions.length, investmentAlerts, monthlyInvestableCash]
   );
 
+  const investmentAssistantPrompt = useMemo(
+    () =>
+      buildInvestmentAssistantPrompt({
+        positions: activePositions,
+        goals,
+        watchlist: investmentWatchlist,
+        monthlyInvestableCash
+      }),
+    [activePositions, goals, investmentWatchlist, monthlyInvestableCash]
+  );
+
+  const latestAssistantAnalysis = useMemo(
+    () =>
+      [...investmentAiMessages]
+        .reverse()
+        .find((item) => item.role === 'assistant' && item.analysis)?.analysis || null,
+    [investmentAiMessages]
+  );
+
+  const streamingDisplayContent = useMemo(
+    () => extractInvestmentAnalysis(streamingContent).displayText,
+    [streamingContent]
+  );
+
   const pendingDeletePosition = useMemo(
     () => positions.find((item) => item.id === pendingDeletePositionId) ?? null,
     [pendingDeletePositionId, positions]
@@ -426,6 +560,170 @@ export function InvestmentsPage() {
     setGoalForm(GOAL_FORM_DEFAULT);
     setEditingGoalId(null);
     setGoalError('');
+  }
+
+  function setToastState(message: string, variant: ToastVariant = 'success') {
+    setToast({ visible: true, message, variant });
+  }
+
+  function syncInvestmentAiMessages(messages: InvestmentAiMessage[]) {
+    const next = trimInvestmentAiMessages(messages);
+    setLocalInvestmentAiMessages(next);
+    setInvestmentAiMessages(next);
+  }
+
+  function scrollToInvestmentAiPanel() {
+    aiPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function handleActionSuggestionClick(item: ActionSuggestion) {
+    if (item.action === 'open-ai') {
+      scrollToInvestmentAiPanel();
+      return;
+    }
+
+    if (item.to) {
+      navigate(item.to);
+    }
+  }
+
+  async function handleInvestmentAiFileSelect(files: File[]) {
+    const imageFiles = files.filter((file) => file.type.startsWith('image/'));
+    if (imageFiles.length === 0) {
+      setInvestmentAiError('请上传图片格式的基金截图。');
+      return;
+    }
+
+    const remainingSlots = MAX_INVESTMENT_AI_IMAGES - investmentAiImages.length;
+    if (remainingSlots <= 0) {
+      setInvestmentAiError(`最多上传 ${MAX_INVESTMENT_AI_IMAGES} 张图片。`);
+      return;
+    }
+
+    const oversizedFile = imageFiles.find(
+      (file) => file.size > MAX_INVESTMENT_AI_IMAGE_SIZE_MB * 1024 * 1024
+    );
+    if (oversizedFile) {
+      setInvestmentAiError(
+        `图片“${oversizedFile.name}”超过 ${MAX_INVESTMENT_AI_IMAGE_SIZE_MB}MB，请压缩后再试。`
+      );
+      return;
+    }
+
+    try {
+      const selectedFiles = imageFiles.slice(0, remainingSlots);
+      const dataUrls = await Promise.all(selectedFiles.map((file) => readImageAsDataUrl(file)));
+      setInvestmentAiImages((prev) => [...prev, ...dataUrls].slice(0, MAX_INVESTMENT_AI_IMAGES));
+      setInvestmentAiError('');
+    } catch (error) {
+      setInvestmentAiError(error instanceof Error ? error.message : '图片读取失败，请稍后再试。');
+    }
+  }
+
+  function handleAddAnalysisToWatchlist(analysis: InvestmentFundAnalysis) {
+    if (!analysis.fundName && !analysis.fundCode) {
+      setToastState('这次分析还没识别出基金名称，暂时不能加入自选。', 'warning');
+      return;
+    }
+
+    upsertInvestmentWatchItem(buildWatchItemFromAnalysis(analysis));
+    setToastState(`已将“${analysis.fundName || analysis.fundCode}”加入自选`, 'success');
+  }
+
+  async function submitInvestmentAi(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (investmentAiStatus === 'loading') {
+      return;
+    }
+
+    const cleanPrompt = investmentAiInput.trim();
+    const hasAttachments = investmentAiImages.length > 0;
+
+    if (!cleanPrompt && !hasAttachments) {
+      setInvestmentAiError('先输入基金问题，或者上传一张基金截图。');
+      return;
+    }
+
+    if (!apiKey.trim()) {
+      setInvestmentAiStatus('error');
+      setInvestmentAiError('请先在设置中配置可用的 AI Key，再来分析基金。');
+      return;
+    }
+
+    const promptText = cleanPrompt || '请根据这张基金截图，帮我判断这只基金是否值得继续关注。';
+    const createdAt = new Date().toISOString();
+    const userMessage = createInvestmentAiMessage({
+      id: createInvestmentChatMessageId('user'),
+      role: 'user',
+      text: promptText,
+      attachmentCount: investmentAiImages.length,
+      createdAt
+    });
+    const optimisticMessages = trimInvestmentAiMessages([...investmentAiMessages, userMessage]);
+
+    setLocalInvestmentAiMessages(optimisticMessages);
+    setInvestmentAiStatus('loading');
+    setInvestmentAiError('');
+    setStreamingContent('');
+    setStreamingReasoning('');
+
+    try {
+      let fullContent = '';
+      let fullReasoning = '';
+      const result = await sendAiChatStream(
+        {
+          baseUrl,
+          apiKey,
+          model,
+          systemPrompt: investmentAssistantPrompt,
+          messages: [
+            {
+              role: 'user',
+              text: promptText,
+              imageDataUrls: [...investmentAiImages]
+            }
+          ]
+        },
+        {
+          onDelta: (delta) => {
+            fullContent += delta;
+            setStreamingContent(fullContent);
+          },
+          onReasoningDelta: (delta) => {
+            fullReasoning += delta;
+            setStreamingReasoning(fullReasoning);
+          },
+          onDone: (content, reasoning) => {
+            fullContent = content || fullContent;
+            fullReasoning = reasoning || fullReasoning;
+          }
+        }
+      );
+
+      const resolvedContent = result.content || fullContent;
+      const resolvedReasoning = result.reasoning || fullReasoning;
+      const extracted = extractInvestmentAnalysis(resolvedContent);
+      const assistantText = summarizeInvestmentAnalysis(extracted.displayText, extracted.analysis);
+      const assistantMessage = createInvestmentAiMessage({
+        id: createInvestmentChatMessageId('assistant'),
+        role: 'assistant',
+        text: assistantText,
+        reasoning: resolvedReasoning,
+        analysis: extracted.analysis,
+        createdAt: new Date().toISOString()
+      });
+      const nextMessages = [...optimisticMessages, assistantMessage];
+
+      syncInvestmentAiMessages(nextMessages);
+      setInvestmentAiStatus('idle');
+      setInvestmentAiInput('');
+      setInvestmentAiImages([]);
+      setStreamingContent('');
+      setStreamingReasoning('');
+    } catch (error) {
+      setInvestmentAiStatus('error');
+      setInvestmentAiError(error instanceof Error ? error.message : '基金分析失败，请稍后再试。');
+    }
   }
 
   function submitPosition(event: FormEvent<HTMLFormElement>) {
@@ -572,6 +870,322 @@ export function InvestmentsPage() {
         </div>
       </section>
 
+      <section className="investments-ai-grid">
+        <article className="panel investments-ai-panel" ref={aiPanelRef}>
+          <div className="investments-section-head investments-ai-panel-head">
+            <div>
+              <h3>AI 基金分析</h3>
+              <p>直接问某只基金值不值得继续跟，也可以上传基金页或持仓截图。</p>
+            </div>
+            <div className="investments-ai-head-actions">
+              <span className="badge">{model || '默认模型'}</span>
+              {investmentAiMessages.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLocalInvestmentAiMessages([]);
+                    clearInvestmentAiMessages();
+                    setToastState('已清空最近分析记录', 'warning');
+                  }}
+                  disabled={investmentAiStatus === 'loading'}
+                >
+                  清空记录
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="investments-ai-status-row">
+            <span>
+              {apiKey.trim()
+                ? investmentAiStatus === 'loading'
+                  ? '正在分析基金...'
+                  : '可以开始分析'
+                : '先配置 AI Key，再来分析基金'}
+            </span>
+            <span>会保留最近分析记录，方便回看。</span>
+          </div>
+
+          {investmentAiError ? (
+            <p className="assistant-wb-issue error investments-ai-error" role="alert">
+              {investmentAiError}
+            </p>
+          ) : null}
+
+          <div className="investments-ai-thread" aria-label="基金分析对话">
+            {investmentAiMessages.length === 0 &&
+            investmentAiStatus !== 'loading' &&
+            !streamingContent &&
+            !streamingReasoning ? (
+              <div className="investments-ai-empty">
+                <strong>还没有开始分析</strong>
+                <p>可以直接输入基金名称、代码、定投疑问，或者上传截图让 AI 先帮你拆重点。</p>
+              </div>
+            ) : null}
+
+            {investmentAiMessages.map((item) => {
+              const matchedWatchItem =
+                item.role === 'assistant' ? findMatchingWatchItem(investmentWatchlist, item.analysis) : null;
+
+              return (
+                <article
+                  key={item.id}
+                  className={`investments-ai-message ${item.role === 'user' ? 'is-user' : 'is-assistant'}`}
+                >
+                  <div className="investments-ai-bubble">
+                    <div className="investments-ai-message-head">
+                      <strong>{item.role === 'user' ? '你' : 'AI 分析'}</strong>
+                      <span>{formatDateTimeLabel(item.createdAt)}</span>
+                    </div>
+                    <div className="chat-msg-content chat-msg-content-rich">
+                      {renderMarkdownContent(item.text)}
+                    </div>
+                    {item.attachmentCount ? (
+                      <p className="investments-ai-attachment-note">附带 {item.attachmentCount} 张图片</p>
+                    ) : null}
+                    {item.reasoning ? (
+                      <details className="chat-thinking-box">
+                        <summary>分析过程</summary>
+                        <div className="chat-thinking-scroll">{item.reasoning}</div>
+                      </details>
+                    ) : null}
+                    {item.analysis ? (
+                      <div className="investments-analysis-card">
+                        <div className="investments-analysis-card-head">
+                          <div>
+                            <strong>{item.analysis.fundName || '基金分析结果'}</strong>
+                            <span>
+                              {item.analysis.fundCode || '未识别代码'}
+                              {item.analysis.platform ? ` · ${item.analysis.platform}` : ''}
+                            </span>
+                          </div>
+                          <span
+                            className={`investments-analysis-risk ${getAnalysisRiskClass(item.analysis.riskLevel)}`}
+                          >
+                            {getAnalysisRiskLabel(item.analysis.riskLevel)}
+                          </span>
+                        </div>
+                        <p className="investments-analysis-summary">{item.analysis.summary}</p>
+                        {item.analysis.highlights.length > 0 ? (
+                          <div className="investments-analysis-list">
+                            <h4>值得关注</h4>
+                            <ul>
+                              {item.analysis.highlights.map((row) => (
+                                <li key={row}>{row}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+                        {item.analysis.risks.length > 0 ? (
+                          <div className="investments-analysis-list">
+                            <h4>风险点</h4>
+                            <ul>
+                              {item.analysis.risks.map((row) => (
+                                <li key={row}>{row}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+                        {item.analysis.actions.length > 0 ? (
+                          <div className="investments-analysis-list">
+                            <h4>下一步</h4>
+                            <ul>
+                              {item.analysis.actions.map((row) => (
+                                <li key={row}>{row}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+                        <div className="investments-analysis-actions">
+                          <button
+                            type="button"
+                            className={matchedWatchItem ? 'investments-analysis-watch-btn is-active' : 'primary'}
+                            onClick={() => handleAddAnalysisToWatchlist(item.analysis!)}
+                          >
+                            {matchedWatchItem ? '更新自选' : '加入自选'}
+                          </button>
+                          {matchedWatchItem?.updatedAt ? (
+                            <span>上次更新 {formatDateTimeLabel(matchedWatchItem.updatedAt)}</span>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </article>
+              );
+            })}
+
+            {investmentAiStatus === 'loading' ? (
+              <article className="investments-ai-message is-assistant">
+                <div className="investments-ai-bubble">
+                  <div className="investments-ai-message-head">
+                    <strong>AI 分析</strong>
+                    <span>刚刚</span>
+                  </div>
+                  {streamingDisplayContent ? (
+                    <div className="chat-msg-content chat-msg-content-rich">
+                      {renderMarkdownContent(streamingDisplayContent)}
+                    </div>
+                  ) : (
+                    <div className="chat-typing investments-ai-streaming">
+                      模型思考中
+                      <img className="chat-typing-loader" src={AI_LOADING_GIF_URL} alt="" aria-hidden="true" />
+                    </div>
+                  )}
+                  {streamingReasoning ? (
+                    <details className="chat-thinking-box" open>
+                      <summary>分析过程</summary>
+                      <div className="chat-thinking-scroll">{streamingReasoning}</div>
+                    </details>
+                  ) : null}
+                </div>
+              </article>
+            ) : null}
+          </div>
+
+          {investmentAiImages.length > 0 ? (
+            <div className="investments-ai-image-strip" aria-label="待分析图片">
+              <div className="investments-ai-thumb-list">
+                {investmentAiImages.map((url, index) => (
+                  <div key={`${url.slice(0, 20)}-${index}`} className="investments-ai-thumb-item">
+                    <img src={url} alt={`待分析图片 ${index + 1}`} className="investments-ai-thumb" />
+                    <button
+                      type="button"
+                      className="investments-ai-thumb-remove"
+                      onClick={() => setInvestmentAiImages((prev) => prev.filter((_, idx) => idx !== index))}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button type="button" onClick={() => setInvestmentAiImages([])}>
+                清空图片
+              </button>
+            </div>
+          ) : null}
+
+          <form className="investments-ai-composer" onSubmit={submitInvestmentAi}>
+            <input
+              ref={aiFileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="chat-file-input-hidden"
+              aria-label="上传基金截图"
+              onChange={(event) => {
+                const files = Array.from(event.target.files || []);
+                void handleInvestmentAiFileSelect(files);
+                event.target.value = '';
+              }}
+            />
+            <div className="investments-ai-composer-toolbar">
+              <button
+                type="button"
+                className="investments-ai-upload-btn"
+                onClick={() => aiFileInputRef.current?.click()}
+                disabled={investmentAiStatus === 'loading'}
+              >
+                上传图片
+              </button>
+              <span>支持最多 {MAX_INVESTMENT_AI_IMAGES} 张截图，本次分析后不会长期保存图片。</span>
+            </div>
+            <textarea
+              rows={3}
+              value={investmentAiInput}
+              className="investments-ai-textarea"
+              placeholder="例如：这只基金适合继续定投吗？波动这么大要不要先观望？"
+              aria-label="基金分析输入框"
+              disabled={investmentAiStatus === 'loading'}
+              onChange={(event) => setInvestmentAiInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault();
+                  event.currentTarget.form?.requestSubmit();
+                }
+              }}
+            />
+            <div className="investments-ai-composer-actions">
+              <span>
+                {latestAssistantAnalysis?.fundName
+                  ? `最近分析：${latestAssistantAnalysis.fundName}`
+                  : '适合问：值不值得继续拿、要不要定投、现在该看哪些风险。'}
+              </span>
+              <button
+                type="submit"
+                className="primary"
+                disabled={
+                  investmentAiStatus === 'loading' ||
+                  (!investmentAiInput.trim() && investmentAiImages.length === 0)
+                }
+              >
+                {investmentAiStatus === 'loading' ? '分析中...' : '开始分析'}
+              </button>
+            </div>
+          </form>
+        </article>
+
+        <aside className="panel investments-watchlist-panel">
+          <div className="investments-section-head">
+            <div>
+              <h3>基金自选</h3>
+              <p>把想继续观察的基金留在这里，下次回来不用重新找。</p>
+            </div>
+            <span className="badge">{investmentWatchlist.length} 只</span>
+          </div>
+
+          {latestAssistantAnalysis && !findMatchingWatchItem(investmentWatchlist, latestAssistantAnalysis) ? (
+            <article className="investments-watchlist-highlight">
+              <strong>{latestAssistantAnalysis.fundName || latestAssistantAnalysis.fundCode || '最新分析结果'}</strong>
+              <p>{latestAssistantAnalysis.verdict}</p>
+              <button type="button" className="primary" onClick={() => handleAddAnalysisToWatchlist(latestAssistantAnalysis)}>
+                加入自选
+              </button>
+            </article>
+          ) : null}
+
+          {investmentWatchlist.length === 0 ? (
+            <div className="investments-watchlist-empty">
+              <strong>还没有自选基金</strong>
+              <p>分析完觉得值得继续跟，就顺手加进来，后面回看会更方便。</p>
+            </div>
+          ) : (
+            <div className="investments-watchlist-list">
+              {investmentWatchlist.map((item) => (
+                <article key={item.id} className="investments-watch-card">
+                  <div className="investments-watch-card-head">
+                    <div>
+                      <strong>{item.name}</strong>
+                      <p>
+                        {item.code || '未记录代码'}
+                        {item.platform ? ` · ${item.platform}` : ''}
+                      </p>
+                    </div>
+                    <button type="button" className="danger" onClick={() => removeInvestmentWatchItem(item.id)}>
+                      移除
+                    </button>
+                  </div>
+                  {item.lastSummary ? <p className="investments-watch-card-summary">{item.lastSummary}</p> : null}
+                  {item.tags.length > 0 ? (
+                    <div className="investments-watch-card-tags">
+                      {item.tags.map((tag) => (
+                        <span key={`${item.id}-${tag}`} className="badge">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                  <div className="investments-watch-card-meta">
+                    <span>{item.lastVerdict || '等待下一次分析'}</span>
+                    <span>{item.lastAnalysisAt ? `更新于 ${formatDateTimeLabel(item.lastAnalysisAt)}` : '暂未分析'}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </aside>
+      </section>
+
       <section className="investments-overview-grid">
         <article className="panel investments-overview-card">
           <div className="investments-section-head">
@@ -643,7 +1257,12 @@ export function InvestmentsPage() {
             <h4>顺手下一步</h4>
             <div className="investments-actions-list">
               {actionSuggestions.map((item) => (
-                <button key={item.label} type="button" className="investments-action-button" onClick={() => navigate(item.to)}>
+                <button
+                  key={item.label}
+                  type="button"
+                  className="investments-action-button"
+                  onClick={() => handleActionSuggestionClick(item)}
+                >
                   <strong>{item.label}</strong>
                   <span>{item.hint}</span>
                 </button>
@@ -1082,6 +1701,13 @@ export function InvestmentsPage() {
           )}
         </article>
       </section>
+
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        variant={toast.variant}
+        onClose={() => setToast((prev) => ({ ...prev, visible: false }))}
+      />
 
       <ConfirmDialog
         open={Boolean(pendingDeletePosition)}

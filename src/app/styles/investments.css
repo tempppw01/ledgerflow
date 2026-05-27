@@ -108,6 +108,355 @@
   color: var(--color-danger);
 }
 
+.investments-ai-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+  gap: 16px;
+}
+
+.investments-ai-panel,
+.investments-watchlist-panel {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.investments-ai-panel-head {
+  align-items: start;
+}
+
+.investments-ai-head-actions {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.investments-ai-status-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.investments-ai-error {
+  margin: 0;
+}
+
+.investments-ai-thread {
+  display: grid;
+  gap: 12px;
+  max-height: 720px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.investments-ai-empty,
+.investments-watchlist-empty,
+.investments-watchlist-highlight {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--color-border-light);
+  background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-primary-bg));
+}
+
+.investments-ai-empty strong,
+.investments-ai-empty p,
+.investments-watchlist-empty strong,
+.investments-watchlist-empty p,
+.investments-watchlist-highlight strong,
+.investments-watchlist-highlight p {
+  margin: 0;
+}
+
+.investments-ai-empty p,
+.investments-watchlist-empty p,
+.investments-watchlist-highlight p {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.investments-ai-message {
+  display: flex;
+}
+
+.investments-ai-message.is-user {
+  justify-content: flex-end;
+}
+
+.investments-ai-bubble {
+  width: min(100%, 760px);
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--color-border-light);
+  background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-bg-subtle));
+}
+
+.investments-ai-message.is-user .investments-ai-bubble {
+  background: color-mix(in srgb, var(--color-primary-bg) 82%, var(--color-bg-elevated));
+  border-color: color-mix(in srgb, var(--color-primary) 16%, transparent);
+}
+
+.investments-ai-message-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.investments-ai-message-head strong {
+  color: var(--color-text);
+}
+
+.investments-ai-attachment-note {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.investments-ai-streaming {
+  gap: 8px;
+  align-items: center;
+}
+
+.investments-analysis-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--color-border-light);
+  background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-primary-bg));
+}
+
+.investments-analysis-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.investments-analysis-card-head strong,
+.investments-analysis-card-head span,
+.investments-analysis-summary {
+  margin: 0;
+}
+
+.investments-analysis-card-head span {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.investments-analysis-risk {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--color-bg-elevated) 88%, var(--color-border-light));
+  color: var(--color-text-secondary);
+}
+
+.investments-analysis-risk.is-low {
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success-bg) 78%, var(--color-bg-elevated));
+}
+
+.investments-analysis-risk.is-medium {
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary-bg) 84%, var(--color-bg-elevated));
+}
+
+.investments-analysis-risk.is-high {
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger-bg) 82%, var(--color-bg-elevated));
+}
+
+.investments-analysis-summary {
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
+.investments-analysis-list {
+  display: grid;
+  gap: 6px;
+}
+
+.investments-analysis-list h4,
+.investments-analysis-list ul {
+  margin: 0;
+}
+
+.investments-analysis-list h4 {
+  font-size: 13px;
+}
+
+.investments-analysis-list ul {
+  padding-left: 18px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.investments-analysis-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.investments-analysis-actions span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.investments-analysis-watch-btn.is-active {
+  background: color-mix(in srgb, var(--color-primary-bg) 84%, var(--color-bg-elevated));
+  color: var(--color-primary);
+  border-color: color-mix(in srgb, var(--color-primary) 16%, transparent);
+}
+
+.investments-ai-image-strip {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--color-border-light);
+  background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-bg-subtle));
+}
+
+.investments-ai-thumb-list {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+}
+
+.investments-ai-thumb-item {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.investments-ai-thumb {
+  width: 88px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--color-border-light);
+}
+
+.investments-ai-thumb-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-bg-elevated) 70%, transparent);
+  background: color-mix(in srgb, var(--color-bg-elevated) 88%, transparent);
+  padding: 0;
+}
+
+.investments-ai-composer {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--color-border-light);
+  background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-primary-bg));
+}
+
+.investments-ai-composer-toolbar,
+.investments-ai-composer-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.investments-ai-composer-toolbar span,
+.investments-ai-composer-actions span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.investments-ai-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+}
+
+.investments-ai-textarea {
+  min-height: 108px;
+  resize: vertical;
+}
+
+.investments-watchlist-list {
+  display: grid;
+  gap: 10px;
+}
+
+.investments-watch-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--color-border-light);
+  background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-bg-subtle));
+}
+
+.investments-watch-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.investments-watch-card-head strong,
+.investments-watch-card-head p,
+.investments-watch-card-summary {
+  margin: 0;
+}
+
+.investments-watch-card-head p,
+.investments-watch-card-summary,
+.investments-watch-card-meta {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.investments-watch-card-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.investments-watch-card-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
 .investments-overview-grid,
 .investments-main-grid {
   display: grid;
@@ -382,12 +731,17 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .investments-ai-grid {
+    grid-template-columns: 1fr;
+  }
+
   .investments-form-grid-primary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 900px) {
+  .investments-ai-grid,
   .investments-tip-board,
   .investments-overview-grid,
   .investments-main-grid,
@@ -400,6 +754,14 @@
 
   .investments-summary-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .investments-ai-head-actions,
+  .investments-ai-status-row,
+  .investments-analysis-card-head,
+  .investments-watch-card-head {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 
@@ -418,5 +780,16 @@
 
   .investments-card-badges {
     justify-content: flex-start;
+  }
+
+  .investments-ai-thread {
+    max-height: none;
+  }
+
+  .investments-ai-image-strip,
+  .investments-ai-composer-toolbar,
+  .investments-ai-composer-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

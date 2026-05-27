@@ -2,8 +2,11 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AppAccentTheme, AppTheme } from '../types/app';
 import {
+  InvestmentAiMessage,
   InvestmentGoal,
-  InvestmentPosition
+  InvestmentFundAnalysis,
+  InvestmentPosition,
+  InvestmentWatchItem
 } from '../../entities/investment/types';
 import {
   DebtItem,
@@ -40,6 +43,8 @@ interface AppPreferencesState {
   rssSubscriptions: RssSubscription[];
   investmentPositions: InvestmentPosition[];
   investmentGoals: InvestmentGoal[];
+  investmentWatchlist: InvestmentWatchItem[];
+  investmentAiMessages: InvestmentAiMessage[];
   debts: DebtItem[];
   repaymentRecords: RepaymentRecord[];
   monthlyIncome: number;
@@ -62,6 +67,16 @@ interface AppPreferencesState {
     payload: Omit<InvestmentGoal, 'id' | 'createdAt' | 'updatedAt'>
   ) => void;
   removeInvestmentGoal: (id: string) => void;
+  upsertInvestmentWatchItem: (
+    payload: Omit<InvestmentWatchItem, 'id' | 'createdAt' | 'updatedAt'> & {
+      id?: string;
+      createdAt?: string;
+      updatedAt?: string;
+    }
+  ) => void;
+  removeInvestmentWatchItem: (id: string) => void;
+  setInvestmentAiMessages: (messages: InvestmentAiMessage[]) => void;
+  clearInvestmentAiMessages: () => void;
   setMonthlyIncome: (income: number) => void;
   setRepaymentState: (payload: { debts: DebtItem[]; monthlyIncome: number }) => void;
   addDebt: (payload: Omit<DebtItem, 'id'>) => void;
@@ -73,19 +88,31 @@ interface AppPreferencesState {
 }
 
 function createDebtId(type: DebtType): string {
-  return `debt-${type}-${Date.now()}`;
+  return createScopedId(`debt-${type}`);
 }
 
 function createRepaymentRecordId(): string {
-  return `repayment-record-${Date.now()}`;
+  return createScopedId('repayment-record');
 }
 
 function createInvestmentPositionId(): string {
-  return `investment-position-${Date.now()}`;
+  return createScopedId('investment-position');
 }
 
 function createInvestmentGoalId(): string {
-  return `investment-goal-${Date.now()}`;
+  return createScopedId('investment-goal');
+}
+
+function createInvestmentWatchItemId(): string {
+  return createScopedId('investment-watch');
+}
+
+function createInvestmentAiMessageId(): string {
+  return createScopedId('investment-ai-message');
+}
+
+function createScopedId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function normalizeFeedUrl(rawUrl: string): string {
@@ -107,6 +134,15 @@ function normalizePercentage(value: unknown): number | undefined {
 function normalizeOptionalString(value: unknown): string | undefined {
   const text = String(value || '').trim();
   return text || undefined;
+}
+
+function normalizeStringList(value: unknown, limit = 6): string[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((item) => String(item || '').trim())
+    .filter(Boolean)
+    .slice(0, limit);
 }
 
 function normalizeDebtStatus(status: unknown, balance?: number): DebtLifecycleStatus {
@@ -177,6 +213,119 @@ function normalizeInvestmentGoal(
   };
 }
 
+function normalizeInvestmentFundAnalysis(value: unknown): InvestmentFundAnalysis | undefined {
+  if (!value || typeof value !== 'object') {
+    return undefined;
+  }
+
+  const item = value as Partial<InvestmentFundAnalysis>;
+  const verdict = String(item.verdict || '').trim();
+  const summary = String(item.summary || '').trim();
+  const riskLevel =
+    item.riskLevel === 'low' ||
+    item.riskLevel === 'medium' ||
+    item.riskLevel === 'high' ||
+    item.riskLevel === 'unknown'
+      ? item.riskLevel
+      : 'unknown';
+
+  if (!verdict && !summary) {
+    return undefined;
+  }
+
+  return {
+    fundName: normalizeOptionalString(item.fundName),
+    fundCode: normalizeOptionalString(item.fundCode),
+    verdict: verdict || summary || '已完成分析',
+    summary: summary || verdict || '已完成分析',
+    riskLevel,
+    highlights: normalizeStringList(item.highlights, 4),
+    risks: normalizeStringList(item.risks, 4),
+    actions: normalizeStringList(item.actions, 4),
+    watchTags: normalizeStringList(item.watchTags, 4),
+    platform: normalizeOptionalString(item.platform),
+    note: normalizeOptionalString(item.note)
+  };
+}
+
+function normalizeInvestmentWatchItem(
+  item: Omit<InvestmentWatchItem, 'id' | 'createdAt' | 'updatedAt'> & {
+    id?: string;
+    createdAt?: string;
+    updatedAt?: string;
+  }
+): InvestmentWatchItem {
+  const now = new Date().toISOString();
+  const riskLevel =
+    item.lastRiskLevel === 'low' ||
+    item.lastRiskLevel === 'medium' ||
+    item.lastRiskLevel === 'high' ||
+    item.lastRiskLevel === 'unknown'
+      ? item.lastRiskLevel
+      : undefined;
+
+  return {
+    id: item.id || createInvestmentWatchItemId(),
+    name: String(item.name || '').trim() || '未命名自选',
+    code: normalizeOptionalString(item.code),
+    platform: normalizeOptionalString(item.platform),
+    tags: normalizeStringList(item.tags, 4),
+    note: normalizeOptionalString(item.note),
+    lastVerdict: normalizeOptionalString(item.lastVerdict),
+    lastSummary: normalizeOptionalString(item.lastSummary),
+    lastRiskLevel: riskLevel,
+    lastAnalysisAt: normalizeOptionalString(item.lastAnalysisAt),
+    createdAt: item.createdAt || now,
+    updatedAt: item.updatedAt || now
+  };
+}
+
+function normalizeInvestmentAiMessage(item: InvestmentAiMessage): InvestmentAiMessage | null {
+  const text = String(item.text || '').trim().slice(0, 6000);
+  const analysis = normalizeInvestmentFundAnalysis(item.analysis);
+  if (!text && !analysis) {
+    return null;
+  }
+
+  return {
+    id: item.id || createInvestmentAiMessageId(),
+    role: item.role === 'assistant' ? 'assistant' : 'user',
+    text: text || (analysis?.summary ?? '已完成分析'),
+    reasoning: normalizeOptionalString(item.reasoning),
+    attachmentCount: Math.max(0, Math.floor(Number(item.attachmentCount || 0))) || undefined,
+    analysis,
+    createdAt: normalizeOptionalString(item.createdAt) || new Date().toISOString()
+  };
+}
+
+function normalizeInvestmentAiMessages(messages: InvestmentAiMessage[]): InvestmentAiMessage[] {
+  return messages
+    .map((item) => normalizeInvestmentAiMessage(item))
+    .filter((item): item is InvestmentAiMessage => Boolean(item))
+    .slice(-12);
+}
+
+function findMatchingWatchItemIndex(
+  list: InvestmentWatchItem[],
+  payload: Pick<InvestmentWatchItem, 'id' | 'name' | 'code' | 'platform'>
+) {
+  const code = String(payload.code || '').trim().toLowerCase();
+  const name = String(payload.name || '').trim().toLowerCase();
+  const platform = String(payload.platform || '').trim().toLowerCase();
+
+  return list.findIndex((item) => {
+    if (payload.id && item.id === payload.id) {
+      return true;
+    }
+
+    const sameCode = code && String(item.code || '').trim().toLowerCase() === code;
+    const sameName = name && String(item.name || '').trim().toLowerCase() === name;
+    const samePlatform = platform === String(item.platform || '').trim().toLowerCase();
+
+    return sameCode || (sameName && (platform ? samePlatform : true));
+  });
+}
+
 function createSubscriptionId(url: string): string {
   const normalized = normalizeFeedUrl(url)
     .toLocaleLowerCase('en-US')
@@ -194,6 +343,8 @@ export const useAppPreferences = create<AppPreferencesState>()(
       rssSubscriptions: DEFAULT_RSS_SUBSCRIPTIONS,
       investmentPositions: [],
       investmentGoals: [],
+      investmentWatchlist: [],
+      investmentAiMessages: [],
       debts: [],
       repaymentRecords: [],
       monthlyIncome: 0,
@@ -309,6 +460,47 @@ export const useAppPreferences = create<AppPreferencesState>()(
         set((state) => ({
           investmentGoals: state.investmentGoals.filter((item) => item.id !== id)
         }));
+      },
+      upsertInvestmentWatchItem: (payload) => {
+        set((state) => {
+          const existingIndex = findMatchingWatchItemIndex(state.investmentWatchlist, payload);
+          if (existingIndex < 0) {
+            return {
+              investmentWatchlist: [
+                normalizeInvestmentWatchItem(payload),
+                ...state.investmentWatchlist
+              ]
+            };
+          }
+
+          const current = state.investmentWatchlist[existingIndex];
+          const nextItem = normalizeInvestmentWatchItem({
+            ...current,
+            ...payload,
+            id: current.id,
+            createdAt: current.createdAt,
+            updatedAt: new Date().toISOString()
+          });
+
+          return {
+            investmentWatchlist: state.investmentWatchlist.map((item, index) =>
+              index === existingIndex ? nextItem : item
+            )
+          };
+        });
+      },
+      removeInvestmentWatchItem: (id) => {
+        set((state) => ({
+          investmentWatchlist: state.investmentWatchlist.filter((item) => item.id !== id)
+        }));
+      },
+      setInvestmentAiMessages: (messages) => {
+        set({
+          investmentAiMessages: normalizeInvestmentAiMessages(messages)
+        });
+      },
+      clearInvestmentAiMessages: () => {
+        set({ investmentAiMessages: [] });
       },
       addDebt: (payload) => {
         set((state) => ({

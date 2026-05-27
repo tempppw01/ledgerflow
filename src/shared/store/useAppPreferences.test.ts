@@ -8,6 +8,8 @@ describe('useAppPreferences RSS subscriptions', () => {
       theme: 'system',
       investmentPositions: [],
       investmentGoals: [],
+      investmentWatchlist: [],
+      investmentAiMessages: [],
       rssSubscriptions: [
         {
           id: 'rss-financial-times-markets',
@@ -107,5 +109,63 @@ describe('useAppPreferences RSS subscriptions', () => {
 
     expect(useAppPreferences.getState().investmentPositions).toEqual([]);
     expect(useAppPreferences.getState().investmentGoals).toEqual([]);
+  });
+
+  it('should upsert investment watchlist items and persist ai messages', () => {
+    useAppPreferences.getState().upsertInvestmentWatchItem({
+      name: '易方达沪深300ETF',
+      code: '510310',
+      platform: '支付宝',
+      tags: ['宽基', '指数'],
+      note: '适合长期观察',
+      lastVerdict: '可以继续跟踪',
+      lastSummary: '规模稳定，波动相对可控',
+      lastRiskLevel: 'medium',
+      lastAnalysisAt: '2026-05-27T10:00:00.000Z'
+    });
+    useAppPreferences.getState().upsertInvestmentWatchItem({
+      name: '易方达沪深300ETF',
+      code: '510310',
+      platform: '支付宝',
+      tags: ['宽基', '定投'],
+      note: '更新后的备注',
+      lastVerdict: '更适合分批跟踪',
+      lastSummary: '最新分析优先级更高',
+      lastRiskLevel: 'low',
+      lastAnalysisAt: '2026-05-27T12:00:00.000Z'
+    });
+    useAppPreferences.getState().setInvestmentAiMessages([
+      {
+        id: 'msg-user-1',
+        role: 'user',
+        text: '这只基金还能继续定投吗？',
+        createdAt: '2026-05-27T10:00:00.000Z'
+      },
+      {
+        id: 'msg-assistant-1',
+        role: 'assistant',
+        text: '可以继续跟踪，但先控制节奏。',
+        reasoning: '先看规模和波动，再看用户当前仓位。',
+        analysis: {
+          fundName: '易方达沪深300ETF',
+          fundCode: '510310',
+          verdict: '可以继续跟踪',
+          summary: '规模稳定，适合作为观察名单的一部分。',
+          riskLevel: 'medium',
+          highlights: ['宽基属性清晰'],
+          risks: ['短期波动仍在'],
+          actions: ['观察回撤区间'],
+          watchTags: ['宽基']
+        },
+        createdAt: '2026-05-27T10:01:00.000Z'
+      }
+    ]);
+
+    const state = useAppPreferences.getState();
+    expect(state.investmentWatchlist).toHaveLength(1);
+    expect(state.investmentWatchlist[0].lastSummary).toBe('最新分析优先级更高');
+    expect(state.investmentWatchlist[0].lastRiskLevel).toBe('low');
+    expect(state.investmentAiMessages).toHaveLength(2);
+    expect(state.investmentAiMessages[1].analysis?.fundCode).toBe('510310');
   });
 });

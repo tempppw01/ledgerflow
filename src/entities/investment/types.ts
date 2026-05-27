@@ -49,3 +49,44 @@ export interface InvestmentGoal {
   createdAt: string;
   updatedAt: string;
 }
+
+export type InvestmentAnalysisRiskLevel = 'low' | 'medium' | 'high' | 'unknown';
+
+export interface InvestmentFundAnalysis {
+  fundName?: string;
+  fundCode?: string;
+  verdict: string;
+  summary: string;
+  riskLevel: InvestmentAnalysisRiskLevel;
+  highlights: string[];
+  risks: string[];
+  actions: string[];
+  watchTags: string[];
+  platform?: string;
+  note?: string;
+}
+
+export interface InvestmentWatchItem {
+  id: string;
+  name: string;
+  code?: string;
+  platform?: string;
+  tags: string[];
+  note?: string;
+  lastVerdict?: string;
+  lastSummary?: string;
+  lastRiskLevel?: InvestmentAnalysisRiskLevel;
+  lastAnalysisAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InvestmentAiMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  text: string;
+  reasoning?: string;
+  attachmentCount?: number;
+  analysis?: InvestmentFundAnalysis;
+  createdAt: string;
+}
