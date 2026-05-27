@@ -21,6 +21,7 @@ import { BillPreviewCard } from '../../features/assistant/ui/BillPreviewCard';
 import { renderMarkdownContent } from '../../features/assistant/ui/MarkdownRenderer';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useGlobalMemoryStore } from '../../shared/store/useGlobalMemoryStore';
+import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
 import { extractGlobalMemoriesFromConversation } from '../../features/assistant/memory/extractGlobalMemories';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
@@ -548,6 +549,31 @@ function buildFollowUpPrompts(answer: string, history: ChatHistoryItem[]): strin
     .map((item) => item.prompt);
 
   return ranked;
+}
+
+function normalizeFollowUpPrompt(prompt: string): string {
+  return prompt
+    .replace(/\s+/g, ' ')
+    .replace(/^[-*•\d一二三四五六七八九十、.．)）\s]+/, '')
+    .trim()
+    .slice(0, 48);
+}
+
+function parseAiFollowUpPrompts(raw: string): string[] {
+  const normalized = raw.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '');
+  const candidate = normalized.match(/\[[\s\S]*\]/)?.[0] || normalized;
+  const parsed = JSON.parse(candidate) as Array<string | { prompt?: unknown; question?: unknown; label?: unknown }>;
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed
+    .map((item) => {
+      if (typeof item === 'string') return item;
+      if (!item || typeof item !== 'object') return '';
+      return String(item.prompt || item.question || item.label || '');
+    })
+    .map(normalizeFollowUpPrompt)
+    .filter((item, index, list) => item.length >= 6 && list.indexOf(item) === index)
+    .slice(0, 4);
 }
 
 function renderFieldMetaTag(meta?: CreditFieldMeta) {
@@ -1095,6 +1121,64 @@ export function AssistantPage() {
     [mode]
   );
 
+  const updateMessageInMode = useCallback(
+    (targetMode: AssistantMode, messageId: string, patch: Partial<ChatHistoryItem>) => {
+      const applyPatch = (items: ChatHistoryItem[]) =>
+        items.map((item) => (item.id === messageId ? { ...item, ...patch } : item));
+
+      if (targetMode === mode) {
+        setChatHistory((prev) => applyPatch(prev));
+        return;
+      }
+
+      const next = applyPatch(readChatHistory(targetMode));
+      try {
+        window.sessionStorage.setItem(CHAT_HISTORY_CACHE_KEYS[targetMode], JSON.stringify(next));
+      } catch {
+        // ignore storage write errors
+      }
+    },
+    [mode]
+  );
+
+  const generateAssistantFollowUpPrompts = useCallback(
+    async (params: { question: string; answer: string; history: ChatHistoryItem[] }) => {
+      const fallback = buildFollowUpPrompts(params.answer, params.history);
+      if (!baseUrl || !apiKey || !model) {
+        return fallback;
+      }
+
+      const recentTurns = params.history
+        .filter((item) => item.role === 'user' || item.role === 'assistant')
+        .slice(-6)
+        .map((item) => `${item.role === 'user' ? '用户' : '助手'}：${item.text.trim()}`)
+        .filter(Boolean)
+        .join('\n');
+
+      try {
+        const reply = await sendAiChat({
+          baseUrl,
+          apiKey,
+          model,
+          systemPrompt:
+            '你是 AI 助手里的“继续追问建议生成器”。请基于最近对话、用户刚才的问题和助手本轮回答，生成 3 到 4 条自然、具体、像真人顺着聊下去会问的问题。只返回 JSON 数组，例如 ["问题1","问题2","问题3"]。要求：1) 每条都必须是中文问题句；2) 聚焦当前主题的下一步，不要泛泛地说“展开讲讲”“还有哪些数据”；3) 尽量引用当前回答里的具体对象、金额、时间、场景或判断；4) 每条角度不同，可以是原因、取舍、风险、下一步、验证；5) 单条尽量控制在 10 到 28 个汉字；6) 不要出现“如果你愿意”“我可以帮你”等助手口吻。',
+          messages: [
+            {
+              role: 'user',
+              text: `最近对话：\n${recentTurns || '无'}\n\n用户刚才的问题：${params.question || '无'}\n\n助手本轮回答：${params.answer}\n\n请生成 3 到 4 条继续追问建议。`
+            }
+          ]
+        });
+
+        const prompts = parseAiFollowUpPrompts(reply.content);
+        return prompts.length >= 2 ? prompts : fallback;
+      } catch {
+        return fallback;
+      }
+    },
+    [apiKey, baseUrl, model]
+  );
+
   const handleSaveCreditItem = useCallback(
     (creditItem: CreditExtractedItem, strategy: 'create' | 'update' = 'create') => {
       const payload = normalizeCreditDebtPayload(creditItem);
@@ -1373,8 +1457,9 @@ export function AssistantPage() {
           )
         : undefined;
 
+    const assistantMessageId = `${Date.now()}-assistant`;
     appendMessageToMode(responseMode, {
-      id: `${Date.now()}-assistant`,
+      id: assistantMessageId,
       role: 'assistant',
       text: messageText,
       usageText,
@@ -1384,19 +1469,34 @@ export function AssistantPage() {
       followUpPrompts:
         responseMode === 'credit'
           ? buildCreditFollowUpPrompts(creditItems || [])
-          : responseMode !== 'bookkeeping'
-            ? buildFollowUpPrompts(wb.rawContent, chatHistory)
-            : undefined,
+          : undefined,
       creditItems
     });
+
+    if (responseMode === 'assistant') {
+      const latestUserQuestion =
+        [...chatHistory].reverse().find((item) => item.role === 'user')?.text?.trim() || '';
+      void generateAssistantFollowUpPrompts({
+        question: latestUserQuestion,
+        answer: messageText,
+        history: chatHistory
+      }).then((prompts) => {
+        if (!prompts.length) return;
+        updateMessageInMode(responseMode, assistantMessageId, {
+          followUpPrompts: prompts
+        });
+      });
+    }
   }, [
     appendMessageToMode,
     buildAssistantMessageText,
     chatHistory,
     debts,
+    generateAssistantFollowUpPrompts,
     repaymentRecords,
     showEmbeddingDebug,
     showEmbeddingSummary,
+    updateMessageInMode,
     wb.embeddingDebug,
     wb.lastUsage,
     wb.rawContent,

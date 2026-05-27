@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
 import { AssistantPage } from './AssistantPage';
 
 Object.defineProperty(window, 'matchMedia', {
@@ -72,6 +73,14 @@ beforeEach(() => {
   navigateMock.mockReset();
   useAssistantWorkbenchMock.mockReset();
   window.sessionStorage.clear();
+  vi.mocked(sendAiChat).mockReset();
+  vi.mocked(sendAiChat).mockResolvedValue({
+    content: JSON.stringify([
+      '先帮我拆出最近两周涨得最快的分类？',
+      '如果只能先压一项支出，你会先动哪一项？',
+      '把这波预算压力按短期和长期分开看？'
+    ])
+  });
 });
 
 const aiSettingsMocks = vi.hoisted(() => {
@@ -174,18 +183,7 @@ vi.mock('../../shared/store/useFinanceStore', () => ({
 }));
 
 vi.mock('../../features/assistant/api/openaiCompatibleClient', () => ({
-  sendAiChat: vi.fn(async () => ({
-    content: JSON.stringify([
-      {
-        label: '测试快捷问题一',
-        prompt: '请给我一条测试用的信贷分析问题。'
-      },
-      {
-        label: '测试快捷问题二',
-        prompt: '请给我另一条测试用的信贷分析问题。'
-      }
-    ])
-  }))
+  sendAiChat: vi.fn()
 }));
 
 vi.mock('../../features/assistant/workbench/useAssistantWorkbench', () => ({
@@ -812,6 +810,14 @@ describe('AssistantPage', () => {
   });
 
   it('AI 助手回复后应生成与主题相关的继续追问建议', async () => {
+    vi.mocked(sendAiChat).mockResolvedValueOnce({
+      content: JSON.stringify([
+        '先帮我拆出最近两周涨得最快的分类？',
+        '如果只能先压一项支出，你会先动哪一项？',
+        '把这波预算压力按短期和长期分开看？'
+      ])
+    });
+
     useAssistantWorkbenchMock.mockReturnValue({
       ...createWorkbenchMock(),
       rawContent: '最近餐饮和通勤支出一起抬升，本月预算压力主要来自高频小额消费。建议先收紧工作日外卖，再看通勤替代方案。',
@@ -840,13 +846,19 @@ describe('AssistantPage', () => {
     );
 
     expect(await screen.findByText('你可以顺手继续问：')).toBeInTheDocument();
-    const chips = screen.getAllByRole('button').filter((button) =>
-      button.className.includes('chat-follow-up-chip')
+    expect(await screen.findByText('先帮我拆出最近两周涨得最快的分类？')).toBeInTheDocument();
+    expect(screen.getByText('如果只能先压一项支出，你会先动哪一项？')).toBeInTheDocument();
+    expect(screen.getByText('把这波预算压力按短期和长期分开看？')).toBeInTheDocument();
+    expect(sendAiChat).toHaveBeenCalledTimes(1);
+    expect(sendAiChat).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messages: expect.arrayContaining([
+          expect.objectContaining({
+            text: expect.stringContaining('帮我看看最近支出趋势')
+          })
+        ])
+      })
     );
-    expect(chips.length).toBeGreaterThanOrEqual(2);
-    expect(chips.length).toBeLessThanOrEqual(4);
-    expect(chips.some((button) => /变化|趋势|阶段|拐点/.test(button.textContent || ''))).toBe(true);
-    expect(chips.some((button) => /分类|优先级|预算|风险|数据/.test(button.textContent || ''))).toBe(true);
 
     sessionStorageGetItemSpy.mockRestore();
   });
