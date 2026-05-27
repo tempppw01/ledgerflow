@@ -555,7 +555,12 @@ export function AppLayout() {
                 onClick={() => setMobileNavOpen(true)}
                 aria-label={t('layout.openDrawer')}
               >
-                ☰
+                <img
+                  className="sidebar-collapse-icon"
+                  src={CHEVRONS_LEFT_RIGHT_ICON_URL}
+                  alt=""
+                  aria-hidden="true"
+                />
               </button>
               {isMobileViewport ? (
                 <div className="workspace-topbar-title" title={currentWorkspaceTitle}>
