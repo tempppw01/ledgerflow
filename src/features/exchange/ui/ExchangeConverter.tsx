@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ExchangeRate } from '../model/types';
 import { getCurrencyFlag, getCurrencyName } from '../model/types';
 
@@ -56,6 +56,18 @@ function evaluateExpression(input: string): number | null {
 function prettyNumber(value: number): string {
   const fixed = value.toFixed(10);
   return fixed.replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+}
+
+function mapKeyboardKeyToCalculatorKey(key: string): (typeof KEYPAD)[number] | null {
+  if (/^\d$/.test(key)) return key as (typeof KEYPAD)[number];
+  if (key === '.' || key === '+') return key as (typeof KEYPAD)[number];
+  if (key === '-') return '-';
+  if (key === '/' || key === '÷') return '÷';
+  if (key === '*' || key === 'x' || key === 'X' || key === '×') return '×';
+  if (key === 'Enter' || key === '=') return '=';
+  if (key === 'Backspace') return '⌫';
+  if (key === 'Delete' || key === 'Escape') return 'C';
+  return null;
 }
 
 export function ExchangeConverter({ rates, base }: ExchangeConverterProps) {
@@ -130,6 +142,36 @@ export function ExchangeConverter({ rates, base }: ExchangeConverterProps) {
     }
     appendToken(key);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || event.isComposing) {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+      const tagName = target?.tagName?.toLowerCase();
+      if (
+        target?.isContentEditable ||
+        tagName === 'input' ||
+        tagName === 'textarea' ||
+        tagName === 'select'
+      ) {
+        return;
+      }
+
+      const mappedKey = mapKeyboardKeyToCalculatorKey(event.key);
+      if (!mappedKey) {
+        return;
+      }
+
+      event.preventDefault();
+      applyKey(mappedKey);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [applyKey]);
 
   return (
     <section className="panel exchange-converter">

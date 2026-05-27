@@ -57,4 +57,29 @@ describe('ExchangeConverter', () => {
 
     expect(screen.getByText('2', { selector: '.exchange-calculator-screen' })).toBeTruthy();
   });
+
+  it('支持电脑键盘直接输入和计算', () => {
+    render(<ExchangeConverter rates={mockRates} base="CNY" />);
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    fireEvent.keyDown(window, { key: '1' });
+    fireEvent.keyDown(window, { key: '0' });
+    fireEvent.keyDown(window, { key: '+' });
+    fireEvent.keyDown(window, { key: '5' });
+    fireEvent.keyDown(window, { key: 'Enter' });
+
+    expect(screen.getByText('15', { selector: '.exchange-calculator-screen' })).toBeTruthy();
+    expect(screen.getByLabelText('换算结果').textContent).toContain('2.1000');
+  });
+
+  it('支持退格和删除键控制计算器', () => {
+    render(<ExchangeConverter rates={mockRates} base="CNY" />);
+
+    fireEvent.keyDown(window, { key: 'Delete' });
+    fireEvent.keyDown(window, { key: '9' });
+    fireEvent.keyDown(window, { key: '8' });
+    fireEvent.keyDown(window, { key: 'Backspace' });
+
+    expect(screen.getByText('9', { selector: '.exchange-calculator-screen' })).toBeTruthy();
+  });
 });
