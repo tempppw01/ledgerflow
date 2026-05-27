@@ -85,6 +85,7 @@ export interface InvestmentAiMessage {
   id: string;
   role: 'user' | 'assistant';
   text: string;
+  feedback?: 'up' | 'down';
   reasoning?: string;
   attachmentCount?: number;
   analysis?: InvestmentFundAnalysis;

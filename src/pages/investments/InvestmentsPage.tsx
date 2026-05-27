@@ -14,7 +14,15 @@ import type {
 } from '../../entities/investment/types';
 import { sendAiChatStream } from '../../features/assistant/api/openaiCompatibleClient';
 import { renderMarkdownContent } from '../../features/assistant/ui/MarkdownRenderer';
-import { INFO_ICON_URL, QUESTION_ICON_URL } from '../../shared/config/brandAssets';
+import {
+  IMAGE_ICON_URL,
+  INFO_ICON_URL,
+  PEN_TOOL_ICON_URL,
+  QUESTION_ICON_URL,
+  STAR_ICON_URL,
+  THUMBS_DOWN_ICON_URL,
+  THUMBS_UP_ICON_URL
+} from '../../shared/config/brandAssets';
 import { formatCurrency, formatCurrencyAuto, formatDate } from '../../shared/lib/format';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
@@ -572,6 +580,16 @@ export function InvestmentsPage() {
     setInvestmentAiMessages(next);
   }
 
+  function setInvestmentMessageFeedback(messageId: string, feedback: InvestmentAiMessage['feedback']) {
+    syncInvestmentAiMessages(
+      investmentAiMessages.map((item) =>
+        item.id === messageId
+          ? { ...item, feedback: item.feedback === feedback ? undefined : feedback }
+          : item
+      )
+    );
+  }
+
   function scrollToInvestmentAiPanel() {
     aiPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -999,15 +1017,43 @@ export function InvestmentsPage() {
                         <div className="investments-analysis-actions">
                           <button
                             type="button"
-                            className={matchedWatchItem ? 'investments-analysis-watch-btn is-active' : 'primary'}
+                            className={`button-with-icon ${matchedWatchItem ? 'investments-analysis-watch-btn is-active' : 'primary'}`}
                             onClick={() => handleAddAnalysisToWatchlist(item.analysis!)}
                           >
+                            <img src={STAR_ICON_URL} alt="" aria-hidden="true" />
                             {matchedWatchItem ? '更新自选' : '加入自选'}
                           </button>
                           {matchedWatchItem?.updatedAt ? (
                             <span>上次更新 {formatDateTimeLabel(matchedWatchItem.updatedAt)}</span>
                           ) : null}
                         </div>
+                      </div>
+                    ) : null}
+                    {item.role === 'assistant' ? (
+                      <div className="investments-ai-message-actions">
+                        <button
+                          type="button"
+                          className={`chat-icon-action-btn${item.feedback === 'up' ? ' is-active' : ''}`}
+                          onClick={() => setInvestmentMessageFeedback(item.id, 'up')}
+                          aria-label="点赞这条分析"
+                          title="点赞这条分析"
+                        >
+                          <img className="chat-icon-action-img" src={THUMBS_UP_ICON_URL} alt="" aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className={`chat-icon-action-btn${item.feedback === 'down' ? ' is-active' : ''}`}
+                          onClick={() => setInvestmentMessageFeedback(item.id, 'down')}
+                          aria-label="点踩这条分析"
+                          title="点踩这条分析"
+                        >
+                          <img
+                            className="chat-icon-action-img"
+                            src={THUMBS_DOWN_ICON_URL}
+                            alt=""
+                            aria-hidden="true"
+                          />
+                        </button>
                       </div>
                     ) : null}
                   </div>
@@ -1082,10 +1128,11 @@ export function InvestmentsPage() {
             <div className="investments-ai-composer-toolbar">
               <button
                 type="button"
-                className="investments-ai-upload-btn"
+                className="investments-ai-upload-btn button-with-icon"
                 onClick={() => aiFileInputRef.current?.click()}
                 disabled={investmentAiStatus === 'loading'}
               >
+                <img src={IMAGE_ICON_URL} alt="" aria-hidden="true" />
                 上传图片
               </button>
               <span>支持最多 {MAX_INVESTMENT_AI_IMAGES} 张截图，本次分析后不会长期保存图片。</span>
@@ -1138,7 +1185,12 @@ export function InvestmentsPage() {
             <article className="investments-watchlist-highlight">
               <strong>{latestAssistantAnalysis.fundName || latestAssistantAnalysis.fundCode || '最新分析结果'}</strong>
               <p>{latestAssistantAnalysis.verdict}</p>
-              <button type="button" className="primary" onClick={() => handleAddAnalysisToWatchlist(latestAssistantAnalysis)}>
+              <button
+                type="button"
+                className="primary button-with-icon"
+                onClick={() => handleAddAnalysisToWatchlist(latestAssistantAnalysis)}
+              >
+                <img src={STAR_ICON_URL} alt="" aria-hidden="true" />
                 加入自选
               </button>
             </article>
@@ -1481,6 +1533,7 @@ export function InvestmentsPage() {
                     <div className="investments-actions-inline">
                       <button
                         type="button"
+                        className="button-with-icon"
                         onClick={() => {
                           setEditingPositionId(item.id);
                           setPositionError('');
@@ -1499,6 +1552,7 @@ export function InvestmentsPage() {
                           });
                         }}
                       >
+                        <img src={PEN_TOOL_ICON_URL} alt="" aria-hidden="true" />
                         编辑
                       </button>
                       <button type="button" className="danger" onClick={() => setPendingDeletePositionId(item.id)}>
@@ -1674,6 +1728,7 @@ export function InvestmentsPage() {
                   <div className="investments-actions-inline">
                     <button
                       type="button"
+                      className="button-with-icon"
                       onClick={() => {
                         setEditingGoalId(item.id);
                         setGoalError('');
@@ -1689,6 +1744,7 @@ export function InvestmentsPage() {
                         });
                       }}
                     >
+                      <img src={PEN_TOOL_ICON_URL} alt="" aria-hidden="true" />
                       编辑
                     </button>
                     <button type="button" className="danger" onClick={() => setPendingDeleteGoalId(item.id)}>

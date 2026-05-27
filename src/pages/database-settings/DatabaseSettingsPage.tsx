@@ -24,7 +24,11 @@ import {
   webdavUploadBackup,
   sanitizeWebdavConfig
 } from '../../shared/lib/backup';
-import { BACKUP_ICON_URL, RESTORE_ICON_URL } from '../../shared/config/brandAssets';
+import {
+  BACKUP_ICON_URL,
+  CARD_SD_ICON_URL,
+  RESTORE_ICON_URL
+} from '../../shared/config/brandAssets';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { useGlobalMemoryStore } from '../../shared/store/useGlobalMemoryStore';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
@@ -583,7 +587,10 @@ export function DatabaseSettingsPage() {
         <div className="database-data-hub-grid">
           <div className="database-data-hub-block">
             <div>
-              <span className="database-data-hub-label">备份导出</span>
+              <span className="database-data-hub-label">
+                <img src={CARD_SD_ICON_URL} alt="" aria-hidden="true" />
+                本地备份
+              </span>
               <h4>按范围导出备份文件</h4>
             </div>
             <p className="sync-tip">

@@ -291,6 +291,7 @@ function normalizeInvestmentAiMessage(item: InvestmentAiMessage): InvestmentAiMe
     id: item.id || createInvestmentAiMessageId(),
     role: item.role === 'assistant' ? 'assistant' : 'user',
     text: text || (analysis?.summary ?? '已完成分析'),
+    feedback: item.feedback === 'up' || item.feedback === 'down' ? item.feedback : undefined,
     reasoning: normalizeOptionalString(item.reasoning),
     attachmentCount: Math.max(0, Math.floor(Number(item.attachmentCount || 0))) || undefined,
     analysis,
@@ -307,7 +308,7 @@ function normalizeInvestmentAiMessages(messages: InvestmentAiMessage[]): Investm
 
 function findMatchingWatchItemIndex(
   list: InvestmentWatchItem[],
-  payload: Pick<InvestmentWatchItem, 'id' | 'name' | 'code' | 'platform'>
+  payload: Pick<InvestmentWatchItem, 'name' | 'code' | 'platform'> & { id?: string }
 ) {
   const code = String(payload.code || '').trim().toLowerCase();
   const name = String(payload.name || '').trim().toLowerCase();

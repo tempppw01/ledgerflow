@@ -17,6 +17,7 @@ import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { ALIPAY_LOGO_URL, WECHAT_LOGO_URL } from '../../shared/config/brandAssets';
 import {
   getAccountDisplayIcon,
+  getAccountDisplayIconUrl,
   getAccountTypeLabel,
   isAlipayAccountName,
   isWechatAccountName
@@ -762,6 +763,7 @@ export function CategoriesAccountsPage() {
                 const balanceValue =
                   editingBalances[item.id] ?? Number(item.computedBalance || 0).toFixed(2);
                 const isEditingBalance = editingBalanceAccountId === item.id;
+                const accountIconUrl = getAccountDisplayIconUrl(item.name, item.type);
                 return (
                   <article key={item.id} className="account-card">
                     <header className="account-card-head">
@@ -778,6 +780,8 @@ export function CategoriesAccountsPage() {
                             src={WECHAT_LOGO_URL}
                             alt=""
                           />
+                        ) : accountIconUrl ? (
+                          <img className="account-card-brand-icon" src={accountIconUrl} alt="" />
                         ) : (
                           getAccountDisplayIcon(item.name, item.type)
                         )}

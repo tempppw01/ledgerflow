@@ -6,7 +6,11 @@ import { formatCurrencyAuto, formatDate } from '../../../shared/lib/format';
 import { summarizeTransactions } from '../../../shared/lib/transactionMetrics';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { TableSkeleton } from '../../../shared/ui/TableSkeleton';
-import { ALIPAY_LOGO_URL, WECHAT_LOGO_URL } from '../../../shared/config/brandAssets';
+import {
+  ALIPAY_LOGO_URL,
+  LANDMARK_ICON_URL,
+  WECHAT_LOGO_URL
+} from '../../../shared/config/brandAssets';
 
 const NOTE_MAX_LENGTH = 22;
 const DEFAULT_MIN_COLUMN_WIDTH = 90;
@@ -55,18 +59,14 @@ function WechatBrandIcon() {
 
 function BankBrandIcon() {
   return (
-    <svg
+    <img
       className="bank-icon"
-      viewBox="0 0 24 24"
+      src={LANDMARK_ICON_URL}
+      alt=""
       width="16"
       height="16"
       aria-hidden="true"
-      focusable="false"
-    >
-      <rect x="2" y="4" width="20" height="16" rx="4" fill="#475569" />
-      <path d="M5 10h14M7 13.5h2.6M11 13.5h2.6M15 13.5h2" stroke="#fff" strokeWidth="1.5" />
-      <rect x="5.2" y="6.2" width="4.2" height="2" rx="1" fill="#94A3B8" />
-    </svg>
+    />
   );
 }
 

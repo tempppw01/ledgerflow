@@ -50,7 +50,13 @@ import {
   readAssistantModeFromSessionStorage,
   type AssistantMode
 } from '../../features/assistant/shared/assistantMode';
-import { BOT_ICON_URL, USER_ICON_URL } from '../../shared/config/brandAssets';
+import {
+  BOT_ICON_URL,
+  IMAGE_ICON_URL,
+  THUMBS_DOWN_ICON_URL,
+  THUMBS_UP_ICON_URL,
+  USER_ICON_URL
+} from '../../shared/config/brandAssets';
 
 function getModelDisplayLabel(modelId: string): string {
   const value = modelId.trim();
@@ -144,6 +150,7 @@ interface ChatHistoryItem {
   id: string;
   role: 'user' | 'assistant';
   text: string;
+  feedback?: 'up' | 'down';
   imageDataUrls?: string[];
   pdfDataUrls?: string[];
   usageText?: string;
@@ -229,6 +236,7 @@ function readChatHistory(mode: AssistantMode): ChatHistoryItem[] {
       )
       .map((item) => ({
         ...item,
+        feedback: item.feedback === 'up' || item.feedback === 'down' ? item.feedback : undefined,
         imageDataUrls: Array.isArray(item.imageDataUrls)
           ? item.imageDataUrls.filter(
               (url): url is string => typeof url === 'string' && url.length > 0
@@ -1507,6 +1515,17 @@ export function AssistantPage() {
   const removeMessage = (id: string) =>
     setChatHistory((prev) => prev.filter((item) => item.id !== id));
 
+  const setMessageFeedback = useCallback(
+    (messageId: string, feedback: ChatHistoryItem['feedback']) => {
+      const current = chatHistory.find((item) => item.id === messageId);
+      if (!current) return;
+      updateMessageInMode(mode, messageId, {
+        feedback: current.feedback === feedback ? undefined : feedback
+      });
+    },
+    [chatHistory, mode, updateMessageInMode]
+  );
+
   const retryMessage = (index: number) => {
     const previousUser = [...chatHistory]
       .slice(0, index)
@@ -2218,6 +2237,38 @@ export function AssistantPage() {
                 ) : null}
                 {item.usageText ? <p className="chat-token-usage">{item.usageText}</p> : null}
                 <div className="chat-message-actions">
+                  {item.role === 'assistant' ? (
+                    <>
+                      <button
+                        type="button"
+                        className={`chat-icon-action-btn${item.feedback === 'up' ? ' is-active' : ''}`}
+                        onClick={() => setMessageFeedback(item.id, 'up')}
+                        aria-label="点赞这条回复"
+                        title="点赞这条回复"
+                      >
+                        <img
+                          className="chat-icon-action-img"
+                          src={THUMBS_UP_ICON_URL}
+                          alt=""
+                          aria-hidden="true"
+                        />
+                      </button>
+                      <button
+                        type="button"
+                        className={`chat-icon-action-btn${item.feedback === 'down' ? ' is-active' : ''}`}
+                        onClick={() => setMessageFeedback(item.id, 'down')}
+                        aria-label="点踩这条回复"
+                        title="点踩这条回复"
+                      >
+                        <img
+                          className="chat-icon-action-img"
+                          src={THUMBS_DOWN_ICON_URL}
+                          alt=""
+                          aria-hidden="true"
+                        />
+                      </button>
+                    </>
+                  ) : null}
                   <button
                     type="button"
                     className="chat-icon-action-btn"
@@ -2652,7 +2703,7 @@ export function AssistantPage() {
                 onClick={() => wb.fileInputRef.current?.click()}
                 disabled={wb.status === 'recognizing'}
               >
-                ＋
+                <img className="chat-upload-icon" src={IMAGE_ICON_URL} alt="" aria-hidden="true" />
               </button>
 
               <div className="chat-input-main">

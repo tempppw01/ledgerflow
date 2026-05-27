@@ -8,7 +8,14 @@ import {
 } from '../../../entities/transaction/types';
 import { formatCurrency, formatDateTime } from '../../../shared/lib/format';
 import { buildA4PrintBaseStyles, buildA4PrintSheetStyles } from '../../../shared/lib/printStyles';
-import { ALIPAY_LOGO_URL, WECHAT_LOGO_URL } from '../../../shared/config/brandAssets';
+import {
+  ALIPAY_LOGO_URL,
+  IMAGE_ICON_URL,
+  LANDMARK_ICON_URL,
+  PEN_TOOL_ICON_URL,
+  PRINTER_ICON_URL,
+  WECHAT_LOGO_URL
+} from '../../../shared/config/brandAssets';
 import {
   loadWebdavConfig,
   sanitizeWebdavConfig,
@@ -39,6 +46,8 @@ type DetailMode = 'professional' | 'timeline';
 const DETAIL_MODE_STORAGE_KEY = 'ledgerflow.transactions.detailMode';
 const ALIPAY_ACCOUNT_PATTERN = /(支付宝|alipay)/i;
 const WECHAT_ACCOUNT_PATTERN = /(微信|wechat|weixin)/i;
+const BANK_ACCOUNT_PATTERN =
+  /(银行|bank|信用卡|储蓄卡|借记卡|icbc|abc|ccb|boc|cmb|psbc|交通银行|招商银行|建设银行|工商银行|农业银行|中国银行)/i;
 
 function isAlipayAccountName(name: string): boolean {
   return ALIPAY_ACCOUNT_PATTERN.test(name);
@@ -46,6 +55,10 @@ function isAlipayAccountName(name: string): boolean {
 
 function isWechatAccountName(name: string): boolean {
   return WECHAT_ACCOUNT_PATTERN.test(name);
+}
+
+function isBankAccountName(name: string): boolean {
+  return BANK_ACCOUNT_PATTERN.test(name);
 }
 
 function AlipayBrandIcon() {
@@ -74,8 +87,21 @@ function WechatBrandIcon() {
   );
 }
 
+function BankBrandIcon() {
+  return (
+    <img
+      className="bank-icon"
+      src={LANDMARK_ICON_URL}
+      alt=""
+      width="16"
+      height="16"
+      aria-hidden="true"
+    />
+  );
+}
+
 function renderAccountLabel(accountName: string): ReactNode {
-  if (!isAlipayAccountName(accountName) && !isWechatAccountName(accountName)) {
+  if (!isAlipayAccountName(accountName) && !isWechatAccountName(accountName) && !isBankAccountName(accountName)) {
     return accountName;
   }
 
@@ -83,6 +109,7 @@ function renderAccountLabel(accountName: string): ReactNode {
     <span className="transaction-account-with-icon">
       {isAlipayAccountName(accountName) ? <AlipayBrandIcon /> : null}
       {isWechatAccountName(accountName) ? <WechatBrandIcon /> : null}
+      {isBankAccountName(accountName) ? <BankBrandIcon /> : null}
       <span>{accountName}</span>
     </span>
   );
@@ -879,9 +906,11 @@ export function TransactionDetailDrawer({
               />
               <button
                 type="button"
+                className="button-with-icon"
                 onClick={triggerAttachmentSelect}
                 disabled={attachmentUploading}
               >
+                <img src={IMAGE_ICON_URL} alt="" aria-hidden="true" />
                 {attachmentUploading ? '上传中…' : '插入附件 / 上传附件'}
               </button>
               {transaction.attachments && transaction.attachments.length > 0 ? (
@@ -948,8 +977,9 @@ export function TransactionDetailDrawer({
           <button type="button" onClick={onShareBill}>
             📤 分享账单
           </button>
-          <button type="button" onClick={handlePrint}>
-            🖨️ 打印 A4
+          <button type="button" onClick={handlePrint} className="button-with-icon">
+            <img src={PRINTER_ICON_URL} alt="" aria-hidden="true" />
+            打印 A4
           </button>
           {onRefund &&
           transaction &&
@@ -965,7 +995,10 @@ export function TransactionDetailDrawer({
             </button>
           ) : null}
           <Link to={`/transactions/${transaction.id}`} style={{ textDecoration: 'none' }}>
-            <button type="button">✏️ 编辑</button>
+            <button type="button" className="button-with-icon">
+              <img src={PEN_TOOL_ICON_URL} alt="" aria-hidden="true" />
+              编辑
+            </button>
           </Link>
           <button type="button" onClick={onAiRecategorize} disabled={aiRecategorizing}>
             {aiRecategorizing ? '🤖 AI 重分类中…' : '🤖 AI 重分类'}

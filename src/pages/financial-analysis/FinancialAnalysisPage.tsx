@@ -6,6 +6,10 @@ import {
   FINANCIAL_ANALYSIS_RANGE_OPTIONS,
   type FinancialAnalysisRangeKey
 } from '../../features/financial-analysis/model/analysis';
+import {
+  BADGE_DOLLAR_SIGN_ICON_URL,
+  SCALE_ICON_URL
+} from '../../shared/config/brandAssets';
 import { formatCurrency } from '../../shared/lib/format';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
@@ -484,7 +488,14 @@ ${JSON.stringify(aiInput)}`
     return (
       <section className="panel">
         <EmptyState
-          icon="📈"
+          icon={
+            <img
+              className="financial-analysis-empty-icon"
+              src={BADGE_DOLLAR_SIGN_ICON_URL}
+              alt=""
+              aria-hidden="true"
+            />
+          }
           title="还没有足够的财务分析数据"
           description="先新增几笔交易，财务分析页就能开始帮你看清过去、理解现在、规划未来。"
           primaryAction={{
@@ -555,7 +566,10 @@ ${JSON.stringify(aiInput)}`
         <article className="financial-analysis-market-board">
           <header className="financial-analysis-market-head">
             <div>
-              <h3>资金动态看板</h3>
+              <h3 className="financial-analysis-title-with-icon">
+                <img src={BADGE_DOLLAR_SIGN_ICON_URL} alt="" aria-hidden="true" />
+                资金动态看板
+              </h3>
               <p className="muted">像看行情一样，先看本月，再看最近 6 个月的变化节奏。</p>
             </div>
             <span className="metric-chip">
@@ -661,7 +675,10 @@ ${JSON.stringify(aiInput)}`
       <section className="panel financial-analysis-section">
         <div className="financial-analysis-section-head">
           <div>
-            <h3>行为洞察：消费习惯与画像</h3>
+            <h3 className="financial-analysis-title-with-icon">
+              <img src={SCALE_ICON_URL} alt="" aria-hidden="true" />
+              行为洞察：消费习惯与画像
+            </h3>
             <p className="muted">先展示本地规则结果；生成 AI 解读后，这里会补充更细的消费语境判断。以下结论属于行为推测，不等同于人格定论。</p>
           </div>
           <span className="metric-chip">

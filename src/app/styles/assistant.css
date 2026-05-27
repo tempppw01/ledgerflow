@@ -2070,6 +2070,10 @@
   opacity: 1;
 }
 
+.chat-msg:focus-within .chat-message-actions {
+  opacity: 1;
+}
+
 .chat-icon-action-btn {
   width: 24px;
   height: 24px;
@@ -2088,6 +2092,12 @@
 .chat-icon-action-btn:hover:not(:disabled) {
   transform: translateY(-1px);
   border-color: var(--color-primary-border);
+  color: var(--color-primary);
+}
+
+.chat-icon-action-btn.is-active {
+  border-color: var(--color-primary-border);
+  background: var(--color-primary-bg);
   color: var(--color-primary);
 }
 
@@ -2770,6 +2780,13 @@
   cursor: not-allowed;
 }
 
+.chat-upload-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+}
+
 .chat-send-btn {
   width: 52px;
   height: 48px;
@@ -3418,6 +3435,12 @@
 
   .chat-msg-image {
     max-width: 200px;
+  }
+}
+
+@media (hover: none) {
+  .chat-message-actions {
+    opacity: 1;
   }
 }
 

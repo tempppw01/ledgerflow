@@ -2,7 +2,8 @@ import { useState } from 'react';
 import {
   CLOUD_SYNC_ICON_URL,
   GLOBE_ICON_URL,
-  PACKAGE_ICON_URL
+  PACKAGE_ICON_URL,
+  STAR_ICON_URL
 } from '../../../shared/config/brandAssets';
 import type { ExchangeRate } from '../model/types';
 import { getCurrencyFlag, getCurrencyName } from '../model/types';
@@ -191,11 +192,16 @@ export function ExchangeRateTable({
                 <td>
                   <button
                     type="button"
-                    className="exchange-fav-btn"
+                    className={`exchange-fav-btn${favorites.includes(rate.code) ? ' is-active' : ''}`}
                     onClick={() => toggleFavorite(rate.code)}
                     title={favorites.includes(rate.code) ? '取消收藏' : '收藏'}
                   >
-                    {favorites.includes(rate.code) ? '★' : '☆'}
+                    <img
+                      className="exchange-inline-icon"
+                      src={STAR_ICON_URL}
+                      alt=""
+                      aria-hidden="true"
+                    />
                   </button>
                 </td>
                 <td className="mono-inline">

@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { PRINTER_ICON_URL } from '../../../shared/config/brandAssets';
 
 export interface BulkActionsBarProps {
   selectedCount: number;
@@ -182,7 +183,8 @@ export function BulkActionsBar({
           </>
         )}
         {onBulkPrintA4 && (
-          <button type="button" onClick={onBulkPrintA4}>
+          <button type="button" onClick={onBulkPrintA4} className="button-with-icon">
+            <img src={PRINTER_ICON_URL} alt="" aria-hidden="true" />
             {t('transactions.bulk.printA4')}
           </button>
         )}

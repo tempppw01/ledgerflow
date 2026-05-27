@@ -865,6 +865,25 @@
   margin: 0;
 }
 
+.financial-analysis-title-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.financial-analysis-title-with-icon img,
+.financial-analysis-empty-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.financial-analysis-empty-icon {
+  width: 52px;
+  height: 52px;
+}
+
 .financial-analysis-range-switcher,
 .financial-analysis-actions {
   display: flex;

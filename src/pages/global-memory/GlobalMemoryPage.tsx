@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { ARCHIVE_ICON_URL, RESTORE_ICON_URL } from '../../shared/config/brandAssets';
 import { useGlobalMemoryStore } from '../../shared/store/useGlobalMemoryStore';
 import type { GlobalMemoryStatus, GlobalMemoryType } from '../../shared/store/globalMemory';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
@@ -184,7 +185,9 @@ export function GlobalMemoryPage() {
 
       {filtered.length === 0 ? (
         <section className="panel empty-state">
-          <div className="empty-state-icon">🗃️</div>
+          <div className="empty-state-icon">
+            <img src={ARCHIVE_ICON_URL} alt="" aria-hidden="true" />
+          </div>
           <h3>当前没有符合条件的记忆</h3>
           <p>可以换个筛选条件看看。之后当你多次表达相同偏好时，助手会把它整理到这里。</p>
         </section>
@@ -245,21 +248,25 @@ export function GlobalMemoryPage() {
                   {item.status === 'active' ? (
                     <button
                       type="button"
+                      className="button-with-icon"
                       onClick={() => {
                         archiveMemory(item.id);
                         showToast('记忆已归档');
                       }}
                     >
+                      <img src={ARCHIVE_ICON_URL} alt="" aria-hidden="true" />
                       归档
                     </button>
                   ) : (
                     <button
                       type="button"
+                      className="button-with-icon"
                       onClick={() => {
                         restoreMemory(item.id);
                         showToast('记忆已恢复');
                       }}
                     >
+                      <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
                       恢复
                     </button>
                   )}

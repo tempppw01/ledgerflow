@@ -15,6 +15,7 @@ import {
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
+import { IMAGE_ICON_URL } from '../../shared/config/brandAssets';
 import { Toast } from '../../shared/ui/Toast';
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -1616,10 +1617,11 @@ export function RepaymentManagementPage() {
               <div className="finance-empty-guide-actions">
                 <button
                   type="button"
-                  className="primary"
+                  className="primary button-with-icon"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={extractLoading}
                 >
+                  <img src={IMAGE_ICON_URL} alt="" aria-hidden="true" />
                   {extractLoading ? '识别中...' : '上传账单自动识别'}
                 </button>
                 <button
@@ -1821,15 +1823,16 @@ export function RepaymentManagementPage() {
           <div className="finance-debt-dual-entry">
             <button
               type="button"
-              className="finance-debt-entry-action"
+              className="finance-debt-entry-action button-with-icon"
               onClick={() => fileInputRef.current?.click()}
               disabled={extractLoading}
             >
+              <img src={IMAGE_ICON_URL} alt="" aria-hidden="true" />
               {extractLoading
-                ? '正在生成AI建议中...' 
+                ? '正在生成AI建议中...'
                 : extractSuccess
-                  ? '✅ 识别完成'
-                  : '📷 上传账单自动识别'}
+                  ? '识别完成'
+                  : '上传账单自动识别'}
             </button>
             <input
               ref={fileInputRef}

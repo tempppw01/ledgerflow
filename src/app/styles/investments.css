@@ -224,6 +224,12 @@
   font-size: 12px;
 }
 
+.investments-ai-message-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
 .investments-ai-streaming {
   gap: 8px;
   align-items: center;
