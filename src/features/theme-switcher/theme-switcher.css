@@ -25,9 +25,19 @@
   background: var(--color-bg-hover);
 }
 
+.theme-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
 .theme-icon-btn.active {
   border-color: var(--color-primary-border);
   background: var(--color-primary);
   color: #fff;
   box-shadow: var(--shadow-xs);
+}
+
+.theme-icon-btn.active .theme-icon {
+  filter: brightness(0) invert(1);
 }

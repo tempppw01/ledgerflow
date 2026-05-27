@@ -400,6 +400,20 @@ body {
   object-fit: contain;
 }
 
+.mobile-nav-profile-copy {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.mobile-nav-profile-mark {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
 .sidebar-link-label {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -6898,8 +6912,18 @@ body.exchange-resizing {
 }
 
 .exchange-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
   font-size: var(--font-sm);
   color: var(--color-text-secondary);
+}
+
+.exchange-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   white-space: nowrap;
 }
 
@@ -6949,6 +6973,26 @@ body.exchange-resizing {
   font-size: var(--font-md);
   padding: 0;
   line-height: 1;
+}
+
+.exchange-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.exchange-title-icon,
+.exchange-inline-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.exchange-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .exchange-rate-trend {

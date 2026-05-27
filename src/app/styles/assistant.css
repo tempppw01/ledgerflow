@@ -421,10 +421,31 @@
   background: var(--color-bg-elevated);
   flex-shrink: 0;
   border: 1px solid var(--color-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1;
 }
 
 .chat-msg-user .chat-msg-avatar {
   background: var(--color-primary-bg);
+}
+
+.chat-msg-avatar-image {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+}
+
+.chat-msg-avatar-system {
+  background: var(--color-success-bg);
+  border-color: var(--color-success-border);
+  color: var(--color-success);
+  font-weight: 700;
 }
 
 .chat-msg-body {
@@ -3310,6 +3331,7 @@
 
   .chat-msg-avatar {
     width: 28px;
+    height: 28px;
   }
 
   .chat-msg-content p {

@@ -49,6 +49,7 @@ import {
   readAssistantModeFromSessionStorage,
   type AssistantMode
 } from '../../features/assistant/shared/assistantMode';
+import { BOT_ICON_URL, USER_ICON_URL } from '../../shared/config/brandAssets';
 
 function getModelDisplayLabel(modelId: string): string {
   const value = modelId.trim();
@@ -182,6 +183,26 @@ const CHAT_HISTORY_CACHE_KEYS: Record<AssistantMode, string> = {
 
 const ASSISTANT_INTRO_ILLUSTRATION_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/importing.svg';
+
+function renderChatAvatar(kind: 'assistant' | 'user' | 'success') {
+  if (kind === 'success') {
+    return (
+      <div className="chat-msg-avatar chat-msg-avatar-system" aria-hidden="true">
+        ✓
+      </div>
+    );
+  }
+
+  return (
+    <div className="chat-msg-avatar" aria-hidden="true">
+      <img
+        className="chat-msg-avatar-image"
+        src={kind === 'user' ? USER_ICON_URL : BOT_ICON_URL}
+        alt=""
+      />
+    </div>
+  );
+}
 
 function readWideLayoutPreference() {
   try {
@@ -1654,7 +1675,7 @@ export function AssistantPage() {
           )}
 
           <article className="chat-msg">
-            <div className="chat-msg-avatar">🤖</div>
+            {renderChatAvatar('assistant')}
             <div className="chat-msg-body">
               <div className="chat-msg-header">
                 {mode === 'bookkeeping'
@@ -1677,7 +1698,7 @@ export function AssistantPage() {
 
           {mode === 'credit' && debts.length > 0 ? (
             <article className="chat-msg">
-              <div className="chat-msg-avatar">📊</div>
+              {renderChatAvatar('assistant')}
               <div className="chat-msg-body">
                 <div className="chat-msg-header">信贷汇总快照</div>
                 <div className="chat-credit-overview-card">
@@ -1747,7 +1768,7 @@ export function AssistantPage() {
               key={item.id}
               className={`chat-msg ${item.role === 'user' ? 'chat-msg-user' : ''}`}
             >
-              <div className="chat-msg-avatar">{item.role === 'user' ? '🙂' : '🤖'}</div>
+              {renderChatAvatar(item.role === 'user' ? 'user' : 'assistant')}
               <div className="chat-msg-body">
                 <div className="chat-msg-header">{item.role === 'user' ? '你' : '助手'}</div>
                 <div className="chat-msg-content chat-msg-content-rich">
@@ -2166,7 +2187,7 @@ export function AssistantPage() {
 
           {selectedValidEntries.length > 0 ? (
             <article className="chat-msg">
-              <div className="chat-msg-avatar">✅</div>
+              {renderChatAvatar('success')}
               <div className="chat-msg-body">
                 <div className="chat-msg-header">识别结果</div>
                 <BillPreviewCard
@@ -2182,7 +2203,7 @@ export function AssistantPage() {
 
           {streamingPreviewMessage || streamingPreviewReasoning ? (
             <article className="chat-msg">
-              <div className="chat-msg-avatar">🤖</div>
+              {renderChatAvatar('assistant')}
               <div className="chat-msg-body">
                 <div className="chat-msg-header">助手（正在生成）</div>
                 {streamingPreviewReasoning ? (
@@ -2342,7 +2363,7 @@ export function AssistantPage() {
 
           {wb.status === 'recognizing' && !streamingPreviewMessage && !streamingPreviewReasoning ? (
             <article className="chat-msg">
-              <div className="chat-msg-avatar">🤖</div>
+              {renderChatAvatar('assistant')}
               <div className="chat-msg-body">
                 <div className="chat-msg-header">助手</div>
                 <div className="chat-typing">
@@ -2360,7 +2381,7 @@ export function AssistantPage() {
 
           {wb.status === 'saved' ? (
             <article className="chat-msg">
-              <div className="chat-msg-avatar">✅</div>
+              {renderChatAvatar('success')}
               <div className="chat-msg-body">
                 <div className="chat-msg-header">系统</div>
                 <div className="chat-auto-card">

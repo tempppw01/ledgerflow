@@ -5,12 +5,12 @@ import {
   type CSSProperties,
   type MouseEvent as ReactMouseEvent
 } from 'react';
+import { GLOBE_ICON_URL } from '../../../shared/config/brandAssets';
 import { useExchangeRates } from '../hooks/useExchangeRates';
-import { ExchangeRateTable } from './ExchangeRateTable';
-import { ExchangeConverter } from './ExchangeConverter';
 import { getCurrencyFlag, getCurrencyName, CURRENCY_NAMES } from '../model/types';
+import { ExchangeConverter } from './ExchangeConverter';
+import { ExchangeRateTable } from './ExchangeRateTable';
 
-/** 基准货币候选列表 */
 const BASE_OPTIONS = ['CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD', 'SGD', 'AUD', 'CAD', 'CHF'];
 
 const MIN_LEFT_WIDTH = 320;
@@ -23,7 +23,6 @@ export function ExchangePage() {
   const layoutRef = useRef<HTMLDivElement | null>(null);
   const [leftWidth, setLeftWidth] = useState(DEFAULT_LEFT_WIDTH);
 
-  /** 所有可用货币代码（用于基准切换下拉） */
   const allCodes = Object.keys(CURRENCY_NAMES).sort();
 
   useEffect(() => {
@@ -80,7 +79,10 @@ export function ExchangePage() {
     >
       <section className="panel exchange-priority-converter">
         <div className="exchange-header exchange-card-header">
-          <h2 style={{ margin: 0 }}>💱 汇率换算器</h2>
+          <h2 className="exchange-title" style={{ margin: 0 }}>
+            <img className="exchange-title-icon" src={GLOBE_ICON_URL} alt="" aria-hidden="true" />
+            汇率换算器
+          </h2>
           <div className="exchange-base-picker">
             <label htmlFor="exchange-base-code">基准货币：</label>
             <select
@@ -89,7 +91,6 @@ export function ExchangePage() {
               value={base}
               onChange={(e) => setBase(e.target.value)}
             >
-              {/* 常用 */}
               <optgroup label="常用">
                 {BASE_OPTIONS.map((code) => (
                   <option key={code} value={code}>
@@ -97,10 +98,9 @@ export function ExchangePage() {
                   </option>
                 ))}
               </optgroup>
-              {/* 全部 */}
               <optgroup label="全部">
                 {allCodes
-                  .filter((c) => !BASE_OPTIONS.includes(c))
+                  .filter((code) => !BASE_OPTIONS.includes(code))
                   .map((code) => (
                     <option key={code} value={code}>
                       {getCurrencyFlag(code)} {code} - {getCurrencyName(code)}
@@ -124,7 +124,10 @@ export function ExchangePage() {
 
       <section className="panel exchange-data-card">
         <div className="exchange-data-header exchange-card-header">
-          <h2 style={{ margin: 0 }}>📊 汇率数据</h2>
+          <h2 className="exchange-title" style={{ margin: 0 }}>
+            <img className="exchange-title-icon" src={GLOBE_ICON_URL} alt="" aria-hidden="true" />
+            汇率数据
+          </h2>
         </div>
         <ExchangeRateTable
           rates={rates}

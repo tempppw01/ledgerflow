@@ -8,7 +8,12 @@ import {
 } from '../../features/assistant/shared/assistantMode';
 import { ThemeSwitcher } from '../../features/theme-switcher/ThemeSwitcher';
 import { APP_LOGO_URL } from '../../shared/config/app';
-import { BRAIN_ICON_URL, CHAT_ICON_URL, DATABASE_ICON_URL } from '../../shared/config/brandAssets';
+import {
+  BRAIN_ICON_URL,
+  CHAT_ICON_URL,
+  CIRCLE_USER_ICON_URL,
+  DATABASE_ICON_URL
+} from '../../shared/config/brandAssets';
 import { formatCurrency } from '../../shared/lib/format';
 import { summarizeTransactions } from '../../shared/lib/transactionMetrics';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
@@ -576,11 +581,19 @@ export function AppLayout() {
             onClick={(e) => e.stopPropagation()}
           >
             <header className="mobile-nav-header mobile-nav-profile">
-              <div>
-                <p className="mobile-nav-name">{t('layout.drawerUser')}</p>
-                <p className="mobile-nav-subtitle">
-                  {t('layout.drawerSubtitle', { today: todayLabel })}
-                </p>
+              <div className="mobile-nav-profile-copy">
+                <img
+                  className="mobile-nav-profile-mark"
+                  src={CIRCLE_USER_ICON_URL}
+                  alt=""
+                  aria-hidden="true"
+                />
+                <div>
+                  <p className="mobile-nav-name">{t('layout.drawerUser')}</p>
+                  <p className="mobile-nav-subtitle">
+                    {t('layout.drawerSubtitle', { today: todayLabel })}
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
