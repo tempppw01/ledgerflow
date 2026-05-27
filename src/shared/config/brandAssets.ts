@@ -52,6 +52,12 @@ export const CALENDAR_ICON_URL =
 export const DATABASE_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/database.svg';
 
+export const QUESTION_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/question.svg';
+
+export const INFO_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/info.svg';
+
 export const ABOUT_HAPPY_ILLUSTRATION_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/happy.svg';
 
