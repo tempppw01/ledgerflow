@@ -70,6 +70,45 @@ export const CALENDAR_ICON_URL =
 export const DATABASE_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/database.svg';
 
+export const BADGE_DOLLAR_SIGN_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/badge-dollar-sign.svg';
+
+export const WALLET_CARDS_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/wallet-cards.svg';
+
+export const CREDIT_CARDS_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/credit-cards.svg';
+
+export const SCALE_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/scale.svg';
+
+export const LANDMARK_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/landmark.svg';
+
+export const IMAGE_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/image.svg';
+
+export const CARD_SD_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/card-sd.svg';
+
+export const ARCHIVE_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/archive.svg';
+
+export const THUMBS_DOWN_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/thumbs-down.svg';
+
+export const THUMBS_UP_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/thumbs-up.svg';
+
+export const STAR_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/star.svg';
+
+export const PRINTER_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/printer.svg';
+
+export const PEN_TOOL_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/pen-tool.svg';
+
 export const QUESTION_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/question.svg';
 
