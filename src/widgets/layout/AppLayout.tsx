@@ -96,6 +96,7 @@ export function AppLayout() {
         items: [
           { to: '/categories-accounts', label: t('nav.categoriesAccounts'), icon: '🗂️' },
           { to: '/balance-changes', label: '余额明细', icon: '📚' },
+          { to: '/investments', label: '投资理财', icon: '📈' },
           { to: '/subscriptions', label: '订阅管理', icon: '🧾' },
           { to: '/repayment-management', label: t('nav.repayment'), icon: '💳' }
         ]
@@ -134,6 +135,7 @@ export function AppLayout() {
           { label: t('nav.dashboard'), icon: '📊', to: '/', end: true },
           { label: t('nav.categoriesAccounts'), icon: '🗂️', to: '/categories-accounts' },
           { label: '余额明细', icon: '📚', to: '/balance-changes' },
+          { label: '投资理财', icon: '📈', to: '/investments' },
           { label: t('nav.smartBudget'), icon: '🧠', iconSrc: BRAIN_ICON_URL, to: '/smart-budget' },
           { label: '全局记忆', icon: '🗃️', to: '/global-memory' },
           { label: t('nav.repayment'), icon: '💳', to: '/repayment-management' },

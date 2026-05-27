@@ -1,0 +1,422 @@
+.investments-page {
+  gap: 16px;
+}
+
+.investments-hero {
+  display: grid;
+  gap: 18px;
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--color-primary-bg) 78%, transparent), transparent 36%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-primary-bg)) 0%,
+      color-mix(in srgb, var(--color-bg-elevated) 88%, var(--color-bg-subtle)) 100%
+    );
+}
+
+.investments-hero-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.investments-kicker {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary-bg) 82%, var(--color-bg-elevated));
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.investments-hero-copy h2 {
+  margin: 0;
+}
+
+.investments-hero-copy p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
+.investments-tip-board {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.investments-tip-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--color-border-light);
+  background: color-mix(in srgb, var(--color-bg-elevated) 92%, var(--color-primary-bg));
+}
+
+.investments-tip-item img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.investments-tip-item strong,
+.investments-tip-item p {
+  margin: 0;
+}
+
+.investments-tip-item p {
+  margin-top: 4px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.investments-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.investments-summary-pill {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--color-border-light);
+  background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-bg-subtle));
+}
+
+.investments-summary-pill span {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.investments-summary-pill strong {
+  font-size: 16px;
+}
+
+.investments-summary-pill.is-positive strong {
+  color: var(--color-success);
+}
+
+.investments-summary-pill.is-negative strong {
+  color: var(--color-danger);
+}
+
+.investments-overview-grid,
+.investments-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 16px;
+}
+
+.investments-overview-card,
+.investments-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.investments-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.investments-section-head h3,
+.investments-list-head h4 {
+  margin: 0;
+}
+
+.investments-section-head p,
+.investments-list-head span {
+  margin: 4px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.investments-allocation-list,
+.investments-alert-list,
+.investments-actions-list,
+.investments-card-list {
+  display: grid;
+  gap: 10px;
+}
+
+.investments-allocation-row,
+.investments-action-button,
+.investments-card {
+  border: 1px solid var(--color-border-light);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-bg-subtle));
+}
+
+.investments-allocation-row {
+  padding: 12px 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.investments-allocation-copy {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.investments-allocation-copy span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.investments-allocation-track {
+  height: 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-border-light) 70%, var(--color-bg-elevated));
+  overflow: hidden;
+}
+
+.investments-allocation-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 68%, #82d3ff));
+}
+
+.investments-meta-grid,
+.investments-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.investments-meta-grid div,
+.investments-card-grid span {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-primary-bg));
+}
+
+.investments-meta-grid span,
+.investments-card-grid em {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.investments-card-grid strong.positive {
+  color: var(--color-success);
+}
+
+.investments-card-grid strong.negative {
+  color: var(--color-danger);
+}
+
+.investments-alert-card {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--color-border-light);
+  background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-bg-subtle));
+}
+
+.investments-alert-card strong,
+.investments-alert-card p {
+  margin: 0;
+}
+
+.investments-alert-card p {
+  margin-top: 6px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.investments-alert-card.tone-warning {
+  border-color: color-mix(in srgb, var(--color-warning) 25%, transparent);
+  background: color-mix(in srgb, var(--color-warning-bg) 72%, var(--color-bg-elevated));
+}
+
+.investments-alert-card.tone-danger {
+  border-color: color-mix(in srgb, var(--color-danger) 25%, transparent);
+  background: color-mix(in srgb, var(--color-danger-bg) 72%, var(--color-bg-elevated));
+}
+
+.investments-actions-card h4 {
+  margin: 0 0 10px;
+}
+
+.investments-action-button {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 14px;
+  text-align: left;
+}
+
+.investments-action-button strong,
+.investments-action-button span {
+  margin: 0;
+}
+
+.investments-action-button span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.investments-form {
+  display: grid;
+  gap: 12px;
+}
+
+.investments-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.investments-form-grid-primary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.investments-field,
+.investments-checkbox {
+  display: grid;
+  gap: 6px;
+}
+
+.investments-field span,
+.investments-checkbox span {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.investments-field-wide textarea {
+  resize: vertical;
+}
+
+.investments-checkbox {
+  align-content: end;
+}
+
+.investments-checkbox input {
+  margin: 0;
+}
+
+.investments-actions-row,
+.investments-actions-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.investments-list-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.investments-card {
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.investments-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.investments-card-head h4,
+.investments-card-head p,
+.investments-card-note {
+  margin: 0;
+}
+
+.investments-card-head p,
+.investments-card-note,
+.investments-goal-progress p {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.investments-card-badges {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.investments-card-note {
+  font-size: 13px;
+}
+
+.investments-goal-progress {
+  display: grid;
+  gap: 8px;
+}
+
+.investments-goal-progress-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.investments-goal-progress-head span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+@media (max-width: 1200px) {
+  .investments-summary-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .investments-form-grid-primary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .investments-tip-board,
+  .investments-overview-grid,
+  .investments-main-grid,
+  .investments-form-grid,
+  .investments-form-grid-primary,
+  .investments-meta-grid,
+  .investments-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .investments-summary-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .investments-summary-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .investments-card-head,
+  .investments-section-head,
+  .investments-list-head,
+  .investments-goal-progress-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .investments-card-badges {
+    justify-content: flex-start;
+  }
+}
