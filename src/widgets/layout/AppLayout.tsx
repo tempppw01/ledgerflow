@@ -117,7 +117,6 @@ export function AppLayout() {
         title: t('nav.toolsInfo'),
         items: [
           { to: '/help', label: '帮助', icon: '❓', iconSrc: QUESTION_ICON_URL },
-          { to: '/settings', label: t('nav.settings'), icon: '⚙️', iconSrc: SETTINGS_ICON_URL },
           {
             to: '/database-settings',
             label: t('nav.dbSettings'),
@@ -171,7 +170,6 @@ export function AppLayout() {
         title: t('nav.systemFeatures'),
         items: [
           { label: '帮助', icon: '❓', iconSrc: QUESTION_ICON_URL, to: '/help' },
-          { label: t('nav.settings'), icon: '⚙️', iconSrc: SETTINGS_ICON_URL, to: '/settings' },
           {
             label: t('nav.dbSettings'),
             icon: '🗄️',
@@ -568,20 +566,7 @@ export function AppLayout() {
                     );
                   }
 
-                  return item.to === '/settings' ? (
-                    <button
-                      key={`${section.title}-${item.label}`}
-                      type="button"
-                      className={`sidebar-link motion-pill-btn ${
-                        settingsOverlayOpen || isStandaloneSettingsRoute ? 'active' : ''
-                      }`.trim()}
-                      title={item.label}
-                      onClick={openSettingsOverlay}
-                    >
-                      {renderNavIcon(item, 'sidebar-link-icon')}
-                      {collapsed ? null : <span className="sidebar-link-label">{item.label}</span>}
-                    </button>
-                  ) : (
+                  return (
                     <NavLink
                       key={`${section.title}-${item.label}`}
                       to={item.to}
@@ -750,32 +735,18 @@ export function AppLayout() {
               <section key={group.title} className="mobile-nav-grid-card">
                 <h3>{group.title}</h3>
                 <div className="mobile-nav-grid">
-                  {group.items.map((item) =>
-                    item.to === '/settings' ? (
-                      <button
-                        key={`${group.title}-${item.label}`}
-                        type="button"
-                        className={`mobile-nav-grid-item motion-pill-btn ${
-                          settingsOverlayOpen || isStandaloneSettingsRoute ? 'active' : ''
-                        }`.trim()}
-                        onClick={openSettingsOverlay}
-                      >
-                        {renderNavIcon(item, 'mobile-nav-grid-icon')}
-                        <strong>{item.label}</strong>
-                      </button>
-                    ) : (
-                      <NavLink
-                        key={`${group.title}-${item.label}`}
-                        to={item.to}
-                        end={item.end}
-                        className="mobile-nav-grid-item motion-pill-btn"
-                        onClick={() => setMobileNavOpen(false)}
-                      >
-                        {renderNavIcon(item, 'mobile-nav-grid-icon')}
-                        <strong>{item.label}</strong>
-                      </NavLink>
-                    )
-                  )}
+                  {group.items.map((item) => (
+                    <NavLink
+                      key={`${group.title}-${item.label}`}
+                      to={item.to}
+                      end={item.end}
+                      className="mobile-nav-grid-item motion-pill-btn"
+                      onClick={() => setMobileNavOpen(false)}
+                    >
+                      {renderNavIcon(item, 'mobile-nav-grid-icon')}
+                      <strong>{item.label}</strong>
+                    </NavLink>
+                  ))}
                 </div>
               </section>
             ))}
