@@ -1221,7 +1221,7 @@
    ============================================================ */
 .about-page {
   display: grid;
-  gap: var(--space-4);
+  gap: 18px;
 }
 
 .about-hero-card {
@@ -1242,7 +1242,7 @@
       180deg,
       color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-primary-bg)),
       var(--color-bg-elevated)
-  );
+    );
 }
 
 .about-hero-illustration {
@@ -1270,9 +1270,49 @@
   filter: drop-shadow(0 18px 28px color-mix(in srgb, var(--color-text) 14%, transparent));
 }
 
+.about-hero-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(220px, 0.9fr);
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.about-inline-card {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 14%, var(--color-border));
+  background: color-mix(in srgb, var(--color-bg-elevated) 92%, white 8%);
+}
+
+.about-inline-card strong {
+  display: block;
+  margin-top: 2px;
+  font-size: clamp(1rem, 1.2vw, 1.1rem);
+  color: var(--color-text);
+}
+
+.about-inline-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.about-section-label {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
 .about-hero-copy,
-.about-grid,
-.about-grid-3,
 .about-block,
 .about-bullet-list {
   display: grid;
@@ -1322,8 +1362,8 @@
 
 .about-block {
   min-width: 0;
-  padding: 16px;
-  border-radius: 18px;
+  padding: 18px;
+  border-radius: 20px;
   border: 1px solid var(--color-border);
   background: var(--color-bg-elevated);
   box-shadow: var(--shadow-sm);
@@ -1331,14 +1371,6 @@
 
 .about-muted-note {
   color: var(--color-text-secondary);
-}
-
-.about-grid {
-  grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.9fr);
-}
-
-.about-grid-3 {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .about-block-featured {
@@ -1393,10 +1425,62 @@
   gap: 8px;
 }
 
+.about-combined-card {
+  gap: 16px;
+}
+
+.about-combined-columns {
+  display: grid;
+  gap: 16px;
+}
+
+.about-combined-columns-wide {
+  grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+}
+
+.about-combined-columns-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.about-subsection {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.about-combined-columns-wide > .about-subsection:last-child,
+.about-combined-columns-3 > .about-subsection:not(:first-child) {
+  padding-left: 16px;
+  border-left: 1px solid color-mix(in srgb, var(--color-primary) 12%, var(--color-border));
+}
+
 .about-version-actions {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.about-link-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-bg-elevated));
+  color: var(--color-text);
+  text-decoration: none;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.about-link-pill:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-bg-elevated));
 }
 
 .about-update-message {
@@ -1420,8 +1504,9 @@
   .financial-analysis-stat-grid.is-three,
   .financial-analysis-ai-columns,
   .financial-analysis-two-col,
-  .about-grid,
-  .about-grid-3 {
+  .about-hero-meta,
+  .about-combined-columns-wide,
+  .about-combined-columns-3 {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -1441,8 +1526,9 @@
   .financial-analysis-ai-columns,
   .financial-analysis-two-col,
   .about-hero-card,
-  .about-grid,
-  .about-grid-3 {
+  .about-hero-meta,
+  .about-combined-columns-wide,
+  .about-combined-columns-3 {
     grid-template-columns: 1fr;
   }
 
@@ -1463,6 +1549,14 @@
   .financial-analysis-ai-bar button,
   .about-version-actions > * {
     flex: 1 1 auto;
+  }
+
+  .about-combined-columns-wide > .about-subsection:last-child,
+  .about-combined-columns-3 > .about-subsection:not(:first-child) {
+    padding-left: 0;
+    border-left: 0;
+    padding-top: 12px;
+    border-top: 1px solid color-mix(in srgb, var(--color-primary) 12%, var(--color-border));
   }
 
   .about-hero-illustration {
