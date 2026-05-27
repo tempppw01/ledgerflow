@@ -169,7 +169,7 @@ function buildPrintStyles(): string {
       bodyBackground: '#ffffff',
       bodyColor: '#0f172a',
       fontFamily:
-        "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif"
+        "'Alibaba PuHuiTi Ledger', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
     })}
 
     ${buildA4PrintSheetStyles({
