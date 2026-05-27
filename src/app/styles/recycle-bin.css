@@ -3,6 +3,19 @@
   gap: 16px;
 }
 
+.recycle-bin-empty-state .empty-state-icon {
+  margin-bottom: var(--space-4);
+  opacity: 1;
+}
+
+.recycle-bin-empty-illustration {
+  width: min(188px, 42vw);
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
 .recycle-bin-header,
 .recycle-bin-item,
 .recycle-bin-pagination {

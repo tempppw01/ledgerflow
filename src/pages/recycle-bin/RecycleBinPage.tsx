@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useFinanceStore } from '../../shared/store/useFinanceStore';
+import { AWESOME_ILLUSTRATION_URL } from '../../shared/config/brandAssets';
 import { formatCurrencyFixed2, formatDateTime } from '../../shared/lib/format';
+import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { EmptyState } from '../../shared/ui/EmptyState';
 
 const PAGE_SIZE = 10;
@@ -33,54 +34,61 @@ export function RecycleBinPage() {
   const [page, setPage] = useState(1);
 
   const totalCount =
-    trashedTransactions.length + trashedCategories.length + trashedAccounts.length + trashedSubscriptions.length;
+    trashedTransactions.length +
+    trashedCategories.length +
+    trashedAccounts.length +
+    trashedSubscriptions.length;
 
   const allItems = useMemo<RecycleBinEntry[]>(
-    () => [
-      ...trashedTransactions.map((item) => ({
-        id: item.id,
-        kind: 'transaction' as const,
-        kindLabel: '交易',
-        title: item.note || '未命名交易',
-        meta: [
-          item.type,
-          formatCurrencyFixed2(item.amount),
-          `删除于 ${formatDateTime(item.trashedAt || item.updatedAt || item.date)}`
-        ],
-        sortTime: new Date(item.trashedAt || item.updatedAt || item.date).getTime()
-      })),
-      ...trashedCategories.map((item) => ({
-        id: item.id,
-        kind: 'category' as const,
-        kindLabel: '分类',
-        title: `${item.icon ? `${item.icon} ` : ''}${item.name}`,
-        meta: [item.kind || '未设置类型', `删除于 ${formatDateTime(item.trashedAt || new Date().toISOString())}`],
-        sortTime: new Date(item.trashedAt || 0).getTime()
-      })),
-      ...trashedAccounts.map((item) => ({
-        id: item.id,
-        kind: 'account' as const,
-        kindLabel: '账户',
-        title: item.name,
-        meta: [
-          formatCurrencyFixed2(Number(item.balance ?? item.initialBalance ?? 0)),
-          `删除于 ${formatDateTime(item.trashedAt || new Date().toISOString())}`
-        ],
-        sortTime: new Date(item.trashedAt || 0).getTime()
-      })),
-      ...trashedSubscriptions.map((item) => ({
-        id: item.id,
-        kind: 'subscription' as const,
-        kindLabel: '订阅',
-        title: item.name,
-        meta: [
-          `${formatCurrencyFixed2(Number(item.amount ?? 0))} ${item.currency || 'CNY'}`,
-          item.provider || '未设置服务商',
-          `删除于 ${formatDateTime(item.trashedAt || item.updatedAt || new Date().toISOString())}`
-        ],
-        sortTime: new Date(item.trashedAt || 0).getTime()
-      }))
-    ].sort((a, b) => b.sortTime - a.sortTime),
+    () =>
+      [
+        ...trashedTransactions.map((item) => ({
+          id: item.id,
+          kind: 'transaction' as const,
+          kindLabel: '交易',
+          title: item.note || '未命名交易',
+          meta: [
+            item.type,
+            formatCurrencyFixed2(item.amount),
+            `删除于 ${formatDateTime(item.trashedAt || item.updatedAt || item.date)}`
+          ],
+          sortTime: new Date(item.trashedAt || item.updatedAt || item.date).getTime()
+        })),
+        ...trashedCategories.map((item) => ({
+          id: item.id,
+          kind: 'category' as const,
+          kindLabel: '分类',
+          title: `${item.icon ? `${item.icon} ` : ''}${item.name}`,
+          meta: [
+            item.kind || '未设置类型',
+            `删除于 ${formatDateTime(item.trashedAt || new Date().toISOString())}`
+          ],
+          sortTime: new Date(item.trashedAt || 0).getTime()
+        })),
+        ...trashedAccounts.map((item) => ({
+          id: item.id,
+          kind: 'account' as const,
+          kindLabel: '账户',
+          title: item.name,
+          meta: [
+            formatCurrencyFixed2(Number(item.balance ?? item.initialBalance ?? 0)),
+            `删除于 ${formatDateTime(item.trashedAt || new Date().toISOString())}`
+          ],
+          sortTime: new Date(item.trashedAt || 0).getTime()
+        })),
+        ...trashedSubscriptions.map((item) => ({
+          id: item.id,
+          kind: 'subscription' as const,
+          kindLabel: '订阅',
+          title: item.name,
+          meta: [
+            `${formatCurrencyFixed2(Number(item.amount ?? 0))} ${item.currency || 'CNY'}`,
+            item.provider || '未设置服务商',
+            `删除于 ${formatDateTime(item.trashedAt || item.updatedAt || new Date().toISOString())}`
+          ],
+          sortTime: new Date(item.trashedAt || 0).getTime()
+        }))
+      ].sort((a, b) => b.sortTime - a.sortTime),
     [trashedAccounts, trashedCategories, trashedSubscriptions, trashedTransactions]
   );
 
@@ -136,7 +144,9 @@ export function RecycleBinPage() {
       return;
     }
 
-    const confirmed = window.confirm(`确认清空回收站吗？将永久删除其中的 ${totalCount} 项内容，且无法恢复。`);
+    const confirmed = window.confirm(
+      `确认清空回收站吗？将永久删除其中的 ${totalCount} 项内容，且无法恢复。`
+    );
     if (!confirmed) {
       return;
     }
@@ -150,20 +160,38 @@ export function RecycleBinPage() {
       <div className="recycle-bin-header">
         <div>
           <h2>回收站</h2>
-          <p className="muted">删除的交易、分类、账户和订阅会先进入这里。回收站每页最多显示 10 条，可翻页查看。</p>
+          <p className="muted">
+            删除的交易、分类、账户和订阅会先进入这里。回收站每页最多显示 10 条，可翻页查看。
+          </p>
         </div>
         <div className="recycle-bin-header-actions">
           <span className="metric-chip">
             共 <strong>{totalCount}</strong> 项
           </span>
-          <button type="button" className="danger" disabled={totalCount === 0} onClick={handleClearRecycleBin}>
+          <button
+            type="button"
+            className="danger"
+            disabled={totalCount === 0}
+            onClick={handleClearRecycleBin}
+          >
             清空回收站
           </button>
         </div>
       </div>
 
       {totalCount === 0 ? (
-        <EmptyState title="回收站为空" description="删除的内容会先进入回收站，避免误删后无法找回。" icon="🗑️" />
+        <EmptyState
+          className="recycle-bin-empty-state"
+          title="回收站为空"
+          description="删除的内容会先进入回收站，避免误删后无法找回。"
+          icon={
+            <img
+              className="recycle-bin-empty-illustration"
+              src={AWESOME_ILLUSTRATION_URL}
+              alt=""
+            />
+          }
+        />
       ) : (
         <>
           <div className="recycle-bin-summary" aria-label="回收站统计">
@@ -198,8 +226,14 @@ export function RecycleBinPage() {
                   </div>
                 </div>
                 <div className="recycle-bin-actions">
-                  <button type="button" onClick={() => handleRestore(item)}>恢复</button>
-                  <button type="button" className="danger" onClick={() => handlePermanentDelete(item)}>
+                  <button type="button" onClick={() => handleRestore(item)}>
+                    恢复
+                  </button>
+                  <button
+                    type="button"
+                    className="danger"
+                    onClick={() => handlePermanentDelete(item)}
+                  >
                     彻底删除
                   </button>
                 </div>
@@ -215,16 +249,28 @@ export function RecycleBinPage() {
               <button type="button" disabled={page === 1} onClick={() => setPage(1)}>
                 第一页
               </button>
-              <button type="button" disabled={page === 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
+              <button
+                type="button"
+                disabled={page === 1}
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+              >
                 上一页
               </button>
               <small className="muted">
                 第 {page} / {totalPages} 页
               </small>
-              <button type="button" disabled={page === totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))}>
+              <button
+                type="button"
+                disabled={page === totalPages}
+                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+              >
                 下一页
               </button>
-              <button type="button" disabled={page === totalPages} onClick={() => setPage(totalPages)}>
+              <button
+                type="button"
+                disabled={page === totalPages}
+                onClick={() => setPage(totalPages)}
+              >
                 最后一页
               </button>
             </div>
