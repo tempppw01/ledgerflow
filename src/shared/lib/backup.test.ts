@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  applyFinanceBackupPayload,
+  createDefaultFinanceBackupScope,
   createFinanceBackupPayload,
   listWebdavBackupVersions,
   loadWebdavConfig,
@@ -35,6 +37,7 @@ describe('parseFinanceBackupPayload', () => {
     );
 
     expect(payload.version).toBe(1);
+    expect(payload.scope).toEqual(createDefaultFinanceBackupScope());
     expect(payload.data.transactions).toEqual([]);
   });
 
@@ -169,6 +172,123 @@ describe('parseFinanceBackupPayload', () => {
     expect(payload.data.globalMemories).toHaveLength(1);
   });
 
+  it('应支持按范围导出备份并保留范围元数据', () => {
+    const payload = createFinanceBackupPayload(
+      {
+        transactions: [
+          {
+            id: 'tx-1',
+            type: 'expense',
+            categoryId: 'cat-1',
+            accountId: 'acc-1',
+            amount: 18,
+            date: '2026-04-01',
+            note: 'Lunch',
+            tags: []
+          }
+        ],
+        categories: [{ id: 'cat-1', name: 'Food', kind: 'expense', sortOrder: 1 }],
+        accounts: [{ id: 'acc-1', name: 'Cash', type: 'cash', balance: 18 }],
+        subscriptions: [
+          {
+            id: 'sub-1',
+            name: 'Netflix',
+            kind: 'digital',
+            amount: 55,
+            currency: 'CNY',
+            billingCycle: 'monthly',
+            status: 'active',
+            createdAt: '2026-04-01T00:00:00.000Z',
+            updatedAt: '2026-04-02T00:00:00.000Z'
+          }
+        ],
+        trashedTransactions: [
+          {
+            id: 'tx-trash-1',
+            type: 'expense',
+            categoryId: 'cat-1',
+            accountId: 'acc-1',
+            amount: 5,
+            date: '2026-04-02',
+            note: 'Snack',
+            tags: [],
+            status: 'completed',
+            trashedAt: '2026-04-03T00:00:00.000Z'
+          }
+        ],
+        trashedCategories: [{ id: 'cat-trash-1', name: 'Old', kind: 'expense', sortOrder: 2 }],
+        trashedAccounts: [{ id: 'acc-trash-1', name: 'Old', type: 'cash', balance: 0 }],
+        balanceChangeEntries: [
+          {
+            id: 'bal-1',
+            accountId: 'acc-1',
+            type: 'manual-adjustment',
+            amount: 1,
+            beforeBalance: 17,
+            afterBalance: 18,
+            createdAt: '2026-04-02T00:00:00.000Z'
+          }
+        ],
+        trashedSubscriptions: [
+          {
+            id: 'sub-trash-1',
+            name: 'Old plan',
+            kind: 'digital',
+            amount: 12,
+            currency: 'CNY',
+            billingCycle: 'monthly',
+            status: 'paused',
+            createdAt: '2026-03-01T00:00:00.000Z',
+            updatedAt: '2026-03-02T00:00:00.000Z'
+          }
+        ],
+        globalMemories: [
+          {
+            id: 'memory-1',
+            title: '偏好简洁回答',
+            content: '先给结论，再展开细节。',
+            type: 'display_preference',
+            source: 'assistant_chat',
+            sourceTrace: [],
+            sourceIds: [],
+            confidence: 0.9,
+            score: 0.9,
+            status: 'active',
+            origin: 'manual',
+            pinned: false,
+            disabled: false,
+            embeddingText: '偏好简洁回答\n先给结论，再展开细节。\ndisplay_preference',
+            lastUsedAt: null,
+            createdAt: '2026-04-01T00:00:00.000Z',
+            updatedAt: '2026-04-02T00:00:00.000Z'
+          }
+        ]
+      },
+      {
+        ledger: false,
+        subscriptions: true,
+        globalMemories: false
+      }
+    );
+
+    expect(payload.scope).toEqual({
+      ledger: false,
+      subscriptions: true,
+      globalMemories: false
+    });
+    expect(payload.data.transactions).toEqual([]);
+    expect(payload.data.categories).toEqual([]);
+    expect(payload.data.accounts).toEqual([]);
+    expect(payload.data.trashedTransactions).toEqual([]);
+    expect(payload.data.balanceChangeEntries).toEqual([]);
+    expect(payload.data.subscriptions).toHaveLength(1);
+    expect(payload.data.trashedSubscriptions).toHaveLength(1);
+    expect(payload.data.globalMemories).toEqual([]);
+
+    const reparsed = parseFinanceBackupPayload(JSON.stringify(payload));
+    expect(reparsed.scope).toEqual(payload.scope);
+  });
+
   it('导入新版本备份时应解析订阅与全局记忆', () => {
     const payload = parseFinanceBackupPayload(
       JSON.stringify({
@@ -221,6 +341,105 @@ describe('parseFinanceBackupPayload', () => {
     expect(payload.data.subscriptions[0].status).toBe('active');
     expect(payload.data.globalMemories[0].title).toBe('保守风险偏好');
     expect(payload.data.globalMemories[0].pinned).toBe(true);
+  });
+
+  it('恢复部分备份时应保留未选范围的本地数据', () => {
+    const current: Parameters<typeof applyFinanceBackupPayload>[0] = {
+      transactions: [
+        {
+          id: 'tx-current-1',
+          type: 'expense',
+          categoryId: 'cat-current-1',
+          accountId: 'acc-current-1',
+          amount: 28,
+          date: '2026-05-01',
+          note: 'Dinner',
+          tags: [],
+          status: 'completed'
+        }
+      ],
+      categories: [{ id: 'cat-current-1', name: 'Current', kind: 'expense', sortOrder: 1 }],
+      accounts: [{ id: 'acc-current-1', name: 'Current card', type: 'debit', balance: 28 }],
+      subscriptions: [
+        {
+          id: 'sub-current-1',
+          name: 'Old Plan',
+          kind: 'digital',
+          amount: 8,
+          currency: 'CNY',
+          billingCycle: 'monthly',
+          status: 'active',
+          createdAt: '2026-04-01T00:00:00.000Z',
+          updatedAt: '2026-04-02T00:00:00.000Z'
+        }
+      ],
+      trashedTransactions: [],
+      trashedCategories: [],
+      trashedAccounts: [],
+      balanceChangeEntries: [],
+      trashedSubscriptions: [],
+      globalMemories: [
+        {
+          id: 'memory-current-1',
+          title: 'Current memory',
+          content: 'Keep me',
+          type: 'display_preference',
+          source: 'assistant_chat',
+          sourceTrace: [],
+          sourceIds: [],
+          confidence: 0.9,
+          score: 0.9,
+          status: 'active',
+          origin: 'manual',
+          pinned: false,
+          disabled: false,
+          embeddingText: 'Current memory\nKeep me\ndisplay_preference',
+          lastUsedAt: null,
+          createdAt: '2026-05-01T00:00:00.000Z',
+          updatedAt: '2026-05-02T00:00:00.000Z'
+        }
+      ]
+    };
+
+    const payload = createFinanceBackupPayload(
+      {
+        transactions: [],
+        categories: [],
+        accounts: [],
+        subscriptions: [
+          {
+            id: 'sub-next-1',
+            name: 'New Plan',
+            kind: 'digital',
+            amount: 18,
+            currency: 'CNY',
+            billingCycle: 'monthly',
+            status: 'paused',
+            createdAt: '2026-05-03T00:00:00.000Z',
+            updatedAt: '2026-05-04T00:00:00.000Z'
+          }
+        ],
+        trashedTransactions: [],
+        trashedCategories: [],
+        trashedAccounts: [],
+        balanceChangeEntries: [],
+        trashedSubscriptions: [],
+        globalMemories: []
+      },
+      {
+        ledger: false,
+        subscriptions: true,
+        globalMemories: false
+      }
+    );
+
+    const restored = applyFinanceBackupPayload(current, payload);
+
+    expect(restored.transactions).toEqual(current.transactions);
+    expect(restored.categories).toEqual(current.categories);
+    expect(restored.accounts).toEqual(current.accounts);
+    expect(restored.subscriptions).toEqual(payload.data.subscriptions);
+    expect(restored.globalMemories).toEqual(current.globalMemories);
   });
 });
 

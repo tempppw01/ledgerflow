@@ -7,14 +7,19 @@ import {
 } from '../../shared/lib/billImport';
 import { resolveImportDefaultAccountId } from '../../shared/lib/importAccount';
 import {
-  BackupWebdavConfig,
+  applyFinanceBackupPayload,
+  type BackupWebdavConfig,
+  createDefaultFinanceBackupScope,
   createFinanceBackupPayload,
   downloadBackupJson,
+  type FinanceBackupPayload,
+  type FinanceBackupScope,
   listWebdavBackupVersions,
   loadWebdavConfig,
+  normalizeFinanceBackupScope,
   parseFinanceBackupPayload,
   saveWebdavConfig,
-  WebdavBackupVersionItem,
+  type WebdavBackupVersionItem,
   webdavDownloadBackup,
   webdavUploadBackup,
   sanitizeWebdavConfig
@@ -30,10 +35,32 @@ const MAX_BACKUP_FILE_SIZE_MB = 50;
 const MAX_BACKUP_FILE_SIZE_BYTES = MAX_BACKUP_FILE_SIZE_MB * 1024 * 1024;
 const MAX_BILL_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const LAST_WEBDAV_BACKUP_KEY = 'ledgerflow-webdav-last-backup-v1';
+const BACKUP_SCOPE_STORAGE_KEY = 'ledgerflow-backup-scope-v1';
 const UNCATEGORIZED_CATEGORY_ID = '';
 
 const BACKUP_ACCEPTED_MIME_TYPES = new Set(['application/json', 'text/json']);
 const BILL_ACCEPTED_EXTENSIONS = new Set(['.csv', '.txt', '.xlsx']);
+const BACKUP_SCOPE_OPTIONS: Array<{
+  key: keyof FinanceBackupScope;
+  label: string;
+  description: string;
+}> = [
+  {
+    key: 'ledger',
+    label: '账本数据',
+    description: '交易、分类、账户、回收站和余额记录'
+  },
+  {
+    key: 'subscriptions',
+    label: '订阅数据',
+    description: '订阅项目和已归档订阅'
+  },
+  {
+    key: 'globalMemories',
+    label: 'AI 记忆',
+    description: '助手偏好、记忆和上下文资料'
+  }
+];
 
 function getFileExtension(fileName: string): string {
   const index = fileName.lastIndexOf('.');
@@ -123,6 +150,67 @@ function formatWebdavBackupTime(value: string): string {
   )}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
+function loadStoredBackupScope(): FinanceBackupScope {
+  const defaults = createDefaultFinanceBackupScope();
+  if (typeof window === 'undefined') {
+    return defaults;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(BACKUP_SCOPE_STORAGE_KEY);
+    if (!raw) {
+      return defaults;
+    }
+
+    return normalizeFinanceBackupScope(JSON.parse(raw) as Partial<FinanceBackupScope>);
+  } catch {
+    return defaults;
+  }
+}
+
+function writeStoredBackupScope(scope: FinanceBackupScope): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(BACKUP_SCOPE_STORAGE_KEY, JSON.stringify(scope));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function hasSelectedBackupScope(scope: FinanceBackupScope): boolean {
+  return scope.ledger || scope.subscriptions || scope.globalMemories;
+}
+
+function getBackupScopeSummary(scope: FinanceBackupScope): string {
+  const labels = BACKUP_SCOPE_OPTIONS.filter((item) => scope[item.key]).map((item) => item.label);
+  return labels.length ? labels.join('、') : '未选择';
+}
+
+function buildBackupRestoreSuccessMessage(action: '导入' | '恢复', payload: FinanceBackupPayload) {
+  const sections: string[] = [];
+
+  if (payload.scope.ledger) {
+    sections.push(
+      `账本 ${payload.data.transactions.length} 条交易 / ${payload.data.categories.length} 个分类 / ${payload.data.accounts.length} 个账户`
+    );
+  }
+
+  if (payload.scope.subscriptions) {
+    sections.push(`订阅 ${payload.data.subscriptions.length} 条`);
+  }
+
+  if (payload.scope.globalMemories) {
+    sections.push(`AI 记忆 ${payload.data.globalMemories.length} 条`);
+  }
+
+  return sections.length
+    ? `备份${action}成功：已更新${getBackupScopeSummary(payload.scope)}（${sections.join('；')}）`
+    : `备份${action}成功`;
+}
+
 export function DatabaseSettingsPage() {
   const hasHydrated = useFinanceStore((s) => s.hasHydrated);
   const transactions = useFinanceStore((s) => s.transactions);
@@ -166,6 +254,7 @@ export function DatabaseSettingsPage() {
   const [selectedRestorePath, setSelectedRestorePath] = useState('');
   const [webdavAdvancedOpen, setWebdavAdvancedOpen] = useState(false);
   const [remoteConnectionOpen, setRemoteConnectionOpen] = useState(false);
+  const [backupScope, setBackupScope] = useState<FinanceBackupScope>(() => loadStoredBackupScope());
 
   const totalRows = useMemo(
     () =>
@@ -185,6 +274,32 @@ export function DatabaseSettingsPage() {
 
   const showToast = (message: string, variant: ToastVariant) => {
     setToast({ visible: true, message, variant });
+  };
+
+  const canCreateBackup = useMemo(() => hasSelectedBackupScope(backupScope), [backupScope]);
+  const backupScopeSummary = useMemo(() => getBackupScopeSummary(backupScope), [backupScope]);
+
+  const getCurrentBackupSnapshot = () => ({
+    transactions,
+    categories,
+    accounts,
+    subscriptions,
+    trashedTransactions,
+    trashedCategories,
+    trashedAccounts,
+    balanceChangeEntries,
+    trashedSubscriptions,
+    globalMemories
+  });
+
+  const createScopedBackupPayload = () => createFinanceBackupPayload(getCurrentBackupSnapshot(), backupScope);
+
+  const applyParsedBackup = (payload: FinanceBackupPayload, action: '导入' | '恢复') => {
+    const restored = applyFinanceBackupPayload(getCurrentBackupSnapshot(), payload);
+    const { globalMemories: nextGlobalMemories, ...nextFinanceData } = restored;
+    replaceAllData(nextFinanceData);
+    replaceAllGlobalMemories(nextGlobalMemories);
+    showToast(buildBackupRestoreSuccessMessage(action, payload), 'success');
   };
 
   useEffect(() => {
@@ -228,6 +343,10 @@ export function DatabaseSettingsPage() {
     };
   }, []);
 
+  useEffect(() => {
+    writeStoredBackupScope(backupScope);
+  }, [backupScope]);
+
   const showWebdavStatus = (message: string) => {
     setWebdavStatus(message);
   };
@@ -241,20 +360,14 @@ export function DatabaseSettingsPage() {
   };
 
   const handleExportJson = () => {
-    const payload = createFinanceBackupPayload({
-      transactions,
-      categories,
-      accounts,
-      subscriptions,
-      trashedTransactions,
-      trashedCategories,
-      trashedAccounts,
-      balanceChangeEntries,
-      trashedSubscriptions,
-      globalMemories
-    });
+    if (!canCreateBackup) {
+      showToast('请至少勾选一个备份范围', 'warning');
+      return;
+    }
+
+    const payload = createScopedBackupPayload();
     downloadBackupJson(payload);
-    showToast('备份导出成功（JSON）', 'success');
+    showToast(`备份导出成功：${backupScopeSummary}`, 'success');
   };
 
   const handleBackupFileImport = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -269,12 +382,7 @@ export function DatabaseSettingsPage() {
       ensureHydrated();
       const text = await file.text();
       const payload = parseFinanceBackupPayload(text);
-      replaceAllData(payload.data);
-      replaceAllGlobalMemories(payload.data.globalMemories);
-      showToast(
-        `备份导入成功：交易 ${payload.data.transactions.length} 条，分类 ${payload.data.categories.length} 条，账户 ${payload.data.accounts.length} 条，订阅 ${payload.data.subscriptions.length} 条，全局记忆 ${payload.data.globalMemories.length} 条。`,
-        'success'
-      );
+      applyParsedBackup(payload, '导入');
     } catch (error) {
       showToast(error instanceof Error ? error.message : '备份导入失败', 'error');
     }
@@ -373,20 +481,12 @@ export function DatabaseSettingsPage() {
     try {
       ensureHydrated();
       validateWebdav();
+      if (!canCreateBackup) {
+        throw new Error('请至少勾选一个备份范围');
+      }
       setBusy(true);
       showWebdavStatus('正在打包备份...');
-      const payload = createFinanceBackupPayload({
-        transactions,
-        categories,
-        accounts,
-        subscriptions,
-        trashedTransactions,
-        trashedCategories,
-        trashedAccounts,
-        balanceChangeEntries,
-        trashedSubscriptions,
-        globalMemories
-      });
+      const payload = createScopedBackupPayload();
       await webdavUploadBackup(webdav, payload, (stage) => {
         showWebdavStatus(stage);
       });
@@ -394,7 +494,7 @@ export function DatabaseSettingsPage() {
       setLastWebdavBackupAt(payload.exportedAt);
       writeStoredLastWebdavBackupAt(webdav, payload.exportedAt);
       showWebdavStatus('备份完成');
-      showToast('WebDAV 备份成功', 'success');
+      showToast(`WebDAV 备份成功：${backupScopeSummary}`, 'success');
     } catch (error) {
       showWebdavStatus('备份失败');
       showToast(error instanceof Error ? error.message : 'WebDAV 备份失败', 'error');
@@ -439,12 +539,10 @@ export function DatabaseSettingsPage() {
       setBusy(true);
       showWebdavStatus('正在下载并恢复...');
       const payload = await webdavDownloadBackup(webdav, selectedRestorePath);
-      replaceAllData(payload.data);
-      replaceAllGlobalMemories(payload.data.globalMemories);
+      applyParsedBackup(payload, '恢复');
       saveWebdavConfig(webdav);
       setWebdavRestoreDialogOpen(false);
       showWebdavStatus('恢复完成');
-      showToast('WebDAV 备份恢复成功', 'success');
     } catch (error) {
       showWebdavStatus('恢复失败');
       showToast(error instanceof Error ? error.message : 'WebDAV 下载失败', 'error');
@@ -483,15 +581,49 @@ export function DatabaseSettingsPage() {
         <div className="database-data-hub-grid">
           <div className="database-data-hub-block">
             <div>
-              <span className="database-data-hub-label">完整备份</span>
-              <h4>导出或恢复整本账本</h4>
+              <span className="database-data-hub-label">备份导出</span>
+              <h4>按范围导出备份文件</h4>
             </div>
             <p className="sync-tip">
-              适合换设备、批量整理前留档。交易、分类、账户、订阅和记忆都会一起保存。
+              导出的备份可直接导入恢复，WebDAV 也会沿用同一份范围设置。
             </p>
+            <div className="database-backup-scope" aria-label="备份范围设置">
+              <div className="database-backup-scope-head">
+                <strong className="database-backup-scope-title">备份范围</strong>
+                <span className="sync-tip">本地导出和 WebDAV 共用</span>
+              </div>
+              <div className="database-backup-scope-list">
+                {BACKUP_SCOPE_OPTIONS.map((item) => (
+                  <label
+                    key={item.key}
+                    className={`database-backup-scope-item${backupScope[item.key] ? ' is-active' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={backupScope[item.key]}
+                      onChange={(e) =>
+                        setBackupScope((prev) => ({ ...prev, [item.key]: e.target.checked }))
+                      }
+                    />
+                    <span className="database-backup-scope-copy">
+                      <strong>{item.label}</strong>
+                      <small>{item.description}</small>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {!canCreateBackup ? (
+                <p className="database-backup-scope-warning">请至少勾选一个备份范围。</p>
+              ) : null}
+            </div>
             <div className="database-data-hub-actions">
-              <button type="button" className="primary" onClick={handleExportJson}>
-                导出完整备份
+              <button
+                type="button"
+                className="primary"
+                onClick={handleExportJson}
+                disabled={!hasHydrated || !canCreateBackup}
+              >
+                导出备份文件
               </button>
               <button type="button" onClick={() => backupInputRef.current?.click()}>
                 导入备份文件
@@ -686,6 +818,9 @@ export function DatabaseSettingsPage() {
         <p className="sync-tip" style={{ margin: '10px 0 0' }}>
           {webdav.proxyEnabled ? '当前：同源代理已启用。' : '当前：浏览器直连，可能受跨域限制。'}
         </p>
+        <p className="sync-tip" style={{ margin: '6px 0 0' }}>
+          当前备份范围：{backupScopeSummary}
+        </p>
 
         <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
           <button type="button" onClick={handleSaveWebdavConfig} disabled={busy}>
@@ -695,7 +830,7 @@ export function DatabaseSettingsPage() {
             type="button"
             className="primary"
             onClick={() => void handleWebdavUpload()}
-            disabled={busy}
+            disabled={busy || !canCreateBackup}
           >
             立即备份
           </button>

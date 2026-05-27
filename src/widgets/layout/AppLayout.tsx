@@ -14,7 +14,9 @@ import {
   CHEVRONS_LEFT_RIGHT_ICON_URL,
   CHEVRONS_RIGHT_LEFT_ICON_URL,
   CIRCLE_USER_ICON_URL,
-  DATABASE_ICON_URL
+  DATABASE_ICON_URL,
+  INFO_ICON_URL,
+  QUESTION_ICON_URL
 } from '../../shared/config/brandAssets';
 import { formatCurrency } from '../../shared/lib/format';
 import { summarizeTransactions } from '../../shared/lib/transactionMetrics';
@@ -104,14 +106,14 @@ export function AppLayout() {
       {
         title: t('nav.toolsInfo'),
         items: [
-          { to: '/help', label: '帮助', icon: '❓' },
+          { to: '/help', label: '帮助', icon: '❓', iconSrc: QUESTION_ICON_URL },
           { to: '/settings', label: t('nav.settings'), icon: '⚙️' },
           { to: '/database-settings', label: t('nav.dbSettings'), icon: '🗄️', iconSrc: DATABASE_ICON_URL },
           { to: '/recycle-bin', label: '回收站', icon: '🗑️' },
           { to: '/exchange', label: t('nav.exchange'), icon: '💱' },
           { to: '/salary-tools', label: '工资工具', icon: '💼' },
           { to: '/finance', label: t('nav.finance'), icon: '📰' },
-          { to: '/about', label: t('nav.about'), icon: 'ℹ️' }
+          { to: '/about', label: t('nav.about'), icon: 'ℹ️', iconSrc: INFO_ICON_URL }
         ]
       }
     ],
@@ -147,11 +149,11 @@ export function AppLayout() {
       {
         title: t('nav.systemFeatures'),
         items: [
-          { label: '帮助', icon: '❓', to: '/help' },
+          { label: '帮助', icon: '❓', iconSrc: QUESTION_ICON_URL, to: '/help' },
           { label: t('nav.settings'), icon: '⚙️', to: '/settings' },
           { label: t('nav.dbSettings'), icon: '🗄️', iconSrc: DATABASE_ICON_URL, to: '/database-settings' },
           { label: '回收站', icon: '🗑️', to: '/recycle-bin' },
-          { label: t('nav.about'), icon: 'ℹ️', to: '/about' }
+          { label: t('nav.about'), icon: 'ℹ️', iconSrc: INFO_ICON_URL, to: '/about' }
         ]
       }
     ],

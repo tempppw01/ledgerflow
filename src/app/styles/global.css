@@ -8334,6 +8334,78 @@ body.categories-accounts-resizing {
   gap: 8px;
 }
 
+.database-backup-scope {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-primary-bg));
+}
+
+.database-backup-scope-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.database-backup-scope-title {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.database-backup-scope-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.database-backup-scope-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 12px;
+  background: var(--color-bg-elevated);
+  cursor: pointer;
+}
+
+.database-backup-scope-item.is-active {
+  border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-primary-bg) 62%, var(--color-bg-elevated));
+}
+
+.database-backup-scope-item input {
+  margin-top: 2px;
+  flex: 0 0 auto;
+}
+
+.database-backup-scope-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.database-backup-scope-copy strong {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.database-backup-scope-copy small {
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+}
+
+.database-backup-scope-warning {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-danger);
+}
+
 .database-data-hub-actions > button,
 .database-import-actions > button {
   min-height: 42px;
@@ -8358,6 +8430,10 @@ body.categories-accounts-resizing {
 
 @media (max-width: 900px) {
   .database-data-hub-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .database-backup-scope-list {
     grid-template-columns: 1fr;
   }
 }

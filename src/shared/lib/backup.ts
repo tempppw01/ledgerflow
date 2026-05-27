@@ -148,10 +148,43 @@ export type FinanceBackupData = Required<FinanceDataSnapshot> & {
   globalMemories: GlobalMemoryItem[];
 };
 
+export interface FinanceBackupScope {
+  ledger: boolean;
+  subscriptions: boolean;
+  globalMemories: boolean;
+}
+
 export interface FinanceBackupPayload {
   version: number;
   exportedAt: string;
+  scope: FinanceBackupScope;
   data: FinanceBackupData;
+}
+
+type FinanceBackupSnapshotWithMemories = Required<FinanceDataSnapshot> & {
+  globalMemories: GlobalMemoryItem[];
+};
+
+export function createDefaultFinanceBackupScope(): FinanceBackupScope {
+  return {
+    ledger: true,
+    subscriptions: true,
+    globalMemories: true
+  };
+}
+
+export function normalizeFinanceBackupScope(
+  scope?: Partial<FinanceBackupScope> | null
+): FinanceBackupScope {
+  const defaults = createDefaultFinanceBackupScope();
+  const safeScope =
+    scope && typeof scope === 'object' ? (scope as Partial<FinanceBackupScope>) : undefined;
+
+  return {
+    ledger: safeScope?.ledger ?? defaults.ledger,
+    subscriptions: safeScope?.subscriptions ?? defaults.subscriptions,
+    globalMemories: safeScope?.globalMemories ?? defaults.globalMemories
+  };
 }
 
 const TRANSACTION_TYPES = new Set<TransactionItem['type']>([
@@ -602,28 +635,43 @@ function validateSubscriptionItem(item: unknown, index: number): SubscriptionIte
 export function createFinanceBackupPayload(
   input: FinanceDataSnapshot & {
     globalMemories?: GlobalMemoryItem[];
-  }
+  },
+  scope?: Partial<FinanceBackupScope> | null
 ): FinanceBackupPayload {
+  const normalizedScope = normalizeFinanceBackupScope(scope);
+
   return {
     version: 3,
     exportedAt: new Date().toISOString(),
+    scope: normalizedScope,
     data: {
-      transactions: input.transactions,
-      categories: input.categories,
-      accounts: input.accounts,
-      subscriptions: Array.isArray(input.subscriptions) ? input.subscriptions : [],
-      trashedTransactions: Array.isArray(input.trashedTransactions)
+      transactions: normalizedScope.ledger ? input.transactions : [],
+      categories: normalizedScope.ledger ? input.categories : [],
+      accounts: normalizedScope.ledger ? input.accounts : [],
+      subscriptions:
+        normalizedScope.subscriptions && Array.isArray(input.subscriptions)
+          ? input.subscriptions
+          : [],
+      trashedTransactions: normalizedScope.ledger && Array.isArray(input.trashedTransactions)
         ? input.trashedTransactions
         : [],
-      trashedCategories: Array.isArray(input.trashedCategories) ? input.trashedCategories : [],
-      trashedAccounts: Array.isArray(input.trashedAccounts) ? input.trashedAccounts : [],
-      balanceChangeEntries: Array.isArray(input.balanceChangeEntries)
+      trashedCategories:
+        normalizedScope.ledger && Array.isArray(input.trashedCategories)
+          ? input.trashedCategories
+          : [],
+      trashedAccounts:
+        normalizedScope.ledger && Array.isArray(input.trashedAccounts) ? input.trashedAccounts : [],
+      balanceChangeEntries: normalizedScope.ledger && Array.isArray(input.balanceChangeEntries)
         ? input.balanceChangeEntries
         : [],
-      trashedSubscriptions: Array.isArray(input.trashedSubscriptions)
+      trashedSubscriptions:
+        normalizedScope.subscriptions && Array.isArray(input.trashedSubscriptions)
         ? input.trashedSubscriptions
         : [],
-      globalMemories: Array.isArray(input.globalMemories) ? input.globalMemories : []
+      globalMemories:
+        normalizedScope.globalMemories && Array.isArray(input.globalMemories)
+          ? input.globalMemories
+          : []
     }
   };
 }
@@ -707,12 +755,16 @@ export function parseFinanceBackupPayload(raw: string): FinanceBackupPayload {
   const globalMemories = (Array.isArray(data.globalMemories) ? data.globalMemories : [])
     .map((item, index) => sanitizePersistedGlobalMemoryItem(item, index))
     .filter((item): item is GlobalMemoryItem => Boolean(item));
+  const scope = normalizeFinanceBackupScope(
+    isObjectRecord(parsed.scope) ? (parsed.scope as Partial<FinanceBackupScope>) : undefined
+  );
 
   return {
     version:
       typeof parsed.version === 'number' && Number.isFinite(parsed.version) ? parsed.version : 1,
     exportedAt:
       typeof parsed.exportedAt === 'string' ? parsed.exportedAt : new Date().toISOString(),
+    scope,
     data: {
       transactions,
       categories,
@@ -725,6 +777,32 @@ export function parseFinanceBackupPayload(raw: string): FinanceBackupPayload {
       trashedSubscriptions,
       globalMemories
     }
+  };
+}
+
+export function applyFinanceBackupPayload(
+  current: FinanceBackupSnapshotWithMemories,
+  payload: FinanceBackupPayload
+): FinanceBackupSnapshotWithMemories {
+  const scope = normalizeFinanceBackupScope(payload.scope);
+
+  return {
+    transactions: scope.ledger ? payload.data.transactions : current.transactions,
+    categories: scope.ledger ? payload.data.categories : current.categories,
+    accounts: scope.ledger ? payload.data.accounts : current.accounts,
+    subscriptions: scope.subscriptions ? payload.data.subscriptions : current.subscriptions,
+    trashedTransactions: scope.ledger
+      ? payload.data.trashedTransactions
+      : current.trashedTransactions,
+    trashedCategories: scope.ledger ? payload.data.trashedCategories : current.trashedCategories,
+    trashedAccounts: scope.ledger ? payload.data.trashedAccounts : current.trashedAccounts,
+    balanceChangeEntries: scope.ledger
+      ? payload.data.balanceChangeEntries
+      : current.balanceChangeEntries,
+    trashedSubscriptions: scope.subscriptions
+      ? payload.data.trashedSubscriptions
+      : current.trashedSubscriptions,
+    globalMemories: scope.globalMemories ? payload.data.globalMemories : current.globalMemories
   };
 }
 
