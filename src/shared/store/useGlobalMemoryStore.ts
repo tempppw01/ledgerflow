@@ -18,6 +18,154 @@ function createGlobalMemoryId() {
   return `memory-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function normalizeMemoryText(value: string) {
+  return String(value || '')
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[\s,.，。!！?？:：;；'"“”‘’()（）[\]{}\-_/\\|]+/g, '')
+    .trim();
+}
+
+function buildMemoryCombinedKey(item: Pick<GlobalMemoryItem, 'title' | 'content'>) {
+  return `${normalizeMemoryText(item.title)}${normalizeMemoryText(item.content)}`;
+}
+
+function buildCharacterBigrams(value: string) {
+  const normalized = normalizeMemoryText(value);
+  const grams = new Set<string>();
+  if (!normalized) return grams;
+  if (normalized.length === 1) {
+    grams.add(normalized);
+    return grams;
+  }
+  for (let index = 0; index < normalized.length - 1; index += 1) {
+    grams.add(normalized.slice(index, index + 2));
+  }
+  return grams;
+}
+
+function calculateDiceCoefficient(left: string, right: string) {
+  const leftGrams = buildCharacterBigrams(left);
+  const rightGrams = buildCharacterBigrams(right);
+  if (!leftGrams.size || !rightGrams.size) return 0;
+
+  let overlap = 0;
+  for (const gram of leftGrams) {
+    if (rightGrams.has(gram)) {
+      overlap += 1;
+    }
+  }
+  return (2 * overlap) / (leftGrams.size + rightGrams.size);
+}
+
+function pickMoreInformativeText(current: string, incoming: string) {
+  const currentText = String(current || '').trim();
+  const incomingText = String(incoming || '').trim();
+  if (!currentText) return incomingText;
+  if (!incomingText) return currentText;
+  return incomingText.length > currentText.length ? incomingText : currentText;
+}
+
+function mergeUniqueStrings(items: string[]) {
+  const seen = new Set<string>();
+  const merged: string[] = [];
+  for (const item of items) {
+    const normalized = String(item || '').trim();
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    merged.push(normalized);
+  }
+  return merged;
+}
+
+function mergeUniqueSourceTrace(
+  current: GlobalMemoryItem['sourceTrace'],
+  incoming: GlobalMemoryItem['sourceTrace']
+) {
+  const seen = new Set<string>();
+  return [...current, ...incoming].filter((item) => {
+    const key = [
+      item.kind,
+      String(item.label || '').trim(),
+      String(item.sourceId || '').trim(),
+      String(item.excerpt || '').trim()
+    ].join('::');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function isLikelyDuplicateMemory(
+  current: Pick<GlobalMemoryItem, 'type' | 'title' | 'content'>,
+  incoming: Pick<GlobalMemoryItem, 'type' | 'title' | 'content'>
+) {
+  if (current.type !== incoming.type) return false;
+
+  const currentTitle = normalizeMemoryText(current.title);
+  const incomingTitle = normalizeMemoryText(incoming.title);
+  const currentContent = normalizeMemoryText(current.content);
+  const incomingContent = normalizeMemoryText(incoming.content);
+
+  if (currentTitle === incomingTitle && currentContent === incomingContent) {
+    return true;
+  }
+  if (currentContent && currentContent === incomingContent) {
+    return true;
+  }
+
+  const currentCombined = buildMemoryCombinedKey(current);
+  const incomingCombined = buildMemoryCombinedKey(incoming);
+  if (!currentCombined || !incomingCombined) return false;
+
+  const shorterLength = Math.min(currentCombined.length, incomingCombined.length);
+  const longerLength = Math.max(currentCombined.length, incomingCombined.length);
+  if (
+    shorterLength >= 12 &&
+    (currentCombined.includes(incomingCombined) || incomingCombined.includes(currentCombined)) &&
+    shorterLength / longerLength >= 0.68
+  ) {
+    return true;
+  }
+
+  return calculateDiceCoefficient(currentCombined, incomingCombined) >= 0.72;
+}
+
+function mergeDuplicateMemory(current: GlobalMemoryItem, incoming: GlobalMemoryItem): GlobalMemoryItem {
+  const title = pickMoreInformativeText(current.title, incoming.title);
+  const content = pickMoreInformativeText(current.content, incoming.content);
+  const type = current.type;
+
+  return {
+    ...current,
+    title,
+    content,
+    source: current.source || incoming.source,
+    sourceTrace: mergeUniqueSourceTrace(current.sourceTrace, incoming.sourceTrace),
+    sourceIds: mergeUniqueStrings([...current.sourceIds, ...incoming.sourceIds]),
+    confidence: Math.max(current.confidence, incoming.confidence),
+    score: Math.max(current.score, incoming.score),
+    origin: current.origin === 'manual' ? current.origin : incoming.origin,
+    pinned: current.pinned || incoming.pinned,
+    disabled: current.disabled,
+    embeddingText: buildMemoryEmbeddingText({ title, content, type }),
+    lastUsedAt: current.lastUsedAt ?? incoming.lastUsedAt ?? null,
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function dedupeMemories(items: GlobalMemoryItem[]) {
+  return items.reduce<GlobalMemoryItem[]>((acc, item) => {
+    const duplicateIndex = acc.findIndex((existing) => isLikelyDuplicateMemory(existing, item));
+    if (duplicateIndex === -1) {
+      acc.push(item);
+      return acc;
+    }
+    acc[duplicateIndex] = mergeDuplicateMemory(acc[duplicateIndex], item);
+    return acc;
+  }, []);
+}
+
 function sortMemories(items: GlobalMemoryItem[], pinnedFirst = true) {
   const copied = [...items];
   copied.sort((a, b) => {
@@ -91,11 +239,26 @@ export const useGlobalMemoryStore = create<GlobalMemoryState>()(
           return { ok: false, reason: '记忆标题和内容不能为空。' };
         }
 
-        const id = createGlobalMemoryId();
-        set((state) => ({
-          memories: sortMemories([{ ...normalized, id }, ...state.memories])
-        }));
-        return { ok: true, id };
+        const candidate = { ...normalized, id: createGlobalMemoryId() };
+        let targetId = candidate.id;
+        set((state) => {
+          const duplicate = state.memories.find((item) => isLikelyDuplicateMemory(item, candidate));
+          if (duplicate) {
+            targetId = duplicate.id;
+            return {
+              memories: sortMemories(
+                state.memories.map((item) =>
+                  item.id === duplicate.id ? mergeDuplicateMemory(item, candidate) : item
+                )
+              )
+            };
+          }
+
+          return {
+            memories: sortMemories([candidate, ...state.memories])
+          };
+        });
+        return { ok: true, id: targetId };
       },
       updateMemory: ({ id, ...payload }) => {
         const exists = get().memories.some((item) => item.id === id);
@@ -105,7 +268,9 @@ export const useGlobalMemoryStore = create<GlobalMemoryState>()(
 
         set((state) => ({
           memories: sortMemories(
-            state.memories.map((item) => (item.id === id ? mergeMemoryItem(item, payload) : item))
+            dedupeMemories(
+              state.memories.map((item) => (item.id === id ? mergeMemoryItem(item, payload) : item))
+            )
           )
         }));
         return { ok: true };
@@ -116,7 +281,7 @@ export const useGlobalMemoryStore = create<GlobalMemoryState>()(
               .map((item, index) => sanitizePersistedGlobalMemoryItem(item, index))
               .filter((item): item is GlobalMemoryItem => Boolean(item))
           : [];
-        set(() => ({ memories: sortMemories(safeMemories) }));
+        set(() => ({ memories: sortMemories(dedupeMemories(safeMemories)) }));
       },
       removeMemory: (id) => {
         set((state) => ({
@@ -226,7 +391,7 @@ export const useGlobalMemoryStore = create<GlobalMemoryState>()(
         return {
           ...currentState,
           ...(persistedState as object),
-          memories: sortMemories(safeMemories)
+          memories: sortMemories(dedupeMemories(safeMemories))
         };
       }
     }

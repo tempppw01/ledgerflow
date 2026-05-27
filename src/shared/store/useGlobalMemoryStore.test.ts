@@ -86,4 +86,100 @@ describe('useGlobalMemoryStore', () => {
     expect(all).toHaveLength(2);
     expect(visible[0].id).toBe(String(first.id));
   });
+
+  it('merges overlapping extracted memories instead of stacking duplicates', () => {
+    const first = useGlobalMemoryStore.getState().addMemory({
+      title: '奶茶消费支付方式',
+      content: '用户主要通过支付宝和微信进行奶茶消费。',
+      type: 'user_preference',
+      source: 'assistant_chat',
+      origin: 'extracted',
+      sourceIds: ['msg-1']
+    });
+
+    const second = useGlobalMemoryStore.getState().addMemory({
+      title: '奶茶消费支付渠道',
+      content: '用户主要通过支付宝和微信进行奶茶消费。',
+      type: 'user_preference',
+      source: 'assistant_chat',
+      origin: 'extracted',
+      sourceIds: ['msg-2']
+    });
+
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(true);
+    expect(second.id).toBe(first.id);
+
+    const memories = useGlobalMemoryStore.getState().memories;
+    expect(memories).toHaveLength(1);
+    expect(memories[0].sourceIds).toEqual(['msg-1', 'msg-2']);
+  });
+
+  it('dedupes similar memories during replaceAllData hydration paths', () => {
+    useGlobalMemoryStore.getState().replaceAllData([
+      {
+        id: 'memory-1',
+        title: '奶茶消费习惯',
+        content: '用户近期有奶茶消费，主要通过支付宝和微信进行。',
+        type: 'financial_habit',
+        source: 'assistant_chat',
+        sourceTrace: [],
+        sourceIds: ['msg-a'],
+        confidence: 0.8,
+        score: 0.8,
+        status: 'active',
+        origin: 'extracted',
+        pinned: false,
+        disabled: false,
+        embeddingText: '',
+        lastUsedAt: null,
+        createdAt: '2026-05-25T12:00:00.000Z',
+        updatedAt: '2026-05-25T12:00:00.000Z'
+      },
+      {
+        id: 'memory-2',
+        title: '奶茶消费偏好',
+        content: '用户近期有奶茶消费，主要通过支付宝和微信进行，1月18日消费更集中。',
+        type: 'financial_habit',
+        source: 'assistant_chat',
+        sourceTrace: [],
+        sourceIds: ['msg-b'],
+        confidence: 0.9,
+        score: 0.9,
+        status: 'active',
+        origin: 'extracted',
+        pinned: false,
+        disabled: false,
+        embeddingText: '',
+        lastUsedAt: null,
+        createdAt: '2026-05-25T12:01:00.000Z',
+        updatedAt: '2026-05-25T12:01:00.000Z'
+      }
+    ]);
+
+    const memories = useGlobalMemoryStore.getState().memories;
+    expect(memories).toHaveLength(1);
+    expect(memories[0].content).toContain('1月18日消费更集中');
+    expect(memories[0].sourceIds).toEqual(['msg-a', 'msg-b']);
+  });
+
+  it('keeps distinct facts separate when only the topic overlaps', () => {
+    useGlobalMemoryStore.getState().addMemory({
+      title: '奶茶消费总额',
+      content: '在2026年1月18日至2月2日期间，奶茶消费总计约275.66元。',
+      type: 'financial_habit',
+      source: 'assistant_chat',
+      origin: 'extracted'
+    });
+
+    useGlobalMemoryStore.getState().addMemory({
+      title: '奶茶消费支付方式',
+      content: '用户主要通过支付宝和微信进行奶茶消费。',
+      type: 'financial_habit',
+      source: 'assistant_chat',
+      origin: 'extracted'
+    });
+
+    expect(useGlobalMemoryStore.getState().memories).toHaveLength(2);
+  });
 });

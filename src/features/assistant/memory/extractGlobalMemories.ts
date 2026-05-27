@@ -53,7 +53,7 @@ export async function extractGlobalMemoriesFromConversation(params: {
     model,
     signal,
     systemPrompt:
-      '你是长期偏好提炼器。请只从多轮对话中提炼稳定、长期、有产品价值的用户偏好。宁可少提，也不要猜。只返回 JSON 数组，格式：[{"title":"...","content":"...","type":"user_preference|financial_habit|risk_preference|display_preference","confidence":0.00}]。不要输出其他说明。禁止提取一次性任务、临时情绪、模糊猜测。',
+      '你是长期偏好提炼器。请只从多轮对话中提炼稳定、长期、有产品价值的用户偏好。宁可少提，也不要猜。同一主题只保留 1 条更完整的记忆，禁止把同一事实拆成多个近义标题；如果支付方式、消费时段、频率等属于同一个稳定习惯，应合并到同一条 content 中。只返回 JSON 数组，格式：[{"title":"...","content":"...","type":"user_preference|financial_habit|risk_preference|display_preference","confidence":0.00}]。不要输出其他说明。禁止提取一次性任务、临时情绪、模糊猜测。',
     messages: [
       {
         role: 'user',
