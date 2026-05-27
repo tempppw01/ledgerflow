@@ -11,9 +11,51 @@ type FinanceNewsItem = {
   summary?: string;
 };
 
+type FeedLoadStatus = {
+  kind: 'idle' | 'loading' | 'success' | 'empty' | 'error' | 'disabled';
+  itemCount?: number;
+};
+
 const FINANCE_NEWS_CACHE_KEY = 'ledgerflow.finance.news-cache.v1';
 const FINANCE_ILLUSTRATION_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/scrum-board.svg';
+
+function getDefaultFeedStatus(enabled: boolean): FeedLoadStatus {
+  return { kind: enabled ? 'loading' : 'disabled' };
+}
+
+function getFeedStatusLabel(status: FeedLoadStatus | undefined, t: (k: string) => string): string {
+  switch (status?.kind) {
+    case 'loading':
+      return t('finance.ui.rssStatusLoading');
+    case 'success':
+      return t('finance.ui.rssStatusSuccess');
+    case 'empty':
+      return t('finance.ui.rssStatusEmpty');
+    case 'error':
+      return t('finance.ui.rssStatusError');
+    case 'disabled':
+      return t('finance.ui.rssStatusDisabled');
+    default:
+      return t('finance.ui.rssStatusIdle');
+  }
+}
+
+function getFeedStatusDetail(
+  status: FeedLoadStatus | undefined,
+  t: (k: string, options?: Record<string, string | number>) => string
+): string {
+  switch (status?.kind) {
+    case 'success':
+      return t('finance.ui.rssStatusSuccessDetail', { count: status.itemCount || 0 });
+    case 'empty':
+      return t('finance.ui.rssStatusEmptyDetail');
+    case 'error':
+      return t('finance.ui.rssStatusErrorDetail');
+    default:
+      return '';
+  }
+}
 
 function formatTimeLabel(value: string | undefined, t: (k: string) => string, language: string): string {
   if (!value) return t('finance.ui.justNow');
@@ -119,6 +161,7 @@ export function FinancePage() {
   const [feedTitle, setFeedTitle] = useState('');
   const [feedUrl, setFeedUrl] = useState('');
   const [activeNewsId, setActiveNewsId] = useState('');
+  const [feedStatuses, setFeedStatuses] = useState<Record<string, FeedLoadStatus>>({});
 
   const enabledFeeds = useMemo(
     () => rssSubscriptions.filter((item) => item.enabled),
@@ -131,6 +174,11 @@ export function FinancePage() {
     async function loadFinanceNews() {
       setLoading(true);
       setError('');
+      setFeedStatuses(
+        Object.fromEntries(
+          rssSubscriptions.map((item) => [item.id, getDefaultFeedStatus(item.enabled)])
+        )
+      );
 
       if (enabledFeeds.length === 0) {
         setLoading(false);
@@ -138,12 +186,38 @@ export function FinancePage() {
       }
 
       try {
-        const loadedLists = await Promise.allSettled(
-          enabledFeeds.map((item) => fetchRssFeed(item.url, controller.signal, t, i18n.language))
+        const loadedFeeds = await Promise.all(
+          enabledFeeds.map(async (item) => {
+            try {
+              const items = await fetchRssFeed(item.url, controller.signal, t, i18n.language);
+              return { feedId: item.id, ok: true as const, items };
+            } catch (fetchError) {
+              return { feedId: item.id, ok: false as const, error: fetchError };
+            }
+          })
         );
-        const merged = loadedLists
-          .flatMap((result) => (result.status === 'fulfilled' ? result.value : []))
+        if (controller.signal.aborted) return;
+
+        const nextStatuses: Record<string, FeedLoadStatus> = Object.fromEntries(
+          rssSubscriptions
+            .filter((item) => !item.enabled)
+            .map((item) => [item.id, { kind: 'disabled' } satisfies FeedLoadStatus])
+        );
+        const merged = loadedFeeds
+          .flatMap((result) => {
+            if (!result.ok) {
+              nextStatuses[result.feedId] = { kind: 'error' };
+              return [];
+            }
+
+            nextStatuses[result.feedId] =
+              result.items.length > 0
+                ? { kind: 'success', itemCount: result.items.length }
+                : { kind: 'empty' };
+            return result.items;
+          })
           .slice(0, 20);
+        setFeedStatuses(nextStatuses);
 
         const sorted = [...merged].sort((a, b) => {
           const aTime = Date.parse(a.publishedAt);
@@ -160,7 +234,7 @@ export function FinancePage() {
           setError(t('finance.ui.noReadableContent'));
         }
 
-        if (loadedLists.every((result) => result.status === 'rejected')) {
+        if (loadedFeeds.every((result) => !result.ok)) {
           setError(t('finance.ui.rssUnavailable'));
         }
       } catch (err) {
@@ -174,7 +248,7 @@ export function FinancePage() {
 
     loadFinanceNews();
     return () => controller.abort();
-  }, [enabledFeeds, i18n.language, t]);
+  }, [enabledFeeds, i18n.language, rssSubscriptions, t]);
 
   const dailyIdea = useMemo(() => {
     const day = new Date().getDate();
@@ -251,45 +325,61 @@ export function FinancePage() {
                 paddingRight: 4
               }}
             >
-              {rssSubscriptions.map((item) => (
-                <div
-                  key={item.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 8,
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 8,
-                    padding: 8
-                  }}
-                >
-                  <div style={{ minWidth: 0 }}>
-                    <strong>{item.title}</strong>
-                    <p
-                      className="muted"
-                      style={{
-                        margin: 0,
-                        fontSize: 12,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis'
-                      }}
-                      title={item.url}
-                    >
-                      {item.url}
-                    </p>
+              {rssSubscriptions.map((item) => {
+                const feedStatus = feedStatuses[item.id] || getDefaultFeedStatus(item.enabled);
+                const statusDetail = getFeedStatusDetail(feedStatus, t);
+
+                return (
+                  <div
+                    key={item.id}
+                    role="group"
+                    aria-label={`RSS 订阅 ${item.title}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 8,
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 8,
+                      padding: 8
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <div className="finance-feed-item-head">
+                        <strong>{item.title}</strong>
+                        <span
+                          className={`finance-feed-status finance-feed-status-${feedStatus.kind}`}
+                          aria-live="polite"
+                        >
+                          {getFeedStatusLabel(feedStatus, t)}
+                        </span>
+                      </div>
+                      <p
+                        className="muted"
+                        style={{
+                          margin: 0,
+                          fontSize: 12,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}
+                        title={item.url}
+                      >
+                        {item.url}
+                      </p>
+                      {statusDetail ? <p className="finance-feed-status-detail">{statusDetail}</p> : null}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                      <button type="button" onClick={() => toggleRssSubscription(item.id)}>
+                        {item.enabled ? t('finance.ui.disable') : t('finance.ui.enable')}
+                      </button>
+                      <button type="button" onClick={() => removeRssSubscription(item.id)}>
+                        {t('finance.ui.delete')}
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                    <button type="button" onClick={() => toggleRssSubscription(item.id)}>
-                      {item.enabled ? t('finance.ui.disable') : t('finance.ui.enable')}
-                    </button>
-                    <button type="button" onClick={() => removeRssSubscription(item.id)}>
-                      {t('finance.ui.delete')}
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </details>
