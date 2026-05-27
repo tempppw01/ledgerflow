@@ -131,13 +131,12 @@ function mergeModelOptions(value: string, presets: string[], remoteModels: strin
   return options;
 }
 
-function ModelSelector({
-  label,
-  hint,
-  value,
-  presets,
-  onChange
-}: ModelSelectorProps) {
+interface SettingsPageProps {
+  variant?: 'page' | 'overlay';
+  onClose?: () => void;
+}
+
+function ModelSelector({ label, hint, value, presets, onChange }: ModelSelectorProps) {
   const options = useMemo(() => mergeModelOptions(value, presets, []), [value, presets]);
 
   return (
@@ -157,7 +156,7 @@ function ModelSelector({
   );
 }
 
-export function SettingsPage() {
+export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
@@ -363,17 +362,38 @@ export function SettingsPage() {
     setter(value.trim());
     showSaveToast();
   };
+  const handleClose = () => {
+    if (variant === 'overlay') {
+      onClose?.();
+      return;
+    }
+
+    navigate(-1);
+  };
 
   return (
-    <div>
-      <section className="panel">
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+    <div
+      className={variant === 'overlay' ? 'settings-page settings-page--overlay' : 'settings-page'}
+    >
+      <section
+        className={
+          variant === 'overlay'
+            ? 'settings-surface settings-surface--overlay'
+            : 'panel settings-surface'
+        }
+      >
+        <div
+          className="row settings-page-header"
+          style={{ justifyContent: 'space-between', alignItems: 'center' }}
+        >
           <h2 style={{ margin: 0 }}>{t('settings.title')}</h2>
-          <button type="button" onClick={() => navigate(-1)}>
-            {t('settings.back')}
+          <button type="button" className="settings-page-close" onClick={handleClose}>
+            {variant === 'overlay' ? '关闭' : t('settings.back')}
           </button>
         </div>
-        <p style={{ marginTop: 16 }}>{t('settings.intro')}</p>
+        <p className="settings-page-intro" style={{ marginTop: 16 }}>
+          {t('settings.intro')}
+        </p>
 
         <div className="field">
           <label>{t('settings.baseUrl')}</label>

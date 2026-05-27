@@ -7,6 +7,7 @@ import {
   readAssistantModeFromSessionStorage
 } from '../../features/assistant/shared/assistantMode';
 import { ThemeSwitcher } from '../../features/theme-switcher/ThemeSwitcher';
+import { SettingsPage } from '../../pages/settings/SettingsPage';
 import { APP_LOGO_URL } from '../../shared/config/app';
 import {
   BRAIN_ICON_URL,
@@ -65,6 +66,7 @@ export function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(260);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [settingsOverlayOpen, setSettingsOverlayOpen] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px)').matches : false
   );
@@ -91,7 +93,13 @@ export function AppLayout() {
         title: t('nav.incomeExpense'),
         items: [
           { to: '/transactions', label: t('nav.transactions'), icon: '📋' },
-          { to: '/', label: t('nav.dashboard'), icon: '📊', iconSrc: DASHBOARD_ICON_URL, end: true },
+          {
+            to: '/',
+            label: t('nav.dashboard'),
+            icon: '📊',
+            iconSrc: DASHBOARD_ICON_URL,
+            end: true
+          },
           { to: '/financial-analysis', label: '财务分析', icon: '🧠' }
         ]
       },
@@ -110,7 +118,12 @@ export function AppLayout() {
         items: [
           { to: '/help', label: '帮助', icon: '❓', iconSrc: QUESTION_ICON_URL },
           { to: '/settings', label: t('nav.settings'), icon: '⚙️', iconSrc: SETTINGS_ICON_URL },
-          { to: '/database-settings', label: t('nav.dbSettings'), icon: '🗄️', iconSrc: DATABASE_ICON_URL },
+          {
+            to: '/database-settings',
+            label: t('nav.dbSettings'),
+            icon: '🗄️',
+            iconSrc: DATABASE_ICON_URL
+          },
           { to: '/recycle-bin', label: '回收站', icon: '🗑️' },
           { to: '/exchange', label: t('nav.exchange'), icon: '💱' },
           { to: '/salary-tools', label: '工资工具', icon: '💼' },
@@ -136,7 +149,13 @@ export function AppLayout() {
           { label: '财务分析', icon: '🧠', to: '/financial-analysis' },
           { label: '订阅管理', icon: '🧾', to: '/subscriptions' },
           { label: t('nav.transactions'), icon: '📋', to: '/transactions' },
-          { label: t('nav.dashboard'), icon: '📊', iconSrc: DASHBOARD_ICON_URL, to: '/', end: true },
+          {
+            label: t('nav.dashboard'),
+            icon: '📊',
+            iconSrc: DASHBOARD_ICON_URL,
+            to: '/',
+            end: true
+          },
           { label: t('nav.categoriesAccounts'), icon: '🗂️', to: '/categories-accounts' },
           { label: '余额明细', icon: '📚', to: '/balance-changes' },
           { label: '投资理财', icon: '📈', to: '/investments' },
@@ -153,7 +172,12 @@ export function AppLayout() {
         items: [
           { label: '帮助', icon: '❓', iconSrc: QUESTION_ICON_URL, to: '/help' },
           { label: t('nav.settings'), icon: '⚙️', iconSrc: SETTINGS_ICON_URL, to: '/settings' },
-          { label: t('nav.dbSettings'), icon: '🗄️', iconSrc: DATABASE_ICON_URL, to: '/database-settings' },
+          {
+            label: t('nav.dbSettings'),
+            icon: '🗄️',
+            iconSrc: DATABASE_ICON_URL,
+            to: '/database-settings'
+          },
           { label: '回收站', icon: '🗑️', to: '/recycle-bin' },
           { label: t('nav.about'), icon: 'ℹ️', iconSrc: INFO_ICON_URL, to: '/about' }
         ]
@@ -184,6 +208,7 @@ export function AppLayout() {
 
     return matchedItem?.label ?? t('layout.workspaceTitle');
   }, [assistantWorkspaceTitle, location.pathname, navSections, t]);
+  const isStandaloneSettingsRoute = location.pathname === '/settings';
 
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(navSections.map((section) => [section.title, true]))
@@ -424,7 +449,7 @@ export function AppLayout() {
   }, [navigate]);
 
   useEffect(() => {
-    if (mobileNavOpen) {
+    if (mobileNavOpen || settingsOverlayOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -432,7 +457,11 @@ export function AppLayout() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [mobileNavOpen]);
+  }, [mobileNavOpen, settingsOverlayOpen]);
+
+  useEffect(() => {
+    setSettingsOverlayOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 768px)');
@@ -448,7 +477,29 @@ export function AppLayout() {
     };
   }, []);
 
-  const shouldShowTopbar = collapsed || isMobileViewport;
+  useEffect(() => {
+    if (!settingsOverlayOpen) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSettingsOverlayOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [settingsOverlayOpen]);
+
+  const openSettingsOverlay = () => {
+    setMobileNavOpen(false);
+    setSettingsOverlayOpen(true);
+  };
+
+  const closeSettingsOverlay = () => {
+    setSettingsOverlayOpen(false);
+  };
 
   return (
     <div
@@ -517,7 +568,20 @@ export function AppLayout() {
                     );
                   }
 
-                  return (
+                  return item.to === '/settings' ? (
+                    <button
+                      key={`${section.title}-${item.label}`}
+                      type="button"
+                      className={`sidebar-link motion-pill-btn ${
+                        settingsOverlayOpen || isStandaloneSettingsRoute ? 'active' : ''
+                      }`.trim()}
+                      title={item.label}
+                      onClick={openSettingsOverlay}
+                    >
+                      {renderNavIcon(item, 'sidebar-link-icon')}
+                      {collapsed ? null : <span className="sidebar-link-label">{item.label}</span>}
+                    </button>
+                  ) : (
                     <NavLink
                       key={`${section.title}-${item.label}`}
                       to={item.to}
@@ -538,19 +602,15 @@ export function AppLayout() {
           ))}
         </nav>
 
-        <div className="sidebar-footer">
-          <ThemeSwitcher />
-        </div>
-
         {!collapsed ? (
           <div className="sidebar-resize-handle" onMouseDown={() => (draggingRef.current = true)} />
         ) : null}
       </aside>
 
       <div className="workspace">
-        {shouldShowTopbar ? (
-          <header className="workspace-topbar">
-            <div className="topbar-left">
+        <header className="workspace-topbar">
+          <div className="topbar-left">
+            {isMobileViewport ? (
               <button
                 type="button"
                 className="icon-btn mobile-nav-toggle"
@@ -564,26 +624,58 @@ export function AppLayout() {
                   aria-hidden="true"
                 />
               </button>
-              {isMobileViewport ? (
-                <div className="workspace-topbar-title" title={currentWorkspaceTitle}>
-                  {currentWorkspaceTitle}
-                </div>
-              ) : null}
-              {collapsed && !isMobileViewport ? (
-                <div className="topbar-brand-copy compact">
-                  <img className="brand-logo compact" src={APP_LOGO_URL} alt="" />
-                  <h1>{t('layout.brand')}</h1>
-                  <span>{t('layout.workspaceTitle')}</span>
-                </div>
-              ) : null}
+            ) : null}
+            {collapsed && !isMobileViewport ? (
+              <div className="topbar-brand-copy compact">
+                <img className="brand-logo compact" src={APP_LOGO_URL} alt="" />
+                <h1>{t('layout.brand')}</h1>
+              </div>
+            ) : null}
+            <div className="workspace-topbar-title" title={currentWorkspaceTitle}>
+              {currentWorkspaceTitle}
             </div>
-          </header>
-        ) : null}
+          </div>
+
+          <div className="topbar-right">
+            <ThemeSwitcher />
+            <button
+              type="button"
+              className={`topbar-settings-btn motion-pill-btn ${
+                settingsOverlayOpen || isStandaloneSettingsRoute ? 'active' : ''
+              }`.trim()}
+              onClick={openSettingsOverlay}
+              aria-haspopup="dialog"
+              aria-expanded={settingsOverlayOpen}
+            >
+              <img
+                className="topbar-settings-icon"
+                src={SETTINGS_ICON_URL}
+                alt=""
+                aria-hidden="true"
+              />
+              <span>{t('nav.settings')}</span>
+            </button>
+          </div>
+        </header>
 
         <main className="content">
           <Outlet />
         </main>
       </div>
+
+      {settingsOverlayOpen ? (
+        <div className="settings-overlay" role="presentation" onClick={closeSettingsOverlay}>
+          <section
+            className="settings-overlay-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('nav.settings')}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <SettingsPage variant="overlay" onClose={closeSettingsOverlay} />
+          </section>
+        </div>
+      ) : null}
 
       {mobileNavOpen ? (
         <div
@@ -658,26 +750,35 @@ export function AppLayout() {
               <section key={group.title} className="mobile-nav-grid-card">
                 <h3>{group.title}</h3>
                 <div className="mobile-nav-grid">
-                  {group.items.map((item) => (
-                    <NavLink
-                      key={`${group.title}-${item.label}`}
-                      to={item.to}
-                      end={item.end}
-                      className="mobile-nav-grid-item motion-pill-btn"
-                      onClick={() => setMobileNavOpen(false)}
-                    >
-                      {renderNavIcon(item, 'mobile-nav-grid-icon')}
-                      <strong>{item.label}</strong>
-                    </NavLink>
-                  ))}
+                  {group.items.map((item) =>
+                    item.to === '/settings' ? (
+                      <button
+                        key={`${group.title}-${item.label}`}
+                        type="button"
+                        className={`mobile-nav-grid-item motion-pill-btn ${
+                          settingsOverlayOpen || isStandaloneSettingsRoute ? 'active' : ''
+                        }`.trim()}
+                        onClick={openSettingsOverlay}
+                      >
+                        {renderNavIcon(item, 'mobile-nav-grid-icon')}
+                        <strong>{item.label}</strong>
+                      </button>
+                    ) : (
+                      <NavLink
+                        key={`${group.title}-${item.label}`}
+                        to={item.to}
+                        end={item.end}
+                        className="mobile-nav-grid-item motion-pill-btn"
+                        onClick={() => setMobileNavOpen(false)}
+                      >
+                        {renderNavIcon(item, 'mobile-nav-grid-icon')}
+                        <strong>{item.label}</strong>
+                      </NavLink>
+                    )
+                  )}
                 </div>
               </section>
             ))}
-
-            <div className="mobile-nav-footer">
-              <span>{t('layout.themeMode')}</span>
-              <ThemeSwitcher />
-            </div>
           </aside>
         </div>
       ) : null}
