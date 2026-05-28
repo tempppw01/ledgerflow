@@ -40,6 +40,12 @@ export const CHEVRONS_RIGHT_LEFT_ICON_URL =
 export const CHEVRONS_LEFT_RIGHT_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/chevrons-left-right.svg';
 
+export const CHEVRONS_UP_DOWN_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/chevrons-up-down.svg';
+
+export const CHEVRONS_DOWN_UP_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/chevrons-down-up.svg';
+
 export const CHEVRON_DOWN_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/chevron-down.svg';
 

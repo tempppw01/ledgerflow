@@ -649,27 +649,25 @@
   flex-shrink: 0;
 }
 
-.investments-fold-side i {
+.investments-fold-side img {
   display: inline-grid;
-  place-items: center;
   width: 26px;
   height: 26px;
+  padding: 5px;
   border-radius: 999px;
   border: 1px solid var(--color-border-light);
-  color: var(--color-text-secondary);
-  font-style: normal;
-  font-size: 16px;
-  line-height: 1;
+  object-fit: contain;
+  opacity: 0.82;
   transition:
-    transform 180ms ease,
     background 180ms ease,
-    color 180ms ease;
+    border-color 180ms ease,
+    opacity 180ms ease;
 }
 
-.investments-fold-card.is-open .investments-fold-side i {
-  transform: rotate(180deg);
+.investments-fold-card.is-open .investments-fold-side img {
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  border-color: color-mix(in srgb, var(--color-primary) 24%, var(--color-border-light));
+  opacity: 1;
 }
 
 .investments-fold-body {

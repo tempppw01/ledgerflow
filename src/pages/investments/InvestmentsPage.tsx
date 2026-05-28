@@ -16,6 +16,8 @@ import { sendAiChatStream } from '../../features/assistant/api/openaiCompatibleC
 import { renderMarkdownContent } from '../../features/assistant/ui/MarkdownRenderer';
 import {
   BOT_ICON_URL,
+  CHEVRONS_DOWN_UP_ICON_URL,
+  CHEVRONS_UP_DOWN_ICON_URL,
   IMAGE_ICON_URL,
   INFO_ICON_URL,
   PEN_TOOL_ICON_URL,
@@ -1525,7 +1527,15 @@ export function InvestmentsPage() {
             </span>
             <span className="investments-fold-side">
               <span className="badge">{activePositions.length} 笔持仓</span>
-              <i aria-hidden="true">⌄</i>
+              <img
+                src={
+                  openInvestmentPanels.allocation
+                    ? CHEVRONS_DOWN_UP_ICON_URL
+                    : CHEVRONS_UP_DOWN_ICON_URL
+                }
+                alt=""
+                aria-hidden="true"
+              />
             </span>
           </button>
 
@@ -1596,7 +1606,15 @@ export function InvestmentsPage() {
             </span>
             <span className="investments-fold-side">
               <span className="badge">{investmentAlerts.length} 条提醒</span>
-              <i aria-hidden="true">⌄</i>
+              <img
+                src={
+                  openInvestmentPanels.alerts
+                    ? CHEVRONS_DOWN_UP_ICON_URL
+                    : CHEVRONS_UP_DOWN_ICON_URL
+                }
+                alt=""
+                aria-hidden="true"
+              />
             </span>
           </button>
 
@@ -1648,7 +1666,15 @@ export function InvestmentsPage() {
             </span>
             <span className="investments-fold-side">
               <span className="badge">{editingPositionId ? '编辑中' : '新增'}</span>
-              <i aria-hidden="true">⌄</i>
+              <img
+                src={
+                  openInvestmentPanels.position
+                    ? CHEVRONS_DOWN_UP_ICON_URL
+                    : CHEVRONS_UP_DOWN_ICON_URL
+                }
+                alt=""
+                aria-hidden="true"
+              />
             </span>
           </button>
 
@@ -1936,7 +1962,13 @@ export function InvestmentsPage() {
             </span>
             <span className="investments-fold-side">
               <span className="badge">{editingGoalId ? '编辑中' : '新增'}</span>
-              <i aria-hidden="true">⌄</i>
+              <img
+                src={
+                  openInvestmentPanels.goal ? CHEVRONS_DOWN_UP_ICON_URL : CHEVRONS_UP_DOWN_ICON_URL
+                }
+                alt=""
+                aria-hidden="true"
+              />
             </span>
           </button>
 
