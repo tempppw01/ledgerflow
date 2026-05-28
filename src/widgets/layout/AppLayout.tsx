@@ -18,6 +18,7 @@ import {
   DASHBOARD_ICON_URL,
   DATABASE_ICON_URL,
   INFO_ICON_URL,
+  INVESTMENTS_ICON_URL,
   QUESTION_ICON_URL,
   SETTINGS_ICON_URL
 } from '../../shared/config/brandAssets';
@@ -108,7 +109,7 @@ export function AppLayout() {
         items: [
           { to: '/categories-accounts', label: t('nav.categoriesAccounts'), icon: '🗂️' },
           { to: '/balance-changes', label: '余额明细', icon: '📚' },
-          { to: '/investments', label: '投资理财', icon: '📈' },
+          { to: '/investments', label: '投资理财', icon: '📈', iconSrc: INVESTMENTS_ICON_URL },
           { to: '/subscriptions', label: '订阅管理', icon: '🧾' },
           { to: '/repayment-management', label: t('nav.repayment'), icon: '💳' }
         ]
@@ -157,7 +158,7 @@ export function AppLayout() {
           },
           { label: t('nav.categoriesAccounts'), icon: '🗂️', to: '/categories-accounts' },
           { label: '余额明细', icon: '📚', to: '/balance-changes' },
-          { label: '投资理财', icon: '📈', to: '/investments' },
+          { label: '投资理财', icon: '📈', iconSrc: INVESTMENTS_ICON_URL, to: '/investments' },
           { label: t('nav.smartBudget'), icon: '🧠', iconSrc: BRAIN_ICON_URL, to: '/smart-budget' },
           { label: '全局记忆', icon: '🗃️', to: '/global-memory' },
           { label: t('nav.repayment'), icon: '💳', to: '/repayment-management' },

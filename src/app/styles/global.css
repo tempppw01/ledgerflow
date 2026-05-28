@@ -1042,6 +1042,20 @@ textarea {
     box-shadow var(--transition-fast);
 }
 
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 34px;
+  background-image: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/chevron-down.svg');
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px 14px;
+}
+
+select:open {
+  background-image: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/chevron-up.svg');
+}
+
 input::placeholder,
 textarea::placeholder {
   color: var(--color-text-placeholder);
