@@ -112,6 +112,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
   gap: 16px;
+  align-items: start;
 }
 
 .investments-ai-panel,
@@ -119,6 +120,7 @@
   display: grid;
   gap: 14px;
   min-width: 0;
+  align-content: start;
 }
 
 .investments-ai-panel-head {
@@ -149,9 +151,10 @@
 .investments-ai-thread {
   display: grid;
   gap: 12px;
-  max-height: 720px;
+  max-height: clamp(360px, 58vh, 620px);
   overflow-y: auto;
   padding-right: 4px;
+  overscroll-behavior: contain;
 }
 
 .investments-ai-empty,

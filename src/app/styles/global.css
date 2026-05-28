@@ -603,18 +603,22 @@ body {
   inset: 0;
   z-index: 420;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 32px;
   background: color-mix(in srgb, var(--color-bg) 62%, rgba(15, 23, 42, 0.58));
   backdrop-filter: blur(14px);
 }
 
 .settings-overlay-dialog {
-  width: min(980px, 100%);
-  max-height: calc(100vh - 48px);
+  width: min(900px, calc(100vw - 96px));
+  max-height: min(760px, calc(100vh - 72px));
   overflow: auto;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+}
+
+.settings-overlay-dialog::-webkit-scrollbar {
+  display: none;
 }
 
 .settings-page {
@@ -623,7 +627,7 @@ body {
 
 .settings-surface--overlay {
   border: 1px solid color-mix(in srgb, var(--color-primary) 14%, var(--color-border));
-  border-radius: 28px;
+  border-radius: 22px;
   background:
     radial-gradient(
       circle at top right,
@@ -631,10 +635,8 @@ body {
       transparent 34%
     ),
     var(--color-bg-elevated);
-  padding: clamp(20px, 3vw, 28px);
-  box-shadow:
-    0 24px 64px rgba(15, 23, 42, 0.24),
-    inset 0 1px 0 color-mix(in srgb, white 72%, transparent);
+  padding: clamp(18px, 2.4vw, 24px);
+  box-shadow: none;
 }
 
 .settings-page-header {
