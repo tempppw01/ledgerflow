@@ -7,6 +7,7 @@ interface ConfirmDialogProps {
   confirmText?: string;
   cancelText?: string;
   danger?: boolean;
+  confirmDisabled?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -18,6 +19,7 @@ export function ConfirmDialog({
   confirmText = '确认',
   cancelText = '取消',
   danger = false,
+  confirmDisabled = false,
   onConfirm,
   onCancel
 }: ConfirmDialogProps) {
@@ -42,14 +44,25 @@ export function ConfirmDialog({
 
   return (
     <div className="dialog-overlay" role="presentation" onClick={onCancel}>
-      <section className="dialog" role="dialog" aria-modal="true" aria-label={title} onClick={(event) => event.stopPropagation()}>
+      <section
+        className="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        onClick={(event) => event.stopPropagation()}
+      >
         <header className="dialog-header">{title}</header>
         <div className="dialog-body">{description}</div>
         <footer className="dialog-footer">
           <button type="button" onClick={onCancel}>
             {cancelText}
           </button>
-          <button type="button" className={danger ? 'danger' : 'primary'} onClick={onConfirm}>
+          <button
+            type="button"
+            className={danger ? 'danger' : 'primary'}
+            disabled={confirmDisabled}
+            onClick={onConfirm}
+          >
             {confirmText}
           </button>
         </footer>

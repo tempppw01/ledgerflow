@@ -5908,6 +5908,34 @@ small.mono {
   overflow: auto;
 }
 
+.danger-confirm-copy {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.danger-confirm-copy p {
+  margin: 0;
+}
+
+.danger-confirm-field {
+  display: grid;
+  gap: 8px;
+  color: var(--color-text);
+}
+
+.danger-confirm-field span {
+  font-size: var(--font-sm);
+  color: var(--color-text-secondary);
+}
+
+.danger-confirm-field strong {
+  color: var(--color-danger);
+}
+
+.danger-confirm-field input {
+  width: 100%;
+}
+
 .import-confirm-dialog {
   display: grid;
   gap: 16px;

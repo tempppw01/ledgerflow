@@ -54,6 +54,7 @@ const LAST_WEBDAV_BACKUP_KEY = 'ledgerflow-webdav-last-backup-v1';
 const LAST_OBJECT_STORAGE_BACKUP_KEY = 'ledgerflow-object-storage-last-backup-v1';
 const BACKUP_SCOPE_STORAGE_KEY = 'ledgerflow-backup-scope-v1';
 const UNCATEGORIZED_CATEGORY_ID = '';
+const CLEAR_BILLS_CONFIRM_TEXT = '清空账单';
 
 const BACKUP_ACCEPTED_MIME_TYPES = new Set(['application/json', 'text/json']);
 const BILL_ACCEPTED_EXTENSIONS = new Set(['.csv', '.txt', '.xlsx']);
@@ -381,6 +382,7 @@ export function DatabaseSettingsPage() {
   const [lastWebdavBackupLoading, setLastWebdavBackupLoading] = useState(false);
   const [lastObjectStorageBackupLoading, setLastObjectStorageBackupLoading] = useState(false);
   const [clearBillsOpen, setClearBillsOpen] = useState(false);
+  const [clearBillsConfirmText, setClearBillsConfirmText] = useState('');
   const [webdavRestoreDialogOpen, setWebdavRestoreDialogOpen] = useState(false);
   const [webdavRestoreVersions, setWebdavRestoreVersions] = useState<WebdavBackupVersionItem[]>([]);
   const [objectStorageRestoreDialogOpen, setObjectStorageRestoreDialogOpen] = useState(false);
@@ -1063,7 +1065,14 @@ export function DatabaseSettingsPage() {
       <section className="panel" style={{ marginTop: 12 }}>
         <h3 style={{ marginTop: 0 }}>数据重制</h3>
         <p className="sync-tip">清空所有账户账单（交易记录），保留账户与分类。</p>
-        <button type="button" className="danger" onClick={() => setClearBillsOpen(true)}>
+        <button
+          type="button"
+          className="danger"
+          onClick={() => {
+            setClearBillsConfirmText('');
+            setClearBillsOpen(true);
+          }}
+        >
           一键清空所有账户账单
         </button>
       </section>
@@ -1553,14 +1562,35 @@ export function DatabaseSettingsPage() {
       <ConfirmDialog
         open={clearBillsOpen}
         title="确认清空账单"
-        description={`将清空全部 ${transactions.length} 条交易，账户余额会按初始值重算。此操作不可恢复。`}
+        description={
+          <div className="danger-confirm-copy">
+            <p>将清空全部 {transactions.length} 条交易，账户余额会按初始值重算。此操作不可恢复。</p>
+            <label className="danger-confirm-field">
+              <span>
+                输入 <strong>{CLEAR_BILLS_CONFIRM_TEXT}</strong> 后才能确认
+              </span>
+              <input
+                value={clearBillsConfirmText}
+                onChange={(event) => setClearBillsConfirmText(event.target.value)}
+                placeholder={CLEAR_BILLS_CONFIRM_TEXT}
+                autoFocus
+              />
+            </label>
+          </div>
+        }
         confirmText="确认清空"
         cancelText="取消"
         danger
-        onCancel={() => setClearBillsOpen(false)}
+        confirmDisabled={clearBillsConfirmText !== CLEAR_BILLS_CONFIRM_TEXT}
+        onCancel={() => {
+          setClearBillsOpen(false);
+          setClearBillsConfirmText('');
+        }}
         onConfirm={() => {
+          if (clearBillsConfirmText !== CLEAR_BILLS_CONFIRM_TEXT) return;
           clearAllAccountBills();
           setClearBillsOpen(false);
+          setClearBillsConfirmText('');
           showToast('已清空所有账户账单', 'success');
         }}
       />
