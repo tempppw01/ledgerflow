@@ -1,12 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   applyFinanceBackupPayload,
+  type BackupObjectStorageConfig,
   createDefaultFinanceBackupScope,
   createFinanceBackupPayload,
   listWebdavBackupVersions,
+  loadObjectStorageConfig,
   loadWebdavConfig,
+  objectStorageUploadBackup,
   parseFinanceBackupPayload,
+  sanitizeObjectStorageConfig,
   sanitizeWebdavConfig,
+  saveObjectStorageConfig,
   saveWebdavConfig,
   webdavUploadBackup,
   webdavUploadFile,
@@ -15,6 +20,8 @@ import {
 
 const BACKUP_KEY = 'ledgerflow-backup-webdav-v1';
 const BACKUP_PASSWORD_SESSION_KEY = 'ledgerflow-backup-webdav-password';
+const OBJECT_STORAGE_KEY_PREFIX = 'ledgerflow-backup-object-storage-v1';
+const OBJECT_STORAGE_SECRET_SESSION_KEY_PREFIX = 'ledgerflow-backup-object-storage-secret-v1';
 
 const baseConfig: BackupWebdavConfig = {
   endpoint: 'https://dav.example.com/remote.php/dav/files/user',
@@ -26,9 +33,25 @@ const baseConfig: BackupWebdavConfig = {
   proxyBasePath: '/api/webdav'
 };
 
+const baseObjectStorageConfig: BackupObjectStorageConfig = {
+  provider: 'aliyun-oss',
+  endpoint: 'https://oss-cn-guangzhou.aliyuncs.com',
+  region: 'cn-guangzhou',
+  bucket: 'ledgerflow-backup',
+  accessKeyId: 'ak-test',
+  accessKeySecret: 'secret-test',
+  remoteFilePath: '账本备份/backup.json',
+  retainedVersions: 3,
+  forcePathStyle: false
+};
+
 beforeEach(() => {
   localStorage.removeItem(BACKUP_KEY);
   sessionStorage.removeItem(BACKUP_PASSWORD_SESSION_KEY);
+  localStorage.removeItem(`${OBJECT_STORAGE_KEY_PREFIX}:aliyun-oss`);
+  localStorage.removeItem(`${OBJECT_STORAGE_KEY_PREFIX}:s3-compatible`);
+  sessionStorage.removeItem(`${OBJECT_STORAGE_SECRET_SESSION_KEY_PREFIX}:aliyun-oss`);
+  sessionStorage.removeItem(`${OBJECT_STORAGE_SECRET_SESSION_KEY_PREFIX}:s3-compatible`);
 });
 
 describe('parseFinanceBackupPayload', () => {
@@ -595,6 +618,27 @@ describe('webdav config storage hardening', () => {
   });
 });
 
+describe('object storage config storage hardening', () => {
+  it('should not persist OSS/S3 secret in localStorage', () => {
+    saveObjectStorageConfig(baseObjectStorageConfig);
+
+    const persisted = localStorage.getItem(`${OBJECT_STORAGE_KEY_PREFIX}:aliyun-oss`) || '';
+    expect(persisted).not.toContain(baseObjectStorageConfig.accessKeySecret);
+    expect(persisted).toContain('"accessKeySecret":""');
+
+    expect(sessionStorage.getItem(`${OBJECT_STORAGE_SECRET_SESSION_KEY_PREFIX}:aliyun-oss`)).toBe(
+      baseObjectStorageConfig.accessKeySecret
+    );
+  });
+
+  it('should restore OSS/S3 secret from sessionStorage when loading config', () => {
+    saveObjectStorageConfig(baseObjectStorageConfig);
+
+    const loaded = loadObjectStorageConfig('aliyun-oss');
+    expect(loaded.accessKeySecret).toBe(baseObjectStorageConfig.accessKeySecret);
+  });
+});
+
 describe('sanitizeWebdavConfig', () => {
   it('仅允许 HTTPS 且拒绝本地/内网地址', () => {
     expect(() =>
@@ -631,6 +675,94 @@ describe('sanitizeWebdavConfig', () => {
         remoteFilePath: '账本备份//2026 02 backup.json'
       })
     ).toThrow('远程文件路径不合法，请避免使用空段或 . / ..');
+  });
+});
+
+describe('sanitizeObjectStorageConfig', () => {
+  it('应规范化 OSS 配置并隐藏路径风格选项', () => {
+    const sanitized = sanitizeObjectStorageConfig({
+      ...baseObjectStorageConfig,
+      endpoint: 'https://oss-cn-guangzhou.aliyuncs.com/',
+      region: '',
+      remoteFilePath: ' /账本备份/backup.json/ ',
+      retainedVersions: 99,
+      forcePathStyle: true
+    });
+
+    expect(sanitized.endpoint).toBe('https://oss-cn-guangzhou.aliyuncs.com');
+    expect(sanitized.region).toBe('cn-guangzhou');
+    expect(sanitized.remoteFilePath).toBe('账本备份/backup.json');
+    expect(sanitized.retainedVersions).toBe(50);
+    expect(sanitized.forcePathStyle).toBe(false);
+  });
+
+  it('S3 兼容配置应保留路径风格地址', () => {
+    const sanitized = sanitizeObjectStorageConfig({
+      ...baseObjectStorageConfig,
+      provider: 's3-compatible',
+      endpoint: 'https://s3.example.com',
+      region: '',
+      forcePathStyle: true
+    });
+
+    expect(sanitized.region).toBe('us-east-1');
+    expect(sanitized.forcePathStyle).toBe(true);
+  });
+
+  it('应拒绝不安全的对象存储 Endpoint 与 Bucket', () => {
+    expect(() =>
+      sanitizeObjectStorageConfig({
+        ...baseObjectStorageConfig,
+        endpoint: 'http://oss-cn-guangzhou.aliyuncs.com'
+      })
+    ).toThrow('对象存储 Endpoint 仅支持 HTTPS 协议');
+
+    expect(() =>
+      sanitizeObjectStorageConfig({
+        ...baseObjectStorageConfig,
+        bucket: 'bad bucket'
+      })
+    ).toThrow('Bucket 名称不应包含空格或斜杠');
+  });
+});
+
+describe('objectStorageUploadBackup', () => {
+  it('阿里云 OSS 上传应使用 V4 签名头且不把密钥放入请求 URL', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, status: 200 })
+      .mockResolvedValueOnce({ ok: true, status: 200 })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve('<ListBucketResult />')
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const payload = {
+      ...createFinanceBackupPayload({
+        transactions: [],
+        categories: [],
+        accounts: [],
+        subscriptions: [],
+        globalMemories: []
+      }),
+      exportedAt: '2026-05-28T01:52:17.000Z'
+    };
+
+    await objectStorageUploadBackup(baseObjectStorageConfig, payload);
+
+    const firstUrl = String(fetchMock.mock.calls[0]?.[0]);
+    const firstHeaders = fetchMock.mock.calls[0]?.[1]?.headers as Record<string, string>;
+    expect(firstUrl).toContain('https://ledgerflow-backup.oss-cn-guangzhou.aliyuncs.com/');
+    expect(firstUrl).not.toContain(baseObjectStorageConfig.accessKeySecret);
+    expect(firstHeaders.Authorization).toContain('OSS4-HMAC-SHA256 Credential=ak-test/');
+    expect(firstHeaders.Authorization).toContain('/cn-guangzhou/oss/aliyun_v4_request');
+    expect(firstHeaders.Authorization).toContain('AdditionalHeaders=host');
+    expect(firstHeaders['x-oss-content-sha256']).toBe('UNSIGNED-PAYLOAD');
+    expect(firstHeaders['x-oss-date']).toMatch(/^\d{8}T\d{6}Z$/);
+
+    vi.unstubAllGlobals();
   });
 });
 

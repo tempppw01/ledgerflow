@@ -16,6 +16,8 @@ import type { FinanceDataSnapshot } from '../store/useFinanceStore';
 
 const BACKUP_KEY = 'ledgerflow-backup-webdav-v1';
 const BACKUP_PASSWORD_SESSION_KEY = 'ledgerflow-backup-webdav-password';
+const OBJECT_STORAGE_KEY_PREFIX = 'ledgerflow-backup-object-storage-v1';
+const OBJECT_STORAGE_SECRET_SESSION_KEY_PREFIX = 'ledgerflow-backup-object-storage-secret-v1';
 
 export interface BackupWebdavConfig {
   /** 真实 WebDAV 服务地址，例如：https://dav.example.com/remote.php/dav/files/user */
@@ -29,6 +31,20 @@ export interface BackupWebdavConfig {
   proxyEnabled: boolean;
   /** 同源代理入口路径，例如：/api/webdav */
   proxyBasePath: string;
+}
+
+export type BackupObjectStorageProvider = 'aliyun-oss' | 's3-compatible';
+
+export interface BackupObjectStorageConfig {
+  provider: BackupObjectStorageProvider;
+  endpoint: string;
+  region: string;
+  bucket: string;
+  accessKeyId: string;
+  accessKeySecret: string;
+  remoteFilePath: string;
+  retainedVersions: number;
+  forcePathStyle: boolean;
 }
 
 const PRIVATE_IPV4_RANGES: Array<[number, number]> = [
@@ -142,6 +158,186 @@ export function sanitizeWebdavConfig(config: BackupWebdavConfig): BackupWebdavCo
       ? normalizeProxyBasePath(config.proxyBasePath)
       : '/api/webdav'
   };
+}
+
+function getObjectStorageConfigKey(provider: BackupObjectStorageProvider): string {
+  return `${OBJECT_STORAGE_KEY_PREFIX}:${provider}`;
+}
+
+function getObjectStorageSecretSessionKey(provider: BackupObjectStorageProvider): string {
+  return `${OBJECT_STORAGE_SECRET_SESSION_KEY_PREFIX}:${provider}`;
+}
+
+function getDefaultObjectStorageConfig(
+  provider: BackupObjectStorageProvider
+): BackupObjectStorageConfig {
+  return {
+    provider,
+    endpoint: provider === 'aliyun-oss' ? 'https://oss-cn-guangzhou.aliyuncs.com' : '',
+    region: provider === 'aliyun-oss' ? 'cn-guangzhou' : 'us-east-1',
+    bucket: '',
+    accessKeyId: '',
+    accessKeySecret: '',
+    remoteFilePath: 'ledgerflow/backup.json',
+    retainedVersions: 5,
+    forcePathStyle: provider === 's3-compatible'
+  };
+}
+
+function normalizeObjectStorageEndpoint(
+  endpoint: string,
+  provider: BackupObjectStorageProvider
+): string {
+  const trimmed = endpoint.trim();
+  if (!trimmed) {
+    throw new Error(provider === 'aliyun-oss' ? '请填写 OSS Endpoint' : '请填写 S3 Endpoint');
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    throw new Error('对象存储 Endpoint 格式无效，请使用完整 HTTPS URL');
+  }
+
+  if (parsed.protocol !== 'https:') {
+    throw new Error('对象存储 Endpoint 仅支持 HTTPS 协议');
+  }
+
+  if (parsed.username || parsed.password) {
+    throw new Error('对象存储 Endpoint 中不应包含 AccessKey');
+  }
+
+  if (isPrivateOrLocalHost(parsed.hostname)) {
+    throw new Error('对象存储 Endpoint 不允许使用本地或内网地址');
+  }
+
+  if (parsed.pathname !== '/' && parsed.pathname.replace(/\/+$/, '') !== '') {
+    throw new Error('对象存储 Endpoint 请填写服务根地址，不要带路径');
+  }
+
+  parsed.pathname = '/';
+  parsed.search = '';
+  parsed.hash = '';
+  return parsed.toString().replace(/\/$/, '');
+}
+
+function normalizeObjectStorageBucket(bucket: string): string {
+  const trimmed = bucket.trim();
+  if (!trimmed) {
+    throw new Error('请填写 Bucket 名称');
+  }
+  if (/[\\/\s]/.test(trimmed)) {
+    throw new Error('Bucket 名称不应包含空格或斜杠');
+  }
+  return trimmed;
+}
+
+function normalizeObjectStorageRegion(
+  provider: BackupObjectStorageProvider,
+  region: string,
+  endpoint: string
+): string {
+  const trimmed = region.trim();
+  if (trimmed) {
+    return trimmed;
+  }
+
+  if (provider === 'aliyun-oss') {
+    const host = new URL(endpoint).hostname;
+    const matched = host.match(/^(oss-[a-z0-9-]+)\./i);
+    return matched?.[1]?.replace(/^oss-/, '') || 'cn-guangzhou';
+  }
+
+  return 'us-east-1';
+}
+
+export function sanitizeObjectStorageConfig(
+  config: BackupObjectStorageConfig
+): BackupObjectStorageConfig {
+  const provider: BackupObjectStorageProvider =
+    config.provider === 's3-compatible' ? 's3-compatible' : 'aliyun-oss';
+  const endpoint = normalizeObjectStorageEndpoint(config.endpoint, provider);
+  const remoteFilePath = normalizeRemoteFilePath(config.remoteFilePath);
+
+  return {
+    ...config,
+    provider,
+    endpoint,
+    region: normalizeObjectStorageRegion(provider, config.region, endpoint),
+    bucket: normalizeObjectStorageBucket(config.bucket),
+    accessKeyId: config.accessKeyId.trim(),
+    accessKeySecret: config.accessKeySecret,
+    remoteFilePath,
+    retainedVersions: normalizeRetainedVersions(config.retainedVersions),
+    forcePathStyle: provider === 's3-compatible' ? Boolean(config.forcePathStyle) : false
+  };
+}
+
+function readObjectStorageSecretFromSession(provider: BackupObjectStorageProvider): string {
+  try {
+    return window.sessionStorage.getItem(getObjectStorageSecretSessionKey(provider)) || '';
+  } catch {
+    return '';
+  }
+}
+
+function writeObjectStorageSecretToSession(
+  provider: BackupObjectStorageProvider,
+  secret: string
+): void {
+  try {
+    const key = getObjectStorageSecretSessionKey(provider);
+    if (secret) {
+      window.sessionStorage.setItem(key, secret);
+      return;
+    }
+    window.sessionStorage.removeItem(key);
+  } catch {
+    // ignore storage errors
+  }
+}
+
+export function saveObjectStorageConfig(config: BackupObjectStorageConfig): void {
+  const sanitized = sanitizeObjectStorageConfig(config);
+  writeObjectStorageSecretToSession(sanitized.provider, sanitized.accessKeySecret);
+  window.localStorage.setItem(
+    getObjectStorageConfigKey(sanitized.provider),
+    JSON.stringify({
+      ...sanitized,
+      accessKeySecret: ''
+    })
+  );
+}
+
+export function loadObjectStorageConfig(
+  provider: BackupObjectStorageProvider
+): BackupObjectStorageConfig {
+  const defaults = getDefaultObjectStorageConfig(provider);
+  try {
+    const raw = window.localStorage.getItem(getObjectStorageConfigKey(provider));
+    if (!raw) {
+      return defaults;
+    }
+    const parsed = JSON.parse(raw) as Partial<BackupObjectStorageConfig>;
+    return sanitizeObjectStorageConfig({
+      ...defaults,
+      provider,
+      endpoint: String(parsed.endpoint || defaults.endpoint),
+      region: String(parsed.region || defaults.region),
+      bucket: String(parsed.bucket || defaults.bucket),
+      accessKeyId: String(parsed.accessKeyId || defaults.accessKeyId),
+      accessKeySecret:
+        readObjectStorageSecretFromSession(provider) ||
+        String(parsed.accessKeySecret || defaults.accessKeySecret),
+      remoteFilePath: String(parsed.remoteFilePath || defaults.remoteFilePath),
+      retainedVersions: Number(parsed.retainedVersions || defaults.retainedVersions),
+      forcePathStyle:
+        typeof parsed.forcePathStyle === 'boolean' ? parsed.forcePathStyle : defaults.forcePathStyle
+    });
+  } catch {
+    return defaults;
+  }
 }
 
 export type FinanceBackupData = Required<FinanceDataSnapshot> & {
@@ -652,22 +848,24 @@ export function createFinanceBackupPayload(
         normalizedScope.subscriptions && Array.isArray(input.subscriptions)
           ? input.subscriptions
           : [],
-      trashedTransactions: normalizedScope.ledger && Array.isArray(input.trashedTransactions)
-        ? input.trashedTransactions
-        : [],
+      trashedTransactions:
+        normalizedScope.ledger && Array.isArray(input.trashedTransactions)
+          ? input.trashedTransactions
+          : [],
       trashedCategories:
         normalizedScope.ledger && Array.isArray(input.trashedCategories)
           ? input.trashedCategories
           : [],
       trashedAccounts:
         normalizedScope.ledger && Array.isArray(input.trashedAccounts) ? input.trashedAccounts : [],
-      balanceChangeEntries: normalizedScope.ledger && Array.isArray(input.balanceChangeEntries)
-        ? input.balanceChangeEntries
-        : [],
+      balanceChangeEntries:
+        normalizedScope.ledger && Array.isArray(input.balanceChangeEntries)
+          ? input.balanceChangeEntries
+          : [],
       trashedSubscriptions:
         normalizedScope.subscriptions && Array.isArray(input.trashedSubscriptions)
-        ? input.trashedSubscriptions
-        : [],
+          ? input.trashedSubscriptions
+          : [],
       globalMemories:
         normalizedScope.globalMemories && Array.isArray(input.globalMemories)
           ? input.globalMemories
@@ -1166,11 +1364,7 @@ async function listWebdavRemoteFileEntries(
   }
 
   const text = await response.text();
-  const entries = extractWebdavRemoteFileEntriesFromXml(
-    text,
-    sanitized.endpoint,
-    remoteFilePath
-  );
+  const entries = extractWebdavRemoteFileEntriesFromXml(text, sanitized.endpoint, remoteFilePath);
 
   const fallbackPaths = extractVersionedBackupPathsFromXml(text, remoteFilePath);
   const byPath = new Map<string, WebdavRemoteFileEntry>();
@@ -1510,5 +1704,566 @@ export async function webdavDownloadBackup(
     return parseFinanceBackupPayload(text);
   } catch (error) {
     throw normalizeWebdavError('下载', error);
+  }
+}
+
+function getObjectStorageProviderLabel(provider: BackupObjectStorageProvider): string {
+  return provider === 'aliyun-oss' ? '阿里云 OSS' : 'S3 兼容存储';
+}
+
+function encodeRfc3986(value: string): string {
+  return encodeURIComponent(value).replace(
+    /[!'()*]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+  );
+}
+
+function encodeObjectStoragePath(path: string): string {
+  return normalizeRemoteFilePath(path).split('/').map(encodeRfc3986).join('/');
+}
+
+function buildCanonicalQuery(query: Record<string, string> = {}): string {
+  return Object.entries(query)
+    .sort(([left], [right]) => left.localeCompare(right, 'en'))
+    .map(([key, value]) => `${encodeRfc3986(key)}=${encodeRfc3986(value)}`)
+    .join('&');
+}
+
+function arrayBufferToHex(buffer: ArrayBuffer): string {
+  return Array.from(new Uint8Array(buffer))
+    .map((item) => item.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function encodeUtf8(value: string): Uint8Array {
+  return new TextEncoder().encode(value);
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await window.crypto.subtle.digest('SHA-256', encodeUtf8(value));
+  return arrayBufferToHex(digest);
+}
+
+async function hmacSign(
+  hash: 'SHA-1' | 'SHA-256',
+  key: string | ArrayBuffer,
+  value: string
+): Promise<ArrayBuffer> {
+  const rawKey = typeof key === 'string' ? encodeUtf8(key) : key;
+  const cryptoKey = await window.crypto.subtle.importKey(
+    'raw',
+    rawKey,
+    { name: 'HMAC', hash },
+    false,
+    ['sign']
+  );
+  return window.crypto.subtle.sign('HMAC', cryptoKey, encodeUtf8(value));
+}
+
+function getS3AmzDate(now = new Date()): { dateStamp: string; amzDate: string } {
+  const iso = now.toISOString().replace(/[:-]|\.\d{3}/g, '');
+  return {
+    dateStamp: iso.slice(0, 8),
+    amzDate: iso
+  };
+}
+
+function buildObjectStorageListPrefix(remoteFilePath: string): string {
+  const { dir, file } = splitRemoteDirAndFile(remoteFilePath);
+  const dotIndex = file.lastIndexOf('.');
+  const baseName = dotIndex > 0 ? file.slice(0, dotIndex) : file;
+  return dir ? `${dir}/${baseName}` : baseName;
+}
+
+function buildS3RequestUrl(
+  config: BackupObjectStorageConfig,
+  remoteFilePath: string | null,
+  query: Record<string, string> = {}
+): URL {
+  const endpoint = new URL(config.endpoint);
+  const url = new URL(endpoint.toString());
+  const queryString = buildCanonicalQuery(query);
+  const encodedBucket = encodeRfc3986(config.bucket);
+
+  if (config.forcePathStyle) {
+    url.pathname = remoteFilePath
+      ? `/${encodedBucket}/${encodeObjectStoragePath(remoteFilePath)}`
+      : `/${encodedBucket}`;
+  } else {
+    url.hostname = `${config.bucket}.${endpoint.hostname}`;
+    url.pathname = remoteFilePath ? `/${encodeObjectStoragePath(remoteFilePath)}` : '/';
+  }
+
+  url.search = queryString ? `?${queryString}` : '';
+  return url;
+}
+
+function buildAliyunOssRequestUrl(
+  config: BackupObjectStorageConfig,
+  remoteFilePath: string | null,
+  query: Record<string, string> = {}
+): URL {
+  const endpoint = new URL(config.endpoint);
+  const url = new URL(endpoint.toString());
+  const queryString = buildCanonicalQuery(query);
+  url.hostname = `${config.bucket}.${endpoint.hostname}`;
+  url.pathname = remoteFilePath ? `/${encodeObjectStoragePath(remoteFilePath)}` : '/';
+  url.search = queryString ? `?${queryString}` : '';
+  return url;
+}
+
+function buildObjectStorageRequestUrl(
+  config: BackupObjectStorageConfig,
+  remoteFilePath: string | null,
+  query: Record<string, string> = {}
+): URL {
+  return config.provider === 'aliyun-oss'
+    ? buildAliyunOssRequestUrl(config, remoteFilePath, query)
+    : buildS3RequestUrl(config, remoteFilePath, query);
+}
+
+async function buildS3AuthorizationHeaders(
+  config: BackupObjectStorageConfig,
+  method: string,
+  url: URL,
+  query: Record<string, string>,
+  body: string,
+  extraHeaders: Record<string, string>
+): Promise<Record<string, string>> {
+  const { dateStamp, amzDate } = getS3AmzDate();
+  const payloadHash = await sha256Hex(body);
+  const headersToSign: Record<string, string> = {
+    host: url.host,
+    'x-amz-content-sha256': payloadHash,
+    'x-amz-date': amzDate
+  };
+
+  Object.entries(extraHeaders).forEach(([key, value]) => {
+    headersToSign[key.toLowerCase()] = value.trim();
+  });
+
+  const sortedHeaders = Object.entries(headersToSign).sort(([left], [right]) =>
+    left.localeCompare(right, 'en')
+  );
+  const canonicalHeaders = sortedHeaders.map(([key, value]) => `${key}:${value}\n`).join('');
+  const signedHeaders = sortedHeaders.map(([key]) => key).join(';');
+  const canonicalRequest = [
+    method,
+    url.pathname || '/',
+    buildCanonicalQuery(query),
+    canonicalHeaders,
+    signedHeaders,
+    payloadHash
+  ].join('\n');
+  const credentialScope = `${dateStamp}/${config.region}/s3/aws4_request`;
+  const stringToSign = [
+    'AWS4-HMAC-SHA256',
+    amzDate,
+    credentialScope,
+    await sha256Hex(canonicalRequest)
+  ].join('\n');
+  const dateKey = await hmacSign('SHA-256', `AWS4${config.accessKeySecret}`, dateStamp);
+  const regionKey = await hmacSign('SHA-256', dateKey, config.region);
+  const serviceKey = await hmacSign('SHA-256', regionKey, 's3');
+  const signingKey = await hmacSign('SHA-256', serviceKey, 'aws4_request');
+  const signature = arrayBufferToHex(await hmacSign('SHA-256', signingKey, stringToSign));
+
+  return {
+    ...extraHeaders,
+    'x-amz-content-sha256': payloadHash,
+    'x-amz-date': amzDate,
+    Authorization: `AWS4-HMAC-SHA256 Credential=${config.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`
+  };
+}
+
+function buildAliyunOssCanonicalUri(
+  config: BackupObjectStorageConfig,
+  remoteFilePath: string | null
+): string {
+  return remoteFilePath
+    ? `/${encodeRfc3986(config.bucket)}/${encodeObjectStoragePath(remoteFilePath)}`
+    : `/${encodeRfc3986(config.bucket)}/`;
+}
+
+async function buildAliyunOssAuthorizationHeaders(
+  config: BackupObjectStorageConfig,
+  method: string,
+  url: URL,
+  remoteFilePath: string | null,
+  query: Record<string, string>,
+  extraHeaders: Record<string, string>
+): Promise<Record<string, string>> {
+  const { dateStamp, amzDate } = getS3AmzDate();
+  const payloadHash = 'UNSIGNED-PAYLOAD';
+  const headersToSign: Record<string, string> = {
+    host: url.host,
+    'x-oss-content-sha256': payloadHash,
+    'x-oss-date': amzDate
+  };
+
+  Object.entries(extraHeaders).forEach(([key, value]) => {
+    headersToSign[key.toLowerCase()] = value.trim();
+  });
+
+  const sortedHeaders = Object.entries(headersToSign).sort(([left], [right]) =>
+    left.localeCompare(right, 'en')
+  );
+  const canonicalHeaders = sortedHeaders.map(([key, value]) => `${key}:${value}\n`).join('');
+  const additionalHeaders = sortedHeaders
+    .map(([key]) => key)
+    .filter((key) => key !== 'content-md5' && key !== 'content-type' && !key.startsWith('x-oss-'))
+    .join(';');
+  const canonicalRequest = [
+    method,
+    buildAliyunOssCanonicalUri(config, remoteFilePath),
+    buildCanonicalQuery(query),
+    canonicalHeaders,
+    additionalHeaders,
+    payloadHash
+  ].join('\n');
+  const credentialScope = `${dateStamp}/${config.region}/oss/aliyun_v4_request`;
+  const stringToSign = [
+    'OSS4-HMAC-SHA256',
+    amzDate,
+    credentialScope,
+    await sha256Hex(canonicalRequest)
+  ].join('\n');
+  const dateKey = await hmacSign('SHA-256', `aliyun_v4${config.accessKeySecret}`, dateStamp);
+  const regionKey = await hmacSign('SHA-256', dateKey, config.region);
+  const serviceKey = await hmacSign('SHA-256', regionKey, 'oss');
+  const signingKey = await hmacSign('SHA-256', serviceKey, 'aliyun_v4_request');
+  const signature = arrayBufferToHex(await hmacSign('SHA-256', signingKey, stringToSign));
+
+  return {
+    ...extraHeaders,
+    'x-oss-content-sha256': payloadHash,
+    'x-oss-date': amzDate,
+    Authorization: `OSS4-HMAC-SHA256 Credential=${config.accessKeyId}/${credentialScope},AdditionalHeaders=${additionalHeaders},Signature=${signature}`
+  };
+}
+
+async function buildObjectStorageHeaders(
+  config: BackupObjectStorageConfig,
+  method: string,
+  url: URL,
+  remoteFilePath: string | null,
+  query: Record<string, string>,
+  body: string,
+  extraHeaders: Record<string, string> = {}
+): Promise<Record<string, string>> {
+  return config.provider === 'aliyun-oss'
+    ? buildAliyunOssAuthorizationHeaders(config, method, url, remoteFilePath, query, extraHeaders)
+    : buildS3AuthorizationHeaders(config, method, url, query, body, extraHeaders);
+}
+
+function normalizeObjectStorageError(
+  provider: BackupObjectStorageProvider,
+  action: '上传' | '下载' | '列目录' | '删除',
+  error: unknown
+): Error {
+  const label = getObjectStorageProviderLabel(provider);
+  if (error instanceof Error) {
+    if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
+      return new Error(
+        `${label} ${action}失败：请求被浏览器拦截，通常是 Bucket CORS 未放行。` +
+          '请允许 Authorization、x-oss-date/x-amz-date、Content-Type 请求头，以及 PUT/GET/DELETE 方法。'
+      );
+    }
+    return error;
+  }
+  return new Error(`${label} ${action}失败，请稍后重试`);
+}
+
+function decodeXmlText(value: string): string {
+  return value
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+function parseObjectStorageDate(value: string): string | undefined {
+  const date = new Date(decodeXmlText(value.trim()));
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+  return date.toISOString();
+}
+
+interface ObjectStorageRemoteFileEntry {
+  remotePath: string;
+  updatedAt?: string;
+}
+
+function extractObjectStorageRemoteFileEntriesFromXml(
+  text: string
+): ObjectStorageRemoteFileEntry[] {
+  const contentMatches = Array.from(text.matchAll(/<Contents\b[^>]*>([\s\S]*?)<\/Contents>/gi));
+  return contentMatches
+    .map((match): ObjectStorageRemoteFileEntry | null => {
+      const body = match[1] || '';
+      const keyMatch = body.match(/<Key\b[^>]*>([\s\S]*?)<\/Key>/i);
+      if (!keyMatch) {
+        return null;
+      }
+      const lastModifiedMatch = body.match(/<LastModified\b[^>]*>([\s\S]*?)<\/LastModified>/i);
+      const remotePath = decodeXmlText(keyMatch[1] || '').trim();
+      const updatedAt = lastModifiedMatch
+        ? parseObjectStorageDate(lastModifiedMatch[1] || '')
+        : undefined;
+      return updatedAt ? { remotePath, updatedAt } : { remotePath };
+    })
+    .filter((item): item is ObjectStorageRemoteFileEntry => item !== null);
+}
+
+async function listObjectStorageRemoteFileEntries(
+  config: BackupObjectStorageConfig,
+  remoteFilePath: string
+): Promise<ObjectStorageRemoteFileEntry[]> {
+  const sanitized = sanitizeObjectStorageConfig(config);
+  const prefix = buildObjectStorageListPrefix(remoteFilePath);
+  const query: Record<string, string> =
+    sanitized.provider === 's3-compatible'
+      ? { 'list-type': '2', prefix, 'max-keys': '1000' }
+      : { prefix, 'max-keys': '1000' };
+  const url = buildObjectStorageRequestUrl(sanitized, null, query);
+  const headers = await buildObjectStorageHeaders(sanitized, 'GET', url, null, query, '', {});
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `${getObjectStorageProviderLabel(sanitized.provider)} 列目录失败（HTTP ${response.status}）`
+    );
+  }
+
+  return extractObjectStorageRemoteFileEntriesFromXml(await response.text());
+}
+
+async function deleteObjectStorageFile(
+  config: BackupObjectStorageConfig,
+  remoteFilePath: string
+): Promise<void> {
+  const sanitized = sanitizeObjectStorageConfig(config);
+  const normalizedRemotePath = normalizeRemoteFilePath(remoteFilePath);
+  const url = buildObjectStorageRequestUrl(sanitized, normalizedRemotePath);
+  const headers = await buildObjectStorageHeaders(
+    sanitized,
+    'DELETE',
+    url,
+    normalizedRemotePath,
+    {},
+    '',
+    {}
+  );
+  const response = await fetch(url.toString(), {
+    method: 'DELETE',
+    headers
+  });
+
+  if (![200, 202, 204, 404].includes(response.status)) {
+    throw new Error(
+      `${getObjectStorageProviderLabel(sanitized.provider)} 删除失败（${remoteFilePath}，HTTP ${response.status}）`
+    );
+  }
+}
+
+async function pruneObjectStorageBackupVersions(config: BackupObjectStorageConfig): Promise<void> {
+  const sanitized = sanitizeObjectStorageConfig(config);
+  const files = await listObjectStorageRemoteFileEntries(sanitized, sanitized.remoteFilePath);
+  const matched = files
+    .map((item) => item.remotePath)
+    .filter((item) => isVersionedBackupMatch(item, sanitized.remoteFilePath))
+    .sort((a, b) => b.localeCompare(a, 'en'));
+  const obsolete = matched.slice(sanitized.retainedVersions);
+  await Promise.all(obsolete.map((item) => deleteObjectStorageFile(sanitized, item)));
+}
+
+export interface ObjectStorageBackupVersionItem {
+  remotePath: string;
+  fileName: string;
+  label: string;
+  isLatest: boolean;
+  backupAt?: string;
+}
+
+export async function listObjectStorageBackupVersions(
+  config: BackupObjectStorageConfig
+): Promise<ObjectStorageBackupVersionItem[]> {
+  const sanitized = sanitizeObjectStorageConfig(config);
+  try {
+    const files = await listObjectStorageRemoteFileEntries(sanitized, sanitized.remoteFilePath);
+    const matched = files
+      .filter((item) => isBackupCandidateMatch(item.remotePath, sanitized.remoteFilePath))
+      .sort((a, b) => b.remotePath.localeCompare(a.remotePath, 'en'));
+
+    if (matched.length === 0) {
+      const fixedEntry = files.find(
+        (item) => normalizeRemoteFilePath(item.remotePath) === sanitized.remoteFilePath
+      );
+      return [
+        {
+          remotePath: sanitized.remoteFilePath,
+          fileName: splitRemoteDirAndFile(sanitized.remoteFilePath).file,
+          label: '当前固定备份文件',
+          isLatest: true,
+          backupAt: fixedEntry?.updatedAt
+        }
+      ];
+    }
+
+    const latestVersioned = matched.find((item) =>
+      isVersionedBackupMatch(item.remotePath, sanitized.remoteFilePath)
+    );
+    const latestVersionedLabel = latestVersioned
+      ? extractWebdavBackupVersionTimeLabel(latestVersioned.remotePath, sanitized.remoteFilePath)
+      : null;
+    const latestVersionedTime = latestVersioned
+      ? extractWebdavBackupVersionTime(latestVersioned.remotePath, sanitized.remoteFilePath)
+      : null;
+
+    return matched.map((item, index) => {
+      const fileName = item.remotePath.split('/').pop() || item.remotePath;
+      const isFixedEntry = normalizeRemoteFilePath(item.remotePath) === sanitized.remoteFilePath;
+      const versionTime = isFixedEntry
+        ? latestVersionedTime
+        : extractWebdavBackupVersionTime(item.remotePath, sanitized.remoteFilePath);
+      return {
+        remotePath: item.remotePath,
+        fileName,
+        label: isFixedEntry
+          ? latestVersionedLabel
+            ? `${latestVersionedLabel} · 固定入口`
+            : '当前固定备份文件'
+          : buildWebdavBackupVersionLabel(item.remotePath, sanitized.remoteFilePath),
+        isLatest: index === 0,
+        backupAt: versionTime?.backupAt || item.updatedAt
+      };
+    });
+  } catch {
+    return [
+      {
+        remotePath: sanitized.remoteFilePath,
+        fileName: splitRemoteDirAndFile(sanitized.remoteFilePath).file,
+        label: '当前固定备份文件（目录列表不可用）',
+        isLatest: true
+      }
+    ];
+  }
+}
+
+async function resolveLatestObjectStorageBackupPath(
+  config: BackupObjectStorageConfig
+): Promise<string> {
+  const sanitized = sanitizeObjectStorageConfig(config);
+  try {
+    const files = await listObjectStorageRemoteFileEntries(sanitized, sanitized.remoteFilePath);
+    const matched = files
+      .map((item) => item.remotePath)
+      .filter((item) => isVersionedBackupMatch(item, sanitized.remoteFilePath))
+      .sort((a, b) => b.localeCompare(a, 'en'));
+    if (matched.length > 0) {
+      return matched[0];
+    }
+  } catch {
+    // 对象存储目录列举失败时，回退到固定路径下载。
+  }
+  return sanitized.remoteFilePath;
+}
+
+export async function objectStorageUploadBackup(
+  config: BackupObjectStorageConfig,
+  payload: FinanceBackupPayload,
+  onProgress?: (stage: string) => void
+): Promise<void> {
+  const provider = config.provider === 's3-compatible' ? 's3-compatible' : 'aliyun-oss';
+  try {
+    const sanitized = sanitizeObjectStorageConfig(config);
+    const label = getObjectStorageProviderLabel(sanitized.provider);
+    onProgress?.(`准备 ${label} 备份...`);
+    const versionedRemotePath = buildVersionedBackupPath(
+      sanitized.remoteFilePath,
+      payload.exportedAt
+    );
+    const body = JSON.stringify(payload, null, 2);
+    const uploadOne = async (remotePath: string, stage: string) => {
+      const normalizedRemotePath = normalizeRemoteFilePath(remotePath);
+      const url = buildObjectStorageRequestUrl(sanitized, normalizedRemotePath);
+      const headers = await buildObjectStorageHeaders(
+        sanitized,
+        'PUT',
+        url,
+        normalizedRemotePath,
+        {},
+        body,
+        {
+          'Content-Type': 'application/json;charset=utf-8'
+        }
+      );
+      onProgress?.(stage);
+      const response = await fetch(url.toString(), {
+        method: 'PUT',
+        headers,
+        body
+      });
+
+      if (!response.ok) {
+        throw new Error(`${label} 上传失败（HTTP ${response.status}）`);
+      }
+    };
+
+    await uploadOne(versionedRemotePath, '上传版本备份...');
+    if (sanitized.remoteFilePath !== versionedRemotePath) {
+      await uploadOne(sanitized.remoteFilePath, '更新最新版本...');
+    }
+
+    try {
+      onProgress?.('清理旧版本...');
+      await pruneObjectStorageBackupVersions(sanitized);
+    } catch {
+      // 版本清理失败不阻断主上传成功，避免不同对象存储的权限差异导致整体失败。
+    }
+  } catch (error) {
+    throw normalizeObjectStorageError(provider, '上传', error);
+  }
+}
+
+export async function objectStorageDownloadBackup(
+  config: BackupObjectStorageConfig,
+  remotePath?: string
+): Promise<FinanceBackupPayload> {
+  const provider = config.provider === 's3-compatible' ? 's3-compatible' : 'aliyun-oss';
+  try {
+    const sanitized = sanitizeObjectStorageConfig(config);
+    const resolvedRemotePath = remotePath
+      ? normalizeRemoteFilePath(remotePath)
+      : await resolveLatestObjectStorageBackupPath(sanitized);
+    const url = buildObjectStorageRequestUrl(sanitized, resolvedRemotePath);
+    const headers = await buildObjectStorageHeaders(
+      sanitized,
+      'GET',
+      url,
+      resolvedRemotePath,
+      {},
+      '',
+      {}
+    );
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `${getObjectStorageProviderLabel(sanitized.provider)} 下载失败（HTTP ${response.status}）`
+      );
+    }
+
+    return parseFinanceBackupPayload(await response.text());
+  } catch (error) {
+    throw normalizeObjectStorageError(provider, '下载', error);
   }
 }

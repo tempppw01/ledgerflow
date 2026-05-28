@@ -8,17 +8,26 @@ import {
 import { resolveImportDefaultAccountId } from '../../shared/lib/importAccount';
 import {
   applyFinanceBackupPayload,
+  type BackupObjectStorageConfig,
+  type BackupObjectStorageProvider,
   type BackupWebdavConfig,
   createDefaultFinanceBackupScope,
   createFinanceBackupPayload,
   downloadBackupJson,
   type FinanceBackupPayload,
   type FinanceBackupScope,
+  listObjectStorageBackupVersions,
   listWebdavBackupVersions,
+  loadObjectStorageConfig,
   loadWebdavConfig,
   normalizeFinanceBackupScope,
+  objectStorageDownloadBackup,
+  type ObjectStorageBackupVersionItem,
+  objectStorageUploadBackup,
   parseFinanceBackupPayload,
+  saveObjectStorageConfig,
   saveWebdavConfig,
+  sanitizeObjectStorageConfig,
   type WebdavBackupVersionItem,
   webdavDownloadBackup,
   webdavUploadBackup,
@@ -41,11 +50,28 @@ const MAX_BACKUP_FILE_SIZE_MB = 50;
 const MAX_BACKUP_FILE_SIZE_BYTES = MAX_BACKUP_FILE_SIZE_MB * 1024 * 1024;
 const MAX_BILL_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const LAST_WEBDAV_BACKUP_KEY = 'ledgerflow-webdav-last-backup-v1';
+const LAST_OBJECT_STORAGE_BACKUP_KEY = 'ledgerflow-object-storage-last-backup-v1';
 const BACKUP_SCOPE_STORAGE_KEY = 'ledgerflow-backup-scope-v1';
 const UNCATEGORIZED_CATEGORY_ID = '';
 
 const BACKUP_ACCEPTED_MIME_TYPES = new Set(['application/json', 'text/json']);
 const BILL_ACCEPTED_EXTENSIONS = new Set(['.csv', '.txt', '.xlsx']);
+const OBJECT_STORAGE_OPTIONS: Array<{
+  value: BackupObjectStorageProvider;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: 'aliyun-oss',
+    label: '阿里云 OSS',
+    description: '适合已开通 OSS Bucket 的用户'
+  },
+  {
+    value: 's3-compatible',
+    label: 'S3 兼容',
+    description: '适合 MinIO、R2、COS 等兼容服务'
+  }
+];
 const BACKUP_SCOPE_OPTIONS: Array<{
   key: keyof FinanceBackupScope;
   label: string;
@@ -84,7 +110,9 @@ function validateBackupFile(file: File): void {
   }
 
   if (file.size > MAX_BACKUP_FILE_SIZE_BYTES) {
-    throw new Error(`备份导入失败：文件过大，请上传不超过 ${MAX_BACKUP_FILE_SIZE_MB}MB 的 JSON 备份`);
+    throw new Error(
+      `备份导入失败：文件过大，请上传不超过 ${MAX_BACKUP_FILE_SIZE_MB}MB 的 JSON 备份`
+    );
   }
 }
 
@@ -139,6 +167,68 @@ function writeStoredLastWebdavBackupAt(config: BackupWebdavConfig, backupAt: str
 }
 
 function getLatestWebdavBackupAt(versions: WebdavBackupVersionItem[]): string {
+  return (
+    versions.find((item) => item.isLatest && item.backupAt)?.backupAt ||
+    versions.find((item) => item.backupAt)?.backupAt ||
+    ''
+  );
+}
+
+function getObjectStorageLabel(provider: BackupObjectStorageProvider): string {
+  return OBJECT_STORAGE_OPTIONS.find((item) => item.value === provider)?.label || '对象存储';
+}
+
+function getObjectStorageBackupSignature(config: BackupObjectStorageConfig): string {
+  return [
+    config.provider,
+    config.endpoint.trim(),
+    config.bucket.trim(),
+    config.remoteFilePath.trim()
+  ].join('|');
+}
+
+function getStoredObjectStorageBackupKey(provider: BackupObjectStorageProvider): string {
+  return `${LAST_OBJECT_STORAGE_BACKUP_KEY}:${provider}`;
+}
+
+function readStoredLastObjectStorageBackupAt(config: BackupObjectStorageConfig): string {
+  try {
+    const raw = window.localStorage.getItem(getStoredObjectStorageBackupKey(config.provider));
+    if (!raw) return '';
+    const parsed = JSON.parse(raw) as { signature?: unknown; backupAt?: unknown };
+    const backupAt = typeof parsed.backupAt === 'string' ? parsed.backupAt : '';
+    if (
+      parsed.signature !== getObjectStorageBackupSignature(config) ||
+      !isValidBackupTime(backupAt)
+    ) {
+      return '';
+    }
+    return backupAt;
+  } catch {
+    return '';
+  }
+}
+
+function writeStoredLastObjectStorageBackupAt(
+  config: BackupObjectStorageConfig,
+  backupAt: string
+): void {
+  if (!isValidBackupTime(backupAt)) return;
+
+  try {
+    window.localStorage.setItem(
+      getStoredObjectStorageBackupKey(config.provider),
+      JSON.stringify({
+        signature: getObjectStorageBackupSignature(config),
+        backupAt
+      })
+    );
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function getLatestObjectStorageBackupAt(versions: ObjectStorageBackupVersionItem[]): string {
   return (
     versions.find((item) => item.isLatest && item.backupAt)?.backupAt ||
     versions.find((item) => item.backupAt)?.backupAt ||
@@ -250,15 +340,41 @@ export function DatabaseSettingsPage() {
   });
 
   const [webdav, setWebdav] = useState<BackupWebdavConfig>(() => loadWebdavConfig());
+  const [objectStorageProvider, setObjectStorageProvider] =
+    useState<BackupObjectStorageProvider>('aliyun-oss');
+  const [objectStorageConfigs, setObjectStorageConfigs] = useState<
+    Record<BackupObjectStorageProvider, BackupObjectStorageConfig>
+  >(() => ({
+    'aliyun-oss': loadObjectStorageConfig('aliyun-oss'),
+    's3-compatible': loadObjectStorageConfig('s3-compatible')
+  }));
   const [lastWebdavBackupAt, setLastWebdavBackupAt] = useState(() =>
     readStoredLastWebdavBackupAt(loadWebdavConfig())
   );
+  const [lastObjectStorageBackupAt, setLastObjectStorageBackupAt] = useState<
+    Record<BackupObjectStorageProvider, string>
+  >(() => {
+    const aliyunConfig = loadObjectStorageConfig('aliyun-oss');
+    const s3Config = loadObjectStorageConfig('s3-compatible');
+    return {
+      'aliyun-oss': readStoredLastObjectStorageBackupAt(aliyunConfig),
+      's3-compatible': readStoredLastObjectStorageBackupAt(s3Config)
+    };
+  });
   const [lastWebdavBackupLoading, setLastWebdavBackupLoading] = useState(false);
+  const [lastObjectStorageBackupLoading, setLastObjectStorageBackupLoading] = useState(false);
   const [clearBillsOpen, setClearBillsOpen] = useState(false);
   const [webdavRestoreDialogOpen, setWebdavRestoreDialogOpen] = useState(false);
   const [webdavRestoreVersions, setWebdavRestoreVersions] = useState<WebdavBackupVersionItem[]>([]);
+  const [objectStorageRestoreDialogOpen, setObjectStorageRestoreDialogOpen] = useState(false);
+  const [objectStorageRestoreVersions, setObjectStorageRestoreVersions] = useState<
+    ObjectStorageBackupVersionItem[]
+  >([]);
   const [selectedRestorePath, setSelectedRestorePath] = useState('');
+  const [selectedObjectStorageRestorePath, setSelectedObjectStorageRestorePath] = useState('');
   const [webdavAdvancedOpen, setWebdavAdvancedOpen] = useState(false);
+  const [objectStorageAdvancedOpen, setObjectStorageAdvancedOpen] = useState(false);
+  const [objectStorageStatus, setObjectStorageStatus] = useState('');
   const [remoteConnectionOpen, setRemoteConnectionOpen] = useState(false);
   const [backupScope, setBackupScope] = useState<FinanceBackupScope>(() => loadStoredBackupScope());
 
@@ -284,6 +400,21 @@ export function DatabaseSettingsPage() {
 
   const canCreateBackup = useMemo(() => hasSelectedBackupScope(backupScope), [backupScope]);
   const backupScopeSummary = useMemo(() => getBackupScopeSummary(backupScope), [backupScope]);
+  const objectStorage = objectStorageConfigs[objectStorageProvider];
+  const objectStorageLabel = useMemo(
+    () => getObjectStorageLabel(objectStorageProvider),
+    [objectStorageProvider]
+  );
+
+  const updateObjectStorage = (patch: Partial<BackupObjectStorageConfig>) => {
+    setObjectStorageConfigs((prev) => ({
+      ...prev,
+      [objectStorageProvider]: {
+        ...prev[objectStorageProvider],
+        ...patch
+      }
+    }));
+  };
 
   const getCurrentBackupSnapshot = () => ({
     transactions,
@@ -298,7 +429,8 @@ export function DatabaseSettingsPage() {
     globalMemories
   });
 
-  const createScopedBackupPayload = () => createFinanceBackupPayload(getCurrentBackupSnapshot(), backupScope);
+  const createScopedBackupPayload = () =>
+    createFinanceBackupPayload(getCurrentBackupSnapshot(), backupScope);
 
   const applyParsedBackup = (payload: FinanceBackupPayload, action: '导入' | '恢复') => {
     const restored = applyFinanceBackupPayload(getCurrentBackupSnapshot(), payload);
@@ -350,11 +482,63 @@ export function DatabaseSettingsPage() {
   }, []);
 
   useEffect(() => {
+    const config = objectStorageConfigs[objectStorageProvider];
+    const storedBackupAt = readStoredLastObjectStorageBackupAt(config);
+    if (storedBackupAt) {
+      setLastObjectStorageBackupAt((prev) => ({
+        ...prev,
+        [objectStorageProvider]: storedBackupAt
+      }));
+    }
+
+    if (
+      !config.endpoint.trim() ||
+      !config.bucket.trim() ||
+      !config.accessKeyId.trim() ||
+      !config.accessKeySecret.trim() ||
+      !config.remoteFilePath.trim()
+    ) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    setLastObjectStorageBackupLoading(true);
+    listObjectStorageBackupVersions(config)
+      .then((versions) => {
+        if (cancelled) return;
+        const backupAt = getLatestObjectStorageBackupAt(versions);
+        if (backupAt) {
+          setLastObjectStorageBackupAt((prev) => ({
+            ...prev,
+            [objectStorageProvider]: backupAt
+          }));
+          writeStoredLastObjectStorageBackupAt(config, backupAt);
+        }
+      })
+      .catch(() => {
+        // 只用于展示最近备份时间，读取失败不打断设置页使用。
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLastObjectStorageBackupLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [objectStorageProvider]);
+
+  useEffect(() => {
     writeStoredBackupScope(backupScope);
   }, [backupScope]);
 
   const showWebdavStatus = (message: string) => {
     setWebdavStatus(message);
+  };
+
+  const showObjectStorageStatus = (message: string) => {
+    setObjectStorageStatus(message);
   };
 
   const ensureDefaultRefs = (source?: BillSource) => {
@@ -477,6 +661,48 @@ export function DatabaseSettingsPage() {
     }
   };
 
+  const handleSaveObjectStorageConfig = () => {
+    try {
+      saveObjectStorageConfig(objectStorage);
+      setLastObjectStorageBackupAt((prev) => ({
+        ...prev,
+        [objectStorageProvider]: readStoredLastObjectStorageBackupAt(objectStorage)
+      }));
+      showToast(`${objectStorageLabel} 配置已保存`, 'success');
+    } catch (error) {
+      showToast(
+        error instanceof Error ? error.message : `${objectStorageLabel} 配置不合法`,
+        'error'
+      );
+    }
+  };
+
+  const validateObjectStorage = () => {
+    if (!objectStorage.endpoint.trim()) {
+      throw new Error(
+        objectStorageProvider === 'aliyun-oss' ? '请填写 OSS Endpoint' : '请填写 S3 Endpoint'
+      );
+    }
+    if (!objectStorage.bucket.trim()) {
+      throw new Error('请填写 Bucket 名称');
+    }
+    if (!objectStorage.accessKeyId.trim()) {
+      throw new Error('请填写 AccessKey ID');
+    }
+    if (!objectStorage.accessKeySecret.trim()) {
+      throw new Error('请填写 AccessKey Secret');
+    }
+    if (!objectStorage.remoteFilePath.trim()) {
+      throw new Error('请填写远程文件路径');
+    }
+
+    try {
+      sanitizeObjectStorageConfig(objectStorage);
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : `${objectStorageLabel} 配置不合法`);
+    }
+  };
+
   const ensureHydrated = () => {
     if (!hasHydrated) {
       throw new Error('本地数据仍在加载中，请稍后重试');
@@ -558,9 +784,98 @@ export function DatabaseSettingsPage() {
     }
   };
 
+  const handleObjectStorageUpload = async () => {
+    try {
+      ensureHydrated();
+      validateObjectStorage();
+      if (!canCreateBackup) {
+        throw new Error('请至少勾选一个备份范围');
+      }
+      setBusy(true);
+      showObjectStorageStatus('正在打包备份...');
+      const payload = createScopedBackupPayload();
+      await objectStorageUploadBackup(objectStorage, payload, (stage) => {
+        showObjectStorageStatus(stage);
+      });
+      saveObjectStorageConfig(objectStorage);
+      setLastObjectStorageBackupAt((prev) => ({
+        ...prev,
+        [objectStorageProvider]: payload.exportedAt
+      }));
+      writeStoredLastObjectStorageBackupAt(objectStorage, payload.exportedAt);
+      showObjectStorageStatus('备份完成');
+      showToast(`${objectStorageLabel} 备份成功：${backupScopeSummary}`, 'success');
+    } catch (error) {
+      showObjectStorageStatus('备份失败');
+      showToast(error instanceof Error ? error.message : `${objectStorageLabel} 备份失败`, 'error');
+    } finally {
+      setBusy(false);
+      window.setTimeout(() => setObjectStorageStatus(''), 2400);
+    }
+  };
+
+  const handleObjectStorageDownload = async () => {
+    try {
+      ensureHydrated();
+      validateObjectStorage();
+      setBusy(true);
+      showObjectStorageStatus('拉取备份列表...');
+      const versions = await listObjectStorageBackupVersions(objectStorage);
+      const backupAt = getLatestObjectStorageBackupAt(versions);
+      if (backupAt) {
+        setLastObjectStorageBackupAt((prev) => ({
+          ...prev,
+          [objectStorageProvider]: backupAt
+        }));
+        writeStoredLastObjectStorageBackupAt(objectStorage, backupAt);
+      }
+      setObjectStorageRestoreVersions(versions);
+      setSelectedObjectStorageRestorePath(versions[0]?.remotePath || '');
+      setObjectStorageRestoreDialogOpen(true);
+      showObjectStorageStatus('已获取备份列表');
+    } catch (error) {
+      showObjectStorageStatus('获取失败');
+      showToast(error instanceof Error ? error.message : `${objectStorageLabel} 下载失败`, 'error');
+    } finally {
+      setBusy(false);
+      window.setTimeout(() => setObjectStorageStatus(''), 2400);
+    }
+  };
+
+  const handleConfirmObjectStorageRestore = async () => {
+    try {
+      ensureHydrated();
+      validateObjectStorage();
+      if (!selectedObjectStorageRestorePath) {
+        throw new Error('请选择一个可恢复版本');
+      }
+      setBusy(true);
+      showObjectStorageStatus('正在下载并恢复...');
+      const payload = await objectStorageDownloadBackup(
+        objectStorage,
+        selectedObjectStorageRestorePath
+      );
+      applyParsedBackup(payload, '恢复');
+      saveObjectStorageConfig(objectStorage);
+      setObjectStorageRestoreDialogOpen(false);
+      showObjectStorageStatus('恢复完成');
+    } catch (error) {
+      showObjectStorageStatus('恢复失败');
+      showToast(error instanceof Error ? error.message : `${objectStorageLabel} 下载失败`, 'error');
+    } finally {
+      setBusy(false);
+      window.setTimeout(() => setObjectStorageStatus(''), 2400);
+    }
+  };
+
   const lastWebdavBackupText = lastWebdavBackupAt
     ? formatWebdavBackupTime(lastWebdavBackupAt)
     : lastWebdavBackupLoading
+      ? '读取中...'
+      : '暂无记录';
+  const lastObjectStorageBackupText = lastObjectStorageBackupAt[objectStorageProvider]
+    ? formatWebdavBackupTime(lastObjectStorageBackupAt[objectStorageProvider])
+    : lastObjectStorageBackupLoading
       ? '读取中...'
       : '暂无记录';
 
@@ -593,9 +908,7 @@ export function DatabaseSettingsPage() {
               </span>
               <h4>按范围导出备份文件</h4>
             </div>
-            <p className="sync-tip">
-              导出的备份可直接导入恢复，WebDAV 也会沿用同一份范围设置。
-            </p>
+            <p className="sync-tip">导出的备份可直接导入恢复，WebDAV 也会沿用同一份范围设置。</p>
             <div className="database-backup-scope" aria-label="备份范围设置">
               <div className="database-backup-scope-head">
                 <strong className="database-backup-scope-title">备份范围</strong>
@@ -875,6 +1188,180 @@ export function DatabaseSettingsPage() {
           }}
         >
           <div>
+            <div className="row" style={{ gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
+              <h3 style={{ margin: 0 }}>对象存储备份</h3>
+              <span className="sync-tip" style={{ whiteSpace: 'nowrap' }}>
+                上次备份：{lastObjectStorageBackupText}
+              </span>
+            </div>
+            <p className="sync-tip" style={{ margin: '6px 0 0' }}>
+              支持阿里云 OSS 与 S3 兼容服务，适合把备份放到自己的 Bucket。
+            </p>
+          </div>
+          <span className="sync-tip" style={{ whiteSpace: 'nowrap' }}>
+            当前：{objectStorageLabel}
+          </span>
+        </div>
+
+        <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+          {OBJECT_STORAGE_OPTIONS.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              className={objectStorageProvider === item.value ? 'primary' : undefined}
+              onClick={() => setObjectStorageProvider(item.value)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+        <p className="sync-tip" style={{ margin: '8px 0 0' }}>
+          {OBJECT_STORAGE_OPTIONS.find((item) => item.value === objectStorageProvider)?.description}
+        </p>
+
+        <div className="grid grid-2" style={{ gap: 10, marginTop: 10 }}>
+          <div className="field" style={{ marginBottom: 0 }}>
+            <label>{objectStorageProvider === 'aliyun-oss' ? 'OSS Endpoint' : 'S3 Endpoint'}</label>
+            <input
+              title={objectStorageProvider === 'aliyun-oss' ? 'OSS Endpoint' : 'S3 Endpoint'}
+              placeholder={
+                objectStorageProvider === 'aliyun-oss'
+                  ? 'https://oss-cn-guangzhou.aliyuncs.com'
+                  : 'https://s3.example.com'
+              }
+              value={objectStorage.endpoint}
+              onChange={(e) => updateObjectStorage({ endpoint: e.target.value })}
+            />
+          </div>
+          <div className="field" style={{ marginBottom: 0 }}>
+            <label>Bucket</label>
+            <input
+              title="Bucket"
+              placeholder="ledgerflow-backup"
+              value={objectStorage.bucket}
+              onChange={(e) => updateObjectStorage({ bucket: e.target.value })}
+            />
+          </div>
+          <div className="field" style={{ marginBottom: 0 }}>
+            <label>远程文件路径</label>
+            <input
+              title="远程文件路径"
+              placeholder="ledgerflow/backup.json"
+              value={objectStorage.remoteFilePath}
+              onChange={(e) => updateObjectStorage({ remoteFilePath: e.target.value })}
+            />
+          </div>
+          <div className="field" style={{ marginBottom: 0 }}>
+            <label>AccessKey ID</label>
+            <input
+              title="AccessKey ID"
+              placeholder="请输入 AccessKey ID"
+              value={objectStorage.accessKeyId}
+              onChange={(e) => updateObjectStorage({ accessKeyId: e.target.value })}
+            />
+          </div>
+          <div className="field" style={{ marginBottom: 0 }}>
+            <label>AccessKey Secret</label>
+            <PasswordInput
+              title="AccessKey Secret"
+              placeholder="仅保存在本次会话"
+              value={objectStorage.accessKeySecret}
+              onChange={(e) => updateObjectStorage({ accessKeySecret: e.target.value })}
+              showLabel="显示密钥"
+              hideLabel="隐藏密钥"
+            />
+          </div>
+        </div>
+
+        <div style={{ marginTop: 10 }}>
+          <button type="button" onClick={() => setObjectStorageAdvancedOpen((prev) => !prev)}>
+            {objectStorageAdvancedOpen ? '收起高级选项' : '展开高级选项'}
+          </button>
+        </div>
+
+        {objectStorageAdvancedOpen ? (
+          <div className="grid grid-2" style={{ gap: 10, marginTop: 10 }}>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>地域</label>
+              <input
+                title="地域"
+                placeholder={objectStorageProvider === 'aliyun-oss' ? 'cn-guangzhou' : 'us-east-1'}
+                value={objectStorage.region}
+                onChange={(e) => updateObjectStorage({ region: e.target.value })}
+              />
+            </div>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>保留版本数</label>
+              <input
+                title="保留版本数"
+                type="number"
+                min={1}
+                max={50}
+                value={objectStorage.retainedVersions}
+                onChange={(e) =>
+                  updateObjectStorage({ retainedVersions: Number(e.target.value) || 1 })
+                }
+              />
+            </div>
+            {objectStorageProvider === 's3-compatible' ? (
+              <div className="field" style={{ marginBottom: 0 }}>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <input
+                    type="checkbox"
+                    checked={objectStorage.forcePathStyle}
+                    onChange={(e) => updateObjectStorage({ forcePathStyle: e.target.checked })}
+                  />
+                  使用路径风格地址
+                </label>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        <p className="sync-tip" style={{ margin: '10px 0 0' }}>
+          如遇到跨域提示，需要在 Bucket 里允许网页访问；密钥不会长期保存到本地。
+        </p>
+        <p className="sync-tip" style={{ margin: '6px 0 0' }}>
+          当前备份范围：{backupScopeSummary}
+        </p>
+
+        <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+          <button type="button" onClick={handleSaveObjectStorageConfig} disabled={busy}>
+            保存
+          </button>
+          <button
+            type="button"
+            className="primary button-with-icon"
+            onClick={() => void handleObjectStorageUpload()}
+            disabled={busy || !canCreateBackup}
+          >
+            <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
+            立即备份
+          </button>
+          <button
+            type="button"
+            className="button-with-icon"
+            onClick={() => void handleObjectStorageDownload()}
+            disabled={busy}
+          >
+            <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
+            恢复备份
+          </button>
+          {objectStorageStatus ? <span className="sync-tip">{objectStorageStatus}</span> : null}
+        </div>
+      </section>
+
+      <section className="panel" style={{ marginTop: 12 }}>
+        <div
+          className="row"
+          style={{
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: 12,
+            flexWrap: 'wrap'
+          }}
+        >
+          <div>
             <h3 style={{ marginTop: 0, marginBottom: 0 }}>远程数据库连接（高级）</h3>
             <p className="sync-tip" style={{ margin: '6px 0 0' }}>
               可选保存 MySQL / Redis 连接参数，不影响本地账本，也不会覆盖 WebDAV 备份。
@@ -931,6 +1418,58 @@ export function DatabaseSettingsPage() {
                 className="primary"
                 onClick={() => void handleConfirmWebdavRestore()}
                 disabled={busy || !selectedRestorePath}
+              >
+                恢复所选版本
+              </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
+
+      {objectStorageRestoreDialogOpen ? (
+        <div
+          className="dialog-overlay"
+          role="presentation"
+          onClick={() => setObjectStorageRestoreDialogOpen(false)}
+        >
+          <section
+            className="dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`选择 ${objectStorageLabel} 恢复版本`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="dialog-header">选择要恢复的 {objectStorageLabel} 备份版本</header>
+            <div className="dialog-body">
+              <div className="webdav-restore-list">
+                {objectStorageRestoreVersions.map((item) => (
+                  <label className="webdav-restore-item" key={item.remotePath}>
+                    <input
+                      type="radio"
+                      name="object-storage-restore-version"
+                      checked={selectedObjectStorageRestorePath === item.remotePath}
+                      onChange={() => setSelectedObjectStorageRestorePath(item.remotePath)}
+                    />
+                    <span className="webdav-restore-item-copy">
+                      <strong>
+                        {item.label}
+                        {item.isLatest ? '（最新）' : ''}
+                      </strong>
+                      <small>{item.fileName}</small>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <footer className="dialog-footer">
+              <button type="button" onClick={() => setObjectStorageRestoreDialogOpen(false)}>
+                取消
+              </button>
+              <button
+                type="button"
+                className="primary"
+                onClick={() => void handleConfirmObjectStorageRestore()}
+                disabled={busy || !selectedObjectStorageRestorePath}
               >
                 恢复所选版本
               </button>
