@@ -103,6 +103,9 @@ export const THUMBS_UP_ICON_URL =
 export const STAR_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/star.svg';
 
+export const STAR_OFF_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/star-off.svg';
+
 export const PRINTER_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/printer.svg';
 

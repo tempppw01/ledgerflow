@@ -3,7 +3,8 @@ import {
   CLOUD_SYNC_ICON_URL,
   GLOBE_ICON_URL,
   PACKAGE_ICON_URL,
-  STAR_ICON_URL
+  STAR_ICON_URL,
+  STAR_OFF_ICON_URL
 } from '../../../shared/config/brandAssets';
 import type { ExchangeRate } from '../model/types';
 import { getCurrencyFlag, getCurrencyName } from '../model/types';
@@ -198,7 +199,7 @@ export function ExchangeRateTable({
                   >
                     <img
                       className="exchange-inline-icon"
-                      src={STAR_ICON_URL}
+                      src={favorites.includes(rate.code) ? STAR_ICON_URL : STAR_OFF_ICON_URL}
                       alt=""
                       aria-hidden="true"
                     />
