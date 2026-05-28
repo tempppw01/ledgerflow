@@ -127,6 +127,12 @@ const AI_LOADING_GIF_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/load.gif';
 const MAX_INVESTMENT_AI_IMAGES = 4;
 const MAX_INVESTMENT_AI_IMAGE_SIZE_MB = 6;
+const INVESTMENT_EXPERT_PROMPTS = [
+  '我不懂投资，请根据我的持仓告诉我现在最该做什么。',
+  '帮我判断这只基金适不适合继续定投，需要看哪些风险？',
+  '我现在现金流有限，应该先补应急金还是继续买基金？',
+  '请把我的投资组合按新手能看懂的方式做一次体检。'
+];
 
 function getClipboardImageFiles(clipboardData: DataTransfer): File[] {
   const itemFiles = Array.from(clipboardData.items || [])
@@ -692,6 +698,14 @@ export function InvestmentsPage() {
     aiPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  function handleInvestmentExpertPrompt(prompt: string) {
+    setInvestmentAiInput(prompt);
+    scrollToInvestmentAiPanel();
+    setTimeout(() => {
+      document.querySelector<HTMLTextAreaElement>('.investments-ai-textarea')?.focus();
+    }, 80);
+  }
+
   function closeWatchContextMenu() {
     setWatchContextMenu((prev) => ({
       ...prev,
@@ -1072,8 +1086,9 @@ export function InvestmentsPage() {
         <article className="panel investments-ai-panel" ref={aiPanelRef}>
           <div className="investments-section-head investments-ai-panel-head">
             <div>
-              <h3>AI 基金分析</h3>
-              <p>直接问某只基金值不值得继续跟，也可以上传基金页或持仓截图。</p>
+              <span className="investments-ai-kicker">AI 投资推荐专家</span>
+              <h3>先让 AI 帮你判断，再决定要不要买</h3>
+              <p>你不需要先懂术语。直接说现状、贴基金截图，我会让 AI 先给结论、风险和下一步。</p>
             </div>
             <div className="investments-ai-head-actions">
               <span className="badge">{model || '默认模型'}</span>
@@ -1097,11 +1112,23 @@ export function InvestmentsPage() {
             <span>
               {apiKey.trim()
                 ? investmentAiStatus === 'loading'
-                  ? '正在分析基金...'
-                  : '可以开始分析'
-                : '先配置 AI Key，再来分析基金'}
+                  ? '正在让 AI 拆风险和建议...'
+                  : '可以把投资问题交给 AI 先判断'
+                : '先配置 AI Key，再让 AI 介入投资判断'}
             </span>
-            <span>会保留最近分析记录，方便回看。</span>
+            <span>会保留最近分析记录，方便回看和继续追问。</span>
+          </div>
+
+          <div className="investments-ai-prompt-bank" aria-label="投资推荐快捷问题">
+            {INVESTMENT_EXPERT_PROMPTS.map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                onClick={() => handleInvestmentExpertPrompt(prompt)}
+              >
+                {prompt}
+              </button>
+            ))}
           </div>
 
           {investmentAiError ? (
@@ -1116,8 +1143,11 @@ export function InvestmentsPage() {
             !streamingContent &&
             !streamingReasoning ? (
               <div className="investments-ai-empty">
-                <strong>还没有开始分析</strong>
-                <p>可以直接输入基金名称、代码、定投疑问，或者上传截图让 AI 先帮你拆重点。</p>
+                <strong>可以先不用录很多资料</strong>
+                <p>
+                  告诉 AI
+                  你想买什么、已经持有什么、能承受多大波动，它会先帮你拆“能不能买、怎么买、别踩什么坑”。
+                </p>
               </div>
             ) : null}
 
@@ -1360,7 +1390,7 @@ export function InvestmentsPage() {
               rows={3}
               value={investmentAiInput}
               className="investments-ai-textarea"
-              placeholder="例如：这只基金适合继续定投吗？波动这么大要不要先观望？"
+              placeholder="例如：我不太懂投资，帮我看看这只基金现在适不适合入手？"
               aria-label="基金分析输入框"
               disabled={investmentAiStatus === 'loading'}
               onChange={(event) => setInvestmentAiInput(event.target.value)}
@@ -1375,7 +1405,7 @@ export function InvestmentsPage() {
               <span>
                 {latestAssistantAnalysis?.fundName
                   ? `最近分析：${latestAssistantAnalysis.fundName}`
-                  : '适合问：值不值得继续拿、要不要定投、现在该看哪些风险。'}
+                  : '适合问：能不能买、怎么买更稳、哪里风险最大、要不要先观望。'}
               </span>
               <button
                 type="submit"
@@ -1662,7 +1692,7 @@ export function InvestmentsPage() {
           >
             <span>
               <h3>{editingPositionId ? '编辑持仓' : '新增持仓'}</h3>
-              <p>{positions.length} 笔持仓 · 表单默认收起，需要时再展开</p>
+              <p>{positions.length} 笔持仓 · 先填名称、本金和市值，其他交给 AI 慢慢补</p>
             </span>
             <span className="investments-fold-side">
               <span className="badge">{editingPositionId ? '编辑中' : '新增'}</span>
@@ -1679,8 +1709,14 @@ export function InvestmentsPage() {
           </button>
 
           <div className="investments-fold-body">
+            <div className="investments-form-guide">
+              <strong>只需要 3 项关键资料</strong>
+              <span>
+                本金和市值统一按人民币“元”填写，不用填份额或股数。月投入、风险档位、账户关联都放到高级选项里。
+              </span>
+            </div>
             <form className="investments-form" onSubmit={submitPosition}>
-              <div className="investments-form-grid investments-form-grid-primary">
+              <div className="investments-form-grid investments-position-quick-grid">
                 <label className="investments-field">
                   <span>持仓名称</span>
                   <input
@@ -1692,140 +1728,144 @@ export function InvestmentsPage() {
                   />
                 </label>
                 <label className="investments-field">
-                  <span>资产类别</span>
-                  <select
-                    value={positionForm.category}
-                    onChange={(event) =>
-                      setPositionForm((prev) => ({
-                        ...prev,
-                        category: event.target.value as InvestmentCategory
-                      }))
-                    }
-                  >
-                    {Object.entries(POSITION_CATEGORY_LABELS).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="investments-field">
-                  <span>平台 / 券商</span>
-                  <input
-                    value={positionForm.platform}
-                    onChange={(event) =>
-                      setPositionForm((prev) => ({ ...prev, platform: event.target.value }))
-                    }
-                    placeholder="例如：支付宝 / 天天基金"
-                  />
-                </label>
-                <label className="investments-field">
-                  <span>关联账户（可选）</span>
-                  <select
-                    value={positionForm.linkedAccountId}
-                    onChange={(event) =>
-                      setPositionForm((prev) => ({ ...prev, linkedAccountId: event.target.value }))
-                    }
-                  >
-                    <option value="">暂不关联</option>
-                    {accounts.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              <div className="investments-form-grid">
-                <label className="investments-field">
-                  <span>投入本金</span>
+                  <span>投入本金（元）</span>
                   <input
                     inputMode="decimal"
                     value={positionForm.investedAmount}
                     onChange={(event) =>
                       setPositionForm((prev) => ({ ...prev, investedAmount: event.target.value }))
                     }
-                    placeholder="0"
+                    placeholder="例如 10000"
                   />
                 </label>
                 <label className="investments-field">
-                  <span>当前市值</span>
+                  <span>当前市值（元）</span>
                   <input
                     inputMode="decimal"
                     value={positionForm.currentValue}
                     onChange={(event) =>
                       setPositionForm((prev) => ({ ...prev, currentValue: event.target.value }))
                     }
-                    placeholder="0"
+                    placeholder="例如 10880"
                   />
-                </label>
-                <label className="investments-field">
-                  <span>计划月投入</span>
-                  <input
-                    inputMode="decimal"
-                    value={positionForm.monthlyContribution}
-                    onChange={(event) =>
-                      setPositionForm((prev) => ({
-                        ...prev,
-                        monthlyContribution: event.target.value
-                      }))
-                    }
-                    placeholder="可留空"
-                  />
-                </label>
-                <label className="investments-field">
-                  <span>目标占比 %</span>
-                  <input
-                    inputMode="decimal"
-                    value={positionForm.targetAllocation}
-                    onChange={(event) =>
-                      setPositionForm((prev) => ({ ...prev, targetAllocation: event.target.value }))
-                    }
-                    placeholder="例如 25"
-                  />
-                </label>
-                <label className="investments-field">
-                  <span>风险档位</span>
-                  <select
-                    value={positionForm.riskLevel}
-                    onChange={(event) =>
-                      setPositionForm((prev) => ({
-                        ...prev,
-                        riskLevel: event.target.value as InvestmentRiskLevel
-                      }))
-                    }
-                  >
-                    {Object.entries(RISK_LEVEL_LABELS).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="investments-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={positionForm.isActive}
-                    onChange={(event) =>
-                      setPositionForm((prev) => ({ ...prev, isActive: event.target.checked }))
-                    }
-                  />
-                  <span>继续纳入当前配置统计</span>
                 </label>
               </div>
 
-              <label className="investments-field investments-field-wide">
-                <span>备注（可选）</span>
-                <textarea
-                  rows={3}
-                  value={positionForm.note}
-                  onChange={(event) =>
-                    setPositionForm((prev) => ({ ...prev, note: event.target.value }))
-                  }
-                  placeholder="例如：这笔主要作为长期底仓，不着急频繁调整。"
-                />
-              </label>
+              <details className="investments-advanced-fields">
+                <summary>
+                  <span>高级选项</span>
+                  <small>资产类别、平台、计划月投入、风险档位</small>
+                </summary>
+
+                <div className="investments-form-grid investments-form-grid-primary">
+                  <label className="investments-field">
+                    <span>资产类别</span>
+                    <select
+                      value={positionForm.category}
+                      onChange={(event) =>
+                        setPositionForm((prev) => ({
+                          ...prev,
+                          category: event.target.value as InvestmentCategory
+                        }))
+                      }
+                    >
+                      {Object.entries(POSITION_CATEGORY_LABELS).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="investments-field">
+                    <span>平台 / 券商</span>
+                    <input
+                      value={positionForm.platform}
+                      onChange={(event) =>
+                        setPositionForm((prev) => ({ ...prev, platform: event.target.value }))
+                      }
+                      placeholder="例如：支付宝 / 天天基金"
+                    />
+                  </label>
+                  <label className="investments-field">
+                    <span>关联账户（可选）</span>
+                    <select
+                      value={positionForm.linkedAccountId}
+                      onChange={(event) =>
+                        setPositionForm((prev) => ({
+                          ...prev,
+                          linkedAccountId: event.target.value
+                        }))
+                      }
+                    >
+                      <option value="">暂不关联</option>
+                      {accounts.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <div className="investments-form-grid">
+                  <label className="investments-field">
+                    <span>计划月投入（元，可选）</span>
+                    <input
+                      inputMode="decimal"
+                      value={positionForm.monthlyContribution}
+                      onChange={(event) =>
+                        setPositionForm((prev) => ({
+                          ...prev,
+                          monthlyContribution: event.target.value
+                        }))
+                      }
+                      placeholder="例如 500"
+                    />
+                  </label>
+                  <label className="investments-field">
+                    <span>目标占比（%，可选）</span>
+                    <input
+                      inputMode="decimal"
+                      value={positionForm.targetAllocation}
+                      onChange={(event) =>
+                        setPositionForm((prev) => ({
+                          ...prev,
+                          targetAllocation: event.target.value
+                        }))
+                      }
+                      placeholder="例如 25"
+                    />
+                  </label>
+                  <label className="investments-field">
+                    <span>风险档位</span>
+                    <select
+                      value={positionForm.riskLevel}
+                      onChange={(event) =>
+                        setPositionForm((prev) => ({
+                          ...prev,
+                          riskLevel: event.target.value as InvestmentRiskLevel
+                        }))
+                      }
+                    >
+                      {Object.entries(RISK_LEVEL_LABELS).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="investments-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={positionForm.isActive}
+                      onChange={(event) =>
+                        setPositionForm((prev) => ({ ...prev, isActive: event.target.checked }))
+                      }
+                    />
+                    <span>继续纳入当前配置统计</span>
+                  </label>
+                </div>
+              </details>
 
               {positionError ? <p className="assistant-wb-issue error">{positionError}</p> : null}
 
@@ -1896,8 +1936,6 @@ export function InvestmentsPage() {
                           </strong>
                         </span>
                       </div>
-
-                      {item.note ? <p className="investments-card-note">{item.note}</p> : null}
 
                       <div className="investments-actions-inline">
                         <button

@@ -131,6 +131,20 @@
   align-items: start;
 }
 
+.investments-ai-kicker {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 24px;
+  align-items: center;
+  padding: 0 10px;
+  margin-bottom: 6px;
+  border-radius: 999px;
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary-bg) 84%, var(--color-bg-elevated));
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .investments-ai-head-actions {
   display: inline-flex;
   gap: 8px;
@@ -150,6 +164,32 @@
 
 .investments-ai-error {
   margin: 0;
+}
+
+.investments-ai-prompt-bank {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+.investments-ai-prompt-bank button {
+  flex: 0 0 auto;
+  max-width: min(280px, 76vw);
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-primary-bg));
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.investments-ai-prompt-bank button:hover,
+.investments-ai-prompt-bank button:focus-visible {
+  border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-primary-bg) 84%, var(--color-bg-elevated));
 }
 
 .investments-ai-thread {
@@ -819,14 +859,41 @@
   gap: 12px;
 }
 
+.investments-form-guide {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 16%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-primary-bg) 70%, var(--color-bg-elevated));
+}
+
+.investments-form-guide strong,
+.investments-form-guide span {
+  margin: 0;
+}
+
+.investments-form-guide span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .investments-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
+.investments-position-quick-grid {
+  grid-template-columns: minmax(220px, 1.2fr) repeat(2, minmax(160px, 0.9fr));
+}
+
 .investments-form-grid-primary {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .investments-field,
@@ -851,6 +918,49 @@
 
 .investments-checkbox input {
   margin: 0;
+}
+
+.investments-advanced-fields {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+}
+
+.investments-advanced-fields summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 12px;
+  border-radius: 14px;
+  border: 1px dashed color-mix(in srgb, var(--color-primary) 20%, var(--color-border-light));
+  color: var(--color-text);
+  cursor: pointer;
+  list-style: none;
+  background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-bg-subtle));
+}
+
+.investments-advanced-fields summary::-webkit-details-marker {
+  display: none;
+}
+
+.investments-advanced-fields summary span {
+  font-weight: 700;
+}
+
+.investments-advanced-fields summary small {
+  color: var(--color-text-secondary);
+}
+
+.investments-advanced-fields[open] summary {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-border-light));
+}
+
+.investments-advanced-fields[open] > .investments-form-grid {
+  margin-top: 12px;
 }
 
 .investments-actions-row,
@@ -941,6 +1051,7 @@
   .investments-overview-grid,
   .investments-main-grid,
   .investments-form-grid,
+  .investments-position-quick-grid,
   .investments-form-grid-primary,
   .investments-meta-grid,
   .investments-card-grid {
@@ -953,6 +1064,7 @@
 
   .investments-ai-head-actions,
   .investments-ai-status-row,
+  .investments-form-guide,
   .investments-analysis-card-head,
   .investments-watch-card-head {
     flex-direction: column;

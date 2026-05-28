@@ -182,7 +182,9 @@ describe('InvestmentsPage AI assistant', () => {
       expect(useAppPreferences.getState().investmentWatchlist).toHaveLength(1);
     });
     expect(useAppPreferences.getState().investmentWatchlist[0].code).toBe('510310');
-    expect(useAppPreferences.getState().investmentWatchlist[0].investmentAdvice).toBe('先观察回撤区间');
+    expect(useAppPreferences.getState().investmentWatchlist[0].investmentAdvice).toBe(
+      '先观察回撤区间'
+    );
     expect(useAppPreferences.getState().investmentWatchlist[0].riskNotes).toEqual(['短期波动仍在']);
     expect(screen.getByText('更新自选')).toBeInTheDocument();
     expect(screen.getAllByText('易方达沪深300ETF').length).toBeGreaterThan(0);
@@ -256,8 +258,9 @@ describe('InvestmentsPage AI assistant', () => {
     expect(request.systemPrompt).toContain('高波动');
 
     await screen.findByText('结合自选里的高波动记录，本次不建议贸然加仓。');
-    const avatarSources = Array.from(container.querySelectorAll<HTMLImageElement>('.investments-ai-message-avatar img'))
-      .map((img) => img.src);
+    const avatarSources = Array.from(
+      container.querySelectorAll<HTMLImageElement>('.investments-ai-message-avatar img')
+    ).map((img) => img.src);
 
     expect(avatarSources).toContain(BOT_ICON_URL);
     expect(avatarSources).toContain(USER_ICON_URL);
@@ -296,8 +299,7 @@ describe('InvestmentsPage AI assistant', () => {
 
     expect(screen.getByDisplayValue('Alpha Growth Fund')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Ant Fund')).toBeInTheDocument();
-    expect(screen.getByDisplayValue(/基金代码：161706/)).toBeInTheDocument();
-    expect(screen.getByDisplayValue(/自选建议：Wait for the next pullback before adding/)).toBeInTheDocument();
+    expect(screen.getByText('高级选项')).toBeInTheDocument();
   });
 
   it('adds pasted fund screenshots to the pending analysis images', async () => {
