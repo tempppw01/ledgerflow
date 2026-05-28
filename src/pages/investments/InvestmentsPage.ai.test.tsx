@@ -263,6 +263,43 @@ describe('InvestmentsPage AI assistant', () => {
     expect(avatarSources).toContain(USER_ICON_URL);
   });
 
+  it('prefills a new position from a watchlist fund context menu', async () => {
+    useAppPreferences.setState({
+      investmentWatchlist: [
+        {
+          id: 'watch-position-1',
+          name: 'Alpha Growth Fund',
+          code: '161706',
+          platform: 'Ant Fund',
+          tags: ['watching'],
+          note: 'Prefer staged entry',
+          lastRiskLevel: 'high',
+          investmentAdvice: 'Wait for the next pullback before adding',
+          nextActions: ['Confirm position size'],
+          createdAt: '2026-05-28T01:47:00.000Z',
+          updatedAt: '2026-05-28T01:47:00.000Z'
+        }
+      ]
+    });
+
+    render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    const watchCard = screen.getByText('Alpha Growth Fund').closest('article');
+    expect(watchCard).not.toBeNull();
+
+    fireEvent.contextMenu(watchCard!);
+    fireEvent.click(await screen.findByRole('menuitem', { name: /添加到持仓/ }));
+
+    expect(screen.getByDisplayValue('Alpha Growth Fund')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Ant Fund')).toBeInTheDocument();
+    expect(screen.getByDisplayValue(/基金代码：161706/)).toBeInTheDocument();
+    expect(screen.getByDisplayValue(/自选建议：Wait for the next pullback before adding/)).toBeInTheDocument();
+  });
+
   it('adds pasted fund screenshots to the pending analysis images', async () => {
     render(
       <MemoryRouter>

@@ -1,4 +1,4 @@
-import { ClipboardEvent, FormEvent, useMemo, useRef, useState } from 'react';
+import { ClipboardEvent, FormEvent, MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Account } from '../../entities/account/types';
 import type {
@@ -110,6 +110,13 @@ type ActionSuggestion = {
   hint: string;
   to?: string;
   action?: 'open-ai';
+};
+
+type WatchContextMenuState = {
+  open: boolean;
+  x: number;
+  y: number;
+  item: InvestmentWatchItem | null;
 };
 
 const AI_LOADING_GIF_URL =
@@ -396,6 +403,12 @@ export function InvestmentsPage() {
     message: '',
     variant: 'success'
   });
+  const [watchContextMenu, setWatchContextMenu] = useState<WatchContextMenuState>({
+    open: false,
+    x: 0,
+    y: 0,
+    item: null
+  });
   const aiFileInputRef = useRef<HTMLInputElement | null>(null);
   const aiPanelRef = useRef<HTMLElement | null>(null);
 
@@ -582,6 +595,29 @@ export function InvestmentsPage() {
     [goals, pendingDeleteGoalId]
   );
 
+  useEffect(() => {
+    if (!watchContextMenu.open) return;
+
+    const closeMenu = () =>
+      setWatchContextMenu((prev) => ({
+        ...prev,
+        open: false,
+        item: null
+      }));
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeMenu();
+    };
+
+    window.addEventListener('click', closeMenu);
+    window.addEventListener('scroll', closeMenu, true);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('click', closeMenu);
+      window.removeEventListener('scroll', closeMenu, true);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [watchContextMenu.open]);
+
   function resetPositionForm() {
     setPositionForm(POSITION_FORM_DEFAULT);
     setEditingPositionId(null);
@@ -616,6 +652,74 @@ export function InvestmentsPage() {
 
   function scrollToInvestmentAiPanel() {
     aiPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function closeWatchContextMenu() {
+    setWatchContextMenu((prev) => ({
+      ...prev,
+      open: false,
+      item: null
+    }));
+  }
+
+  function getPositionRiskFromWatchItem(item: InvestmentWatchItem): InvestmentRiskLevel {
+    if (item.lastRiskLevel === 'low' || item.lastRiskLevel === 'high') {
+      return item.lastRiskLevel;
+    }
+
+    return 'medium';
+  }
+
+  function buildWatchItemPositionNote(item: InvestmentWatchItem) {
+    return [
+      item.code ? `基金代码：${item.code}` : '',
+      item.investmentAdvice ? `自选建议：${item.investmentAdvice}` : '',
+      item.note ? `自选备注：${item.note}` : item.lastSummary ? `最近分析：${item.lastSummary}` : '',
+      item.nextActions?.length ? `下一步：${item.nextActions.join(' / ')}` : ''
+    ]
+      .filter(Boolean)
+      .join('\n');
+  }
+
+  function openWatchContextMenu(event: MouseEvent<HTMLElement>, item: InvestmentWatchItem) {
+    event.preventDefault();
+    event.stopPropagation();
+    const menuWidth = 220;
+    const menuHeight = 92;
+    const x = Math.min(event.clientX, Math.max(12, window.innerWidth - menuWidth));
+    const y = Math.min(event.clientY, Math.max(12, window.innerHeight - menuHeight));
+
+    setWatchContextMenu({
+      open: true,
+      x,
+      y,
+      item
+    });
+  }
+
+  function handleAddWatchItemToPosition(item: InvestmentWatchItem) {
+    setEditingPositionId(null);
+    setPositionError('');
+    setPositionForm({
+      ...POSITION_FORM_DEFAULT,
+      name: item.name,
+      platform: item.platform || '',
+      riskLevel: getPositionRiskFromWatchItem(item),
+      note: buildWatchItemPositionNote(item)
+    });
+    closeWatchContextMenu();
+    const scrollToPositionForm = () => {
+      document.querySelector<HTMLElement>('.investments-main-grid')?.scrollIntoView?.({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    };
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(scrollToPositionForm);
+    } else {
+      scrollToPositionForm();
+    }
+    setToastState(`已把“${item.name}”带入新增持仓表单，请补充投入本金和当前市值。`);
   }
 
   function handleActionSuggestionClick(item: ActionSuggestion) {
@@ -1251,7 +1355,11 @@ export function InvestmentsPage() {
           ) : (
             <div className="investments-watchlist-list">
               {investmentWatchlist.map((item) => (
-                <article key={item.id} className="investments-watch-card">
+                <article
+                  key={item.id}
+                  className="investments-watch-card"
+                  onContextMenu={(event) => openWatchContextMenu(event, item)}
+                >
                   <div className="investments-watch-card-head">
                     <div>
                       <strong>{item.name}</strong>
@@ -1832,6 +1940,28 @@ export function InvestmentsPage() {
           )}
         </article>
       </section>
+
+      {watchContextMenu.open && watchContextMenu.item ? (
+        <div
+          className="investments-watch-context-menu"
+          role="menu"
+          style={{ left: watchContextMenu.x, top: watchContextMenu.y }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              if (watchContextMenu.item) {
+                handleAddWatchItemToPosition(watchContextMenu.item);
+              }
+            }}
+          >
+            <strong>添加到持仓</strong>
+            <span>带入名称、平台、风险与建议</span>
+          </button>
+        </div>
+      ) : null}
 
       <Toast
         visible={toast.visible}

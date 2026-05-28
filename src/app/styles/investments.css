@@ -458,6 +458,49 @@
   background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-bg-subtle));
 }
 
+.investments-watch-card:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border-light));
+}
+
+.investments-watch-context-menu {
+  position: fixed;
+  z-index: 80;
+  width: min(220px, calc(100vw - 24px));
+  padding: 6px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 98%, white);
+  box-shadow: var(--shadow-dropdown);
+}
+
+.investments-watch-context-menu button {
+  width: 100%;
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  text-align: left;
+  background: transparent;
+  color: var(--color-text-primary);
+}
+
+.investments-watch-context-menu button:hover,
+.investments-watch-context-menu button:focus-visible {
+  background: color-mix(in srgb, var(--color-primary-bg) 78%, transparent);
+}
+
+.investments-watch-context-menu strong,
+.investments-watch-context-menu span {
+  margin: 0;
+}
+
+.investments-watch-context-menu span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .investments-watch-card-head {
   display: flex;
   justify-content: space-between;
