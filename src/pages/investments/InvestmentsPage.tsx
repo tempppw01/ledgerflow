@@ -1,7 +1,7 @@
 import {
   ClipboardEvent,
   FormEvent,
-  KeyboardEvent,
+  KeyboardEvent as ReactKeyboardEvent,
   MouseEvent,
   useEffect,
   useMemo,
@@ -675,7 +675,7 @@ export function InvestmentsPage() {
         open: false,
         item: null
       }));
-    const handleKeyDown = (event: KeyboardEvent) => {
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
       if (event.key === 'Escape') closeMenu();
     };
 
@@ -755,7 +755,7 @@ export function InvestmentsPage() {
     setExpandedWatchItemId((current) => (current === itemId ? null : itemId));
   }
 
-  function handleWatchCardKeyDown(event: KeyboardEvent<HTMLElement>, itemId: string) {
+  function handleWatchCardKeyDown(event: ReactKeyboardEvent<HTMLElement>, itemId: string) {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
     toggleWatchItemDetails(itemId);

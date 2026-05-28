@@ -92,7 +92,7 @@ export const WALLET_CARDS_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/wallet-cards.svg';
 
 export const CREDIT_CARDS_ICON_URL =
-  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/credit-cards.svg';
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/credit-card.svg';
 
 export const SCALE_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/scale.svg';
@@ -108,6 +108,9 @@ export const CARD_SD_ICON_URL =
 
 export const ARCHIVE_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/archive.svg';
+
+export const TRASH_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/trash.svg';
 
 export const THUMBS_DOWN_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/thumbs-down.svg';

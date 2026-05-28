@@ -10,17 +10,27 @@ import { ThemeSwitcher } from '../../features/theme-switcher/ThemeSwitcher';
 import { SettingsPage } from '../../pages/settings/SettingsPage';
 import { APP_LOGO_URL } from '../../shared/config/app';
 import {
+  ARCHIVE_ICON_URL,
+  BADGE_DOLLAR_SIGN_ICON_URL,
   BRAIN_ICON_URL,
+  CALENDAR_ICON_URL,
+  CARD_SD_ICON_URL,
   CHAT_ICON_URL,
   CHEVRONS_LEFT_RIGHT_ICON_URL,
   CHEVRONS_RIGHT_LEFT_ICON_URL,
   CIRCLE_USER_ICON_URL,
+  CREDIT_CARDS_ICON_URL,
   DASHBOARD_ICON_URL,
+  DATA_INPUT_ILLUSTRATION_URL,
   DATABASE_ICON_URL,
+  GLOBE_ICON_URL,
   INFO_ICON_URL,
   INVESTMENTS_ICON_URL,
   QUESTION_ICON_URL,
-  SETTINGS_ICON_URL
+  SCALE_ICON_URL,
+  SETTINGS_ICON_URL,
+  TRASH_ICON_URL,
+  WALLET_CARDS_ICON_URL
 } from '../../shared/config/brandAssets';
 import { formatCurrency } from '../../shared/lib/format';
 import { summarizeTransactions } from '../../shared/lib/transactionMetrics';
@@ -87,13 +97,18 @@ export function AppLayout() {
             iconSrc: CHAT_ICON_URL
           },
           { to: '/smart-budget', label: t('nav.smartBudget'), icon: '🧠', iconSrc: BRAIN_ICON_URL },
-          { to: '/global-memory', label: '全局记忆', icon: '🗃️' }
+          { to: '/global-memory', label: '全局记忆', icon: '🗃️', iconSrc: ARCHIVE_ICON_URL }
         ]
       },
       {
         title: t('nav.incomeExpense'),
         items: [
-          { to: '/transactions', label: t('nav.transactions'), icon: '📋' },
+          {
+            to: '/transactions',
+            label: t('nav.transactions'),
+            icon: '📋',
+            iconSrc: DATA_INPUT_ILLUSTRATION_URL
+          },
           {
             to: '/',
             label: t('nav.dashboard'),
@@ -101,17 +116,27 @@ export function AppLayout() {
             iconSrc: DASHBOARD_ICON_URL,
             end: true
           },
-          { to: '/financial-analysis', label: '财务分析', icon: '🧠' }
+          { to: '/financial-analysis', label: '财务分析', icon: '🧠', iconSrc: SCALE_ICON_URL }
         ]
       },
       {
         title: t('nav.assetsDebt'),
         items: [
-          { to: '/categories-accounts', label: t('nav.categoriesAccounts'), icon: '🗂️' },
-          { to: '/balance-changes', label: '余额明细', icon: '📚' },
+          {
+            to: '/categories-accounts',
+            label: t('nav.categoriesAccounts'),
+            icon: '🗂️',
+            iconSrc: WALLET_CARDS_ICON_URL
+          },
+          { to: '/balance-changes', label: '余额明细', icon: '📚', iconSrc: CARD_SD_ICON_URL },
           { to: '/investments', label: '投资理财', icon: '📈', iconSrc: INVESTMENTS_ICON_URL },
-          { to: '/subscriptions', label: '订阅管理', icon: '🧾' },
-          { to: '/repayment-management', label: t('nav.repayment'), icon: '💳' }
+          { to: '/subscriptions', label: '订阅管理', icon: '🧾', iconSrc: CALENDAR_ICON_URL },
+          {
+            to: '/repayment-management',
+            label: t('nav.repayment'),
+            icon: '💳',
+            iconSrc: CREDIT_CARDS_ICON_URL
+          }
         ]
       },
       {
@@ -124,10 +149,15 @@ export function AppLayout() {
             icon: '🗄️',
             iconSrc: DATABASE_ICON_URL
           },
-          { to: '/recycle-bin', label: '回收站', icon: '🗑️' },
-          { to: '/exchange', label: t('nav.exchange'), icon: '💱' },
-          { to: '/salary-tools', label: '工资工具', icon: '💼' },
-          { to: '/finance', label: t('nav.finance'), icon: '📰' },
+          { to: '/recycle-bin', label: '回收站', icon: '🗑️', iconSrc: TRASH_ICON_URL },
+          { to: '/exchange', label: t('nav.exchange'), icon: '💱', iconSrc: GLOBE_ICON_URL },
+          {
+            to: '/salary-tools',
+            label: '工资工具',
+            icon: '💼',
+            iconSrc: BADGE_DOLLAR_SIGN_ICON_URL
+          },
+          { to: '/finance', label: t('nav.finance'), icon: '📰', iconSrc: GLOBE_ICON_URL },
           { to: '/about', label: t('nav.about'), icon: 'ℹ️', iconSrc: INFO_ICON_URL }
         ]
       }
@@ -146,9 +176,14 @@ export function AppLayout() {
             iconSrc: CHAT_ICON_URL,
             to: '/assistant'
           },
-          { label: '财务分析', icon: '🧠', to: '/financial-analysis' },
-          { label: '订阅管理', icon: '🧾', to: '/subscriptions' },
-          { label: t('nav.transactions'), icon: '📋', to: '/transactions' },
+          { label: '财务分析', icon: '🧠', iconSrc: SCALE_ICON_URL, to: '/financial-analysis' },
+          { label: '订阅管理', icon: '🧾', iconSrc: CALENDAR_ICON_URL, to: '/subscriptions' },
+          {
+            label: t('nav.transactions'),
+            icon: '📋',
+            iconSrc: DATA_INPUT_ILLUSTRATION_URL,
+            to: '/transactions'
+          },
           {
             label: t('nav.dashboard'),
             icon: '📊',
@@ -156,15 +191,30 @@ export function AppLayout() {
             to: '/',
             end: true
           },
-          { label: t('nav.categoriesAccounts'), icon: '🗂️', to: '/categories-accounts' },
-          { label: '余额明细', icon: '📚', to: '/balance-changes' },
+          {
+            label: t('nav.categoriesAccounts'),
+            icon: '🗂️',
+            iconSrc: WALLET_CARDS_ICON_URL,
+            to: '/categories-accounts'
+          },
+          { label: '余额明细', icon: '📚', iconSrc: CARD_SD_ICON_URL, to: '/balance-changes' },
           { label: '投资理财', icon: '📈', iconSrc: INVESTMENTS_ICON_URL, to: '/investments' },
           { label: t('nav.smartBudget'), icon: '🧠', iconSrc: BRAIN_ICON_URL, to: '/smart-budget' },
-          { label: '全局记忆', icon: '🗃️', to: '/global-memory' },
-          { label: t('nav.repayment'), icon: '💳', to: '/repayment-management' },
-          { label: '工资工具', icon: '💼', to: '/salary-tools' },
-          { label: t('nav.finance'), icon: '📰', to: '/finance' },
-          { label: t('nav.exchange'), icon: '💱', to: '/exchange' }
+          { label: '全局记忆', icon: '🗃️', iconSrc: ARCHIVE_ICON_URL, to: '/global-memory' },
+          {
+            label: t('nav.repayment'),
+            icon: '💳',
+            iconSrc: CREDIT_CARDS_ICON_URL,
+            to: '/repayment-management'
+          },
+          {
+            label: '工资工具',
+            icon: '💼',
+            iconSrc: BADGE_DOLLAR_SIGN_ICON_URL,
+            to: '/salary-tools'
+          },
+          { label: t('nav.finance'), icon: '📰', iconSrc: GLOBE_ICON_URL, to: '/finance' },
+          { label: t('nav.exchange'), icon: '💱', iconSrc: GLOBE_ICON_URL, to: '/exchange' }
         ]
       },
       {
@@ -177,7 +227,7 @@ export function AppLayout() {
             iconSrc: DATABASE_ICON_URL,
             to: '/database-settings'
           },
-          { label: '回收站', icon: '🗑️', to: '/recycle-bin' },
+          { label: '回收站', icon: '🗑️', iconSrc: TRASH_ICON_URL, to: '/recycle-bin' },
           { label: t('nav.about'), icon: 'ℹ️', iconSrc: INFO_ICON_URL, to: '/about' }
         ]
       }
