@@ -62,6 +62,13 @@ export interface InvestmentFundAnalysis {
   risks: string[];
   actions: string[];
   watchTags: string[];
+  performanceHistory?: string[];
+  fundAnalysis?: string[];
+  fundHoldings?: string[];
+  assetAllocation?: string[];
+  industryAllocation?: string[];
+  buyFeeRate?: string;
+  fundCompany?: string;
   platform?: string;
   note?: string;
 }
@@ -80,6 +87,13 @@ export interface InvestmentWatchItem {
   adviceReasons?: string[];
   riskNotes?: string[];
   nextActions?: string[];
+  performanceHistory?: string[];
+  fundAnalysis?: string[];
+  fundHoldings?: string[];
+  assetAllocation?: string[];
+  industryAllocation?: string[];
+  buyFeeRate?: string;
+  fundCompany?: string;
   lastAnalysisAt?: string;
   createdAt: string;
   updatedAt: string;

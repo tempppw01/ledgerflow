@@ -320,6 +320,13 @@ describe('parseFinanceBackupPayload', () => {
             adviceReasons: ['经理任期回报优异'],
             riskNotes: ['高持股集中度会放大波动'],
             nextActions: ['等待季度持仓更新后复盘'],
+            performanceHistory: ['近五年回撤偏大'],
+            fundAnalysis: ['成长风格明显，适合高风险用户观察'],
+            fundHoldings: ['资源股占比较高'],
+            assetAllocation: ['股票 88%', '现金 12%'],
+            industryAllocation: ['有色金属 22%', '电子 16%'],
+            buyFeeRate: '0.15%',
+            fundCompany: '招商基金',
             lastAnalysisAt: '2026-05-28T01:47:00.000Z',
             createdAt: '2026-05-28T01:47:00.000Z',
             updatedAt: '2026-05-28T01:47:00.000Z'
@@ -428,6 +435,13 @@ describe('parseFinanceBackupPayload', () => {
               adviceReasons: ['经理任期回报优异'],
               riskNotes: ['高持股集中度会放大波动'],
               nextActions: ['等待季度持仓更新后复盘'],
+              performanceHistory: ['近五年回撤偏大'],
+              fundAnalysis: ['成长风格明显，适合高风险用户观察'],
+              fundHoldings: ['资源股占比较高'],
+              assetAllocation: ['股票 88%', '现金 12%'],
+              industryAllocation: ['有色金属 22%', '电子 16%'],
+              buyFeeRate: '0.15%',
+              fundCompany: '招商基金',
               lastAnalysisAt: '2026-05-28T01:47:00.000Z',
               createdAt: '2026-05-28T01:47:00.000Z',
               updatedAt: '2026-05-28T01:47:00.000Z'
@@ -449,6 +463,13 @@ describe('parseFinanceBackupPayload', () => {
                 risks: ['高波动'],
                 actions: ['继续跟踪'],
                 watchTags: ['高波动'],
+                performanceHistory: ['历史波动较高'],
+                fundAnalysis: ['更适合观察，不适合追涨'],
+                fundHoldings: ['资源股占比较高'],
+                assetAllocation: ['股票 88%'],
+                industryAllocation: ['有色金属 22%'],
+                buyFeeRate: '0.15%',
+                fundCompany: '招商基金',
                 platform: '蚂蚁基金',
                 note: '参考自选历史判断'
               },
@@ -465,7 +486,9 @@ describe('parseFinanceBackupPayload', () => {
     expect(payload.data.globalMemories[0].pinned).toBe(true);
     expect(payload.data.investmentGoals[0].name).toBe('6 个月应急金');
     expect(payload.data.investmentWatchlist[0].investmentAdvice).toBe('暂时观察，不主动加仓');
+    expect(payload.data.investmentWatchlist[0].fundCompany).toBe('招商基金');
     expect(payload.data.investmentAiMessages[0].analysis?.fundCode).toBe('161706');
+    expect(payload.data.investmentAiMessages[0].analysis?.buyFeeRate).toBe('0.15%');
   });
 
   it('恢复部分备份时应保留未选范围的本地数据', () => {

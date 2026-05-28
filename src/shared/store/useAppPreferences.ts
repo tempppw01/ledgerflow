@@ -208,7 +208,9 @@ function normalizeInvestmentGoal(
     targetAmount: normalizePositiveNumber(item.targetAmount),
     currentAmount: Math.max(
       0,
-      Number(Number.isFinite(Number(item.currentAmount)) ? Number(item.currentAmount).toFixed(2) : 0)
+      Number(
+        Number.isFinite(Number(item.currentAmount)) ? Number(item.currentAmount).toFixed(2) : 0
+      )
     ),
     monthlyContribution: normalizePositiveNumber(item.monthlyContribution) || undefined,
     targetDate: normalizeOptionalString(item.targetDate),
@@ -249,6 +251,13 @@ function normalizeInvestmentFundAnalysis(value: unknown): InvestmentFundAnalysis
     risks: normalizeStringList(item.risks, 4),
     actions: normalizeStringList(item.actions, 4),
     watchTags: normalizeStringList(item.watchTags, 4),
+    performanceHistory: normalizeStringList(item.performanceHistory, 6),
+    fundAnalysis: normalizeStringList(item.fundAnalysis, 6),
+    fundHoldings: normalizeStringList(item.fundHoldings, 8),
+    assetAllocation: normalizeStringList(item.assetAllocation, 6),
+    industryAllocation: normalizeStringList(item.industryAllocation, 8),
+    buyFeeRate: normalizeOptionalString(item.buyFeeRate),
+    fundCompany: normalizeOptionalString(item.fundCompany),
     platform: normalizeOptionalString(item.platform),
     note: normalizeOptionalString(item.note)
   };
@@ -284,6 +293,13 @@ function normalizeInvestmentWatchItem(
     adviceReasons: normalizeStringList(item.adviceReasons, 6),
     riskNotes: normalizeStringList(item.riskNotes, 6),
     nextActions: normalizeStringList(item.nextActions, 6),
+    performanceHistory: normalizeStringList(item.performanceHistory, 6),
+    fundAnalysis: normalizeStringList(item.fundAnalysis, 6),
+    fundHoldings: normalizeStringList(item.fundHoldings, 8),
+    assetAllocation: normalizeStringList(item.assetAllocation, 6),
+    industryAllocation: normalizeStringList(item.industryAllocation, 8),
+    buyFeeRate: normalizeOptionalString(item.buyFeeRate),
+    fundCompany: normalizeOptionalString(item.fundCompany),
     lastAnalysisAt: normalizeOptionalString(item.lastAnalysisAt),
     createdAt: item.createdAt || now,
     updatedAt: item.updatedAt || now
@@ -291,7 +307,9 @@ function normalizeInvestmentWatchItem(
 }
 
 function normalizeInvestmentAiMessage(item: InvestmentAiMessage): InvestmentAiMessage | null {
-  const text = String(item.text || '').trim().slice(0, 6000);
+  const text = String(item.text || '')
+    .trim()
+    .slice(0, 6000);
   const analysis = normalizeInvestmentFundAnalysis(item.analysis);
   if (!text && !analysis) {
     return null;
@@ -320,18 +338,36 @@ function findMatchingWatchItemIndex(
   list: InvestmentWatchItem[],
   payload: Pick<InvestmentWatchItem, 'name' | 'code' | 'platform'> & { id?: string }
 ) {
-  const code = String(payload.code || '').trim().toLowerCase();
-  const name = String(payload.name || '').trim().toLowerCase();
-  const platform = String(payload.platform || '').trim().toLowerCase();
+  const code = String(payload.code || '')
+    .trim()
+    .toLowerCase();
+  const name = String(payload.name || '')
+    .trim()
+    .toLowerCase();
+  const platform = String(payload.platform || '')
+    .trim()
+    .toLowerCase();
 
   return list.findIndex((item) => {
     if (payload.id && item.id === payload.id) {
       return true;
     }
 
-    const sameCode = code && String(item.code || '').trim().toLowerCase() === code;
-    const sameName = name && String(item.name || '').trim().toLowerCase() === name;
-    const samePlatform = platform === String(item.platform || '').trim().toLowerCase();
+    const sameCode =
+      code &&
+      String(item.code || '')
+        .trim()
+        .toLowerCase() === code;
+    const sameName =
+      name &&
+      String(item.name || '')
+        .trim()
+        .toLowerCase() === name;
+    const samePlatform =
+      platform ===
+      String(item.platform || '')
+        .trim()
+        .toLowerCase();
 
     return sameCode || (sameName && (platform ? samePlatform : true));
   });
@@ -423,10 +459,7 @@ export const useAppPreferences = create<AppPreferencesState>()(
       },
       addInvestmentPosition: (payload) => {
         set((state) => ({
-          investmentPositions: [
-            normalizeInvestmentPosition(payload),
-            ...state.investmentPositions
-          ]
+          investmentPositions: [normalizeInvestmentPosition(payload), ...state.investmentPositions]
         }));
       },
       updateInvestmentPosition: (id, payload) => {

@@ -1,4 +1,13 @@
-import { ClipboardEvent, FormEvent, MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ClipboardEvent,
+  FormEvent,
+  KeyboardEvent,
+  MouseEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Account } from '../../entities/account/types';
 import type {
@@ -383,8 +392,35 @@ function buildWatchItemFromAnalysis(analysis: InvestmentFundAnalysis) {
     adviceReasons: analysis.highlights,
     riskNotes: analysis.risks,
     nextActions: analysis.actions,
+    performanceHistory: analysis.performanceHistory,
+    fundAnalysis: analysis.fundAnalysis,
+    fundHoldings: analysis.fundHoldings,
+    assetAllocation: analysis.assetAllocation,
+    industryAllocation: analysis.industryAllocation,
+    buyFeeRate: analysis.buyFeeRate,
+    fundCompany: analysis.fundCompany,
     lastAnalysisAt: new Date().toISOString()
   };
+}
+
+type WatchDetailSection = {
+  title: string;
+  items: string[];
+};
+
+function compactWatchDetailSections(item: InvestmentWatchItem): WatchDetailSection[] {
+  return [
+    { title: '历史业绩', items: item.performanceHistory || [] },
+    { title: '基金分析', items: item.fundAnalysis || [] },
+    { title: '基金持仓', items: item.fundHoldings || [] },
+    { title: '基金资产分布', items: item.assetAllocation || [] },
+    { title: '行业分布', items: item.industryAllocation || [] },
+    { title: '买入费率', items: item.buyFeeRate ? [item.buyFeeRate] : [] },
+    { title: '基金公司', items: item.fundCompany ? [item.fundCompany] : [] },
+    { title: '判断依据', items: item.adviceReasons || [] },
+    { title: '风险提示', items: item.riskNotes || [] },
+    { title: '下一步', items: item.nextActions || [] }
+  ].filter((section) => section.items.length > 0);
 }
 
 export function InvestmentsPage() {
@@ -439,6 +475,7 @@ export function InvestmentsPage() {
     y: 0,
     item: null
   });
+  const [expandedWatchItemId, setExpandedWatchItemId] = useState<string | null>(null);
   const [openInvestmentPanels, setOpenInvestmentPanels] = useState<
     Record<InvestmentPanelKey, boolean>
   >({
@@ -712,6 +749,16 @@ export function InvestmentsPage() {
       open: false,
       item: null
     }));
+  }
+
+  function toggleWatchItemDetails(itemId: string) {
+    setExpandedWatchItemId((current) => (current === itemId ? null : itemId));
+  }
+
+  function handleWatchCardKeyDown(event: KeyboardEvent<HTMLElement>, itemId: string) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    toggleWatchItemDetails(itemId);
   }
 
   function getPositionRiskFromWatchItem(item: InvestmentWatchItem): InvestmentRiskLevel {
@@ -1457,80 +1504,90 @@ export function InvestmentsPage() {
             </div>
           ) : (
             <div className="investments-watchlist-list">
-              {investmentWatchlist.map((item) => (
-                <article
-                  key={item.id}
-                  className="investments-watch-card"
-                  onContextMenu={(event) => openWatchContextMenu(event, item)}
-                >
-                  <div className="investments-watch-card-head">
-                    <div>
-                      <strong>{item.name}</strong>
-                      <p>
-                        {item.code || '未记录代码'}
-                        {item.platform ? ` · ${item.platform}` : ''}
-                      </p>
+              {investmentWatchlist.map((item) => {
+                const isExpanded = expandedWatchItemId === item.id;
+                const detailSections = compactWatchDetailSections(item);
+                const primaryTag = item.tags[0];
+
+                return (
+                  <article
+                    key={item.id}
+                    className={`investments-watch-card ${isExpanded ? 'is-expanded' : ''}`}
+                    tabIndex={0}
+                    aria-expanded={isExpanded}
+                    onClick={() => toggleWatchItemDetails(item.id)}
+                    onKeyDown={(event) => handleWatchCardKeyDown(event, item.id)}
+                    onContextMenu={(event) => openWatchContextMenu(event, item)}
+                  >
+                    <div className="investments-watch-card-head">
+                      <div>
+                        <strong>{item.name}</strong>
+                        <p>
+                          {item.code || '未记录代码'}
+                          {item.platform ? ` · ${item.platform}` : ''}
+                        </p>
+                      </div>
+                      <div className="investments-watch-card-actions">
+                        {item.lastRiskLevel ? (
+                          <span
+                            className={`investments-analysis-risk ${getAnalysisRiskClass(
+                              item.lastRiskLevel
+                            )}`}
+                          >
+                            {getAnalysisRiskLabel(item.lastRiskLevel)}
+                          </span>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="danger"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            removeInvestmentWatchItem(item.id);
+                          }}
+                        >
+                          移除
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      className="danger"
-                      onClick={() => removeInvestmentWatchItem(item.id)}
-                    >
-                      移除
-                    </button>
-                  </div>
-                  {item.lastSummary ? (
-                    <p className="investments-watch-card-summary">{item.lastSummary}</p>
-                  ) : null}
-                  {item.investmentAdvice ? (
-                    <div className="investments-watch-card-advice">
-                      <span>投资建议</span>
-                      <strong>{item.investmentAdvice}</strong>
+                    <div className="investments-watch-card-brief">
+                      <strong>
+                        {item.investmentAdvice || item.lastVerdict || '等待下一次分析'}
+                      </strong>
+                      {primaryTag ? <span className="badge">{primaryTag}</span> : null}
                     </div>
-                  ) : null}
-                  {item.adviceReasons?.length ||
-                  item.riskNotes?.length ||
-                  item.nextActions?.length ? (
-                    <div className="investments-watch-card-insights">
-                      {item.adviceReasons?.length ? (
-                        <div>
-                          <span>依据</span>
-                          <p>{item.adviceReasons.join(' / ')}</p>
-                        </div>
-                      ) : null}
-                      {item.riskNotes?.length ? (
-                        <div>
-                          <span>风险</span>
-                          <p>{item.riskNotes.join(' / ')}</p>
-                        </div>
-                      ) : null}
-                      {item.nextActions?.length ? (
-                        <div>
-                          <span>下一步</span>
-                          <p>{item.nextActions.join(' / ')}</p>
-                        </div>
-                      ) : null}
+                    {item.lastSummary ? (
+                      <p className="investments-watch-card-summary">{item.lastSummary}</p>
+                    ) : null}
+                    <div className="investments-watch-card-meta">
+                      <span>
+                        {item.lastAnalysisAt
+                          ? `更新于 ${formatDateTimeLabel(item.lastAnalysisAt)}`
+                          : '暂未分析'}
+                      </span>
+                      <span>{isExpanded ? '收起详情' : '点击查看详情'}</span>
                     </div>
-                  ) : null}
-                  {item.tags.length > 0 ? (
-                    <div className="investments-watch-card-tags">
-                      {item.tags.map((tag) => (
-                        <span key={`${item.id}-${tag}`} className="badge">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                  <div className="investments-watch-card-meta">
-                    <span>{item.lastVerdict || '等待下一次分析'}</span>
-                    <span>
-                      {item.lastAnalysisAt
-                        ? `更新于 ${formatDateTimeLabel(item.lastAnalysisAt)}`
-                        : '暂未分析'}
-                    </span>
-                  </div>
-                </article>
-              ))}
+
+                    {isExpanded ? (
+                      <div className="investments-watch-card-details">
+                        {detailSections.length > 0 ? (
+                          <div className="investments-watch-detail-grid">
+                            {detailSections.map((section) => (
+                              <section key={`${item.id}-${section.title}`}>
+                                <span>{section.title}</span>
+                                <p>{section.items.join(' / ')}</p>
+                              </section>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="investments-watch-card-empty-detail">
+                            暂时还没有更多资料，下一次让 AI 分析时会自动补齐。
+                          </p>
+                        )}
+                      </div>
+                    ) : null}
+                  </article>
+                );
+              })}
             </div>
           )}
         </aside>

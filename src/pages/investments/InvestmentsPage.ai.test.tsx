@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Account } from '../../entities/account/types';
@@ -134,6 +134,13 @@ describe('InvestmentsPage AI assistant', () => {
         risks: ['短期波动仍在'],
         actions: ['先观察回撤区间', '如果要加仓，分批进行'],
         watchTags: ['宽基', '指数'],
+        performanceHistory: ['近一年波动中等', '近三年跟随沪深300走势'],
+        fundAnalysis: ['被动跟踪宽基指数，适合做底仓观察'],
+        fundHoldings: ['贵州茅台 5.2%', '宁德时代 3.1%'],
+        assetAllocation: ['股票 94%', '现金 6%'],
+        industryAllocation: ['金融 18%', '消费 15%'],
+        buyFeeRate: '0.12%',
+        fundCompany: '易方达基金',
         platform: '支付宝',
         note: '适合作为观察清单里的长期标的'
       }),
@@ -186,8 +193,25 @@ describe('InvestmentsPage AI assistant', () => {
       '先观察回撤区间'
     );
     expect(useAppPreferences.getState().investmentWatchlist[0].riskNotes).toEqual(['短期波动仍在']);
+    expect(useAppPreferences.getState().investmentWatchlist[0].fundCompany).toBe('易方达基金');
+    expect(useAppPreferences.getState().investmentWatchlist[0].buyFeeRate).toBe('0.12%');
+    expect(useAppPreferences.getState().investmentWatchlist[0].fundHoldings).toEqual([
+      '贵州茅台 5.2%',
+      '宁德时代 3.1%'
+    ]);
     expect(screen.getByText('更新自选')).toBeInTheDocument();
     expect(screen.getAllByText('易方达沪深300ETF').length).toBeGreaterThan(0);
+
+    const watchCard =
+      screen
+        .getAllByText('易方达沪深300ETF')
+        .find((element) => element.closest('.investments-watch-card'))
+        ?.closest('.investments-watch-card') ?? null;
+    expect(watchCard).not.toBeNull();
+    expect(within(watchCard as HTMLElement).queryByText('基金公司')).not.toBeInTheDocument();
+    fireEvent.click(watchCard!);
+    expect(within(watchCard as HTMLElement).getByText('基金公司')).toBeInTheDocument();
+    expect(within(watchCard as HTMLElement).getByText('易方达基金')).toBeInTheDocument();
   });
 
   it('passes fund watchlist details into the AI prompt and renders OSS message icons', async () => {
@@ -207,6 +231,13 @@ describe('InvestmentsPage AI assistant', () => {
           adviceReasons: ['经理任期回报优异'],
           riskNotes: ['高持股集中度会放大波动'],
           nextActions: ['等待季度持仓更新后复盘'],
+          performanceHistory: ['近五年回撤偏大'],
+          fundAnalysis: ['成长风格明显，适合高风险用户观察'],
+          fundHoldings: ['资源股占比较高'],
+          assetAllocation: ['股票 88%', '现金 12%'],
+          industryAllocation: ['有色金属 22%', '电子 16%'],
+          buyFeeRate: '0.15%',
+          fundCompany: '招商基金',
           lastAnalysisAt: '2026-05-28T01:47:00.000Z',
           createdAt: '2026-05-28T01:47:00.000Z',
           updatedAt: '2026-05-28T01:47:00.000Z'
@@ -228,6 +259,13 @@ describe('InvestmentsPage AI assistant', () => {
           risks: ['高波动'],
           actions: ['继续跟踪'],
           watchTags: ['高波动'],
+          performanceHistory: ['历史波动较高'],
+          fundAnalysis: ['更适合观察，不适合追涨'],
+          fundHoldings: ['资源股占比较高'],
+          assetAllocation: ['股票 88%'],
+          industryAllocation: ['有色金属 22%'],
+          buyFeeRate: '0.15%',
+          fundCompany: '招商基金',
           platform: '蚂蚁基金',
           note: '参考自选历史判断'
         }),
@@ -256,6 +294,8 @@ describe('InvestmentsPage AI assistant', () => {
     expect(request.systemPrompt).toContain('暂时观察，不主动加仓');
     expect(request.systemPrompt).toContain('等待季度持仓更新后复盘');
     expect(request.systemPrompt).toContain('高波动');
+    expect(request.systemPrompt).toContain('招商基金');
+    expect(request.systemPrompt).toContain('有色金属 22%');
 
     await screen.findByText('结合自选里的高波动记录，本次不建议贸然加仓。');
     const avatarSources = Array.from(

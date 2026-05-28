@@ -962,7 +962,10 @@ function validateInvestmentGoalItem(item: unknown, index: number): InvestmentGoa
   assertString(item.targetDate, `data.investmentGoals[${index}].targetDate`, { required: false });
   assertString(item.note, `data.investmentGoals[${index}].note`, { required: false });
 
-  if (typeof item.kind !== 'string' || !INVESTMENT_GOAL_KINDS.has(item.kind as InvestmentGoalKind)) {
+  if (
+    typeof item.kind !== 'string' ||
+    !INVESTMENT_GOAL_KINDS.has(item.kind as InvestmentGoalKind)
+  ) {
     throw new Error(`备份文件字段无效：data.investmentGoals[${index}].kind 枚举值不合法`);
   }
 
@@ -1010,6 +1013,8 @@ function validateInvestmentFundAnalysis(
   assertString(item.fundCode, `${path}.fundCode`, { required: false });
   assertString(item.platform, `${path}.platform`, { required: false });
   assertString(item.note, `${path}.note`, { required: false });
+  assertString(item.buyFeeRate, `${path}.buyFeeRate`, { required: false });
+  assertString(item.fundCompany, `${path}.fundCompany`, { required: false });
 
   if (
     typeof item.riskLevel !== 'string' ||
@@ -1028,6 +1033,19 @@ function validateInvestmentFundAnalysis(
     risks: readOptionalStringArray(item.risks, `${path}.risks`),
     actions: readOptionalStringArray(item.actions, `${path}.actions`),
     watchTags: readOptionalStringArray(item.watchTags, `${path}.watchTags`),
+    performanceHistory: readOptionalStringArray(
+      item.performanceHistory,
+      `${path}.performanceHistory`
+    ),
+    fundAnalysis: readOptionalStringArray(item.fundAnalysis, `${path}.fundAnalysis`),
+    fundHoldings: readOptionalStringArray(item.fundHoldings, `${path}.fundHoldings`),
+    assetAllocation: readOptionalStringArray(item.assetAllocation, `${path}.assetAllocation`),
+    industryAllocation: readOptionalStringArray(
+      item.industryAllocation,
+      `${path}.industryAllocation`
+    ),
+    buyFeeRate: asSafeString(item.buyFeeRate) || undefined,
+    fundCompany: asSafeString(item.fundCompany) || undefined,
     platform: asSafeString(item.platform) || undefined,
     note: asSafeString(item.note) || undefined
   };
@@ -1057,13 +1075,21 @@ function validateInvestmentWatchItem(item: unknown, index: number): InvestmentWa
   assertString(item.lastAnalysisAt, `data.investmentWatchlist[${index}].lastAnalysisAt`, {
     required: false
   });
+  assertString(item.buyFeeRate, `data.investmentWatchlist[${index}].buyFeeRate`, {
+    required: false
+  });
+  assertString(item.fundCompany, `data.investmentWatchlist[${index}].fundCompany`, {
+    required: false
+  });
 
   if (
     item.lastRiskLevel !== undefined &&
     (typeof item.lastRiskLevel !== 'string' ||
       !INVESTMENT_ANALYSIS_RISK_LEVELS.has(item.lastRiskLevel as InvestmentAnalysisRiskLevel))
   ) {
-    throw new Error(`备份文件字段无效：data.investmentWatchlist[${index}].lastRiskLevel 枚举值不合法`);
+    throw new Error(
+      `备份文件字段无效：data.investmentWatchlist[${index}].lastRiskLevel 枚举值不合法`
+    );
   }
 
   return {
@@ -1081,11 +1107,36 @@ function validateInvestmentWatchItem(item: unknown, index: number): InvestmentWa
       item.adviceReasons,
       `data.investmentWatchlist[${index}].adviceReasons`
     ),
-    riskNotes: readOptionalStringArray(item.riskNotes, `data.investmentWatchlist[${index}].riskNotes`),
+    riskNotes: readOptionalStringArray(
+      item.riskNotes,
+      `data.investmentWatchlist[${index}].riskNotes`
+    ),
     nextActions: readOptionalStringArray(
       item.nextActions,
       `data.investmentWatchlist[${index}].nextActions`
     ),
+    performanceHistory: readOptionalStringArray(
+      item.performanceHistory,
+      `data.investmentWatchlist[${index}].performanceHistory`
+    ),
+    fundAnalysis: readOptionalStringArray(
+      item.fundAnalysis,
+      `data.investmentWatchlist[${index}].fundAnalysis`
+    ),
+    fundHoldings: readOptionalStringArray(
+      item.fundHoldings,
+      `data.investmentWatchlist[${index}].fundHoldings`
+    ),
+    assetAllocation: readOptionalStringArray(
+      item.assetAllocation,
+      `data.investmentWatchlist[${index}].assetAllocation`
+    ),
+    industryAllocation: readOptionalStringArray(
+      item.industryAllocation,
+      `data.investmentWatchlist[${index}].industryAllocation`
+    ),
+    buyFeeRate: asSafeString(item.buyFeeRate) || undefined,
+    fundCompany: asSafeString(item.fundCompany) || undefined,
     lastAnalysisAt: asSafeString(item.lastAnalysisAt) || undefined,
     createdAt: asSafeString(item.createdAt),
     updatedAt: asSafeString(item.updatedAt)
@@ -1294,9 +1345,9 @@ export function parseFinanceBackupPayload(raw: string): FinanceBackupPayload {
   const investmentPositions = (
     Array.isArray(data.investmentPositions) ? data.investmentPositions : []
   ).map((item, index) => validateInvestmentPositionItem(item, index));
-  const investmentGoals = (
-    Array.isArray(data.investmentGoals) ? data.investmentGoals : []
-  ).map((item, index) => validateInvestmentGoalItem(item, index));
+  const investmentGoals = (Array.isArray(data.investmentGoals) ? data.investmentGoals : []).map(
+    (item, index) => validateInvestmentGoalItem(item, index)
+  );
   const investmentWatchlist = (
     Array.isArray(data.investmentWatchlist) ? data.investmentWatchlist : []
   ).map((item, index) => validateInvestmentWatchItem(item, index));

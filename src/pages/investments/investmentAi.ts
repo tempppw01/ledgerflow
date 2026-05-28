@@ -76,6 +76,13 @@ export function buildInvestmentAssistantPrompt(input: {
       adviceReasons: item.adviceReasons || [],
       riskNotes: item.riskNotes || [],
       nextActions: item.nextActions || [],
+      performanceHistory: item.performanceHistory || [],
+      fundAnalysis: item.fundAnalysis || [],
+      fundHoldings: item.fundHoldings || [],
+      assetAllocation: item.assetAllocation || [],
+      industryAllocation: item.industryAllocation || [],
+      buyFeeRate: item.buyFeeRate || '',
+      fundCompany: item.fundCompany || '',
       lastAnalysisAt: item.lastAnalysisAt || '',
       updatedAt: item.updatedAt || ''
     }))
@@ -88,11 +95,11 @@ export function buildInvestmentAssistantPrompt(input: {
     '2. 第一段必须给行动倾向：可以小额试、继续观察、暂不建议、需要补充信息四选一，并说明一句原因。',
     '3. 然后给 3 条左右依据，尽量翻译成新手能懂的话；最后给 2 到 3 条下一步建议，建议要可执行。',
     '4. 可以结合用户上传的截图、用户问题和投资上下文；如果信息不足，必须直接说“信息不足”，并指出还差什么。',
-    '5. 如果投资上下文里已有基金自选记录，尤其是同名或同代码基金，要参考自选里的投资建议、建议依据、风险提示、上次结论、摘要、备注和更新时间，说明本次判断是否延续或改变。',
+    '5. 如果投资上下文里已有基金自选记录，尤其是同名或同代码基金，要参考自选里的投资建议、历史业绩、基金分析、持仓、资产/行业分布、费率、基金公司、风险提示、上次结论、摘要、备注和更新时间，说明本次判断是否延续或改变。',
     '6. 不要承诺收益，也不要替用户做最终投资决策；但可以给出清晰的风险分级和操作优先级。',
     '7. 在正文最后追加一个 JSON 代码块，格式必须是：',
     '```json',
-    '{"fundName":"","fundCode":"","verdict":"","summary":"","riskLevel":"low|medium|high|unknown","highlights":[""],"risks":[""],"actions":[""],"watchTags":[""],"platform":"","note":""}',
+    '{"fundName":"","fundCode":"","verdict":"","summary":"","riskLevel":"low|medium|high|unknown","highlights":[""],"risks":[""],"actions":[""],"watchTags":[""],"performanceHistory":[""],"fundAnalysis":[""],"fundHoldings":[""],"assetAllocation":[""],"industryAllocation":[""],"buyFeeRate":"","fundCompany":"","platform":"","note":""}',
     '```',
     '8. 如果无法识别基金代码可以留空；数组每个字段最多返回 4 项；JSON 代码块后面不要再追加其他内容。',
     `投资上下文：\n${JSON.stringify(context, null, 2)}`
@@ -129,6 +136,13 @@ export function normalizeInvestmentFundAnalysis(raw: unknown): InvestmentFundAna
     risks: normalizeList(item.risks),
     actions: normalizeList(item.actions),
     watchTags: normalizeList(item.watchTags),
+    performanceHistory: normalizeList(item.performanceHistory, 6),
+    fundAnalysis: normalizeList(item.fundAnalysis, 6),
+    fundHoldings: normalizeList(item.fundHoldings, 8),
+    assetAllocation: normalizeList(item.assetAllocation, 6),
+    industryAllocation: normalizeList(item.industryAllocation, 8),
+    buyFeeRate: normalizeOptionalString(item.buyFeeRate),
+    fundCompany: normalizeOptionalString(item.fundCompany),
     platform: normalizeOptionalString(item.platform),
     note: normalizeOptionalString(item.note)
   };

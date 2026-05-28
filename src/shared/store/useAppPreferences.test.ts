@@ -125,6 +125,13 @@ describe('useAppPreferences RSS subscriptions', () => {
       adviceReasons: ['规模稳定'],
       riskNotes: ['短期波动仍在'],
       nextActions: ['观察回撤区间'],
+      performanceHistory: ['近一年波动中等'],
+      fundAnalysis: ['适合长期观察'],
+      fundHoldings: ['贵州茅台 5.2%'],
+      assetAllocation: ['股票 94%'],
+      industryAllocation: ['消费 15%'],
+      buyFeeRate: '0.12%',
+      fundCompany: '易方达基金',
       lastAnalysisAt: '2026-05-27T10:00:00.000Z'
     });
     useAppPreferences.getState().upsertInvestmentWatchItem({
@@ -140,6 +147,13 @@ describe('useAppPreferences RSS subscriptions', () => {
       adviceReasons: ['估值压力下降', '波动更可控'],
       riskNotes: ['仍受市场情绪影响'],
       nextActions: ['设置观察区间', '下周复盘'],
+      performanceHistory: ['近一年波动回落', '近三年跟随沪深300走势'],
+      fundAnalysis: ['宽基底仓属性更清晰'],
+      fundHoldings: ['宁德时代 3.1%'],
+      assetAllocation: ['股票 93%', '现金 7%'],
+      industryAllocation: ['金融 18%', '消费 15%'],
+      buyFeeRate: '0.1%',
+      fundCompany: '易方达基金管理有限公司',
       lastAnalysisAt: '2026-05-27T12:00:00.000Z'
     });
     useAppPreferences.getState().setInvestmentAiMessages([
@@ -163,7 +177,14 @@ describe('useAppPreferences RSS subscriptions', () => {
           highlights: ['宽基属性清晰'],
           risks: ['短期波动仍在'],
           actions: ['观察回撤区间'],
-          watchTags: ['宽基']
+          watchTags: ['宽基'],
+          performanceHistory: ['近一年波动中等'],
+          fundAnalysis: ['宽基指数基金'],
+          fundHoldings: ['贵州茅台 5.2%'],
+          assetAllocation: ['股票 94%'],
+          industryAllocation: ['消费 15%'],
+          buyFeeRate: '0.12%',
+          fundCompany: '易方达基金'
         },
         createdAt: '2026-05-27T10:01:00.000Z'
       }
@@ -175,7 +196,13 @@ describe('useAppPreferences RSS subscriptions', () => {
     expect(state.investmentWatchlist[0].lastRiskLevel).toBe('low');
     expect(state.investmentWatchlist[0].investmentAdvice).toBe('分批跟踪，不急着加仓');
     expect(state.investmentWatchlist[0].nextActions).toEqual(['设置观察区间', '下周复盘']);
+    expect(state.investmentWatchlist[0].performanceHistory).toEqual([
+      '近一年波动回落',
+      '近三年跟随沪深300走势'
+    ]);
+    expect(state.investmentWatchlist[0].fundCompany).toBe('易方达基金管理有限公司');
     expect(state.investmentAiMessages).toHaveLength(2);
     expect(state.investmentAiMessages[1].analysis?.fundCode).toBe('510310');
+    expect(state.investmentAiMessages[1].analysis?.buyFeeRate).toBe('0.12%');
   });
 });
