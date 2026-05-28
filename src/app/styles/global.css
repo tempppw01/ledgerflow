@@ -2832,6 +2832,9 @@ small.mono {
 }
 
 .empty-state-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   font-size: 44px;
   margin-bottom: var(--space-3);
   opacity: 0.7;
