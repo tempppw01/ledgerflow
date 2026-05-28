@@ -1198,7 +1198,7 @@ button.danger:hover:not(:disabled) {
 .transactions-split-layout {
   display: grid;
   grid-template-columns: auto 12px minmax(320px, 1fr);
-  align-items: stretch;
+  align-items: start;
   gap: var(--space-2);
   min-height: 520px;
   scrollbar-gutter: stable;
@@ -1214,13 +1214,22 @@ button.danger:hover:not(:disabled) {
 
 .transactions-split-side {
   min-width: 320px;
+  align-self: start;
+  position: sticky;
+  top: calc(var(--safe-top, 0px) + var(--topbar-height) + var(--space-3));
+  max-height: calc(100dvh - var(--topbar-height) - var(--space-6));
   overflow: auto;
   display: grid;
+  align-content: start;
+  grid-auto-rows: max-content;
   gap: var(--space-3);
+  overscroll-behavior: contain;
 }
 
 .transactions-split-divider {
   width: 12px;
+  align-self: stretch;
+  min-height: 520px;
   cursor: col-resize;
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-primary) 18%, transparent);
@@ -1243,6 +1252,7 @@ button.danger:hover:not(:disabled) {
 }
 
 .transactions-side-chart-card {
+  align-self: start;
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-lg);
   padding: var(--space-3);
@@ -1412,6 +1422,9 @@ button.danger:hover:not(:disabled) {
 
   .transactions-split-side {
     min-width: 0;
+    position: static;
+    max-height: none;
+    overflow: visible;
   }
 }
 
