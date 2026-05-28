@@ -121,6 +121,10 @@ describe('useAppPreferences RSS subscriptions', () => {
       lastVerdict: '可以继续跟踪',
       lastSummary: '规模稳定，波动相对可控',
       lastRiskLevel: 'medium',
+      investmentAdvice: '先小额定投观察',
+      adviceReasons: ['规模稳定'],
+      riskNotes: ['短期波动仍在'],
+      nextActions: ['观察回撤区间'],
       lastAnalysisAt: '2026-05-27T10:00:00.000Z'
     });
     useAppPreferences.getState().upsertInvestmentWatchItem({
@@ -132,6 +136,10 @@ describe('useAppPreferences RSS subscriptions', () => {
       lastVerdict: '更适合分批跟踪',
       lastSummary: '最新分析优先级更高',
       lastRiskLevel: 'low',
+      investmentAdvice: '分批跟踪，不急着加仓',
+      adviceReasons: ['估值压力下降', '波动更可控'],
+      riskNotes: ['仍受市场情绪影响'],
+      nextActions: ['设置观察区间', '下周复盘'],
       lastAnalysisAt: '2026-05-27T12:00:00.000Z'
     });
     useAppPreferences.getState().setInvestmentAiMessages([
@@ -165,6 +173,8 @@ describe('useAppPreferences RSS subscriptions', () => {
     expect(state.investmentWatchlist).toHaveLength(1);
     expect(state.investmentWatchlist[0].lastSummary).toBe('最新分析优先级更高');
     expect(state.investmentWatchlist[0].lastRiskLevel).toBe('low');
+    expect(state.investmentWatchlist[0].investmentAdvice).toBe('分批跟踪，不急着加仓');
+    expect(state.investmentWatchlist[0].nextActions).toEqual(['设置观察区间', '下周复盘']);
     expect(state.investmentAiMessages).toHaveLength(2);
     expect(state.investmentAiMessages[1].analysis?.fundCode).toBe('510310');
   });

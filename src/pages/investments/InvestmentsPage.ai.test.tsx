@@ -182,6 +182,8 @@ describe('InvestmentsPage AI assistant', () => {
       expect(useAppPreferences.getState().investmentWatchlist).toHaveLength(1);
     });
     expect(useAppPreferences.getState().investmentWatchlist[0].code).toBe('510310');
+    expect(useAppPreferences.getState().investmentWatchlist[0].investmentAdvice).toBe('先观察回撤区间');
+    expect(useAppPreferences.getState().investmentWatchlist[0].riskNotes).toEqual(['短期波动仍在']);
     expect(screen.getByText('更新自选')).toBeInTheDocument();
     expect(screen.getAllByText('易方达沪深300ETF').length).toBeGreaterThan(0);
   });
@@ -199,6 +201,10 @@ describe('InvestmentsPage AI assistant', () => {
           lastVerdict: '资料支撑仓',
           lastSummary: '基金成立超20年，经理任期回报优异，但高持股集中度会放大波动。',
           lastRiskLevel: 'high',
+          investmentAdvice: '暂时观察，不主动加仓',
+          adviceReasons: ['经理任期回报优异'],
+          riskNotes: ['高持股集中度会放大波动'],
+          nextActions: ['等待季度持仓更新后复盘'],
           lastAnalysisAt: '2026-05-28T01:47:00.000Z',
           createdAt: '2026-05-28T01:47:00.000Z',
           updatedAt: '2026-05-28T01:47:00.000Z'
@@ -245,6 +251,8 @@ describe('InvestmentsPage AI assistant', () => {
     expect(request.systemPrompt).toContain('招商优质成长混合(LOF)');
     expect(request.systemPrompt).toContain('资料支撑仓');
     expect(request.systemPrompt).toContain('基金成立超20年');
+    expect(request.systemPrompt).toContain('暂时观察，不主动加仓');
+    expect(request.systemPrompt).toContain('等待季度持仓更新后复盘');
     expect(request.systemPrompt).toContain('高波动');
 
     await screen.findByText('结合自选里的高波动记录，本次不建议贸然加仓。');

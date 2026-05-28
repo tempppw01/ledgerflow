@@ -76,6 +76,10 @@ export interface InvestmentWatchItem {
   lastVerdict?: string;
   lastSummary?: string;
   lastRiskLevel?: InvestmentAnalysisRiskLevel;
+  investmentAdvice?: string;
+  adviceReasons?: string[];
+  riskNotes?: string[];
+  nextActions?: string[];
   lastAnalysisAt?: string;
   createdAt: string;
   updatedAt: string;

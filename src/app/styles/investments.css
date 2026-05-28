@@ -478,6 +478,43 @@
   line-height: 1.6;
 }
 
+.investments-watch-card-advice {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 14%, transparent);
+  background: color-mix(in srgb, var(--color-primary-bg) 72%, var(--color-bg-elevated));
+}
+
+.investments-watch-card-advice span,
+.investments-watch-card-insights span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.investments-watch-card-advice strong {
+  line-height: 1.5;
+}
+
+.investments-watch-card-insights {
+  display: grid;
+  gap: 8px;
+}
+
+.investments-watch-card-insights div {
+  display: grid;
+  gap: 2px;
+}
+
+.investments-watch-card-insights p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .investments-watch-card-tags {
   display: flex;
   gap: 8px;

@@ -274,6 +274,10 @@ function normalizeInvestmentWatchItem(
     lastVerdict: normalizeOptionalString(item.lastVerdict),
     lastSummary: normalizeOptionalString(item.lastSummary),
     lastRiskLevel: riskLevel,
+    investmentAdvice: normalizeOptionalString(item.investmentAdvice),
+    adviceReasons: normalizeStringList(item.adviceReasons, 6),
+    riskNotes: normalizeStringList(item.riskNotes, 6),
+    nextActions: normalizeStringList(item.nextActions, 6),
     lastAnalysisAt: normalizeOptionalString(item.lastAnalysisAt),
     createdAt: item.createdAt || now,
     updatedAt: item.updatedAt || now

@@ -344,6 +344,10 @@ function buildWatchItemFromAnalysis(analysis: InvestmentFundAnalysis) {
     lastVerdict: analysis.verdict,
     lastSummary: analysis.summary,
     lastRiskLevel: analysis.riskLevel,
+    investmentAdvice: analysis.actions[0] || analysis.verdict || analysis.summary,
+    adviceReasons: analysis.highlights,
+    riskNotes: analysis.risks,
+    nextActions: analysis.actions,
     lastAnalysisAt: new Date().toISOString()
   };
 }
@@ -1261,6 +1265,34 @@ export function InvestmentsPage() {
                     </button>
                   </div>
                   {item.lastSummary ? <p className="investments-watch-card-summary">{item.lastSummary}</p> : null}
+                  {item.investmentAdvice ? (
+                    <div className="investments-watch-card-advice">
+                      <span>投资建议</span>
+                      <strong>{item.investmentAdvice}</strong>
+                    </div>
+                  ) : null}
+                  {item.adviceReasons?.length || item.riskNotes?.length || item.nextActions?.length ? (
+                    <div className="investments-watch-card-insights">
+                      {item.adviceReasons?.length ? (
+                        <div>
+                          <span>依据</span>
+                          <p>{item.adviceReasons.join(' / ')}</p>
+                        </div>
+                      ) : null}
+                      {item.riskNotes?.length ? (
+                        <div>
+                          <span>风险</span>
+                          <p>{item.riskNotes.join(' / ')}</p>
+                        </div>
+                      ) : null}
+                      {item.nextActions?.length ? (
+                        <div>
+                          <span>下一步</span>
+                          <p>{item.nextActions.join(' / ')}</p>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {item.tags.length > 0 ? (
                     <div className="investments-watch-card-tags">
                       {item.tags.map((tag) => (
