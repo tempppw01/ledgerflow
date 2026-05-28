@@ -495,6 +495,48 @@
   line-height: 1.6;
 }
 
+.investments-ai-suggestion-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.investments-ai-suggestion-row > span {
+  flex: 0 0 auto;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.investments-ai-suggestion-row > div {
+  display: flex;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+.investments-ai-suggestion-row button {
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-bg-elevated) 90%, var(--color-primary-bg));
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.investments-ai-suggestion-row button:hover:not(:disabled),
+.investments-ai-suggestion-row button:focus-visible {
+  color: var(--color-primary);
+  border-color: color-mix(in srgb, var(--color-primary) 38%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-primary-bg) 78%, var(--color-bg-elevated));
+}
+
 .investments-ai-upload-btn {
   display: inline-flex;
   align-items: center;
@@ -1272,7 +1314,8 @@
 
   .investments-ai-image-strip,
   .investments-ai-composer-toolbar,
-  .investments-ai-composer-actions {
+  .investments-ai-composer-actions,
+  .investments-ai-suggestion-row {
     flex-direction: column;
     align-items: stretch;
   }

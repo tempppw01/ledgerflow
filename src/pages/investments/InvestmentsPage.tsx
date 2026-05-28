@@ -146,6 +146,13 @@ const INVESTMENT_EXPERT_PROMPTS = [
   '我现在现金流有限，应该先补应急金还是继续买基金？',
   '请把我的投资组合按新手能看懂的方式做一次体检。'
 ];
+const INVESTMENT_AI_SUGGESTED_QUESTIONS = [
+  '这只基金现在适合买吗？',
+  '帮我看最大风险',
+  '适合定投还是观望？',
+  '和我的持仓冲突吗？',
+  '我下一步该做什么？'
+];
 
 function getClipboardImageFiles(clipboardData: DataTransfer): File[] {
   const itemFiles = Array.from(clipboardData.items || [])
@@ -1579,6 +1586,21 @@ export function InvestmentsPage() {
                 }
               }}
             />
+            <div className="investments-ai-suggestion-row" aria-label="AI 联想提问">
+              <span>可以直接问</span>
+              <div>
+                {INVESTMENT_AI_SUGGESTED_QUESTIONS.map((question) => (
+                  <button
+                    key={question}
+                    type="button"
+                    onClick={() => handleInvestmentExpertPrompt(question)}
+                    disabled={investmentAiStatus === 'loading'}
+                  >
+                    {question}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="investments-ai-composer-actions">
               <span>
                 {latestAssistantAnalysis?.fundName
