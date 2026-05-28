@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useRef, useState } from 'react';
+import { ClipboardEvent, FormEvent, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Account } from '../../entities/account/types';
 import type {
@@ -114,6 +114,24 @@ const AI_LOADING_GIF_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/load.gif';
 const MAX_INVESTMENT_AI_IMAGES = 4;
 const MAX_INVESTMENT_AI_IMAGE_SIZE_MB = 6;
+
+function getClipboardImageFiles(clipboardData: DataTransfer): File[] {
+  const itemFiles = Array.from(clipboardData.items || [])
+    .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
+    .map((item, index) => {
+      const file = item.getAsFile();
+      if (!file) return null;
+      if (file.name) return file;
+      return new File([file], `clipboard-fund-screenshot-${Date.now()}-${index}.png`, {
+        type: file.type || item.type || 'image/png'
+      });
+    })
+    .filter((file): file is File => Boolean(file));
+
+  if (itemFiles.length > 0) return itemFiles;
+
+  return Array.from(clipboardData.files || []).filter((file) => file.type.startsWith('image/'));
+}
 
 function parseAmountInput(value: string): number {
   const numeric = Number(String(value || '').replace(/[^\d.-]/g, ''));
@@ -638,6 +656,16 @@ export function InvestmentsPage() {
     }
   }
 
+  function handleInvestmentAiPaste(event: ClipboardEvent<HTMLFormElement>) {
+    if (investmentAiStatus === 'loading') return;
+
+    const imageFiles = getClipboardImageFiles(event.clipboardData);
+    if (imageFiles.length === 0) return;
+
+    event.preventDefault();
+    void handleInvestmentAiFileSelect(imageFiles);
+  }
+
   function handleAddAnalysisToWatchlist(analysis: InvestmentFundAnalysis) {
     if (!analysis.fundName && !analysis.fundCode) {
       setToastState('这次分析还没识别出基金名称，暂时不能加入自选。', 'warning');
@@ -1111,7 +1139,7 @@ export function InvestmentsPage() {
             </div>
           ) : null}
 
-          <form className="investments-ai-composer" onSubmit={submitInvestmentAi}>
+          <form className="investments-ai-composer" onSubmit={submitInvestmentAi} onPaste={handleInvestmentAiPaste}>
             <input
               ref={aiFileInputRef}
               type="file"
@@ -1135,7 +1163,7 @@ export function InvestmentsPage() {
                 <img src={IMAGE_ICON_URL} alt="" aria-hidden="true" />
                 上传图片
               </button>
-              <span>支持最多 {MAX_INVESTMENT_AI_IMAGES} 张截图，本次分析后不会长期保存图片。</span>
+              <span>支持上传或粘贴最多 {MAX_INVESTMENT_AI_IMAGES} 张截图，本次分析后不会长期保存图片。</span>
             </div>
             <textarea
               rows={3}

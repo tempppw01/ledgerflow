@@ -184,4 +184,29 @@ describe('InvestmentsPage AI assistant', () => {
     expect(screen.getByText('更新自选')).toBeInTheDocument();
     expect(screen.getAllByText('易方达沪深300ETF').length).toBeGreaterThan(0);
   });
+
+  it('adds pasted fund screenshots to the pending analysis images', async () => {
+    render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    const image = new File(['fake-image'], 'fund-screenshot.png', { type: 'image/png' });
+    fireEvent.paste(screen.getByLabelText('基金分析输入框'), {
+      clipboardData: {
+        files: [],
+        items: [
+          {
+            kind: 'file',
+            type: 'image/png',
+            getAsFile: () => image
+          }
+        ]
+      }
+    });
+
+    expect(await screen.findByAltText('待分析图片 1')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '开始分析' })).toBeEnabled();
+  });
 });
