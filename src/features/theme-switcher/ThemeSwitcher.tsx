@@ -17,6 +17,10 @@ const OPTIONS: Array<{ value: AppTheme; iconSrc: string; label: string }> = [
 export function ThemeSwitcher() {
   const theme = useAppPreferences((s) => s.theme);
   const setTheme = useAppPreferences((s) => s.setTheme);
+  const orderedOptions = [
+    OPTIONS.find((option) => option.value === theme) || OPTIONS[0],
+    ...OPTIONS.filter((option) => option.value !== theme)
+  ];
 
   const handleThemeChange = useCallback(
     (newTheme: AppTheme) => {
@@ -31,7 +35,7 @@ export function ThemeSwitcher() {
 
   return (
     <div className="theme-switcher" aria-label="主题切换">
-      {OPTIONS.map((option) => (
+      {orderedOptions.map((option) => (
         <button
           key={option.value}
           type="button"

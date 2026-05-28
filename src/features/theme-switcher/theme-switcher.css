@@ -1,15 +1,32 @@
 .theme-switcher {
   display: inline-flex;
-  gap: 4px;
+  gap: 0;
   padding: 3px;
   border-radius: var(--radius-full);
   border: 1px solid var(--color-border);
   background: var(--color-bg-subtle);
+  overflow: hidden;
+  transition:
+    gap var(--transition-base),
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.theme-switcher:hover,
+.theme-switcher:focus-within {
+  gap: 4px;
+  border-color: color-mix(in srgb, var(--color-primary) 24%, var(--color-border));
+  background: var(--color-bg-elevated);
+  box-shadow: var(--shadow-xs);
 }
 
 .theme-icon-btn {
+  min-width: 0;
   width: 30px;
   height: 30px;
+  flex: 0 0 30px;
+  padding: 0;
   border-radius: var(--radius-full);
   border: 1px solid transparent;
   background: transparent;
@@ -17,8 +34,24 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  overflow: hidden;
+  transition:
+    width var(--transition-base),
+    flex-basis var(--transition-base),
+    opacity var(--transition-fast),
+    transform var(--transition-fast),
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
   font-size: 14px;
+}
+
+.theme-switcher:not(:hover):not(:focus-within) .theme-icon-btn:not(.active) {
+  width: 0;
+  flex-basis: 0;
+  opacity: 0;
+  transform: scale(0.72);
+  pointer-events: none;
 }
 
 .theme-icon-btn:hover {
