@@ -8628,6 +8628,39 @@ body.categories-accounts-resizing {
   color: var(--color-danger);
 }
 
+.database-remote-backup-card {
+  display: grid;
+  gap: 0;
+}
+
+.database-remote-backup-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.database-remote-backup-summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: min(260px, 100%);
+}
+
+.database-remote-backup-toggle {
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+.database-remote-backup-body {
+  margin-top: 12px;
+}
+
 .database-data-hub-actions > button,
 .database-import-actions > button {
   min-height: 42px;
