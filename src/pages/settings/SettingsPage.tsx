@@ -18,6 +18,7 @@ const AI_PROVIDER_PRESETS = [
 ] as const;
 
 const MODEL_PRESETS = [
+  'gpt-5.4-mini',
   'gpt-5.2',
   'gemini-2.5-flash-lite',
   'gpt-4o-mini',
@@ -115,7 +116,7 @@ interface ModelSelectorProps {
 function getModelDisplayLabel(modelId: string): string {
   const value = modelId.trim();
   if (!value) return value;
-  return value === 'gpt-5.2' ? `${value}（推荐）` : value;
+  return value === 'gpt-5.4-mini' ? `${value}（推荐）` : value;
 }
 
 function mergeModelOptions(value: string, presets: string[], remoteModels: string[]): string[] {

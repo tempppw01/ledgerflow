@@ -61,7 +61,7 @@ import {
 function getModelDisplayLabel(modelId: string): string {
   const value = modelId.trim();
   if (!value) return value;
-  return value === 'gpt-5.4' ? `${value}（推荐）` : value;
+  return value === 'gpt-5.4-mini' ? `${value}（推荐）` : value;
 }
 
 function inputPlaceholder(

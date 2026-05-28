@@ -17,7 +17,7 @@ export const ENV = {
   logLevel: import.meta.env.VITE_LOG_LEVEL || 'info',
   aiBaseUrl: import.meta.env.VITE_AI_BASE_URL || 'https://ai.shuaihong.fun/v1',
   aiApiKey: import.meta.env.VITE_AI_API_KEY || '',
-  aiDefaultModel: import.meta.env.VITE_AI_DEFAULT_MODEL || 'gpt-5.4',
+  aiDefaultModel: import.meta.env.VITE_AI_DEFAULT_MODEL || 'gpt-5.4-mini',
   /** 手动全量同步路径（会拼接到 apiBaseUrl 后） */
   syncLocalDataPath: import.meta.env.VITE_SYNC_LOCAL_DATA_PATH || '/sync-local-data',
   /** 自动增量同步路径（会拼接到 apiBaseUrl 后） */
