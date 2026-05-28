@@ -6,7 +6,11 @@
   display: grid;
   gap: 18px;
   background:
-    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--color-primary-bg) 78%, transparent), transparent 36%),
+    radial-gradient(
+      circle at 100% 0%,
+      color-mix(in srgb, var(--color-primary-bg) 78%, transparent),
+      transparent 36%
+    ),
     linear-gradient(
       180deg,
       color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-primary-bg)) 0%,
@@ -576,13 +580,13 @@
 .investments-main-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-  gap: 16px;
+  gap: 12px;
 }
 
 .investments-overview-card,
 .investments-panel {
   display: grid;
-  gap: 14px;
+  gap: 0;
 }
 
 .investments-section-head {
@@ -602,6 +606,80 @@
   margin: 4px 0 0;
   color: var(--color-text-secondary);
   font-size: 12px;
+}
+
+.investments-fold-card {
+  align-self: start;
+  overflow: hidden;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.investments-fold-card.is-open {
+  border-color: color-mix(in srgb, var(--color-primary) 22%, var(--color-border-light));
+}
+
+.investments-fold-head {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.investments-fold-head > span:first-child {
+  min-width: 0;
+}
+
+.investments-fold-head p {
+  max-width: 38rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.investments-fold-side {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.investments-fold-side i {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-light);
+  color: var(--color-text-secondary);
+  font-style: normal;
+  font-size: 16px;
+  line-height: 1;
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    color 180ms ease;
+}
+
+.investments-fold-card.is-open .investments-fold-side i {
+  transform: rotate(180deg);
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+.investments-fold-body {
+  display: none;
+  margin-top: 14px;
+}
+
+.investments-fold-card.is-open .investments-fold-body {
+  display: grid;
+  gap: 14px;
 }
 
 .investments-allocation-list,
@@ -649,7 +727,11 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 68%, #82d3ff));
+  background: linear-gradient(
+    90deg,
+    var(--color-primary),
+    color-mix(in srgb, var(--color-primary) 68%, #82d3ff)
+  );
 }
 
 .investments-meta-grid,
