@@ -124,7 +124,7 @@
 .investments-ai-panel,
 .investments-watchlist-panel {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
   align-content: start;
 }
@@ -170,7 +170,7 @@
 
 .investments-ai-prompt-bank {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   overflow-x: auto;
   padding-bottom: 2px;
   scrollbar-width: thin;
@@ -178,14 +178,16 @@
 
 .investments-ai-prompt-bank button {
   flex: 0 0 auto;
-  max-width: min(280px, 76vw);
-  min-height: 34px;
+  max-width: min(220px, 68vw);
+  min-height: 32px;
   padding: 0 12px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-primary-bg));
   color: var(--color-text);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .investments-ai-prompt-bank button:hover,
@@ -196,9 +198,10 @@
 
 .investments-ai-thread {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   max-height: clamp(240px, 38vh, 420px);
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 4px;
   overscroll-behavior: contain;
 }
@@ -232,8 +235,9 @@
 
 .investments-ai-message {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: flex-start;
+  min-width: 0;
 }
 
 .investments-ai-message.is-user {
@@ -245,8 +249,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--color-border-light) 86%, transparent);
   background: color-mix(in srgb, var(--color-bg-elevated) 92%, var(--color-primary-bg));
@@ -254,8 +258,8 @@
 }
 
 .investments-ai-message-avatar img {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
   object-fit: contain;
 }
 
@@ -265,11 +269,13 @@
 }
 
 .investments-ai-bubble {
-  width: min(100%, 760px);
+  flex: 0 1 min(68ch, calc(100% - 36px));
+  max-width: calc(100% - 36px);
+  min-width: 0;
   display: grid;
-  gap: 10px;
-  padding: 14px;
-  border-radius: 16px;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 13px;
   border: 1px solid var(--color-border-light);
   background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-bg-subtle));
 }
@@ -282,7 +288,7 @@
 .investments-ai-message-head {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
   align-items: baseline;
   color: var(--color-text-secondary);
@@ -302,7 +308,7 @@
 .investments-ai-message-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 4px;
 }
 
 .investments-ai-streaming {
@@ -312,9 +318,9 @@
 
 .investments-analysis-card {
   display: grid;
-  gap: 12px;
-  padding: 14px;
-  border-radius: 14px;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
   border: 1px solid var(--color-border-light);
   background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-primary-bg));
 }
@@ -322,7 +328,7 @@
 .investments-analysis-card-head {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   align-items: start;
 }
 
@@ -368,12 +374,12 @@
 
 .investments-analysis-summary {
   color: var(--color-text-secondary);
-  line-height: 1.7;
+  line-height: 1.55;
 }
 
 .investments-analysis-list {
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .investments-analysis-list h4,
@@ -388,14 +394,27 @@
 .investments-analysis-list ul {
   padding-left: 18px;
   color: var(--color-text-secondary);
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .investments-analysis-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
+}
+
+.investments-ai-bubble .chat-msg-content-rich {
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  line-height: 1.62;
+}
+
+.investments-ai-bubble .chat-md-paragraph,
+.investments-ai-bubble .chat-msg-content p {
+  line-height: 1.62;
 }
 
 .investments-analysis-actions span {
@@ -412,17 +431,17 @@
 .investments-ai-image-strip {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   align-items: start;
-  padding: 12px;
-  border-radius: 14px;
+  padding: 10px;
+  border-radius: 13px;
   border: 1px solid var(--color-border-light);
   background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-bg-subtle));
 }
 
 .investments-ai-thumb-list {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   overflow-x: auto;
 }
 
@@ -432,10 +451,10 @@
 }
 
 .investments-ai-thumb {
-  width: 88px;
-  height: 88px;
+  width: 72px;
+  height: 72px;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--color-border-light);
 }
 
@@ -453,9 +472,9 @@
 
 .investments-ai-composer {
   display: grid;
-  gap: 12px;
-  padding: 14px;
-  border-radius: 16px;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
   border: 1px solid var(--color-border-light);
   background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-primary-bg));
 }
@@ -464,7 +483,7 @@
 .investments-ai-composer-actions {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
   flex-wrap: wrap;
 }
@@ -480,9 +499,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
-  padding: 0 14px;
-  border-radius: 12px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
 }
 
 .investments-ai-textarea {
