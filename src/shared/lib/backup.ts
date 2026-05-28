@@ -1,6 +1,18 @@
 import { Account } from '../../entities/account/types';
 import { Category } from '../../entities/category/types';
 import {
+  InvestmentAiMessage,
+  InvestmentAnalysisRiskLevel,
+  InvestmentCategory,
+  InvestmentFundAnalysis,
+  InvestmentGoal,
+  InvestmentGoalKind,
+  InvestmentGoalPriority,
+  InvestmentPosition,
+  InvestmentRiskLevel,
+  InvestmentWatchItem
+} from '../../entities/investment/types';
+import {
   SubscriptionBillingCycle,
   SubscriptionItem,
   SubscriptionKind,
@@ -342,12 +354,17 @@ export function loadObjectStorageConfig(
 
 export type FinanceBackupData = Required<FinanceDataSnapshot> & {
   globalMemories: GlobalMemoryItem[];
+  investmentPositions: InvestmentPosition[];
+  investmentGoals: InvestmentGoal[];
+  investmentWatchlist: InvestmentWatchItem[];
+  investmentAiMessages: InvestmentAiMessage[];
 };
 
 export interface FinanceBackupScope {
   ledger: boolean;
   subscriptions: boolean;
   globalMemories: boolean;
+  investments: boolean;
 }
 
 export interface FinanceBackupPayload {
@@ -359,13 +376,18 @@ export interface FinanceBackupPayload {
 
 type FinanceBackupSnapshotWithMemories = Required<FinanceDataSnapshot> & {
   globalMemories: GlobalMemoryItem[];
+  investmentPositions: InvestmentPosition[];
+  investmentGoals: InvestmentGoal[];
+  investmentWatchlist: InvestmentWatchItem[];
+  investmentAiMessages: InvestmentAiMessage[];
 };
 
 export function createDefaultFinanceBackupScope(): FinanceBackupScope {
   return {
     ledger: true,
     subscriptions: true,
-    globalMemories: true
+    globalMemories: true,
+    investments: true
   };
 }
 
@@ -379,7 +401,8 @@ export function normalizeFinanceBackupScope(
   return {
     ledger: safeScope?.ledger ?? defaults.ledger,
     subscriptions: safeScope?.subscriptions ?? defaults.subscriptions,
-    globalMemories: safeScope?.globalMemories ?? defaults.globalMemories
+    globalMemories: safeScope?.globalMemories ?? defaults.globalMemories,
+    investments: safeScope?.investments ?? defaults.investments
   };
 }
 
@@ -431,6 +454,31 @@ const SUBSCRIPTION_STATUS = new Set<SubscriptionStatus>([
   'due-soon',
   'expired',
   'paused'
+]);
+const INVESTMENT_CATEGORIES = new Set<InvestmentCategory>([
+  'cash',
+  'fixed-income',
+  'index-fund',
+  'active-fund',
+  'stock',
+  'gold',
+  'other'
+]);
+const INVESTMENT_RISK_LEVELS = new Set<InvestmentRiskLevel>(['low', 'medium', 'high']);
+const INVESTMENT_GOAL_KINDS = new Set<InvestmentGoalKind>([
+  'emergency',
+  'house',
+  'travel',
+  'education',
+  'retirement',
+  'other'
+]);
+const INVESTMENT_GOAL_PRIORITIES = new Set<InvestmentGoalPriority>(['low', 'medium', 'high']);
+const INVESTMENT_ANALYSIS_RISK_LEVELS = new Set<InvestmentAnalysisRiskLevel>([
+  'low',
+  'medium',
+  'high',
+  'unknown'
 ]);
 const BALANCE_CHANGE_TYPES = new Set<BalanceChangeEntry['type']>([
   'transaction-income',
@@ -828,9 +876,267 @@ function validateSubscriptionItem(item: unknown, index: number): SubscriptionIte
   };
 }
 
+function readOptionalStringArray(value: unknown, path: string): string[] {
+  if (value === undefined || value === null) {
+    return [];
+  }
+  assertStringArray(value, path);
+  return value.map((item) => item.trim()).filter(Boolean);
+}
+
+function validateInvestmentPositionItem(item: unknown, index: number): InvestmentPosition {
+  if (!isObjectRecord(item)) {
+    throw new Error(`备份文件字段无效：data.investmentPositions[${index}] 应为对象`);
+  }
+
+  assertString(item.id, `data.investmentPositions[${index}].id`);
+  assertString(item.name, `data.investmentPositions[${index}].name`);
+  assertNumber(item.investedAmount, `data.investmentPositions[${index}].investedAmount`);
+  assertNumber(item.currentValue, `data.investmentPositions[${index}].currentValue`);
+  assertString(item.createdAt, `data.investmentPositions[${index}].createdAt`);
+  assertString(item.updatedAt, `data.investmentPositions[${index}].updatedAt`);
+  assertString(item.platform, `data.investmentPositions[${index}].platform`, { required: false });
+  assertString(item.linkedAccountId, `data.investmentPositions[${index}].linkedAccountId`, {
+    required: false
+  });
+  assertString(item.note, `data.investmentPositions[${index}].note`, { required: false });
+
+  if (
+    typeof item.category !== 'string' ||
+    !INVESTMENT_CATEGORIES.has(item.category as InvestmentCategory)
+  ) {
+    throw new Error(`备份文件字段无效：data.investmentPositions[${index}].category 枚举值不合法`);
+  }
+
+  if (
+    typeof item.riskLevel !== 'string' ||
+    !INVESTMENT_RISK_LEVELS.has(item.riskLevel as InvestmentRiskLevel)
+  ) {
+    throw new Error(`备份文件字段无效：data.investmentPositions[${index}].riskLevel 枚举值不合法`);
+  }
+
+  if (item.monthlyContribution !== undefined) {
+    assertNumber(
+      item.monthlyContribution,
+      `data.investmentPositions[${index}].monthlyContribution`
+    );
+  }
+  if (item.targetAllocation !== undefined) {
+    assertNumber(item.targetAllocation, `data.investmentPositions[${index}].targetAllocation`);
+  }
+  if (typeof item.isActive !== 'boolean') {
+    throw new Error(`备份文件字段无效：data.investmentPositions[${index}].isActive 应为布尔值`);
+  }
+
+  return {
+    id: asSafeString(item.id),
+    name: asSafeString(item.name),
+    category: item.category as InvestmentCategory,
+    platform: asSafeString(item.platform) || undefined,
+    linkedAccountId: asSafeString(item.linkedAccountId) || undefined,
+    investedAmount: Number(item.investedAmount),
+    currentValue: Number(item.currentValue),
+    monthlyContribution:
+      typeof item.monthlyContribution === 'number' ? Number(item.monthlyContribution) : undefined,
+    targetAllocation:
+      typeof item.targetAllocation === 'number' ? Number(item.targetAllocation) : undefined,
+    riskLevel: item.riskLevel as InvestmentRiskLevel,
+    note: asSafeString(item.note) || undefined,
+    isActive: Boolean(item.isActive),
+    createdAt: asSafeString(item.createdAt),
+    updatedAt: asSafeString(item.updatedAt)
+  };
+}
+
+function validateInvestmentGoalItem(item: unknown, index: number): InvestmentGoal {
+  if (!isObjectRecord(item)) {
+    throw new Error(`备份文件字段无效：data.investmentGoals[${index}] 应为对象`);
+  }
+
+  assertString(item.id, `data.investmentGoals[${index}].id`);
+  assertString(item.name, `data.investmentGoals[${index}].name`);
+  assertNumber(item.targetAmount, `data.investmentGoals[${index}].targetAmount`);
+  assertNumber(item.currentAmount, `data.investmentGoals[${index}].currentAmount`);
+  assertString(item.createdAt, `data.investmentGoals[${index}].createdAt`);
+  assertString(item.updatedAt, `data.investmentGoals[${index}].updatedAt`);
+  assertString(item.targetDate, `data.investmentGoals[${index}].targetDate`, { required: false });
+  assertString(item.note, `data.investmentGoals[${index}].note`, { required: false });
+
+  if (typeof item.kind !== 'string' || !INVESTMENT_GOAL_KINDS.has(item.kind as InvestmentGoalKind)) {
+    throw new Error(`备份文件字段无效：data.investmentGoals[${index}].kind 枚举值不合法`);
+  }
+
+  if (
+    typeof item.priority !== 'string' ||
+    !INVESTMENT_GOAL_PRIORITIES.has(item.priority as InvestmentGoalPriority)
+  ) {
+    throw new Error(`备份文件字段无效：data.investmentGoals[${index}].priority 枚举值不合法`);
+  }
+
+  if (item.monthlyContribution !== undefined) {
+    assertNumber(item.monthlyContribution, `data.investmentGoals[${index}].monthlyContribution`);
+  }
+
+  return {
+    id: asSafeString(item.id),
+    name: asSafeString(item.name),
+    kind: item.kind as InvestmentGoalKind,
+    targetAmount: Number(item.targetAmount),
+    currentAmount: Number(item.currentAmount),
+    monthlyContribution:
+      typeof item.monthlyContribution === 'number' ? Number(item.monthlyContribution) : undefined,
+    targetDate: asSafeString(item.targetDate) || undefined,
+    priority: item.priority as InvestmentGoalPriority,
+    note: asSafeString(item.note) || undefined,
+    createdAt: asSafeString(item.createdAt),
+    updatedAt: asSafeString(item.updatedAt)
+  };
+}
+
+function validateInvestmentFundAnalysis(
+  item: unknown,
+  path: string
+): InvestmentFundAnalysis | undefined {
+  if (item === undefined || item === null) {
+    return undefined;
+  }
+  if (!isObjectRecord(item)) {
+    throw new Error(`备份文件字段无效：${path} 应为对象`);
+  }
+
+  assertString(item.verdict, `${path}.verdict`);
+  assertString(item.summary, `${path}.summary`);
+  assertString(item.fundName, `${path}.fundName`, { required: false });
+  assertString(item.fundCode, `${path}.fundCode`, { required: false });
+  assertString(item.platform, `${path}.platform`, { required: false });
+  assertString(item.note, `${path}.note`, { required: false });
+
+  if (
+    typeof item.riskLevel !== 'string' ||
+    !INVESTMENT_ANALYSIS_RISK_LEVELS.has(item.riskLevel as InvestmentAnalysisRiskLevel)
+  ) {
+    throw new Error(`备份文件字段无效：${path}.riskLevel 枚举值不合法`);
+  }
+
+  return {
+    fundName: asSafeString(item.fundName) || undefined,
+    fundCode: asSafeString(item.fundCode) || undefined,
+    verdict: asSafeString(item.verdict),
+    summary: asSafeString(item.summary),
+    riskLevel: item.riskLevel as InvestmentAnalysisRiskLevel,
+    highlights: readOptionalStringArray(item.highlights, `${path}.highlights`),
+    risks: readOptionalStringArray(item.risks, `${path}.risks`),
+    actions: readOptionalStringArray(item.actions, `${path}.actions`),
+    watchTags: readOptionalStringArray(item.watchTags, `${path}.watchTags`),
+    platform: asSafeString(item.platform) || undefined,
+    note: asSafeString(item.note) || undefined
+  };
+}
+
+function validateInvestmentWatchItem(item: unknown, index: number): InvestmentWatchItem {
+  if (!isObjectRecord(item)) {
+    throw new Error(`备份文件字段无效：data.investmentWatchlist[${index}] 应为对象`);
+  }
+
+  assertString(item.id, `data.investmentWatchlist[${index}].id`);
+  assertString(item.name, `data.investmentWatchlist[${index}].name`);
+  assertString(item.createdAt, `data.investmentWatchlist[${index}].createdAt`);
+  assertString(item.updatedAt, `data.investmentWatchlist[${index}].updatedAt`);
+  assertString(item.code, `data.investmentWatchlist[${index}].code`, { required: false });
+  assertString(item.platform, `data.investmentWatchlist[${index}].platform`, { required: false });
+  assertString(item.note, `data.investmentWatchlist[${index}].note`, { required: false });
+  assertString(item.lastVerdict, `data.investmentWatchlist[${index}].lastVerdict`, {
+    required: false
+  });
+  assertString(item.lastSummary, `data.investmentWatchlist[${index}].lastSummary`, {
+    required: false
+  });
+  assertString(item.investmentAdvice, `data.investmentWatchlist[${index}].investmentAdvice`, {
+    required: false
+  });
+  assertString(item.lastAnalysisAt, `data.investmentWatchlist[${index}].lastAnalysisAt`, {
+    required: false
+  });
+
+  if (
+    item.lastRiskLevel !== undefined &&
+    (typeof item.lastRiskLevel !== 'string' ||
+      !INVESTMENT_ANALYSIS_RISK_LEVELS.has(item.lastRiskLevel as InvestmentAnalysisRiskLevel))
+  ) {
+    throw new Error(`备份文件字段无效：data.investmentWatchlist[${index}].lastRiskLevel 枚举值不合法`);
+  }
+
+  return {
+    id: asSafeString(item.id),
+    name: asSafeString(item.name),
+    code: asSafeString(item.code) || undefined,
+    platform: asSafeString(item.platform) || undefined,
+    tags: readOptionalStringArray(item.tags, `data.investmentWatchlist[${index}].tags`),
+    note: asSafeString(item.note) || undefined,
+    lastVerdict: asSafeString(item.lastVerdict) || undefined,
+    lastSummary: asSafeString(item.lastSummary) || undefined,
+    lastRiskLevel: item.lastRiskLevel as InvestmentAnalysisRiskLevel | undefined,
+    investmentAdvice: asSafeString(item.investmentAdvice) || undefined,
+    adviceReasons: readOptionalStringArray(
+      item.adviceReasons,
+      `data.investmentWatchlist[${index}].adviceReasons`
+    ),
+    riskNotes: readOptionalStringArray(item.riskNotes, `data.investmentWatchlist[${index}].riskNotes`),
+    nextActions: readOptionalStringArray(
+      item.nextActions,
+      `data.investmentWatchlist[${index}].nextActions`
+    ),
+    lastAnalysisAt: asSafeString(item.lastAnalysisAt) || undefined,
+    createdAt: asSafeString(item.createdAt),
+    updatedAt: asSafeString(item.updatedAt)
+  };
+}
+
+function validateInvestmentAiMessage(item: unknown, index: number): InvestmentAiMessage {
+  if (!isObjectRecord(item)) {
+    throw new Error(`备份文件字段无效：data.investmentAiMessages[${index}] 应为对象`);
+  }
+
+  assertString(item.id, `data.investmentAiMessages[${index}].id`);
+  assertString(item.text, `data.investmentAiMessages[${index}].text`);
+  assertString(item.createdAt, `data.investmentAiMessages[${index}].createdAt`);
+  assertString(item.reasoning, `data.investmentAiMessages[${index}].reasoning`, {
+    required: false
+  });
+
+  if (item.role !== 'user' && item.role !== 'assistant') {
+    throw new Error(`备份文件字段无效：data.investmentAiMessages[${index}].role 枚举值不合法`);
+  }
+  if (item.feedback !== undefined && item.feedback !== 'up' && item.feedback !== 'down') {
+    throw new Error(`备份文件字段无效：data.investmentAiMessages[${index}].feedback 枚举值不合法`);
+  }
+  if (item.attachmentCount !== undefined) {
+    assertNumber(item.attachmentCount, `data.investmentAiMessages[${index}].attachmentCount`);
+  }
+
+  return {
+    id: asSafeString(item.id),
+    role: item.role,
+    text: asSafeString(item.text),
+    feedback: item.feedback as InvestmentAiMessage['feedback'] | undefined,
+    reasoning: asSafeString(item.reasoning) || undefined,
+    attachmentCount:
+      typeof item.attachmentCount === 'number' ? Number(item.attachmentCount) : undefined,
+    analysis: validateInvestmentFundAnalysis(
+      item.analysis,
+      `data.investmentAiMessages[${index}].analysis`
+    ),
+    createdAt: asSafeString(item.createdAt)
+  };
+}
+
 export function createFinanceBackupPayload(
   input: FinanceDataSnapshot & {
     globalMemories?: GlobalMemoryItem[];
+    investmentPositions?: InvestmentPosition[];
+    investmentGoals?: InvestmentGoal[];
+    investmentWatchlist?: InvestmentWatchItem[];
+    investmentAiMessages?: InvestmentAiMessage[];
   },
   scope?: Partial<FinanceBackupScope> | null
 ): FinanceBackupPayload {
@@ -869,6 +1175,22 @@ export function createFinanceBackupPayload(
       globalMemories:
         normalizedScope.globalMemories && Array.isArray(input.globalMemories)
           ? input.globalMemories
+          : [],
+      investmentPositions:
+        normalizedScope.investments && Array.isArray(input.investmentPositions)
+          ? input.investmentPositions
+          : [],
+      investmentGoals:
+        normalizedScope.investments && Array.isArray(input.investmentGoals)
+          ? input.investmentGoals
+          : [],
+      investmentWatchlist:
+        normalizedScope.investments && Array.isArray(input.investmentWatchlist)
+          ? input.investmentWatchlist
+          : [],
+      investmentAiMessages:
+        normalizedScope.investments && Array.isArray(input.investmentAiMessages)
+          ? input.investmentAiMessages
           : []
     }
   };
@@ -929,6 +1251,22 @@ export function parseFinanceBackupPayload(raw: string): FinanceBackupPayload {
     throw new Error('备份文件字段无效：data.globalMemories 应为数组');
   }
 
+  if (data.investmentPositions !== undefined && !Array.isArray(data.investmentPositions)) {
+    throw new Error('备份文件字段无效：data.investmentPositions 应为数组');
+  }
+
+  if (data.investmentGoals !== undefined && !Array.isArray(data.investmentGoals)) {
+    throw new Error('备份文件字段无效：data.investmentGoals 应为数组');
+  }
+
+  if (data.investmentWatchlist !== undefined && !Array.isArray(data.investmentWatchlist)) {
+    throw new Error('备份文件字段无效：data.investmentWatchlist 应为数组');
+  }
+
+  if (data.investmentAiMessages !== undefined && !Array.isArray(data.investmentAiMessages)) {
+    throw new Error('备份文件字段无效：data.investmentAiMessages 应为数组');
+  }
+
   const transactions = data.transactions.map((item, index) => validateTransactionItem(item, index));
   const categories = data.categories.map((item, index) => validateCategoryItem(item, index));
   const accounts = data.accounts.map((item, index) => validateAccountItem(item, index));
@@ -953,6 +1291,18 @@ export function parseFinanceBackupPayload(raw: string): FinanceBackupPayload {
   const globalMemories = (Array.isArray(data.globalMemories) ? data.globalMemories : [])
     .map((item, index) => sanitizePersistedGlobalMemoryItem(item, index))
     .filter((item): item is GlobalMemoryItem => Boolean(item));
+  const investmentPositions = (
+    Array.isArray(data.investmentPositions) ? data.investmentPositions : []
+  ).map((item, index) => validateInvestmentPositionItem(item, index));
+  const investmentGoals = (
+    Array.isArray(data.investmentGoals) ? data.investmentGoals : []
+  ).map((item, index) => validateInvestmentGoalItem(item, index));
+  const investmentWatchlist = (
+    Array.isArray(data.investmentWatchlist) ? data.investmentWatchlist : []
+  ).map((item, index) => validateInvestmentWatchItem(item, index));
+  const investmentAiMessages = (
+    Array.isArray(data.investmentAiMessages) ? data.investmentAiMessages : []
+  ).map((item, index) => validateInvestmentAiMessage(item, index));
   const scope = normalizeFinanceBackupScope(
     isObjectRecord(parsed.scope) ? (parsed.scope as Partial<FinanceBackupScope>) : undefined
   );
@@ -973,7 +1323,11 @@ export function parseFinanceBackupPayload(raw: string): FinanceBackupPayload {
       trashedAccounts,
       balanceChangeEntries,
       trashedSubscriptions,
-      globalMemories
+      globalMemories,
+      investmentPositions,
+      investmentGoals,
+      investmentWatchlist,
+      investmentAiMessages
     }
   };
 }
@@ -1000,7 +1354,17 @@ export function applyFinanceBackupPayload(
     trashedSubscriptions: scope.subscriptions
       ? payload.data.trashedSubscriptions
       : current.trashedSubscriptions,
-    globalMemories: scope.globalMemories ? payload.data.globalMemories : current.globalMemories
+    globalMemories: scope.globalMemories ? payload.data.globalMemories : current.globalMemories,
+    investmentPositions: scope.investments
+      ? payload.data.investmentPositions
+      : current.investmentPositions,
+    investmentGoals: scope.investments ? payload.data.investmentGoals : current.investmentGoals,
+    investmentWatchlist: scope.investments
+      ? payload.data.investmentWatchlist
+      : current.investmentWatchlist,
+    investmentAiMessages: scope.investments
+      ? payload.data.investmentAiMessages
+      : current.investmentAiMessages
   };
 }
 

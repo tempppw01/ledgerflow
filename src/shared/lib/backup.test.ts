@@ -188,12 +188,30 @@ describe('parseFinanceBackupPayload', () => {
           createdAt: '2026-04-01T00:00:00.000Z',
           updatedAt: '2026-04-02T00:00:00.000Z'
         }
+      ],
+      investmentPositions: [
+        {
+          id: 'pos-1',
+          name: '沪深 300 ETF',
+          category: 'index-fund',
+          platform: '支付宝',
+          investedAmount: 10000,
+          currentValue: 10880,
+          monthlyContribution: 1200,
+          targetAllocation: 40,
+          riskLevel: 'medium',
+          note: '长期底仓',
+          isActive: true,
+          createdAt: '2026-05-01T00:00:00.000Z',
+          updatedAt: '2026-05-20T00:00:00.000Z'
+        }
       ]
     });
 
     expect(payload.version).toBe(3);
     expect(payload.data.subscriptions).toHaveLength(1);
     expect(payload.data.globalMemories).toHaveLength(1);
+    expect(payload.data.investmentPositions).toHaveLength(1);
   });
 
   it('应支持按范围导出备份并保留范围元数据', () => {
@@ -286,19 +304,41 @@ describe('parseFinanceBackupPayload', () => {
             createdAt: '2026-04-01T00:00:00.000Z',
             updatedAt: '2026-04-02T00:00:00.000Z'
           }
+        ],
+        investmentWatchlist: [
+          {
+            id: 'watch-1',
+            name: '招商优质成长混合(LOF)',
+            code: '161706',
+            platform: '蚂蚁基金',
+            tags: ['高波动'],
+            note: '适合继续观察',
+            lastVerdict: '资料支撑仓',
+            lastSummary: '经理任期回报优异，但持股集中度较高。',
+            lastRiskLevel: 'high',
+            investmentAdvice: '暂时观察，不主动加仓',
+            adviceReasons: ['经理任期回报优异'],
+            riskNotes: ['高持股集中度会放大波动'],
+            nextActions: ['等待季度持仓更新后复盘'],
+            lastAnalysisAt: '2026-05-28T01:47:00.000Z',
+            createdAt: '2026-05-28T01:47:00.000Z',
+            updatedAt: '2026-05-28T01:47:00.000Z'
+          }
         ]
       },
       {
         ledger: false,
         subscriptions: true,
-        globalMemories: false
+        globalMemories: false,
+        investments: false
       }
     );
 
     expect(payload.scope).toEqual({
       ledger: false,
       subscriptions: true,
-      globalMemories: false
+      globalMemories: false,
+      investments: false
     });
     expect(payload.data.transactions).toEqual([]);
     expect(payload.data.categories).toEqual([]);
@@ -308,6 +348,7 @@ describe('parseFinanceBackupPayload', () => {
     expect(payload.data.subscriptions).toHaveLength(1);
     expect(payload.data.trashedSubscriptions).toHaveLength(1);
     expect(payload.data.globalMemories).toEqual([]);
+    expect(payload.data.investmentWatchlist).toEqual([]);
 
     const reparsed = parseFinanceBackupPayload(JSON.stringify(payload));
     expect(reparsed.scope).toEqual(payload.scope);
@@ -356,6 +397,63 @@ describe('parseFinanceBackupPayload', () => {
               createdAt: '2026-04-01T00:00:00.000Z',
               updatedAt: '2026-04-02T00:00:00.000Z'
             }
+          ],
+          investmentGoals: [
+            {
+              id: 'goal-1',
+              name: '6 个月应急金',
+              kind: 'emergency',
+              targetAmount: 30000,
+              currentAmount: 12000,
+              monthlyContribution: 2000,
+              targetDate: '2026-12-31',
+              priority: 'high',
+              note: '优先补足',
+              createdAt: '2026-05-01T00:00:00.000Z',
+              updatedAt: '2026-05-20T00:00:00.000Z'
+            }
+          ],
+          investmentWatchlist: [
+            {
+              id: 'watch-1',
+              name: '招商优质成长混合(LOF)',
+              code: '161706',
+              platform: '蚂蚁基金',
+              tags: ['资源科技持仓', '高波动'],
+              note: '适合高风险承受能力者继续观察',
+              lastVerdict: '资料支撑仓',
+              lastSummary: '基金成立超20年，经理任期回报优异。',
+              lastRiskLevel: 'high',
+              investmentAdvice: '暂时观察，不主动加仓',
+              adviceReasons: ['经理任期回报优异'],
+              riskNotes: ['高持股集中度会放大波动'],
+              nextActions: ['等待季度持仓更新后复盘'],
+              lastAnalysisAt: '2026-05-28T01:47:00.000Z',
+              createdAt: '2026-05-28T01:47:00.000Z',
+              updatedAt: '2026-05-28T01:47:00.000Z'
+            }
+          ],
+          investmentAiMessages: [
+            {
+              id: 'msg-assistant-1',
+              role: 'assistant',
+              text: '参考自选记录后，暂时更适合继续观察。',
+              feedback: 'up',
+              analysis: {
+                fundName: '招商优质成长混合(LOF)',
+                fundCode: '161706',
+                verdict: '继续观察',
+                summary: '结合自选里的高波动记录，本次不建议贸然加仓。',
+                riskLevel: 'high',
+                highlights: ['已有历史观察记录'],
+                risks: ['高波动'],
+                actions: ['继续跟踪'],
+                watchTags: ['高波动'],
+                platform: '蚂蚁基金',
+                note: '参考自选历史判断'
+              },
+              createdAt: '2026-05-28T02:00:00.000Z'
+            }
           ]
         }
       })
@@ -365,6 +463,9 @@ describe('parseFinanceBackupPayload', () => {
     expect(payload.data.subscriptions[0].status).toBe('active');
     expect(payload.data.globalMemories[0].title).toBe('保守风险偏好');
     expect(payload.data.globalMemories[0].pinned).toBe(true);
+    expect(payload.data.investmentGoals[0].name).toBe('6 个月应急金');
+    expect(payload.data.investmentWatchlist[0].investmentAdvice).toBe('暂时观察，不主动加仓');
+    expect(payload.data.investmentAiMessages[0].analysis?.fundCode).toBe('161706');
   });
 
   it('恢复部分备份时应保留未选范围的本地数据', () => {
@@ -422,7 +523,23 @@ describe('parseFinanceBackupPayload', () => {
           createdAt: '2026-05-01T00:00:00.000Z',
           updatedAt: '2026-05-02T00:00:00.000Z'
         }
-      ]
+      ],
+      investmentPositions: [
+        {
+          id: 'pos-current-1',
+          name: '当前持仓',
+          category: 'index-fund',
+          investedAmount: 1000,
+          currentValue: 1100,
+          riskLevel: 'medium',
+          isActive: true,
+          createdAt: '2026-05-01T00:00:00.000Z',
+          updatedAt: '2026-05-02T00:00:00.000Z'
+        }
+      ],
+      investmentGoals: [],
+      investmentWatchlist: [],
+      investmentAiMessages: []
     };
 
     const payload = createFinanceBackupPayload(
@@ -448,12 +565,25 @@ describe('parseFinanceBackupPayload', () => {
         trashedAccounts: [],
         balanceChangeEntries: [],
         trashedSubscriptions: [],
-        globalMemories: []
+        globalMemories: [],
+        investmentPositions: [],
+        investmentGoals: [],
+        investmentWatchlist: [
+          {
+            id: 'watch-next-1',
+            name: '新自选基金',
+            tags: [],
+            createdAt: '2026-05-03T00:00:00.000Z',
+            updatedAt: '2026-05-04T00:00:00.000Z'
+          }
+        ],
+        investmentAiMessages: []
       },
       {
         ledger: false,
         subscriptions: true,
-        globalMemories: false
+        globalMemories: false,
+        investments: false
       }
     );
 
@@ -464,6 +594,8 @@ describe('parseFinanceBackupPayload', () => {
     expect(restored.accounts).toEqual(current.accounts);
     expect(restored.subscriptions).toEqual(payload.data.subscriptions);
     expect(restored.globalMemories).toEqual(current.globalMemories);
+    expect(restored.investmentPositions).toEqual(current.investmentPositions);
+    expect(restored.investmentWatchlist).toEqual(current.investmentWatchlist);
   });
 });
 

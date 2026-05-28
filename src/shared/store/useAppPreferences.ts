@@ -77,6 +77,12 @@ interface AppPreferencesState {
   removeInvestmentWatchItem: (id: string) => void;
   setInvestmentAiMessages: (messages: InvestmentAiMessage[]) => void;
   clearInvestmentAiMessages: () => void;
+  replaceInvestmentData: (payload: {
+    investmentPositions: InvestmentPosition[];
+    investmentGoals: InvestmentGoal[];
+    investmentWatchlist: InvestmentWatchItem[];
+    investmentAiMessages: InvestmentAiMessage[];
+  }) => void;
   setMonthlyIncome: (income: number) => void;
   setRepaymentState: (payload: { debts: DebtItem[]; monthlyIncome: number }) => void;
   addDebt: (payload: Omit<DebtItem, 'id'>) => void;
@@ -506,6 +512,22 @@ export const useAppPreferences = create<AppPreferencesState>()(
       },
       clearInvestmentAiMessages: () => {
         set({ investmentAiMessages: [] });
+      },
+      replaceInvestmentData: (payload) => {
+        set({
+          investmentPositions: Array.isArray(payload.investmentPositions)
+            ? payload.investmentPositions.map((item) => normalizeInvestmentPosition(item))
+            : [],
+          investmentGoals: Array.isArray(payload.investmentGoals)
+            ? payload.investmentGoals.map((item) => normalizeInvestmentGoal(item))
+            : [],
+          investmentWatchlist: Array.isArray(payload.investmentWatchlist)
+            ? payload.investmentWatchlist.map((item) => normalizeInvestmentWatchItem(item))
+            : [],
+          investmentAiMessages: Array.isArray(payload.investmentAiMessages)
+            ? normalizeInvestmentAiMessages(payload.investmentAiMessages)
+            : []
+        });
       },
       addDebt: (payload) => {
         set((state) => ({
