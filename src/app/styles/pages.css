@@ -487,6 +487,13 @@
   padding-inline: 12px;
 }
 
+.transaction-filter-trigger-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
 .transaction-filter-trigger-badge {
   min-width: 20px;
   height: 20px;

@@ -7,7 +7,14 @@ import {
 } from '../hooks/useTransactionFilters';
 import { TransactionColumnKey } from './TransactionTable';
 import { BillImportMode } from '../../../shared/lib/billImport';
-import { CALENDAR_ICON_URL } from '../../../shared/config/brandAssets';
+import {
+  ARCHIVE_ICON_URL,
+  CALENDAR_ICON_URL,
+  DASHBOARD_ICON_URL,
+  EYE_ICON_URL,
+  EYE_OFF_ICON_URL,
+  SETTINGS_ICON_URL
+} from '../../../shared/config/brandAssets';
 
 interface TransactionFiltersProps {
   filters: TransactionFilterState;
@@ -73,7 +80,9 @@ export function TransactionFilters({
     0
   );
   const advancedChangeCount =
-    (filters.source !== 'all' ? 1 : 0) + (hiddenColumnCount > 0 ? 1 : 0) + (importMode !== 'incremental' ? 1 : 0);
+    (filters.source !== 'all' ? 1 : 0) +
+    (hiddenColumnCount > 0 ? 1 : 0) +
+    (importMode !== 'incremental' ? 1 : 0);
 
   useEffect(() => {
     if (!menuOpen) {
@@ -119,7 +128,10 @@ export function TransactionFilters({
       </div>
 
       <div className="transaction-filters-primary-row">
-        <div className="field transaction-filter-field transaction-filter-field-keyword" style={{ marginBottom: 0 }}>
+        <div
+          className="field transaction-filter-field transaction-filter-field-keyword"
+          style={{ marginBottom: 0 }}
+        >
           <label>关键词</label>
           <input
             placeholder="搜索备注或标签"
@@ -193,7 +205,12 @@ export function TransactionFilters({
                 onDateFromChange(monthStart);
               }}
             >
-              <img className="transaction-date-shortcut-icon" src={CALENDAR_ICON_URL} alt="" aria-hidden="true" />
+              <img
+                className="transaction-date-shortcut-icon"
+                src={CALENDAR_ICON_URL}
+                alt=""
+                aria-hidden="true"
+              />
               设为月初
             </button>
           </div>
@@ -220,7 +237,12 @@ export function TransactionFilters({
                 onDateToChange(monthEnd);
               }}
             >
-              <img className="transaction-date-shortcut-icon" src={CALENDAR_ICON_URL} alt="" aria-hidden="true" />
+              <img
+                className="transaction-date-shortcut-icon"
+                src={CALENDAR_ICON_URL}
+                alt=""
+                aria-hidden="true"
+              />
               设为月末
             </button>
           </div>
@@ -233,6 +255,12 @@ export function TransactionFilters({
           className={`transaction-filter-trigger ${sidePanelVisible ? 'active' : ''}`}
           onClick={onToggleSidePanel}
         >
+          <img
+            className="transaction-filter-trigger-icon"
+            src={DASHBOARD_ICON_URL}
+            alt=""
+            aria-hidden="true"
+          />
           {sidePanelVisible ? '收起洞察' : '查看洞察'}
         </button>
 
@@ -242,6 +270,12 @@ export function TransactionFilters({
             className={`transaction-filter-trigger transaction-filter-trigger-compact ${bulkSelectionEnabled ? 'active' : ''}`}
             onClick={onToggleBulkSelection}
           >
+            <img
+              className="transaction-filter-trigger-icon"
+              src={ARCHIVE_ICON_URL}
+              alt=""
+              aria-hidden="true"
+            />
             {bulkSelectionEnabled ? '批量已开' : '批量操作'}
           </button>
           <button
@@ -249,6 +283,12 @@ export function TransactionFilters({
             className={`transaction-filter-trigger transaction-filter-trigger-compact ${privacyMode ? 'active' : ''}`}
             onClick={onTogglePrivacy}
           >
+            <img
+              className="transaction-filter-trigger-icon"
+              src={privacyMode ? EYE_OFF_ICON_URL : EYE_ICON_URL}
+              alt=""
+              aria-hidden="true"
+            />
             {privacyMode ? '隐私已开' : '隐私模式'}
           </button>
         </div>
@@ -261,9 +301,18 @@ export function TransactionFilters({
             aria-haspopup="true"
             aria-expanded={menuOpen}
           >
+            <img
+              className="transaction-filter-trigger-icon"
+              src={SETTINGS_ICON_URL}
+              alt=""
+              aria-hidden="true"
+            />
             筛选设置
             {advancedChangeCount > 0 ? (
-              <span className="transaction-filter-trigger-badge" aria-label={`已调整 ${advancedChangeCount} 项`}>
+              <span
+                className="transaction-filter-trigger-badge"
+                aria-label={`已调整 ${advancedChangeCount} 项`}
+              >
                 {advancedChangeCount}
               </span>
             ) : null}
@@ -283,7 +332,9 @@ export function TransactionFilters({
                   id="tx-filter-source"
                   aria-label="按来源筛选"
                   value={filters.source}
-                  onChange={(event) => onSourceChange(event.target.value as TransactionSourceFilter)}
+                  onChange={(event) =>
+                    onSourceChange(event.target.value as TransactionSourceFilter)
+                  }
                 >
                   <option value="all">全部来源</option>
                   <option value="manual">手工录入</option>
@@ -303,7 +354,9 @@ export function TransactionFilters({
                 <summary className="transaction-filter-section-title">
                   显示列
                   {hiddenColumnCount > 0 ? (
-                    <span className="transaction-filter-inline-note">已隐藏 {hiddenColumnCount} 项</span>
+                    <span className="transaction-filter-inline-note">
+                      已隐藏 {hiddenColumnCount} 项
+                    </span>
                   ) : null}
                 </summary>
                 <div className="transaction-column-check-grid">
