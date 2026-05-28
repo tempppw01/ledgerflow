@@ -8,6 +8,7 @@ import {
   parseFinanceBackupPayload,
   sanitizeWebdavConfig,
   saveWebdavConfig,
+  webdavUploadBackup,
   webdavUploadFile,
   type BackupWebdavConfig
 } from './backup';
@@ -734,13 +735,14 @@ describe('webdav backup version listing', () => {
 });
 
 describe('webdavUploadFile', () => {
-  it('附件上传时即使目录预创建返回 400，只要最终 PUT 成功也应视为成功', async () => {
+  it('附件上传时即使目录预创建返回 400，只要临时 PUT 和 MOVE 成功也应视为成功', async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({ ok: false, status: 400 })
       .mockResolvedValueOnce({ ok: false, status: 400 })
       .mockResolvedValueOnce({ ok: false, status: 400 })
-      .mockResolvedValueOnce({ ok: true, status: 201 });
+      .mockResolvedValueOnce({ ok: true, status: 201 })
+      .mockResolvedValueOnce({ ok: true, status: 204 });
 
     vi.stubGlobal('fetch', fetchMock);
 
@@ -753,9 +755,83 @@ describe('webdavUploadFile', () => {
     );
 
     expect(result.remotePath).toBe('账本备份/attachments/tx-1/test file.txt');
-    expect(fetchMock).toHaveBeenCalledTimes(4);
-    expect(fetchMock.mock.calls.at(-1)?.[0]).toBe(
-      '/api/webdav/%E8%B4%A6%E6%9C%AC%E5%A4%87%E4%BB%BD/attachments/tx-1/test%20file.txt'
+    expect(fetchMock).toHaveBeenCalledTimes(5);
+    expect(fetchMock.mock.calls[3]?.[0]).toContain(
+      '/api/webdav/%E8%B4%A6%E6%9C%AC%E5%A4%87%E4%BB%BD/attachments/tx-1/.test%20file.txt.uploading-'
+    );
+    expect(fetchMock.mock.calls[3]?.[1]).toMatchObject({ method: 'PUT' });
+    expect(fetchMock.mock.calls[4]?.[1]).toMatchObject({ method: 'MOVE' });
+    expect((fetchMock.mock.calls[4]?.[1]?.headers as Record<string, string>).Destination).toBe(
+      'https://dav.example.com/remote.php/dav/files/user/%E8%B4%A6%E6%9C%AC%E5%A4%87%E4%BB%BD/attachments/tx-1/test%20file.txt'
+    );
+
+    vi.unstubAllGlobals();
+  });
+
+  it('临时 PUT 失败时应尝试删除临时文件，避免保留上传占位', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 500 })
+      .mockResolvedValueOnce({ ok: true, status: 204 });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      webdavUploadFile(
+        {
+          ...baseConfig,
+          remoteFilePath: 'backup.json'
+        },
+        'backup.json',
+        new Blob(['hello'], { type: 'text/plain' }),
+        'text/plain'
+      )
+    ).rejects.toThrow('WebDAV 上传失败');
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ method: 'PUT' });
+    expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({ method: 'DELETE' });
+    expect(fetchMock.mock.calls[1]?.[0]).toContain('/api/webdav/.backup.json.uploading-');
+
+    vi.unstubAllGlobals();
+  });
+});
+
+describe('webdavUploadBackup', () => {
+  it('应先上传临时文件再 MOVE 到最终备份名，避免 Cloudreve 留下 0B 最终文件', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 201,
+      text: () => Promise.resolve('')
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const payload = {
+      ...createFinanceBackupPayload({
+        transactions: [],
+        categories: [],
+        accounts: [],
+        subscriptions: [],
+        globalMemories: []
+      }),
+      exportedAt: '2026-05-28T01:52:17.000Z'
+    };
+
+    await webdavUploadBackup(baseConfig, payload);
+
+    const putCalls = fetchMock.mock.calls.filter((call) => call[1]?.method === 'PUT');
+    const moveCalls = fetchMock.mock.calls.filter((call) => call[1]?.method === 'MOVE');
+    expect(putCalls).toHaveLength(2);
+    expect(moveCalls).toHaveLength(2);
+    expect(putCalls[0]?.[0]).toContain('.2026%2002%20backup-2026-05-28_01-52-17.json.uploading-');
+    expect(putCalls[1]?.[0]).toContain('.2026%2002%20backup.json.uploading-');
+    expect(putCalls.map((call) => String(call[0]))).not.toContain(
+      '/api/webdav/%E8%B4%A6%E6%9C%AC%E5%A4%87%E4%BB%BD/2026%2002%20backup-2026-05-28_01-52-17.json'
+    );
+    expect((moveCalls[0]?.[1]?.headers as Record<string, string>).Destination).toBe(
+      'https://dav.example.com/remote.php/dav/files/user/%E8%B4%A6%E6%9C%AC%E5%A4%87%E4%BB%BD/2026%2002%20backup-2026-05-28_01-52-17.json'
+    );
+    expect((moveCalls[1]?.[1]?.headers as Record<string, string>).Destination).toBe(
+      'https://dav.example.com/remote.php/dav/files/user/%E8%B4%A6%E6%9C%AC%E5%A4%87%E4%BB%BD/2026%2002%20backup.json'
     );
 
     vi.unstubAllGlobals();

@@ -903,6 +903,22 @@ function joinWebdavPath(config: BackupWebdavConfig, remoteFilePath: string): str
   return `${base}/${path}`;
 }
 
+function joinRemoteWebdavPath(config: BackupWebdavConfig, remoteFilePath: string): string {
+  const path = normalizeRemoteFilePath(remoteFilePath)
+    .split('/')
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+  const base = normalizeWebdavEndpoint(config.endpoint);
+  return `${base}/${path}`;
+}
+
+function buildTemporaryUploadPath(remoteFilePath: string, seed = Date.now()): string {
+  const { dir, file } = splitRemoteDirAndFile(remoteFilePath);
+  const suffix = Math.random().toString(36).slice(2, 8);
+  const temporaryFile = `.${file}.uploading-${seed}-${suffix}.tmp`;
+  return dir ? `${dir}/${temporaryFile}` : temporaryFile;
+}
+
 function buildWebdavHeaders(
   config: BackupWebdavConfig,
   extra?: Record<string, string>
@@ -1187,6 +1203,68 @@ async function deleteWebdavFile(config: BackupWebdavConfig, remoteFilePath: stri
   }
 }
 
+async function moveWebdavFile(
+  config: BackupWebdavConfig,
+  sourceRemotePath: string,
+  targetRemotePath: string
+): Promise<void> {
+  const sanitized = sanitizeWebdavConfig(config);
+  const response = await fetch(joinWebdavPath(sanitized, sourceRemotePath), {
+    method: 'MOVE',
+    headers: buildWebdavHeaders(sanitized, {
+      Destination: joinRemoteWebdavPath(sanitized, targetRemotePath),
+      Overwrite: 'T'
+    })
+  });
+
+  if (![200, 201, 204].includes(response.status)) {
+    throw new Error(`WebDAV 移动失败（${targetRemotePath}，HTTP ${response.status}）`);
+  }
+}
+
+async function cleanupTemporaryWebdavFile(
+  config: BackupWebdavConfig,
+  temporaryRemotePath: string
+): Promise<void> {
+  try {
+    await deleteWebdavFile(config, temporaryRemotePath);
+  } catch {
+    // 清理临时文件失败不覆盖原始上传错误。
+  }
+}
+
+async function putWebdavFileAtomically(
+  config: BackupWebdavConfig,
+  remoteFilePath: string,
+  body: BodyInit,
+  contentType: string
+): Promise<void> {
+  const sanitized = sanitizeWebdavConfig(config);
+  const normalizedRemotePath = normalizeRemoteFilePath(remoteFilePath);
+  const temporaryRemotePath = buildTemporaryUploadPath(normalizedRemotePath);
+
+  await ensureWebdavDirectoriesByPath(sanitized, temporaryRemotePath);
+
+  try {
+    const response = await fetch(joinWebdavPath(sanitized, temporaryRemotePath), {
+      method: 'PUT',
+      headers: buildWebdavHeaders(sanitized, {
+        'Content-Type': contentType
+      }),
+      body
+    });
+
+    if (!response.ok) {
+      throw new Error(`WebDAV 上传失败（HTTP ${response.status}）`);
+    }
+
+    await moveWebdavFile(sanitized, temporaryRemotePath, normalizedRemotePath);
+  } catch (error) {
+    await cleanupTemporaryWebdavFile(sanitized, temporaryRemotePath);
+    throw error;
+  }
+}
+
 async function pruneWebdavBackupVersions(config: BackupWebdavConfig): Promise<void> {
   const sanitized = sanitizeWebdavConfig(config);
   const files = await listWebdavRemoteFiles(sanitized, sanitized.remoteFilePath);
@@ -1357,35 +1435,23 @@ export async function webdavUploadBackup(
     const latestRemotePath = sanitized.remoteFilePath;
     await ensureWebdavDirectoriesByPath(sanitized, versionedRemotePath);
     const body = JSON.stringify(payload, null, 2);
-    const versionedUrl = joinWebdavPath(sanitized, versionedRemotePath);
     onProgress?.('上传版本备份...');
-    const response = await fetch(versionedUrl, {
-      method: 'PUT',
-      headers: buildWebdavHeaders(sanitized, {
-        'Content-Type': 'application/json;charset=utf-8'
-      }),
-      body
-    });
-
-    if (!response.ok) {
-      throw new Error(`WebDAV 上传失败（HTTP ${response.status}）`);
-    }
+    await putWebdavFileAtomically(
+      sanitized,
+      versionedRemotePath,
+      body,
+      'application/json;charset=utf-8'
+    );
 
     if (latestRemotePath !== versionedRemotePath) {
       await ensureWebdavDirectoriesByPath(sanitized, latestRemotePath);
-      const latestUrl = joinWebdavPath(sanitized, latestRemotePath);
       onProgress?.('更新最新版本...');
-      const latestResponse = await fetch(latestUrl, {
-        method: 'PUT',
-        headers: buildWebdavHeaders(sanitized, {
-          'Content-Type': 'application/json;charset=utf-8'
-        }),
-        body
-      });
-
-      if (!latestResponse.ok) {
-        throw new Error(`WebDAV 上传失败（HTTP ${latestResponse.status}）`);
-      }
+      await putWebdavFileAtomically(
+        sanitized,
+        latestRemotePath,
+        body,
+        'application/json;charset=utf-8'
+      );
     }
 
     try {
@@ -1408,19 +1474,12 @@ export async function webdavUploadFile(
   try {
     const sanitized = sanitizeWebdavConfig(config);
     const normalizedRemotePath = normalizeRemoteFilePath(remoteFilePath);
-    await ensureWebdavDirectoriesByPath(sanitized, normalizedRemotePath);
-    const url = joinWebdavPath(sanitized, normalizedRemotePath);
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: buildWebdavHeaders(sanitized, {
-        'Content-Type': contentType || 'application/octet-stream'
-      }),
-      body: file
-    });
-
-    if (!response.ok) {
-      throw new Error(`WebDAV 上传失败（HTTP ${response.status}）`);
-    }
+    await putWebdavFileAtomically(
+      sanitized,
+      normalizedRemotePath,
+      file,
+      contentType || 'application/octet-stream'
+    );
 
     return { remotePath: normalizedRemotePath };
   } catch (error) {
