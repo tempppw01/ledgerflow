@@ -15,6 +15,16 @@
     transform var(--transition-base);
 }
 
+.dashboard-dynamic-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  align-items: start;
+}
+
+.dashboard-dynamic-grid > .dashboard-unified-card {
+  align-self: start;
+  min-height: 0;
+}
+
 @media (min-width: 1800px) {
   .dashboard-main-grid {
     grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
@@ -70,6 +80,111 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.stat-value,
+.dashboard-summary-main-amount,
+.dashboard-summary-change,
+.dashboard-summary-metric,
+.dashboard-breakdown-meta,
+.dashboard-expense-trend-tooltip strong,
+.dashboard-expense-trend-footnote,
+.dashboard-donut-center strong,
+.dashboard-donut-center em,
+.dashboard-donut-list-percent,
+.dashboard-donut-list-side strong,
+.dashboard-net-row strong,
+.dashboard-net-row small,
+.dashboard-history-metrics--compact article strong,
+.dashboard-forecast-bar-value,
+.dashboard-forecast-axis-y,
+.dashboard-forecast-hover-card span,
+.dashboard-forecast-legend span,
+.dashboard-forecast-quick-value-item strong,
+.dashboard-top-title time,
+.dashboard-top-item strong {
+  font-family: var(--font-number);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+.dashboard-core-top-list {
+  display: grid;
+  gap: 8px;
+}
+
+.dashboard-core-top-list .dashboard-section-header {
+  margin-bottom: 0;
+}
+
+.dashboard-core-top-list .dashboard-top-list {
+  gap: 6px;
+}
+
+.dashboard-core-top-list .dashboard-top-item {
+  min-width: 0;
+  align-items: center;
+  padding: 8px 10px;
+  gap: 10px;
+}
+
+.dashboard-core-top-list .dashboard-top-item > div {
+  min-width: 0;
+}
+
+.dashboard-core-top-list .dashboard-top-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+  min-width: 0;
+}
+
+.dashboard-core-top-list .dashboard-top-title span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-core-top-list .dashboard-top-title time {
+  flex: 0 0 auto;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.dashboard-core-top-list .dashboard-top-note {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-core-top-list .dashboard-top-item strong {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  color: var(--color-primary);
+}
+
+.dashboard-top-toggle {
+  justify-self: end;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.dashboard-top-toggle:hover {
+  border-color: var(--color-primary-border);
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary-bg) 56%, var(--color-bg-elevated));
+}
+
+.dashboard-donut-list-item {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
 }
 
 .dashboard-anomaly-facts,
@@ -144,8 +259,9 @@
 .dashboard-donut-list-head {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: start;
+  align-items: center;
   gap: 10px;
+  width: 100%;
 }
 
 .dashboard-donut-list-head strong {
@@ -164,6 +280,55 @@
   font-size: 11px;
   color: var(--color-text-secondary);
   white-space: nowrap;
+}
+
+.dashboard-donut-list-track,
+.dashboard-donut-list-side {
+  grid-column: 1 / -1;
+}
+
+.dashboard-donut-list-side {
+  align-items: center;
+  margin-top: 0;
+}
+
+.dashboard-donut-list-side strong {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.dashboard-net-row {
+  grid-template-columns: minmax(58px, max-content) minmax(0, 1fr);
+  grid-template-areas:
+    'label amount'
+    'bar change';
+  gap: 6px 12px;
+}
+
+.dashboard-net-row-label {
+  grid-area: label;
+  align-self: center;
+  max-width: 72px;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.dashboard-net-row i {
+  grid-area: bar;
+  width: 100%;
+}
+
+.dashboard-net-row strong {
+  grid-area: amount;
+  justify-self: end;
+  white-space: nowrap;
+}
+
+.dashboard-net-row small {
+  grid-area: change;
+  justify-self: end;
+  font-size: 11px;
+  line-height: 1.3;
 }
 
 .dashboard-forecast-summary-card {
