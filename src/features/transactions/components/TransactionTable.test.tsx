@@ -26,7 +26,7 @@ vi.mock('react-i18next', () => ({
         'transactions.bulk.fieldNote': '备注',
         'transactions.bulk.fieldOrderNo': '订单号',
         'transactions.bulk.fieldTags': '标签',
-        'transactions.bulk.printA4': '🖨️ 打印 A4',
+        'transactions.bulk.printA4': '打印 A4',
         'transactions.bulk.exportPdf': '📄 导出 PDF',
         'transactions.bulk.exportingPdf': '⏳ 正在导出 PDF…',
         'transactions.bulk.delete': '删除所选',
@@ -157,7 +157,7 @@ describe('TransactionTable', () => {
       />
     );
 
-    await user.click(screen.getByRole('button', { name: '🖨️ 打印 A4' }));
+    await user.click(screen.getByRole('button', { name: '打印 A4' }));
     expect(onBulkPrintA4).toHaveBeenCalledTimes(1);
 
     await user.click(screen.getByRole('button', { name: '📄 导出 PDF' }));

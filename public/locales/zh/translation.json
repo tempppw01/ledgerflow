@@ -325,7 +325,7 @@
       "fieldNote": "备注",
       "fieldOrderNo": "订单号",
       "fieldTags": "标签",
-      "printA4": "🖨️ 打印 A4",
+      "printA4": "打印 A4",
       "exportPdf": "📄 导出 PDF",
       "exportingPdf": "⏳ 正在导出 PDF…",
       "delete": "删除所选",
