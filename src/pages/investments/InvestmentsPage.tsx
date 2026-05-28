@@ -15,13 +15,15 @@ import type {
 import { sendAiChatStream } from '../../features/assistant/api/openaiCompatibleClient';
 import { renderMarkdownContent } from '../../features/assistant/ui/MarkdownRenderer';
 import {
+  BOT_ICON_URL,
   IMAGE_ICON_URL,
   INFO_ICON_URL,
   PEN_TOOL_ICON_URL,
   QUESTION_ICON_URL,
   STAR_ICON_URL,
   THUMBS_DOWN_ICON_URL,
-  THUMBS_UP_ICON_URL
+  THUMBS_UP_ICON_URL,
+  USER_ICON_URL
 } from '../../shared/config/brandAssets';
 import { formatCurrency, formatCurrencyAuto, formatDate } from '../../shared/lib/format';
 import { useAiSettings } from '../../shared/store/useAiSettings';
@@ -978,6 +980,11 @@ export function InvestmentsPage() {
                   key={item.id}
                   className={`investments-ai-message ${item.role === 'user' ? 'is-user' : 'is-assistant'}`}
                 >
+                  {item.role === 'assistant' ? (
+                    <div className="investments-ai-message-avatar" aria-hidden="true">
+                      <img src={BOT_ICON_URL} alt="" />
+                    </div>
+                  ) : null}
                   <div className="investments-ai-bubble">
                     <div className="investments-ai-message-head">
                       <strong>{item.role === 'user' ? '你' : 'AI 分析'}</strong>
@@ -1085,12 +1092,20 @@ export function InvestmentsPage() {
                       </div>
                     ) : null}
                   </div>
+                  {item.role === 'user' ? (
+                    <div className="investments-ai-message-avatar" aria-hidden="true">
+                      <img src={USER_ICON_URL} alt="" />
+                    </div>
+                  ) : null}
                 </article>
               );
             })}
 
             {investmentAiStatus === 'loading' ? (
               <article className="investments-ai-message is-assistant">
+                <div className="investments-ai-message-avatar" aria-hidden="true">
+                  <img src={BOT_ICON_URL} alt="" />
+                </div>
                 <div className="investments-ai-bubble">
                   <div className="investments-ai-message-head">
                     <strong>AI 分析</strong>

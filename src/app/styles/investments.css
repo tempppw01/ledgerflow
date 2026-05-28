@@ -186,10 +186,36 @@
 
 .investments-ai-message {
   display: flex;
+  gap: 10px;
+  align-items: flex-start;
 }
 
 .investments-ai-message.is-user {
   justify-content: flex-end;
+}
+
+.investments-ai-message-avatar {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 86%, transparent);
+  background: color-mix(in srgb, var(--color-bg-elevated) 92%, var(--color-primary-bg));
+  box-shadow: var(--shadow-xs);
+}
+
+.investments-ai-message-avatar img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.investments-ai-message.is-user .investments-ai-message-avatar {
+  background: color-mix(in srgb, var(--color-primary-bg) 88%, var(--color-bg-elevated));
+  border-color: color-mix(in srgb, var(--color-primary) 18%, transparent);
 }
 
 .investments-ai-bubble {

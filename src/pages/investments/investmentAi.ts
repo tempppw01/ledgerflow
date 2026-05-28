@@ -67,7 +67,13 @@ export function buildInvestmentAssistantPrompt(input: {
       name: item.name,
       code: item.code || '',
       platform: item.platform || '',
-      tags: item.tags || []
+      tags: item.tags || [],
+      note: item.note || '',
+      lastVerdict: item.lastVerdict || '',
+      lastSummary: item.lastSummary || '',
+      lastRiskLevel: item.lastRiskLevel || 'unknown',
+      lastAnalysisAt: item.lastAnalysisAt || '',
+      updatedAt: item.updatedAt || ''
     }))
   };
 
@@ -77,12 +83,13 @@ export function buildInvestmentAssistantPrompt(input: {
     '1. 用自然、直接的简体中文回答，不要解释页面逻辑，不要空话。',
     '2. 先给一句结论，再给 3 条左右依据，最后给 2 到 3 条下一步建议。',
     '3. 可以结合用户上传的截图、用户问题和投资上下文；如果信息不足，必须直接说“信息不足”，并指出还差什么。',
-    '4. 不要承诺收益，也不要替用户做最终投资决策。',
-    '5. 在正文最后追加一个 JSON 代码块，格式必须是：',
+    '4. 如果投资上下文里已有基金自选记录，尤其是同名或同代码基金，要参考自选里的上次结论、摘要、风险、备注和更新时间，说明本次判断是否延续或改变。',
+    '5. 不要承诺收益，也不要替用户做最终投资决策。',
+    '6. 在正文最后追加一个 JSON 代码块，格式必须是：',
     '```json',
     '{"fundName":"","fundCode":"","verdict":"","summary":"","riskLevel":"low|medium|high|unknown","highlights":[""],"risks":[""],"actions":[""],"watchTags":[""],"platform":"","note":""}',
     '```',
-    '6. 如果无法识别基金代码可以留空；数组每个字段最多返回 4 项；JSON 代码块后面不要再追加其他内容。',
+    '7. 如果无法识别基金代码可以留空；数组每个字段最多返回 4 项；JSON 代码块后面不要再追加其他内容。',
     `投资上下文：\n${JSON.stringify(context, null, 2)}`
   ].join('\n');
 }

@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Account } from '../../entities/account/types';
 import type { TransactionItem } from '../../entities/transaction/types';
+import { BOT_ICON_URL, USER_ICON_URL } from '../../shared/config/brandAssets';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { InvestmentsPage } from './InvestmentsPage';
@@ -183,6 +184,75 @@ describe('InvestmentsPage AI assistant', () => {
     expect(useAppPreferences.getState().investmentWatchlist[0].code).toBe('510310');
     expect(screen.getByText('更新自选')).toBeInTheDocument();
     expect(screen.getAllByText('易方达沪深300ETF').length).toBeGreaterThan(0);
+  });
+
+  it('passes fund watchlist details into the AI prompt and renders OSS message icons', async () => {
+    useAppPreferences.setState({
+      investmentWatchlist: [
+        {
+          id: 'watch-1',
+          name: '招商优质成长混合(LOF)',
+          code: '161706',
+          platform: '蚂蚁基金',
+          tags: ['资源科技持仓', '高波动'],
+          note: '适合高风险承受能力者继续观察',
+          lastVerdict: '资料支撑仓',
+          lastSummary: '基金成立超20年，经理任期回报优异，但高持股集中度会放大波动。',
+          lastRiskLevel: 'high',
+          lastAnalysisAt: '2026-05-28T01:47:00.000Z',
+          createdAt: '2026-05-28T01:47:00.000Z',
+          updatedAt: '2026-05-28T01:47:00.000Z'
+        }
+      ]
+    });
+
+    sendAiChatStreamMock.mockResolvedValue({
+      content: [
+        '参考自选记录后，暂时更适合继续观察。',
+        '```json',
+        JSON.stringify({
+          fundName: '招商优质成长混合(LOF)',
+          fundCode: '161706',
+          verdict: '继续观察',
+          summary: '结合自选里的高波动记录，本次不建议贸然加仓。',
+          riskLevel: 'high',
+          highlights: ['已有历史观察记录'],
+          risks: ['高波动'],
+          actions: ['继续跟踪'],
+          watchTags: ['高波动'],
+          platform: '蚂蚁基金',
+          note: '参考自选历史判断'
+        }),
+        '```'
+      ].join('\n'),
+      reasoning: ''
+    });
+
+    const { container } = render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByLabelText('基金分析输入框'), {
+      target: { value: '结合自选记录看看招商优质成长还值得关注吗？' }
+    });
+    fireEvent.click(screen.getByRole('button', { name: '开始分析' }));
+
+    await waitFor(() => expect(sendAiChatStreamMock).toHaveBeenCalled());
+    const request = sendAiChatStreamMock.mock.calls[0]?.[0] as { systemPrompt: string };
+
+    expect(request.systemPrompt).toContain('招商优质成长混合(LOF)');
+    expect(request.systemPrompt).toContain('资料支撑仓');
+    expect(request.systemPrompt).toContain('基金成立超20年');
+    expect(request.systemPrompt).toContain('高波动');
+
+    await screen.findByText('结合自选里的高波动记录，本次不建议贸然加仓。');
+    const avatarSources = Array.from(container.querySelectorAll<HTMLImageElement>('.investments-ai-message-avatar img'))
+      .map((img) => img.src);
+
+    expect(avatarSources).toContain(BOT_ICON_URL);
+    expect(avatarSources).toContain(USER_ICON_URL);
   });
 
   it('adds pasted fund screenshots to the pending analysis images', async () => {
