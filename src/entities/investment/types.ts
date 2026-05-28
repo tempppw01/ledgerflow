@@ -73,6 +73,27 @@ export interface InvestmentFundAnalysis {
   note?: string;
 }
 
+export interface InvestmentWatchlistReviewItem {
+  id: string;
+  rank: number;
+  verdict: string;
+  summary: string;
+  riskLevel: InvestmentAnalysisRiskLevel;
+  investmentAdvice?: string;
+  adviceReasons?: string[];
+  riskNotes?: string[];
+  nextActions?: string[];
+  watchTags?: string[];
+  performanceHistory?: string[];
+  fundAnalysis?: string[];
+  fundHoldings?: string[];
+  assetAllocation?: string[];
+  industryAllocation?: string[];
+  buyFeeRate?: string;
+  fundCompany?: string;
+  note?: string;
+}
+
 export interface InvestmentWatchItem {
   id: string;
   name: string;

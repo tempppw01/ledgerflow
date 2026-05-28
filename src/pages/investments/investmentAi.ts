@@ -3,7 +3,8 @@ import type {
   InvestmentFundAnalysis,
   InvestmentGoal,
   InvestmentPosition,
-  InvestmentWatchItem
+  InvestmentWatchItem,
+  InvestmentWatchlistReviewItem
 } from '../../entities/investment/types';
 
 function normalizeList(value: unknown, limit = 4): string[] {
@@ -106,6 +107,74 @@ export function buildInvestmentAssistantPrompt(input: {
   ].join('\n');
 }
 
+export function buildInvestmentWatchlistReviewPrompt(input: {
+  positions: InvestmentPosition[];
+  goals: InvestmentGoal[];
+  watchlist: InvestmentWatchItem[];
+  monthlyInvestableCash: number;
+}) {
+  const context = {
+    positions: input.positions.slice(0, 8).map((item) => ({
+      name: item.name,
+      category: item.category,
+      platform: item.platform || '',
+      currentValue: Number(item.currentValue.toFixed(2)),
+      monthlyContribution: item.monthlyContribution || 0,
+      targetAllocation: item.targetAllocation || 0,
+      riskLevel: item.riskLevel
+    })),
+    goals: input.goals.slice(0, 5).map((item) => ({
+      name: item.name,
+      targetAmount: Number(item.targetAmount.toFixed(2)),
+      currentAmount: Number(item.currentAmount.toFixed(2)),
+      priority: item.priority,
+      targetDate: item.targetDate || ''
+    })),
+    monthlyInvestableCash: Number(input.monthlyInvestableCash.toFixed(2)),
+    watchlist: input.watchlist.map((item, index) => ({
+      id: item.id,
+      currentRank: index + 1,
+      name: item.name,
+      code: item.code || '',
+      platform: item.platform || '',
+      tags: item.tags || [],
+      note: item.note || '',
+      lastVerdict: item.lastVerdict || '',
+      lastSummary: item.lastSummary || '',
+      lastRiskLevel: item.lastRiskLevel || 'unknown',
+      investmentAdvice: item.investmentAdvice || '',
+      adviceReasons: item.adviceReasons || [],
+      riskNotes: item.riskNotes || [],
+      nextActions: item.nextActions || [],
+      performanceHistory: item.performanceHistory || [],
+      fundAnalysis: item.fundAnalysis || [],
+      fundHoldings: item.fundHoldings || [],
+      assetAllocation: item.assetAllocation || [],
+      industryAllocation: item.industryAllocation || [],
+      buyFeeRate: item.buyFeeRate || '',
+      fundCompany: item.fundCompany || '',
+      lastAnalysisAt: item.lastAnalysisAt || '',
+      updatedAt: item.updatedAt || ''
+    }))
+  };
+
+  return [
+    '你是 LedgerFlow 的 AI 投资自选基金复盘助手，用户希望你帮他把自选基金按“更值得优先关注/更适合先处理”的顺序排好。',
+    '任务要求：',
+    '1. 逐只复盘所有自选基金，不能遗漏任何 id；不要新增不存在的基金。',
+    '2. rank=1 表示最值得优先关注或最需要用户先看的一只；如果信息不足，也要根据已有资料给出保守排序。',
+    '3. 投资建议要适合新手，短、直观、可执行，例如“继续观察”“小比例定投”“暂不加仓”“先补资料”。',
+    '4. summary 控制在 60 字以内，尽量解释为什么排在这个位置。',
+    '5. 你可以补全历史业绩、基金分析、基金持仓、资产分布、行业分布、买入费率、基金公司；不确定就留空数组或空字符串，不要编造精确数据。',
+    '6. 只返回 JSON 代码块，格式必须是：',
+    '```json',
+    '{"items":[{"id":"","rank":1,"verdict":"","summary":"","riskLevel":"low|medium|high|unknown","investmentAdvice":"","adviceReasons":[""],"riskNotes":[""],"nextActions":[""],"watchTags":[""],"performanceHistory":[""],"fundAnalysis":[""],"fundHoldings":[""],"assetAllocation":[""],"industryAllocation":[""],"buyFeeRate":"","fundCompany":"","note":""}]}',
+    '```',
+    '7. 数组字段每项不超过 8 项；JSON 代码块后面不要再追加其他内容。',
+    `投资上下文：\n${JSON.stringify(context, null, 2)}`
+  ].join('\n');
+}
+
 export function normalizeInvestmentFundAnalysis(raw: unknown): InvestmentFundAnalysis | null {
   if (!raw || typeof raw !== 'object') {
     return null;
@@ -146,6 +215,72 @@ export function normalizeInvestmentFundAnalysis(raw: unknown): InvestmentFundAna
     platform: normalizeOptionalString(item.platform),
     note: normalizeOptionalString(item.note)
   };
+}
+
+export function normalizeInvestmentWatchlistReviewItem(
+  raw: unknown
+): InvestmentWatchlistReviewItem | null {
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+
+  const item = raw as Partial<InvestmentWatchlistReviewItem>;
+  const id = normalizeOptionalString(item.id);
+  if (!id) {
+    return null;
+  }
+
+  const verdict = String(item.verdict || '').trim();
+  const summary = String(item.summary || '').trim();
+  const rank = Math.max(1, Math.floor(Number(item.rank || 0))) || 999;
+  const riskLevel =
+    item.riskLevel === 'low' ||
+    item.riskLevel === 'medium' ||
+    item.riskLevel === 'high' ||
+    item.riskLevel === 'unknown'
+      ? item.riskLevel
+      : 'unknown';
+
+  return {
+    id,
+    rank,
+    verdict: verdict || summary || '已完成复盘',
+    summary: summary || verdict || '已完成复盘',
+    riskLevel,
+    investmentAdvice: normalizeOptionalString(item.investmentAdvice),
+    adviceReasons: normalizeList(item.adviceReasons, 6),
+    riskNotes: normalizeList(item.riskNotes, 6),
+    nextActions: normalizeList(item.nextActions, 6),
+    watchTags: normalizeList(item.watchTags),
+    performanceHistory: normalizeList(item.performanceHistory, 6),
+    fundAnalysis: normalizeList(item.fundAnalysis, 6),
+    fundHoldings: normalizeList(item.fundHoldings, 8),
+    assetAllocation: normalizeList(item.assetAllocation, 6),
+    industryAllocation: normalizeList(item.industryAllocation, 8),
+    buyFeeRate: normalizeOptionalString(item.buyFeeRate),
+    fundCompany: normalizeOptionalString(item.fundCompany),
+    note: normalizeOptionalString(item.note)
+  };
+}
+
+export function extractInvestmentWatchlistReview(raw: string): InvestmentWatchlistReviewItem[] {
+  const jsonBlock = extractJsonCodeBlock(raw);
+  if (!jsonBlock) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(jsonBlock) as { items?: unknown[] };
+    if (!Array.isArray(parsed.items)) {
+      return [];
+    }
+
+    return parsed.items
+      .map((item) => normalizeInvestmentWatchlistReviewItem(item))
+      .filter((item): item is InvestmentWatchlistReviewItem => Boolean(item));
+  } catch {
+    return [];
+  }
 }
 
 export function extractInvestmentAnalysis(raw: string) {

@@ -75,6 +75,7 @@ interface AppPreferencesState {
     }
   ) => void;
   removeInvestmentWatchItem: (id: string) => void;
+  setInvestmentWatchlist: (items: InvestmentWatchItem[]) => void;
   setInvestmentAiMessages: (messages: InvestmentAiMessage[]) => void;
   clearInvestmentAiMessages: () => void;
   replaceInvestmentData: (payload: {
@@ -537,6 +538,13 @@ export const useAppPreferences = create<AppPreferencesState>()(
         set((state) => ({
           investmentWatchlist: state.investmentWatchlist.filter((item) => item.id !== id)
         }));
+      },
+      setInvestmentWatchlist: (items) => {
+        set({
+          investmentWatchlist: Array.isArray(items)
+            ? items.map((item) => normalizeInvestmentWatchItem(item))
+            : []
+        });
       },
       setInvestmentAiMessages: (messages) => {
         set({

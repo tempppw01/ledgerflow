@@ -306,6 +306,106 @@ describe('InvestmentsPage AI assistant', () => {
     expect(avatarSources).toContain(USER_ICON_URL);
   });
 
+  it('reviews and sorts all watchlist funds with AI', async () => {
+    useAppPreferences.setState({
+      investmentWatchlist: [
+        {
+          id: 'watch-a',
+          name: '南方红利低波50ETF联接A',
+          code: '008163',
+          platform: '蚂蚁基金',
+          tags: ['红利低波'],
+          lastVerdict: '可以观察',
+          lastSummary: '红利低波风格偏防守。',
+          lastRiskLevel: 'medium',
+          investmentAdvice: '先观察',
+          createdAt: '2026-05-28T01:47:00.000Z',
+          updatedAt: '2026-05-28T01:47:00.000Z'
+        },
+        {
+          id: 'watch-b',
+          name: '易方达沪深300ETF',
+          code: '510310',
+          platform: '支付宝',
+          tags: ['宽基'],
+          lastVerdict: '适合跟踪',
+          lastSummary: '宽基底仓属性清晰。',
+          lastRiskLevel: 'low',
+          investmentAdvice: '小额定投',
+          createdAt: '2026-05-28T01:47:00.000Z',
+          updatedAt: '2026-05-28T01:47:00.000Z'
+        }
+      ]
+    });
+
+    sendAiChatStreamMock.mockResolvedValue({
+      content: [
+        '```json',
+        JSON.stringify({
+          items: [
+            {
+              id: 'watch-b',
+              rank: 1,
+              verdict: '优先跟踪',
+              summary: '宽基底仓更清晰，适合放在前面复盘。',
+              riskLevel: 'low',
+              investmentAdvice: '小比例定投',
+              adviceReasons: ['宽基分散度更高'],
+              riskNotes: ['仍有市场波动'],
+              nextActions: ['设置定投上限'],
+              watchTags: ['宽基', '优先'],
+              performanceHistory: ['近三年跟随沪深300走势'],
+              fundAnalysis: ['适合作为底仓观察'],
+              fundHoldings: ['沪深300成分股'],
+              assetAllocation: ['股票 94%'],
+              industryAllocation: ['金融 18%'],
+              buyFeeRate: '0.1%',
+              fundCompany: '易方达基金'
+            },
+            {
+              id: 'watch-a',
+              rank: 2,
+              verdict: '继续观察',
+              summary: '红利低波偏防守，但短期弹性一般。',
+              riskLevel: 'medium',
+              investmentAdvice: '先观察不追高',
+              adviceReasons: ['防守属性明确'],
+              riskNotes: ['可能跑输成长风格'],
+              nextActions: ['补充费率和跟踪误差'],
+              watchTags: ['红利低波'],
+              fundCompany: '南方基金'
+            }
+          ]
+        }),
+        '```'
+      ].join('\n'),
+      reasoning: ''
+    });
+
+    const { container } = render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'AI 分析排序' }));
+
+    await waitFor(() => {
+      expect(useAppPreferences.getState().investmentWatchlist[0].id).toBe('watch-b');
+    });
+
+    const request = sendAiChatStreamMock.mock.calls[0]?.[0] as { systemPrompt: string };
+    expect(request.systemPrompt).toContain('watch-a');
+    expect(request.systemPrompt).toContain('watch-b');
+    expect(useAppPreferences.getState().investmentWatchlist[0].investmentAdvice).toBe('小比例定投');
+    expect(useAppPreferences.getState().investmentWatchlist[0].fundCompany).toBe('易方达基金');
+
+    const cards = Array.from(container.querySelectorAll('.investments-watch-card'));
+    expect(cards[0]?.textContent).toContain('易方达沪深300ETF');
+    expect(cards[0]?.textContent).toContain('基金公司');
+    expect(cards[1]?.textContent).toContain('南方红利低波50ETF联接A');
+  });
+
   it('prefills a new position from a watchlist fund context menu', async () => {
     useAppPreferences.setState({
       investmentWatchlist: [

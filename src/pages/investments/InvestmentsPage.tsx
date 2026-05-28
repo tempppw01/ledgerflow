@@ -19,12 +19,14 @@ import type {
   InvestmentGoalPriority,
   InvestmentPosition,
   InvestmentRiskLevel,
-  InvestmentWatchItem
+  InvestmentWatchItem,
+  InvestmentWatchlistReviewItem
 } from '../../entities/investment/types';
 import { sendAiChatStream } from '../../features/assistant/api/openaiCompatibleClient';
 import { renderMarkdownContent } from '../../features/assistant/ui/MarkdownRenderer';
 import {
   BOT_ICON_URL,
+  BRAIN_ICON_URL,
   CHEVRONS_DOWN_UP_ICON_URL,
   CHEVRONS_UP_DOWN_ICON_URL,
   IMAGE_ICON_URL,
@@ -45,8 +47,10 @@ import { EmptyState } from '../../shared/ui/EmptyState';
 import { Toast, type ToastVariant } from '../../shared/ui/Toast';
 import {
   buildInvestmentAssistantPrompt,
+  buildInvestmentWatchlistReviewPrompt,
   createInvestmentAiMessage,
   extractInvestmentAnalysis,
+  extractInvestmentWatchlistReview,
   readImageAsDataUrl,
   summarizeInvestmentAnalysis,
   trimInvestmentAiMessages
@@ -423,6 +427,58 @@ function compactWatchDetailSections(item: InvestmentWatchItem): WatchDetailSecti
   ].filter((section) => section.items.length > 0);
 }
 
+function mergeWatchlistReview(
+  watchlist: InvestmentWatchItem[],
+  reviewItems: InvestmentWatchlistReviewItem[]
+): InvestmentWatchItem[] {
+  const reviewedAt = new Date().toISOString();
+  const reviewById = new Map(reviewItems.map((item) => [item.id, item]));
+
+  return watchlist
+    .map((item, index) => {
+      const review = reviewById.get(item.id);
+      if (!review) {
+        return {
+          item,
+          rank: 9999 + index
+        };
+      }
+
+      return {
+        item: {
+          ...item,
+          tags: review.watchTags?.length ? review.watchTags : item.tags,
+          note: review.note || item.note,
+          lastVerdict: review.verdict || item.lastVerdict,
+          lastSummary: review.summary || item.lastSummary,
+          lastRiskLevel: review.riskLevel || item.lastRiskLevel,
+          investmentAdvice: review.investmentAdvice || item.investmentAdvice,
+          adviceReasons: review.adviceReasons?.length ? review.adviceReasons : item.adviceReasons,
+          riskNotes: review.riskNotes?.length ? review.riskNotes : item.riskNotes,
+          nextActions: review.nextActions?.length ? review.nextActions : item.nextActions,
+          performanceHistory: review.performanceHistory?.length
+            ? review.performanceHistory
+            : item.performanceHistory,
+          fundAnalysis: review.fundAnalysis?.length ? review.fundAnalysis : item.fundAnalysis,
+          fundHoldings: review.fundHoldings?.length ? review.fundHoldings : item.fundHoldings,
+          assetAllocation: review.assetAllocation?.length
+            ? review.assetAllocation
+            : item.assetAllocation,
+          industryAllocation: review.industryAllocation?.length
+            ? review.industryAllocation
+            : item.industryAllocation,
+          buyFeeRate: review.buyFeeRate || item.buyFeeRate,
+          fundCompany: review.fundCompany || item.fundCompany,
+          lastAnalysisAt: reviewedAt,
+          updatedAt: reviewedAt
+        },
+        rank: review.rank || 9999 + index
+      };
+    })
+    .sort((a, b) => a.rank - b.rank)
+    .map(({ item }) => item);
+}
+
 export function InvestmentsPage() {
   const navigate = useNavigate();
   const accounts = useFinanceStore((state) => state.accounts);
@@ -441,6 +497,7 @@ export function InvestmentsPage() {
   const removeInvestmentGoal = useAppPreferences((state) => state.removeInvestmentGoal);
   const upsertInvestmentWatchItem = useAppPreferences((state) => state.upsertInvestmentWatchItem);
   const removeInvestmentWatchItem = useAppPreferences((state) => state.removeInvestmentWatchItem);
+  const setInvestmentWatchlist = useAppPreferences((state) => state.setInvestmentWatchlist);
   const setInvestmentAiMessages = useAppPreferences((state) => state.setInvestmentAiMessages);
   const clearInvestmentAiMessages = useAppPreferences((state) => state.clearInvestmentAiMessages);
   const { baseUrl, apiKey, model } = useAiSettings();
@@ -462,6 +519,10 @@ export function InvestmentsPage() {
     'idle'
   );
   const [investmentAiError, setInvestmentAiError] = useState('');
+  const [watchlistReviewStatus, setWatchlistReviewStatus] = useState<'idle' | 'loading' | 'error'>(
+    'idle'
+  );
+  const [watchlistReviewError, setWatchlistReviewError] = useState('');
   const [streamingContent, setStreamingContent] = useState('');
   const [streamingReasoning, setStreamingReasoning] = useState('');
   const [toast, setToast] = useState<{ visible: boolean; message: string; variant: ToastVariant }>({
@@ -888,6 +949,76 @@ export function InvestmentsPage() {
 
     upsertInvestmentWatchItem(buildWatchItemFromAnalysis(analysis));
     setToastState(`已将“${analysis.fundName || analysis.fundCode}”加入自选`, 'success');
+  }
+
+  async function handleReviewWatchlist() {
+    if (watchlistReviewStatus === 'loading') return;
+
+    if (investmentWatchlist.length === 0) {
+      setToastState('先加入几只自选基金，我再帮你分析排序。', 'warning');
+      return;
+    }
+
+    if (!apiKey.trim()) {
+      setWatchlistReviewStatus('error');
+      setWatchlistReviewError('请先在设置中配置可用的 AI Key，再来分析自选基金。');
+      setToastState('请先配置可用的 AI Key。', 'warning');
+      return;
+    }
+
+    setWatchlistReviewStatus('loading');
+    setWatchlistReviewError('');
+
+    try {
+      let fullContent = '';
+      const result = await sendAiChatStream(
+        {
+          baseUrl,
+          apiKey,
+          model,
+          systemPrompt: buildInvestmentWatchlistReviewPrompt({
+            positions: activePositions,
+            goals,
+            watchlist: investmentWatchlist,
+            monthlyInvestableCash
+          }),
+          messages: [
+            {
+              role: 'user',
+              text: '请复盘并排序当前所有自选基金，返回可持久化的 JSON。'
+            }
+          ]
+        },
+        {
+          onDelta: (delta) => {
+            fullContent += delta;
+          },
+          onDone: (content) => {
+            fullContent = content || fullContent;
+          }
+        }
+      );
+
+      const reviews = extractInvestmentWatchlistReview(result.content || fullContent);
+      const knownReviews = reviews.filter((review) =>
+        investmentWatchlist.some((item) => item.id === review.id)
+      );
+
+      if (knownReviews.length === 0) {
+        throw new Error('AI 没有返回可排序的自选基金结果，请稍后再试。');
+      }
+
+      const nextWatchlist = mergeWatchlistReview(investmentWatchlist, knownReviews);
+      setInvestmentWatchlist(nextWatchlist);
+      setExpandedWatchItemId(nextWatchlist[0]?.id ?? null);
+      setWatchlistReviewStatus('idle');
+      setToastState(`已分析 ${knownReviews.length} 只自选基金，并按优先级重新排序。`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '自选基金分析失败，请稍后再试。';
+      setWatchlistReviewStatus('error');
+      setWatchlistReviewError(message);
+      setToastState(message, 'warning');
+    }
   }
 
   async function submitInvestmentAi(event: FormEvent<HTMLFormElement>) {
@@ -1474,8 +1605,23 @@ export function InvestmentsPage() {
               <h3>基金自选</h3>
               <p>把想继续观察的基金留在这里，下次回来不用重新找。</p>
             </div>
-            <span className="badge">{investmentWatchlist.length} 只</span>
+            <div className="investments-watchlist-actions">
+              <span className="badge">{investmentWatchlist.length} 只</span>
+              <button
+                type="button"
+                className="primary button-with-icon investments-watchlist-review-btn"
+                onClick={handleReviewWatchlist}
+                disabled={watchlistReviewStatus === 'loading' || investmentWatchlist.length === 0}
+              >
+                <img src={BRAIN_ICON_URL} alt="" aria-hidden="true" />
+                {watchlistReviewStatus === 'loading' ? '分析中' : 'AI 分析排序'}
+              </button>
+            </div>
           </div>
+
+          {watchlistReviewError ? (
+            <p className="investments-watchlist-review-error">{watchlistReviewError}</p>
+          ) : null}
 
           {latestAssistantAnalysis &&
           !findMatchingWatchItem(investmentWatchlist, latestAssistantAnalysis) ? (

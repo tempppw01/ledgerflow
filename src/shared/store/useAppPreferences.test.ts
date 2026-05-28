@@ -204,5 +204,19 @@ describe('useAppPreferences RSS subscriptions', () => {
     expect(state.investmentAiMessages).toHaveLength(2);
     expect(state.investmentAiMessages[1].analysis?.fundCode).toBe('510310');
     expect(state.investmentAiMessages[1].analysis?.buyFeeRate).toBe('0.12%');
+
+    useAppPreferences.getState().setInvestmentWatchlist([
+      {
+        ...state.investmentWatchlist[0],
+        name: '排序后的自选基金',
+        fundCompany: '排序后的基金公司'
+      }
+    ]);
+
+    expect(useAppPreferences.getState().investmentWatchlist).toHaveLength(1);
+    expect(useAppPreferences.getState().investmentWatchlist[0].name).toBe('排序后的自选基金');
+    expect(useAppPreferences.getState().investmentWatchlist[0].fundCompany).toBe(
+      '排序后的基金公司'
+    );
   });
 });

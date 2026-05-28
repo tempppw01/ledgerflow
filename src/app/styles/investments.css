@@ -493,6 +493,32 @@
   gap: 10px;
 }
 
+.investments-watchlist-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.investments-watchlist-review-btn {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.investments-watchlist-review-error {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 18%, transparent);
+  background: color-mix(in srgb, var(--color-danger-bg) 72%, var(--color-bg-elevated));
+  color: var(--color-danger);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .investments-watch-card {
   display: grid;
   gap: 10px;
@@ -1155,6 +1181,10 @@
   }
 
   .investments-watch-card-actions {
+    justify-content: flex-start;
+  }
+
+  .investments-watchlist-actions {
     justify-content: flex-start;
   }
 
