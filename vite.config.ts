@@ -59,7 +59,39 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        runtimeCaching: [
+          {
+            urlPattern:
+              /^https:\/\/cloudreve-bei\.oss-cn-guangzhou\.aliyuncs\.com\/ledgerflow\/fonts\/.*\.(?:woff2?|ttf)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'ledgerflow-oss-fonts',
+              expiration: {
+                maxEntries: 16,
+                maxAgeSeconds: 60 * 60 * 24 * 365
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern:
+              /^https:\/\/cloudreve-bei\.oss-cn-guangzhou\.aliyuncs\.com\/ledgerflow\/(?:ui|Illustrations)\/.*\.(?:gif|png|svg|webp)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'ledgerflow-oss-assets',
+              expiration: {
+                maxEntries: 96,
+                maxAgeSeconds: 60 * 60 * 24 * 90
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          }
+        ]
       }
     })
   ],
