@@ -391,6 +391,8 @@ export function DatabaseSettingsPage() {
   >([]);
   const [selectedRestorePath, setSelectedRestorePath] = useState('');
   const [selectedObjectStorageRestorePath, setSelectedObjectStorageRestorePath] = useState('');
+  const [localBackupOpen, setLocalBackupOpen] = useState(false);
+  const [billImportOpen, setBillImportOpen] = useState(false);
   const [webdavBackupOpen, setWebdavBackupOpen] = useState(false);
   const [objectStorageBackupOpen, setObjectStorageBackupOpen] = useState(false);
   const [webdavAdvancedOpen, setWebdavAdvancedOpen] = useState(false);
@@ -927,140 +929,152 @@ export function DatabaseSettingsPage() {
 
   return (
     <div>
-      <section className="panel database-data-hub">
-        <div className="database-data-hub-head">
-          <div>
-            <h3 style={{ marginTop: 0 }}>本地备份与账单导入</h3>
-            <p className="sync-tip">
-              先留一份备份，再导入新账单会更安心。这里可以保存整本账本，也可以把微信、支付宝账单一次补进来。
-            </p>
-          </div>
-          <span className="database-data-hub-count">当前共 {totalRows} 条数据</span>
-        </div>
+      <div className="database-data-stack">
+        <section className="panel database-data-section">
+          <button
+            type="button"
+            className="database-data-section-head"
+            aria-expanded={localBackupOpen}
+            aria-controls="database-local-backup-panel"
+            onClick={() => setLocalBackupOpen((prev) => !prev)}
+          >
+            <span className="database-data-section-title">
+              <img src={CARD_SD_ICON_URL} alt="" aria-hidden="true" />
+              本地备份
+            </span>
+            <span className="database-data-section-meta">
+              当前共 {totalRows} 条数据 · {localBackupOpen ? '收起' : '展开'}
+            </span>
+          </button>
 
-        <div className="database-data-hub-grid">
-          <div className="database-data-hub-block">
-            <div>
-              <span className="database-data-hub-label">
-                <img src={CARD_SD_ICON_URL} alt="" aria-hidden="true" />
-                本地备份
-              </span>
-              <h4>按范围导出备份文件</h4>
-            </div>
-            <p className="sync-tip">导出的备份可直接导入恢复，WebDAV 也会沿用同一份范围设置。</p>
-            <div className="database-backup-scope" aria-label="备份范围设置">
-              <div className="database-backup-scope-head">
-                <strong className="database-backup-scope-title">备份范围</strong>
-                <span className="sync-tip">本地导出和 WebDAV 共用</span>
+          {localBackupOpen ? (
+            <div id="database-local-backup-panel" className="database-data-section-body">
+              <p className="sync-tip">导出的备份可直接导入恢复，WebDAV 也会沿用同一份范围设置。</p>
+              <div className="database-backup-scope" aria-label="备份范围设置">
+                <div className="database-backup-scope-head">
+                  <strong className="database-backup-scope-title">备份范围</strong>
+                  <span className="sync-tip">本地导出和 WebDAV 共用</span>
+                </div>
+                <div className="database-backup-scope-list">
+                  {BACKUP_SCOPE_OPTIONS.map((item) => (
+                    <label
+                      key={item.key}
+                      className={`database-backup-scope-item${backupScope[item.key] ? ' is-active' : ''}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={backupScope[item.key]}
+                        onChange={(e) =>
+                          setBackupScope((prev) => ({ ...prev, [item.key]: e.target.checked }))
+                        }
+                      />
+                      <span className="database-backup-scope-copy">
+                        <strong>{item.label}</strong>
+                        <small>{item.description}</small>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                {!canCreateBackup ? (
+                  <p className="database-backup-scope-warning">请至少勾选一个备份范围。</p>
+                ) : null}
               </div>
-              <div className="database-backup-scope-list">
-                {BACKUP_SCOPE_OPTIONS.map((item) => (
-                  <label
-                    key={item.key}
-                    className={`database-backup-scope-item${backupScope[item.key] ? ' is-active' : ''}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={backupScope[item.key]}
-                      onChange={(e) =>
-                        setBackupScope((prev) => ({ ...prev, [item.key]: e.target.checked }))
-                      }
-                    />
-                    <span className="database-backup-scope-copy">
-                      <strong>{item.label}</strong>
-                      <small>{item.description}</small>
-                    </span>
-                  </label>
-                ))}
-              </div>
-              {!canCreateBackup ? (
-                <p className="database-backup-scope-warning">请至少勾选一个备份范围。</p>
-              ) : null}
-            </div>
-            <div className="database-data-hub-actions">
-              <button
-                type="button"
-                className="primary button-with-icon"
-                onClick={handleExportJson}
-                disabled={!hasHydrated || !canCreateBackup}
-              >
-                <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
-                导出备份文件
-              </button>
-              <button
-                type="button"
-                className="button-with-icon"
-                onClick={() => backupInputRef.current?.click()}
-              >
-                <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
-                导入备份文件
-              </button>
-              <input
-                ref={backupInputRef}
-                type="file"
-                title="导入 JSON 备份"
-                aria-label="导入 JSON 备份"
-                accept="application/json,.json"
-                style={{ display: 'none' }}
-                onChange={handleBackupFileImport}
-              />
-            </div>
-          </div>
-
-          <div className="database-data-hub-block">
-            <div>
-              <span className="database-data-hub-label">账单导入</span>
-              <h4>把微信 / 支付宝账单补进来</h4>
-            </div>
-            <p className="sync-tip">
-              支持微信、支付宝官方账单 CSV / TXT（含制表符），以及微信 XLSX。
-            </p>
-            <div className="database-import-actions">
-              <label className="field database-import-mode-field" style={{ marginBottom: 0 }}>
-                遇到重复账单时
-                <select
-                  aria-label="账单导入模式"
-                  value={importMode}
-                  onChange={(e) => setImportMode(e.target.value as BillImportMode)}
+              <div className="database-data-hub-actions">
+                <button
+                  type="button"
+                  className="primary button-with-icon"
+                  onClick={handleExportJson}
+                  disabled={!hasHydrated || !canCreateBackup}
                 >
-                  <option value="incremental">保留旧账单，重复但有变更时更新为最新</option>
-                  <option value="merge">用新账单覆盖重复账单的导入字段</option>
-                  <option value="overwrite">清空现有交易后重新导入</option>
-                </select>
-              </label>
-              <button
-                type="button"
-                onClick={() => {
-                  setImportSource('wechat');
-                  billInputRef.current?.click();
-                }}
-                disabled={!hasHydrated}
-              >
-                导入微信账单
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setImportSource('alipay');
-                  billInputRef.current?.click();
-                }}
-                disabled={!hasHydrated}
-              >
-                导入支付宝账单
-              </button>
-              <input
-                ref={billInputRef}
-                type="file"
-                title="导入账单文件"
-                aria-label="导入账单文件"
-                accept=".csv,text/csv,.txt,text/plain,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                style={{ display: 'none' }}
-                onChange={handleImportBillFile}
-              />
+                  <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
+                  导出备份文件
+                </button>
+                <button
+                  type="button"
+                  className="button-with-icon"
+                  onClick={() => backupInputRef.current?.click()}
+                >
+                  <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
+                  导入备份文件
+                </button>
+                <input
+                  ref={backupInputRef}
+                  type="file"
+                  title="导入 JSON 备份"
+                  aria-label="导入 JSON 备份"
+                  accept="application/json,.json"
+                  style={{ display: 'none' }}
+                  onChange={handleBackupFileImport}
+                />
+              </div>
             </div>
-          </div>
-        </div>
-      </section>
+          ) : null}
+        </section>
+
+        <section className="panel database-data-section">
+          <button
+            type="button"
+            className="database-data-section-head"
+            aria-expanded={billImportOpen}
+            aria-controls="database-bill-import-panel"
+            onClick={() => setBillImportOpen((prev) => !prev)}
+          >
+            <span className="database-data-section-title">账单导入</span>
+            <span className="database-data-section-meta">{billImportOpen ? '收起' : '展开'}</span>
+          </button>
+
+          {billImportOpen ? (
+            <div id="database-bill-import-panel" className="database-data-section-body">
+              <p className="sync-tip">
+                支持微信、支付宝官方账单 CSV / TXT（含制表符），以及微信 XLSX。
+              </p>
+              <div className="database-import-actions">
+                <label className="field database-import-mode-field" style={{ marginBottom: 0 }}>
+                  遇到重复账单时
+                  <select
+                    aria-label="账单导入模式"
+                    value={importMode}
+                    onChange={(e) => setImportMode(e.target.value as BillImportMode)}
+                  >
+                    <option value="incremental">保留旧账单，重复但有变更时更新为最新</option>
+                    <option value="merge">用新账单覆盖重复账单的导入字段</option>
+                    <option value="overwrite">清空现有交易后重新导入</option>
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImportSource('wechat');
+                    billInputRef.current?.click();
+                  }}
+                  disabled={!hasHydrated}
+                >
+                  导入微信账单
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImportSource('alipay');
+                    billInputRef.current?.click();
+                  }}
+                  disabled={!hasHydrated}
+                >
+                  导入支付宝账单
+                </button>
+                <input
+                  ref={billInputRef}
+                  type="file"
+                  title="导入账单文件"
+                  aria-label="导入账单文件"
+                  accept=".csv,text/csv,.txt,text/plain,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  style={{ display: 'none' }}
+                  onChange={handleImportBillFile}
+                />
+              </div>
+            </div>
+          ) : null}
+        </section>
+      </div>
 
       <section className="panel" style={{ marginTop: 12 }}>
         <h3 style={{ marginTop: 0 }}>数据重制</h3>
