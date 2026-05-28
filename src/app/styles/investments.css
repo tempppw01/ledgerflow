@@ -3,6 +3,7 @@
 }
 
 .investments-hero {
+  order: 3;
   display: grid;
   gap: 18px;
   background:
@@ -113,6 +114,7 @@
 }
 
 .investments-ai-grid {
+  order: 4;
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
   gap: 16px;
@@ -122,7 +124,7 @@
 .investments-ai-panel,
 .investments-watchlist-panel {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   min-width: 0;
   align-content: start;
 }
@@ -156,7 +158,7 @@
 .investments-ai-status-row {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
   color: var(--color-text-secondary);
   font-size: 12px;
@@ -177,7 +179,7 @@
 .investments-ai-prompt-bank button {
   flex: 0 0 auto;
   max-width: min(280px, 76vw);
-  min-height: 38px;
+  min-height: 34px;
   padding: 0 12px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
@@ -194,8 +196,8 @@
 
 .investments-ai-thread {
   display: grid;
-  gap: 12px;
-  max-height: clamp(360px, 58vh, 620px);
+  gap: 10px;
+  max-height: clamp(240px, 38vh, 420px);
   overflow-y: auto;
   padding-right: 4px;
   overscroll-behavior: contain;
@@ -484,7 +486,7 @@
 }
 
 .investments-ai-textarea {
-  min-height: 108px;
+  min-height: 78px;
   resize: vertical;
 }
 
@@ -726,9 +728,14 @@
 
 .investments-overview-grid,
 .investments-main-grid {
+  order: 1;
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
   gap: 12px;
+}
+
+.investments-main-grid {
+  order: 2;
 }
 
 .investments-overview-card,
@@ -761,11 +768,13 @@
   overflow: hidden;
   transition:
     border-color 180ms ease,
-    box-shadow 180ms ease;
+    box-shadow 180ms ease,
+    transform 180ms ease;
 }
 
 .investments-fold-card.is-open {
   border-color: color-mix(in srgb, var(--color-primary) 22%, var(--color-border-light));
+  transform: translateY(2px);
 }
 
 .investments-fold-head {
@@ -809,23 +818,51 @@
   transition:
     background 180ms ease,
     border-color 180ms ease,
-    opacity 180ms ease;
+    opacity 180ms ease,
+    transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .investments-fold-card.is-open .investments-fold-side img {
   background: var(--color-primary-bg);
   border-color: color-mix(in srgb, var(--color-primary) 24%, var(--color-border-light));
   opacity: 1;
+  transform: rotate(180deg);
 }
 
 .investments-fold-body {
-  display: none;
-  margin-top: 14px;
+  display: grid;
+  gap: 0;
+  max-height: 0;
+  margin-top: 0;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-8px);
+  transition:
+    max-height 360ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 220ms ease,
+    margin-top 220ms ease,
+    transform 260ms ease,
+    gap 220ms ease,
+    visibility 0s linear 360ms;
 }
 
 .investments-fold-card.is-open .investments-fold-body {
-  display: grid;
+  max-height: 2400px;
   gap: 14px;
+  margin-top: 14px;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+  transition:
+    max-height 360ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 220ms ease,
+    margin-top 220ms ease,
+    transform 260ms ease,
+    gap 220ms ease,
+    visibility 0s;
 }
 
 .investments-allocation-list,
@@ -1211,7 +1248,7 @@
   }
 
   .investments-ai-thread {
-    max-height: none;
+    max-height: min(42vh, 360px);
   }
 
   .investments-ai-image-strip,
