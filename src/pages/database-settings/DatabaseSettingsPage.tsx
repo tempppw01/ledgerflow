@@ -925,14 +925,7 @@ export function DatabaseSettingsPage() {
 
   return (
     <div>
-      <section className="panel">
-        <h2>备份设置</h2>
-        <p style={{ margin: 0 }}>
-          集中处理本地备份、账单导入和 WebDAV 远程备份；远程数据库连接放在高级区域。
-        </p>
-      </section>
-
-      <section className="panel database-data-hub" style={{ marginTop: 12 }}>
+      <section className="panel database-data-hub">
         <div className="database-data-hub-head">
           <div>
             <h3 style={{ marginTop: 0 }}>本地备份与账单导入</h3>
@@ -1076,9 +1069,7 @@ export function DatabaseSettingsPage() {
       </section>
 
       <section className="panel database-remote-backup-card" style={{ marginTop: 12 }}>
-        <div
-          className="database-remote-backup-head"
-        >
+        <div className="database-remote-backup-head">
           <div>
             <div className="row" style={{ gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
               <h3 style={{ margin: 0 }}>WebDAV 备份</h3>
@@ -1202,7 +1193,9 @@ export function DatabaseSettingsPage() {
             ) : null}
 
             <p className="sync-tip" style={{ margin: '10px 0 0' }}>
-              {webdav.proxyEnabled ? '当前：同源代理已启用。' : '当前：浏览器直连，可能受跨域限制。'}
+              {webdav.proxyEnabled
+                ? '当前：同源代理已启用。'
+                : '当前：浏览器直连，可能受跨域限制。'}
             </p>
             <p className="sync-tip" style={{ margin: '6px 0 0' }}>
               当前备份范围：{backupScopeSummary}
@@ -1237,9 +1230,7 @@ export function DatabaseSettingsPage() {
       </section>
 
       <section className="panel database-remote-backup-card" style={{ marginTop: 12 }}>
-        <div
-          className="database-remote-backup-head"
-        >
+        <div className="database-remote-backup-head">
           <div>
             <div className="row" style={{ gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
               <h3 style={{ margin: 0 }}>对象存储备份</h3>
@@ -1344,10 +1335,7 @@ export function DatabaseSettingsPage() {
             </div>
 
             <div style={{ marginTop: 10 }}>
-              <button
-                type="button"
-                onClick={() => setObjectStorageAdvancedOpen((prev) => !prev)}
-              >
+              <button type="button" onClick={() => setObjectStorageAdvancedOpen((prev) => !prev)}>
                 {objectStorageAdvancedOpen ? '收起高级选项' : '展开高级选项'}
               </button>
             </div>
