@@ -1585,7 +1585,7 @@ export function InvestmentsPage() {
           ) : null}
 
           <form
-            className="investments-ai-composer"
+            className="investments-ai-composer vi-control-surface"
             onSubmit={submitInvestmentAi}
             onPaste={handleInvestmentAiPaste}
           >
@@ -1605,7 +1605,7 @@ export function InvestmentsPage() {
             <div className="investments-ai-composer-toolbar">
               <button
                 type="button"
-                className="investments-ai-upload-btn button-with-icon"
+                className="investments-ai-upload-btn button-with-icon vi-chip"
                 onClick={() => aiFileInputRef.current?.click()}
                 disabled={investmentAiStatus === 'loading'}
               >
@@ -1619,7 +1619,7 @@ export function InvestmentsPage() {
             <textarea
               rows={3}
               value={investmentAiInput}
-              className="investments-ai-textarea"
+              className="investments-ai-textarea vi-textarea"
               placeholder="例如：我不太懂投资，帮我看看这只基金现在适不适合入手？"
               aria-label="基金分析输入框"
               disabled={investmentAiStatus === 'loading'}
@@ -1638,6 +1638,7 @@ export function InvestmentsPage() {
                   <button
                     key={question}
                     type="button"
+                    className="vi-chip"
                     onClick={() => handleInvestmentExpertPrompt(question)}
                     disabled={investmentAiStatus === 'loading'}
                   >

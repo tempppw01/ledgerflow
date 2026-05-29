@@ -515,11 +515,10 @@
 
 .investments-ai-composer {
   display: grid;
-  gap: 10px;
-  padding: 12px;
-  border-radius: 14px;
-  border: 1px solid var(--color-border-light);
-  background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-primary-bg));
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
+  background: color-mix(in srgb, var(--vi-surface-bg-muted) 92%, var(--color-primary-bg));
 }
 
 .investments-ai-composer-toolbar,
@@ -564,11 +563,9 @@
 
 .investments-ai-suggestion-row button {
   flex: 0 0 auto;
-  min-height: 30px;
-  padding: 0 10px;
-  border-radius: 999px;
+  min-height: var(--vi-control-height-sm);
   border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
-  background: color-mix(in srgb, var(--color-bg-elevated) 90%, var(--color-primary-bg));
+  background: color-mix(in srgb, var(--vi-surface-bg) 90%, var(--color-primary-bg));
   color: var(--color-text-secondary);
   font-size: 12px;
 }
@@ -584,14 +581,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 34px;
-  padding: 0 12px;
-  border-radius: 10px;
+  min-height: var(--vi-control-height-sm);
 }
 
 .investments-ai-textarea {
-  min-height: 78px;
-  resize: vertical;
+  min-height: calc(var(--vi-control-height-lg) * 1.75);
 }
 
 .investments-watchlist-list {
