@@ -338,6 +338,29 @@ describe('InvestmentsPage AI assistant', () => {
     expect(screen.getAllByText('Use staged entries instead of buying all at once.')).toHaveLength(1);
   });
 
+  it('submits suggested questions immediately instead of only filling the composer', async () => {
+    sendAiChatStreamMock.mockResolvedValue({
+      content: '这只基金和你当前持仓有部分重合，需要控制比例。',
+      reasoning: ''
+    });
+
+    render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '和我的持仓冲突吗？' }));
+
+    await waitFor(() => expect(sendAiChatStreamMock).toHaveBeenCalled());
+    const request = sendAiChatStreamMock.mock.calls[0]?.[0] as {
+      messages: Array<{ text?: string }>;
+    };
+    expect(request.messages[0]?.text).toBe('和我的持仓冲突吗？');
+    expect(screen.getByLabelText('基金分析输入框')).toHaveValue('');
+    expect(await screen.findByText('这只基金和你当前持仓有部分重合，需要控制比例。')).toBeInTheDocument();
+  });
+
   it('reviews and sorts all watchlist funds with AI', async () => {
     useAppPreferences.setState({
       investmentWatchlist: [

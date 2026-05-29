@@ -795,15 +795,12 @@ export function InvestmentsPage() {
   }
 
   function scrollToInvestmentAiPanel() {
-    aiPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    aiPanelRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
   }
 
   function handleInvestmentExpertPrompt(prompt: string) {
-    setInvestmentAiInput(prompt);
     scrollToInvestmentAiPanel();
-    setTimeout(() => {
-      document.querySelector<HTMLTextAreaElement>('.investments-ai-textarea')?.focus();
-    }, 80);
+    void runInvestmentAi(prompt);
   }
 
   function closeWatchContextMenu() {
@@ -1023,13 +1020,12 @@ export function InvestmentsPage() {
     }
   }
 
-  async function submitInvestmentAi(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function runInvestmentAi(promptOverride?: string) {
     if (investmentAiStatus === 'loading') {
       return;
     }
 
-    const cleanPrompt = investmentAiInput.trim();
+    const cleanPrompt = (promptOverride ?? investmentAiInput).trim();
     const hasAttachments = investmentAiImages.length > 0;
 
     if (!cleanPrompt && !hasAttachments) {
@@ -1059,6 +1055,9 @@ export function InvestmentsPage() {
     setLocalInvestmentAiMessages(optimisticMessages);
     setInvestmentAiStatus('loading');
     setInvestmentAiError('');
+    if (promptOverride !== undefined) {
+      setInvestmentAiInput('');
+    }
     setStreamingContent('');
     setStreamingReasoning('');
 
@@ -1119,6 +1118,11 @@ export function InvestmentsPage() {
       setInvestmentAiStatus('error');
       setInvestmentAiError(error instanceof Error ? error.message : '基金分析失败，请稍后再试。');
     }
+  }
+
+  async function submitInvestmentAi(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await runInvestmentAi();
   }
 
   function submitPosition(event: FormEvent<HTMLFormElement>) {
