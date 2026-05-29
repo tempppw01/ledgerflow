@@ -1,12 +1,6 @@
 .investments-page {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.34fr);
-  grid-template-rows: minmax(0, 1fr) repeat(3, min-content);
-  align-items: start;
-  gap: 12px;
-  height: calc(
-    100vh - var(--topbar-height, 56px) - var(--investments-content-block-padding, 48px)
-  );
+  display: block;
+  height: calc(100vh - var(--topbar-height, 56px) - var(--investments-content-block-padding, 48px));
   height: calc(
     100dvh - var(--topbar-height, 56px) - var(--investments-content-block-padding, 48px)
   );
@@ -28,8 +22,6 @@
 }
 
 .investments-hero {
-  grid-column: 2;
-  grid-row: 2;
   display: grid;
   gap: 0;
   background:
@@ -144,7 +136,12 @@
 }
 
 .investments-ai-grid {
-  display: contents;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.34fr);
+  gap: 12px;
+  align-items: stretch;
+  height: 100%;
+  min-height: 0;
 }
 
 .investments-ai-panel,
@@ -157,7 +154,6 @@
 
 .investments-ai-panel {
   grid-column: 1;
-  grid-row: 1 / span 4;
   position: relative;
   top: auto;
   display: grid;
@@ -169,13 +165,26 @@
   overflow-anchor: none;
 }
 
-.investments-watchlist-panel {
+.investments-support-column {
   grid-column: 2;
-  grid-row: 1;
-  height: 100%;
+  display: grid;
+  grid-auto-rows: max-content;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+  align-content: start;
+  overflow: hidden auto;
+  padding-right: 2px;
+  scrollbar-color: color-mix(in srgb, var(--color-primary) 36%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+.investments-watchlist-panel {
+  height: auto;
   min-height: 0;
   max-height: none;
-  overflow: hidden auto;
+  overflow: visible;
   scrollbar-color: color-mix(in srgb, var(--color-primary) 36%, transparent) transparent;
   scrollbar-width: thin;
 }
@@ -235,6 +244,7 @@
 }
 
 .investments-ai-thread::-webkit-scrollbar,
+.investments-support-column::-webkit-scrollbar,
 .investments-watchlist-panel::-webkit-scrollbar,
 .investments-ai-streaming::-webkit-scrollbar {
   width: 8px;
@@ -242,37 +252,38 @@
 }
 
 .investments-ai-thread::-webkit-scrollbar-track,
+.investments-support-column::-webkit-scrollbar-track,
 .investments-watchlist-panel::-webkit-scrollbar-track,
 .investments-ai-streaming::-webkit-scrollbar-track {
   background: transparent;
 }
 
 .investments-ai-thread::-webkit-scrollbar-thumb,
+.investments-support-column::-webkit-scrollbar-thumb,
 .investments-watchlist-panel::-webkit-scrollbar-thumb,
 .investments-ai-streaming::-webkit-scrollbar-thumb {
   min-height: 48px;
   border: 2px solid transparent;
   border-radius: 999px;
-  background:
-    linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--color-primary) 48%, var(--color-bg-elevated)),
-        color-mix(in srgb, var(--color-accent) 38%, var(--color-bg-elevated))
-      )
-      border-box;
+  background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-primary) 48%, var(--color-bg-elevated)),
+      color-mix(in srgb, var(--color-accent) 38%, var(--color-bg-elevated))
+    )
+    border-box;
   background-clip: content-box;
 }
 
 .investments-ai-thread::-webkit-scrollbar-thumb:hover,
+.investments-support-column::-webkit-scrollbar-thumb:hover,
 .investments-watchlist-panel::-webkit-scrollbar-thumb:hover,
 .investments-ai-streaming::-webkit-scrollbar-thumb:hover {
-  background:
-    linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--color-primary) 62%, var(--color-bg-elevated)),
-        color-mix(in srgb, var(--color-accent) 48%, var(--color-bg-elevated))
-      )
-      border-box;
+  background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-primary) 62%, var(--color-bg-elevated)),
+      color-mix(in srgb, var(--color-accent) 48%, var(--color-bg-elevated))
+    )
+    border-box;
   background-clip: content-box;
 }
 
@@ -900,15 +911,13 @@
 
 .investments-overview-grid,
 .investments-main-grid {
-  grid-column: 2;
-  grid-row: 3;
   display: grid;
   grid-template-columns: 1fr;
   gap: 8px;
 }
 
 .investments-main-grid {
-  grid-row: 4;
+  grid-template-columns: 1fr;
 }
 
 .investments-overview-card,
@@ -1358,6 +1367,7 @@
 }
 
 .investments-hero,
+.investments-support-column,
 .investments-overview-grid,
 .investments-main-grid,
 .investments-hero .investments-summary-strip,
@@ -1426,14 +1436,13 @@
 
 @media (max-width: 900px) {
   .investments-page {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
     height: auto;
     min-height: auto;
     overflow: visible;
   }
 
   .investments-ai-panel,
+  .investments-support-column,
   .investments-watchlist-panel,
   .investments-hero,
   .investments-overview-grid,
@@ -1451,6 +1460,12 @@
 
   .investments-watchlist-panel {
     max-height: none;
+    overflow: visible;
+  }
+
+  .investments-support-column {
+    max-height: none;
+    overflow: visible;
   }
 
   .investments-ai-grid,
