@@ -2618,116 +2618,114 @@ export function AssistantPage() {
 
         <form className="chat-input-form" onSubmit={onSubmit}>
           <div className="chat-input-stack">
-            <div className="chat-input-toolbar">
-              <div className="chat-input-toolbar-left">
-                <div className="chat-model-selector chat-model-selector-inline">
+            <div className="chat-input-main">
+              <textarea
+                ref={wb.textareaRef}
+                className="chat-input-textarea"
+                rows={1}
+                placeholder={inputPlaceholder(wb.status, wb.hasApiKey, mode, t)}
+                value={wb.textInput}
+                onChange={(e) => wb.setTextInput(e.target.value)}
+                onPaste={(e) => void wb.handlePasteImage(e)}
+                onKeyDown={onInputKeyDown}
+              />
+
+              <div className="chat-input-toolbar">
+                <div className="chat-input-toolbar-left">
                   <button
                     type="button"
-                    className={`chat-model-trigger ${modelOpen ? 'is-open' : ''}`}
-                    onClick={() => {
-                      if (modelOpen && modelPickerSource === 'toolbar') {
-                        setModelOpen(false);
-                        setModelPickerSource(null);
-                        return;
-                      }
-                      openModelPicker('toolbar');
-                    }}
-                    aria-haspopup="listbox"
-                    aria-expanded={modelOpen}
-                    aria-label={`当前模型：${getModelDisplayLabel(model || t('assistant.ui.selectModel'))}`}
-                    title={getModelDisplayLabel(model || t('assistant.ui.selectModel'))}
+                    className="chat-upload-btn"
+                    title="上传图片/PDF"
+                    onClick={() => wb.fileInputRef.current?.click()}
+                    disabled={wb.status === 'recognizing'}
                   >
-                    <span className="chat-model-trigger-icon">@</span>
-                    <span className="chat-model-inline-label">{getModelDisplayLabel(model || t('assistant.ui.selectModel'))}</span>
+                    <img className="chat-upload-icon" src={IMAGE_ICON_URL} alt="" aria-hidden="true" />
                   </button>
 
-                  {modelOpen ? (
-                    <div
-                      className={`chat-model-dropdown ${modelPickerSource === 'command' ? 'is-command-open' : ''}`}
-                      role="dialog"
-                      aria-label="模型列表"
+                  <div className="chat-model-selector chat-model-selector-inline">
+                    <button
+                      type="button"
+                      className={`chat-model-trigger ${modelOpen ? 'is-open' : ''}`}
+                      onClick={() => {
+                        if (modelOpen && modelPickerSource === 'toolbar') {
+                          setModelOpen(false);
+                          setModelPickerSource(null);
+                          return;
+                        }
+                        openModelPicker('toolbar');
+                      }}
+                      aria-haspopup="listbox"
+                      aria-expanded={modelOpen}
+                      aria-label={`当前模型：${getModelDisplayLabel(model || t('assistant.ui.selectModel'))}`}
+                      title={getModelDisplayLabel(model || t('assistant.ui.selectModel'))}
                     >
-                      <div className="chat-model-list">
-                        {wb.models.length === 0 ? (
-                          <div className="chat-model-empty">
-                            {wb.loadingModels
-                              ? t('assistant.ui.loadingModels')
-                              : t('assistant.ui.emptyModels')}
-                          </div>
-                        ) : (
-                          wb.models.map((item: string) => (
-                            <button
-                              key={item}
-                              type="button"
-                              className={`chat-model-option ${item === model ? 'active' : ''}`}
-                              onClick={() => handleSelectModel(item)}
-                            >
-                              {getModelDisplayLabel(item)}
-                            </button>
-                          ))
-                        )}
+                      <span className="chat-model-trigger-icon">@</span>
+                      <span className="chat-model-inline-label">{getModelDisplayLabel(model || t('assistant.ui.selectModel'))}</span>
+                    </button>
+
+                    {modelOpen ? (
+                      <div
+                        className={`chat-model-dropdown ${modelPickerSource === 'command' ? 'is-command-open' : ''}`}
+                        role="dialog"
+                        aria-label="模型列表"
+                      >
+                        <div className="chat-model-list">
+                          {wb.models.length === 0 ? (
+                            <div className="chat-model-empty">
+                              {wb.loadingModels
+                                ? t('assistant.ui.loadingModels')
+                                : t('assistant.ui.emptyModels')}
+                            </div>
+                          ) : (
+                            wb.models.map((item: string) => (
+                              <button
+                                key={item}
+                                type="button"
+                                className={`chat-model-option ${item === model ? 'active' : ''}`}
+                                onClick={() => handleSelectModel(item)}
+                              >
+                                {getModelDisplayLabel(item)}
+                              </button>
+                            ))
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ) : null}
+                    ) : null}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="chat-input-toolbar-btn"
+                    aria-label={t('assistant.ui.clearContext')}
+                    title={t('assistant.ui.clearContext')}
+                    onClick={() => {
+                      setChatHistory([]);
+                      setStreamingPreviewMessage('');
+                      setStreamingCommittedSegments([]);
+                      setStreamingDraftSegment('');
+                      wb.resetWorkbench();
+                      try {
+                        window.sessionStorage.removeItem(CHAT_HISTORY_CACHE_KEYS[activeHistoryModeRef.current]);
+                      } catch {
+                        // ignore storage write errors
+                      }
+                    }}
+                    disabled={chatHistory.length === 0}
+                  >
+                    清空上下文
+                  </button>
                 </div>
+
+                <button
+                  type={wb.status === 'recognizing' ? 'button' : 'submit'}
+                  className={`chat-send-btn ${wb.status === 'recognizing' ? 'chat-send-btn-stop' : ''}`}
+                  title={wb.status === 'recognizing' ? '停止' : '发送'}
+                  onClick={wb.status === 'recognizing' ? wb.stopRecognize : undefined}
+                  disabled={wb.status !== 'recognizing' && !wb.canRecognize}
+                >
+                  {wb.status === 'recognizing' ? '■' : '↑'}
+                </button>
               </div>
-
-              <button
-                type="button"
-                className="chat-input-toolbar-btn"
-                aria-label={t('assistant.ui.clearContext')}
-                title={t('assistant.ui.clearContext')}
-                onClick={() => {
-                  setChatHistory([]);
-                  setStreamingPreviewMessage('');
-                  setStreamingCommittedSegments([]);
-                  setStreamingDraftSegment('');
-                  wb.resetWorkbench();
-                  try {
-                    window.sessionStorage.removeItem(CHAT_HISTORY_CACHE_KEYS[activeHistoryModeRef.current]);
-                  } catch {
-                    // ignore storage write errors
-                  }
-                }}
-                disabled={chatHistory.length === 0}
-              >
-                清空上下文
-              </button>
-            </div>
-
-            <div className="chat-input-row">
-              <button
-                type="button"
-                className="chat-upload-btn"
-                title="上传图片/PDF"
-                onClick={() => wb.fileInputRef.current?.click()}
-                disabled={wb.status === 'recognizing'}
-              >
-                <img className="chat-upload-icon" src={IMAGE_ICON_URL} alt="" aria-hidden="true" />
-              </button>
-
-              <div className="chat-input-main">
-                <textarea
-                  ref={wb.textareaRef}
-                  className="chat-input-textarea"
-                  rows={1}
-                  placeholder={inputPlaceholder(wb.status, wb.hasApiKey, mode, t)}
-                  value={wb.textInput}
-                  onChange={(e) => wb.setTextInput(e.target.value)}
-                  onPaste={(e) => void wb.handlePasteImage(e)}
-                  onKeyDown={onInputKeyDown}
-                />
-              </div>
-
-              <button
-                type={wb.status === 'recognizing' ? 'button' : 'submit'}
-                className={`chat-send-btn ${wb.status === 'recognizing' ? 'chat-send-btn-stop' : ''}`}
-                title={wb.status === 'recognizing' ? '停止' : '发送'}
-                onClick={wb.status === 'recognizing' ? wb.stopRecognize : undefined}
-                disabled={wb.status !== 'recognizing' && !wb.canRecognize}
-              >
-                {wb.status === 'recognizing' ? '■' : '↑'}
-              </button>
             </div>
 
             <input
