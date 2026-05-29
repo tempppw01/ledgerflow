@@ -195,39 +195,9 @@
   margin: 0;
 }
 
-.investments-ai-prompt-bank {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding-bottom: 2px;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.investments-ai-prompt-bank::-webkit-scrollbar,
 .investments-ai-suggestion-row > div::-webkit-scrollbar,
 .investments-ai-thumb-list::-webkit-scrollbar {
   display: none;
-}
-
-.investments-ai-prompt-bank button {
-  flex: 0 0 auto;
-  max-width: min(220px, 68vw);
-  min-height: 32px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
-  background: color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-primary-bg));
-  color: var(--color-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.investments-ai-prompt-bank button:hover,
-.investments-ai-prompt-bank button:focus-visible {
-  border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border-light));
-  background: color-mix(in srgb, var(--color-primary-bg) 84%, var(--color-bg-elevated));
 }
 
 .investments-ai-thread {

@@ -140,12 +140,6 @@ const AI_LOADING_GIF_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/load.gif';
 const MAX_INVESTMENT_AI_IMAGES = 4;
 const MAX_INVESTMENT_AI_IMAGE_SIZE_MB = 6;
-const INVESTMENT_EXPERT_PROMPTS = [
-  '我不懂投资，请根据我的持仓告诉我现在最该做什么。',
-  '帮我判断这只基金适不适合继续定投，需要看哪些风险？',
-  '我现在现金流有限，应该先补应急金还是继续买基金？',
-  '请把我的投资组合按新手能看懂的方式做一次体检。'
-];
 const INVESTMENT_AI_SUGGESTED_QUESTIONS = [
   '这只基金现在适合买吗？',
   '帮我看最大风险',
@@ -1343,18 +1337,6 @@ export function InvestmentsPage() {
                 : '先配置 AI Key，再让 AI 介入投资判断'}
             </span>
             <span>会保留最近分析记录，方便回看和继续追问。</span>
-          </div>
-
-          <div className="investments-ai-prompt-bank" aria-label="投资推荐快捷问题">
-            {INVESTMENT_EXPERT_PROMPTS.map((prompt) => (
-              <button
-                key={prompt}
-                type="button"
-                onClick={() => handleInvestmentExpertPrompt(prompt)}
-              >
-                {prompt}
-              </button>
-            ))}
           </div>
 
           {investmentAiError ? (
