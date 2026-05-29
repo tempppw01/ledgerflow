@@ -1050,12 +1050,14 @@ export function InvestmentsPage() {
     }
 
     const promptText = cleanPrompt || '请根据这张基金截图，帮我判断这只基金是否值得继续关注。';
+    const submittedImages = [...investmentAiImages];
     const createdAt = new Date().toISOString();
     const userMessage = createInvestmentAiMessage({
       id: createInvestmentChatMessageId('user'),
       role: 'user',
       text: promptText,
-      attachmentCount: investmentAiImages.length,
+      attachmentCount: submittedImages.length,
+      attachmentImages: submittedImages,
       createdAt
     });
     const optimisticMessages = trimInvestmentAiMessages([...investmentAiMessages, userMessage]);
@@ -1079,7 +1081,7 @@ export function InvestmentsPage() {
             {
               role: 'user',
               text: promptText,
-              imageDataUrls: [...investmentAiImages]
+              imageDataUrls: submittedImages
             }
           ]
         },
@@ -1405,7 +1407,20 @@ export function InvestmentsPage() {
                         {renderMarkdownContent(displayMessageText)}
                       </div>
                     ) : null}
-                    {item.attachmentCount ? (
+                    {item.attachmentImages?.length ? (
+                      <div className="investments-ai-message-attachments" aria-label="消息附带图片">
+                        {item.attachmentImages.map((url, index) => (
+                          <a
+                            key={`${item.id}-${index}`}
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <img src={url} alt={`附带图片 ${index + 1}`} />
+                          </a>
+                        ))}
+                      </div>
+                    ) : item.attachmentCount ? (
                       <p className="investments-ai-attachment-note">
                         附带 {item.attachmentCount} 张图片
                       </p>
@@ -1613,7 +1628,7 @@ export function InvestmentsPage() {
                 上传图片
               </button>
               <span>
-                支持上传或粘贴最多 {MAX_INVESTMENT_AI_IMAGES} 张截图，本次分析后不会长期保存图片。
+                支持上传或粘贴最多 {MAX_INVESTMENT_AI_IMAGES} 张截图，会随本条聊天一起保存。
               </span>
             </div>
             <textarea

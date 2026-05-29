@@ -474,7 +474,12 @@ describe('InvestmentsPage AI assistant', () => {
     expect(screen.getByText('高级选项')).toBeInTheDocument();
   });
 
-  it('adds pasted fund screenshots to the pending analysis images', async () => {
+  it('adds pasted fund screenshots and persists them with the chat message', async () => {
+    sendAiChatStreamMock.mockResolvedValue({
+      content: '先保留截图，再结合基金资料继续分析。',
+      reasoning: ''
+    });
+
     render(
       <MemoryRouter>
         <InvestmentsPage />
@@ -497,5 +502,19 @@ describe('InvestmentsPage AI assistant', () => {
 
     expect(await screen.findByAltText('待分析图片 1')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '开始分析' })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole('button', { name: '开始分析' }));
+
+    await waitFor(() => expect(sendAiChatStreamMock).toHaveBeenCalled());
+    const request = sendAiChatStreamMock.mock.calls[0]?.[0] as {
+      messages: Array<{ imageDataUrls?: string[] }>;
+    };
+    expect(request.messages[0]?.imageDataUrls?.[0]).toMatch(/^data:image\/png;base64,/);
+
+    await screen.findByText('先保留截图，再结合基金资料继续分析。');
+    const [message] = useAppPreferences.getState().investmentAiMessages;
+    expect(message.attachmentImages?.[0]).toMatch(/^data:image\/png;base64,/);
+    expect(message.attachmentCount).toBe(1);
+    expect(screen.getByAltText('附带图片 1')).toBeInTheDocument();
   });
 });

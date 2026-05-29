@@ -127,6 +127,7 @@ export interface InvestmentAiMessage {
   feedback?: 'up' | 'down';
   reasoning?: string;
   attachmentCount?: number;
+  attachmentImages?: string[];
   analysis?: InvestmentFundAnalysis;
   createdAt: string;
 }

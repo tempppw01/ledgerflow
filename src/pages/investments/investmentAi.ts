@@ -350,14 +350,19 @@ export function createInvestmentAiMessage(input: {
   createdAt: string;
   reasoning?: string;
   attachmentCount?: number;
+  attachmentImages?: string[];
   analysis?: InvestmentFundAnalysis | null;
 }): InvestmentAiMessage {
+  const attachmentImages = input.attachmentImages
+    ?.filter((value) => value.startsWith('data:image/'))
+    .slice(0, 4);
   return {
     id: input.id,
     role: input.role,
     text: input.text,
     reasoning: normalizeOptionalString(input.reasoning),
-    attachmentCount: input.attachmentCount,
+    attachmentCount: input.attachmentCount || attachmentImages?.length,
+    attachmentImages: attachmentImages?.length ? attachmentImages : undefined,
     analysis: input.analysis || undefined,
     createdAt: input.createdAt
   };

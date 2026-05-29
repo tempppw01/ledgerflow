@@ -1164,6 +1164,12 @@ function validateInvestmentAiMessage(item: unknown, index: number): InvestmentAi
   if (item.attachmentCount !== undefined) {
     assertNumber(item.attachmentCount, `data.investmentAiMessages[${index}].attachmentCount`);
   }
+  const attachmentImages = readOptionalStringArray(
+    item.attachmentImages,
+    `data.investmentAiMessages[${index}].attachmentImages`
+  )
+    .filter((value) => value.startsWith('data:image/'))
+    .slice(0, 4);
 
   return {
     id: asSafeString(item.id),
@@ -1172,7 +1178,9 @@ function validateInvestmentAiMessage(item: unknown, index: number): InvestmentAi
     feedback: item.feedback as InvestmentAiMessage['feedback'] | undefined,
     reasoning: asSafeString(item.reasoning) || undefined,
     attachmentCount:
-      typeof item.attachmentCount === 'number' ? Number(item.attachmentCount) : undefined,
+      attachmentImages.length ||
+      (typeof item.attachmentCount === 'number' ? Number(item.attachmentCount) : undefined),
+    attachmentImages: attachmentImages.length ? attachmentImages : undefined,
     analysis: validateInvestmentFundAnalysis(
       item.analysis,
       `data.investmentAiMessages[${index}].analysis`

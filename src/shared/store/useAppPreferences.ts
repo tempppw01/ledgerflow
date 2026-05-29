@@ -152,6 +152,10 @@ function normalizeStringList(value: unknown, limit = 6): string[] {
     .slice(0, limit);
 }
 
+function normalizeInvestmentAttachmentImages(value: unknown): string[] {
+  return normalizeStringList(value, 4).filter((item) => item.startsWith('data:image/'));
+}
+
 function normalizeDebtStatus(status: unknown, balance?: number): DebtLifecycleStatus {
   if (status === 'settled' || status === 'closed' || status === 'paused' || status === 'active') {
     return status;
@@ -312,6 +316,7 @@ function normalizeInvestmentAiMessage(item: InvestmentAiMessage): InvestmentAiMe
     .trim()
     .slice(0, 6000);
   const analysis = normalizeInvestmentFundAnalysis(item.analysis);
+  const attachmentImages = normalizeInvestmentAttachmentImages(item.attachmentImages);
   if (!text && !analysis) {
     return null;
   }
@@ -322,7 +327,11 @@ function normalizeInvestmentAiMessage(item: InvestmentAiMessage): InvestmentAiMe
     text: text || (analysis?.summary ?? '已完成分析'),
     feedback: item.feedback === 'up' || item.feedback === 'down' ? item.feedback : undefined,
     reasoning: normalizeOptionalString(item.reasoning),
-    attachmentCount: Math.max(0, Math.floor(Number(item.attachmentCount || 0))) || undefined,
+    attachmentCount:
+      attachmentImages.length ||
+      Math.max(0, Math.floor(Number(item.attachmentCount || 0))) ||
+      undefined,
+    attachmentImages: attachmentImages.length ? attachmentImages : undefined,
     analysis,
     createdAt: normalizeOptionalString(item.createdAt) || new Date().toISOString()
   };

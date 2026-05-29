@@ -453,6 +453,7 @@ describe('parseFinanceBackupPayload', () => {
               role: 'assistant',
               text: '参考自选记录后，暂时更适合继续观察。',
               feedback: 'up',
+              attachmentImages: ['data:image/png;base64,ZmFrZS1mdW5kLWltYWdl'],
               analysis: {
                 fundName: '招商优质成长混合(LOF)',
                 fundCode: '161706',
@@ -489,6 +490,10 @@ describe('parseFinanceBackupPayload', () => {
     expect(payload.data.investmentWatchlist[0].fundCompany).toBe('招商基金');
     expect(payload.data.investmentAiMessages[0].analysis?.fundCode).toBe('161706');
     expect(payload.data.investmentAiMessages[0].analysis?.buyFeeRate).toBe('0.15%');
+    expect(payload.data.investmentAiMessages[0].attachmentImages).toEqual([
+      'data:image/png;base64,ZmFrZS1mdW5kLWltYWdl'
+    ]);
+    expect(payload.data.investmentAiMessages[0].attachmentCount).toBe(1);
   });
 
   it('恢复部分备份时应保留未选范围的本地数据', () => {
