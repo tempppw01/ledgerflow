@@ -1207,7 +1207,9 @@ export function InvestmentsPage() {
   }
 
   return (
-    <div className="page-stack investments-page">
+    <div
+      className={`page-stack investments-page ${openInvestmentPanels.summary ? 'is-support-open' : ''}`}
+    >
       <section
         className={`panel investments-hero investments-fold-card ${
           openInvestmentPanels.summary ? 'is-open' : ''
@@ -1220,16 +1222,17 @@ export function InvestmentsPage() {
           onClick={() => toggleInvestmentPanel('summary')}
         >
           <span>
-            <h3>投资概览与提示</h3>
+            <h3>投资资料与管理</h3>
             <p>
-              总市值 {formatCurrencyAuto(positionSummary.totalCurrentValue)} · 目标进度{' '}
+              点开再看配置、提醒、持仓和目标 · 总市值{' '}
+              {formatCurrencyAuto(positionSummary.totalCurrentValue)} · 目标进度{' '}
               {goalSummary.totalTargetAmount > 0
                 ? `${((goalSummary.totalCurrentAmount / goalSummary.totalTargetAmount) * 100).toFixed(1)}%`
                 : '未开始'}
             </p>
           </span>
           <span className="investments-fold-side">
-            <span className="badge">给聊天做参考</span>
+            <span className="badge">聊天辅助入口</span>
             <img
               src={
                 openInvestmentPanels.summary ? CHEVRONS_DOWN_UP_ICON_URL : CHEVRONS_UP_DOWN_ICON_URL
