@@ -799,7 +799,6 @@ export function InvestmentsPage() {
   }
 
   function handleInvestmentExpertPrompt(prompt: string) {
-    scrollToInvestmentAiPanel();
     void runInvestmentAi(prompt);
   }
 

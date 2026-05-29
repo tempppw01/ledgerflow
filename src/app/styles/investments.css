@@ -145,6 +145,7 @@
   height: calc(100vh - var(--topbar-height, 56px) - 28px);
   min-height: 0;
   overflow: hidden;
+  overflow-anchor: none;
 }
 
 .investments-watchlist-panel {
@@ -200,6 +201,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 4px;
+  overflow-anchor: none;
   overscroll-behavior: contain;
   scrollbar-color: color-mix(in srgb, var(--color-primary) 42%, transparent) transparent;
   scrollbar-gutter: stable;
@@ -554,6 +556,7 @@
   padding: var(--space-3);
   border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
   background: color-mix(in srgb, var(--vi-surface-bg-muted) 92%, var(--color-primary-bg));
+  overflow-anchor: none;
 }
 
 .investments-ai-composer-toolbar,

@@ -339,26 +339,45 @@ describe('InvestmentsPage AI assistant', () => {
   });
 
   it('submits suggested questions immediately instead of only filling the composer', async () => {
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    const scrollIntoViewMock = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoViewMock
+    });
+
     sendAiChatStreamMock.mockResolvedValue({
       content: '这只基金和你当前持仓有部分重合，需要控制比例。',
       reasoning: ''
     });
 
-    render(
-      <MemoryRouter>
-        <InvestmentsPage />
-      </MemoryRouter>
-    );
+    try {
+      render(
+        <MemoryRouter>
+          <InvestmentsPage />
+        </MemoryRouter>
+      );
 
-    fireEvent.click(screen.getByRole('button', { name: '和我的持仓冲突吗？' }));
+      fireEvent.click(screen.getByRole('button', { name: '和我的持仓冲突吗？' }));
 
-    await waitFor(() => expect(sendAiChatStreamMock).toHaveBeenCalled());
-    const request = sendAiChatStreamMock.mock.calls[0]?.[0] as {
-      messages: Array<{ text?: string }>;
-    };
-    expect(request.messages[0]?.text).toBe('和我的持仓冲突吗？');
-    expect(screen.getByLabelText('基金分析输入框')).toHaveValue('');
-    expect(await screen.findByText('这只基金和你当前持仓有部分重合，需要控制比例。')).toBeInTheDocument();
+      await waitFor(() => expect(sendAiChatStreamMock).toHaveBeenCalled());
+      const request = sendAiChatStreamMock.mock.calls[0]?.[0] as {
+        messages: Array<{ text?: string }>;
+      };
+      expect(request.messages[0]?.text).toBe('和我的持仓冲突吗？');
+      expect(scrollIntoViewMock).not.toHaveBeenCalled();
+      expect(screen.getByLabelText('基金分析输入框')).toHaveValue('');
+      expect(await screen.findByText('这只基金和你当前持仓有部分重合，需要控制比例。')).toBeInTheDocument();
+    } finally {
+      if (originalScrollIntoView) {
+        Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+          configurable: true,
+          value: originalScrollIntoView
+        });
+      } else {
+        Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView');
+      }
+    }
   });
 
   it('reviews and sorts all watchlist funds with AI', async () => {
