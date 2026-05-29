@@ -1307,8 +1307,7 @@ export function InvestmentsPage() {
           <div className="investments-section-head investments-ai-panel-head">
             <div>
               <span className="investments-ai-kicker">AI 投资推荐专家</span>
-              <h3>先让 AI 帮你判断，再决定要不要买</h3>
-              <p>你不需要先懂术语。直接说现状、贴基金截图，我会让 AI 先给结论、风险和下一步。</p>
+              <h3>先让 AI 判断要不要买</h3>
             </div>
             <div className="investments-ai-head-actions">
               <span className="badge">{model || '默认模型'}</span>
@@ -1333,10 +1332,9 @@ export function InvestmentsPage() {
               {apiKey.trim()
                 ? investmentAiStatus === 'loading'
                   ? '正在让 AI 拆风险和建议...'
-                  : '可以把投资问题交给 AI 先判断'
+                  : '贴基金截图或直接提问'
                 : '先配置 AI Key，再让 AI 介入投资判断'}
             </span>
-            <span>会保留最近分析记录，方便回看和继续追问。</span>
           </div>
 
           {investmentAiError ? (
