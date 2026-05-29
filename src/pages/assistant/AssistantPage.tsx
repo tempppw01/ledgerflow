@@ -46,7 +46,6 @@ import {
 import {
   ASSISTANT_ACTIVE_MODE_STORAGE_KEY,
   ASSISTANT_MODE_CHANGED_EVENT,
-  getAssistantModeLabel,
   readAssistantModeFromSessionStorage,
   type AssistantMode
 } from '../../features/assistant/shared/assistantMode';
@@ -743,7 +742,6 @@ export function AssistantPage() {
   const [duplicateReviewIndex, setDuplicateReviewIndex] = useState(0);
   const [overwriteEntryIds, setOverwriteEntryIds] = useState<string[]>([]);
   const [semanticPanelOpen, setSemanticPanelOpen] = useState(false);
-  const currentModeLabel = useMemo(() => getAssistantModeLabel(mode, t), [mode, t]);
 
   useEffect(() => {
     try {
@@ -1628,13 +1626,7 @@ export function AssistantPage() {
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => void wb.handleDropImage(e)}
     >
-      <header className="chat-topbar">
-        <div className="chat-topbar-left">
-          <div className="chat-topbar-title-group">
-            <span className="chat-topbar-title">{currentModeLabel}</span>
-          </div>
-        </div>
-
+      <header className="chat-topbar chat-topbar-no-title">
         <div className="chat-mode-switch" aria-label="模式切换">
           <button
             type="button"

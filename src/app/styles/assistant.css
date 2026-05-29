@@ -51,6 +51,10 @@
   gap: var(--space-3);
 }
 
+.chat-topbar-no-title .chat-mode-switch {
+  margin-left: 0;
+}
+
 .chat-topbar-left {
   display: flex;
   align-items: center;
@@ -3276,6 +3280,11 @@
     grid-column: 1 / -1;
     margin-left: 0;
     width: 100%;
+  }
+
+  .chat-topbar-no-title .chat-mode-switch {
+    grid-column: 1;
+    width: auto;
   }
 
   .chat-mode-switch button {
