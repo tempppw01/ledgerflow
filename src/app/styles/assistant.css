@@ -530,6 +530,14 @@
   margin-top: 4px;
 }
 
+.chat-md-divider {
+  width: 100%;
+  height: 1px;
+  margin: 8px 0;
+  border: 0;
+  background: color-mix(in srgb, var(--color-border) 86%, transparent);
+}
+
 .chat-md-table-wrap {
   max-width: 100%;
   overflow-x: auto;

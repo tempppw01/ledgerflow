@@ -35,6 +35,8 @@ const isTableSeparator = (line: string) => {
 
 const isTableRow = (line: string) => /^\|.+\|$/.test(line);
 
+const isMarkdownDivider = (line: string) => /^ {0,3}(?:-{3,}|\*{3,}|_{3,})$/.test(line);
+
 /**
  * Render full markdown content (headings, lists, tables, paragraphs) to React nodes.
  */
@@ -59,6 +61,12 @@ export function renderMarkdownContent(raw: string): ReactNode[] {
     const line = lines[idx].trim();
     if (!line) {
       flushBullets();
+      continue;
+    }
+
+    if (isMarkdownDivider(line)) {
+      flushBullets();
+      nodes.push(<hr key={`md-hr-${idx}`} className="chat-md-divider" />);
       continue;
     }
 
