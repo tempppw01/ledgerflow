@@ -311,15 +311,36 @@ export function summarizeInvestmentAnalysis(
   text: string,
   analysis: InvestmentFundAnalysis | null
 ): string {
-  if (text.trim()) {
-    return text.trim();
-  }
+  const compactText = text.trim();
 
   if (!analysis) {
-    return '已完成分析';
+    return compactText || '已完成分析';
   }
 
-  return [analysis.verdict, analysis.summary].filter(Boolean).join('\n');
+  if (compactText) {
+    const duplicatedLines = new Set(
+      [analysis.verdict, analysis.summary]
+        .map((item) => item.trim().replace(/\s+/g, ' '))
+        .filter(Boolean)
+    );
+    const dedupedText = compactText
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => {
+        const normalizedLine = line.replace(/^[-*]\s+/, '').trim().replace(/\s+/g, ' ');
+        return normalizedLine && !duplicatedLines.has(normalizedLine);
+      })
+      .join('\n')
+      .trim();
+
+    if (dedupedText) {
+      return dedupedText.length > 2600 ? `${dedupedText.slice(0, 2600)}...` : dedupedText;
+    }
+  }
+
+  const verdict = analysis.verdict.trim();
+  const summary = analysis.summary.trim();
+  return verdict && verdict !== summary ? verdict : '';
 }
 
 export function createInvestmentAiMessage(input: {

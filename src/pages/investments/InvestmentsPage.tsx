@@ -1380,6 +1380,10 @@ export function InvestmentsPage() {
                 item.role === 'assistant'
                   ? findMatchingWatchItem(investmentWatchlist, item.analysis)
                   : null;
+              const displayMessageText =
+                item.role === 'assistant'
+                  ? summarizeInvestmentAnalysis(item.text, item.analysis ?? null)
+                  : item.text;
 
               return (
                 <article
@@ -1396,9 +1400,11 @@ export function InvestmentsPage() {
                       <strong>{item.role === 'user' ? '你' : 'AI 分析'}</strong>
                       <span>{formatDateTimeLabel(item.createdAt)}</span>
                     </div>
-                    <div className="chat-msg-content chat-msg-content-rich">
-                      {renderMarkdownContent(item.text)}
-                    </div>
+                    {displayMessageText ? (
+                      <div className="chat-msg-content chat-msg-content-rich">
+                        {renderMarkdownContent(displayMessageText)}
+                      </div>
+                    ) : null}
                     {item.attachmentCount ? (
                       <p className="investments-ai-attachment-note">
                         附带 {item.attachmentCount} 张图片

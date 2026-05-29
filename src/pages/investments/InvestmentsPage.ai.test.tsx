@@ -306,6 +306,38 @@ describe('InvestmentsPage AI assistant', () => {
     expect(avatarSources).toContain(USER_ICON_URL);
   });
 
+  it('deduplicates persisted assistant text that repeats the structured analysis summary', () => {
+    useAppPreferences.setState({
+      investmentAiMessages: [
+        {
+          id: 'assistant-duplicate',
+          role: 'assistant',
+          text: ['Hold for now', 'Use staged entries instead of buying all at once.'].join('\n'),
+          createdAt: '2026-05-29T01:47:00.000Z',
+          analysis: {
+            fundName: 'Alpha Growth Fund',
+            fundCode: '161706',
+            verdict: 'Hold for now',
+            summary: 'Use staged entries instead of buying all at once.',
+            riskLevel: 'medium',
+            highlights: ['Broad exposure'],
+            risks: ['Short-term volatility'],
+            actions: ['Review fees first'],
+            watchTags: ['watching']
+          }
+        }
+      ]
+    });
+
+    render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getAllByText('Use staged entries instead of buying all at once.')).toHaveLength(1);
+  });
+
   it('reviews and sorts all watchlist funds with AI', async () => {
     useAppPreferences.setState({
       investmentWatchlist: [
