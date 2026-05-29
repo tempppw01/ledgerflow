@@ -1,9 +1,15 @@
 .investments-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.34fr);
+  grid-auto-rows: min-content;
+  align-items: start;
   gap: 12px;
+  min-height: calc(100vh - var(--topbar-height, 56px) - 28px);
 }
 
 .investments-hero {
-  order: 2;
+  grid-column: 2;
+  grid-row: 2;
   display: grid;
   gap: 0;
   background:
@@ -118,11 +124,7 @@
 }
 
 .investments-ai-grid {
-  order: 1;
-  display: grid;
-  grid-template-columns: minmax(0, 1.72fr) minmax(260px, 0.52fr);
-  gap: 12px;
-  align-items: start;
+  display: contents;
 }
 
 .investments-ai-panel,
@@ -134,11 +136,21 @@
 }
 
 .investments-ai-panel {
-  min-height: calc(100vh - 112px);
+  grid-column: 1;
+  grid-row: 1 / span 4;
+  position: sticky;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--topbar-height, 56px) - 28px);
+  min-height: 0;
+  overflow: hidden;
 }
 
 .investments-watchlist-panel {
-  max-height: calc(100vh - 112px);
+  grid-column: 2;
+  grid-row: 1;
+  max-height: min(42vh, 420px);
   overflow: hidden auto;
 }
 
@@ -212,8 +224,9 @@
 .investments-ai-thread {
   display: grid;
   gap: 0;
-  min-height: clamp(320px, 44vh, 520px);
-  max-height: clamp(460px, 62vh, 780px);
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 4px;
@@ -829,14 +842,15 @@
 
 .investments-overview-grid,
 .investments-main-grid {
-  order: 3;
+  grid-column: 2;
+  grid-row: 3;
   display: none;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  grid-template-columns: 1fr;
   gap: 12px;
 }
 
 .investments-main-grid {
-  order: 4;
+  grid-row: 4;
 }
 
 .investments-page.is-support-open .investments-overview-grid,
@@ -847,7 +861,9 @@
 .investments-overview-card,
 .investments-panel {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0;
+  min-width: 0;
 }
 
 .investments-section-head {
@@ -871,6 +887,8 @@
 
 .investments-fold-card {
   align-self: start;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   overflow: hidden;
   transition:
     border-color 180ms ease,
@@ -937,7 +955,11 @@
 
 .investments-fold-body {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   max-height: 0;
   margin-top: 0;
   overflow: hidden;
@@ -1282,13 +1304,63 @@
   font-size: 12px;
 }
 
+.investments-hero,
+.investments-overview-grid,
+.investments-main-grid,
+.investments-hero .investments-summary-strip,
+.investments-hero .investments-tip-board,
+.investments-main-grid .investments-form-grid,
+.investments-main-grid .investments-position-quick-grid,
+.investments-main-grid .investments-form-grid-primary {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.investments-hero .investments-tip-board,
+.investments-hero .investments-summary-strip,
+.investments-overview-grid .investments-meta-grid,
+.investments-main-grid .investments-form-grid,
+.investments-main-grid .investments-position-quick-grid,
+.investments-main-grid .investments-form-grid-primary,
+.investments-main-grid .investments-card-grid {
+  grid-template-columns: 1fr;
+}
+
+.investments-main-grid .investments-form-guide,
+.investments-main-grid .investments-card-head,
+.investments-main-grid .investments-goal-progress-head {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.investments-hero .investments-summary-pill,
+.investments-hero .investments-tip-item,
+.investments-overview-grid .investments-meta-grid div,
+.investments-main-grid .investments-card,
+.investments-main-grid .investments-card-grid span,
+.investments-main-grid .investments-field,
+.investments-main-grid .investments-checkbox {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.investments-hero .investments-summary-pill strong,
+.investments-hero .investments-summary-pill span,
+.investments-hero .investments-tip-item strong,
+.investments-hero .investments-tip-item p,
+.investments-main-grid .investments-card h4,
+.investments-main-grid .investments-card p,
+.investments-main-grid .investments-field span {
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 1200px) {
   .investments-summary-strip {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .investments-ai-grid {
-    grid-template-columns: 1fr;
   }
 
   .investments-form-grid-primary {
@@ -1297,6 +1369,31 @@
 }
 
 @media (max-width: 900px) {
+  .investments-page {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .investments-ai-panel,
+  .investments-watchlist-panel,
+  .investments-hero,
+  .investments-overview-grid,
+  .investments-main-grid {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .investments-ai-panel {
+    position: static;
+    height: auto;
+    min-height: calc(100vh - var(--topbar-height, 56px) - 28px);
+    overflow: visible;
+  }
+
+  .investments-watchlist-panel {
+    max-height: none;
+  }
+
   .investments-ai-grid,
   .investments-tip-board,
   .investments-form-grid,
