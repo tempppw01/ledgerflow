@@ -1445,7 +1445,7 @@
   .investments-ai-panel {
     position: static;
     height: auto;
-    min-height: calc(100vh - var(--topbar-height, 56px) - 28px);
+    min-height: 0;
     overflow: visible;
   }
 
@@ -1512,8 +1512,8 @@
   }
 
   .investments-ai-thread {
-    min-height: 360px;
-    max-height: 58vh;
+    min-height: 180px;
+    max-height: 42vh;
   }
 
   .investments-ai-image-strip {
