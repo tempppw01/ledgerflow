@@ -6687,12 +6687,27 @@ input[type='date']:focus {
   }
 
   .topbar-settings-btn {
+    width: 36px;
     min-width: 36px;
-    padding: 0 10px;
+    height: 36px;
+    min-height: 36px;
+    flex: 0 0 36px;
+    padding: 0;
+    border-radius: 14px;
   }
 
   .topbar-settings-btn span {
     display: none;
+  }
+
+  .mobile-nav-toggle {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    min-height: 36px;
+    flex: 0 0 36px;
+    padding: 0;
+    border-radius: 14px;
   }
 
   .settings-overlay {
