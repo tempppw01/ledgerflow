@@ -160,8 +160,9 @@
   grid-row: 1 / span 4;
   position: relative;
   top: auto;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  align-content: stretch;
   height: 100%;
   min-height: 0;
   overflow: hidden;
@@ -180,6 +181,7 @@
 }
 
 .investments-ai-panel-head {
+  grid-row: 1;
   align-items: start;
 }
 
@@ -206,6 +208,7 @@
 }
 
 .investments-ai-error {
+  grid-row: 2;
   margin: 0;
 }
 
@@ -215,9 +218,10 @@
 }
 
 .investments-ai-thread {
+  grid-row: 3;
   display: grid;
+  align-content: start;
   gap: 0;
-  flex: 1 1 auto;
   min-height: 0;
   max-height: none;
   overflow-y: auto;
@@ -529,6 +533,7 @@
 }
 
 .investments-ai-image-strip {
+  grid-row: 4;
   display: flex;
   justify-content: space-between;
   gap: 10px;
@@ -573,8 +578,12 @@
 }
 
 .investments-ai-composer {
+  grid-row: 5;
+  position: relative;
+  z-index: 2;
   display: grid;
   gap: 6px;
+  min-height: 0;
   padding: 8px;
   border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
   background: color-mix(in srgb, var(--vi-surface-bg-muted) 92%, var(--color-primary-bg));
