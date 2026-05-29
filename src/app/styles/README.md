@@ -63,3 +63,54 @@
   - `pages.dashboard.css`
   - `pages.finance.css`
   再由 `pages.css` 聚合导入
+
+## LedgerFlow VI 快速启动层
+
+新增页面优先使用 `vi-system.css` 中的共享类，减少每个页面重新发明卡片、标题、工具栏和空状态：
+
+- 页面根节点：`.vi-page`，需要紧凑密度时叠加 `.vi-page--dense`
+- 页面标题区：`.vi-page-head` + `.vi-page-title` + `.vi-page-actions`
+- 重点首屏块：`.vi-hero`、`.vi-hero-copy`、`.vi-hero-media`
+- 内容区域：`.vi-section`、`.vi-card`、`.vi-card--muted`、`.vi-card--active`
+- 布局：`.vi-grid`、`.vi-grid--wide`、`.vi-grid--two`、`.vi-split`、`.vi-stack`
+- 操作区：`.vi-toolbar`、`.vi-toolbar-main`、`.vi-action-row`
+- 小组件：`.vi-chip`、`.vi-status--success|warning|danger|info`、`.vi-kpi-grid`、`.vi-empty`
+- 工具类：`.vi-number`、`.vi-truncate`、`.vi-wrap-anywhere`、`.vi-scroll-panel`
+
+推荐的新页面骨架：
+
+```tsx
+<div className="vi-page">
+  <header className="vi-page-head">
+    <div className="vi-page-title">
+      <span className="vi-page-kicker">模块分组</span>
+      <h2>页面标题</h2>
+      <p>一句话说明当前页面能完成什么。</p>
+    </div>
+    <div className="vi-page-actions">
+      <button type="button">次要操作</button>
+      <button type="button" className="primary">主要操作</button>
+    </div>
+  </header>
+
+  <section className="vi-section">
+    <div className="vi-section-head">
+      <div className="vi-section-title">
+        <h3>区域标题</h3>
+        <p>区域说明。</p>
+      </div>
+      <span className="vi-chip vi-chip--primary">状态</span>
+    </div>
+    <div className="vi-grid">
+      <article className="vi-card">...</article>
+    </div>
+  </section>
+</div>
+```
+
+落地规则：
+
+- `vi-*` 类只放通用结构和视觉语义，不写业务含义。
+- 页面专属状态继续放在 `pages.css` 或对应领域 CSS 文件里。
+- 新增页面先用 `vi-*` 组合完成 80% 结构，再补少量页面前缀样式。
+- 不要在页面里复制卡片阴影、标题字号、KPI 数字、chip 状态色等基础规则。

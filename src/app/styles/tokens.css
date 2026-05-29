@@ -204,6 +204,29 @@
   --topbar-height: 56px;
   --content-max-width: 1080px;
 
+  /* ---- LedgerFlow VI semantic layer ---- */
+  --vi-page-gap: var(--space-4);
+  --vi-page-padding: var(--space-4);
+  --vi-section-gap: var(--space-3);
+  --vi-control-height-sm: 32px;
+  --vi-control-height: 40px;
+  --vi-control-height-lg: 46px;
+  --vi-surface-radius: var(--radius-lg);
+  --vi-card-radius: var(--radius-lg);
+  --vi-compact-radius: var(--radius-md);
+  --vi-icon-size-sm: 16px;
+  --vi-icon-size: 20px;
+  --vi-icon-size-lg: 28px;
+  --vi-surface-border: 1px solid var(--color-border-light);
+  --vi-surface-bg: var(--color-bg-elevated);
+  --vi-surface-bg-muted: color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-bg-subtle));
+  --vi-surface-bg-active: color-mix(in srgb, var(--color-primary-bg) 62%, var(--color-bg-elevated));
+  --vi-surface-shadow: var(--shadow-xs);
+  --vi-surface-shadow-hover: var(--shadow-sm);
+  --vi-focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
+  --vi-grid-min: 240px;
+  --vi-grid-min-wide: 320px;
+
   /* ---- 兼容层：旧版 CSS 变量名 -> 新版设计 Token ---- */
   --card-bg: var(--color-bg-elevated);
   --bg-primary: var(--color-bg);
