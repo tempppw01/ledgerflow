@@ -196,6 +196,7 @@
 
 .chat-input-toolbar .chat-model-selector-inline {
   flex: 0 0 auto;
+  z-index: 2;
 }
 
 .chat-model-selector-inline .chat-model-dropdown {
@@ -2698,7 +2699,7 @@
   gap: 10px;
   min-width: 0;
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .chat-input-toolbar-btn {
