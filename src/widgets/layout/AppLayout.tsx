@@ -258,6 +258,7 @@ export function AppLayout() {
     return matchedItem?.label ?? t('layout.workspaceTitle');
   }, [assistantWorkspaceTitle, location.pathname, navSections, t]);
   const isStandaloneSettingsRoute = location.pathname === '/settings';
+  const isInvestmentsRoute = location.pathname.startsWith('/investments');
 
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(navSections.map((section) => [section.title, true]))
@@ -694,7 +695,7 @@ export function AppLayout() {
           </div>
         </header>
 
-        <main className="content">
+        <main className={isInvestmentsRoute ? 'content content-investments' : 'content'}>
           <Outlet />
         </main>
       </div>

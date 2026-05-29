@@ -4,8 +4,12 @@
   grid-template-rows: minmax(0, 1fr) repeat(3, min-content);
   align-items: start;
   gap: 12px;
-  height: calc(100vh - var(--topbar-height, 56px) - (var(--space-6) * 2));
-  height: calc(100dvh - var(--topbar-height, 56px) - (var(--space-6) * 2));
+  height: calc(
+    100vh - var(--topbar-height, 56px) - var(--investments-content-block-padding, 48px)
+  );
+  height: calc(
+    100dvh - var(--topbar-height, 56px) - var(--investments-content-block-padding, 48px)
+  );
   min-height: 0;
   overflow: hidden;
 }

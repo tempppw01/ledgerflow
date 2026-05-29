@@ -851,6 +851,13 @@ body {
   padding: var(--space-6);
 }
 
+.content-investments {
+  --investments-content-block-padding: 12px;
+  max-width: none;
+  width: 100%;
+  padding: 4px 8px 8px;
+}
+
 .content > .panel:first-child {
   margin-top: var(--space-1);
 }
