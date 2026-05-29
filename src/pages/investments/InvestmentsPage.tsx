@@ -1331,16 +1331,6 @@ export function InvestmentsPage() {
             </div>
           </div>
 
-          <div className="investments-ai-status-row">
-            <span>
-              {apiKey.trim()
-                ? investmentAiStatus === 'loading'
-                  ? '正在让 AI 拆风险和建议...'
-                  : '贴基金截图或直接提问'
-                : '先配置 AI Key，再让 AI 介入投资判断'}
-            </span>
-          </div>
-
           {investmentAiError ? (
             <p className="assistant-wb-issue error investments-ai-error" role="alert">
               {investmentAiError}
@@ -1348,19 +1338,6 @@ export function InvestmentsPage() {
           ) : null}
 
           <div className="investments-ai-thread" aria-label="基金分析对话">
-            {investmentAiMessages.length === 0 &&
-            investmentAiStatus !== 'loading' &&
-            !streamingContent &&
-            !streamingReasoning ? (
-              <div className="investments-ai-empty">
-                <strong>可以先不用录很多资料</strong>
-                <p>
-                  告诉 AI
-                  你想买什么、已经持有什么、能承受多大波动，它会先帮你拆“能不能买、怎么买、别踩什么坑”。
-                </p>
-              </div>
-            ) : null}
-
             {investmentAiMessages.map((item) => {
               const matchedWatchItem =
                 item.role === 'assistant'
