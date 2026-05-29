@@ -134,7 +134,7 @@ type WatchContextMenuState = {
   item: InvestmentWatchItem | null;
 };
 
-type InvestmentPanelKey = 'allocation' | 'alerts' | 'position' | 'goal';
+type InvestmentPanelKey = 'summary' | 'allocation' | 'alerts' | 'position' | 'goal';
 
 const AI_LOADING_GIF_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/load.gif';
@@ -547,6 +547,7 @@ export function InvestmentsPage() {
   const [openInvestmentPanels, setOpenInvestmentPanels] = useState<
     Record<InvestmentPanelKey, boolean>
   >({
+    summary: false,
     allocation: false,
     alerts: false,
     position: false,
@@ -1207,63 +1208,98 @@ export function InvestmentsPage() {
 
   return (
     <div className="page-stack investments-page">
-      <section className="panel investments-hero">
-        <div className="investments-hero-copy">
-          <span className="investments-kicker">投资理财</span>
-          <h2>看清你的投资节奏和目标进度</h2>
-          <p>把持仓、现金和理财目标放在一起，日常看一眼就知道现在走到哪一步，接下来该补哪一块。</p>
-        </div>
-        <div className="investments-tip-board" aria-label="投资理财页提示">
-          <div className="investments-tip-item">
-            <img src={INFO_ICON_URL} alt="" aria-hidden="true" />
-            <div>
-              <strong>先从常用资产开始</strong>
-              <p>先记下你最常看的基金、股票或现金类资产，后面再慢慢补齐也没关系。</p>
-            </div>
-          </div>
-          <div className="investments-tip-item">
-            <img src={QUESTION_ICON_URL} alt="" aria-hidden="true" />
-            <div>
-              <strong>把目标一起放进来</strong>
-              <p>金额、时间和优先级越清楚，越容易看懂当前进度和仓位分布。</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="investments-summary-strip" aria-label="投资资产总览">
-          <article className="investments-summary-pill">
-            <span>总持仓市值</span>
-            <strong>{formatCurrencyAuto(positionSummary.totalCurrentValue)}</strong>
-          </article>
-          <article className="investments-summary-pill">
-            <span>累计投入本金</span>
-            <strong>{formatCurrencyAuto(positionSummary.totalInvested)}</strong>
-          </article>
-          <article
-            className={`investments-summary-pill ${positionSummary.totalProfit >= 0 ? 'is-positive' : 'is-negative'}`}
-          >
-            <span>浮动收益</span>
-            <strong>
-              {formatCurrencyAuto(positionSummary.totalProfit)} /{' '}
-              {(positionSummary.profitRate * 100).toFixed(1)}%
-            </strong>
-          </article>
-          <article className="investments-summary-pill">
-            <span>本月可投资空间</span>
-            <strong>{formatCurrencyAuto(monthlyInvestableCash)}</strong>
-          </article>
-          <article className="investments-summary-pill">
-            <span>投资占估算净资产</span>
-            <strong>{(investmentAssetRatio * 100).toFixed(1)}%</strong>
-          </article>
-          <article className="investments-summary-pill">
-            <span>理财目标进度</span>
-            <strong>
+      <section
+        className={`panel investments-hero investments-fold-card ${
+          openInvestmentPanels.summary ? 'is-open' : ''
+        }`}
+      >
+        <button
+          type="button"
+          className="investments-section-head investments-fold-head"
+          aria-expanded={openInvestmentPanels.summary}
+          onClick={() => toggleInvestmentPanel('summary')}
+        >
+          <span>
+            <h3>投资概览与提示</h3>
+            <p>
+              总市值 {formatCurrencyAuto(positionSummary.totalCurrentValue)} · 目标进度{' '}
               {goalSummary.totalTargetAmount > 0
                 ? `${((goalSummary.totalCurrentAmount / goalSummary.totalTargetAmount) * 100).toFixed(1)}%`
                 : '未开始'}
-            </strong>
-          </article>
+            </p>
+          </span>
+          <span className="investments-fold-side">
+            <span className="badge">给聊天做参考</span>
+            <img
+              src={
+                openInvestmentPanels.summary ? CHEVRONS_DOWN_UP_ICON_URL : CHEVRONS_UP_DOWN_ICON_URL
+              }
+              alt=""
+              aria-hidden="true"
+            />
+          </span>
+        </button>
+
+        <div className="investments-fold-body">
+          <div className="investments-hero-copy">
+            <span className="investments-kicker">投资理财</span>
+            <h2>看清你的投资节奏和目标进度</h2>
+            <p>
+              把持仓、现金和理财目标放在一起，日常看一眼就知道现在走到哪一步，接下来该补哪一块。
+            </p>
+          </div>
+          <div className="investments-tip-board" aria-label="投资理财页提示">
+            <div className="investments-tip-item">
+              <img src={INFO_ICON_URL} alt="" aria-hidden="true" />
+              <div>
+                <strong>先从常用资产开始</strong>
+                <p>先记下你最常看的基金、股票或现金类资产，后面再慢慢补齐也没关系。</p>
+              </div>
+            </div>
+            <div className="investments-tip-item">
+              <img src={QUESTION_ICON_URL} alt="" aria-hidden="true" />
+              <div>
+                <strong>把目标一起放进来</strong>
+                <p>金额、时间和优先级越清楚，越容易看懂当前进度和仓位分布。</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="investments-summary-strip" aria-label="投资资产总览">
+            <article className="investments-summary-pill">
+              <span>总持仓市值</span>
+              <strong>{formatCurrencyAuto(positionSummary.totalCurrentValue)}</strong>
+            </article>
+            <article className="investments-summary-pill">
+              <span>累计投入本金</span>
+              <strong>{formatCurrencyAuto(positionSummary.totalInvested)}</strong>
+            </article>
+            <article
+              className={`investments-summary-pill ${positionSummary.totalProfit >= 0 ? 'is-positive' : 'is-negative'}`}
+            >
+              <span>浮动收益</span>
+              <strong>
+                {formatCurrencyAuto(positionSummary.totalProfit)} /{' '}
+                {(positionSummary.profitRate * 100).toFixed(1)}%
+              </strong>
+            </article>
+            <article className="investments-summary-pill">
+              <span>本月可投资空间</span>
+              <strong>{formatCurrencyAuto(monthlyInvestableCash)}</strong>
+            </article>
+            <article className="investments-summary-pill">
+              <span>投资占估算净资产</span>
+              <strong>{(investmentAssetRatio * 100).toFixed(1)}%</strong>
+            </article>
+            <article className="investments-summary-pill">
+              <span>理财目标进度</span>
+              <strong>
+                {goalSummary.totalTargetAmount > 0
+                  ? `${((goalSummary.totalCurrentAmount / goalSummary.totalTargetAmount) * 100).toFixed(1)}%`
+                  : '未开始'}
+              </strong>
+            </article>
+          </div>
         </div>
       </section>
 
