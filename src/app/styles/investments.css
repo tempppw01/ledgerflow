@@ -1,10 +1,26 @@
 .investments-page {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 0.34fr);
-  grid-auto-rows: min-content;
+  grid-template-rows: minmax(0, 1fr) repeat(3, min-content);
   align-items: start;
   gap: 12px;
-  min-height: calc(100vh - var(--topbar-height, 56px) - 28px);
+  height: calc(100vh - var(--topbar-height, 56px) - (var(--space-6) * 2));
+  height: calc(100dvh - var(--topbar-height, 56px) - (var(--space-6) * 2));
+  min-height: 0;
+  overflow: hidden;
+}
+
+.investments-page > .panel,
+.investments-page .panel {
+  margin-bottom: 0;
+}
+
+.investments-page .investments-watchlist-panel,
+.investments-page .investments-hero,
+.investments-page .investments-overview-card,
+.investments-page .investments-panel {
+  padding: 14px;
+  border-radius: 16px;
 }
 
 .investments-hero {
@@ -138,11 +154,11 @@
 .investments-ai-panel {
   grid-column: 1;
   grid-row: 1 / span 4;
-  position: sticky;
-  top: 12px;
+  position: relative;
+  top: auto;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - var(--topbar-height, 56px) - 28px);
+  height: 100%;
   min-height: 0;
   overflow: hidden;
   overflow-anchor: none;
@@ -151,7 +167,9 @@
 .investments-watchlist-panel {
   grid-column: 2;
   grid-row: 1;
-  max-height: min(42vh, 420px);
+  height: 100%;
+  min-height: 0;
+  max-height: none;
   overflow: hidden auto;
   scrollbar-color: color-mix(in srgb, var(--color-primary) 36%, transparent) transparent;
   scrollbar-width: thin;
@@ -871,18 +889,13 @@
 .investments-main-grid {
   grid-column: 2;
   grid-row: 3;
-  display: none;
+  display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
+  gap: 8px;
 }
 
 .investments-main-grid {
   grid-row: 4;
-}
-
-.investments-page.is-support-open .investments-overview-grid,
-.investments-page.is-support-open .investments-main-grid {
-  display: grid;
 }
 
 .investments-overview-card,
@@ -1401,7 +1414,10 @@
 @media (max-width: 900px) {
   .investments-page {
     grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    height: auto;
     min-height: auto;
+    overflow: visible;
   }
 
   .investments-ai-panel,
