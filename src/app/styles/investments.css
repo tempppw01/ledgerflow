@@ -152,6 +152,8 @@
   grid-row: 1;
   max-height: min(42vh, 420px);
   overflow: hidden auto;
+  scrollbar-color: color-mix(in srgb, var(--color-primary) 36%, transparent) transparent;
+  scrollbar-width: thin;
 }
 
 .investments-ai-panel-head {
@@ -198,7 +200,14 @@
   gap: 6px;
   overflow-x: auto;
   padding-bottom: 2px;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.investments-ai-prompt-bank::-webkit-scrollbar,
+.investments-ai-suggestion-row > div::-webkit-scrollbar,
+.investments-ai-thumb-list::-webkit-scrollbar {
+  display: none;
 }
 
 .investments-ai-prompt-bank button {
@@ -231,6 +240,51 @@
   overflow-x: hidden;
   padding-right: 4px;
   overscroll-behavior: contain;
+  scrollbar-color: color-mix(in srgb, var(--color-primary) 42%, transparent) transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+
+.investments-ai-thread::-webkit-scrollbar,
+.investments-watchlist-panel::-webkit-scrollbar,
+.investments-ai-streaming::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.investments-ai-thread::-webkit-scrollbar-track,
+.investments-watchlist-panel::-webkit-scrollbar-track,
+.investments-ai-streaming::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.investments-ai-thread::-webkit-scrollbar-thumb,
+.investments-watchlist-panel::-webkit-scrollbar-thumb,
+.investments-ai-streaming::-webkit-scrollbar-thumb {
+  min-height: 48px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background:
+    linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-primary) 48%, var(--color-bg-elevated)),
+        color-mix(in srgb, var(--color-accent) 38%, var(--color-bg-elevated))
+      )
+      border-box;
+  background-clip: content-box;
+}
+
+.investments-ai-thread::-webkit-scrollbar-thumb:hover,
+.investments-watchlist-panel::-webkit-scrollbar-thumb:hover,
+.investments-ai-streaming::-webkit-scrollbar-thumb:hover {
+  background:
+    linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-primary) 62%, var(--color-bg-elevated)),
+        color-mix(in srgb, var(--color-accent) 48%, var(--color-bg-elevated))
+      )
+      border-box;
+  background-clip: content-box;
 }
 
 .investments-ai-empty,
@@ -508,6 +562,8 @@
   display: flex;
   gap: 8px;
   overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .investments-ai-thumb-item {
@@ -580,7 +636,8 @@
   min-width: 0;
   overflow-x: auto;
   padding-bottom: 2px;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .investments-ai-suggestion-row button {
