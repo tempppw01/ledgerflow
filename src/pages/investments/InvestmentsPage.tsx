@@ -1577,25 +1577,11 @@ export function InvestmentsPage() {
                 event.target.value = '';
               }}
             />
-            <div className="investments-ai-composer-toolbar">
-              <button
-                type="button"
-                className="investments-ai-upload-btn button-with-icon vi-chip"
-                onClick={() => aiFileInputRef.current?.click()}
-                disabled={investmentAiStatus === 'loading'}
-              >
-                <img src={IMAGE_ICON_URL} alt="" aria-hidden="true" />
-                上传图片
-              </button>
-              <span>
-                支持上传或粘贴最多 {MAX_INVESTMENT_AI_IMAGES} 张截图，会随本条聊天一起保存。
-              </span>
-            </div>
             <textarea
-              rows={3}
+              rows={1}
               value={investmentAiInput}
               className="investments-ai-textarea vi-textarea"
-              placeholder="例如：我不太懂投资，帮我看看这只基金现在适不适合入手？"
+              placeholder="输入基金问题，Enter 发送"
               aria-label="基金分析输入框"
               disabled={investmentAiStatus === 'loading'}
               onChange={(event) => setInvestmentAiInput(event.target.value)}
@@ -1607,7 +1593,16 @@ export function InvestmentsPage() {
               }}
             />
             <div className="investments-ai-suggestion-row" aria-label="AI 联想提问">
-              <span>可以直接问</span>
+              <button
+                type="button"
+                className="investments-ai-upload-btn button-with-icon vi-chip"
+                onClick={() => aiFileInputRef.current?.click()}
+                disabled={investmentAiStatus === 'loading'}
+                title={`支持上传或粘贴最多 ${MAX_INVESTMENT_AI_IMAGES} 张截图`}
+              >
+                <img src={IMAGE_ICON_URL} alt="" aria-hidden="true" />
+                传图
+              </button>
               <div>
                 {INVESTMENT_AI_SUGGESTED_QUESTIONS.map((question) => (
                   <button
@@ -1621,16 +1616,9 @@ export function InvestmentsPage() {
                   </button>
                 ))}
               </div>
-            </div>
-            <div className="investments-ai-composer-actions">
-              <span>
-                {latestAssistantAnalysis?.fundName
-                  ? `最近分析：${latestAssistantAnalysis.fundName}`
-                  : '适合问：能不能买、怎么买更稳、哪里风险最大、要不要先观望。'}
-              </span>
               <button
                 type="submit"
-                className="primary"
+                className="primary investments-ai-submit-btn"
                 disabled={
                   investmentAiStatus === 'loading' ||
                   (!investmentAiInput.trim() && investmentAiImages.length === 0)
