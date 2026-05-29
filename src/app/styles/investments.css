@@ -1349,13 +1349,16 @@
 }
 
 .investments-hero .investments-tip-board,
-.investments-hero .investments-summary-strip,
 .investments-overview-grid .investments-meta-grid,
 .investments-main-grid .investments-form-grid,
 .investments-main-grid .investments-position-quick-grid,
 .investments-main-grid .investments-form-grid-primary,
 .investments-main-grid .investments-card-grid {
   grid-template-columns: 1fr;
+}
+
+.investments-hero .investments-summary-strip {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 112px), 1fr));
 }
 
 .investments-main-grid .investments-form-guide,
@@ -1467,7 +1470,7 @@
 
 @media (max-width: 640px) {
   .investments-summary-strip {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 112px), 1fr));
   }
 
   .investments-card-head,
