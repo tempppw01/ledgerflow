@@ -18,6 +18,7 @@ import type {
   InvestmentGoalKind,
   InvestmentGoalPriority,
   InvestmentPosition,
+  InvestmentPositionHistoryEntry,
   InvestmentRiskLevel,
   InvestmentWatchItem,
   InvestmentWatchlistReviewItem
@@ -79,6 +80,13 @@ const RISK_LEVEL_LABELS: Record<InvestmentRiskLevel, string> = {
   low: '低波动',
   medium: '均衡',
   high: '进取'
+};
+
+const POSITION_HISTORY_ACTION_LABELS: Record<InvestmentPositionHistoryEntry['action'], string> = {
+  add: '新增持仓',
+  update: '更新持仓',
+  remove: '移除持仓',
+  snapshot: '历史快照'
 };
 
 const PRIORITY_LABELS: Record<InvestmentGoalPriority, string> = {
@@ -342,6 +350,12 @@ function formatDateTimeLabel(value?: string) {
   }
 }
 
+function formatSignedCurrency(value?: number) {
+  if (!value) return '无变化';
+  const prefix = value > 0 ? '+' : '-';
+  return `${prefix}${formatCurrency(Math.abs(value))}`;
+}
+
 function getAnalysisRiskLabel(riskLevel?: InvestmentFundAnalysis['riskLevel']) {
   if (riskLevel === 'low') return '偏稳';
   if (riskLevel === 'medium') return '均衡';
@@ -485,6 +499,7 @@ export function InvestmentsPage() {
   const accounts = useFinanceStore((state) => state.accounts);
   const transactions = useFinanceStore((state) => state.transactions);
   const positions = useAppPreferences((state) => state.investmentPositions);
+  const investmentPositionHistory = useAppPreferences((state) => state.investmentPositionHistory);
   const goals = useAppPreferences((state) => state.investmentGoals);
   const investmentWatchlist = useAppPreferences((state) => state.investmentWatchlist);
   const persistedAiMessages = useAppPreferences((state) => state.investmentAiMessages);
@@ -493,6 +508,9 @@ export function InvestmentsPage() {
   const addInvestmentPosition = useAppPreferences((state) => state.addInvestmentPosition);
   const updateInvestmentPosition = useAppPreferences((state) => state.updateInvestmentPosition);
   const removeInvestmentPosition = useAppPreferences((state) => state.removeInvestmentPosition);
+  const ensureInvestmentPositionHistory = useAppPreferences(
+    (state) => state.ensureInvestmentPositionHistory
+  );
   const addInvestmentGoal = useAppPreferences((state) => state.addInvestmentGoal);
   const updateInvestmentGoal = useAppPreferences((state) => state.updateInvestmentGoal);
   const removeInvestmentGoal = useAppPreferences((state) => state.removeInvestmentGoal);
@@ -549,6 +567,7 @@ export function InvestmentsPage() {
   });
   const aiFileInputRef = useRef<HTMLInputElement | null>(null);
   const aiPanelRef = useRef<HTMLElement | null>(null);
+  const investmentAiThreadEndRef = useRef<HTMLDivElement | null>(null);
 
   const activePositions = useMemo(() => positions.filter((item) => item.isActive), [positions]);
 
@@ -728,6 +747,24 @@ export function InvestmentsPage() {
     () => goals.find((item) => item.id === pendingDeleteGoalId) ?? null,
     [goals, pendingDeleteGoalId]
   );
+
+  const latestInvestmentPositionHistory = useMemo(
+    () => investmentPositionHistory.slice(0, 24),
+    [investmentPositionHistory]
+  );
+
+  useEffect(() => {
+    if (positions.length > 0 && investmentPositionHistory.length === 0) {
+      ensureInvestmentPositionHistory();
+    }
+  }, [ensureInvestmentPositionHistory, investmentPositionHistory.length, positions.length]);
+
+  useEffect(() => {
+    investmentAiThreadEndRef.current?.scrollIntoView?.({
+      behavior: 'smooth',
+      block: 'end'
+    });
+  }, [investmentAiMessages.length, investmentAiStatus, streamingContent, streamingReasoning]);
 
   useEffect(() => {
     if (!watchContextMenu.open) return;
@@ -1433,6 +1470,7 @@ export function InvestmentsPage() {
                 </div>
               </article>
             ) : null}
+            <div ref={investmentAiThreadEndRef} aria-hidden="true" />
           </div>
 
           {investmentAiImages.length > 0 ? (
@@ -1464,72 +1502,87 @@ export function InvestmentsPage() {
           ) : null}
 
           <form
-            className="investments-ai-composer vi-control-surface"
+            className="chat-input-form investments-ai-composer"
             onSubmit={submitInvestmentAi}
             onPaste={handleInvestmentAiPaste}
           >
-            <input
-              ref={aiFileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="chat-file-input-hidden"
-              aria-label="上传基金截图"
-              onChange={(event) => {
-                const files = Array.from(event.target.files || []);
-                void handleInvestmentAiFileSelect(files);
-                event.target.value = '';
-              }}
-            />
-            <textarea
-              rows={1}
-              value={investmentAiInput}
-              className="investments-ai-textarea vi-textarea"
-              placeholder="输入基金问题，Enter 发送"
-              aria-label="基金分析输入框"
-              disabled={investmentAiStatus === 'loading'}
-              onChange={(event) => setInvestmentAiInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault();
-                  event.currentTarget.form?.requestSubmit();
-                }
-              }}
-            />
-            <div className="investments-ai-suggestion-row" aria-label="AI 联想提问">
-              <button
-                type="button"
-                className="investments-ai-upload-btn button-with-icon vi-chip"
-                onClick={() => aiFileInputRef.current?.click()}
-                disabled={investmentAiStatus === 'loading'}
-                title={`支持上传或粘贴最多 ${MAX_INVESTMENT_AI_IMAGES} 张截图`}
-              >
-                <img src={IMAGE_ICON_URL} alt="" aria-hidden="true" />
-                传图
-              </button>
-              <div>
-                {INVESTMENT_AI_SUGGESTED_QUESTIONS.map((question) => (
-                  <button
-                    key={question}
-                    type="button"
-                    className="vi-chip"
-                    onClick={() => handleInvestmentExpertPrompt(question)}
-                    disabled={investmentAiStatus === 'loading'}
+            <div className="chat-input-stack">
+              <div className="chat-input-main investments-ai-input-main">
+                <input
+                  ref={aiFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="chat-file-input-hidden"
+                  aria-label="上传基金截图"
+                  onChange={(event) => {
+                    const files = Array.from(event.target.files || []);
+                    void handleInvestmentAiFileSelect(files);
+                    event.target.value = '';
+                  }}
+                />
+                <textarea
+                  rows={1}
+                  value={investmentAiInput}
+                  className="chat-input-textarea investments-ai-textarea"
+                  placeholder="输入基金问题，Enter 发送"
+                  aria-label="基金分析输入框"
+                  disabled={investmentAiStatus === 'loading'}
+                  onChange={(event) => setInvestmentAiInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                      event.preventDefault();
+                      event.currentTarget.form?.requestSubmit();
+                    }
+                  }}
+                />
+                <div className="chat-input-toolbar investments-ai-input-toolbar">
+                  <div
+                    className="chat-input-toolbar-left investments-ai-suggestion-row"
+                    aria-label="AI 联想提问"
                   >
-                    {question}
+                    <button
+                      type="button"
+                      className="chat-upload-btn investments-ai-upload-btn"
+                      onClick={() => aiFileInputRef.current?.click()}
+                      disabled={investmentAiStatus === 'loading'}
+                      title={`支持上传或粘贴最多 ${MAX_INVESTMENT_AI_IMAGES} 张截图`}
+                    >
+                      <img
+                        className="chat-upload-icon"
+                        src={IMAGE_ICON_URL}
+                        alt=""
+                        aria-hidden="true"
+                      />
+                    </button>
+                    <div>
+                      {INVESTMENT_AI_SUGGESTED_QUESTIONS.map((question) => (
+                        <button
+                          key={question}
+                          type="button"
+                          className="vi-chip"
+                          onClick={() => handleInvestmentExpertPrompt(question)}
+                          disabled={investmentAiStatus === 'loading'}
+                        >
+                          {question}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    className="chat-send-btn investments-ai-submit-btn"
+                    disabled={
+                      investmentAiStatus === 'loading' ||
+                      (!investmentAiInput.trim() && investmentAiImages.length === 0)
+                    }
+                    title={investmentAiStatus === 'loading' ? '分析中' : '发送'}
+                    aria-label={investmentAiStatus === 'loading' ? '分析中' : '开始分析'}
+                  >
+                    {investmentAiStatus === 'loading' ? '…' : '↑'}
                   </button>
-                ))}
+                </div>
               </div>
-              <button
-                type="submit"
-                className="primary investments-ai-submit-btn"
-                disabled={
-                  investmentAiStatus === 'loading' ||
-                  (!investmentAiInput.trim() && investmentAiImages.length === 0)
-                }
-              >
-                {investmentAiStatus === 'loading' ? '分析中...' : '开始分析'}
-              </button>
             </div>
           </form>
         </article>
@@ -2223,6 +2276,65 @@ export function InvestmentsPage() {
                         </article>
                       );
                     })}
+                  </div>
+                )}
+
+                <div className="investments-list-head investments-history-head">
+                  <div>
+                    <h4>持仓流水</h4>
+                    <span>记录新增、调仓、市值更新和移除动作，像交易流水一样可回看。</span>
+                  </div>
+                  <span>{investmentPositionHistory.length} 条</span>
+                </div>
+                {latestInvestmentPositionHistory.length === 0 ? (
+                  <div className="investments-history-empty">
+                    <strong>还没有持仓流水</strong>
+                    <span>新增或编辑持仓后，这里会自动沉淀历史记录。</span>
+                  </div>
+                ) : (
+                  <div className="investments-history-table" role="table" aria-label="持仓流水">
+                    <div className="investments-history-row is-head" role="row">
+                      <span role="columnheader">时间</span>
+                      <span role="columnheader">动作 / 标的</span>
+                      <span role="columnheader">当前市值</span>
+                      <span role="columnheader">市值变化</span>
+                      <span role="columnheader">收益</span>
+                    </div>
+                    {latestInvestmentPositionHistory.map((item) => (
+                      <div key={item.id} className="investments-history-row" role="row">
+                        <span role="cell" className="investments-history-date">
+                          {formatDateTimeLabel(item.createdAt)}
+                        </span>
+                        <span role="cell" className="investments-history-asset">
+                          <strong>{item.positionName}</strong>
+                          <small>
+                            {POSITION_HISTORY_ACTION_LABELS[item.action]} ·{' '}
+                            {POSITION_CATEGORY_LABELS[item.category]}
+                            {item.platform ? ` · ${item.platform}` : ''}
+                          </small>
+                        </span>
+                        <span role="cell">
+                          <strong>{formatCurrency(item.currentValue)}</strong>
+                          <small>本金 {formatCurrency(item.investedAmount)}</small>
+                        </span>
+                        <span
+                          role="cell"
+                          className={
+                            item.currentValueDelta && item.currentValueDelta < 0
+                              ? 'negative'
+                              : item.currentValueDelta && item.currentValueDelta > 0
+                                ? 'positive'
+                                : ''
+                          }
+                        >
+                          {formatSignedCurrency(item.currentValueDelta)}
+                        </span>
+                        <span role="cell" className={item.profit >= 0 ? 'positive' : 'negative'}>
+                          {formatCurrency(item.profit)}
+                          <small>{(item.profitRate * 100).toFixed(1)}%</small>
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

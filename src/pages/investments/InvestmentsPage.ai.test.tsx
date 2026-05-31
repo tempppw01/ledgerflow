@@ -90,6 +90,7 @@ describe('InvestmentsPage AI assistant', () => {
           updatedAt: '2026-05-20T00:00:00.000Z'
         }
       ],
+      investmentPositionHistory: [],
       investmentGoals: [
         {
           id: 'goal-1',
@@ -335,7 +336,9 @@ describe('InvestmentsPage AI assistant', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getAllByText('Use staged entries instead of buying all at once.')).toHaveLength(1);
+    expect(screen.getAllByText('Use staged entries instead of buying all at once.')).toHaveLength(
+      1
+    );
   });
 
   it('submits suggested questions immediately instead of only filling the composer', async () => {
@@ -365,9 +368,11 @@ describe('InvestmentsPage AI assistant', () => {
         messages: Array<{ text?: string }>;
       };
       expect(request.messages[0]?.text).toBe('和我的持仓冲突吗？');
-      expect(scrollIntoViewMock).not.toHaveBeenCalled();
+      expect(scrollIntoViewMock).toHaveBeenCalledWith({ behavior: 'smooth', block: 'end' });
       expect(screen.getByLabelText('基金分析输入框')).toHaveValue('');
-      expect(await screen.findByText('这只基金和你当前持仓有部分重合，需要控制比例。')).toBeInTheDocument();
+      expect(
+        await screen.findByText('这只基金和你当前持仓有部分重合，需要控制比例。')
+      ).toBeInTheDocument();
     } finally {
       if (originalScrollIntoView) {
         Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {

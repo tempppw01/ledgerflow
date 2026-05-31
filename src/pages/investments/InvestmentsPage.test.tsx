@@ -84,6 +84,7 @@ describe('InvestmentsPage', () => {
           updatedAt: '2026-05-20T00:00:00.000Z'
         }
       ],
+      investmentPositionHistory: [],
       investmentGoals: [
         {
           id: 'goal-1',
@@ -111,7 +112,9 @@ describe('InvestmentsPage', () => {
 
     expect(screen.getByRole('heading', { name: '看清你的投资节奏和目标进度' })).toBeInTheDocument();
     expect(screen.getByText('先从常用资产开始')).toBeInTheDocument();
-    expect(screen.getByText('沪深 300 ETF')).toBeInTheDocument();
+    expect(screen.getAllByText('沪深 300 ETF').length).toBeGreaterThan(0);
+    expect(screen.getByText('持仓流水')).toBeInTheDocument();
+    expect(screen.getByText(/历史快照/)).toBeInTheDocument();
     expect(screen.getByText('6 个月应急金')).toBeInTheDocument();
     expect(screen.getByText('单一持仓占比偏高')).toBeInTheDocument();
     expect(screen.getAllByText('¥1.09万').length).toBeGreaterThan(0);

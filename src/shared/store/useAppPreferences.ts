@@ -6,6 +6,8 @@ import {
   InvestmentGoal,
   InvestmentFundAnalysis,
   InvestmentPosition,
+  InvestmentPositionHistoryAction,
+  InvestmentPositionHistoryEntry,
   InvestmentWatchItem
 } from '../../entities/investment/types';
 import {
@@ -42,6 +44,7 @@ interface AppPreferencesState {
   accentTheme: AppAccentTheme;
   rssSubscriptions: RssSubscription[];
   investmentPositions: InvestmentPosition[];
+  investmentPositionHistory: InvestmentPositionHistoryEntry[];
   investmentGoals: InvestmentGoal[];
   investmentWatchlist: InvestmentWatchItem[];
   investmentAiMessages: InvestmentAiMessage[];
@@ -61,6 +64,7 @@ interface AppPreferencesState {
     payload: Omit<InvestmentPosition, 'id' | 'createdAt' | 'updatedAt'>
   ) => void;
   removeInvestmentPosition: (id: string) => void;
+  ensureInvestmentPositionHistory: () => void;
   addInvestmentGoal: (payload: Omit<InvestmentGoal, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateInvestmentGoal: (
     id: string,
@@ -80,6 +84,7 @@ interface AppPreferencesState {
   clearInvestmentAiMessages: () => void;
   replaceInvestmentData: (payload: {
     investmentPositions: InvestmentPosition[];
+    investmentPositionHistory?: InvestmentPositionHistoryEntry[];
     investmentGoals: InvestmentGoal[];
     investmentWatchlist: InvestmentWatchItem[];
     investmentAiMessages: InvestmentAiMessage[];
@@ -104,6 +109,10 @@ function createRepaymentRecordId(): string {
 
 function createInvestmentPositionId(): string {
   return createScopedId('investment-position');
+}
+
+function createInvestmentPositionHistoryId(): string {
+  return createScopedId('investment-position-history');
 }
 
 function createInvestmentGoalId(): string {
@@ -195,6 +204,111 @@ function normalizeInvestmentPosition(
     createdAt: item.createdAt || now,
     updatedAt: item.updatedAt || now
   };
+}
+
+function normalizeDelta(value: unknown): number | undefined {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric === 0) return undefined;
+  return Number(numeric.toFixed(2));
+}
+
+function buildInvestmentPositionHistoryEntry(
+  position: InvestmentPosition,
+  action: InvestmentPositionHistoryAction,
+  previous?: InvestmentPosition | null
+): InvestmentPositionHistoryEntry {
+  const profit = position.currentValue - position.investedAmount;
+  const profitRate = position.investedAmount > 0 ? profit / position.investedAmount : 0;
+  const investedAmountDelta =
+    action === 'snapshot'
+      ? undefined
+      : action === 'remove'
+        ? -position.investedAmount
+        : previous
+          ? position.investedAmount - previous.investedAmount
+          : position.investedAmount;
+  const currentValueDelta =
+    action === 'snapshot'
+      ? undefined
+      : action === 'remove'
+        ? -position.currentValue
+        : previous
+          ? position.currentValue - previous.currentValue
+          : position.currentValue;
+
+  return {
+    id: createInvestmentPositionHistoryId(),
+    positionId: position.id,
+    positionName: position.name,
+    category: position.category,
+    platform: position.platform,
+    action,
+    investedAmount: position.investedAmount,
+    currentValue: position.currentValue,
+    profit: Number(profit.toFixed(2)),
+    profitRate: Number(profitRate.toFixed(4)),
+    investedAmountDelta: normalizeDelta(investedAmountDelta),
+    currentValueDelta: normalizeDelta(currentValueDelta),
+    isActive: position.isActive,
+    note:
+      action === 'snapshot'
+        ? '从已有持仓生成历史快照'
+        : action === 'remove'
+          ? position.note || '持仓已删除'
+          : position.note,
+    createdAt: new Date().toISOString()
+  };
+}
+
+function normalizeInvestmentPositionHistoryEntry(
+  item: InvestmentPositionHistoryEntry
+): InvestmentPositionHistoryEntry | null {
+  if (!item || typeof item !== 'object') return null;
+  const action =
+    item.action === 'add' ||
+    item.action === 'update' ||
+    item.action === 'remove' ||
+    item.action === 'snapshot'
+      ? item.action
+      : 'snapshot';
+  const investedAmount = normalizePositiveNumber(item.investedAmount);
+  const currentValue = normalizePositiveNumber(item.currentValue);
+  const profit = Number.isFinite(Number(item.profit))
+    ? Number(Number(item.profit).toFixed(2))
+    : Number((currentValue - investedAmount).toFixed(2));
+  const profitRate = Number.isFinite(Number(item.profitRate))
+    ? Number(Number(item.profitRate).toFixed(4))
+    : investedAmount > 0
+      ? Number((profit / investedAmount).toFixed(4))
+      : 0;
+
+  return {
+    id: item.id || createInvestmentPositionHistoryId(),
+    positionId: String(item.positionId || '').trim() || createInvestmentPositionId(),
+    positionName: String(item.positionName || '').trim() || '未命名持仓',
+    category: item.category || 'other',
+    platform: normalizeOptionalString(item.platform),
+    action,
+    investedAmount,
+    currentValue,
+    profit,
+    profitRate,
+    investedAmountDelta: normalizeDelta(item.investedAmountDelta),
+    currentValueDelta: normalizeDelta(item.currentValueDelta),
+    isActive: item.isActive !== false,
+    note: normalizeOptionalString(item.note),
+    createdAt: normalizeOptionalString(item.createdAt) || new Date().toISOString()
+  };
+}
+
+function normalizeInvestmentPositionHistory(
+  entries: InvestmentPositionHistoryEntry[]
+): InvestmentPositionHistoryEntry[] {
+  return entries
+    .map((item) => normalizeInvestmentPositionHistoryEntry(item))
+    .filter((item): item is InvestmentPositionHistoryEntry => Boolean(item))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 200);
 }
 
 function normalizeInvestmentGoal(
@@ -399,6 +513,7 @@ export const useAppPreferences = create<AppPreferencesState>()(
       accentTheme: 'blue',
       rssSubscriptions: DEFAULT_RSS_SUBSCRIPTIONS,
       investmentPositions: [],
+      investmentPositionHistory: [],
       investmentGoals: [],
       investmentWatchlist: [],
       investmentAiMessages: [],
@@ -468,28 +583,75 @@ export const useAppPreferences = create<AppPreferencesState>()(
         }));
       },
       addInvestmentPosition: (payload) => {
-        set((state) => ({
-          investmentPositions: [normalizeInvestmentPosition(payload), ...state.investmentPositions]
-        }));
+        set((state) => {
+          const position = normalizeInvestmentPosition(payload);
+          const historyEntry = buildInvestmentPositionHistoryEntry(position, 'add');
+          return {
+            investmentPositions: [position, ...state.investmentPositions],
+            investmentPositionHistory: normalizeInvestmentPositionHistory([
+              historyEntry,
+              ...state.investmentPositionHistory
+            ])
+          };
+        });
       },
       updateInvestmentPosition: (id, payload) => {
-        set((state) => ({
-          investmentPositions: state.investmentPositions.map((item) =>
-            item.id === id
-              ? normalizeInvestmentPosition({
-                  ...payload,
-                  id,
-                  createdAt: item.createdAt,
-                  updatedAt: new Date().toISOString()
-                })
-              : item
-          )
-        }));
+        set((state) => {
+          let historyEntry: InvestmentPositionHistoryEntry | null = null;
+          const investmentPositions = state.investmentPositions.map((item) => {
+            if (item.id !== id) return item;
+            const next = normalizeInvestmentPosition({
+              ...payload,
+              id,
+              createdAt: item.createdAt,
+              updatedAt: new Date().toISOString()
+            });
+            historyEntry = buildInvestmentPositionHistoryEntry(next, 'update', item);
+            return next;
+          });
+
+          return {
+            investmentPositions,
+            investmentPositionHistory: historyEntry
+              ? normalizeInvestmentPositionHistory([
+                  historyEntry,
+                  ...state.investmentPositionHistory
+                ])
+              : state.investmentPositionHistory
+          };
+        });
       },
       removeInvestmentPosition: (id) => {
-        set((state) => ({
-          investmentPositions: state.investmentPositions.filter((item) => item.id !== id)
-        }));
+        set((state) => {
+          const removed = state.investmentPositions.find((item) => item.id === id);
+          return {
+            investmentPositions: state.investmentPositions.filter((item) => item.id !== id),
+            investmentPositionHistory: removed
+              ? normalizeInvestmentPositionHistory([
+                  buildInvestmentPositionHistoryEntry(removed, 'remove'),
+                  ...state.investmentPositionHistory
+                ])
+              : state.investmentPositionHistory
+          };
+        });
+      },
+      ensureInvestmentPositionHistory: () => {
+        set((state) => {
+          if (
+            state.investmentPositions.length === 0 ||
+            state.investmentPositionHistory.length > 0
+          ) {
+            return state;
+          }
+
+          return {
+            investmentPositionHistory: normalizeInvestmentPositionHistory(
+              state.investmentPositions.map((item) =>
+                buildInvestmentPositionHistoryEntry(item, 'snapshot')
+              )
+            )
+          };
+        });
       },
       addInvestmentGoal: (payload) => {
         set((state) => ({
@@ -564,10 +726,19 @@ export const useAppPreferences = create<AppPreferencesState>()(
         set({ investmentAiMessages: [] });
       },
       replaceInvestmentData: (payload) => {
+        const investmentPositions = Array.isArray(payload.investmentPositions)
+          ? payload.investmentPositions.map((item) => normalizeInvestmentPosition(item))
+          : [];
+        const investmentPositionHistory = Array.isArray(payload.investmentPositionHistory)
+          ? normalizeInvestmentPositionHistory(payload.investmentPositionHistory)
+          : normalizeInvestmentPositionHistory(
+              investmentPositions.map((item) =>
+                buildInvestmentPositionHistoryEntry(item, 'snapshot')
+              )
+            );
         set({
-          investmentPositions: Array.isArray(payload.investmentPositions)
-            ? payload.investmentPositions.map((item) => normalizeInvestmentPosition(item))
-            : [],
+          investmentPositions,
+          investmentPositionHistory,
           investmentGoals: Array.isArray(payload.investmentGoals)
             ? payload.investmentGoals.map((item) => normalizeInvestmentGoal(item))
             : [],

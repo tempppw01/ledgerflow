@@ -7,6 +7,7 @@ describe('useAppPreferences RSS subscriptions', () => {
     useAppPreferences.setState({
       theme: 'system',
       investmentPositions: [],
+      investmentPositionHistory: [],
       investmentGoals: [],
       investmentWatchlist: [],
       investmentAiMessages: [],
@@ -89,6 +90,10 @@ describe('useAppPreferences RSS subscriptions', () => {
 
     expect(position.name).toBe('沪深 300 ETF');
     expect(goal.name).toBe('6 个月应急金');
+    expect(useAppPreferences.getState().investmentPositionHistory[0].action).toBe('add');
+    expect(useAppPreferences.getState().investmentPositionHistory[0].positionName).toBe(
+      '沪深 300 ETF'
+    );
 
     useAppPreferences.getState().updateInvestmentPosition(position.id, {
       ...position,
@@ -103,12 +108,50 @@ describe('useAppPreferences RSS subscriptions', () => {
 
     expect(useAppPreferences.getState().investmentPositions[0].currentValue).toBe(11200);
     expect(useAppPreferences.getState().investmentGoals[0].currentAmount).toBe(15000);
+    expect(useAppPreferences.getState().investmentPositionHistory[0].action).toBe('update');
+    expect(useAppPreferences.getState().investmentPositionHistory[0].currentValueDelta).toBe(320);
 
     useAppPreferences.getState().removeInvestmentPosition(position.id);
     useAppPreferences.getState().removeInvestmentGoal(goal.id);
 
     expect(useAppPreferences.getState().investmentPositions).toEqual([]);
     expect(useAppPreferences.getState().investmentGoals).toEqual([]);
+    expect(useAppPreferences.getState().investmentPositionHistory[0].action).toBe('remove');
+    expect(useAppPreferences.getState().investmentPositionHistory).toHaveLength(3);
+  });
+
+  it('should create snapshot history for existing investment positions', () => {
+    useAppPreferences.setState({
+      investmentPositions: [
+        {
+          id: 'pos-existing',
+          name: '纳指 100 ETF',
+          category: 'index-fund',
+          platform: '天天基金',
+          investedAmount: 20000,
+          currentValue: 21800,
+          monthlyContribution: 800,
+          targetAllocation: 25,
+          riskLevel: 'high',
+          note: '已有持仓',
+          isActive: true,
+          createdAt: '2026-05-01T00:00:00.000Z',
+          updatedAt: '2026-05-20T00:00:00.000Z'
+        }
+      ],
+      investmentPositionHistory: []
+    });
+
+    useAppPreferences.getState().ensureInvestmentPositionHistory();
+
+    expect(useAppPreferences.getState().investmentPositionHistory).toHaveLength(1);
+    expect(useAppPreferences.getState().investmentPositionHistory[0]).toMatchObject({
+      action: 'snapshot',
+      positionId: 'pos-existing',
+      positionName: '纳指 100 ETF',
+      currentValue: 21800,
+      note: '从已有持仓生成历史快照'
+    });
   });
 
   it('should upsert investment watchlist items and persist ai messages', () => {

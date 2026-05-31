@@ -565,6 +565,7 @@ describe('parseFinanceBackupPayload', () => {
           updatedAt: '2026-05-02T00:00:00.000Z'
         }
       ],
+      investmentPositionHistory: [],
       investmentGoals: [],
       investmentWatchlist: [],
       investmentAiMessages: []
@@ -595,6 +596,7 @@ describe('parseFinanceBackupPayload', () => {
         trashedSubscriptions: [],
         globalMemories: [],
         investmentPositions: [],
+        investmentPositionHistory: [],
         investmentGoals: [],
         investmentWatchlist: [
           {

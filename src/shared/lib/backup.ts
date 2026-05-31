@@ -9,6 +9,8 @@ import {
   InvestmentGoalKind,
   InvestmentGoalPriority,
   InvestmentPosition,
+  InvestmentPositionHistoryAction,
+  InvestmentPositionHistoryEntry,
   InvestmentRiskLevel,
   InvestmentWatchItem
 } from '../../entities/investment/types';
@@ -355,6 +357,7 @@ export function loadObjectStorageConfig(
 export type FinanceBackupData = Required<FinanceDataSnapshot> & {
   globalMemories: GlobalMemoryItem[];
   investmentPositions: InvestmentPosition[];
+  investmentPositionHistory: InvestmentPositionHistoryEntry[];
   investmentGoals: InvestmentGoal[];
   investmentWatchlist: InvestmentWatchItem[];
   investmentAiMessages: InvestmentAiMessage[];
@@ -377,6 +380,7 @@ export interface FinanceBackupPayload {
 type FinanceBackupSnapshotWithMemories = Required<FinanceDataSnapshot> & {
   globalMemories: GlobalMemoryItem[];
   investmentPositions: InvestmentPosition[];
+  investmentPositionHistory: InvestmentPositionHistoryEntry[];
   investmentGoals: InvestmentGoal[];
   investmentWatchlist: InvestmentWatchItem[];
   investmentAiMessages: InvestmentAiMessage[];
@@ -948,6 +952,86 @@ function validateInvestmentPositionItem(item: unknown, index: number): Investmen
   };
 }
 
+function validateInvestmentPositionHistoryItem(
+  item: unknown,
+  index: number
+): InvestmentPositionHistoryEntry {
+  if (!isObjectRecord(item)) {
+    throw new Error(`备份文件字段无效：data.investmentPositionHistory[${index}] 应为对象`);
+  }
+
+  assertString(item.id, `data.investmentPositionHistory[${index}].id`);
+  assertString(item.positionId, `data.investmentPositionHistory[${index}].positionId`);
+  assertString(item.positionName, `data.investmentPositionHistory[${index}].positionName`);
+  assertNumber(item.investedAmount, `data.investmentPositionHistory[${index}].investedAmount`);
+  assertNumber(item.currentValue, `data.investmentPositionHistory[${index}].currentValue`);
+  assertNumber(item.profit, `data.investmentPositionHistory[${index}].profit`);
+  assertNumber(item.profitRate, `data.investmentPositionHistory[${index}].profitRate`);
+  assertString(item.createdAt, `data.investmentPositionHistory[${index}].createdAt`);
+  assertString(item.platform, `data.investmentPositionHistory[${index}].platform`, {
+    required: false
+  });
+  assertString(item.note, `data.investmentPositionHistory[${index}].note`, { required: false });
+
+  if (
+    typeof item.category !== 'string' ||
+    !INVESTMENT_CATEGORIES.has(item.category as InvestmentCategory)
+  ) {
+    throw new Error(
+      `备份文件字段无效：data.investmentPositionHistory[${index}].category 枚举值不合法`
+    );
+  }
+
+  if (
+    item.action !== 'add' &&
+    item.action !== 'update' &&
+    item.action !== 'remove' &&
+    item.action !== 'snapshot'
+  ) {
+    throw new Error(
+      `备份文件字段无效：data.investmentPositionHistory[${index}].action 枚举值不合法`
+    );
+  }
+
+  if (item.investedAmountDelta !== undefined) {
+    assertNumber(
+      item.investedAmountDelta,
+      `data.investmentPositionHistory[${index}].investedAmountDelta`
+    );
+  }
+  if (item.currentValueDelta !== undefined) {
+    assertNumber(
+      item.currentValueDelta,
+      `data.investmentPositionHistory[${index}].currentValueDelta`
+    );
+  }
+  if (typeof item.isActive !== 'boolean') {
+    throw new Error(
+      `备份文件字段无效：data.investmentPositionHistory[${index}].isActive 应为布尔值`
+    );
+  }
+
+  return {
+    id: asSafeString(item.id),
+    positionId: asSafeString(item.positionId),
+    positionName: asSafeString(item.positionName),
+    category: item.category as InvestmentCategory,
+    platform: asSafeString(item.platform) || undefined,
+    action: item.action as InvestmentPositionHistoryAction,
+    investedAmount: Number(item.investedAmount),
+    currentValue: Number(item.currentValue),
+    profit: Number(item.profit),
+    profitRate: Number(item.profitRate),
+    investedAmountDelta:
+      typeof item.investedAmountDelta === 'number' ? Number(item.investedAmountDelta) : undefined,
+    currentValueDelta:
+      typeof item.currentValueDelta === 'number' ? Number(item.currentValueDelta) : undefined,
+    isActive: Boolean(item.isActive),
+    note: asSafeString(item.note) || undefined,
+    createdAt: asSafeString(item.createdAt)
+  };
+}
+
 function validateInvestmentGoalItem(item: unknown, index: number): InvestmentGoal {
   if (!isObjectRecord(item)) {
     throw new Error(`备份文件字段无效：data.investmentGoals[${index}] 应为对象`);
@@ -1193,6 +1277,7 @@ export function createFinanceBackupPayload(
   input: FinanceDataSnapshot & {
     globalMemories?: GlobalMemoryItem[];
     investmentPositions?: InvestmentPosition[];
+    investmentPositionHistory?: InvestmentPositionHistoryEntry[];
     investmentGoals?: InvestmentGoal[];
     investmentWatchlist?: InvestmentWatchItem[];
     investmentAiMessages?: InvestmentAiMessage[];
@@ -1238,6 +1323,10 @@ export function createFinanceBackupPayload(
       investmentPositions:
         normalizedScope.investments && Array.isArray(input.investmentPositions)
           ? input.investmentPositions
+          : [],
+      investmentPositionHistory:
+        normalizedScope.investments && Array.isArray(input.investmentPositionHistory)
+          ? input.investmentPositionHistory
           : [],
       investmentGoals:
         normalizedScope.investments && Array.isArray(input.investmentGoals)
@@ -1314,6 +1403,13 @@ export function parseFinanceBackupPayload(raw: string): FinanceBackupPayload {
     throw new Error('备份文件字段无效：data.investmentPositions 应为数组');
   }
 
+  if (
+    data.investmentPositionHistory !== undefined &&
+    !Array.isArray(data.investmentPositionHistory)
+  ) {
+    throw new Error('备份文件字段无效：data.investmentPositionHistory 应为数组');
+  }
+
   if (data.investmentGoals !== undefined && !Array.isArray(data.investmentGoals)) {
     throw new Error('备份文件字段无效：data.investmentGoals 应为数组');
   }
@@ -1353,6 +1449,9 @@ export function parseFinanceBackupPayload(raw: string): FinanceBackupPayload {
   const investmentPositions = (
     Array.isArray(data.investmentPositions) ? data.investmentPositions : []
   ).map((item, index) => validateInvestmentPositionItem(item, index));
+  const investmentPositionHistory = (
+    Array.isArray(data.investmentPositionHistory) ? data.investmentPositionHistory : []
+  ).map((item, index) => validateInvestmentPositionHistoryItem(item, index));
   const investmentGoals = (Array.isArray(data.investmentGoals) ? data.investmentGoals : []).map(
     (item, index) => validateInvestmentGoalItem(item, index)
   );
@@ -1384,6 +1483,7 @@ export function parseFinanceBackupPayload(raw: string): FinanceBackupPayload {
       trashedSubscriptions,
       globalMemories,
       investmentPositions,
+      investmentPositionHistory,
       investmentGoals,
       investmentWatchlist,
       investmentAiMessages
@@ -1417,6 +1517,9 @@ export function applyFinanceBackupPayload(
     investmentPositions: scope.investments
       ? payload.data.investmentPositions
       : current.investmentPositions,
+    investmentPositionHistory: scope.investments
+      ? payload.data.investmentPositionHistory
+      : current.investmentPositionHistory,
     investmentGoals: scope.investments ? payload.data.investmentGoals : current.investmentGoals,
     investmentWatchlist: scope.investments
       ? payload.data.investmentWatchlist

@@ -6,6 +6,7 @@ describe('useAppPreferences investment AI attachments', () => {
     localStorage.clear();
     useAppPreferences.setState({
       investmentPositions: [],
+      investmentPositionHistory: [],
       investmentGoals: [],
       investmentWatchlist: [],
       investmentAiMessages: []

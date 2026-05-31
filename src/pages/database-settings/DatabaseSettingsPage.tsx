@@ -311,7 +311,7 @@ function buildBackupRestoreSuccessMessage(action: '导入' | '恢复', payload: 
 
   if (payload.scope.investments) {
     sections.push(
-      `投资理财 ${payload.data.investmentPositions.length} 笔持仓 / ${payload.data.investmentGoals.length} 个目标 / ${payload.data.investmentWatchlist.length} 只自选`
+      `投资理财 ${payload.data.investmentPositions.length} 笔持仓 / ${payload.data.investmentPositionHistory.length} 条持仓流水 / ${payload.data.investmentGoals.length} 个目标 / ${payload.data.investmentWatchlist.length} 只自选`
     );
   }
 
@@ -339,6 +339,7 @@ export function DatabaseSettingsPage() {
   const globalMemories = useGlobalMemoryStore((s) => s.memories);
   const replaceAllGlobalMemories = useGlobalMemoryStore((s) => s.replaceAllData);
   const investmentPositions = useAppPreferences((s) => s.investmentPositions);
+  const investmentPositionHistory = useAppPreferences((s) => s.investmentPositionHistory);
   const investmentGoals = useAppPreferences((s) => s.investmentGoals);
   const investmentWatchlist = useAppPreferences((s) => s.investmentWatchlist);
   const investmentAiMessages = useAppPreferences((s) => s.investmentAiMessages);
@@ -409,6 +410,7 @@ export function DatabaseSettingsPage() {
       subscriptions.length +
       globalMemories.length +
       investmentPositions.length +
+      investmentPositionHistory.length +
       investmentGoals.length +
       investmentWatchlist.length +
       investmentAiMessages.length,
@@ -419,6 +421,7 @@ export function DatabaseSettingsPage() {
       subscriptions.length,
       globalMemories.length,
       investmentPositions.length,
+      investmentPositionHistory.length,
       investmentGoals.length,
       investmentWatchlist.length,
       investmentAiMessages.length
@@ -459,6 +462,7 @@ export function DatabaseSettingsPage() {
     trashedSubscriptions,
     globalMemories,
     investmentPositions,
+    investmentPositionHistory,
     investmentGoals,
     investmentWatchlist,
     investmentAiMessages
@@ -472,6 +476,7 @@ export function DatabaseSettingsPage() {
     const {
       globalMemories: nextGlobalMemories,
       investmentPositions: nextInvestmentPositions,
+      investmentPositionHistory: nextInvestmentPositionHistory,
       investmentGoals: nextInvestmentGoals,
       investmentWatchlist: nextInvestmentWatchlist,
       investmentAiMessages: nextInvestmentAiMessages,
@@ -481,6 +486,7 @@ export function DatabaseSettingsPage() {
     replaceAllGlobalMemories(nextGlobalMemories);
     replaceInvestmentData({
       investmentPositions: nextInvestmentPositions,
+      investmentPositionHistory: nextInvestmentPositionHistory,
       investmentGoals: nextInvestmentGoals,
       investmentWatchlist: nextInvestmentWatchlist,
       investmentAiMessages: nextInvestmentAiMessages

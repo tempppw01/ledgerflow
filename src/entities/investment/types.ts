@@ -26,6 +26,26 @@ export interface InvestmentPosition {
   updatedAt: string;
 }
 
+export type InvestmentPositionHistoryAction = 'add' | 'update' | 'remove' | 'snapshot';
+
+export interface InvestmentPositionHistoryEntry {
+  id: string;
+  positionId: string;
+  positionName: string;
+  category: InvestmentCategory;
+  platform?: string;
+  action: InvestmentPositionHistoryAction;
+  investedAmount: number;
+  currentValue: number;
+  profit: number;
+  profitRate: number;
+  investedAmountDelta?: number;
+  currentValueDelta?: number;
+  isActive: boolean;
+  note?: string;
+  createdAt: string;
+}
+
 export type InvestmentGoalKind =
   | 'emergency'
   | 'house'
