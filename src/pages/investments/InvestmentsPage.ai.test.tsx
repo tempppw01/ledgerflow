@@ -141,6 +141,24 @@ describe('InvestmentsPage AI assistant', () => {
     expect(emptyIllustration?.src).toBe(INVESTMENT_HERO_ILLUSTRATION_URL);
   });
 
+  it('clears the composer immediately after sending a typed question', async () => {
+    sendAiChatStreamMock.mockReturnValue(new Promise(() => undefined));
+
+    render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    const input = screen.getByLabelText('基金分析输入框');
+    fireEvent.change(input, { target: { value: '美国' } });
+    fireEvent.click(screen.getByRole('button', { name: '开始分析' }));
+
+    await waitFor(() => expect(sendAiChatStreamMock).toHaveBeenCalled());
+    expect(input).toHaveValue('');
+    expect(screen.getByText('美国')).toBeInTheDocument();
+  });
+
   it('supports streaming fund analysis and adding result to watchlist', async () => {
     const streamedContent = [
       '先给结论：可以继续跟踪，但别急着一把加仓。\n\n',

@@ -1356,9 +1356,7 @@ export function InvestmentsPage() {
     setLocalInvestmentAiMessages(optimisticMessages);
     setInvestmentAiStatus('loading');
     setInvestmentAiError('');
-    if (promptOverride !== undefined) {
-      setInvestmentAiInput('');
-    }
+    setInvestmentAiInput('');
     setStreamingContent('');
     setStreamingReasoning('');
 
