@@ -559,13 +559,16 @@
 }
 
 .investments-ai-message.is-user .investments-ai-bubble {
-  flex: 0 1 min(68ch, calc(100% - 44px));
+  flex: 0 1 auto;
+  width: fit-content;
   max-width: min(72%, calc(100% - 44px));
+  margin-left: auto;
   padding: 12px 14px;
   border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
   border-radius: 16px 6px 16px 16px;
   background: color-mix(in srgb, var(--color-primary-bg) 74%, var(--color-bg-elevated));
   box-shadow: var(--shadow-xs);
+  overflow-wrap: anywhere;
 }
 
 .investments-ai-message-head {
