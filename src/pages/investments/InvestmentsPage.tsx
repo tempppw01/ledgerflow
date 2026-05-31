@@ -3,6 +3,7 @@ import {
   FormEvent,
   KeyboardEvent as ReactKeyboardEvent,
   MouseEvent,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -23,12 +24,17 @@ import type {
   InvestmentWatchItem,
   InvestmentWatchlistReviewItem
 } from '../../entities/investment/types';
-import { sendAiChatStream } from '../../features/assistant/api/openaiCompatibleClient';
+import {
+  fetchAiModels,
+  sendAiChatStream
+} from '../../features/assistant/api/openaiCompatibleClient';
 import { renderMarkdownContent } from '../../features/assistant/ui/MarkdownRenderer';
 import {
   BOT_ICON_URL,
   BRAIN_ICON_URL,
   CHEVRONS_DOWN_UP_ICON_URL,
+  CHEVRONS_LEFT_RIGHT_ICON_URL,
+  CHEVRONS_RIGHT_LEFT_ICON_URL,
   CHEVRONS_UP_DOWN_ICON_URL,
   IMAGE_ICON_URL,
   INFO_ICON_URL,
@@ -155,6 +161,13 @@ const INVESTMENT_AI_SUGGESTED_QUESTIONS = [
   '和我的持仓冲突吗？',
   '我下一步该做什么？'
 ];
+const INVESTMENT_MODEL_CACHE_KEY = 'ledgerflow-assistant-model-cache-v1';
+
+function getModelDisplayLabel(modelId: string): string {
+  const value = modelId.trim();
+  if (!value) return value;
+  return value === 'gpt-5.4-mini' ? `${value}（推荐）` : value;
+}
 
 function getClipboardImageFiles(clipboardData: DataTransfer): File[] {
   const itemFiles = Array.from(clipboardData.items || [])
@@ -519,7 +532,7 @@ export function InvestmentsPage() {
   const setInvestmentWatchlist = useAppPreferences((state) => state.setInvestmentWatchlist);
   const setInvestmentAiMessages = useAppPreferences((state) => state.setInvestmentAiMessages);
   const clearInvestmentAiMessages = useAppPreferences((state) => state.clearInvestmentAiMessages);
-  const { baseUrl, apiKey, model } = useAiSettings();
+  const { baseUrl, apiKey, model, setModel } = useAiSettings();
 
   const [positionForm, setPositionForm] = useState(POSITION_FORM_DEFAULT);
   const [goalForm, setGoalForm] = useState(GOAL_FORM_DEFAULT);
@@ -544,6 +557,17 @@ export function InvestmentsPage() {
   const [watchlistReviewError, setWatchlistReviewError] = useState('');
   const [streamingContent, setStreamingContent] = useState('');
   const [streamingReasoning, setStreamingReasoning] = useState('');
+  const [modelOpen, setModelOpen] = useState(false);
+  const [models, setModels] = useState<string[]>(() => {
+    try {
+      const cached = JSON.parse(window.localStorage.getItem(INVESTMENT_MODEL_CACHE_KEY) || '[]');
+      return Array.isArray(cached) ? cached.filter((item) => typeof item === 'string') : [];
+    } catch {
+      return [];
+    }
+  });
+  const [loadingModels, setLoadingModels] = useState(false);
+  const [supportCollapsed, setSupportCollapsed] = useState(false);
   const [toast, setToast] = useState<{ visible: boolean; message: string; variant: ToastVariant }>({
     visible: false,
     message: '',
@@ -568,6 +592,7 @@ export function InvestmentsPage() {
   const aiFileInputRef = useRef<HTMLInputElement | null>(null);
   const aiPanelRef = useRef<HTMLElement | null>(null);
   const investmentAiThreadEndRef = useRef<HTMLDivElement | null>(null);
+  const modelSelectorRef = useRef<HTMLDivElement | null>(null);
 
   const activePositions = useMemo(() => positions.filter((item) => item.isActive), [positions]);
 
@@ -753,6 +778,45 @@ export function InvestmentsPage() {
     [investmentPositionHistory]
   );
 
+  const loadInvestmentModels = useCallback(async () => {
+    if (!apiKey.trim()) {
+      setModels((current) => (current.length > 0 ? current : model ? [model] : []));
+      setToastState('请先在设置里配置 API Key，再刷新模型列表', 'warning');
+      return;
+    }
+
+    setLoadingModels(true);
+    try {
+      const nextModels = await fetchAiModels(baseUrl, apiKey);
+      setModels(nextModels);
+      try {
+        window.localStorage.setItem(INVESTMENT_MODEL_CACHE_KEY, JSON.stringify(nextModels));
+      } catch {
+        // ignore storage write errors
+      }
+    } catch (error) {
+      setToastState(error instanceof Error ? error.message : '模型列表拉取失败', 'error');
+    } finally {
+      setLoadingModels(false);
+    }
+  }, [apiKey, baseUrl, model]);
+
+  const openInvestmentModelPicker = useCallback(() => {
+    setModelOpen((current) => !current);
+    if (!modelOpen && !loadingModels) {
+      void loadInvestmentModels();
+    }
+  }, [loadInvestmentModels, loadingModels, modelOpen]);
+
+  const handleSelectInvestmentModel = useCallback(
+    (nextModel: string) => {
+      setModel(nextModel);
+      setModelOpen(false);
+      setToastState(`已切换到 ${getModelDisplayLabel(nextModel)}`, 'success');
+    },
+    [setModel]
+  );
+
   useEffect(() => {
     if (positions.length > 0 && investmentPositionHistory.length === 0) {
       ensureInvestmentPositionHistory();
@@ -765,6 +829,28 @@ export function InvestmentsPage() {
       block: 'end'
     });
   }, [investmentAiMessages.length, investmentAiStatus, streamingContent, streamingReasoning]);
+
+  useEffect(() => {
+    if (!modelOpen) return;
+
+    const handlePointerDown = (event: globalThis.MouseEvent) => {
+      const target = event.target;
+      if (target instanceof Node && modelSelectorRef.current?.contains(target)) return;
+      setModelOpen(false);
+    };
+    const handleEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setModelOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [modelOpen]);
 
   useEffect(() => {
     if (!watchContextMenu.open) return;
@@ -1244,17 +1330,66 @@ export function InvestmentsPage() {
 
   return (
     <div
-      className={`page-stack investments-page ${openInvestmentPanels.summary ? 'is-support-open' : ''}`}
+      className={`page-stack investments-page ${openInvestmentPanels.summary ? 'is-support-open' : ''} ${
+        supportCollapsed ? 'is-support-collapsed' : ''
+      }`}
     >
-      <section className="investments-ai-grid">
+      <section className={`investments-ai-grid ${supportCollapsed ? 'is-support-collapsed' : ''}`}>
         <article className="panel investments-ai-panel" ref={aiPanelRef}>
           <div className="investments-section-head investments-ai-panel-head">
-            <div>
+            <div className="investments-ai-title-group">
               <span className="investments-ai-kicker">AI 投资推荐专家</span>
               <h3>先让 AI 判断要不要买</h3>
+              <div
+                className="chat-model-selector investments-ai-model-selector"
+                ref={modelSelectorRef}
+              >
+                <button
+                  type="button"
+                  className={`chat-model-trigger investments-ai-model-trigger ${
+                    modelOpen ? 'is-open' : ''
+                  }`}
+                  onClick={openInvestmentModelPicker}
+                  aria-haspopup="listbox"
+                  aria-expanded={modelOpen}
+                  aria-label={`当前模型：${getModelDisplayLabel(model || '默认模型')}`}
+                  title={getModelDisplayLabel(model || '默认模型')}
+                >
+                  <span className="chat-model-trigger-icon">@</span>
+                  <span className="chat-model-inline-label">
+                    {getModelDisplayLabel(model || '默认模型')}
+                  </span>
+                </button>
+
+                {modelOpen ? (
+                  <div
+                    className="chat-model-dropdown investments-ai-model-dropdown"
+                    role="dialog"
+                    aria-label="模型列表"
+                  >
+                    <div className="chat-model-list">
+                      {models.length === 0 ? (
+                        <div className="chat-model-empty">
+                          {loadingModels ? '模型加载中…' : '暂无可用模型'}
+                        </div>
+                      ) : (
+                        models.map((item) => (
+                          <button
+                            key={item}
+                            type="button"
+                            className={`chat-model-option ${item === model ? 'active' : ''}`}
+                            onClick={() => handleSelectInvestmentModel(item)}
+                          >
+                            {getModelDisplayLabel(item)}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
             </div>
             <div className="investments-ai-head-actions">
-              <span className="badge">{model || '默认模型'}</span>
               {investmentAiMessages.length > 0 ? (
                 <button
                   type="button"
@@ -1268,6 +1403,23 @@ export function InvestmentsPage() {
                   清空记录
                 </button>
               ) : null}
+              <button
+                type="button"
+                className="button-with-icon investments-support-toggle"
+                onClick={() => setSupportCollapsed((current) => !current)}
+                aria-pressed={supportCollapsed}
+                aria-label={supportCollapsed ? '展开投资侧栏' : '收起投资侧栏'}
+                title={supportCollapsed ? '展开投资侧栏' : '收起投资侧栏'}
+              >
+                <img
+                  src={
+                    supportCollapsed ? CHEVRONS_LEFT_RIGHT_ICON_URL : CHEVRONS_RIGHT_LEFT_ICON_URL
+                  }
+                  alt=""
+                  aria-hidden="true"
+                />
+                <span>{supportCollapsed ? '展开侧栏' : '收起侧栏'}</span>
+              </button>
             </div>
           </div>
 

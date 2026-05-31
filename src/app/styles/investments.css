@@ -144,6 +144,18 @@
   min-height: 0;
 }
 
+.investments-ai-grid.is-support-collapsed {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.investments-ai-grid.is-support-collapsed .investments-ai-panel {
+  grid-column: 1 / -1;
+}
+
+.investments-ai-grid.is-support-collapsed .investments-support-column {
+  display: none;
+}
+
 .investments-ai-panel,
 .investments-watchlist-panel {
   display: grid;
@@ -194,6 +206,12 @@
   align-items: start;
 }
 
+.investments-ai-title-group {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
 .investments-ai-kicker {
   display: inline-flex;
   width: fit-content;
@@ -208,12 +226,46 @@
   font-weight: 800;
 }
 
+.investments-ai-model-selector {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.investments-ai-model-selector .chat-model-dropdown {
+  left: 0;
+  right: auto;
+}
+
+.investments-ai-model-trigger {
+  max-width: min(360px, 100%);
+  border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-primary-bg));
+}
+
+.investments-ai-model-dropdown {
+  min-width: min(320px, calc(100vw - 48px));
+}
+
 .investments-ai-head-actions {
   display: inline-flex;
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
   align-items: center;
+}
+
+.investments-support-toggle {
+  min-height: 32px;
+  padding: 0 10px;
+  border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-primary-bg));
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.investments-support-toggle img {
+  width: 16px;
+  height: 16px;
 }
 
 .investments-ai-error {

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Account } from '../../entities/account/types';
@@ -104,7 +104,7 @@ describe('InvestmentsPage', () => {
   });
 
   it('应展示持仓汇总、目标和风险提醒', () => {
-    render(
+    const { container } = render(
       <MemoryRouter>
         <InvestmentsPage />
       </MemoryRouter>
@@ -118,5 +118,15 @@ describe('InvestmentsPage', () => {
     expect(screen.getByText('6 个月应急金')).toBeInTheDocument();
     expect(screen.getByText('单一持仓占比偏高')).toBeInTheDocument();
     expect(screen.getAllByText('¥1.09万').length).toBeGreaterThan(0);
+
+    expect(screen.getByRole('button', { name: /当前模型/ })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '收起投资侧栏' }));
+
+    expect(screen.getByRole('button', { name: '展开投资侧栏' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    expect(container.querySelector('.investments-ai-grid')).toHaveClass('is-support-collapsed');
   });
 });
