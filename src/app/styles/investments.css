@@ -881,6 +881,17 @@
   box-shadow: 0 10px 20px color-mix(in srgb, var(--color-primary) 18%, transparent);
 }
 
+.investments-ai-submit-btn.is-stop {
+  background: color-mix(in srgb, var(--color-danger-bg) 84%, var(--color-bg-elevated));
+  color: var(--color-danger);
+  border-color: color-mix(in srgb, var(--color-danger) 18%, var(--color-border-light));
+}
+
+.chat-send-stop-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
 .investments-watchlist-list {
   display: grid;
   gap: 10px;

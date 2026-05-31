@@ -247,6 +247,12 @@ export async function sendAiChatStream(
   return finish();
 }
 
+export function isAiRequestAbortError(error: unknown): boolean {
+  return error instanceof DOMException
+    ? error.name === 'AbortError'
+    : error instanceof Error && error.name === 'AbortError';
+}
+
 interface ChatRequestInput {
   baseUrl?: string;
   apiKey?: string;

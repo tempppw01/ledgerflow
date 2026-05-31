@@ -33,6 +33,10 @@ vi.mock('../../shared/store/useFinanceStore', () => ({
 }));
 
 vi.mock('../../features/assistant/api/openaiCompatibleClient', () => ({
+  isAiRequestAbortError: (error: unknown) =>
+    error instanceof DOMException
+      ? error.name === 'AbortError'
+      : error instanceof Error && error.name === 'AbortError',
   sendAiChat: (...args: unknown[]) => sendAiChatMock(...args),
   sendAiChatStream: (...args: unknown[]) => sendAiChatStreamMock(...args)
 }));
@@ -157,6 +161,47 @@ describe('InvestmentsPage AI assistant', () => {
     await waitFor(() => expect(sendAiChatStreamMock).toHaveBeenCalled());
     expect(input).toHaveValue('');
     expect(screen.getByText('美国')).toBeInTheDocument();
+  });
+
+  it('shows a stop button while streaming and can abort the request', async () => {
+    let abortSignal: AbortSignal | null = null;
+    sendAiChatStreamMock.mockImplementation(
+      async (
+        input: { signal?: AbortSignal },
+        handlers: {
+          onDelta: (delta: string) => void;
+          onReasoningDelta?: (delta: string) => void;
+          onDone?: (content: string, reasoning?: string) => void;
+        }
+      ) => {
+        abortSignal = input.signal ?? null;
+        return new Promise((_, reject) => {
+          input.signal?.addEventListener('abort', () =>
+            reject(new DOMException('aborted', 'AbortError'))
+          );
+          handlers.onDelta('模型思考中');
+        });
+      }
+    );
+
+    render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByLabelText('基金分析输入框'), {
+      target: { value: '美国' }
+    });
+    fireEvent.click(screen.getByRole('button', { name: '开始分析' }));
+
+    expect(await screen.findByRole('button', { name: '停止生成' })).toBeInTheDocument();
+    expect(abortSignal).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: '停止生成' }));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: '开始分析' })).toBeInTheDocument();
+    });
   });
 
   it('renders copy, delete and retry actions below investment messages', async () => {

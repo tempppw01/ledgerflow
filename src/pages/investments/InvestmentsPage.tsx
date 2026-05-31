@@ -26,6 +26,7 @@ import type {
 } from '../../entities/investment/types';
 import {
   fetchAiModels,
+  isAiRequestAbortError,
   sendAiChat,
   sendAiChatStream
 } from '../../features/assistant/api/openaiCompatibleClient';
@@ -606,6 +607,7 @@ export function InvestmentsPage() {
   const [modelOpen, setModelOpen] = useState(false);
   const [investmentAiWebEnabled, setInvestmentAiWebEnabled] = useState(false);
   const [suggestionsCollapsed, setSuggestionsCollapsed] = useState(false);
+  const investmentAiAbortControllerRef = useRef<AbortController | null>(null);
   const [models, setModels] = useState<string[]>(() => {
     try {
       const cached = JSON.parse(window.localStorage.getItem(INVESTMENT_MODEL_CACHE_KEY) || '[]');
@@ -1124,6 +1126,15 @@ export function InvestmentsPage() {
     aiPanelRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
   }
 
+  function stopInvestmentAiRequest() {
+    investmentAiAbortControllerRef.current?.abort();
+    investmentAiAbortControllerRef.current = null;
+    setInvestmentAiStatus('idle');
+    setStreamingContent('');
+    setStreamingReasoning('');
+    setToastState('已停止生成', 'warning');
+  }
+
   function handleInvestmentExpertPrompt(prompt: string) {
     void runInvestmentAi(prompt);
   }
@@ -1384,6 +1395,8 @@ export function InvestmentsPage() {
 
     const promptText = cleanPrompt || '请根据这张基金截图，帮我判断这只基金是否值得继续关注。';
     const createdAt = new Date().toISOString();
+    const abortController = new AbortController();
+    investmentAiAbortControllerRef.current = abortController;
     const userMessage = createInvestmentAiMessage({
       id: createInvestmentChatMessageId('user'),
       role: 'user',
@@ -1418,7 +1431,8 @@ export function InvestmentsPage() {
               text: promptText,
               imageDataUrls: submittedImages
             }
-          ]
+          ],
+          signal: abortController.signal
         },
         {
           onDelta: (delta) => {
@@ -1468,8 +1482,15 @@ export function InvestmentsPage() {
         setSuggestionsCollapsed(false);
       });
     } catch (error) {
+      if (isAiRequestAbortError(error)) {
+        return;
+      }
       setInvestmentAiStatus('error');
       setInvestmentAiError(error instanceof Error ? error.message : '基金分析失败，请稍后再试。');
+    } finally {
+      if (investmentAiAbortControllerRef.current === abortController) {
+        investmentAiAbortControllerRef.current = null;
+      }
     }
   }
 
@@ -2059,18 +2080,29 @@ export function InvestmentsPage() {
                       </div>
                     ) : null}
                   </div>
-                  <button
-                    type="submit"
-                    className="chat-send-btn investments-ai-submit-btn"
-                    disabled={
-                      investmentAiStatus === 'loading' ||
-                      (!investmentAiInput.trim() && investmentAiImages.length === 0)
-                    }
-                    title={investmentAiStatus === 'loading' ? '分析中' : '发送'}
-                    aria-label={investmentAiStatus === 'loading' ? '分析中' : '开始分析'}
-                  >
-                    {investmentAiStatus === 'loading' ? '…' : '↑'}
-                  </button>
+                  {investmentAiStatus === 'loading' ? (
+                    <button
+                      type="button"
+                      className="chat-send-btn investments-ai-submit-btn is-stop"
+                      onClick={stopInvestmentAiRequest}
+                      title="停止生成"
+                      aria-label="停止生成"
+                    >
+                      <span className="chat-send-stop-icon" aria-hidden="true">
+                        ■
+                      </span>
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      className="chat-send-btn investments-ai-submit-btn"
+                      disabled={!investmentAiInput.trim() && investmentAiImages.length === 0}
+                      title="发送"
+                      aria-label="开始分析"
+                    >
+                      ↑
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
