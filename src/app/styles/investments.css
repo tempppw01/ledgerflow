@@ -291,6 +291,32 @@
   margin: 0;
 }
 
+.investments-ai-settings-link {
+  width: fit-content;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  box-shadow: none;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.investments-ai-settings-link:hover,
+.investments-ai-settings-link:focus-visible {
+  background: transparent;
+  box-shadow: none;
+  text-decoration: underline;
+}
+
+.investments-ai-settings-link strong {
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
 .investments-ai-suggestion-row > div::-webkit-scrollbar,
 .investments-ai-thumb-list::-webkit-scrollbar {
   display: none;

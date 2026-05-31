@@ -533,6 +533,7 @@ export function InvestmentsPage() {
   const setInvestmentAiMessages = useAppPreferences((state) => state.setInvestmentAiMessages);
   const clearInvestmentAiMessages = useAppPreferences((state) => state.clearInvestmentAiMessages);
   const { baseUrl, apiKey, model, setModel } = useAiSettings();
+  const missingInvestmentAiKey = !apiKey.trim();
 
   const [positionForm, setPositionForm] = useState(POSITION_FORM_DEFAULT);
   const [goalForm, setGoalForm] = useState(GOAL_FORM_DEFAULT);
@@ -1423,7 +1424,16 @@ export function InvestmentsPage() {
             </div>
           </div>
 
-          {investmentAiError ? (
+          {missingInvestmentAiKey ? (
+            <button
+              type="button"
+              className="assistant-wb-issue error investments-ai-error investments-ai-settings-link"
+              onClick={() => navigate('/settings')}
+            >
+              <span>请先在设置中配置可用的 AI Key，再来分析基金。</span>
+              <strong>去设置</strong>
+            </button>
+          ) : investmentAiError ? (
             <p className="assistant-wb-issue error investments-ai-error" role="alert">
               {investmentAiError}
             </p>
