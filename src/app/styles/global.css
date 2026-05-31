@@ -13464,6 +13464,7 @@ body.categories-accounts-resizing {
   padding: 14px;
   border: 1px solid color-mix(in srgb, var(--color-border-light) 86%, transparent);
   border-radius: 18px;
+  container-type: inline-size;
   display: grid;
   gap: 12px;
   background: linear-gradient(
@@ -13584,6 +13585,12 @@ body.categories-accounts-resizing {
   color: var(--color-text-tertiary);
   font-size: 11px;
   line-height: 1.4;
+}
+
+@container (max-width: 1200px) {
+  .dashboard-module-manage-copy small {
+    display: none;
+  }
 }
 
 .dashboard-module-manage-tail {

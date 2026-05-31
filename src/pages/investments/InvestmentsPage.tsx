@@ -1339,8 +1339,6 @@ export function InvestmentsPage() {
         <article className="panel investments-ai-panel" ref={aiPanelRef}>
           <div className="investments-section-head investments-ai-panel-head">
             <div className="investments-ai-title-group">
-              <span className="investments-ai-kicker">AI 投资推荐专家</span>
-              <h3>先让 AI 判断要不要买</h3>
               <div
                 className="chat-model-selector investments-ai-model-selector"
                 ref={modelSelectorRef}
