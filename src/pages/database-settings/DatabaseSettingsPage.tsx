@@ -934,7 +934,7 @@ export function DatabaseSettingsPage() {
       : '暂无记录';
 
   return (
-    <div>
+    <div className="database-settings-page">
       <div className="database-data-stack">
         <section className="panel database-data-section">
           <button
@@ -1081,21 +1081,6 @@ export function DatabaseSettingsPage() {
           ) : null}
         </section>
       </div>
-
-      <section className="panel" style={{ marginTop: 12 }}>
-        <h3 style={{ marginTop: 0 }}>数据重制</h3>
-        <p className="sync-tip">清空所有账户账单（交易记录），保留账户与分类。</p>
-        <button
-          type="button"
-          className="danger"
-          onClick={() => {
-            setClearBillsConfirmText('');
-            setClearBillsOpen(true);
-          }}
-        >
-          一键清空所有账户账单
-        </button>
-      </section>
 
       <section className="panel database-remote-backup-card" style={{ marginTop: 12 }}>
         <div className="database-remote-backup-head">
@@ -1466,6 +1451,21 @@ export function DatabaseSettingsPage() {
           </button>
         </div>
         {remoteConnectionOpen ? <ConnectionConfigManager /> : null}
+      </section>
+
+      <section className="panel" style={{ marginTop: 12 }}>
+        <h3 style={{ marginTop: 0 }}>数据重制</h3>
+        <p className="sync-tip">清空所有账户账单（交易记录），保留账户与分类。</p>
+        <button
+          type="button"
+          className="danger"
+          onClick={() => {
+            setClearBillsConfirmText('');
+            setClearBillsOpen(true);
+          }}
+        >
+          一键清空所有账户账单
+        </button>
       </section>
 
       {webdavRestoreDialogOpen ? (

@@ -8574,6 +8574,15 @@ body.categories-accounts-resizing {
   gap: 12px;
 }
 
+.database-settings-page .panel:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+[data-theme='dark'] .database-settings-page .panel:hover {
+  box-shadow: none;
+}
+
 .database-data-section {
   display: grid;
   gap: 0;
