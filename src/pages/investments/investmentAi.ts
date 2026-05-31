@@ -358,12 +358,73 @@ export function summarizeInvestmentAnalysis(
   return verdict && verdict !== summary ? verdict : '';
 }
 
+function normalizeInvestmentFollowUpPrompt(prompt: string): string {
+  return prompt
+    .replace(/\s+/g, ' ')
+    .replace(/^[-*•\d一二三四五六七八九十、.．)）\s]+/, '')
+    .trim()
+    .slice(0, 42);
+}
+
+export function parseInvestmentFollowUpPrompts(raw: string): string[] {
+  try {
+    const normalized = raw
+      .trim()
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/```$/i, '');
+    const candidate = normalized.match(/\[[\s\S]*\]/)?.[0] || normalized;
+    const parsed = JSON.parse(candidate) as Array<
+      string | { prompt?: unknown; question?: unknown; label?: unknown }
+    >;
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .map((item) => {
+        if (typeof item === 'string') return item;
+        if (!item || typeof item !== 'object') return '';
+        return String(item.prompt || item.question || item.label || '');
+      })
+      .map(normalizeInvestmentFollowUpPrompt)
+      .filter((item, index, list) => item.length >= 5 && list.indexOf(item) === index)
+      .slice(0, 4);
+  } catch {
+    return [];
+  }
+}
+
+export function buildInvestmentFollowUpFallback(input: {
+  question: string;
+  analysis?: InvestmentFundAnalysis | null;
+  watchlist?: InvestmentWatchItem[];
+}) {
+  const fundName =
+    input.analysis?.fundName ||
+    input.watchlist?.find((item) => item.name.trim())?.name ||
+    '这只基金';
+  const candidates = [
+    input.analysis?.risks[0] ? '这个风险影响大吗？' : '',
+    input.analysis?.actions[0] ? '下一步怎么执行更稳？' : '',
+    input.analysis?.fundHoldings?.[0] ? '重仓股票会拖累吗？' : '',
+    input.analysis?.assetAllocation?.[0] ? '资产分布健康吗？' : '',
+    input.analysis?.netValue ? '净值现在算贵吗？' : '',
+    input.question.includes('买') ? '先买多少比较稳？' : '',
+    `${fundName}适合继续观察吗？`
+  ];
+
+  return candidates
+    .map(normalizeInvestmentFollowUpPrompt)
+    .filter((item, index, list) => item.length >= 5 && list.indexOf(item) === index)
+    .slice(0, 4);
+}
+
 export function createInvestmentAiMessage(input: {
   id: string;
   role: InvestmentAiMessage['role'];
   text: string;
   createdAt: string;
   reasoning?: string;
+  followUpPrompts?: string[];
   attachmentCount?: number;
   attachmentImages?: string[];
   analysis?: InvestmentFundAnalysis | null;
@@ -371,11 +432,13 @@ export function createInvestmentAiMessage(input: {
   const attachmentImages = input.attachmentImages
     ?.filter((value) => value.startsWith('data:image/'))
     .slice(0, 4);
+  const followUpPrompts = normalizeList(input.followUpPrompts);
   return {
     id: input.id,
     role: input.role,
     text: input.text,
     reasoning: normalizeOptionalString(input.reasoning),
+    followUpPrompts: followUpPrompts.length ? followUpPrompts : undefined,
     attachmentCount: input.attachmentCount || attachmentImages?.length,
     attachmentImages: attachmentImages?.length ? attachmentImages : undefined,
     analysis: input.analysis || undefined,

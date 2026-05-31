@@ -25,6 +25,7 @@ const financeStoreMock = vi.hoisted(() => ({
 }));
 
 const sendAiChatStreamMock = vi.hoisted(() => vi.fn());
+const sendAiChatMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../../shared/store/useFinanceStore', () => ({
   useFinanceStore: (selector: (state: typeof financeStoreMock.state) => unknown) =>
@@ -32,12 +33,14 @@ vi.mock('../../shared/store/useFinanceStore', () => ({
 }));
 
 vi.mock('../../features/assistant/api/openaiCompatibleClient', () => ({
+  sendAiChat: (...args: unknown[]) => sendAiChatMock(...args),
   sendAiChatStream: (...args: unknown[]) => sendAiChatStreamMock(...args)
 }));
 
 describe('InvestmentsPage AI assistant', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sendAiChatMock.mockResolvedValue({ content: '[]' });
     localStorage.clear();
     sessionStorage.clear();
 
@@ -429,6 +432,17 @@ describe('InvestmentsPage AI assistant', () => {
     sendAiChatStreamMock.mockResolvedValue({
       content: '这只基金和你当前持仓有部分重合，需要控制比例。',
       reasoning: ''
+    });
+    useAppPreferences.setState({
+      investmentAiMessages: [
+        {
+          id: 'assistant-follow-up-1',
+          role: 'assistant',
+          text: '先看持仓重合度，再决定是否加仓。',
+          followUpPrompts: ['和我的持仓冲突吗？', '重仓股票会拖累吗？'],
+          createdAt: '2026-05-31T00:00:00.000Z'
+        }
+      ]
     });
 
     try {

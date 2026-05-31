@@ -26,6 +26,7 @@ import type {
 } from '../../entities/investment/types';
 import {
   fetchAiModels,
+  sendAiChat,
   sendAiChatStream
 } from '../../features/assistant/api/openaiCompatibleClient';
 import { renderMarkdownContent } from '../../features/assistant/ui/MarkdownRenderer';
@@ -36,6 +37,7 @@ import {
   CHEVRONS_LEFT_RIGHT_ICON_URL,
   CHEVRONS_RIGHT_LEFT_ICON_URL,
   CHEVRONS_UP_DOWN_ICON_URL,
+  GLOBE_ICON_URL,
   IMAGE_ICON_URL,
   INFO_ICON_URL,
   INVESTMENT_HERO_ILLUSTRATION_URL,
@@ -55,10 +57,12 @@ import { EmptyState } from '../../shared/ui/EmptyState';
 import { Toast, type ToastVariant } from '../../shared/ui/Toast';
 import {
   buildInvestmentAssistantPrompt,
+  buildInvestmentFollowUpFallback,
   buildInvestmentWatchlistReviewPrompt,
   createInvestmentAiMessage,
   extractInvestmentAnalysis,
   extractInvestmentWatchlistReview,
+  parseInvestmentFollowUpPrompts,
   readImageAsDataUrl,
   summarizeInvestmentAnalysis,
   trimInvestmentAiMessages
@@ -156,13 +160,6 @@ const AI_LOADING_GIF_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/load.gif';
 const MAX_INVESTMENT_AI_IMAGES = 4;
 const MAX_INVESTMENT_AI_IMAGE_SIZE_MB = 6;
-const INVESTMENT_AI_SUGGESTED_QUESTIONS = [
-  '这只基金现在适合买吗？',
-  '帮我看最大风险',
-  '适合定投还是观望？',
-  '和我的持仓冲突吗？',
-  '我下一步该做什么？'
-];
 const INVESTMENT_MODEL_CACHE_KEY = 'ledgerflow-assistant-model-cache-v1';
 
 function getModelDisplayLabel(modelId: string): string {
@@ -604,6 +601,8 @@ export function InvestmentsPage() {
   const [streamingContent, setStreamingContent] = useState('');
   const [streamingReasoning, setStreamingReasoning] = useState('');
   const [modelOpen, setModelOpen] = useState(false);
+  const [investmentAiWebEnabled, setInvestmentAiWebEnabled] = useState(false);
+  const [suggestionsCollapsed, setSuggestionsCollapsed] = useState(false);
   const [models, setModels] = useState<string[]>(() => {
     try {
       const cached = JSON.parse(window.localStorage.getItem(INVESTMENT_MODEL_CACHE_KEY) || '[]');
@@ -806,6 +805,15 @@ export function InvestmentsPage() {
     [investmentAiMessages]
   );
 
+  const latestInvestmentFollowUpPrompts = useMemo(
+    () =>
+      [...investmentAiMessages]
+        .reverse()
+        .find((item) => item.role === 'assistant' && item.followUpPrompts?.length)
+        ?.followUpPrompts || [],
+    [investmentAiMessages]
+  );
+
   const streamingDisplayContent = useMemo(
     () => extractInvestmentAnalysis(streamingContent).displayText,
     [streamingContent]
@@ -824,6 +832,60 @@ export function InvestmentsPage() {
   const latestInvestmentPositionHistory = useMemo(
     () => investmentPositionHistory.slice(0, 24),
     [investmentPositionHistory]
+  );
+
+  const generateInvestmentFollowUpPrompts = useCallback(
+    async (params: {
+      question: string;
+      answer: string;
+      analysis?: InvestmentFundAnalysis | null;
+      history: InvestmentAiMessage[];
+    }) => {
+      const fallback = buildInvestmentFollowUpFallback({
+        question: params.question,
+        analysis: params.analysis,
+        watchlist: investmentWatchlist
+      });
+
+      if (!baseUrl || !apiKey || !model || !params.answer.trim()) {
+        return fallback;
+      }
+
+      const recentTurns = params.history
+        .filter((item) => item.role === 'user' || item.role === 'assistant')
+        .slice(-6)
+        .map((item) => `${item.role === 'user' ? '用户' : 'AI'}：${item.text.trim()}`)
+        .filter(Boolean)
+        .join('\n');
+
+      try {
+        const reply = await sendAiChat({
+          baseUrl,
+          apiKey,
+          model,
+          systemPrompt:
+            '你是 LedgerFlow 投资理财页的“继续追问建议生成器”。请基于最近对话、用户刚才的问题、AI 本轮回答和结构化基金分析，生成 3 到 4 条自然、具体、适合新手继续问的中文问题。只返回 JSON 数组，例如 ["问题1","问题2","问题3"]。要求：1) 每条都必须是问题句；2) 聚焦当前基金、风险、定投、持仓冲突、下一步动作或需要补充的数据；3) 不要固定套话，不要出现“展开讲讲”；4) 单条尽量控制在 8 到 24 个汉字；5) 不要出现“如果你愿意”“我可以”等助手口吻。',
+          messages: [
+            {
+              role: 'user',
+              text: [
+                `最近对话：\n${recentTurns || '无'}`,
+                `用户刚才的问题：${params.question}`,
+                `AI 本轮回答：${params.answer}`,
+                `结构化基金分析：${JSON.stringify(params.analysis || {}, null, 2)}`,
+                '请生成 3 到 4 条继续追问建议。'
+              ].join('\n\n')
+            }
+          ]
+        });
+
+        const prompts = parseInvestmentFollowUpPrompts(reply.content);
+        return prompts.length >= 2 ? prompts : fallback;
+      } catch {
+        return fallback;
+      }
+    },
+    [apiKey, baseUrl, investmentWatchlist, model]
   );
 
   const updateActiveSupportSection = useCallback(() => {
@@ -994,6 +1056,14 @@ export function InvestmentsPage() {
     const next = trimInvestmentAiMessages(messages);
     setLocalInvestmentAiMessages(next);
     setInvestmentAiMessages(next);
+  }
+
+  function patchInvestmentAiMessage(messageId: string, patch: Partial<InvestmentAiMessage>) {
+    const persistedMessages = useAppPreferences.getState().investmentAiMessages;
+    const currentMessages = persistedMessages.length ? persistedMessages : investmentAiMessages;
+    syncInvestmentAiMessages(
+      currentMessages.map((item) => (item.id === messageId ? { ...item, ...patch } : item))
+    );
   }
 
   function setInvestmentMessageFeedback(
@@ -1300,7 +1370,9 @@ export function InvestmentsPage() {
           baseUrl,
           apiKey,
           model,
-          systemPrompt: investmentAssistantPrompt,
+          systemPrompt: investmentAiWebEnabled
+            ? `${investmentAssistantPrompt}\n\n联网模式：用户已开启联网。若当前模型或服务支持联网/实时检索，请优先核验基金净值、费率、持仓、基金公司和近期表现等最新信息；若无法联网，请明确说明“当前无法实时联网核验”，不要编造精确实时数据。`
+            : investmentAssistantPrompt,
           messages: [
             {
               role: 'user',
@@ -1345,6 +1417,17 @@ export function InvestmentsPage() {
       setInvestmentAiImages([]);
       setStreamingContent('');
       setStreamingReasoning('');
+
+      void generateInvestmentFollowUpPrompts({
+        question: promptText,
+        answer: assistantText,
+        analysis: extracted.analysis,
+        history: nextMessages
+      }).then((followUpPrompts) => {
+        if (followUpPrompts.length === 0) return;
+        patchInvestmentAiMessage(assistantMessage.id, { followUpPrompts });
+        setSuggestionsCollapsed(false);
+      });
     } catch (error) {
       setInvestmentAiStatus('error');
       setInvestmentAiError(error instanceof Error ? error.message : '基金分析失败，请稍后再试。');
@@ -1835,19 +1918,60 @@ export function InvestmentsPage() {
                         aria-hidden="true"
                       />
                     </button>
-                    <div>
-                      {INVESTMENT_AI_SUGGESTED_QUESTIONS.map((question) => (
-                        <button
-                          key={question}
-                          type="button"
-                          className="vi-chip"
-                          onClick={() => handleInvestmentExpertPrompt(question)}
-                          disabled={investmentAiStatus === 'loading'}
-                        >
-                          {question}
-                        </button>
-                      ))}
-                    </div>
+                    <button
+                      type="button"
+                      className={`chat-upload-btn investments-ai-web-btn ${
+                        investmentAiWebEnabled ? 'is-active' : ''
+                      }`}
+                      onClick={() => setInvestmentAiWebEnabled((value) => !value)}
+                      disabled={investmentAiStatus === 'loading'}
+                      aria-pressed={investmentAiWebEnabled}
+                      aria-label={investmentAiWebEnabled ? '关闭联网核验' : '开启联网核验'}
+                      title={investmentAiWebEnabled ? '已开启联网核验提示' : '开启联网核验提示'}
+                    >
+                      <img
+                        className="chat-upload-icon"
+                        src={GLOBE_ICON_URL}
+                        alt=""
+                        aria-hidden="true"
+                      />
+                    </button>
+                    {latestInvestmentFollowUpPrompts.length > 0 ? (
+                      <button
+                        type="button"
+                        className="chat-upload-btn investments-ai-suggestions-toggle"
+                        onClick={() => setSuggestionsCollapsed((value) => !value)}
+                        aria-expanded={!suggestionsCollapsed}
+                        aria-label={suggestionsCollapsed ? '展开联想提问' : '收起联想提问'}
+                        title={suggestionsCollapsed ? '展开联想提问' : '收起联想提问'}
+                      >
+                        <img
+                          className="chat-upload-icon"
+                          src={
+                            suggestionsCollapsed
+                              ? CHEVRONS_UP_DOWN_ICON_URL
+                              : CHEVRONS_DOWN_UP_ICON_URL
+                          }
+                          alt=""
+                          aria-hidden="true"
+                        />
+                      </button>
+                    ) : null}
+                    {!suggestionsCollapsed && latestInvestmentFollowUpPrompts.length > 0 ? (
+                      <div className="investments-ai-suggestion-list">
+                        {latestInvestmentFollowUpPrompts.map((question) => (
+                          <button
+                            key={question}
+                            type="button"
+                            className="vi-chip"
+                            onClick={() => handleInvestmentExpertPrompt(question)}
+                            disabled={investmentAiStatus === 'loading'}
+                          >
+                            {question}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                   <button
                     type="submit"

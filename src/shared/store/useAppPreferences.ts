@@ -437,6 +437,7 @@ function normalizeInvestmentAiMessage(item: InvestmentAiMessage): InvestmentAiMe
     .slice(0, 6000);
   const analysis = normalizeInvestmentFundAnalysis(item.analysis);
   const attachmentImages = normalizeInvestmentAttachmentImages(item.attachmentImages);
+  const followUpPrompts = normalizeStringList(item.followUpPrompts, 4);
   if (!text && !analysis) {
     return null;
   }
@@ -447,6 +448,7 @@ function normalizeInvestmentAiMessage(item: InvestmentAiMessage): InvestmentAiMe
     text: text || (analysis?.summary ?? '已完成分析'),
     feedback: item.feedback === 'up' || item.feedback === 'down' ? item.feedback : undefined,
     reasoning: normalizeOptionalString(item.reasoning),
+    followUpPrompts: followUpPrompts.length ? followUpPrompts : undefined,
     attachmentCount:
       attachmentImages.length ||
       Math.max(0, Math.floor(Number(item.attachmentCount || 0))) ||

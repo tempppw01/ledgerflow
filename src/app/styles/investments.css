@@ -826,7 +826,7 @@
   overflow: hidden;
 }
 
-.investments-ai-suggestion-row > div {
+.investments-ai-suggestion-list {
   display: flex;
   gap: 6px;
   flex: 1 1 auto;
@@ -856,6 +856,18 @@
 .investments-ai-upload-btn {
   border-color: color-mix(in srgb, var(--color-primary) 18%, transparent);
   background: color-mix(in srgb, var(--color-bg-elevated) 94%, transparent);
+}
+
+.investments-ai-web-btn,
+.investments-ai-suggestions-toggle {
+  border-color: color-mix(in srgb, var(--color-primary) 16%, transparent);
+  background: color-mix(in srgb, var(--color-bg-elevated) 94%, transparent);
+}
+
+.investments-ai-web-btn.is-active {
+  border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-primary-bg) 78%, var(--color-bg-elevated));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-bg) 72%, transparent);
 }
 
 .investments-ai-submit-btn {
