@@ -199,15 +199,71 @@
   grid-column: 2;
   display: grid;
   grid-auto-rows: max-content;
-  gap: 12px;
+  gap: 0;
   min-width: 0;
   min-height: 0;
   max-height: 100%;
   align-content: start;
   overflow: hidden auto;
-  padding-right: 2px;
+  padding: 10px 12px 14px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 22px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-bg-elevated) 98%, var(--color-primary-bg)) 0%,
+    color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-bg-subtle)) 100%
+  );
+  box-shadow: 0 18px 44px color-mix(in srgb, var(--color-text-primary) 7%, transparent);
   scrollbar-color: color-mix(in srgb, var(--color-primary) 36%, transparent) transparent;
   scrollbar-width: thin;
+}
+
+.investments-support-column > .panel,
+.investments-support-column .investments-overview-card,
+.investments-support-column .investments-panel {
+  border: 0;
+  border-top: 1px solid var(--color-border-light);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.investments-support-column > .panel:hover,
+.investments-support-column > .panel:focus-within,
+.investments-support-column .investments-overview-card:hover,
+.investments-support-column .investments-overview-card:focus-within,
+.investments-support-column .investments-panel:hover,
+.investments-support-column .investments-panel:focus-within {
+  transform: none;
+  box-shadow: none;
+}
+
+.investments-support-sticky-title {
+  position: sticky;
+  top: -10px;
+  z-index: 4;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  margin: -10px -12px 0;
+  padding: 12px;
+  border-bottom: 1px solid var(--color-border-light);
+  border-radius: 22px 22px 0 0;
+  background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-primary-bg));
+  backdrop-filter: blur(14px);
+}
+
+.investments-support-sticky-title span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.investments-support-sticky-title strong {
+  min-width: 0;
+  color: var(--color-text-primary);
+  font-size: 16px;
 }
 
 .investments-watchlist-panel {
@@ -828,7 +884,7 @@
 .investments-watch-card {
   display: grid;
   gap: 8px;
-  max-height: 168px;
+  max-height: 278px;
   overflow: hidden;
   padding: 10px 0;
   border-top: 1px solid var(--color-border-light);
@@ -851,7 +907,7 @@
 }
 
 .investments-watch-card.is-expanded {
-  max-height: 320px;
+  max-height: 560px;
   overflow: auto;
 }
 
@@ -974,6 +1030,66 @@
 
 .investments-watch-card-advice strong {
   line-height: 1.5;
+}
+
+.investments-watch-card-fund-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.investments-watch-card-fund-grid span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 72%, transparent);
+}
+
+.investments-watch-card-fund-grid em {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.investments-watch-card-fund-grid strong {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: 12px;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.investments-watch-card-fund-grid span:first-child,
+.investments-watch-card-fund-grid span:nth-child(2) {
+  grid-column: 1 / -1;
+}
+
+.investments-watch-card-ai-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.investments-watch-card-ai-actions button {
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-primary-bg) 72%, var(--color-bg-elevated));
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.investments-watch-card-ai-actions button:hover:not(:disabled),
+.investments-watch-card-ai-actions button:focus-visible {
+  border-color: color-mix(in srgb, var(--color-primary) 36%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-primary-bg) 88%, var(--color-bg-elevated));
+  box-shadow: 0 10px 20px color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 
 .investments-watch-card-insights {

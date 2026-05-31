@@ -151,6 +151,7 @@ type WatchContextMenuState = {
 
 type InvestmentPanelKey = 'summary' | 'allocation' | 'alerts' | 'position' | 'goal';
 
+const DEFAULT_SUPPORT_SECTION_TITLE = '投资资料与管理';
 const AI_LOADING_GIF_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/load.gif';
 const MAX_INVESTMENT_AI_IMAGES = 4;
@@ -430,6 +431,9 @@ function buildWatchItemFromAnalysis(analysis: InvestmentFundAnalysis) {
     fundHoldings: analysis.fundHoldings,
     assetAllocation: analysis.assetAllocation,
     industryAllocation: analysis.industryAllocation,
+    netValue: analysis.netValue,
+    addedReturn: analysis.addedReturn,
+    holdingReturn: analysis.holdingReturn,
     buyFeeRate: analysis.buyFeeRate,
     fundCompany: analysis.fundCompany,
     lastAnalysisAt: new Date().toISOString()
@@ -454,6 +458,43 @@ function compactWatchDetailSections(item: InvestmentWatchItem): WatchDetailSecti
     { title: '风险提示', items: item.riskNotes || [] },
     { title: '下一步', items: item.nextActions || [] }
   ].filter((section) => section.items.length > 0);
+}
+
+function normalizeInvestmentLookupValue(value?: string) {
+  return String(value || '')
+    .trim()
+    .toLowerCase();
+}
+
+function findPositionForWatchItem(
+  item: InvestmentWatchItem,
+  positions: InvestmentPosition[]
+): InvestmentPosition | null {
+  const code = normalizeInvestmentLookupValue(item.code);
+  const name = normalizeInvestmentLookupValue(item.name);
+
+  return (
+    positions.find((position) => {
+      const positionName = normalizeInvestmentLookupValue(position.name);
+      if (code && positionName.includes(code)) return true;
+      if (!name) return false;
+      return positionName.includes(name) || name.includes(positionName);
+    }) || null
+  );
+}
+
+function getWatchItemHoldingReturn(
+  item: InvestmentWatchItem,
+  positions: InvestmentPosition[]
+): string | null {
+  const matchedPosition = findPositionForWatchItem(item, positions);
+  if (!matchedPosition) return null;
+
+  const profit = matchedPosition.currentValue - matchedPosition.investedAmount;
+  const profitRate =
+    matchedPosition.investedAmount > 0 ? profit / matchedPosition.investedAmount : 0;
+
+  return `${formatCurrency(profit)} / ${(profitRate * 100).toFixed(1)}%`;
 }
 
 function mergeWatchlistReview(
@@ -496,6 +537,9 @@ function mergeWatchlistReview(
           industryAllocation: review.industryAllocation?.length
             ? review.industryAllocation
             : item.industryAllocation,
+          netValue: review.netValue || item.netValue,
+          addedReturn: review.addedReturn || item.addedReturn,
+          holdingReturn: review.holdingReturn || item.holdingReturn,
           buyFeeRate: review.buyFeeRate || item.buyFeeRate,
           fundCompany: review.fundCompany || item.fundCompany,
           lastAnalysisAt: reviewedAt,
@@ -570,6 +614,7 @@ export function InvestmentsPage() {
   });
   const [loadingModels, setLoadingModels] = useState(false);
   const [supportCollapsed, setSupportCollapsed] = useState(false);
+  const [activeSupportTitle, setActiveSupportTitle] = useState(DEFAULT_SUPPORT_SECTION_TITLE);
   const [toast, setToast] = useState<{ visible: boolean; message: string; variant: ToastVariant }>({
     visible: false,
     message: '',
@@ -593,6 +638,7 @@ export function InvestmentsPage() {
   });
   const aiFileInputRef = useRef<HTMLInputElement | null>(null);
   const aiPanelRef = useRef<HTMLElement | null>(null);
+  const supportColumnRef = useRef<HTMLElement | null>(null);
   const investmentAiThreadEndRef = useRef<HTMLDivElement | null>(null);
   const modelSelectorRef = useRef<HTMLDivElement | null>(null);
 
@@ -780,6 +826,28 @@ export function InvestmentsPage() {
     [investmentPositionHistory]
   );
 
+  const updateActiveSupportSection = useCallback(() => {
+    const container = supportColumnRef.current;
+    if (!container) return;
+
+    const sections = Array.from(
+      container.querySelectorAll<HTMLElement>('[data-investment-support-title]')
+    );
+    if (sections.length === 0) {
+      setActiveSupportTitle(DEFAULT_SUPPORT_SECTION_TITLE);
+      return;
+    }
+
+    const containerTop = container.getBoundingClientRect().top;
+    const threshold = containerTop + 86;
+    const activeSection =
+      sections.filter((section) => section.getBoundingClientRect().top <= threshold).at(-1) ||
+      sections[0];
+    const nextTitle = activeSection.dataset.investmentSupportTitle || DEFAULT_SUPPORT_SECTION_TITLE;
+
+    setActiveSupportTitle((current) => (current === nextTitle ? current : nextTitle));
+  }, []);
+
   const loadInvestmentModels = useCallback(async () => {
     if (!apiKey.trim()) {
       setModels((current) => (current.length > 0 ? current : model ? [model] : []));
@@ -831,6 +899,28 @@ export function InvestmentsPage() {
       block: 'end'
     });
   }, [investmentAiMessages.length, investmentAiStatus, streamingContent, streamingReasoning]);
+
+  useEffect(() => {
+    const container = supportColumnRef.current;
+    if (!container) return;
+
+    updateActiveSupportSection();
+    container.addEventListener('scroll', updateActiveSupportSection, { passive: true });
+    window.addEventListener('resize', updateActiveSupportSection);
+
+    return () => {
+      container.removeEventListener('scroll', updateActiveSupportSection);
+      window.removeEventListener('resize', updateActiveSupportSection);
+    };
+  }, [
+    updateActiveSupportSection,
+    investmentWatchlist.length,
+    openInvestmentPanels.summary,
+    openInvestmentPanels.allocation,
+    openInvestmentPanels.alerts,
+    openInvestmentPanels.position,
+    openInvestmentPanels.goal
+  ]);
 
   useEffect(() => {
     if (!modelOpen) return;
@@ -1072,6 +1162,23 @@ export function InvestmentsPage() {
 
     upsertInvestmentWatchItem(buildWatchItemFromAnalysis(analysis));
     setToastState(`已将“${analysis.fundName || analysis.fundCode}”加入自选`, 'success');
+  }
+
+  function handleWatchItemAiAction(
+    event: MouseEvent<HTMLButtonElement>,
+    item: InvestmentWatchItem,
+    action: 'analysis' | 'holdings'
+  ) {
+    event.stopPropagation();
+    setExpandedWatchItemId(item.id);
+
+    const fundLabel = [item.name, item.code ? `代码 ${item.code}` : ''].filter(Boolean).join('，');
+    const prompt =
+      action === 'holdings'
+        ? `请对自选基金「${fundLabel}」做基金持仓分析，重点看重仓股票、资产分布、行业分布、和我已有持仓是否重合，以及下一步要不要继续观察。`
+        : `请对自选基金「${fundLabel}」做一次基金分析，重点看净值、历史业绩、添加后收益、风险点和是否值得继续放在自选里。`;
+
+    void runInvestmentAi(prompt);
   }
 
   async function handleReviewWatchlist() {
@@ -1760,11 +1867,17 @@ export function InvestmentsPage() {
           </form>
         </article>
 
-        <aside className="investments-support-column">
+        <aside className="investments-support-column" ref={supportColumnRef}>
+          <div className="investments-support-sticky-title" aria-live="polite">
+            <span>当前功能</span>
+            <strong>{activeSupportTitle}</strong>
+          </div>
+
           <section
             className={`panel investments-hero investments-fold-card ${
               openInvestmentPanels.summary ? 'is-open' : ''
             }`}
+            data-investment-support-title="投资资料与管理"
           >
             <button
               type="button"
@@ -1859,7 +1972,10 @@ export function InvestmentsPage() {
             </div>
           </section>
 
-          <aside className="panel investments-watchlist-panel">
+          <aside
+            className="panel investments-watchlist-panel"
+            data-investment-support-title="基金自选"
+          >
             <div className="investments-section-head">
               <div>
                 <h3>基金自选</h3>
@@ -1914,6 +2030,10 @@ export function InvestmentsPage() {
                   const isExpanded = expandedWatchItemId === item.id;
                   const detailSections = compactWatchDetailSections(item);
                   const primaryTag = item.tags[0];
+                  const holdingsPreview = item.fundHoldings?.slice(0, 3) || [];
+                  const assetAllocationPreview = item.assetAllocation?.slice(0, 3) || [];
+                  const holdingReturn =
+                    item.holdingReturn || getWatchItemHoldingReturn(item, activePositions);
 
                   return (
                     <article
@@ -1964,6 +2084,52 @@ export function InvestmentsPage() {
                       {item.lastSummary ? (
                         <p className="investments-watch-card-summary">{item.lastSummary}</p>
                       ) : null}
+                      <div className="investments-watch-card-fund-grid" aria-label="基金关键数据">
+                        <span>
+                          <em>重仓股票</em>
+                          <strong>
+                            {holdingsPreview.length > 0 ? holdingsPreview.join(' / ') : '待更新'}
+                          </strong>
+                        </span>
+                        <span>
+                          <em>资产分布</em>
+                          <strong>
+                            {assetAllocationPreview.length > 0
+                              ? assetAllocationPreview.join(' / ')
+                              : '待更新'}
+                          </strong>
+                        </span>
+                        <span>
+                          <em>净值</em>
+                          <strong>{item.netValue || '待更新'}</strong>
+                        </span>
+                        <span>
+                          <em>添加后收益</em>
+                          <strong>{item.addedReturn || '待更新'}</strong>
+                        </span>
+                        {holdingReturn ? (
+                          <span>
+                            <em>持有收益</em>
+                            <strong>{holdingReturn}</strong>
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="investments-watch-card-ai-actions">
+                        <button
+                          type="button"
+                          onClick={(event) => handleWatchItemAiAction(event, item, 'analysis')}
+                          disabled={investmentAiStatus === 'loading'}
+                        >
+                          基金分析
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(event) => handleWatchItemAiAction(event, item, 'holdings')}
+                          disabled={investmentAiStatus === 'loading'}
+                        >
+                          基金持仓分析
+                        </button>
+                      </div>
                       <div className="investments-watch-card-meta">
                         <span>
                           {item.lastAnalysisAt
@@ -2003,6 +2169,7 @@ export function InvestmentsPage() {
               className={`panel investments-overview-card investments-fold-card ${
                 openInvestmentPanels.allocation ? 'is-open' : ''
               }`}
+              data-investment-support-title="当前配置"
             >
               <button
                 type="button"
@@ -2084,6 +2251,7 @@ export function InvestmentsPage() {
               className={`panel investments-overview-card investments-fold-card ${
                 openInvestmentPanels.alerts ? 'is-open' : ''
               }`}
+              data-investment-support-title="当前提醒"
             >
               <button
                 type="button"
@@ -2149,6 +2317,7 @@ export function InvestmentsPage() {
               className={`panel investments-panel investments-fold-card ${
                 openInvestmentPanels.position ? 'is-open' : ''
               }`}
+              data-investment-support-title={editingPositionId ? '编辑持仓' : '新增持仓'}
             >
               <button
                 type="button"
@@ -2515,6 +2684,7 @@ export function InvestmentsPage() {
 
             <article
               className={`panel investments-panel investments-fold-card ${openInvestmentPanels.goal ? 'is-open' : ''}`}
+              data-investment-support-title={editingGoalId ? '编辑理财目标' : '新增理财目标'}
             >
               <button
                 type="button"

@@ -82,6 +82,9 @@ export function buildInvestmentAssistantPrompt(input: {
       fundHoldings: item.fundHoldings || [],
       assetAllocation: item.assetAllocation || [],
       industryAllocation: item.industryAllocation || [],
+      netValue: item.netValue || '',
+      addedReturn: item.addedReturn || '',
+      holdingReturn: item.holdingReturn || '',
       buyFeeRate: item.buyFeeRate || '',
       fundCompany: item.fundCompany || '',
       lastAnalysisAt: item.lastAnalysisAt || '',
@@ -96,11 +99,11 @@ export function buildInvestmentAssistantPrompt(input: {
     '2. 第一段必须给行动倾向：可以小额试、继续观察、暂不建议、需要补充信息四选一，并说明一句原因。',
     '3. 然后给 3 条左右依据，尽量翻译成新手能懂的话；最后给 2 到 3 条下一步建议，建议要可执行。',
     '4. 可以结合用户上传的截图、用户问题和投资上下文；如果信息不足，必须直接说“信息不足”，并指出还差什么。',
-    '5. 如果投资上下文里已有基金自选记录，尤其是同名或同代码基金，要参考自选里的投资建议、历史业绩、基金分析、持仓、资产/行业分布、费率、基金公司、风险提示、上次结论、摘要、备注和更新时间，说明本次判断是否延续或改变。',
+    '5. 如果投资上下文里已有基金自选记录，尤其是同名或同代码基金，要参考自选里的投资建议、历史业绩、重仓股票、资产/行业分布、净值、添加后收益、持有收益、费率、基金公司、风险提示、上次结论、摘要、备注和更新时间，说明本次判断是否延续或改变。',
     '6. 不要承诺收益，也不要替用户做最终投资决策；但可以给出清晰的风险分级和操作优先级。',
     '7. 在正文最后追加一个 JSON 代码块，格式必须是：',
     '```json',
-    '{"fundName":"","fundCode":"","verdict":"","summary":"","riskLevel":"low|medium|high|unknown","highlights":[""],"risks":[""],"actions":[""],"watchTags":[""],"performanceHistory":[""],"fundAnalysis":[""],"fundHoldings":[""],"assetAllocation":[""],"industryAllocation":[""],"buyFeeRate":"","fundCompany":"","platform":"","note":""}',
+    '{"fundName":"","fundCode":"","verdict":"","summary":"","riskLevel":"low|medium|high|unknown","highlights":[""],"risks":[""],"actions":[""],"watchTags":[""],"performanceHistory":[""],"fundAnalysis":[""],"fundHoldings":[""],"assetAllocation":[""],"industryAllocation":[""],"netValue":"","addedReturn":"","holdingReturn":"","buyFeeRate":"","fundCompany":"","platform":"","note":""}',
     '```',
     '8. 如果无法识别基金代码可以留空；数组每个字段最多返回 4 项；JSON 代码块后面不要再追加其他内容。',
     `投资上下文：\n${JSON.stringify(context, null, 2)}`
@@ -151,6 +154,9 @@ export function buildInvestmentWatchlistReviewPrompt(input: {
       fundHoldings: item.fundHoldings || [],
       assetAllocation: item.assetAllocation || [],
       industryAllocation: item.industryAllocation || [],
+      netValue: item.netValue || '',
+      addedReturn: item.addedReturn || '',
+      holdingReturn: item.holdingReturn || '',
       buyFeeRate: item.buyFeeRate || '',
       fundCompany: item.fundCompany || '',
       lastAnalysisAt: item.lastAnalysisAt || '',
@@ -165,10 +171,10 @@ export function buildInvestmentWatchlistReviewPrompt(input: {
     '2. rank=1 表示最值得优先关注或最需要用户先看的一只；如果信息不足，也要根据已有资料给出保守排序。',
     '3. 投资建议要适合新手，短、直观、可执行，例如“继续观察”“小比例定投”“暂不加仓”“先补资料”。',
     '4. summary 控制在 60 字以内，尽量解释为什么排在这个位置。',
-    '5. 你可以补全历史业绩、基金分析、基金持仓、资产分布、行业分布、买入费率、基金公司；不确定就留空数组或空字符串，不要编造精确数据。',
+    '5. 你可以补全历史业绩、基金分析、基金持仓、资产分布、行业分布、净值、添加后收益、持有收益、买入费率、基金公司；不确定就留空数组或空字符串，不要编造精确数据。',
     '6. 只返回 JSON 代码块，格式必须是：',
     '```json',
-    '{"items":[{"id":"","rank":1,"verdict":"","summary":"","riskLevel":"low|medium|high|unknown","investmentAdvice":"","adviceReasons":[""],"riskNotes":[""],"nextActions":[""],"watchTags":[""],"performanceHistory":[""],"fundAnalysis":[""],"fundHoldings":[""],"assetAllocation":[""],"industryAllocation":[""],"buyFeeRate":"","fundCompany":"","note":""}]}',
+    '{"items":[{"id":"","rank":1,"verdict":"","summary":"","riskLevel":"low|medium|high|unknown","investmentAdvice":"","adviceReasons":[""],"riskNotes":[""],"nextActions":[""],"watchTags":[""],"performanceHistory":[""],"fundAnalysis":[""],"fundHoldings":[""],"assetAllocation":[""],"industryAllocation":[""],"netValue":"","addedReturn":"","holdingReturn":"","buyFeeRate":"","fundCompany":"","note":""}]}',
     '```',
     '7. 数组字段每项不超过 8 项；JSON 代码块后面不要再追加其他内容。',
     `投资上下文：\n${JSON.stringify(context, null, 2)}`
@@ -210,6 +216,9 @@ export function normalizeInvestmentFundAnalysis(raw: unknown): InvestmentFundAna
     fundHoldings: normalizeList(item.fundHoldings, 8),
     assetAllocation: normalizeList(item.assetAllocation, 6),
     industryAllocation: normalizeList(item.industryAllocation, 8),
+    netValue: normalizeOptionalString(item.netValue),
+    addedReturn: normalizeOptionalString(item.addedReturn),
+    holdingReturn: normalizeOptionalString(item.holdingReturn),
     buyFeeRate: normalizeOptionalString(item.buyFeeRate),
     fundCompany: normalizeOptionalString(item.fundCompany),
     platform: normalizeOptionalString(item.platform),
@@ -257,6 +266,9 @@ export function normalizeInvestmentWatchlistReviewItem(
     fundHoldings: normalizeList(item.fundHoldings, 8),
     assetAllocation: normalizeList(item.assetAllocation, 6),
     industryAllocation: normalizeList(item.industryAllocation, 8),
+    netValue: normalizeOptionalString(item.netValue),
+    addedReturn: normalizeOptionalString(item.addedReturn),
+    holdingReturn: normalizeOptionalString(item.holdingReturn),
     buyFeeRate: normalizeOptionalString(item.buyFeeRate),
     fundCompany: normalizeOptionalString(item.fundCompany),
     note: normalizeOptionalString(item.note)
@@ -327,7 +339,10 @@ export function summarizeInvestmentAnalysis(
       .split(/\r?\n/)
       .map((line) => line.trim())
       .filter((line) => {
-        const normalizedLine = line.replace(/^[-*]\s+/, '').trim().replace(/\s+/g, ' ');
+        const normalizedLine = line
+          .replace(/^[-*]\s+/, '')
+          .trim()
+          .replace(/\s+/g, ' ');
         return normalizedLine && !duplicatedLines.has(normalizedLine);
       })
       .join('\n')

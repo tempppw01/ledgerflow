@@ -1097,6 +1097,9 @@ function validateInvestmentFundAnalysis(
   assertString(item.fundCode, `${path}.fundCode`, { required: false });
   assertString(item.platform, `${path}.platform`, { required: false });
   assertString(item.note, `${path}.note`, { required: false });
+  assertString(item.netValue, `${path}.netValue`, { required: false });
+  assertString(item.addedReturn, `${path}.addedReturn`, { required: false });
+  assertString(item.holdingReturn, `${path}.holdingReturn`, { required: false });
   assertString(item.buyFeeRate, `${path}.buyFeeRate`, { required: false });
   assertString(item.fundCompany, `${path}.fundCompany`, { required: false });
 
@@ -1128,6 +1131,9 @@ function validateInvestmentFundAnalysis(
       item.industryAllocation,
       `${path}.industryAllocation`
     ),
+    netValue: asSafeString(item.netValue) || undefined,
+    addedReturn: asSafeString(item.addedReturn) || undefined,
+    holdingReturn: asSafeString(item.holdingReturn) || undefined,
     buyFeeRate: asSafeString(item.buyFeeRate) || undefined,
     fundCompany: asSafeString(item.fundCompany) || undefined,
     platform: asSafeString(item.platform) || undefined,
@@ -1160,6 +1166,15 @@ function validateInvestmentWatchItem(item: unknown, index: number): InvestmentWa
     required: false
   });
   assertString(item.buyFeeRate, `data.investmentWatchlist[${index}].buyFeeRate`, {
+    required: false
+  });
+  assertString(item.netValue, `data.investmentWatchlist[${index}].netValue`, {
+    required: false
+  });
+  assertString(item.addedReturn, `data.investmentWatchlist[${index}].addedReturn`, {
+    required: false
+  });
+  assertString(item.holdingReturn, `data.investmentWatchlist[${index}].holdingReturn`, {
     required: false
   });
   assertString(item.fundCompany, `data.investmentWatchlist[${index}].fundCompany`, {
@@ -1219,6 +1234,9 @@ function validateInvestmentWatchItem(item: unknown, index: number): InvestmentWa
       item.industryAllocation,
       `data.investmentWatchlist[${index}].industryAllocation`
     ),
+    netValue: asSafeString(item.netValue) || undefined,
+    addedReturn: asSafeString(item.addedReturn) || undefined,
+    holdingReturn: asSafeString(item.holdingReturn) || undefined,
     buyFeeRate: asSafeString(item.buyFeeRate) || undefined,
     fundCompany: asSafeString(item.fundCompany) || undefined,
     lastAnalysisAt: asSafeString(item.lastAnalysisAt) || undefined,

@@ -159,6 +159,8 @@ describe('InvestmentsPage AI assistant', () => {
         fundHoldings: ['贵州茅台 5.2%', '宁德时代 3.1%'],
         assetAllocation: ['股票 94%', '现金 6%'],
         industryAllocation: ['金融 18%', '消费 15%'],
+        netValue: '1.2345',
+        addedReturn: '+2.6%',
         buyFeeRate: '0.12%',
         fundCompany: '易方达基金',
         platform: '支付宝',
@@ -219,6 +221,8 @@ describe('InvestmentsPage AI assistant', () => {
       '贵州茅台 5.2%',
       '宁德时代 3.1%'
     ]);
+    expect(useAppPreferences.getState().investmentWatchlist[0].netValue).toBe('1.2345');
+    expect(useAppPreferences.getState().investmentWatchlist[0].addedReturn).toBe('+2.6%');
     expect(screen.getByText('更新自选')).toBeInTheDocument();
     expect(screen.getAllByText('易方达沪深300ETF').length).toBeGreaterThan(0);
 
@@ -228,6 +232,12 @@ describe('InvestmentsPage AI assistant', () => {
         .find((element) => element.closest('.investments-watch-card'))
         ?.closest('.investments-watch-card') ?? null;
     expect(watchCard).not.toBeNull();
+    expect(within(watchCard as HTMLElement).getByText('重仓股票')).toBeInTheDocument();
+    expect(within(watchCard as HTMLElement).getByText('股票 94% / 现金 6%')).toBeInTheDocument();
+    expect(within(watchCard as HTMLElement).getByText('1.2345')).toBeInTheDocument();
+    expect(within(watchCard as HTMLElement).getByText('+2.6%')).toBeInTheDocument();
+    expect(within(watchCard as HTMLElement).getByText('基金分析')).toBeInTheDocument();
+    expect(within(watchCard as HTMLElement).getByText('基金持仓分析')).toBeInTheDocument();
     expect(within(watchCard as HTMLElement).queryByText('基金公司')).not.toBeInTheDocument();
     fireEvent.click(watchCard!);
     expect(within(watchCard as HTMLElement).getByText('基金公司')).toBeInTheDocument();
@@ -256,6 +266,8 @@ describe('InvestmentsPage AI assistant', () => {
           fundHoldings: ['资源股占比较高'],
           assetAllocation: ['股票 88%', '现金 12%'],
           industryAllocation: ['有色金属 22%', '电子 16%'],
+          netValue: '3.9800',
+          addedReturn: '-1.4%',
           buyFeeRate: '0.15%',
           fundCompany: '招商基金',
           lastAnalysisAt: '2026-05-28T01:47:00.000Z',
@@ -316,6 +328,8 @@ describe('InvestmentsPage AI assistant', () => {
     expect(request.systemPrompt).toContain('高波动');
     expect(request.systemPrompt).toContain('招商基金');
     expect(request.systemPrompt).toContain('有色金属 22%');
+    expect(request.systemPrompt).toContain('3.9800');
+    expect(request.systemPrompt).toContain('-1.4%');
 
     await screen.findByText('结合自选里的高波动记录，本次不建议贸然加仓。');
     const avatarSources = Array.from(
@@ -324,6 +338,50 @@ describe('InvestmentsPage AI assistant', () => {
 
     expect(avatarSources).toContain(BOT_ICON_URL);
     expect(avatarSources).toContain(USER_ICON_URL);
+  });
+
+  it('starts a holdings-focused analysis from a watchlist card action', async () => {
+    useAppPreferences.setState({
+      investmentWatchlist: [
+        {
+          id: 'watch-holdings',
+          name: '招商优质成长混合(LOF)',
+          code: '161706',
+          platform: '蚂蚁基金',
+          tags: ['高波动'],
+          fundHoldings: ['紫金矿业 6.2%', '宁德时代 4.8%'],
+          assetAllocation: ['股票 93%', '现金 5%'],
+          netValue: '4.1708',
+          addedReturn: '+1.25%',
+          createdAt: '2026-05-28T01:47:00.000Z',
+          updatedAt: '2026-05-28T01:47:00.000Z'
+        }
+      ]
+    });
+
+    sendAiChatStreamMock.mockResolvedValue({
+      content: '持仓集中度偏高，先继续观察。',
+      reasoning: ''
+    });
+
+    render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('紫金矿业 6.2% / 宁德时代 4.8%')).toBeInTheDocument();
+    expect(screen.getByText('4.1708')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '基金持仓分析' }));
+
+    await waitFor(() => expect(sendAiChatStreamMock).toHaveBeenCalled());
+    const request = sendAiChatStreamMock.mock.calls[0]?.[0] as {
+      messages: Array<{ text: string }>;
+    };
+
+    expect(request.messages[0]?.text).toContain('基金持仓分析');
+    expect(request.messages[0]?.text).toContain('招商优质成长混合(LOF)');
   });
 
   it('deduplicates persisted assistant text that repeats the structured analysis summary', () => {

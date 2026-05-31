@@ -87,6 +87,9 @@ export interface InvestmentFundAnalysis {
   fundHoldings?: string[];
   assetAllocation?: string[];
   industryAllocation?: string[];
+  netValue?: string;
+  addedReturn?: string;
+  holdingReturn?: string;
   buyFeeRate?: string;
   fundCompany?: string;
   platform?: string;
@@ -109,6 +112,9 @@ export interface InvestmentWatchlistReviewItem {
   fundHoldings?: string[];
   assetAllocation?: string[];
   industryAllocation?: string[];
+  netValue?: string;
+  addedReturn?: string;
+  holdingReturn?: string;
   buyFeeRate?: string;
   fundCompany?: string;
   note?: string;
@@ -133,6 +139,9 @@ export interface InvestmentWatchItem {
   fundHoldings?: string[];
   assetAllocation?: string[];
   industryAllocation?: string[];
+  netValue?: string;
+  addedReturn?: string;
+  holdingReturn?: string;
   buyFeeRate?: string;
   fundCompany?: string;
   lastAnalysisAt?: string;
