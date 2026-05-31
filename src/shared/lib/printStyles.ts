@@ -9,7 +9,7 @@ export function buildA4PrintBaseStyles(options?: {
   const bodyBackground = options?.bodyBackground || '#ffffff';
   const fontFamily =
     options?.fontFamily ||
-    "'Alibaba PuHuiTi Ledger', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    "'MiSans Ledger', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
   return `
     @page {

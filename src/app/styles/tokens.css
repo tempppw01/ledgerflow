@@ -31,46 +31,91 @@
 }
 
 @font-face {
-  font-family: 'Alibaba PuHuiTi Ledger';
-  src: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/fonts/Alibaba-PuHuiTi-Light.ttf')
-    format('truetype');
+  font-family: 'MiSans Ledger';
+  src: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/fonts/MiSans-Thin.woff2')
+    format('woff2');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MiSans Ledger';
+  src: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/fonts/MiSans-ExtraLight.woff2')
+    format('woff2');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MiSans Ledger';
+  src: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/fonts/MiSans-Light.woff2')
+    format('woff2');
   font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Alibaba PuHuiTi Ledger';
-  src: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/fonts/Alibaba-PuHuiTi-Regular.ttf')
-    format('truetype');
+  font-family: 'MiSans Ledger';
+  src: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/fonts/MiSans-Normal.woff2')
+    format('woff2');
+  font-weight: 350;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MiSans Ledger';
+  src: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/fonts/MiSans-Regular.woff2')
+    format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Alibaba PuHuiTi Ledger';
-  src: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/fonts/Alibaba-PuHuiTi-Medium.ttf')
-    format('truetype');
+  font-family: 'MiSans Ledger';
+  src: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/fonts/MiSans-Medium.woff2')
+    format('woff2');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Alibaba PuHuiTi Ledger';
-  src: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/fonts/Alibaba-PuHuiTi-B.ttf')
-    format('truetype');
+  font-family: 'MiSans Ledger';
+  src: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/fonts/MiSans-Demibold.woff2')
+    format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MiSans Ledger';
+  src: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/fonts/MiSans-Semibold.woff2')
+    format('woff2');
+  font-weight: 650;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MiSans Ledger';
+  src: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/fonts/MiSans-Bold.woff2')
+    format('woff2');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Alibaba PuHuiTi Ledger';
-  src: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/fonts/Alibaba-PuHuiTi-H.ttf')
-    format('truetype');
-  font-weight: 800;
+  font-family: 'MiSans Ledger';
+  src: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/fonts/MiSans-Heavy.woff2')
+    format('woff2');
+  font-weight: 900;
   font-style: normal;
   font-display: swap;
 }
@@ -190,8 +235,8 @@
 
   /* ---- 字体 ---- */
   --font-sans:
-    'Alibaba PuHuiTi Ledger', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
-    'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    'MiSans Ledger', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC',
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono:
     'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --font-number:
