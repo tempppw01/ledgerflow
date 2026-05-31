@@ -343,6 +343,40 @@
   scrollbar-width: thin;
 }
 
+.investments-ai-thread.is-empty {
+  align-content: center;
+  justify-items: center;
+  padding: 8px 4px 12px;
+}
+
+.investments-ai-empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: min(100%, 360px);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.investments-ai-empty img {
+  width: min(78%, 240px);
+  max-height: 210px;
+  object-fit: contain;
+  filter: drop-shadow(0 16px 28px color-mix(in srgb, var(--color-primary) 14%, transparent));
+}
+
+.investments-ai-empty strong {
+  color: var(--color-text-primary);
+  font-size: 16px;
+}
+
+.investments-ai-empty p {
+  max-width: 24em;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
 .investments-ai-thread::-webkit-scrollbar,
 .investments-support-column::-webkit-scrollbar,
 .investments-watchlist-panel::-webkit-scrollbar,

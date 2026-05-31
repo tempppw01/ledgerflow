@@ -142,5 +142,8 @@ export const ABOUT_HAPPY_ILLUSTRATION_URL =
 export const AWESOME_ILLUSTRATION_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/awesome.svg';
 
+export const INVESTMENT_HERO_ILLUSTRATION_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/investment-hero.svg';
+
 export const PDF_CHINESE_FONT_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/fonts/NotoSansSC-Regular.ttf';

@@ -38,6 +38,7 @@ import {
   CHEVRONS_UP_DOWN_ICON_URL,
   IMAGE_ICON_URL,
   INFO_ICON_URL,
+  INVESTMENT_HERO_ILLUSTRATION_URL,
   PEN_TOOL_ICON_URL,
   QUESTION_ICON_URL,
   STAR_ICON_URL,
@@ -1436,7 +1437,20 @@ export function InvestmentsPage() {
             </p>
           ) : null}
 
-          <div className="investments-ai-thread" aria-label="基金分析对话">
+          <div
+            className={`investments-ai-thread ${
+              investmentAiMessages.length === 0 ? 'is-empty' : ''
+            }`}
+            aria-label="基金分析对话"
+          >
+            {investmentAiMessages.length === 0 ? (
+              <div className="investments-ai-empty">
+                <img src={INVESTMENT_HERO_ILLUSTRATION_URL} alt="" aria-hidden="true" />
+                <strong>先丢一个基金问题给我</strong>
+                <p>比如截图、代码、基金名都可以，我先帮你看值不值得放进自选。</p>
+              </div>
+            ) : null}
+
             {investmentAiMessages.map((item) => {
               const matchedWatchItem =
                 item.role === 'assistant'

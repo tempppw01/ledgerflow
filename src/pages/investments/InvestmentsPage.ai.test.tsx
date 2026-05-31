@@ -3,7 +3,11 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Account } from '../../entities/account/types';
 import type { TransactionItem } from '../../entities/transaction/types';
-import { BOT_ICON_URL, USER_ICON_URL } from '../../shared/config/brandAssets';
+import {
+  BOT_ICON_URL,
+  INVESTMENT_HERO_ILLUSTRATION_URL,
+  USER_ICON_URL
+} from '../../shared/config/brandAssets';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { InvestmentsPage } from './InvestmentsPage';
@@ -117,6 +121,21 @@ describe('InvestmentsPage AI assistant', () => {
       apiKey: 'sk-test',
       model: 'gpt-5.4'
     });
+  });
+
+  it('shows an illustration before the first investment chat message', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    const emptyIllustration = container.querySelector<HTMLImageElement>(
+      '.investments-ai-empty img'
+    );
+
+    expect(screen.getByText('先丢一个基金问题给我')).toBeInTheDocument();
+    expect(emptyIllustration?.src).toBe(INVESTMENT_HERO_ILLUSTRATION_URL);
   });
 
   it('supports streaming fund analysis and adding result to watchlist', async () => {
