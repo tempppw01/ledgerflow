@@ -159,6 +159,46 @@ describe('InvestmentsPage AI assistant', () => {
     expect(screen.getByText('美国')).toBeInTheDocument();
   });
 
+  it('renders copy, delete and retry actions below investment messages', async () => {
+    useAppPreferences.setState({
+      investmentAiMessages: [
+        {
+          id: 'investment-user-action',
+          role: 'user',
+          text: '帮我看看美国基金',
+          createdAt: '2026-05-31T08:00:00.000Z'
+        },
+        {
+          id: 'investment-assistant-action',
+          role: 'assistant',
+          text: '先观察，不建议一次性买入。',
+          createdAt: '2026-05-31T08:01:00.000Z'
+        }
+      ]
+    });
+    sendAiChatStreamMock.mockResolvedValue({
+      content: '重新分析后，还是建议先观察。',
+      reasoning: ''
+    });
+
+    render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getAllByRole('button', { name: '复制消息' })).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: '删除消息' })).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: '重新生成' })).toHaveLength(2);
+
+    fireEvent.click(screen.getAllByRole('button', { name: '重新生成' })[1]!);
+    await waitFor(() => expect(sendAiChatStreamMock).toHaveBeenCalled());
+    expect(sendAiChatStreamMock.mock.calls[0]?.[0].messages[0].text).toBe('帮我看看美国基金');
+
+    fireEvent.click(screen.getAllByRole('button', { name: '删除消息' })[0]!);
+    expect(screen.getAllByText('帮我看看美国基金')).toHaveLength(1);
+  });
+
   it('supports streaming fund analysis and adding result to watchlist', async () => {
     const streamedContent = [
       '先给结论：可以继续跟踪，但别急着一把加仓。\n\n',

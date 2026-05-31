@@ -37,15 +37,18 @@ import {
   CHEVRONS_LEFT_RIGHT_ICON_URL,
   CHEVRONS_RIGHT_LEFT_ICON_URL,
   CHEVRONS_UP_DOWN_ICON_URL,
+  COPY_ICON_URL,
   GLOBE_ICON_URL,
   IMAGE_ICON_URL,
   INFO_ICON_URL,
   INVESTMENT_HERO_ILLUSTRATION_URL,
   PEN_TOOL_ICON_URL,
   QUESTION_ICON_URL,
+  ROTATE_CCW_ICON_URL,
   STAR_ICON_URL,
   THUMBS_DOWN_ICON_URL,
   THUMBS_UP_ICON_URL,
+  TRASH_ICON_URL,
   USER_ICON_URL
 } from '../../shared/config/brandAssets';
 import { formatCurrency, formatCurrencyAuto, formatDate } from '../../shared/lib/format';
@@ -1066,6 +1069,44 @@ export function InvestmentsPage() {
     );
   }
 
+  function removeInvestmentAiMessage(messageId: string) {
+    syncInvestmentAiMessages(investmentAiMessages.filter((item) => item.id !== messageId));
+    setToastState('已删除这条消息', 'warning');
+  }
+
+  async function copyInvestmentAiMessage(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setToastState('已复制到剪贴板');
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+
+      try {
+        document.execCommand('copy');
+        setToastState('已复制到剪贴板');
+      } catch {
+        setToastState('复制失败，请手动复制', 'error');
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    }
+  }
+
+  function retryInvestmentAiMessage(index: number) {
+    const previousUser = [...investmentAiMessages]
+      .slice(0, index + 1)
+      .reverse()
+      .find((item) => item.role === 'user');
+    if (!previousUser) return;
+
+    void runInvestmentAi(previousUser.text, previousUser.attachmentImages || []);
+  }
+
   function setInvestmentMessageFeedback(
     messageId: string,
     feedback: InvestmentAiMessage['feedback']
@@ -1321,13 +1362,14 @@ export function InvestmentsPage() {
     }
   }
 
-  async function runInvestmentAi(promptOverride?: string) {
+  async function runInvestmentAi(promptOverride?: string, imageOverride?: string[]) {
     if (investmentAiStatus === 'loading') {
       return;
     }
 
     const cleanPrompt = (promptOverride ?? investmentAiInput).trim();
-    const hasAttachments = investmentAiImages.length > 0;
+    const submittedImages = imageOverride ? [...imageOverride] : [...investmentAiImages];
+    const hasAttachments = submittedImages.length > 0;
 
     if (!cleanPrompt && !hasAttachments) {
       setInvestmentAiError('先输入基金问题，或者上传一张基金截图。');
@@ -1341,7 +1383,6 @@ export function InvestmentsPage() {
     }
 
     const promptText = cleanPrompt || '请根据这张基金截图，帮我判断这只基金是否值得继续关注。';
-    const submittedImages = [...investmentAiImages];
     const createdAt = new Date().toISOString();
     const userMessage = createInvestmentAiMessage({
       id: createInvestmentChatMessageId('user'),
@@ -1639,7 +1680,7 @@ export function InvestmentsPage() {
               </div>
             ) : null}
 
-            {investmentAiMessages.map((item) => {
+            {investmentAiMessages.map((item, index) => {
               const matchedWatchItem =
                 item.role === 'assistant'
                   ? findMatchingWatchItem(investmentWatchlist, item.analysis)
@@ -1755,38 +1796,85 @@ export function InvestmentsPage() {
                         </div>
                       </div>
                     ) : null}
-                    {item.role === 'assistant' ? (
-                      <div className="investments-ai-message-actions">
-                        <button
-                          type="button"
-                          className={`chat-icon-action-btn${item.feedback === 'up' ? ' is-active' : ''}`}
-                          onClick={() => setInvestmentMessageFeedback(item.id, 'up')}
-                          aria-label="点赞这条分析"
-                          title="点赞这条分析"
-                        >
-                          <img
-                            className="chat-icon-action-img"
-                            src={THUMBS_UP_ICON_URL}
-                            alt=""
-                            aria-hidden="true"
-                          />
-                        </button>
-                        <button
-                          type="button"
-                          className={`chat-icon-action-btn${item.feedback === 'down' ? ' is-active' : ''}`}
-                          onClick={() => setInvestmentMessageFeedback(item.id, 'down')}
-                          aria-label="点踩这条分析"
-                          title="点踩这条分析"
-                        >
-                          <img
-                            className="chat-icon-action-img"
-                            src={THUMBS_DOWN_ICON_URL}
-                            alt=""
-                            aria-hidden="true"
-                          />
-                        </button>
-                      </div>
-                    ) : null}
+                    <div className="investments-ai-message-actions">
+                      {item.role === 'assistant' ? (
+                        <>
+                          <button
+                            type="button"
+                            className={`chat-icon-action-btn${item.feedback === 'up' ? ' is-active' : ''}`}
+                            onClick={() => setInvestmentMessageFeedback(item.id, 'up')}
+                            aria-label="点赞这条分析"
+                            title="点赞这条分析"
+                          >
+                            <img
+                              className="chat-icon-action-img"
+                              src={THUMBS_UP_ICON_URL}
+                              alt=""
+                              aria-hidden="true"
+                            />
+                          </button>
+                          <button
+                            type="button"
+                            className={`chat-icon-action-btn${item.feedback === 'down' ? ' is-active' : ''}`}
+                            onClick={() => setInvestmentMessageFeedback(item.id, 'down')}
+                            aria-label="点踩这条分析"
+                            title="点踩这条分析"
+                          >
+                            <img
+                              className="chat-icon-action-img"
+                              src={THUMBS_DOWN_ICON_URL}
+                              alt=""
+                              aria-hidden="true"
+                            />
+                          </button>
+                        </>
+                      ) : null}
+                      <button
+                        type="button"
+                        className="chat-icon-action-btn"
+                        onClick={() =>
+                          void copyInvestmentAiMessage(displayMessageText || item.text)
+                        }
+                        aria-label="复制消息"
+                        title="复制消息"
+                      >
+                        <img
+                          className="chat-icon-action-img"
+                          src={COPY_ICON_URL}
+                          alt=""
+                          aria-hidden="true"
+                        />
+                      </button>
+                      <button
+                        type="button"
+                        className="chat-icon-action-btn"
+                        onClick={() => removeInvestmentAiMessage(item.id)}
+                        aria-label="删除消息"
+                        title="删除消息"
+                      >
+                        <img
+                          className="chat-icon-action-img"
+                          src={TRASH_ICON_URL}
+                          alt=""
+                          aria-hidden="true"
+                        />
+                      </button>
+                      <button
+                        type="button"
+                        className="chat-icon-action-btn"
+                        onClick={() => retryInvestmentAiMessage(index)}
+                        disabled={investmentAiStatus === 'loading'}
+                        aria-label="重新生成"
+                        title="重新生成"
+                      >
+                        <img
+                          className="chat-icon-action-img"
+                          src={ROTATE_CCW_ICON_URL}
+                          alt=""
+                          aria-hidden="true"
+                        />
+                      </button>
+                    </div>
                   </div>
                   {item.role === 'user' ? (
                     <div className="investments-ai-message-avatar" aria-hidden="true">

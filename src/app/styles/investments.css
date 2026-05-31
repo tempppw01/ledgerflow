@@ -615,8 +615,15 @@
 
 .investments-ai-message-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 4px;
+  flex-wrap: wrap;
+  width: fit-content;
+}
+
+.investments-ai-message.is-user .investments-ai-message-actions {
+  justify-content: flex-end;
+  margin-left: auto;
 }
 
 .investments-ai-streaming {

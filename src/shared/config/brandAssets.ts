@@ -25,6 +25,12 @@ export const PACKAGE_ICON_URL =
 export const GLOBE_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/globe.svg';
 
+export const COPY_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/copy.svg';
+
+export const ROTATE_CCW_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/rotate-ccw.svg';
+
 export const SUN_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/sun.svg';
 
