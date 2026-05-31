@@ -1,3 +1,8 @@
+.content-investments {
+  --investments-content-block-padding: 0px;
+  padding: 0;
+}
+
 .investments-page {
   display: block;
   height: calc(100vh - var(--topbar-height, 56px) - var(--investments-content-block-padding, 48px));
@@ -146,6 +151,7 @@
 
 .investments-ai-grid.is-support-collapsed {
   grid-template-columns: minmax(0, 1fr);
+  gap: 0;
 }
 
 .investments-ai-grid.is-support-collapsed .investments-ai-panel {
@@ -173,8 +179,20 @@
   align-content: stretch;
   height: 100%;
   min-height: 0;
+  padding: clamp(12px, 2vw, 24px);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   overflow: hidden;
   overflow-anchor: none;
+}
+
+.investments-ai-panel:hover,
+.investments-ai-panel:focus-within {
+  transform: none;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 .investments-support-column {
