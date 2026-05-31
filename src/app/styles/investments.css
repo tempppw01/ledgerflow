@@ -273,12 +273,16 @@
 }
 
 .investments-support-toggle {
-  min-height: 32px;
-  padding: 0 10px;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  justify-content: center;
+  gap: 0;
   border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-primary-bg));
   color: var(--color-primary);
-  font-weight: 700;
 }
 
 .investments-support-toggle img {

@@ -1417,7 +1417,6 @@ export function InvestmentsPage() {
                   alt=""
                   aria-hidden="true"
                 />
-                <span>{supportCollapsed ? '展开侧栏' : '收起侧栏'}</span>
               </button>
             </div>
           </div>
