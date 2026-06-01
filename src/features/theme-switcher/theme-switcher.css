@@ -81,10 +81,12 @@
 @media (max-width: 768px) {
   .theme-switcher {
     width: auto;
-    height: 36px;
+    height: 34px;
+    min-height: 34px;
+    max-height: 34px;
     flex: 0 0 auto;
     gap: 2px;
-    padding: 2px;
+    padding: 3px;
     border-radius: var(--radius-full);
     background: color-mix(in srgb, var(--color-bg-elevated) 86%, var(--color-bg-subtle));
   }
@@ -96,18 +98,33 @@
   }
 
   .theme-icon-btn {
-    width: 28px;
-    height: 28px;
-    flex: 0 0 28px;
+    width: 26px;
+    min-width: 26px;
+    max-width: 26px;
+    height: 26px;
+    min-height: 26px;
+    max-height: 26px;
+    flex: 0 0 26px;
+    padding: 0;
+    border-radius: 999px;
   }
 
   .theme-switcher:not(:hover):not(:has(.theme-icon-btn:focus-visible)) .theme-icon-btn:not(.active) {
-    width: 28px;
-    flex-basis: 28px;
+    width: 26px;
+    flex-basis: 26px;
     border-width: 1px;
     opacity: 1;
     transform: none;
     pointer-events: auto;
+  }
+
+  .theme-icon-btn::after {
+    display: none;
+  }
+
+  .theme-icon {
+    width: 14px;
+    height: 14px;
   }
 
   .theme-icon-btn.active {
