@@ -80,21 +80,44 @@
 
 @media (max-width: 768px) {
   .theme-switcher {
-    width: 36px;
+    width: auto;
     height: 36px;
-    flex: 0 0 36px;
+    flex: 0 0 auto;
+    gap: 2px;
     padding: 2px;
-    border-radius: 14px;
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--color-bg-elevated) 86%, var(--color-bg-subtle));
   }
 
   .theme-switcher:hover,
   .theme-switcher:has(.theme-icon-btn:focus-visible) {
     width: auto;
+    gap: 2px;
   }
 
   .theme-icon-btn {
-    width: 30px;
-    height: 30px;
-    flex: 0 0 30px;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+  }
+
+  .theme-switcher:not(:hover):not(:has(.theme-icon-btn:focus-visible)) .theme-icon-btn:not(.active) {
+    width: 28px;
+    flex-basis: 28px;
+    border-width: 1px;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  .theme-icon-btn.active {
+    border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border));
+    background: color-mix(in srgb, var(--color-primary-bg) 72%, var(--color-bg-elevated));
+    color: var(--color-primary);
+    box-shadow: none;
+  }
+
+  .theme-icon-btn.active .theme-icon {
+    filter: none;
   }
 }
