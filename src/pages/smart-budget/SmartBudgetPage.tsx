@@ -784,23 +784,7 @@ export function SmartBudgetPage() {
             智能预算管理
           </button>
         </div>
-      ) : (
-        <section
-          className="smart-budget-setup-intro smart-budget-panel-card"
-          aria-label="预算向导说明"
-        >
-          <div className="smart-budget-setup-intro-main">
-            <span className="smart-budget-setup-kicker">快速向导</span>
-            <h3>4 个问题生成月预算</h3>
-          </div>
-          <div className="smart-budget-setup-mini-steps" aria-label="需要填写的预算信息">
-            <span>身份</span>
-            <span>收入</span>
-            <span>固定支出</span>
-            <span>储蓄比例</span>
-          </div>
-        </section>
-      )}
+      ) : null}
 
       {mode === 'management' ? (
         confirmedPlan ? (

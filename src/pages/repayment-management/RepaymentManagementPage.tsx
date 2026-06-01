@@ -1604,15 +1604,11 @@ export function RepaymentManagementPage() {
             <div className="finance-empty-guide">
               <div className="finance-empty-guide-head">
                 <div>
-                  <span className="finance-empty-guide-kicker">还没开始建立负债清单</span>
+                  <span className="finance-empty-guide-kicker">先建一笔负债</span>
                   <p className="finance-empty-guide-title">
-                    先补 1 笔负债，就能看到还款压力、最低还款和处理优先级
-                  </p>
-                  <p className="muted" style={{ margin: 0 }}>
-                    支持截图自动识别，也可以先手动录入一笔，细节后面再补。
+                    上传账单或手动添加，马上看到还款压力。
                   </p>
                 </div>
-                <span className="finance-empty-guide-badge">预计 1 分钟</span>
               </div>
               <div className="finance-empty-guide-actions">
                 <button
@@ -1637,11 +1633,14 @@ export function RepaymentManagementPage() {
                   手动添加负债
                 </button>
               </div>
-              <ul className="finance-empty-guide-steps">
-                <li>截图识别后会自动补全欠款金额、期数，并尝试估算月收入。</li>
-                <li>手动录入时优先填名称、类型和剩余本金，其它字段可稍后补齐。</li>
-                <li>录入完成后就能生成还款压力和 AI 建议，不必一次填完所有信息。</li>
-              </ul>
+              <details className="finance-empty-guide-more">
+                <summary>为什么要填这些</summary>
+                <ul className="finance-empty-guide-steps">
+                  <li>截图识别后会自动补全欠款金额、期数，并尝试估算月收入。</li>
+                  <li>手动录入时优先填名称、类型和剩余本金，其它字段可稍后补齐。</li>
+                  <li>录入完成后就能生成还款压力和 AI 建议，不必一次填完所有信息。</li>
+                </ul>
+              </details>
             </div>
           ) : null}
           {debts.length > 0 ? (
