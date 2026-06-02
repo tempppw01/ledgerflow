@@ -690,7 +690,7 @@ export function AppLayout() {
                 alt=""
                 aria-hidden="true"
               />
-              <span>{t('nav.settings')}</span>
+              <span>{t('nav.settings', { defaultValue: '设置' })}</span>
             </button>
           </div>
         </header>
@@ -706,7 +706,7 @@ export function AppLayout() {
             className="settings-overlay-dialog"
             role="dialog"
             aria-modal="true"
-            aria-label={t('nav.settings')}
+            aria-label={t('nav.settings', { defaultValue: '设置' })}
             onClick={(event) => event.stopPropagation()}
           >
             <SettingsPage variant="overlay" onClose={closeSettingsOverlay} />

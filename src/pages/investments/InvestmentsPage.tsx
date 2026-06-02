@@ -2116,7 +2116,7 @@ export function InvestmentsPage() {
           </div>
 
           <section
-            className={`panel investments-hero investments-fold-card ${
+            className={`panel investments-hero investments-fold-card investments-support-summary-card ${
               openInvestmentPanels.summary ? 'is-open' : ''
             }`}
             data-investment-support-title="投资资料与管理"
@@ -2130,15 +2130,16 @@ export function InvestmentsPage() {
               <span>
                 <h3>投资资料与管理</h3>
                 <p>
-                  点开再看配置、提醒、持仓和目标 · 总市值{' '}
-                  {formatCurrencyAuto(positionSummary.totalCurrentValue)} · 目标进度{' '}
+                  配置、提醒、持仓和目标 · 市值{' '}
+                  {formatCurrencyAuto(positionSummary.totalCurrentValue)}
+                  {' · '}
                   {goalSummary.totalTargetAmount > 0
-                    ? `${((goalSummary.totalCurrentAmount / goalSummary.totalTargetAmount) * 100).toFixed(1)}%`
+                    ? `目标 ${((goalSummary.totalCurrentAmount / goalSummary.totalTargetAmount) * 100).toFixed(1)}%`
                     : '未开始'}
                 </p>
               </span>
               <span className="investments-fold-side">
-                <span className="badge">聊天辅助入口</span>
+                <span className="badge">{openInvestmentPanels.summary ? '收起' : '展开'}</span>
                 <img
                   src={
                     openInvestmentPanels.summary
@@ -2218,10 +2219,10 @@ export function InvestmentsPage() {
             className="panel investments-watchlist-panel"
             data-investment-support-title="基金自选"
           >
-            <div className="investments-section-head">
+            <div className="investments-section-head investments-watchlist-head">
               <div>
                 <h3>基金自选</h3>
-                <p>把想继续观察的基金留在这里，下次回来不用重新找。</p>
+                <p>观察、复盘、让 AI 排序。</p>
               </div>
               <div className="investments-watchlist-actions">
                 <span className="badge">{investmentWatchlist.length} 只</span>
@@ -2232,7 +2233,7 @@ export function InvestmentsPage() {
                   disabled={watchlistReviewStatus === 'loading' || investmentWatchlist.length === 0}
                 >
                   <img src={BRAIN_ICON_URL} alt="" aria-hidden="true" />
-                  {watchlistReviewStatus === 'loading' ? '分析中' : 'AI 分析排序'}
+                  {watchlistReviewStatus === 'loading' ? '分析中' : 'AI 排序'}
                 </button>
               </div>
             </div>
@@ -2264,7 +2265,7 @@ export function InvestmentsPage() {
             {investmentWatchlist.length === 0 ? (
               <div className="investments-watchlist-empty">
                 <strong>还没有自选基金</strong>
-                <p>分析完觉得值得继续跟，就顺手加进来，后面回看会更方便。</p>
+                <p>分析后觉得值得跟踪，就加入这里。</p>
               </div>
             ) : (
               <div className="investments-watchlist-list">
@@ -2276,6 +2277,22 @@ export function InvestmentsPage() {
                   const assetAllocationPreview = item.assetAllocation?.slice(0, 3) || [];
                   const holdingReturn =
                     item.holdingReturn || getWatchItemHoldingReturn(item, activePositions);
+                  const keyStats = [
+                    {
+                      label: '重仓',
+                      value: holdingsPreview.length > 0 ? holdingsPreview.join(' / ') : '待更新'
+                    },
+                    {
+                      label: '资产',
+                      value:
+                        assetAllocationPreview.length > 0
+                          ? assetAllocationPreview.join(' / ')
+                          : '待更新'
+                    },
+                    { label: '净值', value: item.netValue || '待更新' },
+                    { label: '收益', value: item.addedReturn || '待更新' },
+                    holdingReturn ? { label: '持有', value: holdingReturn } : null
+                  ].filter(Boolean) as Array<{ label: string; value: string }>;
 
                   return (
                     <article
@@ -2307,11 +2324,12 @@ export function InvestmentsPage() {
                           ) : null}
                           <button
                             type="button"
-                            className="danger"
+                            className="danger investments-watch-card-remove"
                             onClick={(event) => {
                               event.stopPropagation();
                               removeInvestmentWatchItem(item.id);
                             }}
+                            aria-label={`移除 ${item.name}`}
                           >
                             移除
                           </button>
@@ -2323,55 +2341,35 @@ export function InvestmentsPage() {
                         </strong>
                         {primaryTag ? <span className="badge">{primaryTag}</span> : null}
                       </div>
-                      {item.lastSummary ? (
+                      {isExpanded && item.lastSummary ? (
                         <p className="investments-watch-card-summary">{item.lastSummary}</p>
                       ) : null}
                       <div className="investments-watch-card-fund-grid" aria-label="基金关键数据">
-                        <span>
-                          <em>重仓股票</em>
-                          <strong>
-                            {holdingsPreview.length > 0 ? holdingsPreview.join(' / ') : '待更新'}
-                          </strong>
-                        </span>
-                        <span>
-                          <em>资产分布</em>
-                          <strong>
-                            {assetAllocationPreview.length > 0
-                              ? assetAllocationPreview.join(' / ')
-                              : '待更新'}
-                          </strong>
-                        </span>
-                        <span>
-                          <em>净值</em>
-                          <strong>{item.netValue || '待更新'}</strong>
-                        </span>
-                        <span>
-                          <em>添加后收益</em>
-                          <strong>{item.addedReturn || '待更新'}</strong>
-                        </span>
-                        {holdingReturn ? (
-                          <span>
-                            <em>持有收益</em>
-                            <strong>{holdingReturn}</strong>
+                        {keyStats.map((stat) => (
+                          <span key={`${item.id}-${stat.label}`}>
+                            <em>{stat.label}</em>
+                            <strong>{stat.value}</strong>
                           </span>
-                        ) : null}
+                        ))}
                       </div>
-                      <div className="investments-watch-card-ai-actions">
-                        <button
-                          type="button"
-                          onClick={(event) => handleWatchItemAiAction(event, item, 'analysis')}
-                          disabled={investmentAiStatus === 'loading'}
-                        >
-                          基金分析
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(event) => handleWatchItemAiAction(event, item, 'holdings')}
-                          disabled={investmentAiStatus === 'loading'}
-                        >
-                          基金持仓分析
-                        </button>
-                      </div>
+                      {isExpanded ? (
+                        <div className="investments-watch-card-ai-actions">
+                          <button
+                            type="button"
+                            onClick={(event) => handleWatchItemAiAction(event, item, 'analysis')}
+                            disabled={investmentAiStatus === 'loading'}
+                          >
+                            基金分析
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(event) => handleWatchItemAiAction(event, item, 'holdings')}
+                            disabled={investmentAiStatus === 'loading'}
+                          >
+                            持仓分析
+                          </button>
+                        </div>
+                      ) : null}
                       <div className="investments-watch-card-meta">
                         <span>
                           {item.lastAnalysisAt
