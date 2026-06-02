@@ -160,8 +160,7 @@ body {
   color: var(--color-text);
 }
 
-.sidebar-collapse-btn,
-.mobile-nav-toggle {
+.sidebar-collapse-btn {
   width: 34px;
   height: 34px;
   border-radius: 12px;
@@ -177,8 +176,7 @@ body {
     inset 0 1px 0 color-mix(in srgb, white 72%, transparent);
 }
 
-.sidebar-collapse-btn:hover,
-.mobile-nav-toggle:hover {
+.sidebar-collapse-btn:hover {
   transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--color-primary) 38%, var(--color-border));
   background: linear-gradient(
@@ -192,18 +190,62 @@ body {
     inset 0 1px 0 color-mix(in srgb, white 76%, transparent);
 }
 
-.sidebar-collapse-btn:active,
-.mobile-nav-toggle:active {
+.sidebar-collapse-btn:active {
   transform: translateY(0);
 }
 
-.sidebar-collapse-btn:focus-visible,
-.mobile-nav-toggle:focus-visible {
+.sidebar-collapse-btn:focus-visible {
   outline: none;
   border-color: var(--color-primary);
   box-shadow:
     0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent),
     0 8px 20px color-mix(in srgb, var(--color-primary) 16%, transparent);
+}
+
+.mobile-nav-toggle {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-primary);
+  box-shadow: none;
+}
+
+.mobile-nav-toggle:hover {
+  transform: none;
+  border-color: transparent;
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  color: var(--color-primary-hover);
+  box-shadow: none;
+}
+
+.mobile-nav-toggle:active {
+  transform: none;
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+}
+
+.mobile-nav-toggle:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 42%, transparent);
+  outline-offset: 2px;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.workspace-topbar .icon-btn.mobile-nav-toggle {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.workspace-topbar .icon-btn.mobile-nav-toggle:hover,
+.workspace-topbar .icon-btn.mobile-nav-toggle:active {
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent) !important;
+  box-shadow: none !important;
+}
+
+.workspace-topbar .icon-btn.mobile-nav-toggle::after {
+  display: none;
 }
 
 .sidebar-collapse-icon {
@@ -6722,7 +6764,7 @@ input[type='date']:focus {
     min-height: 36px;
     flex: 0 0 36px;
     padding: 0;
-    border-radius: 14px;
+    border-radius: 999px;
   }
 
   .settings-overlay {

@@ -108,6 +108,10 @@ function buildSmoothPath(points: Array<{ x: number; y: number }>) {
 
 export function DashboardPage() {
   const { t } = useTranslation();
+  const tFallback = (key: string, fallback: string) => {
+    const translated = t(key);
+    return translated === key ? fallback : translated;
+  };
   const navigate = useNavigate();
   const transactions = useFinanceStore((s) => s.transactions);
   const accounts = useFinanceStore((s) => s.accounts);
@@ -1288,8 +1292,11 @@ export function DashboardPage() {
         versionLabel={APP_VERSION}
         isExpanded={isWelcomeExpanded}
         greeting={getGreeting(t)}
-        welcomeTitle={t('dashboard.ui.welcome')}
-        welcomeSubtitle={t('dashboard.ui.welcomeSubtitle')}
+        welcomeTitle={tFallback('dashboard.ui.welcome', 'LedgerFlow')}
+        welcomeSubtitle={tFallback(
+          'dashboard.ui.welcomeSubtitle',
+          '今天的钱花在哪、还剩多少、哪里能省一点，这里直接告诉你。'
+        )}
         monthlyBalance={monthlyBalance}
         netAssets={netAssets}
         tip={localizedTips[tipIndex]}
@@ -1340,7 +1347,7 @@ export function DashboardPage() {
       ) : null}
 
       <section className="panel">
-        <h2>{t('dashboard.ui.corePanel')}</h2>
+        <h2>{tFallback('dashboard.ui.corePanel', '今日财务看板')}</h2>
         <div className="grid grid-2">
           <button
             type="button"
@@ -1374,8 +1381,8 @@ export function DashboardPage() {
           </button>
         </div>
         <DashboardModuleCustomizer
-          title={t('dashboard.ui.moduleCustomize')}
-          hint={t('dashboard.ui.moduleCustomizeHint')}
+          title={tFallback('dashboard.ui.moduleCustomize', '首页模块')}
+          hint={tFallback('dashboard.ui.moduleCustomizeHint', '拖动排序，关掉暂时用不上的卡片。')}
           items={moduleOrder.reduce<
             Array<{ id: DashboardModuleId; label: string; description: string; checked: boolean }>
           >((acc, moduleId) => {
@@ -1498,16 +1505,19 @@ export function DashboardPage() {
         <section className="panel">
           <EmptyState
             icon="📝"
-            title={t('dashboard.ui.emptyTitle')}
-            description={t('dashboard.ui.emptyDesc')}
+            title={tFallback('dashboard.ui.emptyTitle', '还没有账单，先记第一笔')}
+            description={tFallback(
+              'dashboard.ui.emptyDesc',
+              '记录一笔收入或支出后，这里会自动生成趋势、分类和提醒。'
+            )}
             secondaryAction={{
-              label: t('dashboard.ui.findAssistant'),
+              label: tFallback('dashboard.ui.findAssistant', '找助手聊聊'),
               onClick: () => {
                 navigate('/assistant');
               }
             }}
             primaryAction={{
-              label: t('dashboard.ui.quickAdd'),
+              label: tFallback('dashboard.ui.quickAdd', '马上记一笔'),
               variant: 'primary',
               onClick: () => {
                 navigate('/transactions/new?quick=1');
@@ -1518,7 +1528,7 @@ export function DashboardPage() {
       ) : (
         <div className="grid grid-2 dashboard-main-grid" style={{ marginTop: 16 }}>
           <DashboardMonthlyTrendSummaryCard
-            title={t('dashboard.ui.thisMonthTrend')}
+            title={tFallback('dashboard.ui.thisMonthTrend', '本月趋势')}
             currentMonthLabel={currentMonthLabel}
             monthlyInsightActionLabel={monthlyInsightActionLabel}
             monthlyInsightStatus={monthlyInsightStatus}
@@ -1541,7 +1551,7 @@ export function DashboardPage() {
           />
 
           <section className="panel">
-            <h3>{t('dashboard.ui.futureTrend')}</h3>
+            <h3>{tFallback('dashboard.ui.futureTrend', '未来现金流')}</h3>
             <div className="dashboard-forecast-header">
               <p className="dashboard-ai-badge">
                 模型：{model || '默认模型'} ·{' '}

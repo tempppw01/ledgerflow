@@ -17,15 +17,21 @@ export interface MonthlyInsightPayload {
   };
 }
 
+function tWithFallback(t: (key: string) => string, key: string, fallback: string): string {
+  const translated = t(key);
+  return translated === key ? fallback : translated;
+}
+
 export function getGreeting(t: (key: string) => string): string {
   const hour = new Date().getHours();
-  if (hour < 6) return t('dashboard.greeting.night');
-  if (hour < 9) return t('dashboard.greeting.morning');
-  if (hour < 12) return t('dashboard.greeting.forenoon');
-  if (hour < 14) return t('dashboard.greeting.noon');
-  if (hour < 18) return t('dashboard.greeting.afternoon');
-  if (hour < 22) return t('dashboard.greeting.evening');
-  return t('dashboard.greeting.night');
+  if (hour < 6) return tWithFallback(t, 'dashboard.greeting.night', '夜深了，慢慢来');
+  if (hour < 9) return tWithFallback(t, 'dashboard.greeting.morning', '早上好，今天也稳稳来');
+  if (hour < 12) return tWithFallback(t, 'dashboard.greeting.forenoon', '上午好，先看一眼钱流向');
+  if (hour < 14) return tWithFallback(t, 'dashboard.greeting.noon', '中午好，顺手盘一下账');
+  if (hour < 18)
+    return tWithFallback(t, 'dashboard.greeting.afternoon', '下午好，看看今天花得值不值');
+  if (hour < 22) return tWithFallback(t, 'dashboard.greeting.evening', '晚上好，给今天的钱收个尾');
+  return tWithFallback(t, 'dashboard.greeting.night', '夜深了，慢慢来');
 }
 
 export function monthKey(date: Date): string {

@@ -72,6 +72,10 @@ function renderNavIcon(item: { icon: string; iconSrc?: string }, className: stri
 
 export function AppLayout() {
   const { t, i18n } = useTranslation();
+  const tFallback = (key: string, fallback: string) => {
+    const translated = t(key);
+    return translated === key ? fallback : translated;
+  };
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -88,30 +92,35 @@ export function AppLayout() {
   const navSections: Array<{ title: string; items: NavItem[] }> = useMemo(
     () => [
       {
-        title: t('nav.assistant'),
+        title: tFallback('nav.assistant', '智能助手'),
         items: [
           {
             to: '/assistant',
-            label: t('nav.assistantBookkeeping'),
+            label: tFallback('nav.assistantBookkeeping', '记账助手'),
             icon: '🤖',
             iconSrc: CHAT_ICON_URL
           },
-          { to: '/smart-budget', label: t('nav.smartBudget'), icon: '🧠', iconSrc: BRAIN_ICON_URL },
+          {
+            to: '/smart-budget',
+            label: tFallback('nav.smartBudget', '智能预算'),
+            icon: '🧠',
+            iconSrc: BRAIN_ICON_URL
+          },
           { to: '/global-memory', label: '全局记忆', icon: '🗃️', iconSrc: ARCHIVE_ICON_URL }
         ]
       },
       {
-        title: t('nav.incomeExpense'),
+        title: tFallback('nav.incomeExpense', '收支管理'),
         items: [
           {
             to: '/transactions',
-            label: t('nav.transactions'),
+            label: tFallback('nav.transactions', '交易流水'),
             icon: '📋',
             iconSrc: DATA_INPUT_ILLUSTRATION_URL
           },
           {
             to: '/',
-            label: t('nav.dashboard'),
+            label: tFallback('nav.dashboard', '数据概览'),
             icon: '📊',
             iconSrc: DASHBOARD_ICON_URL,
             end: true
@@ -120,11 +129,11 @@ export function AppLayout() {
         ]
       },
       {
-        title: t('nav.assetsDebt'),
+        title: tFallback('nav.assetsDebt', '资产负债'),
         items: [
           {
             to: '/categories-accounts',
-            label: t('nav.categoriesAccounts'),
+            label: tFallback('nav.categoriesAccounts', '账户与分类'),
             icon: '🗂️',
             iconSrc: WALLET_CARDS_ICON_URL
           },
@@ -133,32 +142,47 @@ export function AppLayout() {
           { to: '/subscriptions', label: '订阅管理', icon: '🧾', iconSrc: CALENDAR_ICON_URL },
           {
             to: '/repayment-management',
-            label: t('nav.repayment'),
+            label: tFallback('nav.repayment', '还款管理'),
             icon: '💳',
             iconSrc: CREDIT_CARDS_ICON_URL
           }
         ]
       },
       {
-        title: t('nav.toolsInfo'),
+        title: tFallback('nav.toolsInfo', '工具资讯'),
         items: [
           { to: '/help', label: '帮助', icon: '❓', iconSrc: QUESTION_ICON_URL },
           {
             to: '/database-settings',
-            label: t('nav.dbSettings'),
+            label: tFallback('nav.dbSettings', '备份设置'),
             icon: '🗄️',
             iconSrc: DATABASE_ICON_URL
           },
           { to: '/recycle-bin', label: '回收站', icon: '🗑️', iconSrc: TRASH_ICON_URL },
-          { to: '/exchange', label: t('nav.exchange'), icon: '💱', iconSrc: GLOBE_ICON_URL },
+          {
+            to: '/exchange',
+            label: tFallback('nav.exchange', '汇率工具'),
+            icon: '💱',
+            iconSrc: GLOBE_ICON_URL
+          },
           {
             to: '/salary-tools',
             label: '工资工具',
             icon: '💼',
             iconSrc: BADGE_DOLLAR_SIGN_ICON_URL
           },
-          { to: '/finance', label: t('nav.finance'), icon: '📰', iconSrc: GLOBE_ICON_URL },
-          { to: '/about', label: t('nav.about'), icon: 'ℹ️', iconSrc: INFO_ICON_URL }
+          {
+            to: '/finance',
+            label: tFallback('nav.finance', '市场资讯'),
+            icon: '📰',
+            iconSrc: GLOBE_ICON_URL
+          },
+          {
+            to: '/about',
+            label: tFallback('nav.about', '关于'),
+            icon: 'ℹ️',
+            iconSrc: INFO_ICON_URL
+          }
         ]
       }
     ],
@@ -168,10 +192,10 @@ export function AppLayout() {
   const mobileQuickGroups: Array<{ title: string; items: QuickEntry[] }> = useMemo(
     () => [
       {
-        title: t('nav.commonFeatures'),
+        title: tFallback('nav.commonFeatures', '常用功能'),
         items: [
           {
-            label: t('nav.assistantBookkeeping'),
+            label: tFallback('nav.assistantBookkeeping', '记账助手'),
             icon: '🤖',
             iconSrc: CHAT_ICON_URL,
             to: '/assistant'
@@ -179,30 +203,35 @@ export function AppLayout() {
           { label: '财务分析', icon: '🧠', iconSrc: SCALE_ICON_URL, to: '/financial-analysis' },
           { label: '订阅管理', icon: '🧾', iconSrc: CALENDAR_ICON_URL, to: '/subscriptions' },
           {
-            label: t('nav.transactions'),
+            label: tFallback('nav.transactions', '交易流水'),
             icon: '📋',
             iconSrc: DATA_INPUT_ILLUSTRATION_URL,
             to: '/transactions'
           },
           {
-            label: t('nav.dashboard'),
+            label: tFallback('nav.dashboard', '数据概览'),
             icon: '📊',
             iconSrc: DASHBOARD_ICON_URL,
             to: '/',
             end: true
           },
           {
-            label: t('nav.categoriesAccounts'),
+            label: tFallback('nav.categoriesAccounts', '账户与分类'),
             icon: '🗂️',
             iconSrc: WALLET_CARDS_ICON_URL,
             to: '/categories-accounts'
           },
           { label: '余额明细', icon: '📚', iconSrc: CARD_SD_ICON_URL, to: '/balance-changes' },
           { label: '投资理财', icon: '📈', iconSrc: INVESTMENTS_ICON_URL, to: '/investments' },
-          { label: t('nav.smartBudget'), icon: '🧠', iconSrc: BRAIN_ICON_URL, to: '/smart-budget' },
+          {
+            label: tFallback('nav.smartBudget', '智能预算'),
+            icon: '🧠',
+            iconSrc: BRAIN_ICON_URL,
+            to: '/smart-budget'
+          },
           { label: '全局记忆', icon: '🗃️', iconSrc: ARCHIVE_ICON_URL, to: '/global-memory' },
           {
-            label: t('nav.repayment'),
+            label: tFallback('nav.repayment', '还款管理'),
             icon: '💳',
             iconSrc: CREDIT_CARDS_ICON_URL,
             to: '/repayment-management'
@@ -213,22 +242,37 @@ export function AppLayout() {
             iconSrc: BADGE_DOLLAR_SIGN_ICON_URL,
             to: '/salary-tools'
           },
-          { label: t('nav.finance'), icon: '📰', iconSrc: GLOBE_ICON_URL, to: '/finance' },
-          { label: t('nav.exchange'), icon: '💱', iconSrc: GLOBE_ICON_URL, to: '/exchange' }
+          {
+            label: tFallback('nav.finance', '市场资讯'),
+            icon: '📰',
+            iconSrc: GLOBE_ICON_URL,
+            to: '/finance'
+          },
+          {
+            label: tFallback('nav.exchange', '汇率工具'),
+            icon: '💱',
+            iconSrc: GLOBE_ICON_URL,
+            to: '/exchange'
+          }
         ]
       },
       {
-        title: t('nav.systemFeatures'),
+        title: tFallback('nav.systemFeatures', '系统功能'),
         items: [
           { label: '帮助', icon: '❓', iconSrc: QUESTION_ICON_URL, to: '/help' },
           {
-            label: t('nav.dbSettings'),
+            label: tFallback('nav.dbSettings', '备份设置'),
             icon: '🗄️',
             iconSrc: DATABASE_ICON_URL,
             to: '/database-settings'
           },
           { label: '回收站', icon: '🗑️', iconSrc: TRASH_ICON_URL, to: '/recycle-bin' },
-          { label: t('nav.about'), icon: 'ℹ️', iconSrc: INFO_ICON_URL, to: '/about' }
+          {
+            label: tFallback('nav.about', '关于'),
+            icon: 'ℹ️',
+            iconSrc: INFO_ICON_URL,
+            to: '/about'
+          }
         ]
       }
     ],
@@ -239,7 +283,7 @@ export function AppLayout() {
     const pathname = location.pathname;
 
     if (pathname === '/') {
-      return t('nav.dashboard');
+      return tFallback('nav.dashboard', '数据概览');
     }
 
     if (pathname.startsWith('/assistant')) {
@@ -255,7 +299,7 @@ export function AppLayout() {
       return pathname === item.to || pathname.startsWith(`${item.to}/`);
     });
 
-    return matchedItem?.label ?? t('layout.workspaceTitle');
+    return matchedItem?.label ?? tFallback('layout.workspaceTitle', '智能记账工作台');
   }, [assistantWorkspaceTitle, location.pathname, navSections, t]);
   const isStandaloneSettingsRoute = location.pathname === '/settings';
   const isInvestmentsRoute = location.pathname.startsWith('/investments');
@@ -561,9 +605,9 @@ export function AppLayout() {
       <aside className={collapsed ? 'sidebar collapsed' : 'sidebar'}>
         <div className="sidebar-header">
           {!collapsed ? (
-            <Link to="/" className="brand" title={t('layout.brand')}>
+            <Link to="/" className="brand" title={tFallback('layout.brand', 'LedgerFlow')}>
               <img className="brand-logo" src={APP_LOGO_URL} alt="" />
-              <span>{t('layout.brand')}</span>
+              <span>{tFallback('layout.brand', 'LedgerFlow')}</span>
             </Link>
           ) : null}
           <button
@@ -571,7 +615,9 @@ export function AppLayout() {
             className="icon-btn sidebar-collapse-btn"
             onClick={() => setCollapsed((v) => !v)}
             aria-label={
-              collapsed ? t('layout.toggleSidebarExpand') : t('layout.toggleSidebarCollapse')
+              collapsed
+                ? tFallback('layout.toggleSidebarExpand', '展开侧边栏')
+                : tFallback('layout.toggleSidebarCollapse', '折叠侧边栏')
             }
           >
             <img
@@ -652,7 +698,7 @@ export function AppLayout() {
                 type="button"
                 className="icon-btn mobile-nav-toggle"
                 onClick={() => setMobileNavOpen(true)}
-                aria-label={t('layout.openDrawer')}
+                aria-label={tFallback('layout.openDrawer', '打开功能抽屉')}
               >
                 <img
                   className="sidebar-collapse-icon"
@@ -665,7 +711,7 @@ export function AppLayout() {
             {collapsed && !isMobileViewport ? (
               <div className="topbar-brand-copy compact">
                 <img className="brand-logo compact" src={APP_LOGO_URL} alt="" />
-                <h1>{t('layout.brand')}</h1>
+                <h1>{tFallback('layout.brand', 'LedgerFlow')}</h1>
               </div>
             ) : null}
             <div className="workspace-topbar-title" title={currentWorkspaceTitle}>
@@ -724,7 +770,7 @@ export function AppLayout() {
             className="mobile-nav-drawer"
             role="dialog"
             aria-modal="true"
-            aria-label={t('layout.drawerAria')}
+            aria-label={t('layout.drawerAria', { defaultValue: '功能抽屉' })}
             onClick={(e) => e.stopPropagation()}
           >
             <header className="mobile-nav-header mobile-nav-profile">
@@ -736,9 +782,14 @@ export function AppLayout() {
                   aria-hidden="true"
                 />
                 <div>
-                  <p className="mobile-nav-name">{t('layout.drawerUser')}</p>
+                  <p className="mobile-nav-name">
+                    {t('layout.drawerUser', { defaultValue: 'LedgerFlow 用户' })}
+                  </p>
                   <p className="mobile-nav-subtitle">
-                    {t('layout.drawerSubtitle', { today: todayLabel })}
+                    {t('layout.drawerSubtitle', {
+                      today: todayLabel,
+                      defaultValue: `${todayLabel} · 今天也要轻松记一笔`
+                    })}
                   </p>
                 </div>
               </div>
@@ -746,7 +797,7 @@ export function AppLayout() {
                 type="button"
                 className="icon-btn"
                 onClick={() => setMobileNavOpen(false)}
-                aria-label={t('layout.closeDrawer')}
+                aria-label={t('layout.closeDrawer', { defaultValue: '关闭功能抽屉' })}
               >
                 ✕
               </button>
@@ -754,11 +805,19 @@ export function AppLayout() {
 
             <section className="mobile-nav-summary-card">
               <h3>{monthLabel}</h3>
-              <p>{t('layout.monthlyBalance', { amount: formatCurrency(monthBalance) })}</p>
+              <p>
+                {t('layout.monthlyBalance', {
+                  amount: formatCurrency(monthBalance),
+                  defaultValue: `结余 ${formatCurrency(monthBalance)}`
+                })}
+              </p>
               <p>
                 {t('layout.monthlyIncomeExpense', {
                   income: formatCurrency(monthIncome),
-                  expense: formatCurrency(monthExpense)
+                  expense: formatCurrency(monthExpense),
+                  defaultValue: `收入 ${formatCurrency(monthIncome)} · 支出 ${formatCurrency(
+                    monthExpense
+                  )}`
                 })}
               </p>
             </section>
