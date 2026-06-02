@@ -228,7 +228,14 @@ export function DashboardPage() {
           .filter((t) => isActualExpenseType(t.type))
           .reduce((sum, t) => sum + t.amount, 0);
         const shortLabel = `${d.getMonth() + 1}月`;
-        return { key, shortLabel, income: mIncome, expense: mExpense, balance: mIncome - mExpense };
+        return {
+          key,
+          shortLabel,
+          income: mIncome,
+          expense: mExpense,
+          balance: mIncome - mExpense,
+          transactionCount: rows.length
+        };
       }),
     [currentMonth, currentYear, transactions]
   );
@@ -946,6 +953,7 @@ export function DashboardPage() {
         value: points[index],
         dateFrom: `${year}-${String(month).padStart(2, '0')}-01`,
         dateTo: new Date(year, month, 0).toISOString().slice(0, 10),
+        hasTransactions: item.transactionCount > 0,
         isCurrent: year === currentYear && month === currentMonth + 1
       };
     });
@@ -1239,10 +1247,12 @@ export function DashboardPage() {
   }, [cashflowCategoryRows]);
 
   const netAssetRows = useMemo(() => {
-    return netAssetCurve.map((item, index) => {
-      const prev = index > 0 ? netAssetCurve[index - 1].value : item.value;
-      return { ...item, delta: item.value - prev };
-    });
+    return netAssetCurve
+      .map((item, index) => {
+        const prev = index > 0 ? netAssetCurve[index - 1].value : item.value;
+        return { ...item, delta: item.value - prev };
+      })
+      .filter((item) => item.hasTransactions);
   }, [netAssetCurve]);
 
   const netAssetWorstDrop = useMemo(() => {
@@ -1380,16 +1390,18 @@ export function DashboardPage() {
                   onCashflowViewChange={setCashflowView}
                   onSelectedCategoryNameChange={setSelectedCategoryName}
                 />
-                <NetAssetCurveCard
-                  rows={netAssetRows}
-                  worstDropKey={netAssetWorstDrop?.key}
-                  worstDropDelta={netAssetWorstDrop?.delta}
-                  onNavigateToMonth={(dateFrom, dateTo) => {
-                    navigate(
-                      `/transactions?datePreset=custom&dateFrom=${dateFrom}&dateTo=${dateTo}`
-                    );
-                  }}
-                />
+                {netAssetRows.length > 0 ? (
+                  <NetAssetCurveCard
+                    rows={netAssetRows}
+                    worstDropKey={netAssetWorstDrop?.key}
+                    worstDropDelta={netAssetWorstDrop?.delta}
+                    onNavigateToMonth={(dateFrom, dateTo) => {
+                      navigate(
+                        `/transactions?datePreset=custom&dateFrom=${dateFrom}&dateTo=${dateTo}`
+                      );
+                    }}
+                  />
+                ) : null}
               </section>
             );
           }
