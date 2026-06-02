@@ -729,6 +729,7 @@ export function AppLayout() {
               onClick={openSettingsOverlay}
               aria-haspopup="dialog"
               aria-expanded={settingsOverlayOpen}
+              aria-label={t('nav.settings', { defaultValue: '设置' })}
             >
               <img
                 className="topbar-settings-icon"

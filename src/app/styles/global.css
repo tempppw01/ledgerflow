@@ -599,38 +599,41 @@ body {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 4px;
   flex-shrink: 0;
 }
 
 .topbar-settings-btn {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
   min-height: 36px;
-  padding: 0 14px 0 12px;
+  padding: 0;
   border-radius: 999px;
-  border: 1px solid var(--color-border);
-  background: var(--color-bg-elevated);
+  border: 0;
+  background: transparent;
   color: var(--color-text);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   font-size: var(--font-sm);
   font-weight: 600;
-  box-shadow: var(--shadow-xs);
+  box-shadow: none;
 }
 
 .topbar-settings-btn:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 38%, var(--color-border));
-  background: color-mix(in srgb, var(--color-primary-bg) 46%, var(--color-bg-elevated));
+  border-color: transparent;
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
   color: var(--color-primary);
+  box-shadow: none;
 }
 
 .topbar-settings-btn.active {
-  border-color: var(--color-primary-border);
-  background: color-mix(in srgb, var(--color-primary-bg) 82%, var(--color-bg-elevated));
+  border-color: transparent;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
   color: var(--color-primary);
-  box-shadow:
-    0 10px 24px color-mix(in srgb, var(--color-primary) 12%, transparent),
-    inset 0 1px 0 color-mix(in srgb, white 72%, transparent);
+  box-shadow: none;
 }
 
 .topbar-settings-icon {
@@ -638,6 +641,10 @@ body {
   height: 16px;
   object-fit: contain;
   flex-shrink: 0;
+}
+
+.topbar-settings-btn span {
+  display: none;
 }
 
 .settings-overlay {
