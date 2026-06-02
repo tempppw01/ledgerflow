@@ -492,6 +492,7 @@ const BALANCE_CHANGE_TYPES = new Set<BalanceChangeEntry['type']>([
   'transaction-refund',
   'manual-adjustment'
 ]);
+const LEGACY_BACKUP_FALLBACK_DATE = '1970-01-01T00:00:00.000Z';
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -499,6 +500,18 @@ function isObjectRecord(value: unknown): value is Record<string, unknown> {
 
 function asSafeString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function asSafeNumber(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? Number(value) : fallback;
+}
+
+function asSafeBoolean(value: unknown, fallback = false): boolean {
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+function asSafeTimestamp(value: unknown, fallback: string): string {
+  return asSafeString(value) || fallback;
 }
 
 function assertString(
@@ -550,7 +563,7 @@ function validateTransactionAttachmentItem(
 ): TransactionAttachmentItem {
   if (!isObjectRecord(item)) {
     throw new Error(
-      `澶囦唤鏂囦欢瀛楁鏃犳晥锛歞ata.transactions[${transactionIndex}].attachments[${attachmentIndex}] 搴斾负瀵硅薄`
+      `备份文件字段无效：data.transactions[${transactionIndex}].attachments[${attachmentIndex}] 应为对象`
     );
   }
 
@@ -646,14 +659,14 @@ function validateTransactionItem(item: unknown, index: number): TransactionItem 
       ))
   ) {
     throw new Error(
-      `澶囦唤鏂囦欢瀛楁鏃犳晥锛歞ata.transactions[${index}].adjustmentKind 鏋氫妇鍊间笉鍚堟硶`
+      `备份文件字段无效：data.transactions[${index}].adjustmentKind 枚举值不合法`
     );
   }
 
   const attachments = item.attachments;
   if (attachments !== undefined && !Array.isArray(attachments)) {
     throw new Error(
-      `澶囦唤鏂囦欢瀛楁鏃犳晥锛歞ata.transactions[${index}].attachments 搴斾负鏁扮粍`
+      `备份文件字段无效：data.transactions[${index}].attachments 应为数组`
     );
   }
 
@@ -756,7 +769,7 @@ function validateAccountItem(item: unknown, index: number): Account {
 
 function validateBalanceChangeEntry(item: unknown, index: number): BalanceChangeEntry {
   if (!isObjectRecord(item)) {
-    throw new Error(`澶囦唤鏂囦欢瀛楁鏃犳晥锛歞ata.balanceChangeEntries[${index}] 搴斾负瀵硅薄`);
+    throw new Error(`备份文件字段无效：data.balanceChangeEntries[${index}] 应为对象`);
   }
 
   assertString(item.id, `data.balanceChangeEntries[${index}].id`);
@@ -781,7 +794,7 @@ function validateBalanceChangeEntry(item: unknown, index: number): BalanceChange
     !BALANCE_CHANGE_TYPES.has(item.type as BalanceChangeEntry['type'])
   ) {
     throw new Error(
-      `澶囦唤鏂囦欢瀛楁鏃犳晥锛歞ata.balanceChangeEntries[${index}].type 鏋氫妇鍊间笉鍚堟硶`
+      `备份文件字段无效：data.balanceChangeEntries[${index}].type 枚举值不合法`
     );
   }
 
@@ -800,7 +813,11 @@ function validateBalanceChangeEntry(item: unknown, index: number): BalanceChange
   };
 }
 
-function validateSubscriptionItem(item: unknown, index: number): SubscriptionItem {
+function validateSubscriptionItem(
+  item: unknown,
+  index: number,
+  fallbackDate = LEGACY_BACKUP_FALLBACK_DATE
+): SubscriptionItem {
   if (!isObjectRecord(item)) {
     throw new Error(`备份文件字段无效：data.subscriptions[${index}] 应为对象`);
   }
@@ -808,9 +825,9 @@ function validateSubscriptionItem(item: unknown, index: number): SubscriptionIte
   assertString(item.id, `data.subscriptions[${index}].id`);
   assertString(item.name, `data.subscriptions[${index}].name`);
   assertNumber(item.amount, `data.subscriptions[${index}].amount`);
-  assertString(item.currency, `data.subscriptions[${index}].currency`);
-  assertString(item.createdAt, `data.subscriptions[${index}].createdAt`);
-  assertString(item.updatedAt, `data.subscriptions[${index}].updatedAt`);
+  assertString(item.currency, `data.subscriptions[${index}].currency`, { required: false });
+  assertString(item.createdAt, `data.subscriptions[${index}].createdAt`, { required: false });
+  assertString(item.updatedAt, `data.subscriptions[${index}].updatedAt`, { required: false });
   assertString(item.accountId, `data.subscriptions[${index}].accountId`, { required: false });
   assertString(item.provider, `data.subscriptions[${index}].provider`, { required: false });
   assertString(item.note, `data.subscriptions[${index}].note`, { required: false });
@@ -830,20 +847,25 @@ function validateSubscriptionItem(item: unknown, index: number): SubscriptionIte
   );
   assertDateString(item.trashedAt, `data.subscriptions[${index}].trashedAt`, { required: false });
 
-  if (typeof item.kind !== 'string' || !SUBSCRIPTION_KINDS.has(item.kind as SubscriptionKind)) {
+  if (
+    item.kind !== undefined &&
+    (typeof item.kind !== 'string' || !SUBSCRIPTION_KINDS.has(item.kind as SubscriptionKind))
+  ) {
     throw new Error(`备份文件字段无效：data.subscriptions[${index}].kind 枚举值不合法`);
   }
 
   if (
-    typeof item.billingCycle !== 'string' ||
-    !SUBSCRIPTION_BILLING_CYCLES.has(item.billingCycle as SubscriptionBillingCycle)
+    item.billingCycle !== undefined &&
+    (typeof item.billingCycle !== 'string' ||
+      !SUBSCRIPTION_BILLING_CYCLES.has(item.billingCycle as SubscriptionBillingCycle))
   ) {
     throw new Error(`备份文件字段无效：data.subscriptions[${index}].billingCycle 枚举值不合法`);
   }
 
   if (
-    typeof item.status !== 'string' ||
-    !SUBSCRIPTION_STATUS.has(item.status as SubscriptionStatus)
+    item.status !== undefined &&
+    (typeof item.status !== 'string' ||
+      !SUBSCRIPTION_STATUS.has(item.status as SubscriptionStatus))
   ) {
     throw new Error(`备份文件字段无效：data.subscriptions[${index}].status 枚举值不合法`);
   }
@@ -859,10 +881,10 @@ function validateSubscriptionItem(item: unknown, index: number): SubscriptionIte
   return {
     id: asSafeString(item.id),
     name: asSafeString(item.name),
-    kind: item.kind as SubscriptionKind,
+    kind: (item.kind as SubscriptionKind | undefined) || 'other',
     amount: Number(item.amount),
-    currency: asSafeString(item.currency),
-    billingCycle: item.billingCycle as SubscriptionBillingCycle,
+    currency: asSafeString(item.currency) || 'CNY',
+    billingCycle: (item.billingCycle as SubscriptionBillingCycle | undefined) || 'monthly',
     customCycleDays:
       typeof item.customCycleDays === 'number' ? Number(item.customCycleDays) : undefined,
     accountId: asSafeString(item.accountId) || undefined,
@@ -871,12 +893,12 @@ function validateSubscriptionItem(item: unknown, index: number): SubscriptionIte
     renewalDate: asSafeString(item.renewalDate) || undefined,
     expireDate: asSafeString(item.expireDate) || undefined,
     autoRenew: typeof item.autoRenew === 'boolean' ? item.autoRenew : undefined,
-    status: item.status as SubscriptionStatus,
+    status: (item.status as SubscriptionStatus | undefined) || 'active',
     lastGeneratedAt: asSafeString(item.lastGeneratedAt) || undefined,
     lastGeneratedTransactionId: asSafeString(item.lastGeneratedTransactionId) || undefined,
     trashedAt: asSafeString(item.trashedAt) || undefined,
-    createdAt: asSafeString(item.createdAt),
-    updatedAt: asSafeString(item.updatedAt)
+    createdAt: asSafeTimestamp(item.createdAt, fallbackDate),
+    updatedAt: asSafeTimestamp(item.updatedAt, asSafeTimestamp(item.createdAt, fallbackDate))
   };
 }
 
@@ -888,17 +910,29 @@ function readOptionalStringArray(value: unknown, path: string): string[] {
   return value.map((item) => item.trim()).filter(Boolean);
 }
 
-function validateInvestmentPositionItem(item: unknown, index: number): InvestmentPosition {
+function validateInvestmentPositionItem(
+  item: unknown,
+  index: number,
+  fallbackDate = LEGACY_BACKUP_FALLBACK_DATE
+): InvestmentPosition {
   if (!isObjectRecord(item)) {
     throw new Error(`备份文件字段无效：data.investmentPositions[${index}] 应为对象`);
   }
 
   assertString(item.id, `data.investmentPositions[${index}].id`);
   assertString(item.name, `data.investmentPositions[${index}].name`);
-  assertNumber(item.investedAmount, `data.investmentPositions[${index}].investedAmount`);
-  assertNumber(item.currentValue, `data.investmentPositions[${index}].currentValue`);
-  assertString(item.createdAt, `data.investmentPositions[${index}].createdAt`);
-  assertString(item.updatedAt, `data.investmentPositions[${index}].updatedAt`);
+  if (item.investedAmount !== undefined) {
+    assertNumber(item.investedAmount, `data.investmentPositions[${index}].investedAmount`);
+  }
+  if (item.currentValue !== undefined) {
+    assertNumber(item.currentValue, `data.investmentPositions[${index}].currentValue`);
+  }
+  assertString(item.createdAt, `data.investmentPositions[${index}].createdAt`, {
+    required: false
+  });
+  assertString(item.updatedAt, `data.investmentPositions[${index}].updatedAt`, {
+    required: false
+  });
   assertString(item.platform, `data.investmentPositions[${index}].platform`, { required: false });
   assertString(item.linkedAccountId, `data.investmentPositions[${index}].linkedAccountId`, {
     required: false
@@ -906,15 +940,17 @@ function validateInvestmentPositionItem(item: unknown, index: number): Investmen
   assertString(item.note, `data.investmentPositions[${index}].note`, { required: false });
 
   if (
-    typeof item.category !== 'string' ||
-    !INVESTMENT_CATEGORIES.has(item.category as InvestmentCategory)
+    item.category !== undefined &&
+    (typeof item.category !== 'string' ||
+      !INVESTMENT_CATEGORIES.has(item.category as InvestmentCategory))
   ) {
     throw new Error(`备份文件字段无效：data.investmentPositions[${index}].category 枚举值不合法`);
   }
 
   if (
-    typeof item.riskLevel !== 'string' ||
-    !INVESTMENT_RISK_LEVELS.has(item.riskLevel as InvestmentRiskLevel)
+    item.riskLevel !== undefined &&
+    (typeof item.riskLevel !== 'string' ||
+      !INVESTMENT_RISK_LEVELS.has(item.riskLevel as InvestmentRiskLevel))
   ) {
     throw new Error(`备份文件字段无效：data.investmentPositions[${index}].riskLevel 枚举值不合法`);
   }
@@ -928,33 +964,34 @@ function validateInvestmentPositionItem(item: unknown, index: number): Investmen
   if (item.targetAllocation !== undefined) {
     assertNumber(item.targetAllocation, `data.investmentPositions[${index}].targetAllocation`);
   }
-  if (typeof item.isActive !== 'boolean') {
+  if (item.isActive !== undefined && typeof item.isActive !== 'boolean') {
     throw new Error(`备份文件字段无效：data.investmentPositions[${index}].isActive 应为布尔值`);
   }
 
   return {
     id: asSafeString(item.id),
     name: asSafeString(item.name),
-    category: item.category as InvestmentCategory,
+    category: (item.category as InvestmentCategory | undefined) || 'other',
     platform: asSafeString(item.platform) || undefined,
     linkedAccountId: asSafeString(item.linkedAccountId) || undefined,
-    investedAmount: Number(item.investedAmount),
-    currentValue: Number(item.currentValue),
+    investedAmount: asSafeNumber(item.investedAmount),
+    currentValue: asSafeNumber(item.currentValue),
     monthlyContribution:
       typeof item.monthlyContribution === 'number' ? Number(item.monthlyContribution) : undefined,
     targetAllocation:
       typeof item.targetAllocation === 'number' ? Number(item.targetAllocation) : undefined,
-    riskLevel: item.riskLevel as InvestmentRiskLevel,
+    riskLevel: (item.riskLevel as InvestmentRiskLevel | undefined) || 'medium',
     note: asSafeString(item.note) || undefined,
-    isActive: Boolean(item.isActive),
-    createdAt: asSafeString(item.createdAt),
-    updatedAt: asSafeString(item.updatedAt)
+    isActive: asSafeBoolean(item.isActive, true),
+    createdAt: asSafeTimestamp(item.createdAt, fallbackDate),
+    updatedAt: asSafeTimestamp(item.updatedAt, asSafeTimestamp(item.createdAt, fallbackDate))
   };
 }
 
 function validateInvestmentPositionHistoryItem(
   item: unknown,
-  index: number
+  index: number,
+  fallbackDate = LEGACY_BACKUP_FALLBACK_DATE
 ): InvestmentPositionHistoryEntry {
   if (!isObjectRecord(item)) {
     throw new Error(`备份文件字段无效：data.investmentPositionHistory[${index}] 应为对象`);
@@ -963,19 +1000,30 @@ function validateInvestmentPositionHistoryItem(
   assertString(item.id, `data.investmentPositionHistory[${index}].id`);
   assertString(item.positionId, `data.investmentPositionHistory[${index}].positionId`);
   assertString(item.positionName, `data.investmentPositionHistory[${index}].positionName`);
-  assertNumber(item.investedAmount, `data.investmentPositionHistory[${index}].investedAmount`);
-  assertNumber(item.currentValue, `data.investmentPositionHistory[${index}].currentValue`);
-  assertNumber(item.profit, `data.investmentPositionHistory[${index}].profit`);
-  assertNumber(item.profitRate, `data.investmentPositionHistory[${index}].profitRate`);
-  assertString(item.createdAt, `data.investmentPositionHistory[${index}].createdAt`);
+  if (item.investedAmount !== undefined) {
+    assertNumber(item.investedAmount, `data.investmentPositionHistory[${index}].investedAmount`);
+  }
+  if (item.currentValue !== undefined) {
+    assertNumber(item.currentValue, `data.investmentPositionHistory[${index}].currentValue`);
+  }
+  if (item.profit !== undefined) {
+    assertNumber(item.profit, `data.investmentPositionHistory[${index}].profit`);
+  }
+  if (item.profitRate !== undefined) {
+    assertNumber(item.profitRate, `data.investmentPositionHistory[${index}].profitRate`);
+  }
+  assertString(item.createdAt, `data.investmentPositionHistory[${index}].createdAt`, {
+    required: false
+  });
   assertString(item.platform, `data.investmentPositionHistory[${index}].platform`, {
     required: false
   });
   assertString(item.note, `data.investmentPositionHistory[${index}].note`, { required: false });
 
   if (
-    typeof item.category !== 'string' ||
-    !INVESTMENT_CATEGORIES.has(item.category as InvestmentCategory)
+    item.category !== undefined &&
+    (typeof item.category !== 'string' ||
+      !INVESTMENT_CATEGORIES.has(item.category as InvestmentCategory))
   ) {
     throw new Error(
       `备份文件字段无效：data.investmentPositionHistory[${index}].category 枚举值不合法`
@@ -983,6 +1031,7 @@ function validateInvestmentPositionHistoryItem(
   }
 
   if (
+    item.action !== undefined &&
     item.action !== 'add' &&
     item.action !== 'update' &&
     item.action !== 'remove' &&
@@ -1005,57 +1054,70 @@ function validateInvestmentPositionHistoryItem(
       `data.investmentPositionHistory[${index}].currentValueDelta`
     );
   }
-  if (typeof item.isActive !== 'boolean') {
+  if (item.isActive !== undefined && typeof item.isActive !== 'boolean') {
     throw new Error(
       `备份文件字段无效：data.investmentPositionHistory[${index}].isActive 应为布尔值`
     );
   }
 
+  const investedAmount = asSafeNumber(item.investedAmount);
+  const currentValue = asSafeNumber(item.currentValue);
+  const profit = asSafeNumber(item.profit, currentValue - investedAmount);
+
   return {
     id: asSafeString(item.id),
     positionId: asSafeString(item.positionId),
     positionName: asSafeString(item.positionName),
-    category: item.category as InvestmentCategory,
+    category: (item.category as InvestmentCategory | undefined) || 'other',
     platform: asSafeString(item.platform) || undefined,
-    action: item.action as InvestmentPositionHistoryAction,
-    investedAmount: Number(item.investedAmount),
-    currentValue: Number(item.currentValue),
-    profit: Number(item.profit),
-    profitRate: Number(item.profitRate),
+    action: (item.action as InvestmentPositionHistoryAction | undefined) || 'snapshot',
+    investedAmount,
+    currentValue,
+    profit,
+    profitRate: asSafeNumber(item.profitRate, investedAmount > 0 ? profit / investedAmount : 0),
     investedAmountDelta:
       typeof item.investedAmountDelta === 'number' ? Number(item.investedAmountDelta) : undefined,
     currentValueDelta:
       typeof item.currentValueDelta === 'number' ? Number(item.currentValueDelta) : undefined,
-    isActive: Boolean(item.isActive),
+    isActive: asSafeBoolean(item.isActive, true),
     note: asSafeString(item.note) || undefined,
-    createdAt: asSafeString(item.createdAt)
+    createdAt: asSafeTimestamp(item.createdAt, fallbackDate)
   };
 }
 
-function validateInvestmentGoalItem(item: unknown, index: number): InvestmentGoal {
+function validateInvestmentGoalItem(
+  item: unknown,
+  index: number,
+  fallbackDate = LEGACY_BACKUP_FALLBACK_DATE
+): InvestmentGoal {
   if (!isObjectRecord(item)) {
     throw new Error(`备份文件字段无效：data.investmentGoals[${index}] 应为对象`);
   }
 
   assertString(item.id, `data.investmentGoals[${index}].id`);
   assertString(item.name, `data.investmentGoals[${index}].name`);
-  assertNumber(item.targetAmount, `data.investmentGoals[${index}].targetAmount`);
-  assertNumber(item.currentAmount, `data.investmentGoals[${index}].currentAmount`);
-  assertString(item.createdAt, `data.investmentGoals[${index}].createdAt`);
-  assertString(item.updatedAt, `data.investmentGoals[${index}].updatedAt`);
+  if (item.targetAmount !== undefined) {
+    assertNumber(item.targetAmount, `data.investmentGoals[${index}].targetAmount`);
+  }
+  if (item.currentAmount !== undefined) {
+    assertNumber(item.currentAmount, `data.investmentGoals[${index}].currentAmount`);
+  }
+  assertString(item.createdAt, `data.investmentGoals[${index}].createdAt`, { required: false });
+  assertString(item.updatedAt, `data.investmentGoals[${index}].updatedAt`, { required: false });
   assertString(item.targetDate, `data.investmentGoals[${index}].targetDate`, { required: false });
   assertString(item.note, `data.investmentGoals[${index}].note`, { required: false });
 
   if (
-    typeof item.kind !== 'string' ||
-    !INVESTMENT_GOAL_KINDS.has(item.kind as InvestmentGoalKind)
+    item.kind !== undefined &&
+    (typeof item.kind !== 'string' || !INVESTMENT_GOAL_KINDS.has(item.kind as InvestmentGoalKind))
   ) {
     throw new Error(`备份文件字段无效：data.investmentGoals[${index}].kind 枚举值不合法`);
   }
 
   if (
-    typeof item.priority !== 'string' ||
-    !INVESTMENT_GOAL_PRIORITIES.has(item.priority as InvestmentGoalPriority)
+    item.priority !== undefined &&
+    (typeof item.priority !== 'string' ||
+      !INVESTMENT_GOAL_PRIORITIES.has(item.priority as InvestmentGoalPriority))
   ) {
     throw new Error(`备份文件字段无效：data.investmentGoals[${index}].priority 枚举值不合法`);
   }
@@ -1067,16 +1129,16 @@ function validateInvestmentGoalItem(item: unknown, index: number): InvestmentGoa
   return {
     id: asSafeString(item.id),
     name: asSafeString(item.name),
-    kind: item.kind as InvestmentGoalKind,
-    targetAmount: Number(item.targetAmount),
-    currentAmount: Number(item.currentAmount),
+    kind: (item.kind as InvestmentGoalKind | undefined) || 'other',
+    targetAmount: asSafeNumber(item.targetAmount),
+    currentAmount: asSafeNumber(item.currentAmount),
     monthlyContribution:
       typeof item.monthlyContribution === 'number' ? Number(item.monthlyContribution) : undefined,
     targetDate: asSafeString(item.targetDate) || undefined,
-    priority: item.priority as InvestmentGoalPriority,
+    priority: (item.priority as InvestmentGoalPriority | undefined) || 'medium',
     note: asSafeString(item.note) || undefined,
-    createdAt: asSafeString(item.createdAt),
-    updatedAt: asSafeString(item.updatedAt)
+    createdAt: asSafeTimestamp(item.createdAt, fallbackDate),
+    updatedAt: asSafeTimestamp(item.updatedAt, asSafeTimestamp(item.createdAt, fallbackDate))
   };
 }
 
@@ -1091,8 +1153,8 @@ function validateInvestmentFundAnalysis(
     throw new Error(`备份文件字段无效：${path} 应为对象`);
   }
 
-  assertString(item.verdict, `${path}.verdict`);
-  assertString(item.summary, `${path}.summary`);
+  assertString(item.verdict, `${path}.verdict`, { required: false });
+  assertString(item.summary, `${path}.summary`, { required: false });
   assertString(item.fundName, `${path}.fundName`, { required: false });
   assertString(item.fundCode, `${path}.fundCode`, { required: false });
   assertString(item.platform, `${path}.platform`, { required: false });
@@ -1104,8 +1166,9 @@ function validateInvestmentFundAnalysis(
   assertString(item.fundCompany, `${path}.fundCompany`, { required: false });
 
   if (
-    typeof item.riskLevel !== 'string' ||
-    !INVESTMENT_ANALYSIS_RISK_LEVELS.has(item.riskLevel as InvestmentAnalysisRiskLevel)
+    item.riskLevel !== undefined &&
+    (typeof item.riskLevel !== 'string' ||
+      !INVESTMENT_ANALYSIS_RISK_LEVELS.has(item.riskLevel as InvestmentAnalysisRiskLevel))
   ) {
     throw new Error(`备份文件字段无效：${path}.riskLevel 枚举值不合法`);
   }
@@ -1113,9 +1176,9 @@ function validateInvestmentFundAnalysis(
   return {
     fundName: asSafeString(item.fundName) || undefined,
     fundCode: asSafeString(item.fundCode) || undefined,
-    verdict: asSafeString(item.verdict),
-    summary: asSafeString(item.summary),
-    riskLevel: item.riskLevel as InvestmentAnalysisRiskLevel,
+    verdict: asSafeString(item.verdict) || '待复盘',
+    summary: asSafeString(item.summary) || asSafeString(item.note) || '旧备份未记录分析摘要',
+    riskLevel: (item.riskLevel as InvestmentAnalysisRiskLevel | undefined) || 'unknown',
     highlights: readOptionalStringArray(item.highlights, `${path}.highlights`),
     risks: readOptionalStringArray(item.risks, `${path}.risks`),
     actions: readOptionalStringArray(item.actions, `${path}.actions`),
@@ -1141,15 +1204,23 @@ function validateInvestmentFundAnalysis(
   };
 }
 
-function validateInvestmentWatchItem(item: unknown, index: number): InvestmentWatchItem {
+function validateInvestmentWatchItem(
+  item: unknown,
+  index: number,
+  fallbackDate = LEGACY_BACKUP_FALLBACK_DATE
+): InvestmentWatchItem {
   if (!isObjectRecord(item)) {
     throw new Error(`备份文件字段无效：data.investmentWatchlist[${index}] 应为对象`);
   }
 
   assertString(item.id, `data.investmentWatchlist[${index}].id`);
   assertString(item.name, `data.investmentWatchlist[${index}].name`);
-  assertString(item.createdAt, `data.investmentWatchlist[${index}].createdAt`);
-  assertString(item.updatedAt, `data.investmentWatchlist[${index}].updatedAt`);
+  assertString(item.createdAt, `data.investmentWatchlist[${index}].createdAt`, {
+    required: false
+  });
+  assertString(item.updatedAt, `data.investmentWatchlist[${index}].updatedAt`, {
+    required: false
+  });
   assertString(item.code, `data.investmentWatchlist[${index}].code`, { required: false });
   assertString(item.platform, `data.investmentWatchlist[${index}].platform`, { required: false });
   assertString(item.note, `data.investmentWatchlist[${index}].note`, { required: false });
@@ -1240,24 +1311,30 @@ function validateInvestmentWatchItem(item: unknown, index: number): InvestmentWa
     buyFeeRate: asSafeString(item.buyFeeRate) || undefined,
     fundCompany: asSafeString(item.fundCompany) || undefined,
     lastAnalysisAt: asSafeString(item.lastAnalysisAt) || undefined,
-    createdAt: asSafeString(item.createdAt),
-    updatedAt: asSafeString(item.updatedAt)
+    createdAt: asSafeTimestamp(item.createdAt, fallbackDate),
+    updatedAt: asSafeTimestamp(item.updatedAt, asSafeTimestamp(item.createdAt, fallbackDate))
   };
 }
 
-function validateInvestmentAiMessage(item: unknown, index: number): InvestmentAiMessage {
+function validateInvestmentAiMessage(
+  item: unknown,
+  index: number,
+  fallbackDate = LEGACY_BACKUP_FALLBACK_DATE
+): InvestmentAiMessage {
   if (!isObjectRecord(item)) {
     throw new Error(`备份文件字段无效：data.investmentAiMessages[${index}] 应为对象`);
   }
 
   assertString(item.id, `data.investmentAiMessages[${index}].id`);
-  assertString(item.text, `data.investmentAiMessages[${index}].text`);
-  assertString(item.createdAt, `data.investmentAiMessages[${index}].createdAt`);
+  assertString(item.text, `data.investmentAiMessages[${index}].text`, { required: false });
+  assertString(item.createdAt, `data.investmentAiMessages[${index}].createdAt`, {
+    required: false
+  });
   assertString(item.reasoning, `data.investmentAiMessages[${index}].reasoning`, {
     required: false
   });
 
-  if (item.role !== 'user' && item.role !== 'assistant') {
+  if (item.role !== undefined && item.role !== 'user' && item.role !== 'assistant') {
     throw new Error(`备份文件字段无效：data.investmentAiMessages[${index}].role 枚举值不合法`);
   }
   if (item.feedback !== undefined && item.feedback !== 'up' && item.feedback !== 'down') {
@@ -1275,8 +1352,8 @@ function validateInvestmentAiMessage(item: unknown, index: number): InvestmentAi
 
   return {
     id: asSafeString(item.id),
-    role: item.role,
-    text: asSafeString(item.text),
+    role: item.role === 'user' ? 'user' : 'assistant',
+    text: asSafeString(item.text) || '旧备份未记录消息正文',
     feedback: item.feedback as InvestmentAiMessage['feedback'] | undefined,
     reasoning: asSafeString(item.reasoning) || undefined,
     attachmentCount:
@@ -1287,7 +1364,7 @@ function validateInvestmentAiMessage(item: unknown, index: number): InvestmentAi
       item.analysis,
       `data.investmentAiMessages[${index}].analysis`
     ),
-    createdAt: asSafeString(item.createdAt)
+    createdAt: asSafeTimestamp(item.createdAt, fallbackDate)
   };
 }
 
@@ -1394,23 +1471,23 @@ export function parseFinanceBackupPayload(raw: string): FinanceBackupPayload {
   }
 
   if (data.trashedTransactions !== undefined && !Array.isArray(data.trashedTransactions)) {
-    throw new Error('澶囦唤鏂囦欢瀛楁鏃犳晥锛歞ata.trashedTransactions 搴斾负鏁扮粍');
+    throw new Error('备份文件字段无效：data.trashedTransactions 应为数组');
   }
 
   if (data.trashedCategories !== undefined && !Array.isArray(data.trashedCategories)) {
-    throw new Error('澶囦唤鏂囦欢瀛楁鏃犳晥锛歞ata.trashedCategories 搴斾负鏁扮粍');
+    throw new Error('备份文件字段无效：data.trashedCategories 应为数组');
   }
 
   if (data.trashedAccounts !== undefined && !Array.isArray(data.trashedAccounts)) {
-    throw new Error('澶囦唤鏂囦欢瀛楁鏃犳晥锛歞ata.trashedAccounts 搴斾负鏁扮粍');
+    throw new Error('备份文件字段无效：data.trashedAccounts 应为数组');
   }
 
   if (data.balanceChangeEntries !== undefined && !Array.isArray(data.balanceChangeEntries)) {
-    throw new Error('澶囦唤鏂囦欢瀛楁鏃犳晥锛歞ata.balanceChangeEntries 搴斾负鏁扮粍');
+    throw new Error('备份文件字段无效：data.balanceChangeEntries 应为数组');
   }
 
   if (data.trashedSubscriptions !== undefined && !Array.isArray(data.trashedSubscriptions)) {
-    throw new Error('澶囦唤鏂囦欢瀛楁鏃犳晥锛歞ata.trashedSubscriptions 搴斾负鏁扮粍');
+    throw new Error('备份文件字段无效：data.trashedSubscriptions 应为数组');
   }
 
   if (data.globalMemories !== undefined && !Array.isArray(data.globalMemories)) {
@@ -1440,11 +1517,13 @@ export function parseFinanceBackupPayload(raw: string): FinanceBackupPayload {
     throw new Error('备份文件字段无效：data.investmentAiMessages 应为数组');
   }
 
+  const fallbackDate =
+    typeof parsed.exportedAt === 'string' ? parsed.exportedAt : LEGACY_BACKUP_FALLBACK_DATE;
   const transactions = data.transactions.map((item, index) => validateTransactionItem(item, index));
   const categories = data.categories.map((item, index) => validateCategoryItem(item, index));
   const accounts = data.accounts.map((item, index) => validateAccountItem(item, index));
   const subscriptions = (Array.isArray(data.subscriptions) ? data.subscriptions : []).map(
-    (item, index) => validateSubscriptionItem(item, index)
+    (item, index) => validateSubscriptionItem(item, index, fallbackDate)
   );
   const trashedTransactions = (
     Array.isArray(data.trashedTransactions) ? data.trashedTransactions : []
@@ -1460,25 +1539,25 @@ export function parseFinanceBackupPayload(raw: string): FinanceBackupPayload {
   ).map((item, index) => validateBalanceChangeEntry(item, index));
   const trashedSubscriptions = (
     Array.isArray(data.trashedSubscriptions) ? data.trashedSubscriptions : []
-  ).map((item, index) => validateSubscriptionItem(item, index));
+  ).map((item, index) => validateSubscriptionItem(item, index, fallbackDate));
   const globalMemories = (Array.isArray(data.globalMemories) ? data.globalMemories : [])
     .map((item, index) => sanitizePersistedGlobalMemoryItem(item, index))
     .filter((item): item is GlobalMemoryItem => Boolean(item));
   const investmentPositions = (
     Array.isArray(data.investmentPositions) ? data.investmentPositions : []
-  ).map((item, index) => validateInvestmentPositionItem(item, index));
+  ).map((item, index) => validateInvestmentPositionItem(item, index, fallbackDate));
   const investmentPositionHistory = (
     Array.isArray(data.investmentPositionHistory) ? data.investmentPositionHistory : []
-  ).map((item, index) => validateInvestmentPositionHistoryItem(item, index));
+  ).map((item, index) => validateInvestmentPositionHistoryItem(item, index, fallbackDate));
   const investmentGoals = (Array.isArray(data.investmentGoals) ? data.investmentGoals : []).map(
-    (item, index) => validateInvestmentGoalItem(item, index)
+    (item, index) => validateInvestmentGoalItem(item, index, fallbackDate)
   );
   const investmentWatchlist = (
     Array.isArray(data.investmentWatchlist) ? data.investmentWatchlist : []
-  ).map((item, index) => validateInvestmentWatchItem(item, index));
+  ).map((item, index) => validateInvestmentWatchItem(item, index, fallbackDate));
   const investmentAiMessages = (
     Array.isArray(data.investmentAiMessages) ? data.investmentAiMessages : []
-  ).map((item, index) => validateInvestmentAiMessage(item, index));
+  ).map((item, index) => validateInvestmentAiMessage(item, index, fallbackDate));
   const scope = normalizeFinanceBackupScope(
     isObjectRecord(parsed.scope) ? (parsed.scope as Partial<FinanceBackupScope>) : undefined
   );

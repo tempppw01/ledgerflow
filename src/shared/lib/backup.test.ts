@@ -496,6 +496,103 @@ describe('parseFinanceBackupPayload', () => {
     expect(payload.data.investmentAiMessages[0].attachmentCount).toBe(1);
   });
 
+  it('恢复旧对象存储备份时应兼容后来新增的订阅与投资字段', () => {
+    const payload = parseFinanceBackupPayload(
+      JSON.stringify({
+        version: 2,
+        exportedAt: '2026-05-31T02:12:50.000Z',
+        data: {
+          transactions: [],
+          categories: [],
+          accounts: [],
+          subscriptions: [
+            {
+              id: 'sub-legacy-1',
+              name: '旧订阅',
+              amount: 18
+            }
+          ],
+          investmentPositions: [
+            {
+              id: 'pos-legacy-1',
+              name: '旧持仓'
+            }
+          ],
+          investmentPositionHistory: [
+            {
+              id: 'history-legacy-1',
+              positionId: 'pos-legacy-1',
+              positionName: '旧持仓'
+            }
+          ],
+          investmentGoals: [
+            {
+              id: 'goal-legacy-1',
+              name: '旧目标'
+            }
+          ],
+          investmentWatchlist: [
+            {
+              id: 'watch-legacy-1',
+              name: '旧自选基金',
+              analysis: {
+                note: '旧版只记录了备注'
+              }
+            }
+          ],
+          investmentAiMessages: [
+            {
+              id: 'msg-legacy-1',
+              analysis: {
+                fundName: '旧基金'
+              }
+            }
+          ]
+        }
+      })
+    );
+
+    expect(payload.data.subscriptions[0]).toMatchObject({
+      kind: 'other',
+      currency: 'CNY',
+      billingCycle: 'monthly',
+      status: 'active',
+      createdAt: '2026-05-31T02:12:50.000Z'
+    });
+    expect(payload.data.investmentPositions[0]).toMatchObject({
+      category: 'other',
+      investedAmount: 0,
+      currentValue: 0,
+      riskLevel: 'medium',
+      isActive: true,
+      createdAt: '2026-05-31T02:12:50.000Z'
+    });
+    expect(payload.data.investmentPositionHistory[0]).toMatchObject({
+      action: 'snapshot',
+      profit: 0,
+      profitRate: 0,
+      isActive: true
+    });
+    expect(payload.data.investmentGoals[0]).toMatchObject({
+      kind: 'other',
+      priority: 'medium',
+      targetAmount: 0,
+      currentAmount: 0
+    });
+    expect(payload.data.investmentWatchlist[0].createdAt).toBe('2026-05-31T02:12:50.000Z');
+    expect(payload.data.investmentAiMessages[0]).toMatchObject({
+      role: 'assistant',
+      text: '旧备份未记录消息正文',
+      createdAt: '2026-05-31T02:12:50.000Z',
+      analysis: {
+        fundName: '旧基金',
+        verdict: '待复盘',
+        summary: '旧备份未记录分析摘要',
+        riskLevel: 'unknown'
+      }
+    });
+  });
+
   it('恢复部分备份时应保留未选范围的本地数据', () => {
     const current: Parameters<typeof applyFinanceBackupPayload>[0] = {
       transactions: [
