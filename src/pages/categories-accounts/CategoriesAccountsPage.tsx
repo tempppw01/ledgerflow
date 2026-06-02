@@ -123,8 +123,6 @@ export function CategoriesAccountsPage() {
   const layoutRef = useRef<HTMLDivElement | null>(null);
   const [leftPanelWidth, setLeftPanelWidth] = useState(DEFAULT_CATEGORY_PANEL_WIDTH);
 
-  const CATEGORY_COLLAPSE_THRESHOLD = 5;
-  const TAG_COLLAPSE_THRESHOLD = 5;
   const ACCOUNT_COLLAPSE_THRESHOLD = 8;
 
   useEffect(() => {
@@ -247,19 +245,9 @@ export function CategoriesAccountsPage() {
     : 0;
 
   const orderedCategories = useMemo(() => {
-    const byOrder = [...categories].sort(
+    return [...categories].sort(
       (a, b) => (a.sortOrder ?? Number.MAX_SAFE_INTEGER) - (b.sortOrder ?? Number.MAX_SAFE_INTEGER)
     );
-    const income: Category[] = [];
-    const expense: Category[] = [];
-    byOrder.forEach((item) => {
-      if (item.kind === 'income') {
-        income.push(item);
-      } else {
-        expense.push(item);
-      }
-    });
-    return { income, expense };
   }, [categories]);
 
   const tagGroups = useMemo(() => {
@@ -287,20 +275,9 @@ export function CategoriesAccountsPage() {
     });
   }, [transactions]);
 
-  const displayExpenseCategories = useMemo(
-    () =>
-      showAllCategories
-        ? orderedCategories.expense
-        : orderedCategories.expense.slice(0, CATEGORY_COLLAPSE_THRESHOLD),
-    [orderedCategories.expense, showAllCategories]
-  );
-
-  const displayIncomeCategories = useMemo(
-    () =>
-      showAllCategories
-        ? orderedCategories.income
-        : orderedCategories.income.slice(0, CATEGORY_COLLAPSE_THRESHOLD),
-    [orderedCategories.income, showAllCategories]
+  const displayCategories = useMemo(
+    () => (showAllCategories ? orderedCategories : []),
+    [orderedCategories, showAllCategories]
   );
 
   const categoryUsageMap = useMemo(() => {
@@ -312,10 +289,7 @@ export function CategoriesAccountsPage() {
     return map;
   }, [transactions]);
 
-  const displayTags = useMemo(
-    () => (showAllTags ? tagGroups : tagGroups.slice(0, TAG_COLLAPSE_THRESHOLD)),
-    [tagGroups, showAllTags]
-  );
+  const displayTags = useMemo(() => (showAllTags ? tagGroups : []), [tagGroups, showAllTags]);
 
   const displayAccounts = useMemo(
     () =>
@@ -323,11 +297,6 @@ export function CategoriesAccountsPage() {
     [managedAccounts, showAllAccounts]
   );
 
-  const hiddenCategoryCount = Math.max(
-    0,
-    categories.length - (displayExpenseCategories.length + displayIncomeCategories.length)
-  );
-  const hiddenTagCount = Math.max(0, tagGroups.length - displayTags.length);
   const hiddenAccountCount = Math.max(0, managedAccounts.length - displayAccounts.length);
 
   const accountBalanceMap = useMemo(() => {
@@ -598,26 +567,27 @@ export function CategoriesAccountsPage() {
         ) : categories.length === 0 ? (
           <EmptyState title="暂无分类" description="请添加第一个交易分类。" icon="🧩" />
         ) : (
-          <>
-            <h3>支出分类</h3>
-            <ul className="categories-list">{displayExpenseCategories.map(renderCategoryRow)}</ul>
-            <h3 style={{ marginTop: 16 }}>收入分类</h3>
-            <ul className="categories-list">{displayIncomeCategories.map(renderCategoryRow)}</ul>
-            {categories.length > CATEGORY_COLLAPSE_THRESHOLD ? (
-              <div className="row" style={{ justifyContent: 'space-between', marginTop: 10 }}>
-                <small style={{ color: 'var(--color-text-secondary)' }}>
-                  已显示 {displayExpenseCategories.length + displayIncomeCategories.length}/
-                  {categories.length}
-                </small>
-                <button type="button" onClick={() => setShowAllCategories((prev) => !prev)}>
-                  {showAllCategories ? '收起' : `展开剩余 ${hiddenCategoryCount} 项`}
-                </button>
-              </div>
+          <section className="categories-fold-block">
+            <button
+              type="button"
+              className="categories-fold-summary"
+              aria-expanded={showAllCategories}
+              onClick={() => setShowAllCategories((prev) => !prev)}
+            >
+              <span>
+                <strong>分类库</strong>
+                <small>统一管理名称、排序和删除</small>
+              </span>
+              <span className="categories-fold-meta">
+                {categories.length} 个<i aria-hidden="true">{showAllCategories ? '⌃' : '⌄'}</i>
+              </span>
+            </button>
+            {showAllCategories ? (
+              <ul className="categories-list">{displayCategories.map(renderCategoryRow)}</ul>
             ) : null}
-          </>
+          </section>
         )}
 
-        <h3 style={{ marginTop: 20 }}>交易标签（支持合并/删除）</h3>
         {tagGroups.length === 0 ? (
           <EmptyState
             title="暂无标签"
@@ -625,65 +595,73 @@ export function CategoriesAccountsPage() {
             icon="🏷️"
           />
         ) : (
-          <>
-            <ul className="categories-list">
-              {displayTags.map((tag) => (
-                <li key={tag.key} className="row categories-row">
-                  <span style={{ flex: 1 }}>
-                    #{tag.label}
-                    <button
-                      type="button"
-                      className="tag-count-chip tag-count-chip-link"
-                      onClick={() =>
-                        navigate(`/transactions?keyword=${encodeURIComponent(tag.label)}`)
+          <section className="categories-fold-block categories-fold-block-tags">
+            <button
+              type="button"
+              className="categories-fold-summary"
+              aria-expanded={showAllTags}
+              onClick={() => setShowAllTags((prev) => !prev)}
+            >
+              <span>
+                <strong>标签库</strong>
+                <small>集中合并、清理交易标签</small>
+              </span>
+              <span className="categories-fold-meta">
+                {tagGroups.length} 个<i aria-hidden="true">{showAllTags ? '⌃' : '⌄'}</i>
+              </span>
+            </button>
+            {showAllTags ? (
+              <ul className="categories-list">
+                {displayTags.map((tag) => (
+                  <li key={tag.key} className="row categories-row">
+                    <span style={{ flex: 1 }}>
+                      #{tag.label}
+                      <button
+                        type="button"
+                        className="tag-count-chip tag-count-chip-link"
+                        onClick={() =>
+                          navigate(`/transactions?keyword=${encodeURIComponent(tag.label)}`)
+                        }
+                      >
+                        {tag.count} 条
+                      </button>
+                    </span>
+                    <select
+                      aria-label={`选择 ${tag.label} 的合并目标`}
+                      value={mergeTargetByTag[tag.key] || ''}
+                      onChange={(e) =>
+                        setMergeTargetByTag((prev) => ({ ...prev, [tag.key]: e.target.value }))
                       }
                     >
-                      {tag.count} 条
+                      <option value="">选择合并目标</option>
+                      {tagGroups
+                        .filter((item) => item.key !== tag.key)
+                        .map((item) => (
+                          <option key={item.key} value={item.label}>
+                            {item.label}
+                          </option>
+                        ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        mergeTagIntoAnother(tag.label, mergeTargetByTag[tag.key] || '')
+                      }
+                    >
+                      合并
                     </button>
-                  </span>
-                  <select
-                    aria-label={`选择 ${tag.label} 的合并目标`}
-                    value={mergeTargetByTag[tag.key] || ''}
-                    onChange={(e) =>
-                      setMergeTargetByTag((prev) => ({ ...prev, [tag.key]: e.target.value }))
-                    }
-                  >
-                    <option value="">选择合并目标</option>
-                    {tagGroups
-                      .filter((item) => item.key !== tag.key)
-                      .map((item) => (
-                        <option key={item.key} value={item.label}>
-                          {item.label}
-                        </option>
-                      ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => mergeTagIntoAnother(tag.label, mergeTargetByTag[tag.key] || '')}
-                  >
-                    合并
-                  </button>
-                  <button
-                    type="button"
-                    className="danger"
-                    onClick={() => setPendingRemoveTagLabel(tag.label)}
-                  >
-                    删除
-                  </button>
-                </li>
-              ))}
-            </ul>
-            {tagGroups.length > TAG_COLLAPSE_THRESHOLD ? (
-              <div className="row" style={{ justifyContent: 'space-between', marginTop: 10 }}>
-                <small style={{ color: 'var(--color-text-secondary)' }}>
-                  已显示 {displayTags.length}/{tagGroups.length}
-                </small>
-                <button type="button" onClick={() => setShowAllTags((prev) => !prev)}>
-                  {showAllTags ? '收起' : `展开剩余 ${hiddenTagCount} 项`}
-                </button>
-              </div>
+                    <button
+                      type="button"
+                      className="danger"
+                      onClick={() => setPendingRemoveTagLabel(tag.label)}
+                    >
+                      删除
+                    </button>
+                  </li>
+                ))}
+              </ul>
             ) : null}
-          </>
+          </section>
         )}
       </section>
 

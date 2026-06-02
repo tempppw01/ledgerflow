@@ -8033,6 +8033,83 @@ body.categories-accounts-resizing {
   margin: 0;
 }
 
+.categories-fold-block {
+  margin-top: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-bg-subtle) 58%, transparent);
+  overflow: hidden;
+}
+
+.categories-fold-block-tags {
+  margin-top: var(--space-2);
+}
+
+.categories-fold-summary {
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  text-align: left;
+  box-shadow: none;
+}
+
+.categories-fold-summary:hover {
+  transform: none;
+  background: color-mix(in srgb, var(--color-primary) 7%, transparent);
+  box-shadow: none;
+}
+
+.categories-fold-summary > span:first-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.categories-fold-summary strong {
+  font-size: var(--font-base);
+  font-weight: 700;
+}
+
+.categories-fold-summary small {
+  color: var(--color-text-secondary);
+  line-height: 1.35;
+}
+
+.categories-fold-meta {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+}
+
+.categories-fold-meta i {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
+  font-style: normal;
+  font-weight: 700;
+}
+
+.categories-fold-block .categories-list {
+  border-top: 1px solid var(--color-border-light);
+  padding: 0 12px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 74%, transparent);
+}
+
 .categories-row {
   padding: 10px 0;
   border-bottom: 1px solid var(--color-border-light);
