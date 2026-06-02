@@ -1288,7 +1288,7 @@ export function DashboardPage() {
 
       <section className="panel">
         <h2>{tFallback('dashboard.ui.corePanel', '今日财务看板')}</h2>
-        <div className="grid grid-2">
+        <div className="grid grid-2 dashboard-stat-grid">
           <button
             type="button"
             className="stat-card stat-balance stat-card-gradient"

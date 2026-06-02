@@ -1048,6 +1048,11 @@ body {
 .grid-2 {
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
+
+.dashboard-stat-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+}
+
 .grid-3 {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
@@ -7099,6 +7104,10 @@ input[type='date']:focus {
 
   .grid.grid-2 {
     grid-template-columns: 1fr;
+  }
+
+  .grid.dashboard-stat-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   }
 
   .dashboard-main-grid {
