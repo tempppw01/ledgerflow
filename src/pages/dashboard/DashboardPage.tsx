@@ -32,7 +32,6 @@ import { EmptyState } from '../../shared/ui/EmptyState';
 
 const FORECAST_CACHE_KEY = 'dashboard_forecast_cache_v1';
 const DASHBOARD_MODULES_KEY = 'dashboard_custom_modules_v1';
-const DASHBOARD_INLINE_HELP_KEY = 'dashboard_inline_help_dismissed_v1';
 
 const DASHBOARD_MODULE_CATALOG = [
   { id: 'dynamic-charts', label: '趋势雷达', description: '钱花在哪、占比多少，一眼扫完' },
@@ -141,13 +140,6 @@ export function DashboardPage() {
     value: number;
   } | null>(null);
   const [isWelcomeExpanded, setIsWelcomeExpanded] = useState(false);
-  const [isInlineHelpDismissed, setIsInlineHelpDismissed] = useState(() => {
-    try {
-      return localStorage.getItem(DASHBOARD_INLINE_HELP_KEY) === '1';
-    } catch {
-      return false;
-    }
-  });
   const [trendGranularity, setTrendGranularity] = useState<'week' | 'month' | 'year'>('week');
   const [trendMonthOffset, setTrendMonthOffset] = useState(0);
   const [selectedTrendIndex, setSelectedTrendIndex] = useState<number | null>(null);
@@ -1262,17 +1254,6 @@ export function DashboardPage() {
     return worst.delta < 0 ? worst : null;
   }, [netAssetRows]);
 
-  const dismissInlineHelp = () => {
-    setIsInlineHelpDismissed(true);
-    try {
-      localStorage.setItem(DASHBOARD_INLINE_HELP_KEY, '1');
-    } catch {
-      // ignore persistence errors
-    }
-  };
-
-  const showInlineHelp = !isInlineHelpDismissed && transactions.length === 0;
-
   const moveModule = (from: DashboardModuleId, to: DashboardModuleId) => {
     if (from === to) return;
     setModuleOrder((prev) => {
@@ -1304,47 +1285,6 @@ export function DashboardPage() {
         onNavigateToQuickAdd={() => navigate('/transactions/new?quick=1')}
         onNavigateToAssistant={() => navigate('/assistant')}
       />
-
-      {showInlineHelp ? (
-        <section className="panel dashboard-inline-help">
-          <div className="dashboard-inline-help-copy">
-            <span className="dashboard-inline-help-kicker">首次使用建议</span>
-            <h3>先看一遍帮助页，再回来记第一笔</h3>
-            <p className="dashboard-shortcuts-tip">
-              如果你已经知道怎么用，直接用上面的「记一笔」即可；首页不再重复展开长说明。
-            </p>
-          </div>
-          <div className="dashboard-inline-help-actions">
-            <button
-              type="button"
-              className="primary"
-              onClick={() => {
-                dismissInlineHelp();
-                navigate('/help');
-              }}
-            >
-              打开帮助页
-            </button>
-            <button
-              type="button"
-              className="dashboard-inline-help-secondary"
-              onClick={() => {
-                dismissInlineHelp();
-                navigate('/transactions/new?quick=1');
-              }}
-            >
-              直接记一笔
-            </button>
-          </div>
-          <button
-            type="button"
-            className="dashboard-inline-help-dismiss"
-            onClick={dismissInlineHelp}
-          >
-            暂时收起
-          </button>
-        </section>
-      ) : null}
 
       <section className="panel">
         <h2>{tFallback('dashboard.ui.corePanel', '今日财务看板')}</h2>

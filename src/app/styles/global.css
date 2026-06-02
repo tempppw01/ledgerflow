@@ -3789,35 +3789,10 @@ small.mono {
     font-size: 12px;
   }
 
-  .dashboard-inline-help {
-    margin-top: 12px;
-    padding: 14px;
-  }
-
-  .dashboard-inline-help h3 {
-    font-size: var(--font-lg);
-    line-height: 1.3;
-  }
-
-  .dashboard-inline-help-kicker {
-    font-size: 11px;
-  }
-
   .dashboard-shortcuts-tip {
     margin-top: 8px;
     font-size: 12px;
     line-height: 1.5;
-  }
-
-  .dashboard-inline-help-actions {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
-    margin-top: 10px;
-  }
-
-  .dashboard-inline-help-actions button {
-    width: 100%;
   }
 
   .dashboard-summary-chip {
@@ -8897,8 +8872,7 @@ body.categories-accounts-resizing {
   .sync-actions > a,
   .chat-preview-toolbar > button,
   .assistant-wb-json-actions > button,
-  .global-memory-actions button,
-  .dashboard-inline-help-actions button {
+  .global-memory-actions button {
     width: 100%;
   }
 
@@ -8912,13 +8886,11 @@ body.categories-accounts-resizing {
   }
 
   .chat-preview-toolbar,
-  .assistant-wb-json-actions,
-  .dashboard-inline-help-actions {
+  .assistant-wb-json-actions {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .dashboard-inline-help-dismiss,
   .finance-empty-guide-actions > button {
     width: 100%;
   }
@@ -13482,64 +13454,6 @@ body.categories-accounts-resizing {
   .dashboard-module-order-list {
     grid-template-columns: minmax(0, 1fr);
   }
-}
-
-.dashboard-inline-help {
-  margin-top: 16px;
-  display: grid;
-  gap: 14px;
-}
-
-.dashboard-inline-help-copy {
-  display: grid;
-  gap: 6px;
-}
-
-.dashboard-inline-help-kicker {
-  display: inline-flex;
-  width: fit-content;
-  min-height: 26px;
-  align-items: center;
-  padding: 0 10px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--color-primary-bg) 82%, var(--color-bg-elevated));
-  color: var(--color-primary);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.dashboard-inline-help h3 {
-  margin: 0;
-}
-
-.dashboard-inline-help-dismiss {
-  justify-self: start;
-  min-height: 32px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid var(--color-border-light);
-  background: color-mix(in srgb, var(--color-bg-elevated) 92%, white 8%);
-  color: var(--color-text-secondary);
-}
-
-.dashboard-inline-help-dismiss:hover {
-  border-color: var(--color-primary-border);
-  color: var(--color-text);
-}
-
-.dashboard-inline-help-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.dashboard-inline-help-actions button {
-  min-width: 0;
-}
-
-.dashboard-inline-help-secondary {
-  background: var(--color-bg-elevated);
-  color: var(--color-text);
 }
 
 .dashboard-module-customizer {
