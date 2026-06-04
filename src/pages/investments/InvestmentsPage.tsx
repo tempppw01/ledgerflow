@@ -156,8 +156,6 @@ type WatchContextMenuState = {
   item: InvestmentWatchItem | null;
 };
 
-type InvestmentPanelKey = 'summary' | 'allocation' | 'alerts' | 'position' | 'goal';
-
 const DEFAULT_SUPPORT_SECTION_TITLE = '投资资料与管理';
 const AI_LOADING_GIF_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/load.gif';
@@ -617,7 +615,6 @@ export function InvestmentsPage() {
   });
   const [loadingModels, setLoadingModels] = useState(false);
   const [supportCollapsed, setSupportCollapsed] = useState(false);
-  const [activeSupportTitle, setActiveSupportTitle] = useState(DEFAULT_SUPPORT_SECTION_TITLE);
   const [toast, setToast] = useState<{ visible: boolean; message: string; variant: ToastVariant }>({
     visible: false,
     message: '',
@@ -630,18 +627,8 @@ export function InvestmentsPage() {
     item: null
   });
   const [expandedWatchItemId, setExpandedWatchItemId] = useState<string | null>(null);
-  const [openInvestmentPanels, setOpenInvestmentPanels] = useState<
-    Record<InvestmentPanelKey, boolean>
-  >({
-    summary: true,
-    allocation: true,
-    alerts: true,
-    position: true,
-    goal: true
-  });
   const aiFileInputRef = useRef<HTMLInputElement | null>(null);
   const aiPanelRef = useRef<HTMLElement | null>(null);
-  const supportColumnRef = useRef<HTMLElement | null>(null);
   const investmentAiThreadEndRef = useRef<HTMLDivElement | null>(null);
   const modelSelectorRef = useRef<HTMLDivElement | null>(null);
 
@@ -892,28 +879,6 @@ export function InvestmentsPage() {
     [apiKey, baseUrl, investmentWatchlist, model]
   );
 
-  const updateActiveSupportSection = useCallback(() => {
-    const container = supportColumnRef.current;
-    if (!container) return;
-
-    const sections = Array.from(
-      container.querySelectorAll<HTMLElement>('[data-investment-support-title]')
-    );
-    if (sections.length === 0) {
-      setActiveSupportTitle(DEFAULT_SUPPORT_SECTION_TITLE);
-      return;
-    }
-
-    const containerTop = container.getBoundingClientRect().top;
-    const threshold = containerTop + 86;
-    const activeSection =
-      sections.filter((section) => section.getBoundingClientRect().top <= threshold).at(-1) ||
-      sections[0];
-    const nextTitle = activeSection.dataset.investmentSupportTitle || DEFAULT_SUPPORT_SECTION_TITLE;
-
-    setActiveSupportTitle((current) => (current === nextTitle ? current : nextTitle));
-  }, []);
-
   const loadInvestmentModels = useCallback(async () => {
     if (!apiKey.trim()) {
       setModels((current) => (current.length > 0 ? current : model ? [model] : []));
@@ -965,28 +930,6 @@ export function InvestmentsPage() {
       block: 'end'
     });
   }, [investmentAiMessages.length, investmentAiStatus, streamingContent, streamingReasoning]);
-
-  useEffect(() => {
-    const container = supportColumnRef.current;
-    if (!container) return;
-
-    updateActiveSupportSection();
-    container.addEventListener('scroll', updateActiveSupportSection, { passive: true });
-    window.addEventListener('resize', updateActiveSupportSection);
-
-    return () => {
-      container.removeEventListener('scroll', updateActiveSupportSection);
-      window.removeEventListener('resize', updateActiveSupportSection);
-    };
-  }, [
-    updateActiveSupportSection,
-    investmentWatchlist.length,
-    openInvestmentPanels.summary,
-    openInvestmentPanels.allocation,
-    openInvestmentPanels.alerts,
-    openInvestmentPanels.position,
-    openInvestmentPanels.goal
-  ]);
 
   useEffect(() => {
     if (!modelOpen) return;
@@ -1047,13 +990,6 @@ export function InvestmentsPage() {
 
   function setToastState(message: string, variant: ToastVariant = 'success') {
     setToast({ visible: true, message, variant });
-  }
-
-  function toggleInvestmentPanel(panel: InvestmentPanelKey) {
-    setOpenInvestmentPanels((prev) => ({
-      ...prev,
-      [panel]: !prev[panel]
-    }));
   }
 
   function syncInvestmentAiMessages(messages: InvestmentAiMessage[]) {
@@ -1198,7 +1134,6 @@ export function InvestmentsPage() {
   function handleAddWatchItemToPosition(item: InvestmentWatchItem) {
     setEditingPositionId(null);
     setPositionError('');
-    setOpenInvestmentPanels((prev) => ({ ...prev, position: true }));
     setPositionForm({
       ...POSITION_FORM_DEFAULT,
       name: item.name,
@@ -1581,7 +1516,7 @@ export function InvestmentsPage() {
 
   return (
     <div
-      className={`page-stack investments-page ${openInvestmentPanels.summary ? 'is-support-open' : ''} ${
+      className={`page-stack investments-page is-support-open ${
         supportCollapsed ? 'is-support-collapsed' : ''
       }`}
     >
@@ -2108,95 +2043,83 @@ export function InvestmentsPage() {
           </form>
         </article>
 
-        <aside className="investments-support-column" ref={supportColumnRef}>
+        <aside className="investments-support-column">
           <div className="investments-support-sticky-title" aria-live="polite">
-            <strong>{activeSupportTitle}</strong>
+            <strong>{DEFAULT_SUPPORT_SECTION_TITLE}</strong>
           </div>
 
           <section
-            className={`panel investments-hero investments-fold-card investments-support-summary-card ${
-              openInvestmentPanels.summary ? 'is-open' : ''
-            }`}
+            className="panel investments-hero investments-flat-section investments-support-summary-card"
             data-investment-support-title="投资资料与管理"
           >
-            <button
-              type="button"
-              className="investments-section-head investments-fold-head"
-              aria-expanded={openInvestmentPanels.summary}
-              onClick={() => toggleInvestmentPanel('summary')}
-            >
+            <div className="investments-flat-head">
+              <h3>投资资料与管理</h3>
+              <span className="badge">{activePositions.length} 笔持仓</span>
+            </div>
+
+            <div className="investments-flat-summary" aria-label="投资资产总览">
+              <article className="investments-flat-metric is-primary">
+                <span>总市值</span>
+                <strong>{formatCurrencyAuto(positionSummary.totalCurrentValue)}</strong>
+              </article>
+              <article
+                className={`investments-flat-metric is-primary ${
+                  positionSummary.totalProfit >= 0 ? 'is-positive' : 'is-negative'
+                }`}
+              >
+                <span>浮动收益</span>
+                <strong>
+                  {formatCurrencyAuto(positionSummary.totalProfit)} /{' '}
+                  {(positionSummary.profitRate * 100).toFixed(1)}%
+                </strong>
+              </article>
+              <article className="investments-flat-metric is-primary">
+                <span>本月可投</span>
+                <strong>{formatCurrencyAuto(monthlyInvestableCash)}</strong>
+              </article>
+            </div>
+
+            <div className="investments-flat-mini-grid">
               <span>
-                <h3>投资资料与管理</h3>
-                <p>
-                  配置、提醒、持仓和目标 · 市值{' '}
-                  {formatCurrencyAuto(positionSummary.totalCurrentValue)}
-                  {' · '}
+                <em>本金</em>
+                <strong>{formatCurrencyAuto(positionSummary.totalInvested)}</strong>
+              </span>
+              <span>
+                <em>净资产占比</em>
+                <strong>{(investmentAssetRatio * 100).toFixed(1)}%</strong>
+              </span>
+              <span>
+                <em>目标进度</em>
+                <strong>
                   {goalSummary.totalTargetAmount > 0
-                    ? `目标 ${((goalSummary.totalCurrentAmount / goalSummary.totalTargetAmount) * 100).toFixed(1)}%`
+                    ? `${((goalSummary.totalCurrentAmount / goalSummary.totalTargetAmount) * 100).toFixed(1)}%`
                     : '未开始'}
-                </p>
+                </strong>
               </span>
-              <span className="investments-fold-side">
-                <span className="badge">{openInvestmentPanels.summary ? '收起' : '展开'}</span>
-                <img
-                  src={
-                    openInvestmentPanels.summary
-                      ? CHEVRONS_DOWN_UP_ICON_URL
-                      : CHEVRONS_UP_DOWN_ICON_URL
-                  }
-                  alt=""
-                  aria-hidden="true"
-                />
-              </span>
-            </button>
+            </div>
 
-            <div className="investments-fold-body">
-              <div className="investments-actions-inline">
-                <button
-                  type="button"
-                  className="button-with-icon primary"
-                  onClick={() => navigate('/investments/flow')}
-                >
-                  <img src={INFO_ICON_URL} alt="" aria-hidden="true" />
-                  投资风向
-                </button>
-              </div>
-
-              <div className="investments-summary-strip" aria-label="投资资产总览">
-                <article className="investments-summary-pill">
-                  <span>总持仓市值</span>
-                  <strong>{formatCurrencyAuto(positionSummary.totalCurrentValue)}</strong>
-                </article>
-                <article className="investments-summary-pill">
-                  <span>累计投入本金</span>
-                  <strong>{formatCurrencyAuto(positionSummary.totalInvested)}</strong>
-                </article>
-                <article
-                  className={`investments-summary-pill ${positionSummary.totalProfit >= 0 ? 'is-positive' : 'is-negative'}`}
-                >
-                  <span>浮动收益</span>
-                  <strong>
-                    {formatCurrencyAuto(positionSummary.totalProfit)} /{' '}
-                    {(positionSummary.profitRate * 100).toFixed(1)}%
-                  </strong>
-                </article>
-                <article className="investments-summary-pill">
-                  <span>本月可投资空间</span>
-                  <strong>{formatCurrencyAuto(monthlyInvestableCash)}</strong>
-                </article>
-                <article className="investments-summary-pill">
-                  <span>投资占估算净资产</span>
-                  <strong>{(investmentAssetRatio * 100).toFixed(1)}%</strong>
-                </article>
-                <article className="investments-summary-pill">
-                  <span>理财目标进度</span>
-                  <strong>
-                    {goalSummary.totalTargetAmount > 0
-                      ? `${((goalSummary.totalCurrentAmount / goalSummary.totalTargetAmount) * 100).toFixed(1)}%`
-                      : '未开始'}
-                  </strong>
-                </article>
-              </div>
+            <div className="investments-flat-actions">
+              <button
+                type="button"
+                className="button-with-icon primary"
+                onClick={() => navigate('/investments/flow')}
+              >
+                <img src={INFO_ICON_URL} alt="" aria-hidden="true" />
+                投资风向
+              </button>
+              <button
+                type="button"
+                className="button-with-icon"
+                onClick={() =>
+                  document.querySelector<HTMLElement>('.investments-main-grid')?.scrollIntoView?.({
+                    behavior: 'smooth',
+                    block: 'start'
+                  })
+                }
+              >
+                <img src={PEN_TOOL_ICON_URL} alt="" aria-hidden="true" />
+                新增持仓
+              </button>
             </div>
           </section>
 
@@ -2207,7 +2130,6 @@ export function InvestmentsPage() {
             <div className="investments-section-head investments-watchlist-head">
               <div>
                 <h3>基金自选</h3>
-                <p>观察、复盘、让 AI 排序。</p>
               </div>
               <div className="investments-watchlist-actions">
                 <span className="badge">{investmentWatchlist.length} 只</span>
@@ -2334,7 +2256,7 @@ export function InvestmentsPage() {
                         </strong>
                         {primaryTag ? <span className="badge">{primaryTag}</span> : null}
                       </div>
-                      {isExpanded && item.lastSummary ? (
+                      {item.lastSummary ? (
                         <p className="investments-watch-card-summary">{item.lastSummary}</p>
                       ) : null}
                       <div className="investments-watch-card-fund-grid" aria-label="基金关键数据">
@@ -2345,31 +2267,28 @@ export function InvestmentsPage() {
                           </span>
                         ))}
                       </div>
-                      {isExpanded ? (
-                        <div className="investments-watch-card-ai-actions">
-                          <button
-                            type="button"
-                            onClick={(event) => handleWatchItemAiAction(event, item, 'analysis')}
-                            disabled={investmentAiStatus === 'loading'}
-                          >
-                            基金分析
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(event) => handleWatchItemAiAction(event, item, 'holdings')}
-                            disabled={investmentAiStatus === 'loading'}
-                          >
-                            持仓分析
-                          </button>
-                        </div>
-                      ) : null}
+                      <div className="investments-watch-card-ai-actions">
+                        <button
+                          type="button"
+                          onClick={(event) => handleWatchItemAiAction(event, item, 'analysis')}
+                          disabled={investmentAiStatus === 'loading'}
+                        >
+                          基金分析
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(event) => handleWatchItemAiAction(event, item, 'holdings')}
+                          disabled={investmentAiStatus === 'loading'}
+                        >
+                          持仓分析
+                        </button>
+                      </div>
                       <div className="investments-watch-card-meta">
                         <span>
                           {item.lastAnalysisAt
                             ? `更新于 ${formatDateTimeLabel(item.lastAnalysisAt)}`
                             : '暂未分析'}
                         </span>
-                        <span>{isExpanded ? '收起详情' : '点击查看详情'}</span>
                       </div>
 
                       {isExpanded ? (
@@ -2385,7 +2304,7 @@ export function InvestmentsPage() {
                             </div>
                           ) : (
                             <p className="investments-watch-card-empty-detail">
-                              暂时还没有更多资料，下一次让 AI 分析时会自动补齐。
+                              暂无更多资料。
                             </p>
                           )}
                         </div>
@@ -2399,39 +2318,21 @@ export function InvestmentsPage() {
 
           <section className="investments-overview-grid">
             <article
-              className={`panel investments-overview-card investments-fold-card ${
-                openInvestmentPanels.allocation ? 'is-open' : ''
-              }`}
+              className="panel investments-overview-card investments-flat-section"
               data-investment-support-title="当前配置"
             >
-              <button
-                type="button"
-                className="investments-section-head investments-fold-head"
-                aria-expanded={openInvestmentPanels.allocation}
-                onClick={() => toggleInvestmentPanel('allocation')}
-              >
-                <span>
+              <div className="investments-section-head investments-flat-head">
+                <div>
                   <h3>当前配置</h3>
                   <p>
                     市值 {formatCurrencyAuto(positionSummary.totalCurrentValue)} ·{' '}
                     {activePositions.length} 笔持仓
                   </p>
-                </span>
-                <span className="investments-fold-side">
-                  <span className="badge">{activePositions.length} 笔持仓</span>
-                  <img
-                    src={
-                      openInvestmentPanels.allocation
-                        ? CHEVRONS_DOWN_UP_ICON_URL
-                        : CHEVRONS_UP_DOWN_ICON_URL
-                    }
-                    alt=""
-                    aria-hidden="true"
-                  />
-                </span>
-              </button>
+                </div>
+                <span className="badge">{activePositions.length} 笔</span>
+              </div>
 
-              <div className="investments-fold-body">
+              <div className="investments-flat-body">
                 {positionSummary.allocationRows.length === 0 ? (
                   <p className="muted">还没有可统计的持仓，先新增第一笔再看配置。</p>
                 ) : (
@@ -2481,40 +2382,22 @@ export function InvestmentsPage() {
             </article>
 
             <article
-              className={`panel investments-overview-card investments-fold-card ${
-                openInvestmentPanels.alerts ? 'is-open' : ''
-              }`}
+              className="panel investments-overview-card investments-flat-section"
               data-investment-support-title="当前提醒"
             >
-              <button
-                type="button"
-                className="investments-section-head investments-fold-head"
-                aria-expanded={openInvestmentPanels.alerts}
-                onClick={() => toggleInvestmentPanel('alerts')}
-              >
-                <span>
+              <div className="investments-section-head investments-flat-head">
+                <div>
                   <h3>当前提醒</h3>
                   <p>
                     {investmentAlerts[0]?.title || '暂无提醒'} · {actionSuggestions.length} 个动作
                   </p>
-                </span>
-                <span className="investments-fold-side">
-                  <span className="badge">{investmentAlerts.length} 条提醒</span>
-                  <img
-                    src={
-                      openInvestmentPanels.alerts
-                        ? CHEVRONS_DOWN_UP_ICON_URL
-                        : CHEVRONS_UP_DOWN_ICON_URL
-                    }
-                    alt=""
-                    aria-hidden="true"
-                  />
-                </span>
-              </button>
+                </div>
+                <span className="badge">{investmentAlerts.length} 条</span>
+              </div>
 
-              <div className="investments-fold-body">
+              <div className="investments-flat-body">
                 <div className="investments-alert-list">
-                  {investmentAlerts.map((item) => (
+                  {investmentAlerts.slice(0, 2).map((item) => (
                     <article
                       key={item.title}
                       className={`investments-alert-card tone-${item.tone}`}
@@ -2536,7 +2419,6 @@ export function InvestmentsPage() {
                         onClick={() => handleActionSuggestionClick(item)}
                       >
                         <strong>{item.label}</strong>
-                        <span>{item.hint}</span>
                       </button>
                     ))}
                   </div>
@@ -2547,42 +2429,17 @@ export function InvestmentsPage() {
 
           <section className="investments-main-grid">
             <article
-              className={`panel investments-panel investments-fold-card ${
-                openInvestmentPanels.position ? 'is-open' : ''
-              }`}
+              className="panel investments-panel investments-flat-section"
               data-investment-support-title={editingPositionId ? '编辑持仓' : '新增持仓'}
             >
-              <button
-                type="button"
-                className="investments-section-head investments-fold-head"
-                aria-expanded={openInvestmentPanels.position}
-                onClick={() => toggleInvestmentPanel('position')}
-              >
-                <span>
+              <div className="investments-section-head investments-flat-head">
+                <div>
                   <h3>{editingPositionId ? '编辑持仓' : '新增持仓'}</h3>
-                  <p>{positions.length} 笔持仓 · 先填名称、本金和市值，其他交给 AI 慢慢补</p>
-                </span>
-                <span className="investments-fold-side">
-                  <span className="badge">{editingPositionId ? '编辑中' : '新增'}</span>
-                  <img
-                    src={
-                      openInvestmentPanels.position
-                        ? CHEVRONS_DOWN_UP_ICON_URL
-                        : CHEVRONS_UP_DOWN_ICON_URL
-                    }
-                    alt=""
-                    aria-hidden="true"
-                  />
-                </span>
-              </button>
-
-              <div className="investments-fold-body">
-                <div className="investments-form-guide">
-                  <strong>只需要 3 项关键资料</strong>
-                  <span>
-                    本金和市值统一按人民币“元”填写，不用填份额或股数。月投入、风险档位、账户关联都放到高级选项里。
-                  </span>
                 </div>
+                <span className="badge">{editingPositionId ? '编辑中' : '新增'}</span>
+              </div>
+
+              <div className="investments-flat-body">
                 <form className="investments-form" onSubmit={submitPosition}>
                   <div className="investments-form-grid investments-position-quick-grid">
                     <label className="investments-field">
@@ -2816,7 +2673,6 @@ export function InvestmentsPage() {
                               className="button-with-icon"
                               onClick={() => {
                                 setEditingPositionId(item.id);
-                                setOpenInvestmentPanels((prev) => ({ ...prev, position: true }));
                                 setPositionError('');
                                 setPositionForm({
                                   name: item.name,
@@ -2916,36 +2772,20 @@ export function InvestmentsPage() {
             </article>
 
             <article
-              className={`panel investments-panel investments-fold-card ${openInvestmentPanels.goal ? 'is-open' : ''}`}
+              className="panel investments-panel investments-flat-section"
               data-investment-support-title={editingGoalId ? '编辑理财目标' : '新增理财目标'}
             >
-              <button
-                type="button"
-                className="investments-section-head investments-fold-head"
-                aria-expanded={openInvestmentPanels.goal}
-                onClick={() => toggleInvestmentPanel('goal')}
-              >
-                <span>
+              <div className="investments-section-head investments-flat-head">
+                <div>
                   <h3>{editingGoalId ? '编辑理财目标' : '新增理财目标'}</h3>
                   <p>
                     {goals.length} 个目标 · 缺口 {formatCurrencyAuto(goalSummary.totalGap)}
                   </p>
-                </span>
-                <span className="investments-fold-side">
-                  <span className="badge">{editingGoalId ? '编辑中' : '新增'}</span>
-                  <img
-                    src={
-                      openInvestmentPanels.goal
-                        ? CHEVRONS_DOWN_UP_ICON_URL
-                        : CHEVRONS_UP_DOWN_ICON_URL
-                    }
-                    alt=""
-                    aria-hidden="true"
-                  />
-                </span>
-              </button>
+                </div>
+                <span className="badge">{editingGoalId ? '编辑中' : '新增'}</span>
+              </div>
 
-              <div className="investments-fold-body">
+              <div className="investments-flat-body">
                 <form className="investments-form" onSubmit={submitGoal}>
                   <div className="investments-form-grid investments-form-grid-primary">
                     <label className="investments-field">
@@ -3127,7 +2967,6 @@ export function InvestmentsPage() {
                             className="button-with-icon"
                             onClick={() => {
                               setEditingGoalId(item.id);
-                              setOpenInvestmentPanels((prev) => ({ ...prev, goal: true }));
                               setGoalError('');
                               setGoalForm({
                                 name: item.name,
