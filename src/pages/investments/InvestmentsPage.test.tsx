@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+﻿import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Account } from '../../entities/account/types';
@@ -110,8 +110,7 @@ describe('InvestmentsPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('heading', { name: '看清你的投资节奏和目标进度' })).toBeInTheDocument();
-    expect(screen.getByText('先从常用资产开始')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: '投资风向' }).length).toBeGreaterThan(0);
     expect(screen.getAllByText('沪深 300 ETF').length).toBeGreaterThan(0);
     expect(screen.getByText('持仓流水')).toBeInTheDocument();
     expect(screen.getByText(/历史快照/)).toBeInTheDocument();

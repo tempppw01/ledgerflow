@@ -42,11 +42,6 @@
     );
 }
 
-.investments-hero-copy {
-  display: grid;
-  gap: 8px;
-}
-
 .investments-kicker {
   display: inline-flex;
   width: fit-content;
@@ -62,50 +57,6 @@
 
 .investments-fold-head .investments-kicker {
   margin-bottom: 6px;
-}
-
-.investments-hero-copy h2 {
-  margin: 0;
-}
-
-.investments-hero-copy p {
-  margin: 0;
-  color: var(--color-text-secondary);
-  line-height: 1.7;
-}
-
-.investments-tip-board {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.investments-tip-item {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 12px;
-  align-items: start;
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid var(--color-border-light);
-  background: color-mix(in srgb, var(--color-bg-elevated) 92%, var(--color-primary-bg));
-}
-
-.investments-tip-item img {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-}
-
-.investments-tip-item strong,
-.investments-tip-item p {
-  margin: 0;
-}
-
-.investments-tip-item p {
-  margin-top: 4px;
-  color: var(--color-text-secondary);
-  line-height: 1.6;
 }
 
 .investments-summary-strip {
@@ -130,6 +81,21 @@
 
 .investments-summary-pill strong {
   font-size: 16px;
+}
+
+.investments-summary-pill strong,
+.investments-card-grid strong,
+.investments-goal-progress strong,
+.investments-watch-card-fund-grid strong,
+.investments-history-date,
+.investments-history-amount,
+.investments-history-delta,
+.investments-history-profit,
+.investments-flow-summary-card strong,
+.investments-money {
+  font-family: var(--font-number);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
 }
 
 .investments-summary-pill.is-positive strong {
@@ -1262,6 +1228,166 @@
   line-height: 1.55;
 }
 
+.investments-flow-page {
+  display: grid;
+  gap: 12px;
+}
+
+.investments-flow-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.investments-flow-hero-copy {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.investments-flow-hero-copy h2 {
+  margin: 0;
+}
+
+.investments-flow-hero-copy p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.65;
+}
+
+.investments-flow-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.investments-flow-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: 10px;
+}
+
+.investments-flow-summary-card {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-bg-subtle));
+}
+
+.investments-flow-summary-card span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.investments-flow-summary-card strong {
+  font-size: 16px;
+}
+
+.investments-flow-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.investments-flow-card {
+  display: grid;
+  gap: 12px;
+}
+
+.investments-flow-watch-list,
+.investments-flow-ai-list {
+  display: grid;
+  gap: 12px;
+}
+
+.investments-flow-watch-card {
+  max-height: none;
+  overflow: visible;
+  cursor: default;
+}
+
+.investments-flow-watch-card:hover {
+  transform: none;
+}
+
+.investments-flow-detail-toggle {
+  display: grid;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--color-border-light);
+}
+
+.investments-flow-detail-toggle summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+}
+
+.investments-flow-detail-toggle summary::-webkit-details-marker {
+  display: none;
+}
+
+.investments-flow-detail-toggle summary span {
+  font-weight: 700;
+}
+
+.investments-flow-detail-toggle summary small {
+  color: var(--color-text-secondary);
+}
+
+.investments-flow-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.investments-flow-detail-item {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 70%, transparent);
+}
+
+.investments-flow-detail-item span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.investments-flow-detail-item p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+}
+
+.investments-flow-empty {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px dashed var(--color-border-light);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-bg-subtle));
+}
+
+.investments-flow-empty strong,
+.investments-flow-empty p {
+  margin: 0;
+}
+
+.investments-flow-empty p {
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+}
+
 .investments-overview-grid,
 .investments-main-grid {
   display: grid;
@@ -1589,6 +1715,18 @@
   color: var(--color-danger);
 }
 
+.investments-flow-history-table .investments-history-row {
+  grid-template-columns:
+    minmax(94px, 0.82fr) minmax(180px, 1.4fr) minmax(126px, 0.88fr) minmax(106px, 0.78fr)
+    minmax(130px, 0.92fr);
+}
+
+.investments-flow-history-table .investments-history-row strong,
+.investments-flow-history-table .investments-history-row small {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .investments-alert-card {
   padding: 12px 14px;
   border-radius: 14px;
@@ -1822,7 +1960,6 @@
 .investments-overview-grid,
 .investments-main-grid,
 .investments-hero .investments-summary-strip,
-.investments-hero .investments-tip-board,
 .investments-main-grid .investments-form-grid,
 .investments-main-grid .investments-position-quick-grid,
 .investments-main-grid .investments-form-grid-primary {
@@ -1832,7 +1969,6 @@
   box-sizing: border-box;
 }
 
-.investments-hero .investments-tip-board,
 .investments-overview-grid .investments-meta-grid,
 .investments-main-grid .investments-form-grid,
 .investments-main-grid .investments-position-quick-grid,
@@ -1853,7 +1989,6 @@
 }
 
 .investments-hero .investments-summary-pill,
-.investments-hero .investments-tip-item,
 .investments-overview-grid .investments-meta-grid div,
 .investments-main-grid .investments-card,
 .investments-main-grid .investments-card-grid span,
@@ -1867,8 +2002,6 @@
 
 .investments-hero .investments-summary-pill strong,
 .investments-hero .investments-summary-pill span,
-.investments-hero .investments-tip-item strong,
-.investments-hero .investments-tip-item p,
 .investments-main-grid .investments-card h4,
 .investments-main-grid .investments-card p,
 .investments-main-grid .investments-field span {
@@ -1907,6 +2040,23 @@
     grid-row: auto;
   }
 
+  .investments-flow-hero {
+    flex-direction: column;
+  }
+
+  .investments-flow-summary,
+  .investments-flow-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .investments-flow-history-table {
+    overflow-x: auto;
+  }
+
+  .investments-flow-history-table .investments-history-row {
+    min-width: 720px;
+  }
+
   .investments-ai-panel {
     position: static;
     height: calc(100dvh - var(--topbar-height, 56px));
@@ -1943,7 +2093,6 @@
   }
 
   .investments-ai-grid,
-  .investments-tip-board,
   .investments-form-grid,
   .investments-position-quick-grid,
   .investments-form-grid-primary,

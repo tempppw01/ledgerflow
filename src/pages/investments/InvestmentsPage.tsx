@@ -44,7 +44,6 @@ import {
   INFO_ICON_URL,
   INVESTMENT_HERO_ILLUSTRATION_URL,
   PEN_TOOL_ICON_URL,
-  QUESTION_ICON_URL,
   ROTATE_CCW_ICON_URL,
   STAR_ICON_URL,
   THUMBS_DOWN_ICON_URL,
@@ -634,11 +633,11 @@ export function InvestmentsPage() {
   const [openInvestmentPanels, setOpenInvestmentPanels] = useState<
     Record<InvestmentPanelKey, boolean>
   >({
-    summary: false,
-    allocation: false,
-    alerts: false,
-    position: false,
-    goal: false
+    summary: true,
+    allocation: true,
+    alerts: true,
+    position: true,
+    goal: true
   });
   const aiFileInputRef = useRef<HTMLInputElement | null>(null);
   const aiPanelRef = useRef<HTMLElement | null>(null);
@@ -2111,7 +2110,6 @@ export function InvestmentsPage() {
 
         <aside className="investments-support-column" ref={supportColumnRef}>
           <div className="investments-support-sticky-title" aria-live="polite">
-            <span>当前功能</span>
             <strong>{activeSupportTitle}</strong>
           </div>
 
@@ -2153,28 +2151,15 @@ export function InvestmentsPage() {
             </button>
 
             <div className="investments-fold-body">
-              <div className="investments-hero-copy">
-                <span className="investments-kicker">投资理财</span>
-                <h2>看清你的投资节奏和目标进度</h2>
-                <p>
-                  把持仓、现金和理财目标放在一起，日常看一眼就知道现在走到哪一步，接下来该补哪一块。
-                </p>
-              </div>
-              <div className="investments-tip-board" aria-label="投资理财页提示">
-                <div className="investments-tip-item">
+              <div className="investments-actions-inline">
+                <button
+                  type="button"
+                  className="button-with-icon primary"
+                  onClick={() => navigate('/investments/flow')}
+                >
                   <img src={INFO_ICON_URL} alt="" aria-hidden="true" />
-                  <div>
-                    <strong>先从常用资产开始</strong>
-                    <p>先记下你最常看的基金、股票或现金类资产，后面再慢慢补齐也没关系。</p>
-                  </div>
-                </div>
-                <div className="investments-tip-item">
-                  <img src={QUESTION_ICON_URL} alt="" aria-hidden="true" />
-                  <div>
-                    <strong>把目标一起放进来</strong>
-                    <p>金额、时间和优先级越清楚，越容易看懂当前进度和仓位分布。</p>
-                  </div>
-                </div>
+                  投资风向
+                </button>
               </div>
 
               <div className="investments-summary-strip" aria-label="投资资产总览">
@@ -2234,6 +2219,14 @@ export function InvestmentsPage() {
                 >
                   <img src={BRAIN_ICON_URL} alt="" aria-hidden="true" />
                   {watchlistReviewStatus === 'loading' ? '分析中' : 'AI 排序'}
+                </button>
+                <button
+                  type="button"
+                  className="button-with-icon investments-watchlist-flow-btn"
+                  onClick={() => navigate('/investments/flow')}
+                >
+                  <img src={INFO_ICON_URL} alt="" aria-hidden="true" />
+                  投资风向
                 </button>
               </div>
             </div>
