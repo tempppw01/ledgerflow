@@ -4,7 +4,7 @@ This is the first production-safe MySQL integration step for LedgerFlow.
 
 The frontend still keeps the current browser data flow. MySQL stores full finance backup snapshots so existing JSON data can be saved and restored before any table-level migration happens.
 
-## Run the API server
+## Run locally
 
 ```bash
 MYSQL_HOST=rm-xxxx.mysql.rds.aliyuncs.com \
@@ -15,9 +15,7 @@ MYSQL_DATABASE=ledgerflow \
 npm run server:mysql
 ```
 
-The server listens on `8787` by default. Set `LEDGERFLOW_API_PORT` or `PORT` to change it.
-
-In production, proxy frontend `/api` requests to this server. The frontend already calls same-origin `/api`.
+The API server listens on `8787` by default. Set `LEDGERFLOW_API_PORT` or `PORT` to change it.
 
 For local Vite development, run both commands:
 
@@ -28,7 +26,32 @@ npm run dev
 
 Vite proxies `/api` to `http://127.0.0.1:8787` by default. Override it with `LEDGERFLOW_API_PROXY_TARGET` if needed.
 
-For Docker Compose, edit `docker-compose.yml` directly and replace these values before deploying:
+## Docker Compose
+
+The production image runs Nginx and the MySQL snapshot API in one container. Nginx serves the frontend on port `80` and proxies `/api/*` to the internal Node API on `127.0.0.1:8787`.
+
+Use one service and edit `docker-compose.yml` directly before deploying:
+
+```yaml
+services:
+  ledgerflow:
+    image: 34v0wphix/ledgerflow:latest
+    container_name: ledgerflow
+    ports:
+      - "18080:80"
+    environment:
+      LEDGERFLOW_API_PORT: "8787"
+      LEDGERFLOW_MAX_BODY_BYTES: "52428800"
+      MYSQL_HOST: "rm-xxxx.mysql.rds.aliyuncs.com"
+      MYSQL_PORT: "3306"
+      MYSQL_USER: "ledgerflow"
+      MYSQL_PASSWORD: "CHANGE_ME"
+      MYSQL_DATABASE: "ledgerflow"
+      MYSQL_SSL: "false"
+    restart: unless-stopped
+```
+
+Replace these values before deploying:
 
 ```yaml
 MYSQL_HOST: "rm-xxxx.mysql.rds.aliyuncs.com"
@@ -42,10 +65,8 @@ MYSQL_SSL: "false"
 `MYSQL_HOST` should be the Alibaba Cloud RDS internal or public endpoint. This setup does not require a local MySQL container.
 
 ```bash
-docker compose up --build
+docker compose up -d
 ```
-
-The web container proxies `/api/*` to the `ledgerflow-api` container.
 
 ## Supported routes
 
