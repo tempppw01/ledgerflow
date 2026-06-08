@@ -1,5 +1,6 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { ConnectionConfigManager } from '../../features/connection-config/ui/ConnectionConfigManager';
+import { MysqlSnapshotPanel } from '../../features/mysql-snapshot/ui/MysqlSnapshotPanel';
 import {
   applyBillImportMode,
   BillImportMode,
@@ -1081,6 +1082,14 @@ export function DatabaseSettingsPage() {
           ) : null}
         </section>
       </div>
+
+      <MysqlSnapshotPanel
+        disabled={!hasHydrated}
+        canCreateBackup={canCreateBackup}
+        backupScopeSummary={backupScopeSummary}
+        createPayload={createScopedBackupPayload}
+        onRestore={(payload) => applyParsedBackup(payload, '恢复')}
+      />
 
       <section className="panel database-remote-backup-card" style={{ marginTop: 12 }}>
         <div className="database-remote-backup-head">

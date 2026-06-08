@@ -1,0 +1,14 @@
+# syntax=docker/dockerfile:1.7
+FROM node:20-alpine
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV HUSKY=0
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund
+
+COPY server ./server
+
+EXPOSE 8787
+CMD ["npm", "run", "server:mysql"]

@@ -3,8 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { fetchEmbeddings } from '../../features/assistant/api/openaiEmbeddingClient';
 import { useAiSettings } from '../../shared/store/useAiSettings';
-import { useAppPreferences } from '../../shared/store/useAppPreferences';
-import { AppAccentTheme } from '../../shared/types/app';
 import { PasswordInput } from '../../shared/ui/PasswordInput';
 import { Toast } from '../../shared/ui/Toast';
 
@@ -88,19 +86,6 @@ function getEmbeddingModelValidationMessage(modelId: string, candidates: string[
   return '该模型不在当前候选列表中，请确认服务端已支持此 embedding 模型。';
 }
 
-const ACCENT_THEME_OPTIONS: Array<{ value: AppAccentTheme; labelKey: string; preview: string }> = [
-  { value: 'blue', labelKey: 'settings.accent.options.blue', preview: '#4f6ef7' },
-  { value: 'emerald', labelKey: 'settings.accent.options.emerald', preview: '#10b981' },
-  { value: 'violet', labelKey: 'settings.accent.options.violet', preview: '#8b5cf6' },
-  { value: 'rose', labelKey: 'settings.accent.options.rose', preview: '#f43f5e' },
-  { value: 'amber', labelKey: 'settings.accent.options.amber', preview: '#f59e0b' },
-  {
-    value: 'aurora',
-    labelKey: 'settings.accent.options.aurora',
-    preview: 'linear-gradient(135deg, #6366f1 0%, #22c55e 45%, #ec4899 100%)'
-  }
-];
-
 function normalizeProviderBaseUrl(url: string): string {
   return url.trim().replace(/\/+$/, '');
 }
@@ -164,10 +149,10 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
   const baseUrl = useAiSettings((s) => s.baseUrl);
   const apiKey = useAiSettings((s) => s.apiKey);
   const model = useAiSettings((s) => s.model);
-  const accentTheme = useAppPreferences((s) => s.accentTheme);
   const embeddingModel = useAiSettings((s) => s.embeddingModel);
   const enableEmbeddingModel = useAiSettings((s) => s.enableEmbeddingModel);
   const embeddingChannel = useAiSettings((s) => s.embedding);
+  const webSearch = useAiSettings((s) => s.webSearch);
   const rerankModel = useAiSettings((s) => s.rerankModel);
   const enableRerankModel = useAiSettings((s) => s.enableRerankModel);
   const rememberApiKey = useAiSettings((s) => s.rememberApiKey);
@@ -175,10 +160,10 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
   const setApiKey = useAiSettings((s) => s.setApiKey);
   const setRememberApiKey = useAiSettings((s) => s.setRememberApiKey);
   const setModel = useAiSettings((s) => s.setModel);
-  const setAccentTheme = useAppPreferences((s) => s.setAccentTheme);
   const setEmbeddingModel = useAiSettings((s) => s.setEmbeddingModel);
   const setEnableEmbeddingModel = useAiSettings((s) => s.setEnableEmbeddingModel);
   const setEmbeddingChannel = useAiSettings((s) => s.setEmbedding);
+  const setWebSearch = useAiSettings((s) => s.setWebSearch);
   const setRerankModel = useAiSettings((s) => s.setRerankModel);
   const setEnableRerankModel = useAiSettings((s) => s.setEnableRerankModel);
   const memoryDays = useAiSettings((s) => s.memoryDays);
@@ -508,31 +493,61 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
           </div>
         </div>
 
-        <div className="field">
-          <label>{t('settings.accent.label')}</label>
-          <div
-            className="settings-accent-grid"
-            role="radiogroup"
-            aria-label={t('settings.accent.label')}
-          >
-            {ACCENT_THEME_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className={`settings-accent-option ${accentTheme === option.value ? 'active' : ''}`}
-                onClick={() => {
-                  setAccentTheme(option.value);
-                  showSaveToast();
-                }}
-                role="radio"
-                aria-checked={accentTheme === option.value}
-              >
-                <span className="settings-accent-dot" style={{ background: option.preview }} />
-                <span>{t(option.labelKey)}</span>
-              </button>
-            ))}
+        <div className="settings-subpanel is-active">
+          <div className="settings-subpanel-toggle">
+            <div className="settings-subpanel-copy">
+              <strong>联网核验服务</strong>
+              <small>Tavily 作为联网服务商，本地同源接口作为兜底。</small>
+            </div>
+            <span className="settings-subpanel-chip is-active">Tavily</span>
           </div>
-          <small>{t('settings.accent.hint')}</small>
+          <div className="settings-subpanel-body">
+            <div className="settings-inline-grid settings-inline-grid--double">
+              <div className="field">
+                <label>服务商</label>
+                <select value={webSearch.provider} onChange={() => undefined}>
+                  <option value="tavily">Tavily（本地兜底）</option>
+                </select>
+                <small>开启投资页“联网核验”后，会优先走 Tavily Search。</small>
+              </div>
+              <div className="field">
+                <label>Tavily API Key</label>
+                <PasswordInput
+                  value={webSearch.tavilyApiKey}
+                  placeholder="tvly-..."
+                  onChange={(e) => {
+                    setWebSearch({ tavilyApiKey: e.target.value });
+                    showSaveToast();
+                  }}
+                  showLabel={t('settings.show')}
+                  hideLabel={t('settings.hide')}
+                />
+              </div>
+              <div className="field">
+                <label>Tavily Base URL</label>
+                <input
+                  value={webSearch.tavilyBaseUrl}
+                  placeholder="https://api.tavily.com"
+                  onChange={(e) => {
+                    setWebSearch({ tavilyBaseUrl: e.target.value });
+                    showSaveToast();
+                  }}
+                />
+              </div>
+              <div className="field">
+                <label>本地联网兜底接口</label>
+                <input
+                  value={webSearch.localEndpoint}
+                  placeholder="/api/web-search"
+                  onChange={(e) => {
+                    setWebSearch({ localEndpoint: e.target.value });
+                    showSaveToast();
+                  }}
+                />
+                <small>当 Tavily Key 缺失或请求失败时，会 POST 到这个同源接口。</small>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="settings-divider" />

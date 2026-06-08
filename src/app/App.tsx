@@ -16,7 +16,6 @@ const queryClient = new QueryClient({
 
 export function App() {
   const theme = useAppPreferences((s) => s.theme);
-  const accentTheme = useAppPreferences((s) => s.accentTheme);
   const resolvedTheme = useResolvedTheme(theme);
 
   /**
@@ -25,8 +24,8 @@ export function App() {
    */
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', resolvedTheme);
-    document.documentElement.setAttribute('data-accent-theme', accentTheme);
-  }, [resolvedTheme, accentTheme]);
+    document.documentElement.setAttribute('data-accent-theme', 'amber');
+  }, [resolvedTheme]);
 
   return (
     <div className="app-shell">

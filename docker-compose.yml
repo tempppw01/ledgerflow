@@ -1,7 +1,28 @@
 services:
+  ledgerflow-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.mysql-api
+    container_name: ledgerflow-api
+    environment:
+      LEDGERFLOW_API_PORT: "8787"
+      LEDGERFLOW_MAX_BODY_BYTES: "52428800"
+      MYSQL_HOST: "rm-xxxx.mysql.rds.aliyuncs.com"
+      MYSQL_PORT: "3306"
+      MYSQL_USER: "ledgerflow"
+      MYSQL_PASSWORD: "CHANGE_ME"
+      MYSQL_DATABASE: "ledgerflow"
+      MYSQL_SSL: "false"
+    restart: unless-stopped
+
   ledgerflow-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: 34v0wphix/ledgerflow:latest
     container_name: ledgerflow-web
     ports:
-      - "${LEDGERFLOW_PORT:-8080}:80"
+      - "18080:80"
+    depends_on:
+      - ledgerflow-api
     restart: unless-stopped

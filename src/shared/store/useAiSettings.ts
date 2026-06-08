@@ -95,6 +95,8 @@ type PersistedAiSettingsState = Omit<
   | 'setRememberApiKey'
   | 'embedding'
   | 'setEmbedding'
+  | 'webSearch'
+  | 'setWebSearch'
 > & {
   baseUrl: string;
   model: string;
@@ -109,6 +111,7 @@ type PersistedAiSettingsState = Omit<
   showEmbeddingSummary: boolean;
   rememberApiKey: boolean;
   embedding: EmbeddingChannelSettings;
+  webSearch: WebSearchSettings;
 };
 
 export interface EmbeddingChannelSettings {
@@ -116,6 +119,14 @@ export interface EmbeddingChannelSettings {
   baseUrl: string;
   apiKey: string;
   model: string;
+}
+
+export interface WebSearchSettings {
+  provider: 'tavily';
+  tavilyApiKey: string;
+  tavilyBaseUrl: string;
+  localEndpoint: string;
+  maxResults: number;
 }
 
 interface AiSettingsState {
@@ -133,6 +144,7 @@ interface AiSettingsState {
   showEmbeddingSummary: boolean;
   rememberApiKey: boolean;
   embedding: EmbeddingChannelSettings;
+  webSearch: WebSearchSettings;
   setBaseUrl: (baseUrl: string) => void;
   setApiKey: (apiKey: string) => void;
   setModel: (model: string) => void;
@@ -147,6 +159,7 @@ interface AiSettingsState {
   setShowEmbeddingSummary: (enabled: boolean) => void;
   setRememberApiKey: (enabled: boolean) => void;
   setEmbedding: (patch: Partial<EmbeddingChannelSettings>) => void;
+  setWebSearch: (patch: Partial<WebSearchSettings>) => void;
 }
 
 const DEFAULT_BULK_RECATEGORIZE_CONCURRENCY = 8;
@@ -158,6 +171,14 @@ const DEFAULT_EMBEDDING_CHANNEL_SETTINGS: EmbeddingChannelSettings = {
   baseUrl: '',
   apiKey: '',
   model: ''
+};
+
+const DEFAULT_WEB_SEARCH_SETTINGS: WebSearchSettings = {
+  provider: 'tavily',
+  tavilyApiKey: ENV.tavilyApiKey,
+  tavilyBaseUrl: ENV.tavilyBaseUrl,
+  localEndpoint: ENV.localWebSearchEndpoint,
+  maxResults: 5
 };
 
 function normalizeBulkRecategorizeConcurrency(value: number): number {
@@ -192,6 +213,7 @@ export const useAiSettings = create<AiSettingsState>()(
       showEmbeddingSummary: true,
       rememberApiKey: Boolean(readLocalApiKey()),
       embedding: DEFAULT_EMBEDDING_CHANNEL_SETTINGS,
+      webSearch: DEFAULT_WEB_SEARCH_SETTINGS,
       setBaseUrl: (baseUrl: string) => set({ baseUrl: baseUrl.trim() }),
       setApiKey: (apiKey: string) =>
         set((state) => {
@@ -239,6 +261,30 @@ export const useAiSettings = create<AiSettingsState>()(
             apiKey: typeof patch.apiKey === 'string' ? patch.apiKey.trim() : state.embedding.apiKey,
             model: typeof patch.model === 'string' ? patch.model.trim() : state.embedding.model
           }
+        })),
+      setWebSearch: (patch: Partial<WebSearchSettings>) =>
+        set((state) => ({
+          webSearch: {
+            ...state.webSearch,
+            ...patch,
+            provider: 'tavily',
+            tavilyApiKey:
+              typeof patch.tavilyApiKey === 'string'
+                ? patch.tavilyApiKey.trim()
+                : state.webSearch.tavilyApiKey,
+            tavilyBaseUrl:
+              typeof patch.tavilyBaseUrl === 'string'
+                ? patch.tavilyBaseUrl.trim()
+                : state.webSearch.tavilyBaseUrl,
+            localEndpoint:
+              typeof patch.localEndpoint === 'string'
+                ? patch.localEndpoint.trim()
+                : state.webSearch.localEndpoint,
+            maxResults:
+              typeof patch.maxResults === 'number'
+                ? Math.min(10, Math.max(1, Math.round(patch.maxResults || 5)))
+                : state.webSearch.maxResults
+          }
         }))
     }),
     {
@@ -256,7 +302,8 @@ export const useAiSettings = create<AiSettingsState>()(
         showEmbeddingDebug: state.showEmbeddingDebug,
         showEmbeddingSummary: state.showEmbeddingSummary,
         rememberApiKey: state.rememberApiKey,
-        embedding: state.embedding
+        embedding: state.embedding,
+        webSearch: state.webSearch
       }),
       merge: (persisted: unknown, current: AiSettingsState) => {
         const next = { ...current, ...(persisted as Partial<PersistedAiSettingsState>) };
@@ -298,6 +345,24 @@ export const useAiSettings = create<AiSettingsState>()(
         next.embedding.baseUrl = String(next.embedding.baseUrl || '').trim();
         next.embedding.apiKey = String(next.embedding.apiKey || '').trim();
         next.embedding.model = String(next.embedding.model || '').trim();
+
+        const webSearch = (next as Partial<PersistedAiSettingsState>).webSearch;
+        next.webSearch = {
+          ...DEFAULT_WEB_SEARCH_SETTINGS,
+          ...(webSearch && typeof webSearch === 'object' ? webSearch : {})
+        };
+        next.webSearch.provider = 'tavily';
+        next.webSearch.tavilyApiKey = String(next.webSearch.tavilyApiKey || '').trim();
+        next.webSearch.tavilyBaseUrl = String(
+          next.webSearch.tavilyBaseUrl || ENV.tavilyBaseUrl
+        ).trim();
+        next.webSearch.localEndpoint = String(
+          next.webSearch.localEndpoint || ENV.localWebSearchEndpoint
+        ).trim();
+        next.webSearch.maxResults = Math.min(
+          10,
+          Math.max(1, Math.round(Number(next.webSearch.maxResults || 5)))
+        );
 
         return next;
       }

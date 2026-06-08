@@ -38,6 +38,14 @@ function manualChunks(id: string) {
 }
 
 export default defineConfig({
+  server: {
+    proxy: {
+      '/api': {
+        target: process.env.LEDGERFLOW_API_PROXY_TARGET || 'http://127.0.0.1:8787',
+        changeOrigin: true
+      }
+    }
+  },
   plugins: [
     react(),
     VitePWA({

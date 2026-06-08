@@ -518,7 +518,7 @@ export const useAppPreferences = create<AppPreferencesState>()(
   persist(
     (set) => ({
       theme: 'system',
-      accentTheme: 'blue',
+      accentTheme: 'amber',
       rssSubscriptions: DEFAULT_RSS_SUBSCRIPTIONS,
       investmentPositions: [],
       investmentPositionHistory: [],

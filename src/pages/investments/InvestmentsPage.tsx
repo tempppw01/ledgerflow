@@ -30,6 +30,10 @@ import {
   sendAiChat,
   sendAiChatStream
 } from '../../features/assistant/api/openaiCompatibleClient';
+import {
+  buildWebSearchPrompt,
+  fetchWebSearchContext
+} from '../../features/assistant/api/webSearchClient';
 import { renderMarkdownContent } from '../../features/assistant/ui/MarkdownRenderer';
 import {
   BOT_ICON_URL,
@@ -575,7 +579,7 @@ export function InvestmentsPage() {
   const setInvestmentWatchlist = useAppPreferences((state) => state.setInvestmentWatchlist);
   const setInvestmentAiMessages = useAppPreferences((state) => state.setInvestmentAiMessages);
   const clearInvestmentAiMessages = useAppPreferences((state) => state.clearInvestmentAiMessages);
-  const { baseUrl, apiKey, model, setModel } = useAiSettings();
+  const { baseUrl, apiKey, model, setModel, webSearch } = useAiSettings();
   const missingInvestmentAiKey = !apiKey.trim();
 
   const [positionForm, setPositionForm] = useState(POSITION_FORM_DEFAULT);
@@ -1351,13 +1355,18 @@ export function InvestmentsPage() {
     try {
       let fullContent = '';
       let fullReasoning = '';
+      const webSearchPrompt = investmentAiWebEnabled
+        ? buildWebSearchPrompt(
+            await fetchWebSearchContext(promptText, webSearch, abortController.signal)
+          )
+        : '';
       const result = await sendAiChatStream(
         {
           baseUrl,
           apiKey,
           model,
           systemPrompt: investmentAiWebEnabled
-            ? `${investmentAssistantPrompt}\n\n联网模式：用户已开启联网。若当前模型或服务支持联网/实时检索，请优先核验基金净值、费率、持仓、基金公司和近期表现等最新信息；若无法联网，请明确说明“当前无法实时联网核验”，不要编造精确实时数据。`
+            ? `${investmentAssistantPrompt}\n\n联网模式：用户已开启联网核验。请优先使用以下联网检索上下文核验基金净值、费率、持仓、基金公司和近期表现等最新信息。\n\n${webSearchPrompt}`
             : investmentAssistantPrompt,
           messages: [
             {
@@ -1968,7 +1977,11 @@ export function InvestmentsPage() {
                       disabled={investmentAiStatus === 'loading'}
                       aria-pressed={investmentAiWebEnabled}
                       aria-label={investmentAiWebEnabled ? '关闭联网核验' : '开启联网核验'}
-                      title={investmentAiWebEnabled ? '已开启联网核验提示' : '开启联网核验提示'}
+                      title={
+                        investmentAiWebEnabled
+                          ? '已开启 Tavily / 本地联网核验'
+                          : '开启 Tavily / 本地联网核验'
+                      }
                     >
                       <img
                         className="chat-upload-icon"

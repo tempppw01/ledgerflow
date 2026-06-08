@@ -137,10 +137,10 @@
   --color-border-light: #e6eaf3;
   --color-divider: #e6eaf3;
 
-  --color-primary: #4f6ef7;
-  --color-primary-hover: #3d5ce5;
-  --color-primary-bg: rgba(79, 110, 247, 0.08);
-  --color-primary-border: rgba(79, 110, 247, 0.22);
+  --color-primary: #f59e0b;
+  --color-primary-hover: #d97706;
+  --color-primary-bg: rgba(245, 158, 11, 0.14);
+  --color-primary-border: rgba(245, 158, 11, 0.34);
 
   --color-success: #34a853;
   --color-success-bg: rgba(52, 168, 83, 0.08);
