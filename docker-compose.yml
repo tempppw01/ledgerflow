@@ -8,6 +8,7 @@ services:
       LEDGERFLOW_API_PORT: '8787'
       LEDGERFLOW_MAX_BODY_BYTES: '52428800'
       LEDGERFLOW_API_TOKEN: '${LEDGERFLOW_API_TOKEN:?Set LEDGERFLOW_API_TOKEN to a long random value}'
+      LEDGERFLOW_WEBDAV_ALLOWED_HOSTS: '${LEDGERFLOW_WEBDAV_ALLOWED_HOSTS:-}'
       MYSQL_HOST: 'rm-xxxx.mysql.rds.aliyuncs.com'
       MYSQL_PORT: '3306'
       MYSQL_USER: 'ledgerflow'

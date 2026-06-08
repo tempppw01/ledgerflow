@@ -18,6 +18,7 @@ npm run server:mysql
 
 The API server listens on `8787` by default. Set `LEDGERFLOW_API_PORT` or `PORT` to change it.
 All snapshot routes require `LEDGERFLOW_API_TOKEN`. Enter the same token in the MySQL snapshot panel before uploading or restoring.
+The same token also protects the WebDAV same-origin proxy at `/api/webdav/*`.
 
 For local Vite development, run both commands:
 
@@ -45,6 +46,7 @@ services:
       LEDGERFLOW_API_PORT: '8787'
       LEDGERFLOW_MAX_BODY_BYTES: '52428800'
       LEDGERFLOW_API_TOKEN: '${LEDGERFLOW_API_TOKEN:?Set LEDGERFLOW_API_TOKEN to a long random value}'
+      LEDGERFLOW_WEBDAV_ALLOWED_HOSTS: '${LEDGERFLOW_WEBDAV_ALLOWED_HOSTS:-}'
       MYSQL_HOST: 'rm-xxxx.mysql.rds.aliyuncs.com'
       MYSQL_PORT: '3306'
       MYSQL_USER: 'ledgerflow'
@@ -64,6 +66,7 @@ MYSQL_PASSWORD: 'CHANGE_ME'
 MYSQL_DATABASE: 'ledgerflow'
 MYSQL_SSL: 'false'
 LEDGERFLOW_API_TOKEN: 'replace-with-a-long-random-token'
+LEDGERFLOW_WEBDAV_ALLOWED_HOSTS: 'dav.example.com'
 ```
 
 `MYSQL_HOST` should be the Alibaba Cloud RDS internal or public endpoint. This setup does not require a local MySQL container.
@@ -85,6 +88,8 @@ Except for `GET /api/health`, every route requires `Authorization: Bearer <LEDGE
 `POST /api/conn/test` only checks the MySQL credentials configured in server environment variables. It intentionally ignores browser-provided host, port, username, password, or connection string values to avoid turning the API into an arbitrary network probe.
 
 Snapshot routes also use the server environment MySQL credentials, not browser-stored credentials.
+
+`/api/webdav/*` is a guarded same-origin WebDAV proxy. It requires `X-LedgerFlow-Api-Token`, only accepts HTTPS upstreams, rejects local/private network addresses after DNS lookup, and can be restricted further with `LEDGERFLOW_WEBDAV_ALLOWED_HOSTS`.
 
 ## Table
 

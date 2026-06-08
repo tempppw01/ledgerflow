@@ -1,16 +1,7 @@
 import { ConnectionFormValues, connectionFormSchema } from './connectionFormSchema';
 import { ConnectionTestResult } from '../../../entities/connection/types';
 import { postConnectionTest } from '../../../shared/api/connectionClient';
-
-const MYSQL_SNAPSHOT_API_TOKEN_STORAGE_KEY = 'ledgerflow-mysql-snapshot-api-token';
-
-function readStoredApiToken() {
-  try {
-    return window.localStorage.getItem(MYSQL_SNAPSHOT_API_TOKEN_STORAGE_KEY) || '';
-  } catch {
-    return '';
-  }
-}
+import { readStoredLedgerflowApiToken } from '../../../shared/lib/ledgerflowApiToken';
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
   return new Promise<T>((resolve, reject) => {
@@ -29,7 +20,10 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
 
 async function testByProxy(config: ConnectionFormValues): Promise<ConnectionTestResult> {
   const start = performance.now();
-  const data = await withTimeout(postConnectionTest(readStoredApiToken()), config.timeoutMs);
+  const data = await withTimeout(
+    postConnectionTest(readStoredLedgerflowApiToken()),
+    config.timeoutMs
+  );
 
   return {
     ok: data.ok,

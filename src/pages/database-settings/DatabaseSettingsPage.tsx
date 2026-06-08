@@ -44,6 +44,10 @@ import { useGlobalMemoryStore } from '../../shared/store/useGlobalMemoryStore';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { PasswordInput } from '../../shared/ui/PasswordInput';
 import { Toast, ToastVariant } from '../../shared/ui/Toast';
+import {
+  readStoredLedgerflowApiToken,
+  writeStoredLedgerflowApiToken
+} from '../../shared/lib/ledgerflowApiToken';
 
 type BillSource = 'wechat' | 'alipay';
 
@@ -359,6 +363,7 @@ export function DatabaseSettingsPage() {
   });
 
   const [webdav, setWebdav] = useState<BackupWebdavConfig>(() => loadWebdavConfig());
+  const [serverApiToken, setServerApiToken] = useState(() => readStoredLedgerflowApiToken());
   const [objectStorageProvider, setObjectStorageProvider] =
     useState<BackupObjectStorageProvider>('aliyun-oss');
   const [objectStorageConfigs, setObjectStorageConfigs] = useState<
@@ -447,6 +452,11 @@ export function DatabaseSettingsPage() {
         ...patch
       }
     }));
+  };
+
+  const handleServerApiTokenChange = (value: string) => {
+    setServerApiToken(value);
+    writeStoredLedgerflowApiToken(value);
   };
 
   const getCurrentBackupSnapshot = () => ({
@@ -1085,6 +1095,8 @@ export function DatabaseSettingsPage() {
         disabled={!hasHydrated}
         canCreateBackup={canCreateBackup}
         backupScopeSummary={backupScopeSummary}
+        apiToken={serverApiToken}
+        onApiTokenChange={handleServerApiTokenChange}
         createPayload={createScopedBackupPayload}
         onRestore={(payload) => applyParsedBackup(payload, '恢复')}
       />
@@ -1210,6 +1222,19 @@ export function DatabaseSettingsPage() {
                     disabled={!webdav.proxyEnabled}
                   />
                 </div>
+                {webdav.proxyEnabled ? (
+                  <div className="field" style={{ marginBottom: 0 }}>
+                    <label>代理令牌</label>
+                    <PasswordInput
+                      title="LedgerFlow API 令牌"
+                      placeholder="与服务端 LEDGERFLOW_API_TOKEN 保持一致"
+                      value={serverApiToken}
+                      onChange={(e) => handleServerApiTokenChange(e.target.value)}
+                      showLabel="显示"
+                      hideLabel="隐藏"
+                    />
+                  </div>
+                ) : null}
               </div>
             ) : null}
 

@@ -17,6 +17,7 @@ import {
   webdavUploadFile,
   type BackupWebdavConfig
 } from './backup';
+import { LEDGERFLOW_API_TOKEN_STORAGE_KEY } from './ledgerflowApiToken';
 
 const BACKUP_KEY = 'ledgerflow-backup-webdav-v1';
 const BACKUP_PASSWORD_SESSION_KEY = 'ledgerflow-backup-webdav-password';
@@ -47,6 +48,7 @@ const baseObjectStorageConfig: BackupObjectStorageConfig = {
 
 beforeEach(() => {
   localStorage.removeItem(BACKUP_KEY);
+  localStorage.removeItem(LEDGERFLOW_API_TOKEN_STORAGE_KEY);
   sessionStorage.removeItem(BACKUP_PASSWORD_SESSION_KEY);
   localStorage.removeItem(`${OBJECT_STORAGE_KEY_PREFIX}:aliyun-oss`);
   localStorage.removeItem(`${OBJECT_STORAGE_KEY_PREFIX}:s3-compatible`);
@@ -1126,6 +1128,26 @@ describe('webdav backup version listing', () => {
 });
 
 describe('webdavUploadFile', () => {
+  it('同源代理请求应带 LedgerFlow 代理令牌并保留 WebDAV Basic 认证', async () => {
+    localStorage.setItem(LEDGERFLOW_API_TOKEN_STORAGE_KEY, 'proxy-token');
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 201,
+      text: () => Promise.resolve('')
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await webdavUploadFile(baseConfig, '账本备份/test file.txt', new Blob(['hello']), 'text/plain');
+
+    const putCall = fetchMock.mock.calls.find((call) => call[1]?.method === 'PUT');
+    const headers = putCall?.[1]?.headers as Record<string, string>;
+    expect(headers.Authorization).toMatch(/^Basic /);
+    expect(headers['X-LedgerFlow-Api-Token']).toBe('proxy-token');
+    expect(headers['X-WebDAV-Endpoint']).toBe(baseConfig.endpoint);
+
+    vi.unstubAllGlobals();
+  });
+
   it('附件上传时即使目录预创建返回 400，只要临时 PUT 和 MOVE 成功也应视为成功', async () => {
     const fetchMock = vi
       .fn()

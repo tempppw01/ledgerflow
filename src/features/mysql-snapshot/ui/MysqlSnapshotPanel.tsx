@@ -13,6 +13,8 @@ interface MysqlSnapshotPanelProps {
   disabled: boolean;
   canCreateBackup: boolean;
   backupScopeSummary: string;
+  apiToken: string;
+  onApiTokenChange: (value: string) => void;
   createPayload: () => FinanceBackupPayload;
   onRestore: (payload: FinanceBackupPayload) => void;
 }
@@ -36,33 +38,12 @@ function formatTime(value?: string | null) {
   });
 }
 
-const MYSQL_SNAPSHOT_API_TOKEN_STORAGE_KEY = 'ledgerflow-mysql-snapshot-api-token';
-
-function readStoredApiToken() {
-  try {
-    return window.localStorage.getItem(MYSQL_SNAPSHOT_API_TOKEN_STORAGE_KEY) || '';
-  } catch {
-    return '';
-  }
-}
-
-function writeStoredApiToken(value: string) {
-  try {
-    const token = value.trim();
-    if (token) {
-      window.localStorage.setItem(MYSQL_SNAPSHOT_API_TOKEN_STORAGE_KEY, token);
-      return;
-    }
-    window.localStorage.removeItem(MYSQL_SNAPSHOT_API_TOKEN_STORAGE_KEY);
-  } catch {
-    // ignore storage errors
-  }
-}
-
 export function MysqlSnapshotPanel({
   disabled,
   canCreateBackup,
   backupScopeSummary,
+  apiToken,
+  onApiTokenChange,
   createPayload,
   onRestore
 }: MysqlSnapshotPanelProps) {
@@ -70,7 +51,6 @@ export function MysqlSnapshotPanel({
   const [status, setStatus] = useState('');
   const [lastSnapshot, setLastSnapshot] = useState<MysqlSnapshotRecord | null>(null);
   const [restoreOpen, setRestoreOpen] = useState(false);
-  const [apiToken, setApiToken] = useState(() => readStoredApiToken());
 
   const summary = useMemo(() => {
     if (!lastSnapshot) return '尚未读取 MySQL 快照';
@@ -173,8 +153,7 @@ export function MysqlSnapshotPanel({
             value={apiToken}
             placeholder="与服务端 LEDGERFLOW_API_TOKEN 保持一致"
             onChange={(event) => {
-              setApiToken(event.target.value);
-              writeStoredApiToken(event.target.value);
+              onApiTokenChange(event.target.value);
             }}
             showLabel="显示"
             hideLabel="隐藏"

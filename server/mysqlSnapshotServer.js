@@ -1,5 +1,7 @@
 import http from 'node:http';
 import { createHash, timingSafeEqual } from 'node:crypto';
+import dns from 'node:dns/promises';
+import net from 'node:net';
 import { URL } from 'node:url';
 import mysql from 'mysql2/promise';
 
@@ -7,6 +9,11 @@ const DEFAULT_PORT = 8787;
 const DEFAULT_USER_ID = 'default';
 const MAX_BODY_BYTES = Number(process.env.LEDGERFLOW_MAX_BODY_BYTES || 50 * 1024 * 1024);
 const API_TOKEN = String(process.env.LEDGERFLOW_API_TOKEN || '').trim();
+const WEBDAV_ALLOWED_HOSTS = String(process.env.LEDGERFLOW_WEBDAV_ALLOWED_HOSTS || '')
+  .split(',')
+  .map((item) => item.trim().toLowerCase())
+  .filter(Boolean);
+const WEBDAV_PROXY_METHODS = new Set(['GET', 'PUT', 'DELETE', 'MKCOL', 'MOVE', 'PROPFIND']);
 
 function jsonResponse(res, status, body) {
   const text = JSON.stringify(body);
@@ -14,8 +21,9 @@ function jsonResponse(res, status, body) {
     'Content-Type': 'application/json; charset=utf-8',
     'Content-Length': Buffer.byteLength(text),
     'Access-Control-Allow-Origin': process.env.LEDGERFLOW_CORS_ORIGIN || '*',
-    'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-LedgerFlow-Api-Token'
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,MKCOL,MOVE,PROPFIND,OPTIONS',
+    'Access-Control-Allow-Headers':
+      'Content-Type, Authorization, X-LedgerFlow-Api-Token, X-WebDAV-Endpoint, Depth, Destination, Overwrite'
   });
   res.end(text);
 }
@@ -71,6 +79,112 @@ function requireApiToken(req, res) {
   return true;
 }
 
+function ipv4ToInt(hostname) {
+  const parts = hostname.split('.');
+  if (parts.length !== 4) return null;
+  const nums = parts.map((item) => Number(item));
+  if (nums.some((item) => !Number.isInteger(item) || item < 0 || item > 255)) {
+    return null;
+  }
+  return ((nums[0] << 24) >>> 0) + (nums[1] << 16) + (nums[2] << 8) + nums[3];
+}
+
+function isPrivateIpv4(address) {
+  const value = ipv4ToInt(address);
+  if (value === null) return false;
+  return [
+    [0x00000000, 0x00ffffff],
+    [0x0a000000, 0x0affffff],
+    [0x64400000, 0x647fffff],
+    [0x7f000000, 0x7fffffff],
+    [0xa9fe0000, 0xa9feffff],
+    [0xac100000, 0xac1fffff],
+    [0xc0000000, 0xc00000ff],
+    [0xc0000200, 0xc00002ff],
+    [0xc0a80000, 0xc0a8ffff],
+    [0xc6336400, 0xc63364ff],
+    [0xcb007100, 0xcb0071ff],
+    [0xe0000000, 0xffffffff]
+  ].some(([start, end]) => value >= start && value <= end);
+}
+
+function isPrivateIpv6(address) {
+  const lower = address.toLowerCase();
+  return (
+    lower === '::1' ||
+    lower === '::' ||
+    lower.startsWith('fc') ||
+    lower.startsWith('fd') ||
+    lower.startsWith('fe80:') ||
+    lower.startsWith('ff') ||
+    lower.startsWith('2001:db8')
+  );
+}
+
+function isBlockedNetworkAddress(address) {
+  const family = net.isIP(address);
+  if (family === 4) return isPrivateIpv4(address);
+  if (family === 6) return isPrivateIpv6(address);
+  return false;
+}
+
+async function assertPublicHttpsUrl(value, label = 'WebDAV endpoint') {
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error(`${label} is not a valid URL.`);
+  }
+
+  if (parsed.protocol !== 'https:') {
+    throw new Error(`${label} must use HTTPS.`);
+  }
+  if (parsed.username || parsed.password) {
+    throw new Error(`${label} must not contain credentials.`);
+  }
+  if (parsed.search) {
+    throw new Error(`${label} must not contain query parameters.`);
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+  if (
+    hostname === 'localhost' ||
+    (WEBDAV_ALLOWED_HOSTS.length > 0 && !WEBDAV_ALLOWED_HOSTS.includes(hostname))
+  ) {
+    throw new Error(`${label} host is not allowed.`);
+  }
+
+  const directIpFamily = net.isIP(hostname);
+  if (directIpFamily && isBlockedNetworkAddress(hostname)) {
+    throw new Error(`${label} must not point to a private or local address.`);
+  }
+
+  if (!directIpFamily) {
+    const records = await dns.lookup(hostname, { all: true, verbatim: true });
+    if (records.length === 0 || records.some((record) => isBlockedNetworkAddress(record.address))) {
+      throw new Error(`${label} must resolve to public addresses only.`);
+    }
+  }
+
+  parsed.hash = '';
+  return parsed;
+}
+
+function assertSafeRemotePath(encodedRemotePath) {
+  if (!encodedRemotePath) return;
+  const segments = encodedRemotePath.split('/').map((segment) => {
+    try {
+      return decodeURIComponent(segment);
+    } catch {
+      throw new Error('WebDAV path contains invalid encoding.');
+    }
+  });
+
+  if (segments.some((segment) => !segment || segment === '.' || segment === '..')) {
+    throw new Error('WebDAV path must not contain empty, . or .. segments.');
+  }
+}
+
 function getEnvConnectionOptions() {
   if (process.env.MYSQL_URL) {
     return process.env.MYSQL_URL;
@@ -108,6 +222,21 @@ async function readJsonBody(req) {
 
   const raw = Buffer.concat(chunks).toString('utf8');
   return JSON.parse(raw);
+}
+
+async function readRawBody(req) {
+  let size = 0;
+  const chunks = [];
+
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > MAX_BODY_BYTES) {
+      throw new Error(`Request body is too large. Limit is ${MAX_BODY_BYTES} bytes.`);
+    }
+    chunks.push(chunk);
+  }
+
+  return Buffer.concat(chunks);
 }
 
 async function withConnection(options, handler) {
@@ -249,6 +378,75 @@ async function getLatestSnapshot(url) {
   });
 }
 
+function getHeaderValue(req, name) {
+  const value = req.headers[name.toLowerCase()];
+  if (Array.isArray(value)) return value[0] || '';
+  return typeof value === 'string' ? value : '';
+}
+
+function copyHeaderIfPresent(req, target, reqName, upstreamName = reqName) {
+  const value = getHeaderValue(req, reqName);
+  if (value) {
+    target[upstreamName] = value;
+  }
+}
+
+async function proxyWebdavRequest(req, res, url, pathname) {
+  if (!WEBDAV_PROXY_METHODS.has(req.method || '')) {
+    jsonResponse(res, 405, { ok: false, message: 'WebDAV proxy method is not allowed.' });
+    return;
+  }
+
+  const endpointHeader = getHeaderValue(req, 'x-webdav-endpoint');
+  const endpoint = await assertPublicHttpsUrl(endpointHeader, 'WebDAV endpoint');
+  const pathPrefix = '/webdav/';
+  const encodedRemotePath = pathname.startsWith(pathPrefix)
+    ? pathname.slice(pathPrefix.length)
+    : '';
+  assertSafeRemotePath(encodedRemotePath);
+  const target = new URL(endpoint.toString().replace(/\/+$/, '/') + encodedRemotePath);
+  target.search = url.search;
+
+  const upstreamHeaders = {};
+  copyHeaderIfPresent(req, upstreamHeaders, 'authorization', 'Authorization');
+  copyHeaderIfPresent(req, upstreamHeaders, 'depth', 'Depth');
+  copyHeaderIfPresent(req, upstreamHeaders, 'overwrite', 'Overwrite');
+  copyHeaderIfPresent(req, upstreamHeaders, 'content-type', 'Content-Type');
+
+  const destination = getHeaderValue(req, 'destination');
+  if (destination) {
+    const destinationUrl = await assertPublicHttpsUrl(destination, 'WebDAV destination');
+    const endpointBase = endpoint.toString().replace(/\/+$/, '/');
+    if (
+      destinationUrl.origin !== endpoint.origin ||
+      !destinationUrl.toString().startsWith(endpointBase)
+    ) {
+      throw new Error('WebDAV destination must stay under the configured endpoint.');
+    }
+    upstreamHeaders.Destination = destinationUrl.toString();
+  }
+
+  const body = ['GET', 'HEAD'].includes(req.method || '') ? undefined : await readRawBody(req);
+  const upstream = await fetch(target, {
+    method: req.method,
+    headers: upstreamHeaders,
+    body: body && body.length > 0 ? body : undefined
+  });
+
+  const responseHeaders = {
+    'Access-Control-Allow-Origin': process.env.LEDGERFLOW_CORS_ORIGIN || '*'
+  };
+  ['content-type', 'etag', 'last-modified', 'location'].forEach((header) => {
+    const value = upstream.headers.get(header);
+    if (value) responseHeaders[header] = value;
+  });
+
+  const responseBody = Buffer.from(await upstream.arrayBuffer());
+  responseHeaders['Content-Length'] = responseBody.length;
+  res.writeHead(upstream.status, responseHeaders);
+  res.end(responseBody);
+}
+
 async function handleRequest(req, res) {
   if (req.method === 'OPTIONS') {
     jsonResponse(res, 204, {});
@@ -265,6 +463,11 @@ async function handleRequest(req, res) {
     }
 
     if (!requireApiToken(req, res)) {
+      return;
+    }
+
+    if (pathname === '/webdav' || pathname.startsWith('/webdav/')) {
+      await proxyWebdavRequest(req, res, url, pathname);
       return;
     }
 

@@ -27,6 +27,7 @@ import {
 } from '../../entities/transaction/types';
 import { GlobalMemoryItem, sanitizePersistedGlobalMemoryItem } from '../store/globalMemory';
 import type { FinanceDataSnapshot } from '../store/useFinanceStore';
+import { readStoredLedgerflowApiToken } from './ledgerflowApiToken';
 
 const BACKUP_KEY = 'ledgerflow-backup-webdav-v1';
 const BACKUP_PASSWORD_SESSION_KEY = 'ledgerflow-backup-webdav-password';
@@ -658,16 +659,12 @@ function validateTransactionItem(item: unknown, index: number): TransactionItem 
         item.adjustmentKind as NonNullable<TransactionItem['adjustmentKind']>
       ))
   ) {
-    throw new Error(
-      `备份文件字段无效：data.transactions[${index}].adjustmentKind 枚举值不合法`
-    );
+    throw new Error(`备份文件字段无效：data.transactions[${index}].adjustmentKind 枚举值不合法`);
   }
 
   const attachments = item.attachments;
   if (attachments !== undefined && !Array.isArray(attachments)) {
-    throw new Error(
-      `备份文件字段无效：data.transactions[${index}].attachments 应为数组`
-    );
+    throw new Error(`备份文件字段无效：data.transactions[${index}].attachments 应为数组`);
   }
 
   return {
@@ -793,9 +790,7 @@ function validateBalanceChangeEntry(item: unknown, index: number): BalanceChange
     typeof item.type !== 'string' ||
     !BALANCE_CHANGE_TYPES.has(item.type as BalanceChangeEntry['type'])
   ) {
-    throw new Error(
-      `备份文件字段无效：data.balanceChangeEntries[${index}].type 枚举值不合法`
-    );
+    throw new Error(`备份文件字段无效：data.balanceChangeEntries[${index}].type 枚举值不合法`);
   }
 
   return {
@@ -864,8 +859,7 @@ function validateSubscriptionItem(
 
   if (
     item.status !== undefined &&
-    (typeof item.status !== 'string' ||
-      !SUBSCRIPTION_STATUS.has(item.status as SubscriptionStatus))
+    (typeof item.status !== 'string' || !SUBSCRIPTION_STATUS.has(item.status as SubscriptionStatus))
   ) {
     throw new Error(`备份文件字段无效：data.subscriptions[${index}].status 枚举值不合法`);
   }
@@ -1752,6 +1746,10 @@ function buildWebdavHeaders(
 
   if (sanitized.proxyEnabled) {
     headers['X-WebDAV-Endpoint'] = sanitized.endpoint;
+    const apiToken = readStoredLedgerflowApiToken().trim();
+    if (apiToken) {
+      headers['X-LedgerFlow-Api-Token'] = apiToken;
+    }
   }
 
   return headers;
