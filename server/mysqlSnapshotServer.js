@@ -1,11 +1,12 @@
 import http from 'node:http';
-import { createHash } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { URL } from 'node:url';
 import mysql from 'mysql2/promise';
 
 const DEFAULT_PORT = 8787;
 const DEFAULT_USER_ID = 'default';
 const MAX_BODY_BYTES = Number(process.env.LEDGERFLOW_MAX_BODY_BYTES || 50 * 1024 * 1024);
+const API_TOKEN = String(process.env.LEDGERFLOW_API_TOKEN || '').trim();
 
 function jsonResponse(res, status, body) {
   const text = JSON.stringify(body);
@@ -14,7 +15,7 @@ function jsonResponse(res, status, body) {
     'Content-Length': Buffer.byteLength(text),
     'Access-Control-Allow-Origin': process.env.LEDGERFLOW_CORS_ORIGIN || '*',
     'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type'
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-LedgerFlow-Api-Token'
   });
   res.end(text);
 }
@@ -25,6 +26,49 @@ function normalizePath(pathname) {
 
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex');
+}
+
+function readRequestToken(req) {
+  const explicitToken = req.headers['x-ledgerflow-api-token'];
+  if (Array.isArray(explicitToken)) {
+    return explicitToken[0] || '';
+  }
+  if (typeof explicitToken === 'string' && explicitToken.trim()) {
+    return explicitToken.trim();
+  }
+
+  const authorization = req.headers.authorization || '';
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1].trim() : '';
+}
+
+function safeTokenEquals(received, expected) {
+  const receivedBuffer = Buffer.from(received);
+  const expectedBuffer = Buffer.from(expected);
+  return (
+    receivedBuffer.length === expectedBuffer.length &&
+    timingSafeEqual(receivedBuffer, expectedBuffer)
+  );
+}
+
+function requireApiToken(req, res) {
+  if (!API_TOKEN) {
+    jsonResponse(res, 503, {
+      ok: false,
+      message: 'MySQL snapshot API token is not configured.'
+    });
+    return false;
+  }
+
+  if (!safeTokenEquals(readRequestToken(req), API_TOKEN)) {
+    jsonResponse(res, 401, {
+      ok: false,
+      message: 'Invalid MySQL snapshot API token.'
+    });
+    return false;
+  }
+
+  return true;
 }
 
 function getEnvConnectionOptions() {
@@ -43,31 +87,6 @@ function getEnvConnectionOptions() {
       process.env.MYSQL_SSL === 'true'
         ? { rejectUnauthorized: process.env.MYSQL_SSL_REJECT_UNAUTHORIZED !== 'false' }
         : undefined
-  };
-}
-
-function getConfigConnectionOptions(config) {
-  if (!config || config.type !== 'mysql') {
-    throw new Error('Only MySQL connection tests are supported by this server.');
-  }
-
-  if (typeof config.connectionString === 'string' && config.connectionString.trim()) {
-    return config.connectionString.trim();
-  }
-
-  return {
-    host: config.host || '127.0.0.1',
-    port: Number(config.port || 3306),
-    user: config.username || undefined,
-    password: config.password || undefined,
-    database: config.database || undefined,
-    connectTimeout: Number(config.timeoutMs || 8000),
-    ssl: config.tls?.enabled
-      ? {
-          rejectUnauthorized: config.tls.rejectUnauthorized !== false,
-          ca: config.tls.caCert || undefined
-        }
-      : undefined
   };
 }
 
@@ -125,8 +144,8 @@ function parseDateOrNull(value) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-async function testConnection(body) {
-  const options = body?.config ? getConfigConnectionOptions(body.config) : getEnvConnectionOptions();
+async function testConnection() {
+  const options = getEnvConnectionOptions();
   const start = Date.now();
 
   return withConnection(options, async (connection) => {
@@ -182,7 +201,8 @@ async function saveSnapshot(body) {
 }
 
 function normalizeSnapshotRow(row) {
-  const payload = typeof row.payload_json === 'string' ? JSON.parse(row.payload_json) : row.payload_json;
+  const payload =
+    typeof row.payload_json === 'string' ? JSON.parse(row.payload_json) : row.payload_json;
   return {
     id: Number(row.id),
     userId: row.user_id,
@@ -244,11 +264,15 @@ async function handleRequest(req, res) {
       return;
     }
 
+    if (!requireApiToken(req, res)) {
+      return;
+    }
+
     if (
       (req.method === 'POST' || req.method === 'PUT') &&
       ['/conn/test', '/connection/test', '/db/connection/test'].includes(pathname)
     ) {
-      jsonResponse(res, 200, await testConnection(await readJsonBody(req)));
+      jsonResponse(res, 200, await testConnection());
       return;
     }
 

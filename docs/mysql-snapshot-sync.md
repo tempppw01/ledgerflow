@@ -12,10 +12,12 @@ MYSQL_PORT=3306 \
 MYSQL_USER=ledgerflow \
 MYSQL_PASSWORD=change-me \
 MYSQL_DATABASE=ledgerflow \
+LEDGERFLOW_API_TOKEN=replace-with-a-long-random-token \
 npm run server:mysql
 ```
 
 The API server listens on `8787` by default. Set `LEDGERFLOW_API_PORT` or `PORT` to change it.
+All snapshot routes require `LEDGERFLOW_API_TOKEN`. Enter the same token in the MySQL snapshot panel before uploading or restoring.
 
 For local Vite development, run both commands:
 
@@ -38,28 +40,30 @@ services:
     image: 34v0wphix/ledgerflow:latest
     container_name: ledgerflow
     ports:
-      - "18080:80"
+      - '18080:80'
     environment:
-      LEDGERFLOW_API_PORT: "8787"
-      LEDGERFLOW_MAX_BODY_BYTES: "52428800"
-      MYSQL_HOST: "rm-xxxx.mysql.rds.aliyuncs.com"
-      MYSQL_PORT: "3306"
-      MYSQL_USER: "ledgerflow"
-      MYSQL_PASSWORD: "CHANGE_ME"
-      MYSQL_DATABASE: "ledgerflow"
-      MYSQL_SSL: "false"
+      LEDGERFLOW_API_PORT: '8787'
+      LEDGERFLOW_MAX_BODY_BYTES: '52428800'
+      LEDGERFLOW_API_TOKEN: '${LEDGERFLOW_API_TOKEN:?Set LEDGERFLOW_API_TOKEN to a long random value}'
+      MYSQL_HOST: 'rm-xxxx.mysql.rds.aliyuncs.com'
+      MYSQL_PORT: '3306'
+      MYSQL_USER: 'ledgerflow'
+      MYSQL_PASSWORD: 'CHANGE_ME'
+      MYSQL_DATABASE: 'ledgerflow'
+      MYSQL_SSL: 'false'
     restart: unless-stopped
 ```
 
 Replace these values before deploying:
 
 ```yaml
-MYSQL_HOST: "rm-xxxx.mysql.rds.aliyuncs.com"
-MYSQL_PORT: "3306"
-MYSQL_USER: "ledgerflow"
-MYSQL_PASSWORD: "CHANGE_ME"
-MYSQL_DATABASE: "ledgerflow"
-MYSQL_SSL: "false"
+MYSQL_HOST: 'rm-xxxx.mysql.rds.aliyuncs.com'
+MYSQL_PORT: '3306'
+MYSQL_USER: 'ledgerflow'
+MYSQL_PASSWORD: 'CHANGE_ME'
+MYSQL_DATABASE: 'ledgerflow'
+MYSQL_SSL: 'false'
+LEDGERFLOW_API_TOKEN: 'replace-with-a-long-random-token'
 ```
 
 `MYSQL_HOST` should be the Alibaba Cloud RDS internal or public endpoint. This setup does not require a local MySQL container.
@@ -76,23 +80,11 @@ docker compose up -d
 - `POST /api/snapshots/upload`
 - `GET /api/snapshots/latest?userId=default`
 
-`POST /api/conn/test` accepts the existing connection config payload:
+Except for `GET /api/health`, every route requires `Authorization: Bearer <LEDGERFLOW_API_TOKEN>` or `X-LedgerFlow-Api-Token: <LEDGERFLOW_API_TOKEN>`.
 
-```json
-{
-  "config": {
-    "type": "mysql",
-    "host": "127.0.0.1",
-    "port": 3306,
-    "username": "ledgerflow",
-    "password": "change-me",
-    "database": "ledgerflow",
-    "timeoutMs": 8000
-  }
-}
-```
+`POST /api/conn/test` only checks the MySQL credentials configured in server environment variables. It intentionally ignores browser-provided host, port, username, password, or connection string values to avoid turning the API into an arbitrary network probe.
 
-Snapshot routes use the server environment MySQL credentials, not browser-stored credentials.
+Snapshot routes also use the server environment MySQL credentials, not browser-stored credentials.
 
 ## Table
 

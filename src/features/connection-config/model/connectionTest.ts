@@ -2,6 +2,16 @@ import { ConnectionFormValues, connectionFormSchema } from './connectionFormSche
 import { ConnectionTestResult } from '../../../entities/connection/types';
 import { postConnectionTest } from '../../../shared/api/connectionClient';
 
+const MYSQL_SNAPSHOT_API_TOKEN_STORAGE_KEY = 'ledgerflow-mysql-snapshot-api-token';
+
+function readStoredApiToken() {
+  try {
+    return window.localStorage.getItem(MYSQL_SNAPSHOT_API_TOKEN_STORAGE_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`连接超时（>${timeoutMs}ms）`)), timeoutMs);
@@ -19,13 +29,13 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number) {
 
 async function testByProxy(config: ConnectionFormValues): Promise<ConnectionTestResult> {
   const start = performance.now();
-  const data = await withTimeout(postConnectionTest({ config }), config.timeoutMs);
+  const data = await withTimeout(postConnectionTest(readStoredApiToken()), config.timeoutMs);
 
   return {
     ok: data.ok,
-    message: data.message ?? (data.ok ? '代理连接成功' : '代理连接失败'),
+    message: data.message ?? (data.ok ? '服务端连接成功' : '服务端连接失败'),
     elapsedMs: Math.round(performance.now() - start),
-    detail: data.detail ?? '[proxy] no detail'
+    detail: data.detail ?? '[server-env] no detail'
   };
 }
 

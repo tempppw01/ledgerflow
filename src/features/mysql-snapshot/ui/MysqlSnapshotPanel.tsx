@@ -6,6 +6,7 @@ import {
   type MysqlSnapshotRecord
 } from '../../../shared/api/mysqlSnapshotClient';
 import { ConfirmDialog } from '../../../shared/ui/ConfirmDialog';
+import { PasswordInput } from '../../../shared/ui/PasswordInput';
 import { BACKUP_ICON_URL, RESTORE_ICON_URL } from '../../../shared/config/brandAssets';
 
 interface MysqlSnapshotPanelProps {
@@ -35,6 +36,29 @@ function formatTime(value?: string | null) {
   });
 }
 
+const MYSQL_SNAPSHOT_API_TOKEN_STORAGE_KEY = 'ledgerflow-mysql-snapshot-api-token';
+
+function readStoredApiToken() {
+  try {
+    return window.localStorage.getItem(MYSQL_SNAPSHOT_API_TOKEN_STORAGE_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+function writeStoredApiToken(value: string) {
+  try {
+    const token = value.trim();
+    if (token) {
+      window.localStorage.setItem(MYSQL_SNAPSHOT_API_TOKEN_STORAGE_KEY, token);
+      return;
+    }
+    window.localStorage.removeItem(MYSQL_SNAPSHOT_API_TOKEN_STORAGE_KEY);
+  } catch {
+    // ignore storage errors
+  }
+}
+
 export function MysqlSnapshotPanel({
   disabled,
   canCreateBackup,
@@ -46,6 +70,7 @@ export function MysqlSnapshotPanel({
   const [status, setStatus] = useState('');
   const [lastSnapshot, setLastSnapshot] = useState<MysqlSnapshotRecord | null>(null);
   const [restoreOpen, setRestoreOpen] = useState(false);
+  const [apiToken, setApiToken] = useState(() => readStoredApiToken());
 
   const summary = useMemo(() => {
     if (!lastSnapshot) return '尚未读取 MySQL 快照';
@@ -57,12 +82,21 @@ export function MysqlSnapshotPanel({
       setStatus('请至少选择一个备份范围。');
       return;
     }
+    if (!apiToken.trim()) {
+      setStatus('请先填写 MySQL 快照 API 令牌。');
+      return;
+    }
 
     try {
       setBusy(true);
       setStatus('正在生成快照...');
       const payload = createPayload();
-      const response = await uploadMysqlSnapshot({ payload, schemaVersion: 1, source: 'manual' });
+      const response = await uploadMysqlSnapshot({
+        payload,
+        schemaVersion: 1,
+        source: 'manual',
+        apiToken
+      });
       setLastSnapshot({
         id: response.id,
         userId: response.userId,
@@ -83,10 +117,15 @@ export function MysqlSnapshotPanel({
   }
 
   async function handleLoadLatest() {
+    if (!apiToken.trim()) {
+      setStatus('请先填写 MySQL 快照 API 令牌。');
+      return;
+    }
+
     try {
       setBusy(true);
       setStatus('正在读取 MySQL 最新快照...');
-      const response = await downloadLatestMysqlSnapshot();
+      const response = await downloadLatestMysqlSnapshot('default', apiToken);
       if (!response.ok || !response.snapshot) {
         setStatus(response.message || 'MySQL 中还没有快照。');
         return;
@@ -128,6 +167,20 @@ export function MysqlSnapshotPanel({
         <p className="sync-tip" style={{ margin: '0 0 10px' }}>
           当前备份范围：{backupScopeSummary}
         </p>
+        <div className="field" style={{ marginBottom: 10 }}>
+          <label>API 令牌</label>
+          <PasswordInput
+            value={apiToken}
+            placeholder="与服务端 LEDGERFLOW_API_TOKEN 保持一致"
+            onChange={(event) => {
+              setApiToken(event.target.value);
+              writeStoredApiToken(event.target.value);
+            }}
+            showLabel="显示"
+            hideLabel="隐藏"
+          />
+          <small className="sync-tip">令牌只保存在当前浏览器，用于保护 MySQL 快照读写接口。</small>
+        </div>
         <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
           <button
             type="button"
@@ -144,8 +197,7 @@ export function MysqlSnapshotPanel({
             onClick={() => void handleLoadLatest()}
             disabled={disabled || busy}
           >
-            <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
-            从 MySQL 恢复
+            <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />从 MySQL 恢复
           </button>
           {status ? <span className="sync-tip">{status}</span> : null}
         </div>

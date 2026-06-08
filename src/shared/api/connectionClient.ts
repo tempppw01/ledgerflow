@@ -1,9 +1,4 @@
 import { ENV } from '../config/env';
-import { ConnectionFormValues } from '../../features/connection-config/model/connectionFormSchema';
-
-interface ProxyTestRequest {
-  config: ConnectionFormValues;
-}
 
 interface ProxyTestResponse {
   ok: boolean;
@@ -48,13 +43,22 @@ function joinBaseAndPath(base: string, path: string) {
 
 async function requestJson<T>(
   url: string,
-  payload: unknown,
+  apiToken?: string,
   method: 'POST' | 'PUT' = 'POST'
 ): Promise<T> {
+  const token = String(apiToken || '').trim();
   const response = await fetch(url, {
     method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token
+        ? {
+            Authorization: `Bearer ${token}`,
+            'X-LedgerFlow-Api-Token': token
+          }
+        : {})
+    },
+    body: JSON.stringify({})
   });
 
   const body = (await response.json().catch(() => ({}))) as {
@@ -76,7 +80,7 @@ async function requestJson<T>(
 
 async function requestWithFallback<T>(
   paths: string[],
-  payload: unknown,
+  apiToken?: string,
   methods: Array<'POST' | 'PUT'> = ['POST', 'PUT']
 ): Promise<T> {
   let lastError: unknown;
@@ -96,7 +100,7 @@ async function requestWithFallback<T>(
 
         try {
           attempts.push(attemptKey);
-          return await requestJson<T>(url, payload, method);
+          return await requestJson<T>(url, apiToken, method);
         } catch (error) {
           lastError = error;
           if (error instanceof HttpRequestError && (error.status === 404 || error.status === 405)) {
@@ -118,10 +122,10 @@ async function requestWithFallback<T>(
   throw lastError instanceof Error ? lastError : new Error('连接测试请求失败');
 }
 
-export async function postConnectionTest(payload: ProxyTestRequest): Promise<ProxyTestResponse> {
+export async function postConnectionTest(apiToken?: string): Promise<ProxyTestResponse> {
   return requestWithFallback<ProxyTestResponse>(
     ['/conn/test', '/api/conn/test', '/connection/test', '/db/connection/test'],
-    payload,
+    apiToken,
     ['POST', 'PUT']
   );
 }

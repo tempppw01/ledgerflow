@@ -48,11 +48,14 @@ describe('mysqlSnapshotClient', () => {
     );
     vi.stubGlobal('fetch', fetchMock);
 
-    await uploadMysqlSnapshot({ payload });
+    await uploadMysqlSnapshot({ payload, apiToken: 'secret-token' });
 
     const calls = (fetchMock as Mock).mock.calls as Array<[string, RequestInit]>;
     const body = JSON.parse(String(calls[0]?.[1]?.body));
+    const headers = calls[0]?.[1]?.headers as Record<string, string>;
     expect(calls[0]?.[0]).toBe('/api/snapshots');
+    expect(headers.Authorization).toBe('Bearer secret-token');
+    expect(headers['X-LedgerFlow-Api-Token']).toBe('secret-token');
     expect(body.payload).toEqual(payload);
     expect(body.checksum).toHaveLength(64);
   });
@@ -108,6 +111,13 @@ describe('mysqlSnapshotClient', () => {
       )
     );
 
-    await expect(downloadLatestMysqlSnapshot()).rejects.toThrow('checksum mismatch');
+    await expect(downloadLatestMysqlSnapshot('default', 'secret-token')).rejects.toThrow(
+      'checksum mismatch'
+    );
+    const fetchMock = fetch as Mock;
+    const calls = fetchMock.mock.calls as Array<[string, RequestInit]>;
+    const headers = calls[0]?.[1]?.headers as Record<string, string>;
+    expect(headers.Authorization).toBe('Bearer secret-token');
+    expect(headers['X-LedgerFlow-Api-Token']).toBe('secret-token');
   });
 });
