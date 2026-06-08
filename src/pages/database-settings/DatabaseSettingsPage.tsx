@@ -1,5 +1,4 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { ConnectionConfigManager } from '../../features/connection-config/ui/ConnectionConfigManager';
 import { MysqlSnapshotPanel } from '../../features/mysql-snapshot/ui/MysqlSnapshotPanel';
 import {
   applyBillImportMode,
@@ -400,7 +399,6 @@ export function DatabaseSettingsPage() {
   const [webdavAdvancedOpen, setWebdavAdvancedOpen] = useState(false);
   const [objectStorageAdvancedOpen, setObjectStorageAdvancedOpen] = useState(false);
   const [objectStorageStatus, setObjectStorageStatus] = useState('');
-  const [remoteConnectionOpen, setRemoteConnectionOpen] = useState(false);
   const [backupScope, setBackupScope] = useState<FinanceBackupScope>(() => loadStoredBackupScope());
 
   const totalRows = useMemo(
@@ -1437,29 +1435,6 @@ export function DatabaseSettingsPage() {
             </div>
           </div>
         ) : null}
-      </section>
-
-      <section className="panel" style={{ marginTop: 12 }}>
-        <div
-          className="row"
-          style={{
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            gap: 12,
-            flexWrap: 'wrap'
-          }}
-        >
-          <div>
-            <h3 style={{ marginTop: 0, marginBottom: 0 }}>远程数据库连接（高级）</h3>
-            <p className="sync-tip" style={{ margin: '6px 0 0' }}>
-              可选保存 MySQL / Redis 连接参数，不影响本地账本，也不会覆盖 WebDAV 备份。
-            </p>
-          </div>
-          <button type="button" onClick={() => setRemoteConnectionOpen((prev) => !prev)}>
-            {remoteConnectionOpen ? '收起连接配置' : '展开连接配置'}
-          </button>
-        </div>
-        {remoteConnectionOpen ? <ConnectionConfigManager /> : null}
       </section>
 
       <section className="panel" style={{ marginTop: 12 }}>
