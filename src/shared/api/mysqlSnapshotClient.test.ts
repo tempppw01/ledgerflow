@@ -57,6 +57,35 @@ describe('mysqlSnapshotClient', () => {
     expect(body.checksum).toHaveLength(64);
   });
 
+  it('uploads backup payload when WebCrypto subtle is unavailable', async () => {
+    const originalCrypto = window.crypto;
+    const expectedChecksum = await checksum(payload);
+    try {
+      vi.stubGlobal('crypto', {});
+      const fetchMock = vi.fn(async () =>
+        Response.json({
+          ok: true,
+          id: 1,
+          userId: 'default',
+          schemaVersion: 1,
+          checksum: expectedChecksum,
+          payloadBytes: 128,
+          exportedAt: payload.exportedAt,
+          message: 'ok'
+        })
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      await uploadMysqlSnapshot({ payload });
+
+      const calls = (fetchMock as Mock).mock.calls as Array<[string, RequestInit]>;
+      const body = JSON.parse(String(calls[0]?.[1]?.body));
+      expect(body.checksum).toBe(expectedChecksum);
+    } finally {
+      vi.stubGlobal('crypto', originalCrypto);
+    }
+  });
+
   it('rejects a downloaded snapshot when checksum does not match', async () => {
     vi.stubGlobal(
       'fetch',
