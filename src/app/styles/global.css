@@ -288,12 +288,14 @@ body {
   gap: var(--space-4);
   flex: 1;
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--color-primary) 38%, var(--color-border)) transparent;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .sidebar-nav::-webkit-scrollbar {
-  width: 8px;
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .sidebar-nav::-webkit-scrollbar-track {
