@@ -24,6 +24,15 @@ interface EastmoneyRealtimePayload {
   gztime?: string;
 }
 
+interface EastmoneyQuoteListPayload {
+  data?: {
+    diff?: Array<{
+      f12?: string;
+      f14?: string;
+    }>;
+  };
+}
+
 const EASTMONEY_SCRIPT_TIMEOUT_MS = 12000;
 
 function normalizeFundCode(input: string): string {
@@ -94,6 +103,44 @@ async function loadFundDetailGlobals(code: string) {
   await appendScript(`https://fund.eastmoney.com/pingzhongdata/${code}.js?v=${Date.now()}`);
 }
 
+function normalizeStockSecId(secId: string): string {
+  return String(secId || '').trim();
+}
+
+async function fetchStockNameMap(secIds: string[]): Promise<Map<string, string>> {
+  const normalizedSecIds = secIds.map(normalizeStockSecId).filter(Boolean);
+  if (normalizedSecIds.length === 0) {
+    return new Map();
+  }
+
+  try {
+    const response = await fetch(
+      `https://push2.eastmoney.com/api/qt/ulist.np/get?secids=${encodeURIComponent(
+        normalizedSecIds.join(',')
+      )}&fields=f12,f14`
+    );
+
+    if (!response.ok) {
+      return new Map();
+    }
+
+    const payload = (await response.json()) as EastmoneyQuoteListPayload;
+    const map = new Map<string, string>();
+
+    for (const item of payload.data?.diff || []) {
+      const code = String(item.f12 || '').trim();
+      const name = String(item.f14 || '').trim();
+      if (code && name) {
+        map.set(code, name);
+      }
+    }
+
+    return map;
+  } catch {
+    return new Map();
+  }
+}
+
 export async function fetchEastmoneyFundSnapshot(inputCode: string): Promise<EastmoneyFundSnapshot> {
   const code = normalizeFundCode(inputCode);
   const realtime = await fetchRealtimeSnapshot(code);
@@ -103,6 +150,8 @@ export async function fetchEastmoneyFundSnapshot(inputCode: string): Promise<Eas
   const detailCode = readWindowString('fS_code');
   const buyFeeRate = readWindowString('fund_Rate');
   const sourceFeeRate = readWindowString('fund_sourceRate');
+  const stockCodesNew = getWindowValueAs<string[]>('stockCodesNew') || [];
+  const stockNameMap = await fetchStockNameMap(stockCodesNew);
   const performanceHistory = [
     formatPercent(readWindowString('syl_1y'), '近 1 月'),
     formatPercent(readWindowString('syl_3y'), '近 3 月'),
@@ -115,17 +164,18 @@ export async function fetchEastmoneyFundSnapshot(inputCode: string): Promise<Eas
     return value as T | undefined;
   }
 
-  const fundHoldings: Array<{ name: string; ratio: string }> =
-    getWindowValueAs<Array<{ '0': string; '1': string; '2': string; '3'?: string; '4'?: string }>>('Data_fundSharesPositions')?.map(
-      (item) => ({
-        name: String(item['0'] || ''),
-        ratio: String(item['1'] || '')
-      })
-    ) ?? [];
-
-  const holdingItems = fundHoldings
-    .filter((item) => item.name)
-    .filter((item) => item.ratio).map((item) => `${item.name} ${item.ratio}`).slice(0, 6);
+  const holdingItems = stockCodesNew
+    .map((secId) => {
+      const normalizedSecId = normalizeStockSecId(secId);
+      const code = normalizedSecId.split('.').pop()?.trim() || normalizedSecId;
+      const name = stockNameMap.get(code);
+      if (name) {
+        return `${name}（${code}）`;
+      }
+      return code;
+    })
+    .filter(Boolean)
+    .slice(0, 6);
 
   const allocationData = getWindowValueAs<Array<{ '0': string; '2': string }>>('Data_assetAllocationWeight');
   const allocationItems = (allocationData ?? [])

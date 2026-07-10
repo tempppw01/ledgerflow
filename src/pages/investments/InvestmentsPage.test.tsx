@@ -120,6 +120,7 @@ describe('InvestmentsPage', () => {
     expect(screen.queryByLabelText('基金分析输入框')).not.toBeInTheDocument();
     expect(container.querySelector('.investments-management-grid')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '顺手下一步' })).toBeInTheDocument();
+    expect(screen.queryByText('在投资理财助手中继续分析这只基金')).not.toBeInTheDocument();
     expect(container.querySelector('.investments-actions-card')).not.toBeInTheDocument();
 
   });

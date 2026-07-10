@@ -1230,7 +1230,7 @@
   gap: 6px;
   max-height: none;
   overflow: visible;
-  padding: 9px 10px;
+  padding: 8px 9px;
   border: 1px solid color-mix(in srgb, var(--color-border-light) 86%, transparent);
   border-radius: 12px;
   background: color-mix(in srgb, var(--color-bg-elevated) 80%, var(--color-bg-subtle));
@@ -1451,6 +1451,69 @@
   white-space: nowrap;
 }
 
+.investments-watch-card-split-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.investments-watch-card-split {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 76%, transparent);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 74%, transparent);
+}
+
+.investments-watch-card-split.is-holdings {
+  background: color-mix(in srgb, var(--color-primary-bg) 28%, var(--color-bg-subtle));
+}
+
+.investments-watch-card-split.is-assets {
+  background: color-mix(in srgb, var(--color-success-bg) 18%, var(--color-bg-subtle));
+}
+
+.investments-watch-card-split span,
+.investments-watch-detail-head span {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.investments-watch-card-split p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.investments-watch-chip-list {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.investments-watch-chip-list strong {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  padding: 4px 7px;
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 72%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 90%, var(--color-bg-subtle));
+  color: var(--color-text-primary);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
 .investments-watch-card-ai-actions {
   display: flex;
   gap: 5px;
@@ -1511,28 +1574,152 @@
   border-top: 1px dashed var(--color-border-light);
 }
 
+.investments-watch-performance-panel {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
+  border-radius: 13px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-primary-bg) 70%, var(--color-bg-elevated)) 0%,
+    color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-bg-subtle)) 100%
+  );
+}
+
+.investments-watch-performance-chart {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  align-items: end;
+  min-height: 112px;
+}
+
+.investments-watch-performance-bar {
+  display: grid;
+  gap: 5px;
+  align-content: end;
+  justify-items: center;
+  min-width: 0;
+  text-align: center;
+}
+
+.investments-watch-performance-track {
+  position: relative;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  width: 100%;
+  height: 78px;
+  border-radius: 999px 999px 8px 8px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 72%, transparent);
+  overflow: hidden;
+}
+
+.investments-watch-performance-track i {
+  width: min(18px, 100%);
+  min-height: 14px;
+  border-radius: 999px 999px 6px 6px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-primary) 92%, white),
+    color-mix(in srgb, var(--color-accent) 64%, var(--color-primary))
+  );
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--color-primary) 16%, transparent);
+  transition:
+    height 0.25s ease,
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.investments-watch-performance-bar.is-negative .investments-watch-performance-track i {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-danger) 88%, white),
+    color-mix(in srgb, var(--color-warning) 60%, var(--color-danger))
+  );
+}
+
+.investments-watch-performance-bar strong {
+  color: var(--color-text-primary);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.investments-watch-performance-bar em {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.15;
+}
+
+.investments-watch-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.investments-watch-detail-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 78%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 72%, transparent);
+}
+
+.investments-watch-detail-card.is-chips {
+  background: color-mix(in srgb, var(--color-primary-bg) 14%, var(--color-bg-subtle));
+}
+
+.investments-watch-detail-card.is-stat {
+  background: color-mix(in srgb, var(--color-warning-bg) 14%, var(--color-bg-subtle));
+}
+
+.investments-watch-detail-card.is-text {
+  background: color-mix(in srgb, var(--color-bg-elevated) 88%, var(--color-bg-subtle));
+}
+
+.investments-watch-detail-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.investments-watch-detail-head small {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.investments-watch-detail-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.investments-watch-detail-copy p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.investments-watch-detail-stat {
+  color: var(--color-text-primary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .investments-watch-detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
-.investments-watch-detail-grid section {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-  padding: 10px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--color-bg-subtle) 70%, transparent);
-}
-
-.investments-watch-detail-grid span {
-  color: var(--color-text-secondary);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.investments-watch-detail-grid p,
 .investments-watch-card-empty-detail {
   color: var(--color-text-secondary);
   font-size: 12px;
@@ -2550,6 +2737,11 @@
     grid-template-columns: 1fr;
   }
 
+  .investments-watch-card-split-grid,
+  .investments-watch-performance-chart {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .investments-history-table {
     overflow-x: auto;
   }
@@ -2562,6 +2754,19 @@
 @media (max-width: 640px) {
   .investments-summary-strip {
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 112px), 1fr));
+  }
+
+  .investments-watch-card-split-grid,
+  .investments-watch-performance-chart {
+    grid-template-columns: 1fr;
+  }
+
+  .investments-watch-card {
+    padding: 8px;
+  }
+
+  .investments-watch-card-mini-stats {
+    gap: 4px;
   }
 
   .investments-card-head,

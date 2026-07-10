@@ -270,22 +270,102 @@ function getAnalysisRiskClass(riskLevel?: InvestmentFundAnalysis['riskLevel']) {
 
 type WatchDetailSection = {
   title: string;
+  kind: 'chart' | 'chips' | 'stat' | 'text';
   items: string[];
 };
 
 function compactWatchDetailSections(item: InvestmentWatchItem): WatchDetailSection[] {
   return [
-    { title: '历史业绩', items: item.performanceHistory || [] },
-    { title: '基金分析', items: item.fundAnalysis || [] },
-    { title: '基金持仓', items: item.fundHoldings || [] },
-    { title: '基金资产分布', items: item.assetAllocation || [] },
-    { title: '行业分布', items: item.industryAllocation || [] },
-    { title: '买入费率', items: item.buyFeeRate ? [item.buyFeeRate] : [] },
-    { title: '基金公司', items: item.fundCompany ? [item.fundCompany] : [] },
-    { title: '判断依据', items: item.adviceReasons || [] },
-    { title: '风险提示', items: item.riskNotes || [] },
-    { title: '下一步', items: item.nextActions || [] }
+    { title: '历史业绩', kind: 'chart' as const, items: item.performanceHistory || [] },
+    { title: '基金分析', kind: 'text' as const, items: item.fundAnalysis || [] },
+    { title: '基金持仓', kind: 'chips' as const, items: item.fundHoldings || [] },
+    { title: '基金资产分布', kind: 'chips' as const, items: item.assetAllocation || [] },
+    { title: '行业分布', kind: 'chips' as const, items: item.industryAllocation || [] },
+    { title: '买入费率', kind: 'stat' as const, items: item.buyFeeRate ? [item.buyFeeRate] : [] },
+    { title: '基金公司', kind: 'stat' as const, items: item.fundCompany ? [item.fundCompany] : [] },
+    { title: '判断依据', kind: 'text' as const, items: item.adviceReasons || [] },
+    { title: '风险提示', kind: 'text' as const, items: item.riskNotes || [] }
   ].filter((section) => section.items.length > 0);
+}
+
+type WatchPerformancePoint = {
+  label: string;
+  value: number;
+  caption: string;
+};
+
+function formatWatchPerformanceCaption(value: number) {
+  const sign = value > 0 ? '+' : '';
+  return `${sign}${value.toFixed(2)}%`;
+}
+
+function parseWatchPerformancePoints(items: string[]): WatchPerformancePoint[] {
+  return items
+    .map((item) => String(item || '').trim())
+    .filter(Boolean)
+    .map((item) => {
+      const periodMatch = item.match(/^(近\s*\d+\s*[月周日年])\s+(-?\d+(?:\.\d+)?)%?$/);
+      if (periodMatch) {
+        const value = Number(periodMatch[2] || 0);
+        return {
+          label: periodMatch[1].replace(/\s+/g, ''),
+          value,
+          caption: formatWatchPerformanceCaption(value)
+        };
+      }
+
+      const timestampMatch = item.match(/^(\d{10,13})\s+(-?\d+(?:\.\d+)?)%?$/);
+      if (timestampMatch) {
+        const timestamp = Number(timestampMatch[1]);
+        const value = Number(timestampMatch[2] || 0);
+        const date = new Date(timestamp < 1e12 ? timestamp * 1000 : timestamp);
+        const label = Number.isNaN(date.getTime())
+          ? item
+          : date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
+        return {
+          label,
+          value,
+          caption: formatWatchPerformanceCaption(value)
+        };
+      }
+
+      const valueMatch = item.match(/(-?\d+(?:\.\d+)?)%$/);
+      const value = valueMatch ? Number(valueMatch[1] || 0) : 0;
+
+      return {
+        label: item.slice(0, 4),
+        value,
+        caption: item
+      };
+    })
+    .filter((point) => Number.isFinite(point.value));
+}
+
+function getWatchSectionClassName(kind: WatchDetailSection['kind']) {
+  if (kind === 'chart') return 'is-chart';
+  if (kind === 'chips') return 'is-chips';
+  if (kind === 'stat') return 'is-stat';
+  return 'is-text';
+}
+
+function formatWatchPreviewItem(value: string) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+
+  const timestampMatch = text.match(/^(\d{10,13})\s+(-?\d+(?:\.\d+)?)%?$/);
+  if (timestampMatch) {
+    const timestamp = Number(timestampMatch[1]);
+    const metric = Number(timestampMatch[2] || 0);
+    const date = new Date(timestamp < 1e12 ? timestamp * 1000 : timestamp);
+    if (!Number.isNaN(date.getTime())) {
+      return `${date.toLocaleDateString('zh-CN', {
+        month: '2-digit',
+        day: '2-digit'
+      })} ${metric.toFixed(2)}`;
+    }
+  }
+
+  return text;
 }
 
 function normalizeInvestmentLookupValue(value?: string) {
@@ -820,7 +900,7 @@ export function InvestmentsPage() {
         investmentAdvice: existing?.investmentAdvice || '先加入自选观察，再结合持仓和风险偏好决定。',
         adviceReasons: existing?.adviceReasons || [],
         riskNotes: existing?.riskNotes || [],
-        nextActions: existing?.nextActions || ['在投资理财助手中继续分析这只基金'],
+        nextActions: existing?.nextActions || [],
         performanceHistory: snapshot.performanceHistory.length
           ? snapshot.performanceHistory
           : existing?.performanceHistory,
@@ -1114,9 +1194,18 @@ export function InvestmentsPage() {
                 {investmentWatchlist.map((item) => {
                   const isExpanded = expandedWatchItemId === item.id;
                   const detailSections = compactWatchDetailSections(item);
+                  const performanceSection = detailSections.find(
+                    (section) => section.title === '历史业绩'
+                  );
+                  const otherDetailSections = detailSections.filter(
+                    (section) => section.title !== '历史业绩'
+                  );
                   const primaryTag = item.tags[0];
-                  const holdingsPreview = item.fundHoldings?.slice(0, 2) || [];
-                  const assetAllocationPreview = item.assetAllocation?.slice(0, 2) || [];
+                  const holdingsPreview = item.fundHoldings?.slice(0, 3) || [];
+                  const assetAllocationPreview = item.assetAllocation?.slice(0, 3) || [];
+                  const performancePoints = parseWatchPerformancePoints(
+                    performanceSection?.items || []
+                  );
                   const holdingReturn =
                     item.holdingReturn || getWatchItemHoldingReturn(item, activePositions);
 
@@ -1183,18 +1272,45 @@ export function InvestmentsPage() {
                           <em>持有</em>
                           <strong>{holdingReturn || '待更新'}</strong>
                         </span>
-                        <span>
-                          <em>重仓</em>
-                          <strong>{holdingsPreview.length > 0 ? holdingsPreview.join(' / ') : '待更新'}</strong>
-                        </span>
-                        <span>
-                          <em>资产</em>
-                          <strong>
-                            {assetAllocationPreview.length > 0
-                              ? assetAllocationPreview.join(' / ')
-                              : '待更新'}
-                          </strong>
-                        </span>
+                      </div>
+                      <div className="investments-watch-card-split-grid">
+                        <article className="investments-watch-card-split is-holdings">
+                          <span>重仓</span>
+                          {holdingsPreview.length > 0 ? (
+                            <div className="investments-watch-chip-list" aria-label="基金重仓股票">
+                              {holdingsPreview.map((value) => {
+                                const displayValue = formatWatchPreviewItem(value);
+                                return (
+                                  <strong
+                                    key={`${item.id}-holding-${value}`}
+                                    title={displayValue}
+                                  >
+                                    {displayValue}
+                                  </strong>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p>待更新</p>
+                          )}
+                        </article>
+                        <article className="investments-watch-card-split is-assets">
+                          <span>资产</span>
+                          {assetAllocationPreview.length > 0 ? (
+                            <div className="investments-watch-chip-list" aria-label="基金资产分布">
+                              {assetAllocationPreview.map((value) => {
+                                const displayValue = formatWatchPreviewItem(value);
+                                return (
+                                  <strong key={`${item.id}-asset-${value}`} title={displayValue}>
+                                    {displayValue}
+                                  </strong>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p>待更新</p>
+                          )}
+                        </article>
                       </div>
                       <div className="investments-watch-card-ai-actions">
                         <button
@@ -1228,14 +1344,87 @@ export function InvestmentsPage() {
                       {isExpanded ? (
                         <div className="investments-watch-card-details">
                           {detailSections.length > 0 ? (
-                            <div className="investments-watch-detail-grid">
-                              {detailSections.map((section) => (
-                                <section key={`${item.id}-${section.title}`}>
-                                  <span>{section.title}</span>
-                                  <p>{section.items.join(' / ')}</p>
+                            <>
+                              {performanceSection && performancePoints.length > 0 ? (
+                                <section className="investments-watch-performance-panel">
+                                  <div className="investments-watch-detail-head">
+                                    <span>{performanceSection.title}</span>
+                                    <small>最近四个区间的表现</small>
+                                  </div>
+                                  <div
+                                    className="investments-watch-performance-chart"
+                                    role="list"
+                                    aria-label="历史业绩图表"
+                                  >
+                                    {performancePoints.map((point, index) => {
+                                      const maxValue = Math.max(
+                                        ...performancePoints.map((entry) => Math.abs(entry.value)),
+                                        1
+                                      );
+                                      const height = Math.max(
+                                        14,
+                                        (Math.abs(point.value) / maxValue) * 100
+                                      );
+
+                                      return (
+                                        <div
+                                          key={`${item.id}-performance-${point.label}-${index}`}
+                                          className={`investments-watch-performance-bar ${
+                                            point.value >= 0 ? 'is-positive' : 'is-negative'
+                                          }`}
+                                          role="listitem"
+                                          title={`${point.label} ${point.caption}`}
+                                        >
+                                          <span className="investments-watch-performance-track">
+                                            <i style={{ height: `${height}%` }} />
+                                          </span>
+                                          <strong>{point.label}</strong>
+                                          <em>{point.caption}</em>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
                                 </section>
-                              ))}
-                            </div>
+                              ) : null}
+
+                              <div className="investments-watch-detail-grid">
+                                {otherDetailSections.map((section) => (
+                                  <section
+                                    key={`${item.id}-${section.title}`}
+                                    className={`investments-watch-detail-card ${getWatchSectionClassName(
+                                      section.kind
+                                    )}`}
+                                  >
+                                    <div className="investments-watch-detail-head">
+                                      <span>{section.title}</span>
+                                      {section.kind === 'chips' ? <small>精选摘要</small> : null}
+                                    </div>
+                                    {section.kind === 'chips' ? (
+                                      <div className="investments-watch-chip-list">
+                                        {section.items.map((value) => (
+                                          <strong
+                                            key={`${item.id}-${section.title}-${value}`}
+                                            title={value}
+                                          >
+                                            {value}
+                                          </strong>
+                                        ))}
+                                      </div>
+                                    ) : section.kind === 'stat' ? (
+                                      <strong className="investments-watch-detail-stat">
+                                        {section.items[0]}
+                                      </strong>
+                                    ) : (
+                                      <div className="investments-watch-detail-copy">
+                                        {section.items.map((value) => (
+                                          <p key={`${item.id}-${section.title}-${value}`}>{value}</p>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </section>
+                                ))}
+                              </div>
+                            </>
                           ) : (
                             <p className="investments-watch-card-empty-detail">
                               暂无更多资料。
