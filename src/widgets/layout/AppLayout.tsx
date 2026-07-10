@@ -96,7 +96,7 @@ export function AppLayout() {
         items: [
           {
             to: '/assistant',
-            label: tFallback('nav.assistantBookkeeping', '记账助手'),
+            label: tFallback('nav.assistantBookkeeping', 'AI助手'),
             icon: '🤖',
             iconSrc: CHAT_ICON_URL
           },
@@ -195,7 +195,7 @@ export function AppLayout() {
         title: tFallback('nav.commonFeatures', '常用功能'),
         items: [
           {
-            label: tFallback('nav.assistantBookkeeping', '记账助手'),
+            label: tFallback('nav.assistantBookkeeping', 'AI助手'),
             icon: '🤖',
             iconSrc: CHAT_ICON_URL,
             to: '/assistant'
@@ -737,7 +737,6 @@ export function AppLayout() {
                 alt=""
                 aria-hidden="true"
               />
-              <span>{t('nav.settings', { defaultValue: '设置' })}</span>
             </button>
           </div>
         </header>

@@ -112,7 +112,6 @@ export function buildInvestmentAssistantPrompt(input: {
 
 export function buildInvestmentWatchlistReviewPrompt(input: {
   positions: InvestmentPosition[];
-  goals: InvestmentGoal[];
   watchlist: InvestmentWatchItem[];
   monthlyInvestableCash: number;
 }) {
@@ -125,13 +124,6 @@ export function buildInvestmentWatchlistReviewPrompt(input: {
       monthlyContribution: item.monthlyContribution || 0,
       targetAllocation: item.targetAllocation || 0,
       riskLevel: item.riskLevel
-    })),
-    goals: input.goals.slice(0, 5).map((item) => ({
-      name: item.name,
-      targetAmount: Number(item.targetAmount.toFixed(2)),
-      currentAmount: Number(item.currentAmount.toFixed(2)),
-      priority: item.priority,
-      targetDate: item.targetDate || ''
     })),
     monthlyInvestableCash: Number(input.monthlyInvestableCash.toFixed(2)),
     watchlist: input.watchlist.map((item, index) => ({

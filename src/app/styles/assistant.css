@@ -380,6 +380,14 @@
   background: var(--color-bg-subtle);
 }
 
+.chat-messages-area.is-investment-mode {
+  overflow: hidden;
+}
+
+.chat-messages-area.is-investment-mode .chat-messages-inner {
+  min-height: 0;
+}
+
 .chat-messages-area::-webkit-scrollbar {
   width: 5px;
 }
@@ -952,6 +960,72 @@
 
 .chat-credit-panel .chat-assistant-layout-main {
   grid-template-rows: auto;
+}
+
+.chat-investment-panel.is-compact {
+  min-height: 0;
+}
+
+.chat-investment-panel:not(.is-compact) {
+  max-height: calc(100dvh - var(--topbar-height) - 24px);
+  overflow-y: auto;
+}
+
+.chat-investment-panel.is-compact {
+  min-height: 0;
+  flex: 1 1 auto;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+.chat-investment-panel.is-compact .chat-messages-area {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: transparent;
+  padding: 0;
+}
+
+.chat-investment-panel.is-compact .chat-messages-inner {
+  min-height: auto;
+  padding: 0;
+}
+
+.chat-investment-panel.is-compact .chat-assistant-hero {
+  display: grid;
+  gap: 6px;
+}
+
+.chat-investment-panel.is-compact .chat-assistant-hero h2 {
+  font-size: 20px;
+  margin-bottom: 0;
+}
+
+.chat-investment-panel.is-compact .chat-assistant-hero p {
+  margin-top: 0;
+}
+
+.chat-investment-panel.is-compact .investments-ai-empty-compact {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.chat-investment-panel.is-compact .investments-ai-empty-compact img {
+  width: min(220px, 52vw);
+  max-width: 100%;
+  flex: 0 0 auto;
+  object-fit: contain;
 }
 
 .chat-assistant-layout {

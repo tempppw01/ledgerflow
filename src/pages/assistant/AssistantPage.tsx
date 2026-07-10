@@ -15,6 +15,7 @@ import {
   extractCreditStructuredItems,
   extractStreamingCreditPreview
 } from '../../features/assistant/creditAssistant/parser';
+import { InvestmentChatComposer, InvestmentChatPanel } from '../../features/assistant/investment-chat/InvestmentChatPanel';
 import type { CreditExtractedItem, CreditFieldMeta } from '../../features/assistant/creditAssistant/types';
 import { useAssistantWorkbench } from '../../features/assistant/workbench/useAssistantWorkbench';
 import { BillPreviewCard } from '../../features/assistant/ui/BillPreviewCard';
@@ -74,6 +75,7 @@ function inputPlaceholder(
   const assistantHint = t('assistant.placeholders.assistantHint');
   const bookkeepingHint = t('assistant.placeholders.bookkeepingHint');
   const creditHint = '可以直接问我花呗、分期、贷款、账单和还款安排。';
+  const investmentHint = '可以直接问我基金、持仓、定投和仓位配置。';
 
   switch (status) {
     case 'idle':
@@ -81,12 +83,16 @@ function inputPlaceholder(
         ? t('assistant.placeholders.idleBookkeeping', { hint: bookkeepingHint })
         : mode === 'credit'
           ? creditHint
+          : mode === 'investment'
+            ? investmentHint
           : assistantHint;
     case 'ready':
       return mode === 'bookkeeping'
         ? t('assistant.placeholders.readyBookkeeping')
         : mode === 'credit'
           ? '把贷款、分期或账单截图贴给我，我先帮你梳理应还信息。'
+          : mode === 'investment'
+            ? investmentHint
           : t('assistant.placeholders.readyAssistant', { hint: assistantHint });
     case 'recognizing':
       return t('assistant.placeholders.recognizing');
@@ -99,7 +105,13 @@ function inputPlaceholder(
     case 'error':
       return t('assistant.placeholders.error');
     default:
-      return mode === 'bookkeeping' ? bookkeepingHint : mode === 'credit' ? creditHint : assistantHint;
+      return mode === 'bookkeeping'
+        ? bookkeepingHint
+        : mode === 'credit'
+          ? creditHint
+          : mode === 'investment'
+            ? investmentHint
+            : assistantHint;
   }
 }
 
@@ -185,7 +197,8 @@ interface DuplicateReviewPair {
 const CHAT_HISTORY_CACHE_KEYS: Record<AssistantMode, string> = {
   bookkeeping: 'ledgerflow.assistant.chatHistory.bookkeeping',
   assistant: 'ledgerflow.assistant.chatHistory.assistant',
-  credit: 'ledgerflow.assistant.chatHistory.credit'
+  credit: 'ledgerflow.assistant.chatHistory.credit',
+  investment: 'ledgerflow.assistant.chatHistory.investment'
 };
 
 const ASSISTANT_INTRO_ILLUSTRATION_URL =
@@ -668,7 +681,7 @@ export function AssistantPage() {
     updateTransaction,
     debts,
     repaymentRecords,
-    sceneMode: mode,
+    sceneMode: mode === 'investment' ? 'assistant' : mode,
     globalMemories
   });
 
@@ -683,7 +696,8 @@ export function AssistantPage() {
   const memoryExtractionSignatureRef = useRef<Record<AssistantMode, string>>({
     bookkeeping: '',
     assistant: '',
-    credit: ''
+    credit: '',
+    investment: ''
   });
   const hasInitializedModeHistoryRef = useRef(false);
   const activeHistoryModeRef = useRef<AssistantMode>(mode);
@@ -733,7 +747,8 @@ export function AssistantPage() {
   const lastAssistantRef = useRef<Record<AssistantMode, string>>({
     bookkeeping: '',
     assistant: '',
-    credit: ''
+    credit: '',
+    investment: ''
   });
   const pendingRequestModeRef = useRef<AssistantMode>('assistant');
   const messageEndRef = useRef<HTMLDivElement | null>(null);
@@ -1584,6 +1599,10 @@ export function AssistantPage() {
   }, [mode]);
 
   useEffect(() => {
+    if (mode === 'investment') {
+      return;
+    }
+
     if (!hasInitializedModeHistoryRef.current) {
       hasInitializedModeHistoryRef.current = true;
       activeHistoryModeRef.current = mode;
@@ -1608,6 +1627,10 @@ export function AssistantPage() {
   }, [mode]);
 
   useEffect(() => {
+    if (mode === 'investment') {
+      return;
+    }
+
     if (skipHistoryPersistRef.current) {
       skipHistoryPersistRef.current = false;
       return;
@@ -1649,6 +1672,13 @@ export function AssistantPage() {
           >
             {t('assistant.ui.creditMode')}
           </button>
+          <button
+            type="button"
+            className={mode === 'investment' ? 'active' : ''}
+            onClick={() => setMode('investment')}
+          >
+            投资理财
+          </button>
         </div>
 
         <div className="chat-topbar-right">
@@ -1675,7 +1705,7 @@ export function AssistantPage() {
         </div>
       </header>
 
-      <section className={`chat-messages-area ${isWideLayout ? 'is-wide' : ''}`}>
+      <section className={`chat-messages-area ${mode === 'investment' ? 'is-investment-mode' : ''} ${isWideLayout ? 'is-wide' : ''}`}>
         <div className={`chat-messages-inner ${isWideLayout ? 'is-wide' : ''}`}>
           {!wb.hasApiKey ? (
             <section className="chat-key-required">
@@ -1744,6 +1774,8 @@ export function AssistantPage() {
                 </div>
               </div>
             </section>
+          ) : mode === 'investment' ? (
+            <InvestmentChatPanel showComposer={false} />
           ) : (
             <section className="chat-kawaii-panel chat-assistant-panel chat-assistant-panel-qa">
               <div className="chat-assistant-layout">
@@ -2538,15 +2570,16 @@ export function AssistantPage() {
         </div>
       </section>
 
-      <section className="chat-input-bar">
-        {shouldShowError ? (
-          <div className="chat-error-strip" role="alert">
-            <span>{wb.error}</span>
-            <button type="button" onClick={retryLastPrompt} disabled={wb.status === 'recognizing'}>
-              重试
-            </button>
-          </div>
-        ) : null}
+      {mode !== 'investment' ? (
+        <section className="chat-input-bar">
+          {shouldShowError ? (
+            <div className="chat-error-strip" role="alert">
+              <span>{wb.error}</span>
+              <button type="button" onClick={retryLastPrompt} disabled={wb.status === 'recognizing'}>
+                重试
+              </button>
+            </div>
+          ) : null}
 
         {wb.imageDataUrls.length > 0 || wb.pdfDataUrls.length > 0 ? (
           <div className="chat-image-strip">
@@ -2590,7 +2623,7 @@ export function AssistantPage() {
           </div>
         ) : null}
 
-        <p className="chat-disclaimer">AI 生成内容仅供参考，请结合原始账单核对后再保存。</p>
+          <p className="chat-disclaimer">AI 生成内容仅供参考，请结合原始账单核对后再保存。</p>
 
         {latestTransaction ? (
           <div className="chat-input-meta">
@@ -2608,19 +2641,19 @@ export function AssistantPage() {
           </div>
         ) : null}
 
-        <form className="chat-input-form" onSubmit={onSubmit}>
-          <div className="chat-input-stack">
-            <div className="chat-input-main">
-              <textarea
-                ref={wb.textareaRef}
-                className="chat-input-textarea"
-                rows={1}
-                placeholder={inputPlaceholder(wb.status, wb.hasApiKey, mode, t)}
-                value={wb.textInput}
-                onChange={(e) => wb.setTextInput(e.target.value)}
-                onPaste={(e) => void wb.handlePasteImage(e)}
-                onKeyDown={onInputKeyDown}
-              />
+          <form className="chat-input-form" onSubmit={onSubmit}>
+            <div className="chat-input-stack">
+              <div className="chat-input-main">
+                <textarea
+                  ref={wb.textareaRef}
+                  className="chat-input-textarea"
+                  rows={1}
+                  placeholder={inputPlaceholder(wb.status, wb.hasApiKey, mode, t)}
+                  value={wb.textInput}
+                  onChange={(e) => wb.setTextInput(e.target.value)}
+                  onPaste={(e) => void wb.handlePasteImage(e)}
+                  onKeyDown={onInputKeyDown}
+                />
 
               <div className="chat-input-toolbar">
                 <div className="chat-input-toolbar-left">
@@ -2720,18 +2753,25 @@ export function AssistantPage() {
               </div>
             </div>
 
-            <input
-              ref={wb.fileInputRef}
-              className="chat-file-input-hidden"
-              type="file"
-              accept="image/*,application/pdf"
-              title="上传账单图片或 PDF"
-              aria-label="上传账单图片或 PDF"
-              onChange={(e) => void wb.handleSetFile(e.target.files?.[0])}
-            />
-          </div>
-        </form>
-      </section>
+              <input
+                ref={wb.fileInputRef}
+                className="chat-file-input-hidden"
+                type="file"
+                accept="image/*,application/pdf"
+                title="上传账单图片或 PDF"
+                aria-label="上传账单图片或 PDF"
+                onChange={(e) => void wb.handleSetFile(e.target.files?.[0])}
+              />
+            </div>
+          </form>
+        </section>
+      ) : null}
+
+      {mode === 'investment' ? (
+        <section className="chat-input-bar">
+          <InvestmentChatComposer showLinks={false} />
+        </section>
+      ) : null}
 
       {semanticPanelOpen ? (
         <div className="drawer-overlay" role="presentation" onClick={() => setSemanticPanelOpen(false)}>
