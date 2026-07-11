@@ -338,11 +338,11 @@
 
 /* ---- 暗色模式 ---- */
 [data-theme='dark'] {
-  --color-bg: #111111;
+  --color-bg: #141414;
   --color-bg-elevated: #1a1a1a;
-  --color-bg-subtle: #202020;
-  --color-bg-hover: #2a2a2a;
-  --color-bg-active: #323232;
+  --color-bg-subtle: #262626;
+  --color-bg-hover: #303030;
+  --color-bg-active: #3a3a3a;
 
   --color-text: #f0eeea;
   --color-text-secondary: #cbc6bd;
@@ -372,7 +372,7 @@
   --gradient-app-bg:
     radial-gradient(circle at 12% -8%, rgba(245, 158, 11, 0.13), transparent 34%),
     radial-gradient(circle at 88% -10%, rgba(45, 212, 191, 0.08), transparent 28%),
-    linear-gradient(180deg, #111111 0%, #171717 48%, #141414 100%);
+    linear-gradient(180deg, #141414 0%, #1a1a1a 48%, #141414 100%);
   --gradient-surface:
     linear-gradient(
       180deg,

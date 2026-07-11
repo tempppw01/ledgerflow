@@ -974,6 +974,8 @@
 .chat-investment-panel.is-compact {
   min-height: 0;
   flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
   gap: 0;
   padding: 0;
   border: 0;
@@ -986,8 +988,7 @@
   flex: 1 1 auto;
   min-height: 0;
   max-height: none;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: visible;
   background: transparent;
   padding: 0;
 }

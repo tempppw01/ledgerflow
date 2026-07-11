@@ -1,4 +1,4 @@
-﻿import { render, screen, waitFor } from '@testing-library/react';
+﻿import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -21,7 +21,9 @@ const financeStoreMock = vi.hoisted(() => ({
 }));
 
 const eastmoneyClientMock = vi.hoisted(() => ({
-  fetchEastmoneyFundSnapshot: vi.fn()
+  fetchEastmoneyFundSnapshot: vi.fn(),
+  fetchEastmoneyMarketOverview: vi.fn(),
+  fetchEastmoneyMarketNews: vi.fn()
 }));
 
 vi.mock('../../shared/store/useFinanceStore', () => ({
@@ -33,9 +35,77 @@ vi.mock('../../features/investments/api/eastmoneyFundClient', () => ({
   fetchEastmoneyFundSnapshot: eastmoneyClientMock.fetchEastmoneyFundSnapshot
 }));
 
+vi.mock('../../features/investments/api/eastmoneyMarketClient', () => ({
+  EASTMONEY_MARKET_INDEXES: [
+    { secId: '1.000001', code: '000001', name: '上证指数', shortName: '上证' },
+    { secId: '0.399001', code: '399001', name: '深证成指', shortName: '深证' },
+    { secId: '0.399006', code: '399006', name: '创业板指', shortName: '创业板' },
+    { secId: '1.000688', code: '000688', name: '科创50', shortName: '科创50' }
+  ],
+  EASTMONEY_MARKET_NEWS_CATEGORIES: [
+    { id: 'a-share', label: 'A股', column: '103' },
+    { id: 'important', label: '重要', column: '102' },
+    { id: 'notice', label: '公告', column: '104' },
+    { id: 'futures', label: '期货', column: '106' },
+    { id: 'movement', label: '异动', column: '100' },
+    { id: 'hk', label: '港股', column: '105' },
+    { id: 'us', label: '美股', column: '108' }
+  ],
+  fetchEastmoneyMarketOverview: eastmoneyClientMock.fetchEastmoneyMarketOverview,
+  fetchEastmoneyMarketNews: eastmoneyClientMock.fetchEastmoneyMarketNews
+}));
+
 describe('InvestmentsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    eastmoneyClientMock.fetchEastmoneyMarketOverview.mockResolvedValue({
+      selectedSecId: '1.000001',
+      updatedAt: '2026-07-10T15:10:00.000Z',
+      quotes: [
+        {
+          secId: '1.000001',
+          code: '000001',
+          name: '上证指数',
+          value: 3996.16,
+          change: -40.43,
+          changePercent: -1,
+          high: 4074.83,
+          low: 3995.81,
+          open: 4031.54,
+          previousClose: 4036.59,
+          volume: 627450065,
+          amount: 1563108691542.7
+        }
+      ],
+      trend: [
+        {
+          time: '2026-07-10 09:30',
+          label: '09:30',
+          value: 4031.54,
+          volume: 4279461,
+          amount: 13614469632,
+          average: 4033.65
+        },
+        {
+          time: '2026-07-10 15:00',
+          label: '15:00',
+          value: 3996.16,
+          volume: 5279461,
+          amount: 23614469632,
+          average: 4010.65
+        }
+      ]
+    });
+    eastmoneyClientMock.fetchEastmoneyMarketNews.mockResolvedValue([
+      {
+        id: 'news-1',
+        title: '多元化突破，液化天然气制甲烷首次应用于长征系列火箭',
+        summary: '记者从相关单位获悉，首次规模化应用带来产业链关注。',
+        time: '2026-07-10 09:36:00',
+        link: 'https://finance.eastmoney.com/a/news-1.html',
+        stocks: ['中国石化']
+      }
+    ]);
     const now = new Date();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const year = now.getFullYear();
@@ -101,28 +171,50 @@ describe('InvestmentsPage', () => {
     });
   });
 
-  it('应展示持仓汇总和风险提醒', () => {
+  function getMarketChartStage() {
+    const stage = document.querySelector('.investments-market-chart-stage') as HTMLElement | null;
+    expect(stage).toBeTruthy();
+    Object.defineProperty(stage, 'getBoundingClientRect', {
+      value: () =>
+        ({
+          left: 0,
+          top: 0,
+          right: 560,
+          bottom: 176,
+          width: 560,
+          height: 176,
+          x: 0,
+          y: 0,
+          toJSON: () => ({})
+        }) as DOMRect
+    });
+    return stage as HTMLElement;
+  }
+
+  it('应展示持仓汇总和风险提醒', async () => {
     const { container } = render(
       <MemoryRouter>
         <InvestmentsPage />
       </MemoryRouter>
     );
 
+    expect(await screen.findByText('大盘概览')).toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText('上证指数关键数据')).getByText('1.56万亿')
+    ).toBeInTheDocument();
+    expect(await screen.findByText('快讯')).toBeInTheDocument();
+    expect(screen.getByText('7x24')).toBeInTheDocument();
+    expect(screen.getByText(/液化天然气制甲烷/)).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: '投资风向' }).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('沪深 300 ETF').length).toBeGreaterThan(0);
-    expect(screen.getByText('持仓流水')).toBeInTheDocument();
-    expect(screen.getByText(/历史快照/)).toBeInTheDocument();
-    expect(screen.getByText('单一持仓占比偏高')).toBeInTheDocument();
+    expect(screen.getByText('大盘概览')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '问 AI 怎么看' })).toBeInTheDocument();
     expect(screen.getAllByText('¥1.09万').length).toBeGreaterThan(0);
 
     expect(screen.queryByText('6 个月应急金')).not.toBeInTheDocument();
     expect(screen.getByText('基金自选')).toBeInTheDocument();
-    expect(screen.queryByLabelText('基金分析输入框')).not.toBeInTheDocument();
+    expect(screen.getByText('快捷问答')).toBeInTheDocument();
+    expect(screen.getByLabelText('基金分析输入框')).toBeInTheDocument();
     expect(container.querySelector('.investments-management-grid')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '顺手下一步' })).toBeInTheDocument();
-    expect(screen.queryByText('在投资理财助手中继续分析这只基金')).not.toBeInTheDocument();
-    expect(container.querySelector('.investments-actions-card')).not.toBeInTheDocument();
-
   });
 
   it('可以通过东方财富基金代码添加自选基金资料', async () => {
@@ -148,6 +240,11 @@ describe('InvestmentsPage', () => {
       </MemoryRouter>
     );
 
+    expect(await screen.findByText('大盘概览')).toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText('上证指数关键数据')).getByText('1.56万亿')
+    ).toBeInTheDocument();
+    expect(await screen.findByText(/液化天然气制甲烷/)).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText('添加基金代码'), '161725');
     await userEvent.click(screen.getByRole('button', { name: /获取资料/ }));
 
@@ -158,14 +255,14 @@ describe('InvestmentsPage', () => {
     expect(await screen.findByText('招商中证白酒指数(LOF)A')).toBeInTheDocument();
     expect(screen.getByText(/单位净值 0\.5162/)).toBeInTheDocument();
     expect(screen.getByText(/估算涨跌 -3\.10%/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '添加关注' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '获取更新' })).toBeInTheDocument();
-
-    fireEvent.contextMenu(screen.getByText('招商中证白酒指数(LOF)A'));
-    await userEvent.click(screen.getByRole('menuitem', { name: /添加到持仓/ }));
+    await userEvent.click(screen.getByRole('button', { name: '添加关注' }));
+    expect(screen.getByText('关注中')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '添加关注' })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /刷新 招商中证白酒指数.*基金资料/ })
+    ).toBeInTheDocument();
 
     expect(screen.getByText('招商中证白酒指数(LOF)A')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('招商中证白酒指数(LOF)A')).toBeInTheDocument();
 
     const watchItem = useAppPreferences.getState().investmentWatchlist[0];
     expect(watchItem).toMatchObject({
@@ -176,4 +273,21 @@ describe('InvestmentsPage', () => {
       netValue: '0.5162'
     });
   });
+
+  it('鼠标悬停大盘分时图时会显示对应坐标的数值', async () => {
+    render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('大盘概览')).toBeInTheDocument();
+    const stage = getMarketChartStage();
+
+    fireEvent.mouseMove(stage, { clientX: 20 });
+
+    expect(await screen.findByText('09:30 · 4031.54')).toBeInTheDocument();
+    expect(screen.getByText(/均价 4033\.65/)).toBeInTheDocument();
+  });
+
 });

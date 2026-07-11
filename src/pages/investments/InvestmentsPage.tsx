@@ -11,23 +11,42 @@ import type { Account } from '../../entities/account/types';
 import type {
   InvestmentCategory,
   InvestmentFundAnalysis,
-  InvestmentPosition,
-  InvestmentPositionHistoryEntry,
-  InvestmentRiskLevel,
   InvestmentWatchItem,
   InvestmentWatchlistReviewItem
 } from '../../entities/investment/types';
 import { sendAiChatStream } from '../../features/assistant/api/openaiCompatibleClient';
+import { fetchWebSearchContext, buildWebSearchPrompt } from '../../features/assistant/api/webSearchClient';
+import { InvestmentChatPanel } from '../../features/assistant/investment-chat/InvestmentChatPanel';
 import { fetchEastmoneyFundSnapshot } from '../../features/investments/api/eastmoneyFundClient';
-import { BRAIN_ICON_URL, INFO_ICON_URL, PEN_TOOL_ICON_URL } from '../../shared/config/brandAssets';
-import { formatCurrency, formatCurrencyAuto } from '../../shared/lib/format';
+import {
+  EASTMONEY_MARKET_INDEXES,
+  EASTMONEY_MARKET_NEWS_CATEGORIES,
+  fetchEastmoneyMarketOverview,
+  fetchEastmoneyMarketNews,
+  type EastmoneyMarketOverview,
+  type EastmoneyMarketNewsItem,
+  type EastmoneyMarketQuote,
+  type EastmoneyMarketTrendPoint
+} from '../../features/investments/api/eastmoneyMarketClient';
+import {
+  BRAIN_ICON_URL,
+  INFO_ICON_URL,
+  ROTATE_CCW_ICON_URL
+} from '../../shared/config/brandAssets';
+import { formatCurrencyAuto } from '../../shared/lib/format';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
-import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
-import { EmptyState } from '../../shared/ui/EmptyState';
 import { Toast, type ToastVariant } from '../../shared/ui/Toast';
-import { buildInvestmentWatchlistReviewPrompt, extractInvestmentWatchlistReview } from './investmentAi';
+import {
+  buildInvestmentFundAnalysisPrompt,
+  buildInvestmentWatchlistReviewPrompt,
+  createInvestmentAiMessage,
+  extractInvestmentAnalysis,
+  extractInvestmentWatchlistReview,
+  summarizeInvestmentAnalysis,
+  trimInvestmentAiMessages
+} from './investmentAi';
 import {
   ASSISTANT_ACTIVE_MODE_STORAGE_KEY,
   ASSISTANT_MODE_CHANGED_EVENT
@@ -43,65 +62,27 @@ const POSITION_CATEGORY_LABELS: Record<InvestmentCategory, string> = {
   other: '其他'
 };
 
-const RISK_LEVEL_LABELS: Record<InvestmentRiskLevel, string> = {
-  low: '低波动',
-  medium: '均衡',
-  high: '进取'
-};
 
-const POSITION_HISTORY_ACTION_LABELS: Record<InvestmentPositionHistoryEntry['action'], string> = {
-  add: '新增持仓',
-  update: '更新持仓',
-  remove: '移除持仓',
-  snapshot: '历史快照'
-};
+type WatchCategoryFilterId =
+  | 'all'
+  | 'index-fund'
+  | 'active-fund'
+  | 'fixed-income'
+  | 'cash'
+  | 'other';
 
-const POSITION_FORM_DEFAULT = {
-  name: '',
-  category: 'index-fund' as InvestmentCategory,
-  platform: '',
-  linkedAccountId: '',
-  investedAmount: '',
-  currentValue: '',
-  monthlyContribution: '',
-  targetAllocation: '',
-  riskLevel: 'medium' as InvestmentRiskLevel,
-  note: '',
-  isActive: true
-};
+const WATCH_CATEGORY_FILTERS: Array<{ id: WatchCategoryFilterId; label: string; mark: string }> = [
+  { id: 'all', label: '全部', mark: '全' },
+  { id: 'index-fund', label: '指数', mark: '指' },
+  { id: 'active-fund', label: '主动', mark: '主' },
+  { id: 'fixed-income', label: '债券', mark: '债' },
+  { id: 'cash', label: '货币', mark: '货' },
+  { id: 'other', label: '其他', mark: '其' }
+];
 
-type InvestmentAlertTone = 'info' | 'warning' | 'danger';
+const WATCH_GRID_COLUMN_OPTIONS = [1, 2, 3] as const;
 
-type InvestmentAlert = {
-  tone: InvestmentAlertTone;
-  title: string;
-  description: string;
-};
-
-type ActionSuggestion = {
-  label: string;
-  hint: string;
-  to?: string;
-  action?: 'open-investment-assistant';
-};
-
-type WatchContextMenuState = {
-  open: boolean;
-  x: number;
-  y: number;
-  item: InvestmentWatchItem | null;
-};
-
-type QuickActionsMenuState = {
-  open: boolean;
-  x: number;
-  y: number;
-};
-
-function parseAmountInput(value: string): number {
-  const numeric = Number(String(value || '').replace(/[^\d.-]/g, ''));
-  return Number.isFinite(numeric) ? numeric : 0;
-}
+type WatchGridColumnCount = (typeof WATCH_GRID_COLUMN_OPTIONS)[number];
 
 function isPositiveAccount(account: Account) {
   return account.type !== 'liability' && account.type !== 'credit';
@@ -112,125 +93,6 @@ function getMonthBounds() {
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   return { start, end };
-}
-
-function getLargestPositionShare(positions: InvestmentPosition[], totalCurrentValue: number) {
-  if (positions.length === 0 || totalCurrentValue <= 0) return 0;
-  return Math.max(...positions.map((item) => item.currentValue / totalCurrentValue));
-}
-
-function buildInvestmentAlerts(params: {
-  positions: InvestmentPosition[];
-  totalCurrentValue: number;
-  cashBucketValue: number;
-  monthlyInvestableCash: number;
-}): InvestmentAlert[] {
-  const alerts: InvestmentAlert[] = [];
-  const activePositions = params.positions.filter((item) => item.isActive);
-
-  if (activePositions.length === 0) {
-    return [
-      {
-        tone: 'info',
-        title: '先从第一笔持仓开始',
-        description: '这页已经准备好接你的基金、股票、固收或现金理财，先录一笔再看配置和提醒。'
-      }
-    ];
-  }
-
-  const largestShare = getLargestPositionShare(activePositions, params.totalCurrentValue);
-  if (largestShare >= 0.45) {
-    alerts.push({
-      tone: 'danger',
-      title: '单一持仓占比偏高',
-      description: `当前最大持仓约占 ${(largestShare * 100).toFixed(1)}%，仓位有点挤，后续补仓尽量分散。`
-    });
-  } else if (largestShare >= 0.3) {
-    alerts.push({
-      tone: 'warning',
-      title: '最大持仓已经有点重',
-      description: `当前最大持仓约占 ${(largestShare * 100).toFixed(1)}%，再继续加仓前建议先看整体配置。`
-    });
-  }
-
-  const equityValue = activePositions
-    .filter(
-      (item) =>
-        item.category === 'stock' ||
-        item.category === 'index-fund' ||
-        item.category === 'active-fund'
-    )
-    .reduce((sum, item) => sum + item.currentValue, 0);
-  const equityShare = params.totalCurrentValue > 0 ? equityValue / params.totalCurrentValue : 0;
-  if (equityShare >= 0.7 && params.monthlyInvestableCash <= 0) {
-    alerts.push({
-      tone: 'danger',
-      title: '权益仓位高，现金补给偏紧',
-      description: '当前更适合先把现金流站稳，再考虑继续往高波动资产上叠仓。'
-    });
-  }
-
-  const safeBucketShare =
-    params.totalCurrentValue > 0 ? params.cashBucketValue / params.totalCurrentValue : 0;
-  if (params.totalCurrentValue >= 10000 && safeBucketShare < 0.15) {
-    alerts.push({
-      tone: 'warning',
-      title: '低波动仓位偏薄',
-      description: '现金理财和固收合计不到 15%，如果你最近还在加仓，记得留一点缓冲垫。'
-    });
-  }
-
-  return alerts.slice(0, 4);
-}
-
-function buildActionSuggestions(params: {
-  hasPositions: boolean;
-  monthlyInvestableCash: number;
-  alerts: InvestmentAlert[];
-}): ActionSuggestion[] {
-  if (!params.hasPositions) {
-    return [
-      {
-        label: '先补一笔真实持仓',
-        hint: '只填名称、成本和现值也可以，先把页面跑起来。',
-        to: '/categories-accounts'
-      },
-      {
-        label: '从记账里找结余',
-        hint: '先回交易页看最近有没有稳定结余，再决定每月理财额度。',
-        to: '/transactions'
-      }
-    ];
-  }
-
-  const hasDanger = params.alerts.some((item) => item.tone === 'danger');
-  if (hasDanger || params.monthlyInvestableCash <= 0) {
-    return [
-      {
-        label: '先收口预算',
-        hint: '现在更适合先守现金流，再考虑继续扩大仓位。',
-        to: '/smart-budget'
-      },
-      {
-        label: '带着配置去问 AI',
-        hint: '直接去记账助手里的投资理财页提问，先拿到一轮分析再决定。',
-        action: 'open-investment-assistant'
-      }
-    ];
-  }
-
-  return [
-    {
-      label: '继续跟进持仓配置',
-      hint: '直接去记账助手里的投资理财页问一只基金值不值得继续跟。',
-      action: 'open-investment-assistant'
-    },
-    {
-      label: '回交易页核对现金流',
-      hint: '每月理财投入最好和真实结余对得上，不要只看想法。',
-      to: '/transactions'
-    }
-  ];
 }
 
 function formatDateTimeLabel(value?: string) {
@@ -246,12 +108,6 @@ function formatDateTimeLabel(value?: string) {
   } catch {
     return value;
   }
-}
-
-function formatSignedCurrency(value?: number) {
-  if (!value) return '无变化';
-  const prefix = value > 0 ? '+' : '-';
-  return `${prefix}${formatCurrency(Math.abs(value))}`;
 }
 
 function getAnalysisRiskLabel(riskLevel?: InvestmentFundAnalysis['riskLevel']) {
@@ -292,6 +148,12 @@ type WatchPerformancePoint = {
   label: string;
   value: number;
   caption: string;
+};
+
+type MarketTrendChartPoint = EastmoneyMarketTrendPoint & {
+  x: number;
+  y: number;
+  index: number;
 };
 
 function formatWatchPerformanceCaption(value: number) {
@@ -368,41 +230,492 @@ function formatWatchPreviewItem(value: string) {
   return text;
 }
 
-function normalizeInvestmentLookupValue(value?: string) {
-  return String(value || '')
-    .trim()
-    .toLowerCase();
+function formatMarketIndexValue(value?: number | null) {
+  return typeof value === 'number' ? value.toFixed(2) : '--';
 }
 
-function findPositionForWatchItem(
-  item: InvestmentWatchItem,
-  positions: InvestmentPosition[]
-): InvestmentPosition | null {
-  const code = normalizeInvestmentLookupValue(item.code);
-  const name = normalizeInvestmentLookupValue(item.name);
+function formatMarketPercent(value?: number | null) {
+  if (typeof value !== 'number') return '--';
+  return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
+}
+
+function formatMarketAmount(value?: number | null) {
+  if (typeof value !== 'number' || value <= 0) return '--';
+  if (value >= 1e12) return `${(value / 1e12).toFixed(2)}万亿`;
+  if (value >= 1e8) return `${(value / 1e8).toFixed(value >= 1e10 ? 0 : 1)}亿`;
+  if (value >= 1e4) return `${(value / 1e4).toFixed(0)}万`;
+  return value.toFixed(0);
+}
+
+function formatMarketNewsTime(value?: string) {
+  if (!value) return '刚刚';
+  const timePart = value.match(/(\d{2}:\d{2})(?::\d{2})?$/)?.[1];
+  if (timePart) return timePart;
+
+  const date = new Date(value);
+  if (!Number.isNaN(date.getTime())) {
+    return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+  }
+
+  return value;
+}
+
+function getMarketTone(value?: number | null) {
+  if (typeof value !== 'number') return 'is-flat';
+  if (value > 0) return 'is-positive';
+  if (value < 0) return 'is-negative';
+  return 'is-flat';
+}
+
+function buildMarketTrendGeometry(points: EastmoneyMarketTrendPoint[]) {
+  const width = 560;
+  const height = 176;
+  const paddingX = 6;
+  const paddingY = 12;
+  const usableWidth = width - paddingX * 2;
+  const usableHeight = height - paddingY * 2;
+  const values = points.map((item) => item.value).filter((value) => Number.isFinite(value));
+
+  if (values.length < 2) {
+    return {
+      width,
+      height,
+      linePath: '',
+      areaPath: '',
+      min: null as number | null,
+      max: null as number | null,
+      mid: null as number | null,
+      points: [] as MarketTrendChartPoint[],
+      labels: [] as string[]
+    };
+  }
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const spread = Math.max(max - min, 0.01);
+  const coords = points.map((point, index) => {
+    const x = paddingX + (index / Math.max(points.length - 1, 1)) * usableWidth;
+    const y = paddingY + (1 - (point.value - min) / spread) * usableHeight;
+    return { ...point, x, y, index };
+  });
+  const linePath = coords
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
+    .join(' ');
+  const first = coords[0];
+  const last = coords[coords.length - 1];
+  const areaPath = `${linePath} L ${last.x.toFixed(2)} ${height.toFixed(2)} L ${first.x.toFixed(
+    2
+  )} ${height.toFixed(2)} Z`;
+  const middle = points[Math.floor(points.length / 2)];
+
+  return {
+    width,
+    height,
+    linePath,
+    areaPath,
+    min,
+    max,
+    mid: min + spread / 2,
+    points: coords,
+    labels: [points[0]?.label, middle?.label, points[points.length - 1]?.label].filter(Boolean)
+  };
+}
+
+function MarketOverviewPanel({
+  overview,
+  selectedSecId,
+  status,
+  error,
+  onSelect,
+  onRefresh,
+  onAskMarket
+}: {
+  overview: EastmoneyMarketOverview | null;
+  selectedSecId: string;
+  status: 'idle' | 'loading' | 'error';
+  error: string;
+  onSelect: (secId: string) => void;
+  onRefresh: () => void;
+  onAskMarket: () => void;
+}) {
+  const quotes = overview?.quotes || [];
+  const quoteBySecId = new Map(quotes.map((quote) => [quote.secId, quote]));
+  const activeIndex = EASTMONEY_MARKET_INDEXES.find((item) => item.secId === selectedSecId);
+  const selectedQuote =
+    quoteBySecId.get(selectedSecId) ||
+    quotes.find((quote) => quote.code === activeIndex?.code) ||
+    quotes[0] ||
+    EASTMONEY_MARKET_INDEXES.find((item) => item.secId === selectedSecId);
+  const isTrendCurrent = overview?.selectedSecId === selectedSecId;
+  const selectedTrend = isTrendCurrent ? overview?.trend || [] : [];
+  const chart = buildMarketTrendGeometry(selectedTrend);
+  const [hoveredTrendIndex, setHoveredTrendIndex] = useState<number | null>(null);
+  const totalAmount = quotes.reduce((sum, item) => sum + (item.amount || 0), 0);
+  const selectedQuoteData =
+    selectedQuote && 'amount' in selectedQuote ? (selectedQuote as EastmoneyMarketQuote) : null;
+  const updatedAt = overview?.updatedAt ? formatDateTimeLabel(overview.updatedAt) : '';
+  const isSwitchingTrend = status === 'loading' && !isTrendCurrent;
+  const activeTrendPoint =
+    chart.points[hoveredTrendIndex ?? chart.points.length - 1] ||
+    chart.points[chart.points.length - 1] ||
+    null;
+
+  useEffect(() => {
+    setHoveredTrendIndex(null);
+  }, [selectedSecId]);
+
+  function handleChartPointerMove(event: MouseEvent<HTMLDivElement>) {
+    if (!chart.points.length) return;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (rect.width <= 0) return;
+
+    const x = ((event.clientX - rect.left) / rect.width) * chart.width;
+    let closestIndex = 0;
+    let closestDistance = Number.POSITIVE_INFINITY;
+
+    chart.points.forEach((point, index) => {
+      const distance = Math.abs(point.x - x);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+
+    setHoveredTrendIndex(closestIndex);
+  }
+
+  const activeTrendText =
+    activeTrendPoint && Number.isFinite(activeTrendPoint.value)
+      ? `${activeTrendPoint.label || '当前'} · ${formatMarketIndexValue(activeTrendPoint.value)}`
+      : '等待分时线';
 
   return (
-    positions.find((position) => {
-      const positionName = normalizeInvestmentLookupValue(position.name);
-      if (code && positionName.includes(code)) return true;
-      if (!name) return false;
-      return positionName.includes(name) || name.includes(positionName);
-    }) || null
+    <section
+      className={`panel investments-market-panel ${status === 'loading' ? 'is-loading' : ''}`}
+      data-investment-support-title="大盘概览"
+    >
+      <div className="investments-market-head">
+        <div>
+          <h3>大盘概览</h3>
+          <p>{updatedAt ? `东方财富行情 · ${updatedAt}` : '东方财富行情'}</p>
+        </div>
+        <div className="investments-market-actions">
+          <button type="button" onClick={onRefresh} disabled={status === 'loading'}>
+            {status === 'loading' ? '刷新中' : '刷新'}
+          </button>
+          <button type="button" className="primary" onClick={onAskMarket}>
+            问 AI 怎么看
+          </button>
+        </div>
+      </div>
+
+      <div className="investments-market-tabs" role="tablist" aria-label="大盘指数">
+        {EASTMONEY_MARKET_INDEXES.map((item) => {
+          const quote = quoteBySecId.get(item.secId);
+          const changePercent = quote?.changePercent ?? null;
+          return (
+            <button
+              key={item.secId}
+              type="button"
+              role="tab"
+              aria-selected={selectedSecId === item.secId}
+              className={`investments-market-tab ${selectedSecId === item.secId ? 'is-active' : ''} ${getMarketTone(
+                changePercent
+              )}`}
+              onClick={() => onSelect(item.secId)}
+            >
+              <span>{item.name}</span>
+              <strong>{formatMarketPercent(changePercent)}</strong>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="investments-market-body">
+        <div className="investments-market-main">
+          <div
+            className="investments-market-mini-stats"
+            aria-label={`${activeIndex?.name || '大盘'}关键数据`}
+          >
+            <span>
+              最新 <strong>{formatMarketIndexValue(selectedQuoteData?.value)}</strong>
+            </span>
+            <span>
+              最高 <strong>{formatMarketIndexValue(selectedQuoteData?.high)}</strong>
+            </span>
+            <span>
+              最低 <strong>{formatMarketIndexValue(selectedQuoteData?.low)}</strong>
+            </span>
+            <span>
+              成交额 <strong>{formatMarketAmount(selectedQuoteData?.amount)}</strong>
+            </span>
+          </div>
+
+          <div
+            className="investments-market-chart-wrap"
+            key={selectedSecId}
+            onMouseLeave={() => setHoveredTrendIndex(null)}
+          >
+            {chart.linePath ? (
+              <div className="investments-market-chart-stage" onMouseMove={handleChartPointerMove}>
+                <svg
+                  className={`investments-market-chart ${getMarketTone(
+                    selectedQuoteData?.changePercent
+                  )}`}
+                  viewBox={`0 0 ${chart.width} ${chart.height}`}
+                  role="img"
+                  aria-label={`${activeIndex?.name || '指数'}分时走势`}
+                >
+                  <defs>
+                    <linearGradient id="investments-market-area" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stopColor="currentColor" stopOpacity="0.22" />
+                      <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" />
+                    </linearGradient>
+                  </defs>
+                  <path className="investments-market-chart-area" d={chart.areaPath} />
+                  {[0.25, 0.5, 0.75].map((ratio) => (
+                    <line
+                      key={ratio}
+                      className="investments-market-chart-grid"
+                      x1="0"
+                      x2={chart.width}
+                      y1={chart.height * ratio}
+                      y2={chart.height * ratio}
+                    />
+                  ))}
+                  {activeTrendPoint ? (
+                    <>
+                      <line
+                        className="investments-market-chart-cursor"
+                        x1={activeTrendPoint.x}
+                        x2={activeTrendPoint.x}
+                        y1="0"
+                        y2={chart.height}
+                      />
+                      <circle
+                        className="investments-market-chart-point"
+                        cx={activeTrendPoint.x}
+                        cy={activeTrendPoint.y}
+                        r="4.5"
+                      />
+                    </>
+                  ) : null}
+                  <path className="investments-market-chart-line" d={chart.linePath} />
+                </svg>
+                {activeTrendPoint ? (
+                  <div
+                    className="investments-market-chart-tooltip"
+                    style={{
+                      left: `${(activeTrendPoint.x / chart.width) * 100}%`,
+                      top: `${Math.max(8, ((activeTrendPoint.y - 14) / chart.height) * 100)}%`
+                    }}
+                    aria-hidden="true"
+                  >
+                    <strong>{activeTrendPoint.label}</strong>
+                    <span>{formatMarketIndexValue(activeTrendPoint.value)}</span>
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="investments-market-chart-empty">
+                <strong>
+                  {status === 'error'
+                    ? '行情暂时没有连上'
+                    : isSwitchingTrend
+                      ? '正在切换指数'
+                      : '等待分时线'}
+                </strong>
+                <span>{error || `${activeIndex?.name || '指数'}分时线加载后会显示在这里。`}</span>
+              </div>
+            )}
+
+            {chart.labels.length ? (
+              <div className="investments-market-time-axis" aria-hidden="true">
+                {chart.labels.map((label, index) => (
+                  <span key={`${label}-${index}`}>{label}</span>
+                ))}
+              </div>
+            ) : null}
+
+            <div className="investments-market-chart-foot">
+              <div>
+                <strong>{activeTrendText}</strong>
+                <span>
+                  {activeTrendPoint
+                    ? `均价 ${formatMarketIndexValue(activeTrendPoint.average)}`
+                    : '分时点位'}
+                </span>
+              </div>
+              <div>
+                <span>
+                  成交额 <strong>{formatMarketAmount(activeTrendPoint?.amount)}</strong>
+                </span>
+                <span>
+                  成交量 <strong>{formatMarketAmount(activeTrendPoint?.volume)}</strong>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside className="investments-market-side" aria-label="大盘成交概览">
+          <div className="investments-market-turnover-card">
+            <span>四大指数成交额</span>
+            <strong>{formatMarketAmount(totalAmount)}</strong>
+            <em>
+              {activeIndex?.shortName || '指数'}{' '}
+              {formatMarketPercent(selectedQuoteData?.changePercent)}
+            </em>
+          </div>
+          <div className="investments-market-side-grid">
+            <span>
+              选中指数
+              <strong>{formatMarketAmount(selectedQuoteData?.amount)}</strong>
+            </span>
+            <span>
+              昨收
+              <strong>{formatMarketIndexValue(selectedQuoteData?.previousClose)}</strong>
+            </span>
+          </div>
+        </aside>
+      </div>
+
+      {error && status === 'error' ? <p className="investments-market-error">{error}</p> : null}
+    </section>
   );
 }
 
-function getWatchItemHoldingReturn(
-  item: InvestmentWatchItem,
-  positions: InvestmentPosition[]
-): string | null {
-  const matchedPosition = findPositionForWatchItem(item, positions);
-  if (!matchedPosition) return null;
+function MarketNewsPanel({
+  news,
+  selectedCategoryId,
+  status,
+  error,
+  onSelectCategory,
+  onRefresh
+}: {
+  news: EastmoneyMarketNewsItem[];
+  selectedCategoryId: string;
+  status: 'idle' | 'loading' | 'error';
+  error: string;
+  onSelectCategory: (categoryId: string) => void;
+  onRefresh: () => void;
+}) {
+  return (
+    <section
+      className={`panel investments-market-news-panel ${status === 'loading' ? 'is-loading' : ''}`}
+      data-investment-support-title="快讯"
+    >
+      <div className="investments-market-news-head">
+        <div>
+          <h3>
+            快讯 <span>7x24</span>
+          </h3>
+        </div>
+        <button type="button" onClick={onRefresh} disabled={status === 'loading'}>
+          {status === 'loading' ? '刷新中' : '刷新'}
+        </button>
+      </div>
 
-  const profit = matchedPosition.currentValue - matchedPosition.investedAmount;
-  const profitRate =
-    matchedPosition.investedAmount > 0 ? profit / matchedPosition.investedAmount : 0;
+      <div className="investments-market-news-tabs" role="tablist" aria-label="快讯分类">
+        {EASTMONEY_MARKET_NEWS_CATEGORIES.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            aria-selected={selectedCategoryId === item.id}
+            className={selectedCategoryId === item.id ? 'is-active' : ''}
+            onClick={() => onSelectCategory(item.id)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
 
-  return `${formatCurrency(profit)} / ${(profitRate * 100).toFixed(1)}%`;
+      {error && status === 'error' ? (
+        <p className="investments-market-news-error">{error}</p>
+      ) : null}
+
+      {news.length === 0 && status !== 'loading' ? (
+        <div className="investments-market-news-empty">
+          <strong>暂无快讯</strong>
+          <span>稍后刷新，或切换其他分类看看。</span>
+        </div>
+      ) : (
+        <div className="investments-market-news-list" aria-label="市场快讯">
+          {news.slice(0, 8).map((item) => (
+            <a
+              key={item.id}
+              className="investments-market-news-item"
+              href={item.link}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span className="investments-market-news-time">
+                {formatMarketNewsTime(item.time)}
+              </span>
+              <strong>{item.title}</strong>
+              {item.summary ? <p>{item.summary}</p> : null}
+              {item.stocks.length ? (
+                <div className="investments-market-news-tags" aria-label="关联代码">
+                  {item.stocks.map((stock) => (
+                    <em key={stock}>{stock}</em>
+                  ))}
+                </div>
+              ) : null}
+            </a>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function getWatchItemCategoryId(item: InvestmentWatchItem): WatchCategoryFilterId {
+  const searchText = [
+    item.name,
+    item.code,
+    item.platform,
+    item.lastVerdict,
+    item.lastSummary,
+    item.investmentAdvice,
+    item.note,
+    ...(item.tags || []),
+    ...(item.fundAnalysis || []),
+    ...(item.fundHoldings || []),
+    ...(item.assetAllocation || []),
+    ...(item.industryAllocation || [])
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  if (/(指数|etf|lof|联接|index|宽基|沪深|中证|上证|深证|创业板|科创)/i.test(searchText)) {
+    return 'index-fund';
+  }
+
+  if (/(债|固收|纯债|短债|可转债|利率|信用债|fixed)/i.test(searchText)) {
+    return 'fixed-income';
+  }
+
+  if (/(货币|现金|添利|余额|money|cash)/i.test(searchText)) {
+    return 'cash';
+  }
+
+  if (/(主动|混合|股票型|灵活配置|成长|价值|精选|消费|医药|新能源|红利)/i.test(searchText)) {
+    return 'active-fund';
+  }
+
+  return 'other';
+}
+
+function formatHoldingShares(value?: number) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return '';
+  }
+
+  const rounded = Number(value.toFixed(2));
+  return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(2)} 份`;
 }
 
 function mergeWatchlistReview(
@@ -434,6 +747,7 @@ function mergeWatchlistReview(
           adviceReasons: review.adviceReasons?.length ? review.adviceReasons : item.adviceReasons,
           riskNotes: review.riskNotes?.length ? review.riskNotes : item.riskNotes,
           nextActions: review.nextActions?.length ? review.nextActions : item.nextActions,
+          holdingShares: item.holdingShares,
           performanceHistory: review.performanceHistory?.length
             ? review.performanceHistory
             : item.performanceHistory,
@@ -465,25 +779,16 @@ export function InvestmentsPage() {
   const accounts = useFinanceStore((state) => state.accounts);
   const transactions = useFinanceStore((state) => state.transactions);
   const positions = useAppPreferences((state) => state.investmentPositions);
-  const investmentPositionHistory = useAppPreferences((state) => state.investmentPositionHistory);
   const investmentWatchlist = useAppPreferences((state) => state.investmentWatchlist);
+  const investmentAiMessages = useAppPreferences((state) => state.investmentAiMessages);
   const debts = useAppPreferences((state) => state.debts);
   const monthlyIncome = useAppPreferences((state) => state.monthlyIncome);
-  const addInvestmentPosition = useAppPreferences((state) => state.addInvestmentPosition);
-  const updateInvestmentPosition = useAppPreferences((state) => state.updateInvestmentPosition);
-  const removeInvestmentPosition = useAppPreferences((state) => state.removeInvestmentPosition);
-  const ensureInvestmentPositionHistory = useAppPreferences(
-    (state) => state.ensureInvestmentPositionHistory
-  );
   const removeInvestmentWatchItem = useAppPreferences((state) => state.removeInvestmentWatchItem);
   const upsertInvestmentWatchItem = useAppPreferences((state) => state.upsertInvestmentWatchItem);
   const setInvestmentWatchlist = useAppPreferences((state) => state.setInvestmentWatchlist);
-  const { baseUrl, apiKey, model } = useAiSettings();
+  const setInvestmentAiMessages = useAppPreferences((state) => state.setInvestmentAiMessages);
+  const { baseUrl, apiKey, model, webSearch } = useAiSettings();
 
-  const [positionForm, setPositionForm] = useState(POSITION_FORM_DEFAULT);
-  const [positionError, setPositionError] = useState('');
-  const [editingPositionId, setEditingPositionId] = useState<string | null>(null);
-  const [pendingDeletePositionId, setPendingDeletePositionId] = useState<string | null>(null);
   const [watchlistReviewStatus, setWatchlistReviewStatus] = useState<'idle' | 'loading' | 'error'>(
     'idle'
   );
@@ -491,27 +796,31 @@ export function InvestmentsPage() {
   const [fundLookupCode, setFundLookupCode] = useState('');
   const [fundLookupStatus, setFundLookupStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [fundLookupError, setFundLookupError] = useState('');
+  const [selectedWatchCategoryId, setSelectedWatchCategoryId] =
+    useState<WatchCategoryFilterId>('all');
+  const [watchGridColumns, setWatchGridColumns] = useState<WatchGridColumnCount>(3);
+  const [refreshingWatchItemId, setRefreshingWatchItemId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ visible: boolean; message: string; variant: ToastVariant }>({
     visible: false,
     message: '',
     variant: 'success'
   });
-  const [watchContextMenu, setWatchContextMenu] = useState<WatchContextMenuState>({
-    open: false,
-    x: 0,
-    y: 0,
-    item: null
-  });
-  const [quickActionsMenu, setQuickActionsMenu] = useState<QuickActionsMenuState>({
-    open: false,
-    x: 0,
-    y: 0
-  });
   const [expandedWatchItemId, setExpandedWatchItemId] = useState<string | null>(null);
+  const [selectedMarketSecId, setSelectedMarketSecId] = useState(EASTMONEY_MARKET_INDEXES[0].secId);
+  const [marketOverview, setMarketOverview] = useState<EastmoneyMarketOverview | null>(null);
+  const [marketStatus, setMarketStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [marketError, setMarketError] = useState('');
+  const [selectedNewsCategoryId, setSelectedNewsCategoryId] = useState(
+    EASTMONEY_MARKET_NEWS_CATEGORIES[1].id
+  );
+  const [marketNews, setMarketNews] = useState<EastmoneyMarketNewsItem[]>([]);
+  const [marketNewsStatus, setMarketNewsStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [marketNewsError, setMarketNewsError] = useState('');
+  const [analyzingWatchItemId, setAnalyzingWatchItemId] = useState<string | null>(null);
 
   const activePositions = useMemo(() => positions.filter((item) => item.isActive), [positions]);
 
-  const { monthIncomeTotal, monthExpenseTotal, monthNetBalance } = useMemo(() => {
+  const { monthExpenseTotal, monthNetBalance } = useMemo(() => {
     const { start, end } = getMonthBounds();
     const monthTransactions = transactions.filter((item) => {
       const date = new Date(item.date);
@@ -526,7 +835,6 @@ export function InvestmentsPage() {
       .reduce((sum, item) => sum + item.amount, 0);
 
     return {
-      monthIncomeTotal: incomeTotal,
       monthExpenseTotal: expenseTotal,
       monthNetBalance: incomeTotal - expenseTotal
     };
@@ -593,120 +901,158 @@ export function InvestmentsPage() {
   const investmentAssetRatio =
     estimatedNetAssets > 0 ? positionSummary.totalCurrentValue / estimatedNetAssets : 0;
 
-  const cashBucketValue = useMemo(
+
+
+  const watchCategoryCounts = useMemo<Record<WatchCategoryFilterId, number>>(() => {
+    const counts: Record<WatchCategoryFilterId, number> = {
+      all: investmentWatchlist.length,
+      'index-fund': 0,
+      'active-fund': 0,
+      'fixed-income': 0,
+      cash: 0,
+      other: 0
+    };
+
+    investmentWatchlist.forEach((item) => {
+      counts[getWatchItemCategoryId(item)] += 1;
+    });
+
+    return counts;
+  }, [investmentWatchlist]);
+
+  const filteredInvestmentWatchlist = useMemo(
     () =>
-      activePositions
-        .filter((item) => item.category === 'cash' || item.category === 'fixed-income')
-        .reduce((sum, item) => sum + item.currentValue, 0),
-    [activePositions]
+      selectedWatchCategoryId === 'all'
+        ? investmentWatchlist
+        : investmentWatchlist.filter(
+            (item) => getWatchItemCategoryId(item) === selectedWatchCategoryId
+          ),
+    [investmentWatchlist, selectedWatchCategoryId]
   );
 
-  const investmentAlerts = useMemo(
-    () =>
-      buildInvestmentAlerts({
-        positions: activePositions,
-        totalCurrentValue: positionSummary.totalCurrentValue,
-        cashBucketValue,
-        monthlyInvestableCash
-      }),
-    [activePositions, cashBucketValue, monthlyInvestableCash, positionSummary.totalCurrentValue]
-  );
+  const marketContextSummary = useMemo(() => {
+    const overviewSummary = marketOverview?.quotes
+      ?.slice(0, 4)
+      .map((quote) => {
+        const amount = formatMarketAmount(quote.amount);
+        const percent = formatMarketPercent(quote.changePercent);
+        const value = formatMarketIndexValue(quote.value);
+        return `${quote.name} ${value} ${percent} 成交额 ${amount}`;
+      })
+      .join('；');
 
-  const actionSuggestions = useMemo(
-    () =>
-      buildActionSuggestions({
-        hasPositions: activePositions.length > 0,
-        monthlyInvestableCash,
-        alerts: investmentAlerts
-      }),
-    [activePositions.length, investmentAlerts, monthlyInvestableCash]
-  );
+    const newsSummary = marketNews
+      .slice(0, 3)
+      .map((item) => `${formatMarketNewsTime(item.time)} ${item.title}`)
+      .join('；');
+
+    return [overviewSummary, newsSummary].filter(Boolean).join('\n');
+  }, [marketNews, marketOverview]);
 
   const hasInvestmentSummary =
     activePositions.length > 0 ||
     positionSummary.totalCurrentValue > 0 ||
     positionSummary.totalInvested > 0;
 
-  const pendingDeletePosition = useMemo(
-    () => positions.find((item) => item.id === pendingDeletePositionId) ?? null,
-    [pendingDeletePositionId, positions]
-  );
-
-  const latestInvestmentPositionHistory = useMemo(
-    () => investmentPositionHistory.slice(0, 24),
-    [investmentPositionHistory]
-  );
-
   useEffect(() => {
-    if (positions.length > 0 && investmentPositionHistory.length === 0) {
-      ensureInvestmentPositionHistory();
+    let cancelled = false;
+
+    async function loadMarketOverview() {
+      setMarketStatus('loading');
+      setMarketError('');
+
+      try {
+        const overview = await fetchEastmoneyMarketOverview(selectedMarketSecId);
+        if (cancelled) return;
+        setMarketOverview(overview);
+        setMarketStatus('idle');
+      } catch (error) {
+        if (cancelled) return;
+        const message = error instanceof Error ? error.message : '大盘行情加载失败，请稍后重试。';
+        setMarketError(message);
+        setMarketStatus('error');
+      }
     }
-  }, [ensureInvestmentPositionHistory, investmentPositionHistory.length, positions.length]);
+
+    loadMarketOverview();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedMarketSecId]);
 
   useEffect(() => {
-    if (!watchContextMenu.open && !quickActionsMenu.open) return;
+    let cancelled = false;
+    const category = EASTMONEY_MARKET_NEWS_CATEGORIES.find(
+      (item) => item.id === selectedNewsCategoryId
+    );
 
-    const closeMenu = () => {
-      setWatchContextMenu((prev) => ({
-        ...prev,
-        open: false,
-        item: null
-      }));
-      setQuickActionsMenu((prev) => ({ ...prev, open: false }));
-    };
-    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.key === 'Escape') closeMenu();
-    };
+    async function loadMarketNews() {
+      setMarketNewsStatus('loading');
+      setMarketNewsError('');
 
-    window.addEventListener('click', closeMenu);
-    window.addEventListener('scroll', closeMenu, true);
-    window.addEventListener('keydown', handleKeyDown);
+      try {
+        const nextNews = await fetchEastmoneyMarketNews(category?.column);
+        if (cancelled) return;
+        setMarketNews(nextNews);
+        setMarketNewsStatus('idle');
+      } catch (error) {
+        if (cancelled) return;
+        const message = error instanceof Error ? error.message : '快讯加载失败，请稍后重试。';
+        setMarketNewsError(message);
+        setMarketNewsStatus('error');
+      }
+    }
+
+    loadMarketNews();
+
     return () => {
-      window.removeEventListener('click', closeMenu);
-      window.removeEventListener('scroll', closeMenu, true);
-      window.removeEventListener('keydown', handleKeyDown);
+      cancelled = true;
     };
-  }, [quickActionsMenu.open, watchContextMenu.open]);
+  }, [selectedNewsCategoryId]);
 
-  function resetPositionForm() {
-    setPositionForm(POSITION_FORM_DEFAULT);
-    setEditingPositionId(null);
-    setPositionError('');
-  }
 
   function setToastState(message: string, variant: ToastVariant = 'success') {
     setToast({ visible: true, message, variant });
   }
 
-  function closeWatchContextMenu() {
-    setWatchContextMenu((prev) => ({
-      ...prev,
-      open: false,
-      item: null
-    }));
+  async function refreshMarketOverview() {
+    if (marketStatus === 'loading') return;
+
+    setMarketStatus('loading');
+    setMarketError('');
+
+    try {
+      const overview = await fetchEastmoneyMarketOverview(selectedMarketSecId);
+      setMarketOverview(overview);
+      setMarketStatus('idle');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '大盘行情加载失败，请稍后重试。';
+      setMarketError(message);
+      setMarketStatus('error');
+      setToastState(message, 'warning');
+    }
   }
 
-  function closeQuickActionsMenu() {
-    setQuickActionsMenu((prev) => ({ ...prev, open: false }));
-  }
+  async function refreshMarketNews() {
+    if (marketNewsStatus === 'loading') return;
 
-  function scrollToPositionForm() {
-    document.querySelector<HTMLElement>('.investments-main-grid')?.scrollIntoView?.({
-      behavior: 'smooth',
-      block: 'start'
-    });
-  }
+    const category = EASTMONEY_MARKET_NEWS_CATEGORIES.find(
+      (item) => item.id === selectedNewsCategoryId
+    );
+    setMarketNewsStatus('loading');
+    setMarketNewsError('');
 
-  function openQuickActionsMenu(event: MouseEvent<HTMLElement>) {
-    event.preventDefault();
-    event.stopPropagation();
-    const menuWidth = 240;
-    const menuHeight = 148;
-    const x = Math.min(event.clientX, Math.max(12, window.innerWidth - menuWidth));
-    const y = Math.min(event.clientY, Math.max(12, window.innerHeight - menuHeight));
-
-    closeWatchContextMenu();
-    setQuickActionsMenu({ open: true, x, y });
+    try {
+      const nextNews = await fetchEastmoneyMarketNews(category?.column);
+      setMarketNews(nextNews);
+      setMarketNewsStatus('idle');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '快讯加载失败，请稍后重试。';
+      setMarketNewsError(message);
+      setMarketNewsStatus('error');
+      setToastState(message, 'warning');
+    }
   }
 
   function toggleWatchItemDetails(itemId: string) {
@@ -719,69 +1065,31 @@ export function InvestmentsPage() {
     toggleWatchItemDetails(itemId);
   }
 
-  function getPositionRiskFromWatchItem(item: InvestmentWatchItem): InvestmentRiskLevel {
-    if (item.lastRiskLevel === 'low' || item.lastRiskLevel === 'high') {
-      return item.lastRiskLevel;
+  function handleSetWatchItemHoldingShares(item: InvestmentWatchItem) {
+    const currentValue =
+      typeof item.holdingShares === 'number' && item.holdingShares > 0
+        ? String(item.holdingShares)
+        : '';
+    const nextValue = window.prompt(`请输入 ${item.name} 的持有份额`, currentValue);
+    if (nextValue === null) return;
+
+    const cleaned = nextValue.trim();
+    const shares = cleaned ? Number(cleaned.replace(/[^\d.-]/g, '')) : undefined;
+    if (cleaned && (!Number.isFinite(shares as number) || (shares as number) < 0)) {
+      setToastState('请输入有效的持有份额。', 'warning');
+      return;
     }
 
-    return 'medium';
-  }
-
-  function buildWatchItemPositionNote(item: InvestmentWatchItem) {
-    return [
-      item.code ? `基金代码：${item.code}` : '',
-      item.investmentAdvice ? `自选建议：${item.investmentAdvice}` : '',
-      item.note
-        ? `自选备注：${item.note}`
-        : item.lastSummary
-          ? `最近分析：${item.lastSummary}`
-          : '',
-      item.nextActions?.length ? `下一步：${item.nextActions.join(' / ')}` : ''
-    ]
-      .filter(Boolean)
-      .join('\n');
-  }
-
-  function openWatchContextMenu(event: MouseEvent<HTMLElement>, item: InvestmentWatchItem) {
-    event.preventDefault();
-    event.stopPropagation();
-    const menuWidth = 220;
-    const menuHeight = 92;
-    const x = Math.min(event.clientX, Math.max(12, window.innerWidth - menuWidth));
-    const y = Math.min(event.clientY, Math.max(12, window.innerHeight - menuHeight));
-
-    setWatchContextMenu({
-      open: true,
-      x,
-      y,
-      item
+    upsertInvestmentWatchItem({
+      ...item,
+      holdingShares: shares === undefined ? undefined : Number((shares as number).toFixed(2)),
+      updatedAt: new Date().toISOString()
     });
-    closeQuickActionsMenu();
-  }
-
-  function handleAddWatchItemToPosition(item: InvestmentWatchItem) {
-    setEditingPositionId(null);
-    setPositionError('');
-    setPositionForm({
-      ...POSITION_FORM_DEFAULT,
-      name: item.name,
-      platform: item.platform || '',
-      riskLevel: getPositionRiskFromWatchItem(item),
-      note: buildWatchItemPositionNote(item)
-    });
-    closeWatchContextMenu();
-    const scrollToPositionForm = () => {
-      document.querySelector<HTMLElement>('.investments-main-grid')?.scrollIntoView?.({
-        behavior: 'smooth',
-        block: 'start'
-      });
-    };
-    if (typeof requestAnimationFrame === 'function') {
-      requestAnimationFrame(scrollToPositionForm);
-    } else {
-      scrollToPositionForm();
-    }
-    setToastState(`已把“${item.name}”带入新增持仓表单，请补充投入本金和当前市值。`);
+    setToastState(
+      shares === undefined
+        ? `已清空“${item.name}”的持有份额。`
+        : `已更新“${item.name}”持有 ${formatHoldingShares(shares)}。`
+    );
   }
 
   function handleFollowWatchItem(item: InvestmentWatchItem) {
@@ -796,11 +1104,137 @@ export function InvestmentsPage() {
     setToastState(`已把“${item.name}”加入关注。`);
   }
 
+  async function handleAnalyzeWatchItem(item: InvestmentWatchItem) {
+    if (analyzingWatchItemId === item.id) return;
+
+    if (!apiKey.trim()) {
+      setToastState('请先在设置中配置可用的 AI Key。', 'warning');
+      return;
+    }
+
+    setAnalyzingWatchItemId(item.id);
+
+    const userMessage = createInvestmentAiMessage({
+      id: `investment-user-${Date.now()}`,
+      role: 'user',
+      text: `请分析 ${item.name}${item.code ? `（${item.code}）` : ''} 是否该加仓减仓，说明行业、政策影响、重仓产品比例和当前建议。`,
+      createdAt: new Date().toISOString()
+    });
+    const nextMessages = trimInvestmentAiMessages([...investmentAiMessages, userMessage]);
+    setInvestmentAiMessages(nextMessages);
+
+    try {
+      const webContext = buildWebSearchPrompt(
+        await fetchWebSearchContext(
+          [item.name, item.code, item.platform, '行业 政策 最新 影响'].filter(Boolean).join(' '),
+          webSearch
+        )
+      );
+      let fullContent = '';
+      const result = await sendAiChatStream(
+        {
+          baseUrl,
+          apiKey,
+          model,
+          systemPrompt: buildInvestmentFundAnalysisPrompt({
+            watchItem: item,
+            positions: activePositions,
+            marketContext: marketContextSummary,
+            webContext
+          }),
+          messages: [
+            {
+              role: 'user',
+              text: `请分析 ${item.name}${item.code ? `（${item.code}）` : ''}，重点回答是否加仓、减仓、继续持有，以及行业和政策影响。`
+            }
+          ]
+        },
+        {
+          onDelta: (delta) => {
+            fullContent += delta;
+          },
+          onDone: (content) => {
+            fullContent = content || fullContent;
+          }
+        }
+      );
+
+      const rawContent = result.content || fullContent;
+      const { displayText, analysis } = extractInvestmentAnalysis(rawContent);
+      const analysisText = summarizeInvestmentAnalysis(displayText, analysis);
+      const assistantMessage = createInvestmentAiMessage({
+        id: `investment-assistant-${Date.now()}`,
+        role: 'assistant',
+        text: analysisText || analysis?.summary || rawContent.trim() || '已完成分析。',
+        createdAt: new Date().toISOString(),
+        analysis
+      });
+      setInvestmentAiMessages(trimInvestmentAiMessages([...nextMessages, assistantMessage]));
+
+      const normalizedAnalysis = analysis;
+      if (normalizedAnalysis) {
+        const nextTags = Array.from(
+          new Set([...(normalizedAnalysis.watchTags || []), ...(item.tags || [])])
+        ).slice(0, 8);
+
+        upsertInvestmentWatchItem({
+          ...item,
+          tags: nextTags,
+          lastVerdict: normalizedAnalysis.verdict || item.lastVerdict || '已完成分析',
+          lastSummary: normalizedAnalysis.summary || analysisText || item.lastSummary,
+          lastRiskLevel: normalizedAnalysis.riskLevel || item.lastRiskLevel || 'unknown',
+          investmentAdvice:
+            normalizedAnalysis.verdict || normalizedAnalysis.summary || item.investmentAdvice,
+          adviceReasons: normalizedAnalysis.highlights?.length
+            ? normalizedAnalysis.highlights
+            : item.adviceReasons,
+          riskNotes: normalizedAnalysis.risks?.length ? normalizedAnalysis.risks : item.riskNotes,
+          nextActions: normalizedAnalysis.actions?.length
+            ? normalizedAnalysis.actions
+            : item.nextActions,
+          fundAnalysis: normalizedAnalysis.fundAnalysis?.length
+            ? normalizedAnalysis.fundAnalysis
+            : item.fundAnalysis,
+          fundHoldings: normalizedAnalysis.fundHoldings?.length
+            ? normalizedAnalysis.fundHoldings
+            : item.fundHoldings,
+          assetAllocation: normalizedAnalysis.assetAllocation?.length
+            ? normalizedAnalysis.assetAllocation
+            : item.assetAllocation,
+          industryAllocation: normalizedAnalysis.industryAllocation?.length
+            ? normalizedAnalysis.industryAllocation
+            : item.industryAllocation,
+          netValue: normalizedAnalysis.netValue || item.netValue,
+          addedReturn: normalizedAnalysis.addedReturn || item.addedReturn,
+          holdingReturn: normalizedAnalysis.holdingReturn || item.holdingReturn,
+          buyFeeRate: normalizedAnalysis.buyFeeRate || item.buyFeeRate,
+          fundCompany: normalizedAnalysis.fundCompany || item.fundCompany,
+          platform: normalizedAnalysis.platform || item.platform,
+          note: normalizedAnalysis.note || item.note,
+          lastAnalysisAt: new Date().toISOString()
+        });
+      }
+
+      setToastState(
+        normalizedAnalysis?.verdict || normalizedAnalysis?.summary || '已完成基金分析。'
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '基金分析失败，请稍后再试。';
+      setToastState(message, 'warning');
+    } finally {
+      setAnalyzingWatchItemId((current) => (current === item.id ? null : current));
+    }
+  }
+
   async function handleRefreshWatchItem(item: InvestmentWatchItem) {
+    if (refreshingWatchItemId === item.id) return;
+
     if (!item.code) {
       setToastState('这只基金没有代码，暂时无法刷新。', 'warning');
       return;
     }
+
+    setRefreshingWatchItemId(item.id);
 
     try {
       const snapshot = await fetchEastmoneyFundSnapshot(item.code);
@@ -826,7 +1260,9 @@ export function InvestmentsPage() {
           : item.performanceHistory,
         fundAnalysis: snapshot.fundAnalysis.length ? snapshot.fundAnalysis : item.fundAnalysis,
         fundHoldings: snapshot.fundHoldings.length ? snapshot.fundHoldings : item.fundHoldings,
-        assetAllocation: snapshot.assetAllocation.length ? snapshot.assetAllocation : item.assetAllocation,
+        assetAllocation: snapshot.assetAllocation.length
+          ? snapshot.assetAllocation
+          : item.assetAllocation,
         netValue: snapshot.netValue || item.netValue,
         addedReturn: estimatedChange || item.addedReturn,
         buyFeeRate: snapshot.buyFeeRate || item.buyFeeRate,
@@ -836,11 +1272,17 @@ export function InvestmentsPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : '获取更新失败，请稍后再试。';
       setToastState(message, 'warning');
+    } finally {
+      setRefreshingWatchItemId((current) => (current === item.id ? null : current));
     }
   }
 
-  function handleActionSuggestionClick(item: ActionSuggestion) {
-    closeQuickActionsMenu();
+  function handleActionSuggestionClick(item: {
+    label: string;
+    hint: string;
+    to?: string;
+    action?: 'open-investment-assistant';
+  }) {
     if (item.action === 'open-investment-assistant') {
       try {
         window.sessionStorage.setItem(ASSISTANT_ACTIVE_MODE_STORAGE_KEY, 'investment');
@@ -897,16 +1339,22 @@ export function InvestmentsPage() {
             .filter(Boolean)
             .join(' · ') || existing?.lastSummary,
         lastRiskLevel: existing?.lastRiskLevel || 'unknown',
-        investmentAdvice: existing?.investmentAdvice || '先加入自选观察，再结合持仓和风险偏好决定。',
+        investmentAdvice:
+          existing?.investmentAdvice || '先加入自选观察，再结合持仓和风险偏好决定。',
         adviceReasons: existing?.adviceReasons || [],
         riskNotes: existing?.riskNotes || [],
         nextActions: existing?.nextActions || [],
+        holdingShares: existing?.holdingShares,
         performanceHistory: snapshot.performanceHistory.length
           ? snapshot.performanceHistory
           : existing?.performanceHistory,
         fundAnalysis: snapshot.fundAnalysis.length ? snapshot.fundAnalysis : existing?.fundAnalysis,
-        fundHoldings: snapshot.fundHoldings.length ? snapshot.fundHoldings : existing?.fundHoldings || [],
-        assetAllocation: snapshot.assetAllocation.length ? snapshot.assetAllocation : existing?.assetAllocation || [],
+        fundHoldings: snapshot.fundHoldings.length
+          ? snapshot.fundHoldings
+          : existing?.fundHoldings || [],
+        assetAllocation: snapshot.assetAllocation.length
+          ? snapshot.assetAllocation
+          : existing?.assetAllocation || [],
         industryAllocation: existing?.industryAllocation || [],
         netValue: snapshot.netValue || existing?.netValue,
         addedReturn: estimatedChange || existing?.addedReturn,
@@ -998,62 +1446,39 @@ export function InvestmentsPage() {
     }
   }
 
-  function submitPosition(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const investedAmount = parseAmountInput(positionForm.investedAmount);
-    const currentValue = parseAmountInput(positionForm.currentValue);
-    const monthlyContribution = parseAmountInput(positionForm.monthlyContribution);
-    const targetAllocation = parseAmountInput(positionForm.targetAllocation);
-
-    if (!positionForm.name.trim()) {
-      setPositionError('请先填写持仓名称。');
-      return;
-    }
-
-    if (investedAmount <= 0) {
-      setPositionError('投入本金必须大于 0。');
-      return;
-    }
-
-    if (currentValue <= 0) {
-      setPositionError('当前市值必须大于 0。');
-      return;
-    }
-
-    const payload = {
-      name: positionForm.name.trim(),
-      category: positionForm.category,
-      platform: positionForm.platform.trim(),
-      linkedAccountId: positionForm.linkedAccountId,
-      investedAmount,
-      currentValue,
-      monthlyContribution: monthlyContribution || undefined,
-      targetAllocation: targetAllocation || undefined,
-      riskLevel: positionForm.riskLevel,
-      note: positionForm.note.trim(),
-      isActive: positionForm.isActive
-    };
-
-    if (editingPositionId) {
-      updateInvestmentPosition(editingPositionId, payload);
-    } else {
-      addInvestmentPosition(payload);
-    }
-
-    resetPositionForm();
-  }
-
   return (
     <div className="page-stack investments-page investments-management-page">
       <section className="investments-management-grid">
         <aside className="investments-management-column investments-support-column">
-          <section
-            className="panel investments-hero investments-flat-section investments-support-summary-card"
-          >
+          <section className="investments-market-news-grid" aria-label="大盘和快讯">
+            <MarketOverviewPanel
+              overview={marketOverview}
+              selectedSecId={selectedMarketSecId}
+              status={marketStatus}
+              error={marketError}
+              onSelect={setSelectedMarketSecId}
+              onRefresh={refreshMarketOverview}
+              onAskMarket={() =>
+                handleActionSuggestionClick({
+                  label: '问 AI 怎么看大盘',
+                  hint: '带着当前大盘概览去投资助手里继续分析。',
+                  action: 'open-investment-assistant'
+                })
+              }
+            />
+            <MarketNewsPanel
+              news={marketNews}
+              selectedCategoryId={selectedNewsCategoryId}
+              status={marketNewsStatus}
+              error={marketNewsError}
+              onSelectCategory={setSelectedNewsCategoryId}
+              onRefresh={refreshMarketNews}
+            />
+          </section>
+
+          <section className="panel investments-hero investments-flat-section investments-support-summary-card">
             <div className="investments-flat-head">
-              <div>
-                {!hasInvestmentSummary ? <p>先添加基金代码或第一笔持仓。</p> : null}
-              </div>
+              <div>{!hasInvestmentSummary ? <p>先添加基金代码或第一笔持仓。</p> : null}</div>
               <span className="badge">{activePositions.length} 笔持仓</span>
             </div>
 
@@ -1107,14 +1532,6 @@ export function InvestmentsPage() {
               >
                 <img src={INFO_ICON_URL} alt="" aria-hidden="true" />
                 投资风向
-              </button>
-              <button
-                type="button"
-                className="button-with-icon"
-                onClick={scrollToPositionForm}
-              >
-                <img src={PEN_TOOL_ICON_URL} alt="" aria-hidden="true" />
-                新增持仓
               </button>
             </div>
           </section>
@@ -1180,7 +1597,8 @@ export function InvestmentsPage() {
                 </button>
               </div>
               <p className={fundLookupError ? 'investments-fund-lookup-error' : ''}>
-                {fundLookupError || '从东方财富读取净值、估算涨跌、费率和近期表现，添加到自选基金。'}
+                {fundLookupError ||
+                  '从东方财富读取净值、估算涨跌、费率和近期表现，添加到自选基金。'}
               </p>
             </form>
 
@@ -1190,776 +1608,388 @@ export function InvestmentsPage() {
                 <p>分析后觉得值得跟踪，就加入这里。</p>
               </div>
             ) : (
-              <div className="investments-watchlist-list">
-                {investmentWatchlist.map((item) => {
-                  const isExpanded = expandedWatchItemId === item.id;
-                  const detailSections = compactWatchDetailSections(item);
-                  const performanceSection = detailSections.find(
-                    (section) => section.title === '历史业绩'
-                  );
-                  const otherDetailSections = detailSections.filter(
-                    (section) => section.title !== '历史业绩'
-                  );
-                  const primaryTag = item.tags[0];
-                  const holdingsPreview = item.fundHoldings?.slice(0, 3) || [];
-                  const assetAllocationPreview = item.assetAllocation?.slice(0, 3) || [];
-                  const performancePoints = parseWatchPerformancePoints(
-                    performanceSection?.items || []
-                  );
-                  const holdingReturn =
-                    item.holdingReturn || getWatchItemHoldingReturn(item, activePositions);
+              <>
+                <div className="investments-watchlist-tools">
+                  <div className="investments-watch-category-tabs" aria-label="自选基金分类">
+                    {WATCH_CATEGORY_FILTERS.map((category) => {
+                      const count = watchCategoryCounts[category.id];
+                      const isActive = selectedWatchCategoryId === category.id;
 
-                  return (
-                    <article
-                      key={item.id}
-                      className={`investments-watch-card ${isExpanded ? 'is-expanded' : ''}`}
-                      tabIndex={0}
-                      aria-expanded={isExpanded}
-                      onClick={() => toggleWatchItemDetails(item.id)}
-                      onKeyDown={(event) => handleWatchCardKeyDown(event, item.id)}
-                      onContextMenu={(event) => openWatchContextMenu(event, item)}
-                    >
-                      <div className="investments-watch-card-head">
-                        <div>
-                          <strong>{item.name}</strong>
-                          <p>
-                            {item.code || '未记录代码'}
-                            {item.platform ? ` · ${item.platform}` : ''}
-                          </p>
-                        </div>
-                        <div className="investments-watch-card-actions">
-                          {item.lastRiskLevel ? (
-                            <span
-                              className={`investments-analysis-risk ${getAnalysisRiskClass(
-                                item.lastRiskLevel
-                              )}`}
-                            >
-                              {getAnalysisRiskLabel(item.lastRiskLevel)}
-                            </span>
-                          ) : null}
-                          <button
-                            type="button"
-                            className="danger investments-watch-card-remove"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              removeInvestmentWatchItem(item.id);
-                            }}
-                            aria-label={`移除 ${item.name}`}
-                          >
-                            移除
-                          </button>
-                        </div>
-                      </div>
-                      <div className="investments-watch-card-brief">
-                        <strong>
-                          {item.investmentAdvice || item.lastVerdict || '等待下一次分析'}
-                        </strong>
-                        {primaryTag ? <span className="badge">{primaryTag}</span> : null}
-                      </div>
-                      {item.lastSummary ? (
-                        <p className="investments-watch-card-summary">{item.lastSummary}</p>
-                      ) : null}
-                      <div className="investments-watch-card-mini-stats" aria-label="基金关键数据">
-                        <span>
-                          <em>净值</em>
-                          <strong>{item.netValue || '待更新'}</strong>
-                        </span>
-                        <span>
-                          <em>收益</em>
-                          <strong>{item.addedReturn || '待更新'}</strong>
-                        </span>
-                        <span>
-                          <em>持有</em>
-                          <strong>{holdingReturn || '待更新'}</strong>
-                        </span>
-                      </div>
-                      <div className="investments-watch-card-split-grid">
-                        <article className="investments-watch-card-split is-holdings">
-                          <span>重仓</span>
-                          {holdingsPreview.length > 0 ? (
-                            <div className="investments-watch-chip-list" aria-label="基金重仓股票">
-                              {holdingsPreview.map((value) => {
-                                const displayValue = formatWatchPreviewItem(value);
-                                return (
-                                  <strong
-                                    key={`${item.id}-holding-${value}`}
-                                    title={displayValue}
-                                  >
-                                    {displayValue}
-                                  </strong>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <p>待更新</p>
-                          )}
-                        </article>
-                        <article className="investments-watch-card-split is-assets">
-                          <span>资产</span>
-                          {assetAllocationPreview.length > 0 ? (
-                            <div className="investments-watch-chip-list" aria-label="基金资产分布">
-                              {assetAllocationPreview.map((value) => {
-                                const displayValue = formatWatchPreviewItem(value);
-                                return (
-                                  <strong key={`${item.id}-asset-${value}`} title={displayValue}>
-                                    {displayValue}
-                                  </strong>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <p>待更新</p>
-                          )}
-                        </article>
-                      </div>
-                      <div className="investments-watch-card-ai-actions">
+                      return (
                         <button
+                          key={category.id}
                           type="button"
-                          className="investments-watch-follow-btn"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleFollowWatchItem(item);
-                          }}
+                          className={isActive ? 'is-active' : ''}
+                          onClick={() => setSelectedWatchCategoryId(category.id)}
+                          disabled={count === 0 && category.id !== 'all'}
+                          aria-pressed={isActive}
                         >
-                          添加关注
+                          <span>{category.mark}</span>
+                          <strong>{category.label}</strong>
+                          <em>{count}</em>
                         </button>
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            void handleRefreshWatchItem(item);
-                          }}
-                        >
-                          获取更新
-                        </button>
-                      </div>
-                      <div className="investments-watch-card-meta">
-                        <span>
-                          {item.lastAnalysisAt
-                            ? `更新于 ${formatDateTimeLabel(item.lastAnalysisAt)}`
-                            : '暂未分析'}
-                        </span>
-                      </div>
-
-                      {isExpanded ? (
-                        <div className="investments-watch-card-details">
-                          {detailSections.length > 0 ? (
-                            <>
-                              {performanceSection && performancePoints.length > 0 ? (
-                                <section className="investments-watch-performance-panel">
-                                  <div className="investments-watch-detail-head">
-                                    <span>{performanceSection.title}</span>
-                                    <small>最近四个区间的表现</small>
-                                  </div>
-                                  <div
-                                    className="investments-watch-performance-chart"
-                                    role="list"
-                                    aria-label="历史业绩图表"
-                                  >
-                                    {performancePoints.map((point, index) => {
-                                      const maxValue = Math.max(
-                                        ...performancePoints.map((entry) => Math.abs(entry.value)),
-                                        1
-                                      );
-                                      const height = Math.max(
-                                        14,
-                                        (Math.abs(point.value) / maxValue) * 100
-                                      );
-
-                                      return (
-                                        <div
-                                          key={`${item.id}-performance-${point.label}-${index}`}
-                                          className={`investments-watch-performance-bar ${
-                                            point.value >= 0 ? 'is-positive' : 'is-negative'
-                                          }`}
-                                          role="listitem"
-                                          title={`${point.label} ${point.caption}`}
-                                        >
-                                          <span className="investments-watch-performance-track">
-                                            <i style={{ height: `${height}%` }} />
-                                          </span>
-                                          <strong>{point.label}</strong>
-                                          <em>{point.caption}</em>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </section>
-                              ) : null}
-
-                              <div className="investments-watch-detail-grid">
-                                {otherDetailSections.map((section) => (
-                                  <section
-                                    key={`${item.id}-${section.title}`}
-                                    className={`investments-watch-detail-card ${getWatchSectionClassName(
-                                      section.kind
-                                    )}`}
-                                  >
-                                    <div className="investments-watch-detail-head">
-                                      <span>{section.title}</span>
-                                      {section.kind === 'chips' ? <small>精选摘要</small> : null}
-                                    </div>
-                                    {section.kind === 'chips' ? (
-                                      <div className="investments-watch-chip-list">
-                                        {section.items.map((value) => (
-                                          <strong
-                                            key={`${item.id}-${section.title}-${value}`}
-                                            title={value}
-                                          >
-                                            {value}
-                                          </strong>
-                                        ))}
-                                      </div>
-                                    ) : section.kind === 'stat' ? (
-                                      <strong className="investments-watch-detail-stat">
-                                        {section.items[0]}
-                                      </strong>
-                                    ) : (
-                                      <div className="investments-watch-detail-copy">
-                                        {section.items.map((value) => (
-                                          <p key={`${item.id}-${section.title}-${value}`}>{value}</p>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </section>
-                                ))}
-                              </div>
-                            </>
-                          ) : (
-                            <p className="investments-watch-card-empty-detail">
-                              暂无更多资料。
-                            </p>
-                          )}
-                        </div>
-                      ) : null}
-                    </article>
-                  );
-                })}
-              </div>
-            )}
-          </aside>
-
-          <section className="investments-overview-grid">
-            <article
-              className="panel investments-overview-card investments-flat-section"
-              data-investment-support-title="当前配置"
-            >
-              <div className="investments-section-head investments-flat-head">
-                <div>
-                  <h3>当前配置</h3>
-                  <p>
-                    市值 {formatCurrencyAuto(positionSummary.totalCurrentValue)} ·{' '}
-                    {activePositions.length} 笔持仓
-                  </p>
-                </div>
-                <span className="badge">{activePositions.length} 笔</span>
-              </div>
-
-              <div className="investments-flat-body">
-                {positionSummary.allocationRows.length === 0 ? (
-                  <p className="muted">还没有可统计的持仓，先新增第一笔再看配置。</p>
-                ) : (
-                  <div className="investments-allocation-list">
-                    {positionSummary.allocationRows.map((item) => (
-                      <article key={item.category} className="investments-allocation-row">
-                        <div className="investments-allocation-copy">
-                          <strong>{item.label}</strong>
-                          <span>
-                            {formatCurrencyAuto(item.value)} · {(item.share * 100).toFixed(1)}%
-                          </span>
-                        </div>
-                        <div className="investments-allocation-track" aria-hidden="true">
-                          <i style={{ width: `${Math.max(6, item.share * 100)}%` }} />
-                        </div>
-                      </article>
+                      );
+                    })}
+                  </div>
+                  <div className="investments-watch-grid-controls" aria-label="每行卡片数量">
+                    <span>每行</span>
+                    {WATCH_GRID_COLUMN_OPTIONS.map((count) => (
+                      <button
+                        key={count}
+                        type="button"
+                        className={watchGridColumns === count ? 'is-active' : ''}
+                        onClick={() => setWatchGridColumns(count)}
+                        aria-pressed={watchGridColumns === count}
+                      >
+                        {count}
+                      </button>
                     ))}
                   </div>
-                )}
+                </div>
 
-                {hasInvestmentSummary ? (
-                    <div className="investments-meta-grid investments-meta-grid-compact">
-                      <div>
-                        <span>计划月投入</span>
-                        <strong>
-                          {formatCurrency(positionSummary.totalMonthlyContribution)}
-                        </strong>
-                      </div>
-                    <div>
-                      <span>账户资产余额</span>
-                      <strong>{formatCurrencyAuto(accountAssetBalance)}</strong>
-                    </div>
-                    <div>
-                      <span>当前月收入</span>
-                      <strong>
-                        {formatCurrencyAuto(monthlyIncome > 0 ? monthlyIncome : monthIncomeTotal)}
-                      </strong>
-                    </div>
-                    <div>
-                      <span>当前月支出</span>
-                      <strong>{formatCurrencyAuto(monthExpenseTotal)}</strong>
-                    </div>
+                {filteredInvestmentWatchlist.length === 0 ? (
+                  <div className="investments-watchlist-empty investments-watchlist-filter-empty">
+                    <strong>当前分类没有自选基金</strong>
+                    <p>切换到其他分类，或用基金代码添加一只新的。</p>
                   </div>
-                ) : null}
-              </div>
-            </article>
-
-            <article
-              className="panel investments-overview-card investments-flat-section"
-              data-investment-support-title="当前提醒"
-            >
-              <div className="investments-section-head investments-flat-head">
-                <div>
-                  <h3>当前提醒</h3>
-                  <p>
-                    {investmentAlerts[0]?.title || '暂无提醒'} · {actionSuggestions.length} 个动作
-                  </p>
-                </div>
-                <span className="badge">{investmentAlerts.length} 条</span>
-              </div>
-
-              <div className="investments-flat-body">
-                <div className="investments-alert-list">
-                  {investmentAlerts.slice(0, 2).map((item) => (
-                    <article
-                      key={item.title}
-                      className={`investments-alert-card tone-${item.tone}`}
-                    >
-                      <strong>{item.title}</strong>
-                      <p>{item.description}</p>
-                    </article>
-                  ))}
-                </div>
-
-                <button
-                  type="button"
-                  className="investments-quick-actions-trigger"
-                  onClick={openQuickActionsMenu}
-                  onContextMenu={openQuickActionsMenu}
-                >
-                  顺手下一步
-                </button>
-              </div>
-            </article>
-          </section>
-
-          <section className="investments-main-grid">
-            <article
-              className="panel investments-panel investments-flat-section"
-              data-investment-support-title={editingPositionId ? '编辑持仓' : '新增持仓'}
-            >
-              <div className="investments-section-head investments-flat-head">
-                <div>
-                  <h3>{editingPositionId ? '编辑持仓' : '新增持仓'}</h3>
-                </div>
-                <span className="badge">{editingPositionId ? '编辑中' : '新增'}</span>
-              </div>
-
-              <div className="investments-flat-body">
-                <form className="investments-form" onSubmit={submitPosition}>
-                  <div className="investments-form-grid investments-position-quick-grid">
-                    <label className="investments-field">
-                      <span>持仓名称</span>
-                      <input
-                        value={positionForm.name}
-                        onChange={(event) =>
-                          setPositionForm((prev) => ({ ...prev, name: event.target.value }))
-                        }
-                        placeholder="例如：沪深 300 ETF"
-                      />
-                    </label>
-                    <label className="investments-field">
-                      <span>投入本金（元）</span>
-                      <input
-                        inputMode="decimal"
-                        value={positionForm.investedAmount}
-                        onChange={(event) =>
-                          setPositionForm((prev) => ({
-                            ...prev,
-                            investedAmount: event.target.value
-                          }))
-                        }
-                        placeholder="例如 10000"
-                      />
-                    </label>
-                    <label className="investments-field">
-                      <span>当前市值（元）</span>
-                      <input
-                        inputMode="decimal"
-                        value={positionForm.currentValue}
-                        onChange={(event) =>
-                          setPositionForm((prev) => ({ ...prev, currentValue: event.target.value }))
-                        }
-                        placeholder="例如 10880"
-                      />
-                    </label>
-                  </div>
-
-                  <details className="investments-advanced-fields">
-                    <summary>
-                      <span>高级选项</span>
-                      <small>资产类别、平台、计划月投入、风险档位</small>
-                    </summary>
-
-                    <div className="investments-form-grid investments-form-grid-primary">
-                      <label className="investments-field">
-                        <span>资产类别</span>
-                        <select
-                          value={positionForm.category}
-                          onChange={(event) =>
-                            setPositionForm((prev) => ({
-                              ...prev,
-                              category: event.target.value as InvestmentCategory
-                            }))
-                          }
-                        >
-                          {Object.entries(POSITION_CATEGORY_LABELS).map(([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="investments-field">
-                        <span>平台 / 券商</span>
-                        <input
-                          value={positionForm.platform}
-                          onChange={(event) =>
-                            setPositionForm((prev) => ({ ...prev, platform: event.target.value }))
-                          }
-                          placeholder="例如：支付宝 / 天天基金"
-                        />
-                      </label>
-                      <label className="investments-field">
-                        <span>关联账户（可选）</span>
-                        <select
-                          value={positionForm.linkedAccountId}
-                          onChange={(event) =>
-                            setPositionForm((prev) => ({
-                              ...prev,
-                              linkedAccountId: event.target.value
-                            }))
-                          }
-                        >
-                          <option value="">暂不关联</option>
-                          {accounts.map((item) => (
-                            <option key={item.id} value={item.id}>
-                              {item.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-
-                    <div className="investments-form-grid">
-                      <label className="investments-field">
-                        <span>计划月投入（元，可选）</span>
-                        <input
-                          inputMode="decimal"
-                          value={positionForm.monthlyContribution}
-                          onChange={(event) =>
-                            setPositionForm((prev) => ({
-                              ...prev,
-                              monthlyContribution: event.target.value
-                            }))
-                          }
-                          placeholder="例如 500"
-                        />
-                      </label>
-                      <label className="investments-field">
-                        <span>目标占比（%，可选）</span>
-                        <input
-                          inputMode="decimal"
-                          value={positionForm.targetAllocation}
-                          onChange={(event) =>
-                            setPositionForm((prev) => ({
-                              ...prev,
-                              targetAllocation: event.target.value
-                            }))
-                          }
-                          placeholder="例如 25"
-                        />
-                      </label>
-                      <label className="investments-field">
-                        <span>风险档位</span>
-                        <select
-                          value={positionForm.riskLevel}
-                          onChange={(event) =>
-                            setPositionForm((prev) => ({
-                              ...prev,
-                              riskLevel: event.target.value as InvestmentRiskLevel
-                            }))
-                          }
-                        >
-                          {Object.entries(RISK_LEVEL_LABELS).map(([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="investments-checkbox">
-                        <input
-                          type="checkbox"
-                          checked={positionForm.isActive}
-                          onChange={(event) =>
-                            setPositionForm((prev) => ({ ...prev, isActive: event.target.checked }))
-                          }
-                        />
-                        <span>继续纳入当前配置统计</span>
-                      </label>
-                    </div>
-                  </details>
-
-                  {positionError ? (
-                    <p className="assistant-wb-issue error">{positionError}</p>
-                  ) : null}
-
-                  <div className="investments-actions-row">
-                    <button type="submit" className="primary">
-                      {editingPositionId ? '保存持仓' : '新增持仓'}
-                    </button>
-                    {editingPositionId ? (
-                      <button type="button" onClick={resetPositionForm}>
-                        取消编辑
-                      </button>
-                    ) : null}
-                  </div>
-                </form>
-
-                <div className="investments-list-head">
-                  <h4>持仓列表</h4>
-                  <span>{positions.length} 笔</span>
-                </div>
-                {positions.length === 0 ? (
-                  <EmptyState
-                    title="还没有投资持仓"
-                    description="先录入第一笔基金、股票、黄金或现金理财，后面这页才会开始给出配置和风险提醒。"
-                    icon="📈"
-                  />
                 ) : (
-                  <div className="investments-card-list">
-                    {positions.map((item) => {
-                      const profit = item.currentValue - item.investedAmount;
-                      const profitRate = item.investedAmount > 0 ? profit / item.investedAmount : 0;
+                  <div className={`investments-watchlist-list is-columns-${watchGridColumns}`}>
+                    {filteredInvestmentWatchlist.map((item) => {
+                      const isExpanded = expandedWatchItemId === item.id;
+                      const detailSections = compactWatchDetailSections(item);
+                      const performanceSection = detailSections.find(
+                        (section) => section.title === '历史业绩'
+                      );
+                      const otherDetailSections = detailSections.filter(
+                        (section) => section.title !== '历史业绩'
+                      );
+                      const primaryTag = item.tags[0];
+                      const holdingsPreview = item.fundHoldings?.slice(0, 3) || [];
+                      const assetAllocationPreview = item.assetAllocation?.slice(0, 3) || [];
+                      const performancePoints = parseWatchPerformancePoints(
+                        performanceSection?.items || []
+                      );
+                      const watchCategory =
+                        WATCH_CATEGORY_FILTERS.find(
+                          (category) => category.id === getWatchItemCategoryId(item)
+                        ) || WATCH_CATEGORY_FILTERS[WATCH_CATEGORY_FILTERS.length - 1];
+                      const isRefreshing = refreshingWatchItemId === item.id;
+                      const isFollowing = item.tags.includes('关注中');
+
                       return (
-                        <article key={item.id} className="investments-card">
-                          <div className="investments-card-head">
+                        <article
+                          key={item.id}
+                          className={`investments-watch-card ${isExpanded ? 'is-expanded' : ''}`}
+                          tabIndex={0}
+                          aria-expanded={isExpanded}
+                          onClick={() => toggleWatchItemDetails(item.id)}
+                          onKeyDown={(event) => handleWatchCardKeyDown(event, item.id)}
+                        >
+                          <div className="investments-watch-card-head">
                             <div>
-                              <h4>{item.name}</h4>
+                              <strong>{item.name}</strong>
                               <p>
-                                {POSITION_CATEGORY_LABELS[item.category]}
+                                {item.code || '未记录代码'}
                                 {item.platform ? ` · ${item.platform}` : ''}
                               </p>
                             </div>
-                            <div className="investments-card-badges">
-                              <span className="badge">{RISK_LEVEL_LABELS[item.riskLevel]}</span>
-                              {!item.isActive ? <span className="badge">已归档</span> : null}
+                            <div className="investments-watch-card-actions">
+                              <span className="investments-watch-card-category">
+                                {watchCategory.label}
+                              </span>
+                              {item.lastRiskLevel ? (
+                                <span
+                                  className={`investments-analysis-risk ${getAnalysisRiskClass(
+                                    item.lastRiskLevel
+                                  )}`}
+                                >
+                                  {getAnalysisRiskLabel(item.lastRiskLevel)}
+                                </span>
+                              ) : null}
+                              <button
+                                type="button"
+                                className="danger investments-watch-card-remove"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  removeInvestmentWatchItem(item.id);
+                                }}
+                                aria-label={`移除 ${item.name}`}
+                              >
+                                移除
+                              </button>
                             </div>
                           </div>
-
-                          <div className="investments-card-grid" aria-label="持仓摘要">
+                          <div className="investments-watch-card-brief">
+                            <strong>
+                              {item.investmentAdvice || item.lastVerdict || '等待下一次分析'}
+                            </strong>
+                            {primaryTag ? <span className="badge">{primaryTag}</span> : null}
+                          </div>
+                          {item.lastSummary ? (
+                            <p className="investments-watch-card-summary">{item.lastSummary}</p>
+                          ) : null}
+                          <div
+                            className="investments-watch-card-mini-stats"
+                            aria-label="基金关键数据"
+                          >
                             <span>
-                              <em>本金</em>
-                              <strong>{formatCurrency(item.investedAmount)}</strong>
-                            </span>
-                            <span>
-                              <em>现值</em>
-                              <strong>{formatCurrency(item.currentValue)}</strong>
+                              <em>净值</em>
+                              <strong>{item.netValue || '待更新'}</strong>
                             </span>
                             <span>
                               <em>收益</em>
-                              <strong className={profit >= 0 ? 'positive' : 'negative'}>
-                                {formatCurrency(profit)} / {(profitRate * 100).toFixed(1)}%
-                              </strong>
+                              <strong>{item.addedReturn || '待更新'}</strong>
                             </span>
                             <span>
-                              <em>月投入</em>
-                              <strong>
-                                {item.monthlyContribution
-                                  ? formatCurrency(item.monthlyContribution)
-                                  : '未设置'}
-                              </strong>
+                              <em>持有</em>
+                              <button
+                                type="button"
+                                className={`investments-watch-holding-btn ${
+                                  item.holdingShares ? 'has-value' : 'is-empty'
+                                }`}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleSetWatchItemHoldingShares(item);
+                                }}
+                                onContextMenu={(event) => {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  handleSetWatchItemHoldingShares(item);
+                                }}
+                                title="右键或点击设置持有份额"
+                              >
+                                {formatHoldingShares(item.holdingShares) || '待获取'}
+                              </button>
+                            </span>
+                          </div>
+                          <div className="investments-watch-card-split-grid">
+                            <article className="investments-watch-card-split is-holdings">
+                              <span>重仓</span>
+                              {holdingsPreview.length > 0 ? (
+                                <div
+                                  className="investments-watch-chip-list"
+                                  aria-label="基金重仓股票"
+                                >
+                                  {holdingsPreview.map((value) => {
+                                    const displayValue = formatWatchPreviewItem(value);
+                                    return (
+                                      <strong
+                                        key={`${item.id}-holding-${value}`}
+                                        title={displayValue}
+                                      >
+                                        {displayValue}
+                                      </strong>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <p>待更新</p>
+                              )}
+                            </article>
+                            <article className="investments-watch-card-split is-assets">
+                              <span>资产</span>
+                              {assetAllocationPreview.length > 0 ? (
+                                <div
+                                  className="investments-watch-chip-list"
+                                  aria-label="基金资产分布"
+                                >
+                                  {assetAllocationPreview.map((value) => {
+                                    const displayValue = formatWatchPreviewItem(value);
+                                    return (
+                                      <strong
+                                        key={`${item.id}-asset-${value}`}
+                                        title={displayValue}
+                                      >
+                                        {displayValue}
+                                      </strong>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <p>待更新</p>
+                              )}
+                            </article>
+                          </div>
+                          <div className="investments-watch-card-ai-actions">
+                            <button
+                              type="button"
+                              className={`investments-watch-analyze-btn ${
+                                analyzingWatchItemId === item.id ? 'is-loading' : ''
+                              }`}
+                              disabled={analyzingWatchItemId === item.id}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                void handleAnalyzeWatchItem(item);
+                              }}
+                              aria-label={`AI 分析 ${item.name}`}
+                              title="AI 分析"
+                            >
+                              <img src={BRAIN_ICON_URL} alt="" aria-hidden="true" />
+                              {analyzingWatchItemId === item.id ? '分析中' : 'AI 分析'}
+                            </button>
+                            {!isFollowing ? (
+                              <button
+                                type="button"
+                                className="investments-watch-follow-btn"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleFollowWatchItem(item);
+                                }}
+                              >
+                                添加关注
+                              </button>
+                            ) : null}
+                            <button
+                              type="button"
+                              className={`investments-watch-refresh-btn ${isRefreshing ? 'is-loading' : ''}`}
+                              aria-label={`刷新 ${item.name} 基金资料`}
+                              title="刷新基金资料"
+                              disabled={isRefreshing}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                void handleRefreshWatchItem(item);
+                              }}
+                            >
+                              <img src={ROTATE_CCW_ICON_URL} alt="" aria-hidden="true" />
+                            </button>
+                          </div>
+                          <div className="investments-watch-card-meta">
+                            <span>
+                              {item.lastAnalysisAt
+                                ? `更新于 ${formatDateTimeLabel(item.lastAnalysisAt)}`
+                                : '暂未分析'}
                             </span>
                           </div>
 
-                          <div className="investments-actions-inline">
-                            <button
-                              type="button"
-                              className="button-with-icon"
-                              onClick={() => {
-                                setEditingPositionId(item.id);
-                                setPositionError('');
-                                setPositionForm({
-                                  name: item.name,
-                                  category: item.category,
-                                  platform: item.platform || '',
-                                  linkedAccountId: item.linkedAccountId || '',
-                                  investedAmount: String(item.investedAmount),
-                                  currentValue: String(item.currentValue),
-                                  monthlyContribution: item.monthlyContribution
-                                    ? String(item.monthlyContribution)
-                                    : '',
-                                  targetAllocation: item.targetAllocation
-                                    ? String(item.targetAllocation)
-                                    : '',
-                                  riskLevel: item.riskLevel,
-                                  note: item.note || '',
-                                  isActive: item.isActive
-                                });
-                              }}
-                            >
-                              <img src={PEN_TOOL_ICON_URL} alt="" aria-hidden="true" />
-                              编辑
-                            </button>
-                            <button
-                              type="button"
-                              className="danger"
-                              onClick={() => setPendingDeletePositionId(item.id)}
-                            >
-                              删除
-                            </button>
-                          </div>
+                          {isExpanded ? (
+                            <div className="investments-watch-card-details">
+                              {detailSections.length > 0 ? (
+                                <>
+                                  {performanceSection && performancePoints.length > 0 ? (
+                                    <section className="investments-watch-performance-panel">
+                                      <div className="investments-watch-detail-head">
+                                        <span>{performanceSection.title}</span>
+                                        <small>最近四个区间的表现</small>
+                                      </div>
+                                      <div
+                                        className="investments-watch-performance-chart"
+                                        role="list"
+                                        aria-label="历史业绩图表"
+                                      >
+                                        {performancePoints.map((point, index) => {
+                                          const maxValue = Math.max(
+                                            ...performancePoints.map((entry) =>
+                                              Math.abs(entry.value)
+                                            ),
+                                            1
+                                          );
+                                          const height = Math.max(
+                                            14,
+                                            (Math.abs(point.value) / maxValue) * 100
+                                          );
+
+                                          return (
+                                            <div
+                                              key={`${item.id}-performance-${point.label}-${index}`}
+                                              className={`investments-watch-performance-bar ${
+                                                point.value >= 0 ? 'is-positive' : 'is-negative'
+                                              }`}
+                                              role="listitem"
+                                              title={`${point.label} ${point.caption}`}
+                                            >
+                                              <span className="investments-watch-performance-track">
+                                                <i style={{ height: `${height}%` }} />
+                                              </span>
+                                              <strong>{point.label}</strong>
+                                              <em>{point.caption}</em>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </section>
+                                  ) : null}
+
+                                  <div className="investments-watch-detail-grid">
+                                    {otherDetailSections.map((section) => (
+                                      <section
+                                        key={`${item.id}-${section.title}`}
+                                        className={`investments-watch-detail-card ${getWatchSectionClassName(
+                                          section.kind
+                                        )}`}
+                                      >
+                                        <div className="investments-watch-detail-head">
+                                          <span>{section.title}</span>
+                                          {section.kind === 'chips' ? (
+                                            <small>精选摘要</small>
+                                          ) : null}
+                                        </div>
+                                        {section.kind === 'chips' ? (
+                                          <div className="investments-watch-chip-list">
+                                            {section.items.map((value) => (
+                                              <strong
+                                                key={`${item.id}-${section.title}-${value}`}
+                                                title={value}
+                                              >
+                                                {value}
+                                              </strong>
+                                            ))}
+                                          </div>
+                                        ) : section.kind === 'stat' ? (
+                                          <strong className="investments-watch-detail-stat">
+                                            {section.items[0]}
+                                          </strong>
+                                        ) : (
+                                          <div className="investments-watch-detail-copy">
+                                            {section.items.map((value) => (
+                                              <p key={`${item.id}-${section.title}-${value}`}>
+                                                {value}
+                                              </p>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </section>
+                                    ))}
+                                  </div>
+                                </>
+                              ) : (
+                                <p className="investments-watch-card-empty-detail">
+                                  暂无更多资料。
+                                </p>
+                              )}
+                            </div>
+                          ) : null}
                         </article>
                       );
                     })}
                   </div>
                 )}
+              </>
+            )}
+          </aside>
 
-                <div className="investments-list-head investments-history-head">
-                  <div>
-                    <h4>持仓流水</h4>
-                    <span>记录新增、调仓、市值更新和移除动作，像交易流水一样可回看。</span>
-                  </div>
-                  <span>{investmentPositionHistory.length} 条</span>
+            <section className="panel investments-quick-chat-panel" data-investment-support-title="快捷问答">
+              <div className="investments-section-head investments-quick-chat-head">
+                <div>
+                  <h3>快捷问答</h3>
                 </div>
-                {latestInvestmentPositionHistory.length === 0 ? (
-                  <div className="investments-history-empty">
-                    <strong>还没有持仓流水</strong>
-                    <span>新增或编辑持仓后，这里会自动沉淀历史记录。</span>
-                  </div>
-                ) : (
-                  <div className="investments-history-table" role="table" aria-label="持仓流水">
-                    <div className="investments-history-row is-head" role="row">
-                      <span role="columnheader">时间</span>
-                      <span role="columnheader">动作 / 标的</span>
-                      <span role="columnheader">当前市值</span>
-                      <span role="columnheader">市值变化</span>
-                      <span role="columnheader">收益</span>
-                    </div>
-                    {latestInvestmentPositionHistory.map((item) => (
-                      <div key={item.id} className="investments-history-row" role="row">
-                        <span role="cell" className="investments-history-date">
-                          {formatDateTimeLabel(item.createdAt)}
-                        </span>
-                        <span role="cell" className="investments-history-asset">
-                          <strong>{item.positionName}</strong>
-                          <small>
-                            {POSITION_HISTORY_ACTION_LABELS[item.action]} ·{' '}
-                            {POSITION_CATEGORY_LABELS[item.category]}
-                            {item.platform ? ` · ${item.platform}` : ''}
-                          </small>
-                        </span>
-                        <span role="cell">
-                          <strong>{formatCurrency(item.currentValue)}</strong>
-                          <small>本金 {formatCurrency(item.investedAmount)}</small>
-                        </span>
-                        <span
-                          role="cell"
-                          className={
-                            item.currentValueDelta && item.currentValueDelta < 0
-                              ? 'negative'
-                              : item.currentValueDelta && item.currentValueDelta > 0
-                                ? 'positive'
-                                : ''
-                          }
-                        >
-                          {formatSignedCurrency(item.currentValueDelta)}
-                        </span>
-                        <span role="cell" className={item.profit >= 0 ? 'positive' : 'negative'}>
-                          {formatCurrency(item.profit)}
-                          <small>{(item.profitRate * 100).toFixed(1)}%</small>
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <span className="badge">联网</span>
               </div>
-            </article>
-          </section>
+              <InvestmentChatPanel
+                showHero={false}
+                defaultWebEnabled
+                contextNote={marketContextSummary}
+              />
+            </section>
         </aside>
       </section>
 
-      {watchContextMenu.open && watchContextMenu.item ? (
-        <div
-          className="investments-watch-context-menu"
-          role="menu"
-          style={{ left: watchContextMenu.x, top: watchContextMenu.y }}
-          onClick={(event) => event.stopPropagation()}
-        >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              if (watchContextMenu.item) {
-                handleAddWatchItemToPosition(watchContextMenu.item);
-              }
-            }}
-          >
-            <strong>添加到持仓</strong>
-            <span>带入名称、平台、风险与建议</span>
-          </button>
-        </div>
-      ) : null}
 
-      {quickActionsMenu.open ? (
-        <div
-          className="investments-quick-actions-menu"
-          role="menu"
-          style={{ left: quickActionsMenu.x, top: quickActionsMenu.y }}
-          onClick={(event) => event.stopPropagation()}
-        >
-          {actionSuggestions.map((item) => (
-            <button key={item.label} type="button" role="menuitem" onClick={() => handleActionSuggestionClick(item)}>
-              <strong>{item.label}</strong>
-              <span>{item.hint}</span>
-            </button>
-          ))}
-        </div>
-      ) : null}
 
       <Toast
         visible={toast.visible}
         message={toast.message}
         variant={toast.variant}
         onClose={() => setToast((prev) => ({ ...prev, visible: false }))}
-      />
-
-      <ConfirmDialog
-        open={Boolean(pendingDeletePosition)}
-        title="删除持仓"
-        description={
-          pendingDeletePosition ? (
-            <>
-              确认删除「<strong>{pendingDeletePosition.name}</strong>
-              」吗？删除后当前配置、收益和提醒都会一起更新。
-            </>
-          ) : (
-            ''
-          )
-        }
-        confirmText="删除持仓"
-        cancelText="取消"
-        danger
-        onCancel={() => setPendingDeletePositionId(null)}
-        onConfirm={() => {
-          if (pendingDeletePosition) {
-            removeInvestmentPosition(pendingDeletePosition.id);
-            if (editingPositionId === pendingDeletePosition.id) {
-              resetPositionForm();
-            }
-          }
-          setPendingDeletePositionId(null);
-        }}
       />
 
     </div>

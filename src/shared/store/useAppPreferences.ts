@@ -152,6 +152,12 @@ function normalizeOptionalString(value: unknown): string | undefined {
   return text || undefined;
 }
 
+function normalizeOptionalNumber(value: unknown): number | undefined {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < 0) return undefined;
+  return Number(numeric.toFixed(2));
+}
+
 function normalizeStringList(value: unknown, limit = 6): string[] {
   if (!Array.isArray(value)) return [];
 
@@ -415,6 +421,7 @@ function normalizeInvestmentWatchItem(
     adviceReasons: normalizeStringList(item.adviceReasons, 6),
     riskNotes: normalizeStringList(item.riskNotes, 6),
     nextActions: normalizeStringList(item.nextActions, 6),
+    holdingShares: normalizeOptionalNumber(item.holdingShares),
     performanceHistory: normalizeStringList(item.performanceHistory, 6),
     fundAnalysis: normalizeStringList(item.fundAnalysis, 6),
     fundHoldings: normalizeStringList(item.fundHoldings, 8),

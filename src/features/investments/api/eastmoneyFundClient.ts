@@ -78,6 +78,19 @@ function formatPercent(value: string, label: string): string {
   return clean ? `${label} ${clean}%` : '';
 }
 
+function parseHoldingsPageContent(raw: string): string {
+  const contentMatch = raw.match(/content:"([\s\S]*?)",arryear:/);
+  if (!contentMatch?.[1]) {
+    return '';
+  }
+
+  try {
+    return JSON.parse(`"${contentMatch[1]}"`) as string;
+  } catch {
+    return '';
+  }
+}
+
 async function fetchRealtimeSnapshot(code: string): Promise<EastmoneyRealtimePayload | null> {
   const previousCallback = (window as unknown as { jsonpgz?: unknown }).jsonpgz;
   let payload: EastmoneyRealtimePayload | null = null;
@@ -101,6 +114,19 @@ async function fetchRealtimeSnapshot(code: string): Promise<EastmoneyRealtimePay
 
 async function loadFundDetailGlobals(code: string) {
   await appendScript(`https://fund.eastmoney.com/pingzhongdata/${code}.js?v=${Date.now()}`);
+}
+
+async function fetchHoldingsDetailPage(code: string): Promise<string> {
+  const response = await fetch(
+    `https://fundf10.eastmoney.com/FundArchivesDatas.aspx?type=jjcc&code=${code}&topline=20&year=&month=`
+  );
+
+  if (!response.ok) {
+    throw new Error('东方财富持仓明细加载失败，请稍后重试。');
+  }
+
+  const raw = await response.text();
+  return parseHoldingsPageContent(raw);
 }
 
 function normalizeStockSecId(secId: string): string {
@@ -145,6 +171,7 @@ export async function fetchEastmoneyFundSnapshot(inputCode: string): Promise<Eas
   const code = normalizeFundCode(inputCode);
   const realtime = await fetchRealtimeSnapshot(code);
   await loadFundDetailGlobals(code).catch(() => undefined);
+  const holdingsPage = await fetchHoldingsDetailPage(code).catch(() => '');
 
   const name = realtime?.name || readWindowString('fS_name');
   const detailCode = readWindowString('fS_code');
@@ -177,14 +204,40 @@ export async function fetchEastmoneyFundSnapshot(inputCode: string): Promise<Eas
     .filter(Boolean)
     .slice(0, 6);
 
-  const allocationData = getWindowValueAs<Array<{ '0': string; '2': string }>>('Data_assetAllocationWeight');
-  const allocationItems = (allocationData ?? [])
-    .filter((item) => item['0'] && item['2'])
+  if (holdingsPage) {
+    const doc = new DOMParser().parseFromString(holdingsPage, 'text/html');
+    const latestHoldingTable = doc.querySelector('.boxitem.w790');
+    const rows = Array.from(latestHoldingTable?.querySelectorAll('tbody tr') || []);
+    const parsedHoldings = rows
+      .map((row) => {
+        const cells = Array.from(row.querySelectorAll('td'));
+        const codeText = String(cells[1]?.textContent || '').trim();
+        const nameText = String(cells[2]?.textContent || '').trim();
+        const pctText = String(cells[4]?.textContent || '').trim();
+        if (!nameText) return '';
+        return codeText && pctText ? `${nameText}（${codeText}） ${pctText}` : `${nameText} ${pctText}`;
+      })
+      .filter(Boolean)
+      .slice(0, 8);
+
+    if (parsedHoldings.length > 0) {
+      holdingItems.splice(0, holdingItems.length, ...parsedHoldings);
+    }
+  }
+
+  const assetAllocationData = getWindowValueAs<{
+    series?: Array<{ name?: string; data?: number[] }>;
+    categories?: string[];
+  }>('Data_assetAllocation');
+  const latestAssetIndex = Math.max((assetAllocationData?.categories?.length || 1) - 1, 0);
+  const allocationItems = (assetAllocationData?.series ?? [])
+    .filter((item) => String(item.name || '').includes('占净比'))
     .map((item) => {
-      const name = String(item['0']).trim();
-      const pct = String(item['2']).trim();
-      return `${name} ${pct}`;
+      const name = String(item.name || '').trim();
+      const value = item.data?.[latestAssetIndex];
+      return typeof value === 'number' ? `${name} ${value.toFixed(2)}%` : '';
     })
+    .filter(Boolean)
     .slice(0, 4);
   if (!name && !realtime?.fundcode && !detailCode) {
     throw new Error('没有查到这只基金，请确认代码是否正确。');

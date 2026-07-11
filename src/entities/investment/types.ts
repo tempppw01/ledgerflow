@@ -134,6 +134,7 @@ export interface InvestmentWatchItem {
   adviceReasons?: string[];
   riskNotes?: string[];
   nextActions?: string[];
+  holdingShares?: number;
   performanceHistory?: string[];
   fundAnalysis?: string[];
   fundHoldings?: string[];

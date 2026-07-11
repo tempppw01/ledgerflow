@@ -77,6 +77,7 @@ export function buildInvestmentAssistantPrompt(input: {
       adviceReasons: item.adviceReasons || [],
       riskNotes: item.riskNotes || [],
       nextActions: item.nextActions || [],
+      holdingShares: item.holdingShares || 0,
       performanceHistory: item.performanceHistory || [],
       fundAnalysis: item.fundAnalysis || [],
       fundHoldings: item.fundHoldings || [],
@@ -141,6 +142,7 @@ export function buildInvestmentWatchlistReviewPrompt(input: {
       adviceReasons: item.adviceReasons || [],
       riskNotes: item.riskNotes || [],
       nextActions: item.nextActions || [],
+      holdingShares: item.holdingShares || 0,
       performanceHistory: item.performanceHistory || [],
       fundAnalysis: item.fundAnalysis || [],
       fundHoldings: item.fundHoldings || [],
@@ -169,6 +171,71 @@ export function buildInvestmentWatchlistReviewPrompt(input: {
     '{"items":[{"id":"","rank":1,"verdict":"","summary":"","riskLevel":"low|medium|high|unknown","investmentAdvice":"","adviceReasons":[""],"riskNotes":[""],"nextActions":[""],"watchTags":[""],"performanceHistory":[""],"fundAnalysis":[""],"fundHoldings":[""],"assetAllocation":[""],"industryAllocation":[""],"netValue":"","addedReturn":"","holdingReturn":"","buyFeeRate":"","fundCompany":"","note":""}]}',
     '```',
     '7. 数组字段每项不超过 8 项；JSON 代码块后面不要再追加其他内容。',
+    `投资上下文：\n${JSON.stringify(context, null, 2)}`
+  ].join('\n');
+}
+
+export function buildInvestmentFundAnalysisPrompt(input: {
+  watchItem: InvestmentWatchItem;
+  positions: InvestmentPosition[];
+  marketContext?: string;
+  webContext?: string;
+}) {
+  const context = {
+      watchItem: {
+        id: input.watchItem.id,
+        name: input.watchItem.name,
+        code: input.watchItem.code || '',
+        platform: input.watchItem.platform || '',
+        tags: input.watchItem.tags || [],
+        note: input.watchItem.note || '',
+        lastVerdict: input.watchItem.lastVerdict || '',
+        lastSummary: input.watchItem.lastSummary || '',
+        lastRiskLevel: input.watchItem.lastRiskLevel || 'unknown',
+        investmentAdvice: input.watchItem.investmentAdvice || '',
+        adviceReasons: input.watchItem.adviceReasons || [],
+        riskNotes: input.watchItem.riskNotes || [],
+        nextActions: input.watchItem.nextActions || [],
+        holdingShares: input.watchItem.holdingShares || 0,
+        performanceHistory: input.watchItem.performanceHistory || [],
+        fundAnalysis: input.watchItem.fundAnalysis || [],
+        fundHoldings: input.watchItem.fundHoldings || [],
+      assetAllocation: input.watchItem.assetAllocation || [],
+      industryAllocation: input.watchItem.industryAllocation || [],
+      netValue: input.watchItem.netValue || '',
+      addedReturn: input.watchItem.addedReturn || '',
+      holdingReturn: input.watchItem.holdingReturn || '',
+      buyFeeRate: input.watchItem.buyFeeRate || '',
+      fundCompany: input.watchItem.fundCompany || '',
+      lastAnalysisAt: input.watchItem.lastAnalysisAt || '',
+      updatedAt: input.watchItem.updatedAt || ''
+    },
+    positions: input.positions.slice(0, 8).map((item) => ({
+      name: item.name,
+      category: item.category,
+      platform: item.platform || '',
+      currentValue: Number(item.currentValue.toFixed(2)),
+      monthlyContribution: item.monthlyContribution || 0,
+      targetAllocation: item.targetAllocation || 0,
+      riskLevel: item.riskLevel
+    })),
+    marketContext: input.marketContext || '',
+    webContext: input.webContext || ''
+  };
+
+  return [
+    '你是 LedgerFlow 的基金分析助手，专门分析“这只基金是否该加仓、减仓、继续持有，属于什么行业，以及哪些政策或市场变化会影响它”。',
+    '回答要求：',
+    '1. 先给一句明确结论，只能在“建议加仓 / 建议减仓 / 继续持有 / 先观望 / 需要补充信息”里选一个。',
+    '2. 再给 3 到 5 条依据，尽量结合行业、基金重仓、资产配置、当前大盘和联网资讯。',
+    '3. 如果有明显的行业或政策催化，直接点出来；如果没有，就明确说现在没有看到足够强的催化。',
+    '4. 重仓股票/产品请尽量写出名称和比例；如果拿不到准确比例，明确写“待获取”，不要编造。',
+    '5. 输出要能持久化，最后必须追加一个 JSON 代码块，格式必须是：',
+    '```json',
+    '{"fundName":"","fundCode":"","verdict":"","summary":"","riskLevel":"low|medium|high|unknown","highlights":[""],"risks":[""],"actions":[""],"watchTags":[""],"performanceHistory":[""],"fundAnalysis":[""],"fundHoldings":[""],"assetAllocation":[""],"industryAllocation":[""],"netValue":"","addedReturn":"","holdingReturn":"","buyFeeRate":"","fundCompany":"","platform":"","note":""}',
+    '```',
+    '6. watchTags 里优先放“加仓 / 减仓 / 观望 / 继续持有 / 政策利好 / 政策承压”这类短标签。',
+    '7. JSON 代码块后面不要再追加其他内容。',
     `投资上下文：\n${JSON.stringify(context, null, 2)}`
   ].join('\n');
 }

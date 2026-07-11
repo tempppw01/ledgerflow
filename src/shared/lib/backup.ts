@@ -1227,6 +1227,9 @@ function validateInvestmentWatchItem(
   assertString(item.investmentAdvice, `data.investmentWatchlist[${index}].investmentAdvice`, {
     required: false
   });
+  if (item.holdingShares !== undefined) {
+    assertNumber(item.holdingShares, `data.investmentWatchlist[${index}].holdingShares`);
+  }
   assertString(item.lastAnalysisAt, `data.investmentWatchlist[${index}].lastAnalysisAt`, {
     required: false
   });
@@ -1279,6 +1282,8 @@ function validateInvestmentWatchItem(
       item.nextActions,
       `data.investmentWatchlist[${index}].nextActions`
     ),
+    holdingShares:
+      typeof item.holdingShares === 'number' ? Number(item.holdingShares) : undefined,
     performanceHistory: readOptionalStringArray(
       item.performanceHistory,
       `data.investmentWatchlist[${index}].performanceHistory`

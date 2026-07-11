@@ -1,4 +1,13 @@
-import { ClipboardEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ClipboardEvent,
+  FormEvent,
+  WheelEvent as ReactWheelEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
@@ -68,9 +77,15 @@ function Avatar({ user }: { user?: boolean }) {
 
 type InvestmentChatComposerProps = {
   showLinks?: boolean;
+  defaultWebEnabled?: boolean;
+  contextNote?: string;
 };
 
-export function InvestmentChatComposer({ showLinks = true }: InvestmentChatComposerProps) {
+export function InvestmentChatComposer({
+  showLinks = true,
+  defaultWebEnabled = false,
+  contextNote = ''
+}: InvestmentChatComposerProps) {
   const { baseUrl, apiKey, model, webSearch } = useAiSettings();
   const setModel = useAiSettings((s) => s.setModel);
   const messages = useAppPreferences((s) => s.investmentAiMessages);
@@ -84,7 +99,7 @@ export function InvestmentChatComposer({ showLinks = true }: InvestmentChatCompo
   const [input, setInput] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [webEnabled, setWebEnabled] = useState(false);
+  const [webEnabled, setWebEnabled] = useState(defaultWebEnabled);
   const [suggestionsCollapsed, setSuggestionsCollapsed] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
   const [models, setModels] = useState<string[]>([]);
@@ -125,8 +140,8 @@ export function InvestmentChatComposer({ showLinks = true }: InvestmentChatCompo
         goals,
         watchlist,
         monthlyInvestableCash
-      }),
-    [goals, monthlyInvestableCash, positions, watchlist]
+      }) + (contextNote ? `\n\n页面实时上下文：\n${contextNote}` : ''),
+    [contextNote, goals, monthlyInvestableCash, positions, watchlist]
   );
 
   const followUps = useMemo(
@@ -570,15 +585,46 @@ export function InvestmentChatComposer({ showLinks = true }: InvestmentChatCompo
 
 type InvestmentChatPanelProps = {
   showComposer?: boolean;
+  showHero?: boolean;
+  defaultWebEnabled?: boolean;
+  contextNote?: string;
 };
 
-export function InvestmentChatPanel({ showComposer = true }: InvestmentChatPanelProps) {
+export function InvestmentChatPanel({
+  showComposer = true,
+  showHero = true,
+  defaultWebEnabled = false,
+  contextNote = ''
+}: InvestmentChatPanelProps) {
   const messages = useAppPreferences((s) => s.investmentAiMessages);
-  const isCompact = !showComposer;
+  const isCompact = !showHero;
+
+  const handleCompactWheelCapture = useCallback(
+    (event: ReactWheelEvent<HTMLElement>) => {
+      if (!isCompact) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('textarea, input, select, .chat-model-dropdown')) {
+        return;
+      }
+
+      if (event.deltaY === 0) return;
+      const supportColumn = (event.currentTarget as HTMLElement).closest(
+        '.investments-support-column'
+      ) as HTMLElement | null;
+      if (!supportColumn) return;
+
+      supportColumn.scrollTop += event.deltaY;
+      event.preventDefault();
+    },
+    [isCompact]
+  );
 
   return (
-    <section className={`chat-kawaii-panel chat-assistant-panel chat-investment-panel ${isCompact ? 'is-compact' : ''}`}>
-      {!isCompact ? (
+    <section
+      className={`chat-kawaii-panel chat-assistant-panel chat-investment-panel ${isCompact ? 'is-compact' : ''}`}
+      onWheelCapture={handleCompactWheelCapture}
+    >
+      {showHero ? (
         <div className="chat-assistant-hero">
           <h2>助手</h2>
           <p>基金、持仓、截图和问题都可以直接丢给我，我先帮你把结论说清楚。</p>
@@ -623,7 +669,13 @@ export function InvestmentChatPanel({ showComposer = true }: InvestmentChatPanel
         </div>
       )}
 
-      {showComposer ? <InvestmentChatComposer showLinks /> : null}
+      {showComposer ? (
+        <InvestmentChatComposer
+          showLinks={!isCompact}
+          defaultWebEnabled={defaultWebEnabled}
+          contextNote={contextNote}
+        />
+      ) : null}
     </section>
   );
 }
