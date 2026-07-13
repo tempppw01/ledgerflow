@@ -2,22 +2,47 @@
 
 > 面向个人长期财务管理的 AI-native 记账系统。快速记一笔、看懂现金流、管理负债和预算，并把 AI 深度接入账单识别、信贷整理、投资分析与财务复盘。
 
-LedgerFlow 当前版本：`0.5.8`
+LedgerFlow 当前版本：`0.6.1`
 
-在线体验：<https://ledgerflow.up.railway.app>
+在线体验：<https://ledgerflow.shuaihong.fun>
 
 > 说明：项目仍处于快速迭代阶段，功能、界面和数据结构会持续调整。重要数据请务必保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
 
+## 功能页面截图
+
 <table>
   <tr>
-    <td><img src="docs/images/screenshot-1.png" alt="LedgerFlow screenshot 1" /></td>
-    <td><img src="docs/images/screenshot-2.png" alt="LedgerFlow screenshot 2" /></td>
+    <th width="50%">AI 记账助手</th>
+    <th width="50%">交易流水管理</th>
   </tr>
   <tr>
-    <td><img src="docs/images/screenshot-3.png" alt="LedgerFlow screenshot 3" /></td>
-    <td><img src="docs/images/screenshot-4.png" alt="LedgerFlow screenshot 4" /></td>
+    <td><img src="docs/images/screenshot-1.png" alt="LedgerFlow AI 记账助手页面" /></td>
+    <td><img src="docs/images/screenshot-3.png" alt="LedgerFlow 交易流水管理页面" /></td>
+  </tr>
+  <tr>
+    <td>自然语言或截图识别账单，核对后可直接写入账本。</td>
+    <td>筛选、排序、批量操作、状态统计和订单号检索集中在一个工作区。</td>
+  </tr>
+  <tr>
+    <th>全局记忆</th>
+    <th>财务趋势与预测</th>
+  </tr>
+  <tr>
+    <td><img src="docs/images/screenshot-2.png" alt="LedgerFlow 全局记忆页面" /></td>
+    <td><img src="docs/images/screenshot-4.png" alt="LedgerFlow 财务趋势与预测页面" /></td>
+  </tr>
+  <tr>
+    <td>沉淀长期偏好、账务习惯与展示偏好，可启用、停用、归档和批量管理。</td>
+    <td>聚合月度收支、分类结构、历史趋势和未来预测，支持 AI 进一步解读。</td>
   </tr>
 </table>
+
+### 0.6.1 功能亮点
+
+- 投资理财页提供四大指数分时走势、官方快讯分类、基金自选和持仓资料。
+- 自选基金支持一键刷新、历史业绩、重仓产品、资产配置和 AI 加减仓分析。
+- AI 记账、AI 助手、AI 信贷管家、投资理财助手均使用可折叠输入框。
+- 本地、MySQL、WebDAV、阿里云 OSS 与 S3 备份均可勾选备份内容。
 
 ## 产品定位
 
@@ -55,8 +80,9 @@ LedgerFlow 的目标不是做一个传统流水表，而是做一个更适合年
 
 ### 投资理财
 
-- 投资持仓、自选基金和持仓流水。
-- AI 基金分析与基金持仓分析。
+- 四大指数行情、分时坐标提示和东方财富官方快讯分类。
+- 投资持仓、自选基金、持仓流水和基金资料一键刷新。
+- AI 基金分析与基金持仓分析，可沉淀加仓、减仓或继续观察建议。
 - 自选基金可沉淀历史业绩、资产分布、行业分布、重仓股票、费率、基金公司等信息。
 - 投资 AI 聊天支持图片、联网核验开关、停止请求、复制 / 重试 / 删除等消息操作。
 
@@ -66,6 +92,7 @@ LedgerFlow 的目标不是做一个传统流水表，而是做一个更适合年
 - WebDAV 备份与恢复，支持版本列表。
 - 阿里云 OSS / S3 兼容对象存储备份。
 - MySQL 快照同步：把完整备份快照写入 MySQL，恢复前校验 checksum。
+- 所有备份方式都支持选择账本、订阅、AI 记忆和投资理财数据范围。
 - 生产镜像内置 Nginx + Node API，`/api/*` 走同容器内部 API。
 
 ## 快速部署
