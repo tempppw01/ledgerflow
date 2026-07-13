@@ -93,13 +93,21 @@ const aiSettingsMocks = vi.hoisted(() => {
     showEmbeddingSummary: false,
     showEmbeddingDebug: false,
     embeddingModel: '',
-    enableEmbeddingModel: false
+    enableEmbeddingModel: false,
+    webSearch: {
+      tavilyApiKey: '',
+      tavilyBaseUrl: '',
+      localEndpoint: '',
+      provider: 'tavily',
+      maxResults: 5
+    }
   };
   return { setModelMock, state };
 });
 
 vi.mock('../../shared/store/useAiSettings', () => ({
-  useAiSettings: (selector: (state: any) => unknown) => selector(aiSettingsMocks.state)
+  useAiSettings: (selector?: (state: any) => unknown) =>
+    selector ? selector(aiSettingsMocks.state) : aiSettingsMocks.state
 }));
 
 
@@ -114,6 +122,11 @@ const appPreferencesMocks = vi.hoisted(() => {
     removeDebt: removeDebtMock,
     addRepaymentRecord: addRepaymentRecordMock,
     monthlyIncome: 0,
+    investmentPositions: [],
+    investmentGoals: [],
+    investmentWatchlist: [],
+    investmentAiMessages: [],
+    setInvestmentAiMessages: vi.fn(),
     debts: [
       {
         id: 'saved-debt-1',
@@ -291,6 +304,28 @@ describe('AssistantPage', () => {
     expect(screen.queryByText('识别花呗与分期')).not.toBeInTheDocument();
     expect(screen.queryByText('🧭 优先处理')).not.toBeInTheDocument();
     expect(screen.queryByText('📌 这个模式适合什么')).not.toBeInTheDocument();
+  });
+
+  it('投资理财模式使用独立无卡片嵌套的消息框架', async () => {
+    useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
+
+    const { container } = render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '投资理财' }));
+    });
+
+    const messagesArea = container.querySelector('.chat-messages-area.is-investment-mode');
+    const investmentPanel = messagesArea?.querySelector(':scope > .chat-investment-panel');
+
+    expect(investmentPanel).not.toBeNull();
+    expect(investmentPanel).not.toHaveClass('chat-kawaii-panel');
+    expect(messagesArea?.querySelector(':scope > .chat-messages-inner')).toBeNull();
+    expect(screen.queryByText(/输入一句话或贴截图/)).not.toBeInTheDocument();
   });
 
   it('AI 信贷管家在有内容时才显示优先处理模块', async () => {

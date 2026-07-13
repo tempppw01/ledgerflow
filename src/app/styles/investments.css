@@ -1600,11 +1600,25 @@
 
 .investments-ai-composer {
   grid-row: 5;
-  position: relative;
-  z-index: 2;
-  min-height: 0;
+  position: sticky;
+  bottom: 12px;
+  z-index: 12;
+  min-height: 48px;
+  height: 48px;
   padding: 0;
+  overflow: visible;
   overflow-anchor: none;
+  transform-origin: center bottom;
+  transition:
+    max-width 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.investments-ai-composer .chat-input-stack {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
 }
 
 .investments-ai-input-main {
@@ -1612,6 +1626,16 @@
   max-width: none;
   border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
   background: color-mix(in srgb, var(--vi-surface-bg-muted) 92%, var(--color-primary-bg));
+  transform-origin: center bottom;
+  transition:
+    min-height 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    padding 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    gap 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .investments-ai-textarea {
@@ -1621,6 +1645,79 @@
 
 .investments-ai-input-toolbar {
   gap: 8px;
+}
+
+.investments-ai-composer.is-compact {
+  width: min(100%, 780px);
+  margin-inline: auto;
+  transform: scale(0.985);
+}
+
+.investments-ai-composer.is-compact .investments-ai-input-main {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 48px;
+  gap: 8px;
+  padding: 5px 6px 5px 15px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 90%, var(--color-bg-subtle));
+  box-shadow: 0 8px 24px color-mix(in srgb, black 8%, transparent);
+}
+
+.investments-ai-composer.is-compact .investments-ai-textarea {
+  min-height: 36px;
+  max-height: 36px;
+  padding: 7px 0;
+  overflow: hidden;
+  line-height: 22px;
+  white-space: nowrap;
+}
+
+.investments-ai-composer.is-compact .investments-ai-input-toolbar {
+  display: contents;
+}
+
+.investments-ai-composer.is-compact .investments-ai-suggestion-row {
+  display: none;
+}
+
+.investments-ai-composer.is-compact .investments-ai-submit-btn {
+  grid-column: 2;
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  min-height: 38px;
+}
+
+.investments-ai-composer.is-expanded {
+  width: 100%;
+  margin-inline: auto;
+  transform: translateY(0) scale(1);
+}
+
+.investments-ai-composer.is-expanded .investments-ai-input-main {
+  box-shadow:
+    0 18px 42px color-mix(in srgb, black 10%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--color-primary) 8%, transparent);
+  transform: translateY(-2px);
+}
+
+.chat-investment-panel .chat-msg {
+  scroll-margin-top: 12px;
+}
+
+.chat-investment-panel.has-active-turn .chat-messages-inner::after {
+  content: '';
+  flex: 0 0 clamp(320px, calc(100dvh - 112px), 760px);
+  width: 100%;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .investments-ai-composer,
+  .investments-ai-input-main {
+    transition: none;
+  }
 }
 
 .investments-ai-suggestion-row {
@@ -1914,6 +2011,21 @@
 .investments-watchlist-review-btn img {
   width: 14px;
   height: 14px;
+}
+
+.investments-watchlist-actions .investments-watchlist-refresh-all-btn {
+  width: 32px;
+  min-width: 32px;
+  padding: 0;
+}
+
+.investments-watchlist-refresh-all-btn img {
+  width: 15px;
+  height: 15px;
+}
+
+.investments-watchlist-refresh-all-btn.is-loading img {
+  animation: spin 0.8s linear infinite;
 }
 
 .investments-watchlist-review-error {
@@ -2371,6 +2483,7 @@
 
 .investments-quick-chat-panel .chat-investment-panel.is-compact {
   min-height: 460px;
+  overflow: visible;
 }
 
 .investments-watch-card-insights {
@@ -2442,19 +2555,29 @@
 
 .investments-watch-performance-track {
   position: relative;
-  display: flex;
-  align-items: end;
-  justify-content: center;
+  display: block;
   width: 100%;
   height: 78px;
-  border-radius: 999px 999px 8px 8px;
+  border-radius: 8px;
   background: color-mix(in srgb, var(--color-bg-subtle) 72%, transparent);
   overflow: hidden;
 }
 
+.investments-watch-performance-zero {
+  position: absolute;
+  z-index: 1;
+  right: 4px;
+  left: 4px;
+  height: 1px;
+  background: color-mix(in srgb, var(--color-text-tertiary) 34%, transparent);
+  transform: translateY(-0.5px);
+}
+
 .investments-watch-performance-track i {
+  position: absolute;
+  left: 50%;
   width: min(18px, 100%);
-  min-height: 14px;
+  min-height: 0;
   border-radius: 999px 999px 6px 6px;
   background: linear-gradient(
     180deg,
@@ -2462,13 +2585,14 @@
     color-mix(in srgb, var(--color-accent) 64%, var(--color-primary))
   );
   box-shadow: 0 8px 18px color-mix(in srgb, var(--color-primary) 16%, transparent);
+  transform: translateX(-50%);
   transition:
     height 0.25s ease,
-    transform 0.2s ease,
     opacity 0.2s ease;
 }
 
 .investments-watch-performance-bar.is-negative .investments-watch-performance-track i {
+  border-radius: 6px 6px 999px 999px;
   background: linear-gradient(
     180deg,
     color-mix(in srgb, var(--color-danger) 88%, white),

@@ -154,6 +154,49 @@ describe('Investment assistant chat', () => {
     expect(screen.getByText('美国')).toBeInTheDocument();
   });
 
+  it('keeps the composer compact until the input is focused', () => {
+    render(
+      <MemoryRouter>
+        <InvestmentChatPanel />
+      </MemoryRouter>
+    );
+
+    const input = screen.getByLabelText('基金分析输入框');
+    const composer = input.closest('form');
+
+    expect(composer).toHaveClass('is-compact');
+    fireEvent.focus(input);
+    expect(composer).toHaveClass('is-expanded');
+    fireEvent.blur(input);
+    expect(composer).toHaveClass('is-compact');
+  });
+
+  it('scrolls the newly sent message into view and collapses the composer', async () => {
+    sendAiChatStreamMock.mockReturnValue(new Promise(() => undefined));
+    const scrollIntoView = vi.fn();
+    const originalScrollIntoView = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollIntoView;
+
+    render(
+      <MemoryRouter>
+        <InvestmentChatPanel />
+      </MemoryRouter>
+    );
+
+    const input = screen.getByLabelText('基金分析输入框');
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: '分析当前持仓' } });
+    fireEvent.click(screen.getByRole('button', { name: '开始分析' }));
+
+    await waitFor(() => {
+      expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+    });
+    expect(input.closest('form')).toHaveClass('is-compact');
+    expect(input.closest('.chat-investment-panel')).toHaveClass('has-active-turn');
+
+    Element.prototype.scrollIntoView = originalScrollIntoView;
+  });
+
   it('can stop a streaming investment analysis request', async () => {
     let abortSignal: AbortSignal | null = null;
     sendAiChatStreamMock.mockImplementation(

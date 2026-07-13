@@ -98,13 +98,15 @@ export const EASTMONEY_MARKET_INDEXES: EastmoneyMarketIndex[] = [
 ];
 
 export const EASTMONEY_MARKET_NEWS_CATEGORIES: EastmoneyMarketNewsCategory[] = [
-  { id: 'a-share', label: 'A股', column: '103' },
-  { id: 'important', label: '重要', column: '102' },
-  { id: 'notice', label: '公告', column: '104' },
-  { id: 'futures', label: '期货', column: '106' },
-  { id: 'movement', label: '异动', column: '100' },
-  { id: 'hk', label: '港股', column: '105' },
-  { id: 'us', label: '美股', column: '108' }
+  { id: 'all-day', label: '7×24', column: '102' },
+  { id: 'focus', label: '焦点', column: '101' },
+  { id: 'listed-company', label: '上市公司', column: '103' },
+  { id: 'china-market', label: '中国股市', column: '104' },
+  { id: 'global-market', label: '全球股市', column: '105' },
+  { id: 'commodity', label: '商品', column: '106' },
+  { id: 'forex', label: '外汇', column: '107' },
+  { id: 'bond', label: '债券', column: '108' },
+  { id: 'fund', label: '基金', column: '109' }
 ];
 
 function toNullableNumber(value: unknown): number | null {
@@ -114,7 +116,7 @@ function toNullableNumber(value: unknown): number | null {
 }
 
 function getSecIdByMarketAndCode(market: unknown, code: string) {
-  const normalizedMarket = String(market || '').trim();
+  const normalizedMarket = String(market ?? '').trim();
   if (!normalizedMarket || !code) return '';
   return `${normalizedMarket}.${code}`;
 }
@@ -212,7 +214,7 @@ export async function fetchEastmoneyMarketOverview(
 }
 
 export async function fetchEastmoneyMarketNews(
-  column = EASTMONEY_MARKET_NEWS_CATEGORIES[1].column,
+  column = EASTMONEY_MARKET_NEWS_CATEGORIES[0].column,
   pageSize = 12
 ): Promise<EastmoneyMarketNewsItem[]> {
   const trace = `${Date.now()}${Math.random().toString(16).slice(2)}`;

@@ -43,13 +43,15 @@ vi.mock('../../features/investments/api/eastmoneyMarketClient', () => ({
     { secId: '1.000688', code: '000688', name: '科创50', shortName: '科创50' }
   ],
   EASTMONEY_MARKET_NEWS_CATEGORIES: [
-    { id: 'a-share', label: 'A股', column: '103' },
-    { id: 'important', label: '重要', column: '102' },
-    { id: 'notice', label: '公告', column: '104' },
-    { id: 'futures', label: '期货', column: '106' },
-    { id: 'movement', label: '异动', column: '100' },
-    { id: 'hk', label: '港股', column: '105' },
-    { id: 'us', label: '美股', column: '108' }
+    { id: 'all-day', label: '7×24', column: '102' },
+    { id: 'focus', label: '焦点', column: '101' },
+    { id: 'listed-company', label: '上市公司', column: '103' },
+    { id: 'china-market', label: '中国股市', column: '104' },
+    { id: 'global-market', label: '全球股市', column: '105' },
+    { id: 'commodity', label: '商品', column: '106' },
+    { id: 'forex', label: '外汇', column: '107' },
+    { id: 'bond', label: '债券', column: '108' },
+    { id: 'fund', label: '基金', column: '109' }
   ],
   fetchEastmoneyMarketOverview: eastmoneyClientMock.fetchEastmoneyMarketOverview,
   fetchEastmoneyMarketNews: eastmoneyClientMock.fetchEastmoneyMarketNews
@@ -272,6 +274,93 @@ describe('InvestmentsPage', () => {
       addedReturn: '-3.10%',
       netValue: '0.5162'
     });
+  });
+
+  it('可以一键刷新全部自选基金资料', async () => {
+    useAppPreferences.getState().setInvestmentWatchlist([
+      {
+        id: 'watch-1',
+        name: '测试指数基金',
+        code: '000001',
+        platform: '东方财富',
+        tags: ['指数'],
+        createdAt: '2026-07-01T00:00:00.000Z',
+        updatedAt: '2026-07-01T00:00:00.000Z'
+      },
+      {
+        id: 'watch-2',
+        name: '测试主动基金',
+        code: '000002',
+        platform: '东方财富',
+        tags: ['主动'],
+        createdAt: '2026-07-01T00:00:00.000Z',
+        updatedAt: '2026-07-01T00:00:00.000Z'
+      }
+    ]);
+    eastmoneyClientMock.fetchEastmoneyFundSnapshot.mockImplementation(async (code: string) => ({
+      code,
+      name: code === '000001' ? '测试指数基金' : '测试主动基金',
+      netValue: code === '000001' ? '1.1234' : '2.3456',
+      netValueDate: '2026-07-13',
+      estimatedValue: '',
+      estimatedChangePercent: code === '000001' ? '1.20' : '-0.80',
+      estimatedAt: '2026-07-13 15:00',
+      buyFeeRate: '0.10%',
+      sourceFeeRate: '1.00%',
+      performanceHistory: [],
+      fundAnalysis: [],
+      fundHoldings: [],
+      assetAllocation: []
+    }));
+
+    render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: '刷新全部自选基金资料' }));
+
+    await waitFor(() => {
+      expect(eastmoneyClientMock.fetchEastmoneyFundSnapshot).toHaveBeenCalledTimes(2);
+    });
+    expect(eastmoneyClientMock.fetchEastmoneyFundSnapshot).toHaveBeenCalledWith('000001');
+    expect(eastmoneyClientMock.fetchEastmoneyFundSnapshot).toHaveBeenCalledWith('000002');
+    await waitFor(() => {
+      expect(useAppPreferences.getState().investmentWatchlist).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ code: '000001', netValue: '1.1234', addedReturn: '+1.20%' }),
+          expect.objectContaining({ code: '000002', netValue: '2.3456', addedReturn: '-0.80%' })
+        ])
+      );
+    });
+  });
+
+  it('负收益历史业绩柱从零轴向下延伸', async () => {
+    useAppPreferences.getState().setInvestmentWatchlist([
+      {
+        id: 'watch-negative',
+        name: '负收益测试基金',
+        code: '000003',
+        platform: '东方财富',
+        tags: ['指数'],
+        performanceHistory: ['近1月 -8.43%', '近3月 -17.10%', '近6月 -32.03%', '近1年 -33.52%'],
+        createdAt: '2026-07-01T00:00:00.000Z',
+        updatedAt: '2026-07-01T00:00:00.000Z'
+      }
+    ]);
+
+    render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    await userEvent.click(screen.getByText('负收益测试基金'));
+
+    const chart = await screen.findByRole('list', { name: '历史业绩图表' });
+    const negativeBar = chart.querySelector('.investments-watch-performance-bar.is-negative i');
+    expect(negativeBar).toHaveStyle({ top: '6%', bottom: '' });
   });
 
   it('鼠标悬停大盘分时图时会显示对应坐标的数值', async () => {

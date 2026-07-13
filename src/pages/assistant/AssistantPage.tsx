@@ -686,6 +686,7 @@ export function AssistantPage() {
   });
 
   const [modelOpen, setModelOpen] = useState(false);
+  const [composerFocused, setComposerFocused] = useState(false);
   const [streamingPreviewMessage, setStreamingPreviewMessage] = useState('');
   const [streamingPreviewReasoning, setStreamingPreviewReasoning] = useState('');
   const [streamingCommittedSegments, setStreamingCommittedSegments] = useState<string[]>([]);
@@ -1052,6 +1053,12 @@ export function AssistantPage() {
     wb.textInput.trim().length > 0;
 
   const shouldShowIntroIllustration = !chatHistory.some((item) => item.role === 'user');
+  const regularComposerExpanded =
+    composerFocused ||
+    Boolean(wb.textInput.trim()) ||
+    wb.imageDataUrls.length > 0 ||
+    wb.pdfDataUrls.length > 0 ||
+    modelOpen;
 
   const latestContextLabel = latestTransaction
     ? getTransactionDirection(latestTransaction) === 'inflow'
@@ -1323,6 +1330,8 @@ export function AssistantPage() {
       }
     ]);
     wb.setTextInput('');
+    setComposerFocused(false);
+    wb.textareaRef.current?.blur();
     void wb.handleRecognizeWithPrompt(requestPrompt, {
       imageDataUrls: imagePayload,
       pdfDataUrls: pdfPayload
@@ -1384,6 +1393,12 @@ export function AssistantPage() {
     const el = wb.textareaRef.current;
     if (!el) return;
 
+    if (!regularComposerExpanded) {
+      el.style.height = '36px';
+      el.style.overflowY = 'hidden';
+      return;
+    }
+
     const isEmpty = !el.value.trim();
     const minHeight = isEmpty ? 56 : 40;
     const maxHeight = 170;
@@ -1393,7 +1408,7 @@ export function AssistantPage() {
     const nextHeight = Math.min(maxHeight, Math.max(minHeight, el.scrollHeight));
     el.style.height = `${nextHeight}px`;
     el.style.overflowY = el.scrollHeight > maxHeight ? 'auto' : 'hidden';
-  }, [wb.textareaRef]);
+  }, [regularComposerExpanded, wb.textareaRef]);
 
   useEffect(() => {
     // Defer to ensure DOM updated with latest value.
@@ -1706,6 +1721,9 @@ export function AssistantPage() {
       </header>
 
       <section className={`chat-messages-area ${mode === 'investment' ? 'is-investment-mode' : ''} ${isWideLayout ? 'is-wide' : ''}`}>
+        {mode === 'investment' ? (
+          <InvestmentChatPanel showComposer={false} showHero={false} />
+        ) : (
         <div className={`chat-messages-inner ${isWideLayout ? 'is-wide' : ''}`}>
           {!wb.hasApiKey ? (
             <section className="chat-key-required">
@@ -1774,8 +1792,6 @@ export function AssistantPage() {
                 </div>
               </div>
             </section>
-          ) : mode === 'investment' ? (
-            <InvestmentChatPanel showComposer={false} />
           ) : (
             <section className="chat-kawaii-panel chat-assistant-panel chat-assistant-panel-qa">
               <div className="chat-assistant-layout">
@@ -2568,10 +2584,15 @@ export function AssistantPage() {
 
           <div ref={messageEndRef} />
         </div>
+        )}
       </section>
 
       {mode !== 'investment' ? (
-        <section className="chat-input-bar">
+        <section
+          className={`chat-input-bar chat-input-bar-collapsible ${
+            regularComposerExpanded ? 'is-expanded' : 'is-compact'
+          }`}
+        >
           {shouldShowError ? (
             <div className="chat-error-strip" role="alert">
               <span>{wb.error}</span>
@@ -2641,9 +2662,27 @@ export function AssistantPage() {
           </div>
         ) : null}
 
-          <form className="chat-input-form" onSubmit={onSubmit}>
+          <form
+            className={`chat-input-form chat-input-form-collapsible ${
+              regularComposerExpanded ? 'is-expanded' : 'is-compact'
+            }`}
+            aria-expanded={regularComposerExpanded}
+            onSubmit={onSubmit}
+            onFocusCapture={() => setComposerFocused(true)}
+            onBlurCapture={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                setComposerFocused(false);
+              }
+            }}
+          >
             <div className="chat-input-stack">
-              <div className="chat-input-main">
+              <div
+                className="chat-input-main"
+                onClick={(event) => {
+                  const target = event.target as HTMLElement;
+                  if (!target.closest('button, input')) wb.textareaRef.current?.focus();
+                }}
+              >
                 <textarea
                   ref={wb.textareaRef}
                   className="chat-input-textarea"

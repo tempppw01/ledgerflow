@@ -800,6 +800,7 @@ export function InvestmentsPage() {
     useState<WatchCategoryFilterId>('all');
   const [watchGridColumns, setWatchGridColumns] = useState<WatchGridColumnCount>(3);
   const [refreshingWatchItemId, setRefreshingWatchItemId] = useState<string | null>(null);
+  const [refreshingAllWatchItems, setRefreshingAllWatchItems] = useState(false);
   const [toast, setToast] = useState<{ visible: boolean; message: string; variant: ToastVariant }>({
     visible: false,
     message: '',
@@ -811,7 +812,7 @@ export function InvestmentsPage() {
   const [marketStatus, setMarketStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [marketError, setMarketError] = useState('');
   const [selectedNewsCategoryId, setSelectedNewsCategoryId] = useState(
-    EASTMONEY_MARKET_NEWS_CATEGORIES[1].id
+    EASTMONEY_MARKET_NEWS_CATEGORIES[0].id
   );
   const [marketNews, setMarketNews] = useState<EastmoneyMarketNewsItem[]>([]);
   const [marketNewsStatus, setMarketNewsStatus] = useState<'idle' | 'loading' | 'error'>('idle');
@@ -1226,54 +1227,82 @@ export function InvestmentsPage() {
     }
   }
 
-  async function handleRefreshWatchItem(item: InvestmentWatchItem) {
-    if (refreshingWatchItemId === item.id) return;
+  async function refreshWatchItemSnapshot(item: InvestmentWatchItem) {
+    if (!item.code) throw new Error('这只基金没有代码，暂时无法刷新。');
 
-    if (!item.code) {
-      setToastState('这只基金没有代码，暂时无法刷新。', 'warning');
-      return;
-    }
+    const snapshot = await fetchEastmoneyFundSnapshot(item.code);
+    const estimatedChange = snapshot.estimatedChangePercent
+      ? `${Number(snapshot.estimatedChangePercent) >= 0 ? '+' : ''}${snapshot.estimatedChangePercent}%`
+      : '';
+
+    upsertInvestmentWatchItem({
+      ...item,
+      name: snapshot.name || item.name,
+      code: snapshot.code || item.code,
+      platform: item.platform || '东方财富',
+      lastSummary:
+        [
+          snapshot.netValue ? `单位净值 ${snapshot.netValue}` : '',
+          estimatedChange ? `估算涨跌 ${estimatedChange}` : '',
+          snapshot.buyFeeRate ? `申购费率 ${snapshot.buyFeeRate}` : ''
+        ]
+          .filter(Boolean)
+          .join(' · ') || item.lastSummary,
+      performanceHistory: snapshot.performanceHistory.length
+        ? snapshot.performanceHistory
+        : item.performanceHistory,
+      fundAnalysis: snapshot.fundAnalysis.length ? snapshot.fundAnalysis : item.fundAnalysis,
+      fundHoldings: snapshot.fundHoldings.length ? snapshot.fundHoldings : item.fundHoldings,
+      assetAllocation: snapshot.assetAllocation.length
+        ? snapshot.assetAllocation
+        : item.assetAllocation,
+      netValue: snapshot.netValue || item.netValue,
+      addedReturn: estimatedChange || item.addedReturn,
+      buyFeeRate: snapshot.buyFeeRate || item.buyFeeRate,
+      lastAnalysisAt: new Date().toISOString()
+    });
+
+    return snapshot.name || item.name;
+  }
+
+  async function handleRefreshWatchItem(item: InvestmentWatchItem) {
+    if (refreshingAllWatchItems || refreshingWatchItemId === item.id) return;
 
     setRefreshingWatchItemId(item.id);
 
     try {
-      const snapshot = await fetchEastmoneyFundSnapshot(item.code);
-      const estimatedChange = snapshot.estimatedChangePercent
-        ? `${Number(snapshot.estimatedChangePercent) >= 0 ? '+' : ''}${snapshot.estimatedChangePercent}%`
-        : '';
-
-      upsertInvestmentWatchItem({
-        ...item,
-        name: snapshot.name || item.name,
-        code: snapshot.code || item.code,
-        platform: item.platform || '东方财富',
-        lastSummary:
-          [
-            snapshot.netValue ? `单位净值 ${snapshot.netValue}` : '',
-            estimatedChange ? `估算涨跌 ${estimatedChange}` : '',
-            snapshot.buyFeeRate ? `申购费率 ${snapshot.buyFeeRate}` : ''
-          ]
-            .filter(Boolean)
-            .join(' · ') || item.lastSummary,
-        performanceHistory: snapshot.performanceHistory.length
-          ? snapshot.performanceHistory
-          : item.performanceHistory,
-        fundAnalysis: snapshot.fundAnalysis.length ? snapshot.fundAnalysis : item.fundAnalysis,
-        fundHoldings: snapshot.fundHoldings.length ? snapshot.fundHoldings : item.fundHoldings,
-        assetAllocation: snapshot.assetAllocation.length
-          ? snapshot.assetAllocation
-          : item.assetAllocation,
-        netValue: snapshot.netValue || item.netValue,
-        addedReturn: estimatedChange || item.addedReturn,
-        buyFeeRate: snapshot.buyFeeRate || item.buyFeeRate,
-        lastAnalysisAt: new Date().toISOString()
-      });
-      setToastState(`已刷新“${snapshot.name || item.name}”。`);
+      const refreshedName = await refreshWatchItemSnapshot(item);
+      setToastState(`已刷新“${refreshedName}”。`);
     } catch (err) {
       const message = err instanceof Error ? err.message : '获取更新失败，请稍后再试。';
       setToastState(message, 'warning');
     } finally {
       setRefreshingWatchItemId((current) => (current === item.id ? null : current));
+    }
+  }
+
+  async function handleRefreshAllWatchItems() {
+    if (refreshingAllWatchItems || refreshingWatchItemId || investmentWatchlist.length === 0) {
+      return;
+    }
+
+    setRefreshingAllWatchItems(true);
+
+    try {
+      const results = await Promise.allSettled(
+        investmentWatchlist.map((item) => refreshWatchItemSnapshot(item))
+      );
+      const successCount = results.filter((result) => result.status === 'fulfilled').length;
+      const failedCount = results.length - successCount;
+
+      setToastState(
+        failedCount > 0
+          ? `已刷新 ${successCount} 只，${failedCount} 只未能更新。`
+          : `已刷新全部 ${successCount} 只自选基金。`,
+        failedCount > 0 ? 'warning' : 'success'
+      );
+    } finally {
+      setRefreshingAllWatchItems(false);
     }
   }
 
@@ -1548,6 +1577,20 @@ export function InvestmentsPage() {
                 <span className="badge">{investmentWatchlist.length} 只</span>
                 <button
                   type="button"
+                  className={`investments-watchlist-refresh-all-btn ${refreshingAllWatchItems ? 'is-loading' : ''}`}
+                  onClick={() => void handleRefreshAllWatchItems()}
+                  disabled={
+                    refreshingAllWatchItems ||
+                    refreshingWatchItemId !== null ||
+                    investmentWatchlist.length === 0
+                  }
+                  aria-label="刷新全部自选基金资料"
+                  title="刷新全部自选基金资料"
+                >
+                  <img src={ROTATE_CCW_ICON_URL} alt="" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
                   className="primary button-with-icon investments-watchlist-review-btn"
                   onClick={handleReviewWatchlist}
                   disabled={watchlistReviewStatus === 'loading' || investmentWatchlist.length === 0}
@@ -1669,11 +1712,28 @@ export function InvestmentsPage() {
                       const performancePoints = parseWatchPerformancePoints(
                         performanceSection?.items || []
                       );
+                      const maxPositivePerformance = Math.max(
+                        ...performancePoints.map((point) => Math.max(point.value, 0)),
+                        0
+                      );
+                      const maxNegativePerformance = Math.max(
+                        ...performancePoints.map((point) => Math.max(-point.value, 0)),
+                        0
+                      );
+                      const performanceZeroPosition =
+                        maxPositivePerformance > 0 && maxNegativePerformance > 0
+                          ? (maxPositivePerformance /
+                              (maxPositivePerformance + maxNegativePerformance)) *
+                            100
+                          : maxPositivePerformance > 0
+                            ? 94
+                            : 6;
                       const watchCategory =
                         WATCH_CATEGORY_FILTERS.find(
                           (category) => category.id === getWatchItemCategoryId(item)
                         ) || WATCH_CATEGORY_FILTERS[WATCH_CATEGORY_FILTERS.length - 1];
-                      const isRefreshing = refreshingWatchItemId === item.id;
+                      const isRefreshing =
+                        refreshingAllWatchItems || refreshingWatchItemId === item.id;
                       const isFollowing = item.tags.includes('关注中');
 
                       return (
@@ -1877,16 +1937,21 @@ export function InvestmentsPage() {
                                         aria-label="历史业绩图表"
                                       >
                                         {performancePoints.map((point, index) => {
-                                          const maxValue = Math.max(
-                                            ...performancePoints.map((entry) =>
-                                              Math.abs(entry.value)
-                                            ),
-                                            1
-                                          );
-                                          const height = Math.max(
-                                            14,
-                                            (Math.abs(point.value) / maxValue) * 100
-                                          );
+                                          const isPositive = point.value >= 0;
+                                          const scaleMax = isPositive
+                                            ? maxPositivePerformance
+                                            : maxNegativePerformance;
+                                          const availableHeight = isPositive
+                                            ? performanceZeroPosition
+                                            : 100 - performanceZeroPosition;
+                                          const height =
+                                            point.value === 0 || scaleMax === 0
+                                              ? 0
+                                              : Math.max(
+                                                  6,
+                                                  (Math.abs(point.value) / scaleMax) *
+                                                    availableHeight
+                                                );
 
                                           return (
                                             <div
@@ -1898,7 +1963,21 @@ export function InvestmentsPage() {
                                               title={`${point.label} ${point.caption}`}
                                             >
                                               <span className="investments-watch-performance-track">
-                                                <i style={{ height: `${height}%` }} />
+                                                <span
+                                                  className="investments-watch-performance-zero"
+                                                  style={{ top: `${performanceZeroPosition}%` }}
+                                                  aria-hidden="true"
+                                                />
+                                                <i
+                                                  style={{
+                                                    height: `${height}%`,
+                                                    ...(isPositive
+                                                      ? {
+                                                          bottom: `${100 - performanceZeroPosition}%`
+                                                        }
+                                                      : { top: `${performanceZeroPosition}%` })
+                                                  }}
+                                                />
                                               </span>
                                               <strong>{point.label}</strong>
                                               <em>{point.caption}</em>

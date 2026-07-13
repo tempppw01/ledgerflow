@@ -4,6 +4,7 @@ import {
   WheelEvent as ReactWheelEvent,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState
@@ -79,12 +80,14 @@ type InvestmentChatComposerProps = {
   showLinks?: boolean;
   defaultWebEnabled?: boolean;
   contextNote?: string;
+  onPromptSubmitted?: (messageId: string) => void;
 };
 
 export function InvestmentChatComposer({
   showLinks = true,
   defaultWebEnabled = false,
-  contextNote = ''
+  contextNote = '',
+  onPromptSubmitted
 }: InvestmentChatComposerProps) {
   const { baseUrl, apiKey, model, webSearch } = useAiSettings();
   const setModel = useAiSettings((s) => s.setModel);
@@ -105,15 +108,16 @@ export function InvestmentChatComposer({
   const [models, setModels] = useState<string[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
   const [error, setError] = useState('');
-  const [streaming, setStreaming] = useState('');
-  const [streamingReasoning, setStreamingReasoning] = useState('');
+  const [, setStreaming] = useState('');
+  const [, setStreamingReasoning] = useState('');
+  const [composerFocused, setComposerFocused] = useState(false);
   const [toast, setToast] = useState<{ visible: boolean; message: string; variant: ToastVariant }>({
     visible: false,
     message: '',
     variant: 'success'
   });
-  const endRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const modelSelectorRef = useRef<HTMLDivElement | null>(null);
   const modelTriggerRef = useRef<HTMLButtonElement | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -171,10 +175,6 @@ export function InvestmentChatComposer({
       zIndex: 10000
     });
   }, []);
-
-  useEffect(() => {
-    endRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'end' });
-  }, [messages.length, loading, streaming, streamingReasoning]);
 
   useEffect(() => {
     if (!modelOpen) return;
@@ -309,6 +309,9 @@ export function InvestmentChatComposer({
     setImages([]);
     setStreaming('');
     setStreamingReasoning('');
+    setComposerFocused(false);
+    textareaRef.current?.blur();
+    onPromptSubmitted?.(userMessage.id);
 
     try {
       const webSearchPrompt = webEnabled ? buildWebSearchPrompt(await fetchWebSearchContext(cleanPrompt, webSearch)) : '';
@@ -369,6 +372,9 @@ export function InvestmentChatComposer({
     }
   };
 
+  const composerExpanded =
+    composerFocused || Boolean(input.trim()) || images.length > 0 || modelOpen;
+
   return (
     <>
       {error ? <p className="chat-inline-error">{error}</p> : null}
@@ -404,15 +410,30 @@ export function InvestmentChatComposer({
       ) : null}
 
       <form
-        className="chat-input-form investments-ai-composer"
+        className={`chat-input-form investments-ai-composer ${
+          composerExpanded ? 'is-expanded' : 'is-compact'
+        }`}
+        aria-expanded={composerExpanded}
         onSubmit={(e: FormEvent) => {
           e.preventDefault();
           void submitPrompt();
         }}
         onPaste={handlePaste}
+        onFocusCapture={() => setComposerFocused(true)}
+        onBlurCapture={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+            setComposerFocused(false);
+          }
+        }}
       >
         <div className="chat-input-stack">
-          <div className="chat-input-main investments-ai-input-main">
+          <div
+            className="chat-input-main investments-ai-input-main"
+            onClick={(event) => {
+              const target = event.target as HTMLElement;
+              if (!target.closest('button, input')) textareaRef.current?.focus();
+            }}
+          >
             <input
               ref={fileInputRef}
               type="file"
@@ -427,6 +448,7 @@ export function InvestmentChatComposer({
               }}
             />
             <textarea
+              ref={textareaRef}
               rows={1}
               value={input}
               className="chat-input-textarea investments-ai-textarea"
@@ -598,6 +620,23 @@ export function InvestmentChatPanel({
 }: InvestmentChatPanelProps) {
   const messages = useAppPreferences((s) => s.investmentAiMessages);
   const isCompact = !showHero;
+  const messageRefs = useRef(new Map<string, HTMLElement>());
+  const [pendingScrollMessageId, setPendingScrollMessageId] = useState<string | null>(null);
+  const [activeTurnMessageId, setActiveTurnMessageId] = useState<string | null>(null);
+
+  const handlePromptSubmitted = useCallback((messageId: string) => {
+    setActiveTurnMessageId(messageId);
+    setPendingScrollMessageId(messageId);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!pendingScrollMessageId) return;
+    const messageElement = messageRefs.current.get(pendingScrollMessageId);
+    if (!messageElement) return;
+
+    messageElement.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    setPendingScrollMessageId(null);
+  }, [messages, pendingScrollMessageId]);
 
   const handleCompactWheelCapture = useCallback(
     (event: ReactWheelEvent<HTMLElement>) => {
@@ -621,7 +660,9 @@ export function InvestmentChatPanel({
 
   return (
     <section
-      className={`chat-kawaii-panel chat-assistant-panel chat-investment-panel ${isCompact ? 'is-compact' : ''}`}
+      className={`${showHero ? 'chat-kawaii-panel chat-assistant-panel ' : ''}chat-investment-panel ${
+        isCompact ? 'is-compact' : ''
+      } ${activeTurnMessageId ? 'has-active-turn' : ''}`}
       onWheelCapture={handleCompactWheelCapture}
     >
       {showHero ? (
@@ -635,7 +676,14 @@ export function InvestmentChatPanel({
         <div className="chat-messages-area investments-ai-messages-area">
           <div className="chat-messages-inner">
           {messages.map((item) => (
-            <article key={item.id} className={`chat-msg ${item.role === 'user' ? 'chat-msg-user' : ''}`}>
+            <article
+              key={item.id}
+              ref={(element) => {
+                if (element) messageRefs.current.set(item.id, element);
+                else messageRefs.current.delete(item.id);
+              }}
+              className={`chat-msg ${item.role === 'user' ? 'chat-msg-user' : ''}`}
+            >
               <Avatar user={item.role === 'user'} />
               <div className="chat-msg-body">
                 <div className="chat-msg-header">{item.role === 'user' ? '你' : '助手'}</div>
@@ -674,6 +722,7 @@ export function InvestmentChatPanel({
           showLinks={!isCompact}
           defaultWebEnabled={defaultWebEnabled}
           contextNote={contextNote}
+          onPromptSubmitted={handlePromptSubmitted}
         />
       ) : null}
     </section>

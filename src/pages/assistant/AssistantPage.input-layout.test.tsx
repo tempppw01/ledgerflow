@@ -1,4 +1,4 @@
-import { act, render } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { AssistantPage } from './AssistantPage';
@@ -212,5 +212,36 @@ describe('AssistantPage input layout', () => {
     expect(context).not.toBeNull();
     expect(form).not.toBeNull();
     expect(form?.contains(context as Node)).toBe(false);
+  });
+
+  it('uses the compact composer for the three regular assistant modes', async () => {
+    useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
+
+    const { container } = render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    const regularModeButtons = Array.from(
+      container.querySelectorAll<HTMLButtonElement>('.chat-mode-switch button')
+    ).slice(0, 3);
+
+    expect(regularModeButtons).toHaveLength(3);
+
+    for (const modeButton of regularModeButtons) {
+      await act(async () => {
+        fireEvent.click(modeButton);
+      });
+
+      const input = screen.getByRole('textbox');
+      const form = container.querySelector('.chat-input-form-collapsible');
+      expect(form).toHaveClass('is-compact');
+
+      fireEvent.focus(input);
+      expect(form).toHaveClass('is-expanded');
+      fireEvent.blur(input);
+      expect(form).toHaveClass('is-compact');
+    }
   });
 });

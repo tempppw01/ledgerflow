@@ -1,6 +1,10 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { MysqlSnapshotPanel } from '../../features/mysql-snapshot/ui/MysqlSnapshotPanel';
 import {
+  BACKUP_SCOPE_LABELS,
+  BackupScopeSelector
+} from '../../features/backup/ui/BackupScopeSelector';
+import {
   applyBillImportMode,
   BillImportMode,
   parseBillFileToTransactions
@@ -78,33 +82,6 @@ const OBJECT_STORAGE_OPTIONS: Array<{
     description: '适合 MinIO、R2、COS 等兼容服务'
   }
 ];
-const BACKUP_SCOPE_OPTIONS: Array<{
-  key: keyof FinanceBackupScope;
-  label: string;
-  description: string;
-}> = [
-  {
-    key: 'ledger',
-    label: '账本数据',
-    description: '交易、分类、账户、回收站和余额记录'
-  },
-  {
-    key: 'subscriptions',
-    label: '订阅数据',
-    description: '订阅项目和已归档订阅'
-  },
-  {
-    key: 'globalMemories',
-    label: 'AI 记忆',
-    description: '助手偏好、记忆和上下文资料'
-  },
-  {
-    key: 'investments',
-    label: '投资理财',
-    description: '投资持仓、理财目标、基金自选和 AI 基金分析记录'
-  }
-];
-
 function getFileExtension(fileName: string): string {
   const index = fileName.lastIndexOf('.');
   if (index < 0) return '';
@@ -292,7 +269,9 @@ function hasSelectedBackupScope(scope: FinanceBackupScope): boolean {
 }
 
 function getBackupScopeSummary(scope: FinanceBackupScope): string {
-  const labels = BACKUP_SCOPE_OPTIONS.filter((item) => scope[item.key]).map((item) => item.label);
+  const labels = (Object.keys(scope) as Array<keyof FinanceBackupScope>)
+    .filter((key) => scope[key])
+    .map((key) => BACKUP_SCOPE_LABELS[key]);
   return labels.length ? labels.join('、') : '未选择';
 }
 
@@ -965,35 +944,7 @@ export function DatabaseSettingsPage() {
           {localBackupOpen ? (
             <div id="database-local-backup-panel" className="database-data-section-body">
               <p className="sync-tip">导出的备份可直接导入恢复，WebDAV 也会沿用同一份范围设置。</p>
-              <div className="database-backup-scope" aria-label="备份范围设置">
-                <div className="database-backup-scope-head">
-                  <strong className="database-backup-scope-title">备份范围</strong>
-                  <span className="sync-tip">本地导出和 WebDAV 共用</span>
-                </div>
-                <div className="database-backup-scope-list">
-                  {BACKUP_SCOPE_OPTIONS.map((item) => (
-                    <label
-                      key={item.key}
-                      className={`database-backup-scope-item${backupScope[item.key] ? ' is-active' : ''}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={backupScope[item.key]}
-                        onChange={(e) =>
-                          setBackupScope((prev) => ({ ...prev, [item.key]: e.target.checked }))
-                        }
-                      />
-                      <span className="database-backup-scope-copy">
-                        <strong>{item.label}</strong>
-                        <small>{item.description}</small>
-                      </span>
-                    </label>
-                  ))}
-                </div>
-                {!canCreateBackup ? (
-                  <p className="database-backup-scope-warning">请至少勾选一个备份范围。</p>
-                ) : null}
-              </div>
+              <BackupScopeSelector scope={backupScope} onChange={setBackupScope} />
               <div className="database-data-hub-actions">
                 <button
                   type="button"
@@ -1095,6 +1046,8 @@ export function DatabaseSettingsPage() {
         disabled={!hasHydrated}
         canCreateBackup={canCreateBackup}
         backupScopeSummary={backupScopeSummary}
+        backupScope={backupScope}
+        onBackupScopeChange={setBackupScope}
         apiToken={serverApiToken}
         onApiTokenChange={handleServerApiTokenChange}
         createPayload={createScopedBackupPayload}
@@ -1246,6 +1199,9 @@ export function DatabaseSettingsPage() {
             <p className="sync-tip" style={{ margin: '6px 0 0' }}>
               当前备份范围：{backupScopeSummary}
             </p>
+            <div style={{ marginTop: 10 }}>
+              <BackupScopeSelector scope={backupScope} onChange={setBackupScope} />
+            </div>
 
             <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
               <button type="button" onClick={handleSaveWebdavConfig} disabled={busy}>
@@ -1433,6 +1389,9 @@ export function DatabaseSettingsPage() {
             <p className="sync-tip" style={{ margin: '6px 0 0' }}>
               当前备份范围：{backupScopeSummary}
             </p>
+            <div style={{ marginTop: 10 }}>
+              <BackupScopeSelector scope={backupScope} onChange={setBackupScope} />
+            </div>
 
             <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
               <button type="button" onClick={handleSaveObjectStorageConfig} disabled={busy}>

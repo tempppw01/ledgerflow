@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { FinanceBackupPayload } from '../../../shared/lib/backup';
+import type { FinanceBackupPayload, FinanceBackupScope } from '../../../shared/lib/backup';
 import {
   downloadLatestMysqlSnapshot,
   uploadMysqlSnapshot,
@@ -8,11 +8,14 @@ import {
 import { ConfirmDialog } from '../../../shared/ui/ConfirmDialog';
 import { PasswordInput } from '../../../shared/ui/PasswordInput';
 import { BACKUP_ICON_URL, RESTORE_ICON_URL } from '../../../shared/config/brandAssets';
+import { BackupScopeSelector } from '../../backup/ui/BackupScopeSelector';
 
 interface MysqlSnapshotPanelProps {
   disabled: boolean;
   canCreateBackup: boolean;
   backupScopeSummary: string;
+  backupScope: FinanceBackupScope;
+  onBackupScopeChange: (scope: FinanceBackupScope) => void;
   apiToken: string;
   onApiTokenChange: (value: string) => void;
   createPayload: () => FinanceBackupPayload;
@@ -42,6 +45,8 @@ export function MysqlSnapshotPanel({
   disabled,
   canCreateBackup,
   backupScopeSummary,
+  backupScope,
+  onBackupScopeChange,
   apiToken,
   onApiTokenChange,
   createPayload,
@@ -147,6 +152,7 @@ export function MysqlSnapshotPanel({
         <p className="sync-tip" style={{ margin: '0 0 10px' }}>
           当前备份范围：{backupScopeSummary}
         </p>
+        <BackupScopeSelector scope={backupScope} onChange={onBackupScopeChange} />
         <div className="field" style={{ marginBottom: 10 }}>
           <label>API 令牌</label>
           <PasswordInput
