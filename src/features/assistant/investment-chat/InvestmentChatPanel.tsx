@@ -27,6 +27,7 @@ import { buildWebSearchPrompt, fetchWebSearchContext } from '../api/webSearchCli
 import { renderMarkdownContent } from '../ui/MarkdownRenderer';
 import {
   BOT_ICON_URL,
+  CHEVRON_UP_ICON_URL,
   CHEVRONS_DOWN_UP_ICON_URL,
   CHEVRONS_UP_DOWN_ICON_URL,
   GLOBE_ICON_URL,
@@ -472,6 +473,17 @@ export function InvestmentChatComposer({
   const composerExpanded =
     composerFocused || Boolean(input.trim()) || images.length > 0 || modelOpen;
 
+  const scrollToConversationTop = useCallback(() => {
+    const targets = new Set<HTMLElement>();
+    const messagesArea = document.querySelector<HTMLElement>('.chat-messages-area.is-investment-mode');
+    const supportColumn = textareaRef.current?.closest<HTMLElement>('.investments-support-column');
+
+    if (messagesArea) targets.add(messagesArea);
+    if (supportColumn) targets.add(supportColumn);
+    targets.forEach((target) => target.scrollTo({ top: 0, behavior: 'smooth' }));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   return (
     <>
       {error ? <p className="chat-inline-error">{error}</p> : null}
@@ -695,6 +707,20 @@ export function InvestmentChatComposer({
                   </div>
                 ) : null}
               </div>
+              <button
+                type="button"
+                className="chat-upload-btn investments-ai-scroll-top-btn"
+                onClick={scrollToConversationTop}
+                title="返回页面顶部"
+                aria-label="返回页面顶部"
+              >
+                <img
+                  className="chat-upload-icon"
+                  src={CHEVRON_UP_ICON_URL}
+                  alt=""
+                  aria-hidden="true"
+                />
+              </button>
               {loading ? (
                 <button
                   type="button"

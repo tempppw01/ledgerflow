@@ -173,6 +173,7 @@ describe('Investment assistant chat', () => {
     expect(screen.getByText('模型推理摘要')).toBeInTheDocument();
     expect(screen.getByText('检索与核验状态')).toBeInTheDocument();
     expect(screen.getByText('新闻、政策与市场上下文')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '返回页面顶部' })).toBeInTheDocument();
   });
 
   it('shows an illustration before the first investment chat message', () => {
