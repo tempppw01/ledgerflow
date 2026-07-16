@@ -455,6 +455,8 @@ function normalizeInvestmentAiMessage(item: InvestmentAiMessage): InvestmentAiMe
     text: text || (analysis?.summary ?? '已完成分析'),
     feedback: item.feedback === 'up' || item.feedback === 'down' ? item.feedback : undefined,
     reasoning: normalizeOptionalString(item.reasoning),
+    webTrace: normalizeOptionalString(item.webTrace),
+    auxiliaryInfo: normalizeOptionalString(item.auxiliaryInfo),
     followUpPrompts: followUpPrompts.length ? followUpPrompts : undefined,
     attachmentCount:
       attachmentImages.length ||

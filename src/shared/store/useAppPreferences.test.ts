@@ -211,6 +211,8 @@ describe('useAppPreferences RSS subscriptions', () => {
         role: 'assistant',
         text: '可以继续跟踪，但先控制节奏。',
         reasoning: '先看规模和波动，再看用户当前仓位。',
+        webTrace: '联网过程：已开启联网核验\n检索关键词：沪深 300 ETF',
+        auxiliaryInfo: '相关资讯数据：\n市场新闻与政策信号。',
         analysis: {
           fundName: '易方达沪深300ETF',
           fundCode: '510310',
@@ -247,6 +249,8 @@ describe('useAppPreferences RSS subscriptions', () => {
     expect(state.investmentAiMessages).toHaveLength(2);
     expect(state.investmentAiMessages[1].analysis?.fundCode).toBe('510310');
     expect(state.investmentAiMessages[1].analysis?.buyFeeRate).toBe('0.12%');
+    expect(state.investmentAiMessages[1].webTrace).toContain('已开启联网核验');
+    expect(state.investmentAiMessages[1].auxiliaryInfo).toContain('市场新闻与政策信号');
 
     useAppPreferences.getState().setInvestmentWatchlist([
       {
