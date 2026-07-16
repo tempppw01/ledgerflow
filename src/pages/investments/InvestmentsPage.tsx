@@ -4,6 +4,7 @@ import {
   MouseEvent,
   useEffect,
   useMemo,
+  useRef,
   useState
 } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -36,6 +37,7 @@ import {
 } from '../../features/investments/api/eastmoneyMarketClient';
 import {
   BRAIN_ICON_URL,
+  CHEVRON_UP_ICON_URL,
   INFO_ICON_URL,
   ROTATE_CCW_ICON_URL
 } from '../../shared/config/brandAssets';
@@ -757,6 +759,7 @@ function MarketOverviewPanel({
   const selectedTrend = isTrendCurrent ? overview?.trend || [] : [];
   const chart = buildMarketTrendGeometry(selectedTrend);
   const [hoveredTrendIndex, setHoveredTrendIndex] = useState<number | null>(null);
+  const indexRailRef = useRef<HTMLDivElement | null>(null);
   const totalAmount = quotes.reduce((sum, item) => sum + (item.amount || 0), 0);
   const selectedQuoteData =
     selectedQuote && 'amount' in selectedQuote ? (selectedQuote as EastmoneyMarketQuote) : null;
@@ -792,6 +795,10 @@ function MarketOverviewPanel({
     setHoveredTrendIndex(closestIndex);
   }
 
+  function scrollIndexRail(direction: -1 | 1) {
+    indexRailRef.current?.scrollBy({ left: direction * 276, behavior: 'smooth' });
+  }
+
   const activeTrendText =
     activeTrendPoint && Number.isFinite(activeTrendPoint.value)
       ? `${activeTrendPoint.label || '当前'} · ${formatMarketIndexValue(activeTrendPoint.value)}`
@@ -818,26 +825,49 @@ function MarketOverviewPanel({
         </div>
       </div>
 
-      <div className="investments-market-tabs" role="tablist" aria-label="大盘指数">
-        {EASTMONEY_MARKET_INDEXES.map((item) => {
-          const quote = quoteBySecId.get(item.secId);
-          const changePercent = quote?.changePercent ?? null;
-          return (
-            <button
-              key={item.secId}
-              type="button"
-              role="tab"
-              aria-selected={selectedSecId === item.secId}
-              className={`investments-market-tab ${selectedSecId === item.secId ? 'is-active' : ''} ${getMarketTone(
-                changePercent
-              )}`}
-              onClick={() => onSelect(item.secId)}
-            >
-              <span>{item.name}</span>
-              <strong>{formatMarketPercent(changePercent)}</strong>
-            </button>
-          );
-        })}
+      <div className="investments-market-index-rail">
+        <button
+          type="button"
+          className="investments-market-rail-control is-previous"
+          aria-label="查看上一组指数"
+          onClick={() => scrollIndexRail(-1)}
+        >
+          <img src={CHEVRON_UP_ICON_URL} alt="" aria-hidden="true" />
+        </button>
+        <div
+          ref={indexRailRef}
+          className="investments-market-tabs"
+          role="tablist"
+          aria-label="大盘指数"
+        >
+          {EASTMONEY_MARKET_INDEXES.map((item) => {
+            const quote = quoteBySecId.get(item.secId);
+            const changePercent = quote?.changePercent ?? null;
+            return (
+              <button
+                key={item.secId}
+                type="button"
+                role="tab"
+                aria-selected={selectedSecId === item.secId}
+                className={`investments-market-tab ${selectedSecId === item.secId ? 'is-active' : ''} ${getMarketTone(
+                  changePercent
+                )}`}
+                onClick={() => onSelect(item.secId)}
+              >
+                <span>{item.name}</span>
+                <strong>{formatMarketPercent(changePercent)}</strong>
+              </button>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          className="investments-market-rail-control is-next"
+          aria-label="查看下一组指数"
+          onClick={() => scrollIndexRail(1)}
+        >
+          <img src={CHEVRON_UP_ICON_URL} alt="" aria-hidden="true" />
+        </button>
       </div>
 
       <div className="investments-market-body">

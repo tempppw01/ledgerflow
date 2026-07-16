@@ -638,23 +638,71 @@
   white-space: nowrap;
 }
 
-.investments-market-tabs {
+.investments-market-index-rail {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.investments-market-tabs {
+  display: flex;
   gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding: 1px;
+  scrollbar-width: thin;
+  scroll-behavior: smooth;
+  scroll-snap-type: inline proximity;
+}
+
+.investments-market-rail-control {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 86%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 60%, transparent);
+}
+
+.investments-market-rail-control:hover,
+.investments-market-rail-control:focus-visible {
+  border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-primary-bg) 62%, var(--color-bg-elevated));
+  box-shadow: none;
+  transform: none;
+}
+
+.investments-market-rail-control img {
+  width: 14px;
+  height: 14px;
+  opacity: 0.74;
+}
+
+.investments-market-rail-control.is-previous img {
+  transform: rotate(-90deg);
+}
+
+.investments-market-rail-control.is-next img {
+  transform: rotate(90deg);
 }
 
 .investments-market-tab {
   display: grid;
   gap: 4px;
-  min-width: 0;
+  flex: 0 0 116px;
   min-height: 50px;
   padding: 8px 10px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: 8px;
   background: color-mix(in srgb, var(--color-bg-subtle) 46%, transparent);
   color: var(--color-text-primary);
   text-align: left;
+  scroll-snap-align: start;
 }
 
 .investments-market-tab:hover,
@@ -4734,8 +4782,16 @@
     flex: 1 1 0;
   }
 
+  .investments-market-index-rail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .investments-market-rail-control {
+    display: none;
+  }
+
   .investments-market-tabs {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-inline: 0;
   }
 
   .investments-market-news-list {

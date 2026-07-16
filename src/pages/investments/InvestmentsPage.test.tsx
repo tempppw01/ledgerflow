@@ -42,7 +42,14 @@ vi.mock('../../features/investments/api/eastmoneyMarketClient', () => ({
     { secId: '1.000001', code: '000001', name: '上证指数', shortName: '上证' },
     { secId: '0.399001', code: '399001', name: '深证成指', shortName: '深证' },
     { secId: '0.399006', code: '399006', name: '创业板指', shortName: '创业板' },
-    { secId: '1.000688', code: '000688', name: '科创50', shortName: '科创50' }
+    { secId: '1.000688', code: '000688', name: '科创50', shortName: '科创50' },
+    { secId: '0.899050', code: '899050', name: '北证50', shortName: '北证50' },
+    { secId: '1.000016', code: '000016', name: '上证50', shortName: '上证50' },
+    { secId: '1.000300', code: '000300', name: '沪深300', shortName: '沪深300' },
+    { secId: '1.000905', code: '000905', name: '中证500', shortName: '中证500' },
+    { secId: '1.000852', code: '000852', name: '中证1000', shortName: '中证1000' },
+    { secId: '0.399330', code: '399330', name: '深证100', shortName: '深证100' },
+    { secId: '0.399673', code: '399673', name: '创业板50', shortName: '创业板50' }
   ],
   EASTMONEY_MARKET_NEWS_CATEGORIES: [
     { id: 'all-day', label: '7×24', column: '102' },
@@ -423,6 +430,27 @@ describe('InvestmentsPage', () => {
 
     expect(await screen.findByText('09:30 · 4031.54')).toBeInTheDocument();
     expect(screen.getByText(/均价 4033\.65/)).toBeInTheDocument();
+  });
+
+  it('可以从指数轨道切换到扩展的宽基指数', async () => {
+    render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    const indexTab = await screen.findByRole('tab', { name: /^沪深300/ });
+    expect(screen.getByRole('tab', { name: /^上证50/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '查看上一组指数' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '查看下一组指数' })).toBeInTheDocument();
+
+    await userEvent.click(indexTab);
+
+    await waitFor(() => {
+      expect(eastmoneyClientMock.fetchEastmoneyMarketOverview).toHaveBeenLastCalledWith('1.000300');
+    });
+    expect(indexTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByLabelText('沪深300关键数据')).toBeInTheDocument();
   });
 
   it('可以切换热门题材并更新题材数据图', async () => {
