@@ -2401,16 +2401,30 @@
   z-index: 3;
 }
 
-.investments-ai-model-trigger {
+.investments-ai-input-toolbar .investments-ai-model-trigger {
   height: 34px;
   min-height: 34px;
   width: auto;
   min-width: 120px;
   max-width: min(260px, 100%);
-  padding-inline-end: 10px;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 3px 10px 3px 5px;
+  border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-primary-bg));
 }
 
-.investments-ai-model-trigger .chat-model-inline-label {
+.investments-ai-input-toolbar .investments-ai-model-trigger .chat-model-trigger-icon {
+  width: 24px;
+  height: 24px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 88%, var(--color-primary-bg));
+  font-size: 13px;
+}
+
+.investments-ai-input-toolbar .investments-ai-model-trigger .chat-model-inline-label {
   max-width: 118px;
   position: static;
   width: auto;
@@ -2419,6 +2433,12 @@
   clip: auto;
   overflow: visible;
   white-space: nowrap;
+}
+
+.investments-ai-input-toolbar .investments-ai-model-trigger:hover,
+.investments-ai-input-toolbar .investments-ai-model-trigger.is-open {
+  border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-primary-bg) 84%, var(--color-bg-elevated));
 }
 
 .investments-ai-model-dropdown {
