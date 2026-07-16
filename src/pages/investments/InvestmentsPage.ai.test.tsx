@@ -212,6 +212,21 @@ describe('Investment assistant chat', () => {
     expect(emptyIllustration?.src).toBe(INVESTMENT_HERO_ILLUSTRATION_URL);
   });
 
+  it('centers the compact empty state and shows a prompt', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <InvestmentChatPanel showHero={false} />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('先丢一个基金问题给我')).toBeInTheDocument();
+    expect(screen.getByText('例如：这只基金现在适合继续定投吗？')).toBeInTheDocument();
+    expect(container.querySelector('.chat-investment-panel')).toHaveClass('is-empty');
+    expect(container.querySelector('.investments-ai-empty-compact img')?.getAttribute('src')).toBe(
+      INVESTMENT_HERO_ILLUSTRATION_URL
+    );
+  });
+
   it('clears the composer immediately after sending a typed question', async () => {
     sendAiChatStreamMock.mockReturnValue(new Promise(() => undefined));
 

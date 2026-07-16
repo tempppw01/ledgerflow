@@ -852,7 +852,7 @@ export function InvestmentChatPanel({
     <section
       className={`${showHero ? 'chat-kawaii-panel chat-assistant-panel ' : ''}chat-investment-panel ${
         isCompact ? 'is-compact' : ''
-      } ${activeTurnMessageId ? 'has-active-turn' : ''}`}
+      } ${messages.length === 0 ? 'is-empty' : ''} ${activeTurnMessageId ? 'has-active-turn' : ''}`}
       onWheelCapture={handleCompactWheelCapture}
     >
       {showHero ? (
@@ -950,6 +950,8 @@ export function InvestmentChatPanel({
       ) : isCompact ? (
         <div className="investments-ai-empty-compact" aria-label="投资理财空状态">
           <img src={INVESTMENT_HERO_ILLUSTRATION_URL} alt="" aria-hidden="true" />
+          <strong>先丢一个基金问题给我</strong>
+          <p>例如：这只基金现在适合继续定投吗？</p>
         </div>
       ) : (
         <div className="investments-ai-empty">
