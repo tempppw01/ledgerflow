@@ -81,6 +81,7 @@ beforeEach(() => {
       '把这波预算压力按短期和长期分开看？'
     ])
   });
+  appPreferencesMocks.state.investmentAiMessages = [];
 });
 
 const aiSettingsMocks = vi.hoisted(() => {
@@ -125,7 +126,7 @@ const appPreferencesMocks = vi.hoisted(() => {
     investmentPositions: [],
     investmentGoals: [],
     investmentWatchlist: [],
-    investmentAiMessages: [],
+    investmentAiMessages: [] as Array<Record<string, unknown>>,
     setInvestmentAiMessages: vi.fn(),
     debts: [
       {
@@ -326,6 +327,34 @@ describe('AssistantPage', () => {
     expect(investmentPanel).not.toHaveClass('chat-kawaii-panel');
     expect(messagesArea?.querySelector(':scope > .chat-messages-inner')).toBeNull();
     expect(screen.queryByText(/输入一句话或贴截图/)).not.toBeInTheDocument();
+  });
+
+  it('投资理财模式在提问后展示右侧会话面板', async () => {
+    appPreferencesMocks.state.investmentAiMessages = [
+      {
+        id: 'investment-user-1',
+        role: 'user',
+        text: '沪深300现在适合定投吗？',
+        createdAt: '2026-07-17T09:30:00.000Z'
+      }
+    ];
+    useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
+
+    const { container } = render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '投资理财' }));
+    });
+
+    const messagesArea = container.querySelector('.chat-messages-area.is-investment-mode');
+    expect(messagesArea).toHaveClass('has-investment-conversation');
+    expect(screen.getByLabelText('当前投资分析')).toHaveTextContent('沪深300现在适合定投吗？');
+    expect(messagesArea?.querySelector(':scope > .chat-investment-stage')).toBeInTheDocument();
+    expect(messagesArea?.querySelector(':scope > .chat-investment-panel.is-compact')).toBeInTheDocument();
   });
 
   it('AI 信贷管家在有内容时才显示优先处理模块', async () => {

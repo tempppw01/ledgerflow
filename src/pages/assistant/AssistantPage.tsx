@@ -15,7 +15,7 @@ import {
   extractCreditStructuredItems,
   extractStreamingCreditPreview
 } from '../../features/assistant/creditAssistant/parser';
-import { InvestmentChatComposer, InvestmentChatPanel } from '../../features/assistant/investment-chat/InvestmentChatPanel';
+import { InvestmentChatPanel } from '../../features/assistant/investment-chat/InvestmentChatPanel';
 import type { CreditExtractedItem, CreditFieldMeta } from '../../features/assistant/creditAssistant/types';
 import { useAssistantWorkbench } from '../../features/assistant/workbench/useAssistantWorkbench';
 import { BillPreviewCard } from '../../features/assistant/ui/BillPreviewCard';
@@ -53,6 +53,7 @@ import {
 import {
   BOT_ICON_URL,
   IMAGE_ICON_URL,
+  INVESTMENT_HERO_ILLUSTRATION_URL,
   THUMBS_DOWN_ICON_URL,
   THUMBS_UP_ICON_URL,
   USER_ICON_URL
@@ -641,6 +642,7 @@ export function AssistantPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<AssistantMode>(() => readAssistantModeFromSessionStorage());
   const [isWideLayout, setIsWideLayout] = useState(() => readWideLayoutPreference());
+  const investmentAiMessages = useAppPreferences((s) => s.investmentAiMessages);
   const baseUrl = useAiSettings((s) => s.baseUrl);
   const apiKey = useAiSettings((s) => s.apiKey);
   const model = useAiSettings((s) => s.model);
@@ -700,6 +702,11 @@ export function AssistantPage() {
     credit: '',
     investment: ''
   });
+  const hasInvestmentConversation = mode === 'investment' && investmentAiMessages.length > 0;
+  const latestInvestmentQuestion = [...investmentAiMessages]
+    .reverse()
+    .find((item) => item.role === 'user')?.text.trim();
+  const latestInvestmentMessage = investmentAiMessages[investmentAiMessages.length - 1];
   const hasInitializedModeHistoryRef = useRef(false);
   const activeHistoryModeRef = useRef<AssistantMode>(mode);
   const skipHistoryPersistRef = useRef(false);
@@ -1720,9 +1727,29 @@ export function AssistantPage() {
         </div>
       </header>
 
-      <section className={`chat-messages-area ${mode === 'investment' ? 'is-investment-mode' : ''} ${isWideLayout ? 'is-wide' : ''}`}>
+      <section
+        className={`chat-messages-area ${mode === 'investment' ? 'is-investment-mode' : ''} ${
+          hasInvestmentConversation ? 'has-investment-conversation' : ''
+        } ${isWideLayout ? 'is-wide' : ''}`}
+      >
         {mode === 'investment' ? (
-          <InvestmentChatPanel showComposer={false} showHero={false} />
+          <>
+            {hasInvestmentConversation ? (
+              <aside className="chat-investment-stage" aria-label="当前投资分析">
+                <img src={INVESTMENT_HERO_ILLUSTRATION_URL} alt="" aria-hidden="true" />
+                <div>
+                  <span>本次投资分析</span>
+                  <h2>{latestInvestmentQuestion || '正在整理你的投资问题'}</h2>
+                  <p>
+                    {latestInvestmentMessage?.role === 'assistant'
+                      ? '分析结论已生成'
+                      : '正在整理行情、资讯与持仓信息'}
+                  </p>
+                </div>
+              </aside>
+            ) : null}
+            <InvestmentChatPanel showHero={false} />
+          </>
         ) : (
         <div className={`chat-messages-inner ${isWideLayout ? 'is-wide' : ''}`}>
           {!wb.hasApiKey ? (
@@ -2803,12 +2830,6 @@ export function AssistantPage() {
               />
             </div>
           </form>
-        </section>
-      ) : null}
-
-      {mode === 'investment' ? (
-        <section className="chat-input-bar">
-          <InvestmentChatComposer showLinks={false} />
         </section>
       ) : null}
 
