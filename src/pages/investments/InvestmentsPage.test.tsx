@@ -230,7 +230,7 @@ describe('InvestmentsPage', () => {
     return stage as HTMLElement;
   }
 
-  it('应展示持仓汇总和风险提醒', async () => {
+  it('应展示今日持仓、通俗行情和规则提示', async () => {
     const { container } = render(
       <MemoryRouter>
         <InvestmentsPage />
@@ -247,6 +247,12 @@ describe('InvestmentsPage', () => {
     expect(screen.getByTestId('market-session-status')).toBeInTheDocument();
     expect(screen.getByText('7x24')).toBeInTheDocument();
     expect(screen.getByText(/液化天然气制甲烷/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '今日持仓' })).toBeInTheDocument();
+    expect(screen.getByText('今日市场估算')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '今天的市场，说人话' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '今天怎么做' })).toBeInTheDocument();
+    expect(screen.getByText('板块健康度')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'AI 排序' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '打开投资风向' })).toBeInTheDocument();
     expect(screen.getByText('大盘概览')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '问 AI 怎么看' })).toBeInTheDocument();
