@@ -22,8 +22,10 @@ const financeStoreMock = vi.hoisted(() => ({
 
 const eastmoneyClientMock = vi.hoisted(() => ({
   fetchEastmoneyFundSnapshot: vi.fn(),
+  fetchEastmoneyMarketBoards: vi.fn(),
   fetchEastmoneyMarketOverview: vi.fn(),
-  fetchEastmoneyMarketNews: vi.fn()
+  fetchEastmoneyMarketNews: vi.fn(),
+  fetchEastmoneyMarketThemeBoards: vi.fn()
 }));
 
 vi.mock('../../shared/store/useFinanceStore', () => ({
@@ -53,8 +55,15 @@ vi.mock('../../features/investments/api/eastmoneyMarketClient', () => ({
     { id: 'bond', label: '债券', column: '108' },
     { id: 'fund', label: '基金', column: '109' }
   ],
+  EASTMONEY_MARKET_THEMES: [
+    { code: 'BK1106', name: '创新药' },
+    { code: 'BK1128', name: 'CPO概念' },
+    { code: 'BK0877', name: 'PCB概念' }
+  ],
+  fetchEastmoneyMarketBoards: eastmoneyClientMock.fetchEastmoneyMarketBoards,
   fetchEastmoneyMarketOverview: eastmoneyClientMock.fetchEastmoneyMarketOverview,
-  fetchEastmoneyMarketNews: eastmoneyClientMock.fetchEastmoneyMarketNews
+  fetchEastmoneyMarketNews: eastmoneyClientMock.fetchEastmoneyMarketNews,
+  fetchEastmoneyMarketThemeBoards: eastmoneyClientMock.fetchEastmoneyMarketThemeBoards
 }));
 
 describe('InvestmentsPage', () => {
@@ -106,6 +115,34 @@ describe('InvestmentsPage', () => {
         time: '2026-07-10 09:36:00',
         link: 'https://finance.eastmoney.com/a/news-1.html',
         stocks: ['中国石化']
+      }
+    ]);
+    eastmoneyClientMock.fetchEastmoneyMarketThemeBoards.mockResolvedValue([
+      {
+        code: 'BK1106',
+        name: '创新药',
+        value: 1234.56,
+        change: 12.34,
+        changePercent: 1.02,
+        volume: 1200000,
+        amount: 987654321,
+        upCount: 12,
+        downCount: 3,
+        flatCount: 1
+      }
+    ]);
+    eastmoneyClientMock.fetchEastmoneyMarketBoards.mockResolvedValue([
+      {
+        code: 'BK0001',
+        name: '测试细分行业',
+        value: 1234.56,
+        change: 12.34,
+        changePercent: 1.02,
+        volume: 1200000,
+        amount: 987654321,
+        upCount: 12,
+        downCount: 3,
+        flatCount: 1
       }
     ]);
     const now = new Date();
@@ -205,9 +242,12 @@ describe('InvestmentsPage', () => {
       within(screen.getByLabelText('上证指数关键数据')).getByText('1.56万亿')
     ).toBeInTheDocument();
     expect(await screen.findByText('快讯')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '热门题材' })).toBeInTheDocument();
+    expect(screen.getByLabelText('选择热门题材')).toHaveValue('BK1106');
+    expect(screen.getByTestId('market-session-status')).toBeInTheDocument();
     expect(screen.getByText('7x24')).toBeInTheDocument();
     expect(screen.getByText(/液化天然气制甲烷/)).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: '投资风向' }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: '打开投资风向' })).toBeInTheDocument();
     expect(screen.getByText('大盘概览')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '问 AI 怎么看' })).toBeInTheDocument();
     expect(screen.getAllByText('¥1.09万').length).toBeGreaterThan(0);
@@ -379,4 +419,44 @@ describe('InvestmentsPage', () => {
     expect(screen.getByText(/均价 4033\.65/)).toBeInTheDocument();
   });
 
+  it('可以切换热门题材并更新题材数据图', async () => {
+    eastmoneyClientMock.fetchEastmoneyMarketThemeBoards.mockResolvedValue([
+      {
+        code: 'BK1106',
+        name: '创新药',
+        value: 1500,
+        change: 18,
+        changePercent: 1.2,
+        volume: 1000,
+        amount: 100000000,
+        upCount: 20,
+        downCount: 4,
+        flatCount: 1
+      },
+      {
+        code: 'BK1128',
+        name: 'CPO概念',
+        value: 8800,
+        change: -120,
+        changePercent: -1.3,
+        volume: 2000,
+        amount: 200000000,
+        upCount: 10,
+        downCount: 30,
+        flatCount: 1
+      }
+    ]);
+
+    render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    const themeSelect = await screen.findByLabelText('选择热门题材');
+    await userEvent.selectOptions(themeSelect, 'BK1128');
+
+    expect(themeSelect).toHaveValue('BK1128');
+    expect(screen.getByLabelText('CPO概念涨跌分布')).toBeInTheDocument();
+  });
 });

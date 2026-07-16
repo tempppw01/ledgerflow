@@ -51,6 +51,26 @@ export interface EastmoneyMarketNewsItem {
   stocks: string[];
 }
 
+export type EastmoneyMarketBoardType = 'industry' | 'concept';
+
+export interface EastmoneyMarketBoard {
+  code: string;
+  name: string;
+  value: number | null;
+  change: number | null;
+  changePercent: number | null;
+  volume: number | null;
+  amount: number | null;
+  upCount: number | null;
+  downCount: number | null;
+  flatCount: number | null;
+}
+
+export interface EastmoneyMarketTheme {
+  code: string;
+  name: string;
+}
+
 type EastmoneyQuotePayload = {
   data?: {
     diff?: Array<{
@@ -90,6 +110,23 @@ type EastmoneyFastNewsPayload = {
   };
 };
 
+type EastmoneyBoardPayload = {
+  data?: {
+    diff?: Array<{
+      f2?: number | string;
+      f3?: number | string;
+      f4?: number | string;
+      f5?: number | string;
+      f6?: number | string;
+      f12?: string;
+      f14?: string;
+      f104?: number | string;
+      f105?: number | string;
+      f106?: number | string;
+    }>;
+  };
+};
+
 export const EASTMONEY_MARKET_INDEXES: EastmoneyMarketIndex[] = [
   { secId: '1.000001', code: '000001', name: '上证指数', shortName: '上证' },
   { secId: '0.399001', code: '399001', name: '深证成指', shortName: '深证' },
@@ -107,6 +144,17 @@ export const EASTMONEY_MARKET_NEWS_CATEGORIES: EastmoneyMarketNewsCategory[] = [
   { id: 'forex', label: '外汇', column: '107' },
   { id: 'bond', label: '债券', column: '108' },
   { id: 'fund', label: '基金', column: '109' }
+];
+
+export const EASTMONEY_MARKET_THEMES: EastmoneyMarketTheme[] = [
+  { code: 'BK1106', name: '创新药' },
+  { code: 'BK1128', name: 'CPO概念' },
+  { code: 'BK0877', name: 'PCB概念' },
+  { code: 'BK1134', name: '算力概念' },
+  { code: 'BK1649', name: '油气资源' },
+  { code: 'BK0512', name: '化工原料' },
+  { code: 'BK0963', name: '商业航天' },
+  { code: 'BK0695', name: '小金属概念' }
 ];
 
 function toNullableNumber(value: unknown): number | null {
@@ -131,37 +179,85 @@ function stripFastNewsSummaryTitle(title: string, summary: string) {
   return trimmed.replace(new RegExp(`^【${escapeRegExp(title)}】`), '').trim();
 }
 
-export async function fetchEastmoneyMarketQuotes(): Promise<EastmoneyMarketQuote[]> {
-  const secids = EASTMONEY_MARKET_INDEXES.map((item) => item.secId).join(',');
-  const response = await fetch(
-    `https://push2.eastmoney.com/api/qt/ulist.np/get?secids=${encodeURIComponent(
-      secids
-    )}&fields=f12,f13,f14,f2,f3,f4,f5,f6,f15,f16,f17,f18&fltt=2&invt=2`
-  );
+const marketQuoteCache = new Map<string, EastmoneyMarketQuote>();
 
-  if (!response.ok) {
-    throw new Error('大盘行情加载失败，请稍后重试。');
+export function clearEastmoneyMarketQuoteCache() {
+  marketQuoteCache.clear();
+}
+
+function parseMarketQuote(
+  item: NonNullable<NonNullable<EastmoneyQuotePayload['data']>['diff']>[number],
+  fallbackIndex?: EastmoneyMarketIndex
+) {
+  const code = String(item.f12 || fallbackIndex?.code || '').trim();
+  const secId = getSecIdByMarketAndCode(item.f13, code) || fallbackIndex?.secId || '';
+
+  return {
+    secId,
+    code,
+    name: String(item.f14 || fallbackIndex?.name || '').trim() || code,
+    value: toNullableNumber(item.f2),
+    changePercent: toNullableNumber(item.f3),
+    change: toNullableNumber(item.f4),
+    volume: toNullableNumber(item.f5),
+    amount: toNullableNumber(item.f6),
+    high: toNullableNumber(item.f15),
+    low: toNullableNumber(item.f16),
+    open: toNullableNumber(item.f17),
+    previousClose: toNullableNumber(item.f18)
+  } satisfies EastmoneyMarketQuote;
+}
+
+function buildMarketQuoteUrl(secids: string) {
+  return `https://push2.eastmoney.com/api/qt/ulist.np/get?secids=${encodeURIComponent(
+    secids
+  )}&fields=f12,f13,f14,f2,f3,f4,f5,f6,f15,f16,f17,f18&fltt=2&invt=2`;
+}
+
+async function fetchMarketQuotePayload(secids: string) {
+  const response = await fetch(buildMarketQuoteUrl(secids));
+  if (!response.ok) throw new Error('大盘行情加载失败，请稍后重试。');
+  return (await response.json()) as EastmoneyQuotePayload;
+}
+
+export async function fetchEastmoneyMarketQuotes(): Promise<EastmoneyMarketQuote[]> {
+  const bySecId = new Map<string, EastmoneyMarketQuote>();
+
+  try {
+    const payload = await fetchMarketQuotePayload(
+      EASTMONEY_MARKET_INDEXES.map((item) => item.secId).join(',')
+    );
+    (payload.data?.diff || []).forEach((item) => {
+      const quote = parseMarketQuote(
+        item,
+        EASTMONEY_MARKET_INDEXES.find((index) => index.code === item.f12)
+      );
+      if (quote.secId) bySecId.set(quote.secId, quote);
+    });
+  } catch {
+    // Individual requests below and the in-memory cache can still recover a partial outage.
   }
 
-  const payload = (await response.json()) as EastmoneyQuotePayload;
-  return (payload.data?.diff || []).map((item) => {
-    const code = String(item.f12 || '').trim();
-    const secId = getSecIdByMarketAndCode(item.f13, code);
+  const missingIndexes = EASTMONEY_MARKET_INDEXES.filter((item) => !bySecId.has(item.secId));
+  const recovered = await Promise.allSettled(
+    missingIndexes.map(async (index) => {
+      const payload = await fetchMarketQuotePayload(index.secId);
+      const item = payload.data?.diff?.find((entry) => String(entry.f12 || '') === index.code);
+      if (!item) throw new Error(`Missing quote for ${index.code}`);
+      return parseMarketQuote(item, index);
+    })
+  );
 
-    return {
-      secId,
-      code,
-      name: String(item.f14 || '').trim() || code,
-      value: toNullableNumber(item.f2),
-      changePercent: toNullableNumber(item.f3),
-      change: toNullableNumber(item.f4),
-      volume: toNullableNumber(item.f5),
-      amount: toNullableNumber(item.f6),
-      high: toNullableNumber(item.f15),
-      low: toNullableNumber(item.f16),
-      open: toNullableNumber(item.f17),
-      previousClose: toNullableNumber(item.f18)
-    };
+  recovered.forEach((result) => {
+    if (result.status === 'fulfilled' && result.value.secId)
+      bySecId.set(result.value.secId, result.value);
+  });
+
+  return EASTMONEY_MARKET_INDEXES.flatMap((index) => {
+    const quote = bySecId.get(index.secId) || marketQuoteCache.get(index.secId);
+    if (!quote) return [];
+    marketQuoteCache.set(index.secId, quote);
+    return [quote];
   });
 }
 
@@ -200,10 +296,17 @@ export async function fetchEastmoneyIndexTrend(
 export async function fetchEastmoneyMarketOverview(
   selectedSecId = EASTMONEY_MARKET_INDEXES[0].secId
 ): Promise<EastmoneyMarketOverview> {
-  const [quotes, trend] = await Promise.all([
+  const [quotesResult, trendResult] = await Promise.allSettled([
     fetchEastmoneyMarketQuotes(),
     fetchEastmoneyIndexTrend(selectedSecId)
   ]);
+
+  const quotes = quotesResult.status === 'fulfilled' ? quotesResult.value : [];
+  const trend = trendResult.status === 'fulfilled' ? trendResult.value : [];
+
+  if (quotesResult.status === 'rejected' && trendResult.status === 'rejected') {
+    throw new Error('大盘行情加载失败，请稍后重试。');
+  }
 
   return {
     selectedSecId,
@@ -246,5 +349,66 @@ export async function fetchEastmoneyMarketNews(
       link: `https://finance.eastmoney.com/a/${id}.html`,
       stocks: Array.isArray(item.stockList) ? item.stockList.slice(0, 4) : []
     };
+  });
+}
+
+export async function fetchEastmoneyMarketBoards(
+  type: EastmoneyMarketBoardType = 'industry',
+  pageSize = 8
+): Promise<EastmoneyMarketBoard[]> {
+  const sectorType = type === 'concept' ? '3' : '2';
+  const response = await fetch(
+    `https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=${pageSize}&po=1&np=1&fltt=2&invt=2&fid=f3&fs=m:90+t:${sectorType}&fields=f12,f14,f2,f3,f4,f5,f6,f104,f105,f106`
+  );
+
+  if (!response.ok) throw new Error('板块行情加载失败，请稍后重试。');
+
+  const payload = (await response.json()) as EastmoneyBoardPayload;
+  return (payload.data?.diff || []).map((item) => ({
+    code: String(item.f12 || '').trim(),
+    name: String(item.f14 || '').trim() || '未命名板块',
+    value: toNullableNumber(item.f2),
+    changePercent: toNullableNumber(item.f3),
+    change: toNullableNumber(item.f4),
+    volume: toNullableNumber(item.f5),
+    amount: toNullableNumber(item.f6),
+    upCount: toNullableNumber(item.f104),
+    downCount: toNullableNumber(item.f105),
+    flatCount: toNullableNumber(item.f106)
+  }));
+}
+
+export async function fetchEastmoneyMarketThemeBoards(): Promise<EastmoneyMarketBoard[]> {
+  const secids = EASTMONEY_MARKET_THEMES.map((item) => `90.${item.code}`).join(',');
+  const response = await fetch(
+    `https://push2.eastmoney.com/api/qt/ulist.np/get?secids=${encodeURIComponent(
+      secids
+    )}&fields=f12,f13,f14,f2,f3,f4,f5,f6,f104,f105,f106&fltt=2&invt=2`
+  );
+
+  if (!response.ok) throw new Error('热门题材加载失败，请稍后重试。');
+
+  const payload = (await response.json()) as EastmoneyBoardPayload;
+  const byCode = new Map(
+    (payload.data?.diff || []).map((item) => [
+      String(item.f12 || '').trim(),
+      {
+        code: String(item.f12 || '').trim(),
+        name: String(item.f14 || '').trim() || '未命名板块',
+        value: toNullableNumber(item.f2),
+        changePercent: toNullableNumber(item.f3),
+        change: toNullableNumber(item.f4),
+        volume: toNullableNumber(item.f5),
+        amount: toNullableNumber(item.f6),
+        upCount: toNullableNumber(item.f104),
+        downCount: toNullableNumber(item.f105),
+        flatCount: toNullableNumber(item.f106)
+      } satisfies EastmoneyMarketBoard
+    ])
+  );
+
+  return EASTMONEY_MARKET_THEMES.flatMap((theme) => {
+    const board = byCode.get(theme.code);
+    return board ? [board] : [];
   });
 }

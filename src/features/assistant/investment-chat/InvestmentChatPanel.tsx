@@ -40,9 +40,16 @@ import { Toast } from '../../../shared/ui/Toast';
 import type { ToastVariant } from '../../../shared/ui/Toast';
 
 type Message = ReturnType<typeof createInvestmentAiMessage>;
+type InvestmentChatProgress = 'market' | 'web' | 'thinking' | 'answering' | '';
 
 const MAX_INVESTMENT_AI_IMAGES = 4;
 const MAX_INVESTMENT_AI_IMAGE_SIZE_MB = 6;
+const INVESTMENT_CHAT_PROGRESS_LABELS: Record<Exclude<InvestmentChatProgress, ''>, string> = {
+  market: '正在读取当前页面的大盘、板块和快讯数据',
+  web: '正在查询公开联网资讯',
+  thinking: '正在思考投资结论',
+  answering: '正在组织回答'
+};
 
 function getModelDisplayLabel(modelId: string): string {
   const value = modelId.trim();
@@ -81,13 +88,15 @@ type InvestmentChatComposerProps = {
   defaultWebEnabled?: boolean;
   contextNote?: string;
   onPromptSubmitted?: (messageId: string) => void;
+  clearContextVersion?: number;
 };
 
 export function InvestmentChatComposer({
   showLinks = true,
   defaultWebEnabled = false,
   contextNote = '',
-  onPromptSubmitted
+  onPromptSubmitted,
+  clearContextVersion = 0
 }: InvestmentChatComposerProps) {
   const { baseUrl, apiKey, model, webSearch } = useAiSettings();
   const setModel = useAiSettings((s) => s.setModel);
@@ -110,6 +119,7 @@ export function InvestmentChatComposer({
   const [error, setError] = useState('');
   const [, setStreaming] = useState('');
   const [, setStreamingReasoning] = useState('');
+  const [progress, setProgress] = useState<InvestmentChatProgress>('');
   const [composerFocused, setComposerFocused] = useState(false);
   const [toast, setToast] = useState<{ visible: boolean; message: string; variant: ToastVariant }>({
     visible: false,
@@ -122,6 +132,7 @@ export function InvestmentChatComposer({
   const modelTriggerRef = useRef<HTMLButtonElement | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const requestVersionRef = useRef(0);
   const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({
     position: 'fixed',
     left: 0,
@@ -149,7 +160,11 @@ export function InvestmentChatComposer({
   );
 
   const followUps = useMemo(
-    () => [...messages].reverse().find((item) => item.role === 'assistant' && item.followUpPrompts?.length)?.followUpPrompts || [],
+    () =>
+      [...messages]
+        .reverse()
+        .find((item) => item.role === 'assistant' && item.followUpPrompts?.length)
+        ?.followUpPrompts || [],
     [messages]
   );
 
@@ -160,7 +175,10 @@ export function InvestmentChatComposer({
     const rect = trigger.getBoundingClientRect();
     const dropdownWidth = Math.min(320, window.innerWidth - 24);
     const dropdownHeight = dropdownRef.current?.offsetHeight || 260;
-    const left = Math.min(Math.max(12, rect.left), Math.max(12, window.innerWidth - dropdownWidth - 12));
+    const left = Math.min(
+      Math.max(12, rect.left),
+      Math.max(12, window.innerWidth - dropdownWidth - 12)
+    );
     const openAbove = rect.top > dropdownHeight + 20;
     const top = openAbove
       ? Math.max(12, rect.top - dropdownHeight - 8)
@@ -208,6 +226,28 @@ export function InvestmentChatComposer({
     };
   }, [modelOpen, updateModelDropdownPosition]);
 
+  useEffect(() => {
+    if (clearContextVersion === 0) return;
+
+    requestVersionRef.current += 1;
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setLoading(false);
+    setError('');
+    setStreaming('');
+    setStreamingReasoning('');
+    setProgress('');
+  }, [clearContextVersion]);
+
+  useEffect(
+    () => () => {
+      requestVersionRef.current += 1;
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = null;
+    },
+    []
+  );
+
   const loadModels = useCallback(async () => {
     if (loadingModels) return;
     if (!baseUrl.trim() || !apiKey.trim()) return;
@@ -243,14 +283,24 @@ export function InvestmentChatComposer({
 
     const slots = MAX_INVESTMENT_AI_IMAGES - images.length;
     if (slots <= 0) {
-      setToast({ visible: true, message: `最多只能附加 ${MAX_INVESTMENT_AI_IMAGES} 张截图。`, variant: 'warning' });
+      setToast({
+        visible: true,
+        message: `最多只能附加 ${MAX_INVESTMENT_AI_IMAGES} 张截图。`,
+        variant: 'warning'
+      });
       return;
     }
 
     const accepted = files.slice(0, slots);
-    const oversized = accepted.find((file) => file.size > MAX_INVESTMENT_AI_IMAGE_SIZE_MB * 1024 * 1024);
+    const oversized = accepted.find(
+      (file) => file.size > MAX_INVESTMENT_AI_IMAGE_SIZE_MB * 1024 * 1024
+    );
     if (oversized) {
-      setToast({ visible: true, message: `单张图片不能超过 ${MAX_INVESTMENT_AI_IMAGE_SIZE_MB}MB。`, variant: 'warning' });
+      setToast({
+        visible: true,
+        message: `单张图片不能超过 ${MAX_INVESTMENT_AI_IMAGE_SIZE_MB}MB。`,
+        variant: 'warning'
+      });
       return;
     }
 
@@ -274,11 +324,13 @@ export function InvestmentChatComposer({
   }
 
   function stopRequest() {
+    requestVersionRef.current += 1;
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
     setLoading(false);
     setStreaming('');
     setStreamingReasoning('');
+    setProgress('');
   }
 
   const submitPrompt = async (prompt?: string) => {
@@ -292,9 +344,12 @@ export function InvestmentChatComposer({
     const requestImages = prompt ? [] : images;
     const requestText = cleanPrompt || '请基于这些基金或持仓截图做投资分析。';
     const abortController = new AbortController();
+    const requestVersion = requestVersionRef.current + 1;
+    requestVersionRef.current = requestVersion;
     abortControllerRef.current = abortController;
     setLoading(true);
     setError('');
+    setProgress('market');
     const userMessage: Message = createInvestmentAiMessage({
       id: `investment-user-${Date.now()}`,
       role: 'user',
@@ -314,7 +369,18 @@ export function InvestmentChatComposer({
     onPromptSubmitted?.(userMessage.id);
 
     try {
-      const webSearchPrompt = webEnabled ? buildWebSearchPrompt(await fetchWebSearchContext(cleanPrompt, webSearch)) : '';
+      const isCurrentRequest = () => requestVersion === requestVersionRef.current;
+      await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+      if (!isCurrentRequest()) return;
+      let webSearchPrompt = '';
+      if (webEnabled) {
+        setProgress('web');
+        webSearchPrompt = buildWebSearchPrompt(
+          await fetchWebSearchContext(cleanPrompt, webSearch, abortController.signal)
+        );
+      }
+      if (!isCurrentRequest()) return;
+      setProgress('thinking');
       const result = await sendAiChatStream(
         {
           baseUrl,
@@ -331,9 +397,18 @@ export function InvestmentChatComposer({
           signal: abortController.signal
         },
         {
-          onDelta: (delta) => setStreaming((prev) => prev + delta),
-          onReasoningDelta: (delta) => setStreamingReasoning((prev) => prev + delta),
+          onDelta: (delta) => {
+            if (!isCurrentRequest()) return;
+            setProgress('answering');
+            setStreaming((prev) => prev + delta);
+          },
+          onReasoningDelta: (delta) => {
+            if (!isCurrentRequest()) return;
+            setProgress('answering');
+            setStreamingReasoning((prev) => prev + delta);
+          },
           onDone: (content, reasoning) => {
+            if (!isCurrentRequest()) return;
             const analysis = extractInvestmentAnalysis(content).analysis;
             const answer = extractInvestmentAnalysis(content).displayText.trim() || content.trim();
             const assistantMessage: Message = createInvestmentAiMessage({
@@ -348,11 +423,16 @@ export function InvestmentChatComposer({
             setMessages(trimInvestmentAiMessages([...nextMessages, assistantMessage]));
             setStreaming('');
             setStreamingReasoning('');
+            setProgress('');
           }
         }
       );
+      if (!isCurrentRequest()) return;
       if (!result.content.trim()) {
-        const fallbackPrompts = buildInvestmentFollowUpFallback({ question: requestText, watchlist });
+        const fallbackPrompts = buildInvestmentFollowUpFallback({
+          question: requestText,
+          watchlist
+        });
         const fallback: Message = createInvestmentAiMessage({
           id: `investment-assistant-${Date.now()}`,
           role: 'assistant',
@@ -363,12 +443,16 @@ export function InvestmentChatComposer({
         setMessages(trimInvestmentAiMessages([...nextMessages, fallback]));
       }
     } catch (err) {
+      if (requestVersion !== requestVersionRef.current) return;
       if (err instanceof DOMException && err.name === 'AbortError') return;
       setError(err instanceof Error ? err.message : '投资分析失败');
       setToast({ visible: true, message: '投资分析失败', variant: 'error' });
     } finally {
-      abortControllerRef.current = null;
-      setLoading(false);
+      if (requestVersion === requestVersionRef.current) {
+        abortControllerRef.current = null;
+        setLoading(false);
+        setProgress('');
+      }
     }
   };
 
@@ -396,7 +480,9 @@ export function InvestmentChatComposer({
               </div>
             ))}
           </div>
-          <button type="button" onClick={() => setImages([])}>清空图片</button>
+          <button type="button" onClick={() => setImages([])}>
+            清空图片
+          </button>
         </div>
       ) : null}
 
@@ -406,6 +492,13 @@ export function InvestmentChatComposer({
             <img src={IMAGE_ICON_URL} alt="" aria-hidden="true" />
             投资资料与管理
           </Link>
+        </div>
+      ) : null}
+
+      {progress ? (
+        <div className="investments-ai-progress" role="status" aria-live="polite">
+          <span className="investments-ai-progress-indicator" aria-hidden="true" />
+          <span>{INVESTMENT_CHAT_PROGRESS_LABELS[progress]}</span>
         </div>
       ) : null}
 
@@ -464,7 +557,10 @@ export function InvestmentChatComposer({
               disabled={loading}
             />
             <div className="chat-input-toolbar investments-ai-input-toolbar">
-              <div className="chat-input-toolbar-left investments-ai-suggestion-row" aria-label="AI 联想提问">
+              <div
+                className="chat-input-toolbar-left investments-ai-suggestion-row"
+                aria-label="AI 联想提问"
+              >
                 <button
                   type="button"
                   className="chat-upload-btn investments-ai-upload-btn"
@@ -473,7 +569,12 @@ export function InvestmentChatComposer({
                   title={`支持上传或粘贴最多 ${MAX_INVESTMENT_AI_IMAGES} 张截图`}
                   aria-label="上传基金截图"
                 >
-                  <img className="chat-upload-icon" src={IMAGE_ICON_URL} alt="" aria-hidden="true" />
+                  <img
+                    className="chat-upload-icon"
+                    src={IMAGE_ICON_URL}
+                    alt=""
+                    aria-hidden="true"
+                  />
                 </button>
                 <button
                   type="button"
@@ -483,7 +584,12 @@ export function InvestmentChatComposer({
                   aria-label={webEnabled ? '关闭联网核验' : '开启联网核验'}
                   title={webEnabled ? '已开启联网核验' : '开启联网核验'}
                 >
-                  <img className="chat-upload-icon" src={GLOBE_ICON_URL} alt="" aria-hidden="true" />
+                  <img
+                    className="chat-upload-icon"
+                    src={GLOBE_ICON_URL}
+                    alt=""
+                    aria-hidden="true"
+                  />
                 </button>
                 <button
                   type="button"
@@ -495,12 +601,17 @@ export function InvestmentChatComposer({
                 >
                   <img
                     className="chat-upload-icon"
-                    src={suggestionsCollapsed ? CHEVRONS_UP_DOWN_ICON_URL : CHEVRONS_DOWN_UP_ICON_URL}
+                    src={
+                      suggestionsCollapsed ? CHEVRONS_UP_DOWN_ICON_URL : CHEVRONS_DOWN_UP_ICON_URL
+                    }
                     alt=""
                     aria-hidden="true"
                   />
                 </button>
-                <div className="chat-model-selector chat-model-selector-inline investments-ai-model-selector" ref={modelSelectorRef}>
+                <div
+                  className="chat-model-selector chat-model-selector-inline investments-ai-model-selector"
+                  ref={modelSelectorRef}
+                >
                   <button
                     type="button"
                     className={`chat-model-trigger investments-ai-model-trigger ${modelOpen ? 'is-open' : ''}`}
@@ -518,40 +629,42 @@ export function InvestmentChatComposer({
                     ref={modelTriggerRef}
                   >
                     <span className="chat-model-trigger-icon">@</span>
-                    <span className="chat-model-inline-label">{getModelDisplayLabel(model || '选择模型')}</span>
+                    <span className="chat-model-inline-label">
+                      {getModelDisplayLabel(model || '选择模型')}
+                    </span>
                   </button>
 
-                  {modelOpen ? (
-                    createPortal(
-                      <div
-                        ref={dropdownRef}
-                        className="chat-model-dropdown investments-ai-model-dropdown"
-                        role="dialog"
-                        aria-label="模型列表"
-                        style={dropdownStyle}
-                      >
-                        <div className="chat-model-list">
-                          {loadingModels ? (
-                            <div className="chat-model-empty">正在加载模型列表...</div>
-                          ) : models.length === 0 ? (
-                            <div className="chat-model-empty">暂无可选模型</div>
-                          ) : (
-                            models.map((item) => (
-                              <button
-                                key={item}
-                                type="button"
-                                className={`chat-model-option ${item === model ? 'active' : ''}`}
-                                onClick={() => selectModel(item)}
-                              >
-                                {getModelDisplayLabel(item)}
-                              </button>
-                            ))
-                          )}
-                        </div>
-                      </div>,
-                      document.body
-                    )
-                  ) : null}
+                  {modelOpen
+                    ? createPortal(
+                        <div
+                          ref={dropdownRef}
+                          className="chat-model-dropdown investments-ai-model-dropdown"
+                          role="dialog"
+                          aria-label="模型列表"
+                          style={dropdownStyle}
+                        >
+                          <div className="chat-model-list">
+                            {loadingModels ? (
+                              <div className="chat-model-empty">正在加载模型列表...</div>
+                            ) : models.length === 0 ? (
+                              <div className="chat-model-empty">暂无可选模型</div>
+                            ) : (
+                              models.map((item) => (
+                                <button
+                                  key={item}
+                                  type="button"
+                                  className={`chat-model-option ${item === model ? 'active' : ''}`}
+                                  onClick={() => selectModel(item)}
+                                >
+                                  {getModelDisplayLabel(item)}
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </div>,
+                        document.body
+                      )
+                    : null}
                 </div>
                 {!suggestionsCollapsed && followUps.length > 0 ? (
                   <div className="investments-ai-suggestion-list">
@@ -577,7 +690,9 @@ export function InvestmentChatComposer({
                   title="停止生成"
                   aria-label="停止生成"
                 >
-                  <span className="chat-send-stop-icon" aria-hidden="true">■</span>
+                  <span className="chat-send-stop-icon" aria-hidden="true">
+                    ■
+                  </span>
                 </button>
               ) : (
                 <button
@@ -619,15 +734,50 @@ export function InvestmentChatPanel({
   contextNote = ''
 }: InvestmentChatPanelProps) {
   const messages = useAppPreferences((s) => s.investmentAiMessages);
+  const clearInvestmentAiMessages = useAppPreferences((s) => s.clearInvestmentAiMessages);
   const isCompact = !showHero;
   const messageRefs = useRef(new Map<string, HTMLElement>());
   const [pendingScrollMessageId, setPendingScrollMessageId] = useState<string | null>(null);
   const [activeTurnMessageId, setActiveTurnMessageId] = useState<string | null>(null);
+  const [selectedHistoryMessageId, setSelectedHistoryMessageId] = useState('');
+  const [clearContextVersion, setClearContextVersion] = useState(0);
+  const historyTurns = useMemo(() => messages.filter((item) => item.role === 'user'), [messages]);
+  const latestMessageId = messages[messages.length - 1]?.id || '';
+
+  const scrollToMessage = useCallback(
+    (messageId: string, block: ScrollLogicalPosition = 'start') => {
+      messageRefs.current.get(messageId)?.scrollIntoView?.({ behavior: 'smooth', block });
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (historyTurns.length === 0) {
+      setSelectedHistoryMessageId('');
+      return;
+    }
+
+    setSelectedHistoryMessageId((current) =>
+      historyTurns.some((item) => item.id === current)
+        ? current
+        : historyTurns[historyTurns.length - 1].id
+    );
+  }, [historyTurns]);
 
   const handlePromptSubmitted = useCallback((messageId: string) => {
     setActiveTurnMessageId(messageId);
     setPendingScrollMessageId(messageId);
   }, []);
+
+  const clearContext = useCallback(() => {
+    if (!window.confirm('确定清空本次投资聊天上下文吗？此操作不可恢复。')) return;
+    clearInvestmentAiMessages();
+    messageRefs.current.clear();
+    setActiveTurnMessageId(null);
+    setPendingScrollMessageId(null);
+    setSelectedHistoryMessageId('');
+    setClearContextVersion((current) => current + 1);
+  }, [clearInvestmentAiMessages]);
 
   useLayoutEffect(() => {
     if (!pendingScrollMessageId) return;
@@ -674,34 +824,79 @@ export function InvestmentChatPanel({
 
       {messages.length > 0 ? (
         <div className="chat-messages-area investments-ai-messages-area">
-          <div className="chat-messages-inner">
-          {messages.map((item) => (
-            <article
-              key={item.id}
-              ref={(element) => {
-                if (element) messageRefs.current.set(item.id, element);
-                else messageRefs.current.delete(item.id);
-              }}
-              className={`chat-msg ${item.role === 'user' ? 'chat-msg-user' : ''}`}
+          <div
+            className={`investments-ai-history-actions ${historyTurns.length > 2 ? '' : 'is-compact'}`}
+          >
+            {historyTurns.length > 2 ? (
+              <nav className="investments-ai-history-nav" aria-label="投资聊天记录导航">
+                <span>{historyTurns.length} 轮</span>
+                <select
+                  aria-label="跳转到历史提问"
+                  value={selectedHistoryMessageId}
+                  onChange={(event) => {
+                    const messageId = event.target.value;
+                    setSelectedHistoryMessageId(messageId);
+                    scrollToMessage(messageId);
+                  }}
+                >
+                  {historyTurns.map((item, index) => (
+                    <option key={item.id} value={item.id}>
+                      {getInvestmentChatHistoryLabel(item.text, index)}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => scrollToMessage(latestMessageId, 'end')}
+                  aria-label="回到最新消息"
+                  title="回到最新消息"
+                >
+                  最新
+                </button>
+              </nav>
+            ) : null}
+            <button
+              type="button"
+              className="investments-ai-clear-context"
+              onClick={clearContext}
+              aria-label="清空上下文"
+              title="清空上下文"
             >
-              <Avatar user={item.role === 'user'} />
-              <div className="chat-msg-body">
-                <div className="chat-msg-header">{item.role === 'user' ? '你' : '助手'}</div>
-                <div className="chat-msg-content chat-msg-content-rich">{renderMarkdownContent(item.text)}</div>
-                {item.attachmentImages?.length ? (
-                  <div className="investments-ai-message-attachments">
-                    {item.attachmentImages.map((url, index) => (
-                      <a key={`${item.id}-${index}`} href={url} target="_blank" rel="noreferrer">
-                        <img src={url} alt={`附带图片 ${index + 1}`} />
-                      </a>
-                    ))}
+              清空上下文
+            </button>
+          </div>
+          <div className="chat-messages-inner">
+            {messages.map((item) => (
+              <article
+                key={item.id}
+                ref={(element) => {
+                  if (element) messageRefs.current.set(item.id, element);
+                  else messageRefs.current.delete(item.id);
+                }}
+                className={`chat-msg ${item.role === 'user' ? 'chat-msg-user' : ''}`}
+              >
+                <Avatar user={item.role === 'user'} />
+                <div className="chat-msg-body">
+                  <div className="chat-msg-header">{item.role === 'user' ? '你' : '助手'}</div>
+                  <div className="chat-msg-content chat-msg-content-rich">
+                    {renderMarkdownContent(item.text)}
                   </div>
-                ) : item.attachmentCount ? (
-                  <p className="investments-ai-attachment-note">附带 {item.attachmentCount} 张图片</p>
-                ) : null}
-              </div>
-            </article>
-          ))}
+                  {item.attachmentImages?.length ? (
+                    <div className="investments-ai-message-attachments">
+                      {item.attachmentImages.map((url, index) => (
+                        <a key={`${item.id}-${index}`} href={url} target="_blank" rel="noreferrer">
+                          <img src={url} alt={`附带图片 ${index + 1}`} />
+                        </a>
+                      ))}
+                    </div>
+                  ) : item.attachmentCount ? (
+                    <p className="investments-ai-attachment-note">
+                      附带 {item.attachmentCount} 张图片
+                    </p>
+                  ) : null}
+                </div>
+              </article>
+            ))}
             <div aria-hidden="true" />
           </div>
         </div>
@@ -723,8 +918,14 @@ export function InvestmentChatPanel({
           defaultWebEnabled={defaultWebEnabled}
           contextNote={contextNote}
           onPromptSubmitted={handlePromptSubmitted}
+          clearContextVersion={clearContextVersion}
         />
       ) : null}
     </section>
   );
+}
+
+function getInvestmentChatHistoryLabel(text: string, index: number) {
+  const preview = text.replace(/\s+/g, ' ').trim().slice(0, 20);
+  return `第 ${index + 1} 轮${preview ? ` · ${preview}` : ''}`;
 }

@@ -130,7 +130,9 @@ describe('Investment assistant chat', () => {
       </MemoryRouter>
     );
 
-    const emptyIllustration = container.querySelector<HTMLImageElement>('.investments-ai-empty img');
+    const emptyIllustration = container.querySelector<HTMLImageElement>(
+      '.investments-ai-empty img'
+    );
 
     expect(screen.getByText('先丢一个基金问题给我')).toBeInTheDocument();
     expect(emptyIllustration?.src).toBe(INVESTMENT_HERO_ILLUSTRATION_URL);
@@ -197,13 +199,104 @@ describe('Investment assistant chat', () => {
     Element.prototype.scrollIntoView = originalScrollIntoView;
   });
 
+  it('provides direct navigation for long investment chat histories', () => {
+    useAppPreferences.setState({
+      investmentAiMessages: [
+        { id: 'user-1', role: 'user', text: '第一轮问题', createdAt: '2026-07-16T09:00:00.000Z' },
+        {
+          id: 'assistant-1',
+          role: 'assistant',
+          text: '第一轮回复',
+          createdAt: '2026-07-16T09:01:00.000Z'
+        },
+        { id: 'user-2', role: 'user', text: '第二轮问题', createdAt: '2026-07-16T09:02:00.000Z' },
+        {
+          id: 'assistant-2',
+          role: 'assistant',
+          text: '第二轮回复',
+          createdAt: '2026-07-16T09:03:00.000Z'
+        },
+        { id: 'user-3', role: 'user', text: '第三轮问题', createdAt: '2026-07-16T09:04:00.000Z' },
+        {
+          id: 'assistant-3',
+          role: 'assistant',
+          text: '第三轮回复',
+          createdAt: '2026-07-16T09:05:00.000Z'
+        }
+      ]
+    });
+    const scrollIntoView = vi.fn();
+    const originalScrollIntoView = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollIntoView;
+
+    render(
+      <MemoryRouter>
+        <InvestmentChatPanel showHero={false} />
+      </MemoryRouter>
+    );
+
+    const historySelect = screen.getByLabelText('跳转到历史提问');
+    expect(historySelect).toHaveValue('user-3');
+    fireEvent.change(historySelect, { target: { value: 'user-1' } });
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+
+    fireEvent.click(screen.getByRole('button', { name: '回到最新消息' }));
+    expect(scrollIntoView).toHaveBeenLastCalledWith({ behavior: 'smooth', block: 'end' });
+
+    Element.prototype.scrollIntoView = originalScrollIntoView;
+  });
+
+  it('clears persisted investment chat context from the message area', () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    useAppPreferences.setState({
+      investmentAiMessages: [
+        { id: 'user-1', role: 'user', text: '第一轮问题', createdAt: '2026-07-16T09:00:00.000Z' },
+        {
+          id: 'assistant-1',
+          role: 'assistant',
+          text: '第一轮回答',
+          createdAt: '2026-07-16T09:01:00.000Z'
+        }
+      ]
+    });
+
+    render(
+      <MemoryRouter>
+        <InvestmentChatPanel showHero={false} />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '清空上下文' }));
+
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(useAppPreferences.getState().investmentAiMessages).toEqual([]);
+    expect(screen.queryByText('第一轮问题')).not.toBeInTheDocument();
+    confirmSpy.mockRestore();
+  });
+
+  it('shows a progress stage while the investment answer is being generated', async () => {
+    sendAiChatStreamMock.mockReturnValue(new Promise(() => undefined));
+
+    render(
+      <MemoryRouter>
+        <InvestmentChatPanel />
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByLabelText('基金分析输入框'), {
+      target: { value: '分析当前市场风格' }
+    });
+    fireEvent.click(screen.getByRole('button', { name: '开始分析' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('正在思考投资结论')
+    );
+  });
+
   it('can stop a streaming investment analysis request', async () => {
     let abortSignal: AbortSignal | null = null;
     sendAiChatStreamMock.mockImplementation(
-      async (
-        input: { signal?: AbortSignal },
-        handlers: { onDelta: (delta: string) => void }
-      ) => {
+      async (input: { signal?: AbortSignal }, handlers: { onDelta: (delta: string) => void }) => {
         abortSignal = input.signal ?? null;
         return new Promise((_, reject) => {
           input.signal?.addEventListener('abort', () =>
@@ -226,7 +319,7 @@ describe('Investment assistant chat', () => {
     fireEvent.click(screen.getByRole('button', { name: '开始分析' }));
 
     expect(await screen.findByRole('button', { name: '停止生成' })).toBeInTheDocument();
-    expect(abortSignal).not.toBeNull();
+    await waitFor(() => expect(abortSignal).not.toBeNull());
 
     fireEvent.click(screen.getByRole('button', { name: '停止生成' }));
     await waitFor(() => {

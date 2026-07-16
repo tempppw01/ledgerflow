@@ -15,14 +15,21 @@ import type {
   InvestmentWatchlistReviewItem
 } from '../../entities/investment/types';
 import { sendAiChatStream } from '../../features/assistant/api/openaiCompatibleClient';
-import { fetchWebSearchContext, buildWebSearchPrompt } from '../../features/assistant/api/webSearchClient';
+import {
+  fetchWebSearchContext,
+  buildWebSearchPrompt
+} from '../../features/assistant/api/webSearchClient';
 import { InvestmentChatPanel } from '../../features/assistant/investment-chat/InvestmentChatPanel';
 import { fetchEastmoneyFundSnapshot } from '../../features/investments/api/eastmoneyFundClient';
 import {
   EASTMONEY_MARKET_INDEXES,
   EASTMONEY_MARKET_NEWS_CATEGORIES,
+  EASTMONEY_MARKET_THEMES,
+  fetchEastmoneyMarketBoards,
   fetchEastmoneyMarketOverview,
   fetchEastmoneyMarketNews,
+  fetchEastmoneyMarketThemeBoards,
+  type EastmoneyMarketBoard,
   type EastmoneyMarketOverview,
   type EastmoneyMarketNewsItem,
   type EastmoneyMarketQuote,
@@ -61,7 +68,6 @@ const POSITION_CATEGORY_LABELS: Record<InvestmentCategory, string> = {
   gold: '黄金',
   other: '其他'
 };
-
 
 type WatchCategoryFilterId =
   | 'all'
@@ -267,6 +273,111 @@ function getMarketTone(value?: number | null) {
   return 'is-flat';
 }
 
+function formatCountdown(milliseconds: number) {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return [hours, minutes, seconds].map((value) => String(value).padStart(2, '0')).join(':');
+}
+
+type MarketSession = {
+  isOpen: boolean;
+  label: string;
+  detail: string;
+  countdown: string;
+};
+
+function getNextWeekday(date: Date) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + 1);
+  next.setHours(9, 30, 0, 0);
+  while (next.getDay() === 0 || next.getDay() === 6) {
+    next.setDate(next.getDate() + 1);
+  }
+  return next;
+}
+
+function getMarketSession(now = new Date()): MarketSession {
+  const day = now.getDay();
+  const minutes = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+  const morningOpen = new Date(now);
+  morningOpen.setHours(9, 30, 0, 0);
+  const lunchOpen = new Date(now);
+  lunchOpen.setHours(13, 0, 0, 0);
+  const close = new Date(now);
+  close.setHours(15, 0, 0, 0);
+
+  if (day === 0 || day === 6) {
+    const nextOpen = getNextWeekday(now);
+    return {
+      isOpen: false,
+      label: '周末休市',
+      detail: '下个交易日 09:30 开盘',
+      countdown: formatCountdown(nextOpen.getTime() - now.getTime())
+    };
+  }
+
+  if (minutes >= 570 && minutes < 690) {
+    return {
+      isOpen: true,
+      label: '交易中',
+      detail: '距收盘',
+      countdown: formatCountdown(close.getTime() - now.getTime())
+    };
+  }
+
+  if (minutes >= 780 && minutes < 900) {
+    return {
+      isOpen: true,
+      label: '交易中',
+      detail: '距收盘',
+      countdown: formatCountdown(close.getTime() - now.getTime())
+    };
+  }
+
+  if (minutes >= 690 && minutes < 780) {
+    return {
+      isOpen: false,
+      label: '午间休市',
+      detail: '距下午开盘',
+      countdown: formatCountdown(lunchOpen.getTime() - now.getTime())
+    };
+  }
+
+  const nextOpen = minutes < 570 ? morningOpen : getNextWeekday(now);
+  return {
+    isOpen: false,
+    label: minutes < 570 ? '未开盘' : '已收盘',
+    detail: minutes < 570 ? '距开盘' : '下个交易日开盘',
+    countdown: formatCountdown(nextOpen.getTime() - now.getTime())
+  };
+}
+
+function MarketSessionStatus() {
+  const [session, setSession] = useState(() => getMarketSession());
+
+  useEffect(() => {
+    const update = () => setSession(getMarketSession());
+    const timer = window.setInterval(update, 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return (
+    <div
+      className={`investments-market-session ${session.isOpen ? 'is-open' : 'is-closed'}`}
+      data-testid="market-session-status"
+    >
+      <span className="investments-market-session-dot" aria-hidden="true" />
+      <div>
+        <strong>{session.label}</strong>
+        <span>{session.detail}</span>
+      </div>
+      <b>{session.countdown}</b>
+    </div>
+  );
+}
+
 function buildMarketTrendGeometry(points: EastmoneyMarketTrendPoint[]) {
   const width = 560;
   const height = 176;
@@ -401,6 +512,7 @@ function MarketOverviewPanel({
           <p>{updatedAt ? `东方财富行情 · ${updatedAt}` : '东方财富行情'}</p>
         </div>
         <div className="investments-market-actions">
+          <MarketSessionStatus />
           <button type="button" onClick={onRefresh} disabled={status === 'loading'}>
             {status === 'loading' ? '刷新中' : '刷新'}
           </button>
@@ -582,6 +694,220 @@ function MarketOverviewPanel({
       </div>
 
       {error && status === 'error' ? <p className="investments-market-error">{error}</p> : null}
+    </section>
+  );
+}
+
+type MarketBoardView = 'theme' | 'industry';
+
+type MarketBreadth = {
+  up: number;
+  flat: number;
+  down: number;
+};
+
+function getMarketBreadth(boards: EastmoneyMarketBoard[]): MarketBreadth {
+  return boards.reduce(
+    (total, board) => ({
+      up: total.up + (board.upCount || 0),
+      flat: total.flat + (board.flatCount || 0),
+      down: total.down + (board.downCount || 0)
+    }),
+    { up: 0, flat: 0, down: 0 }
+  );
+}
+
+function MarketBreadthDonut({ breadth, label }: { breadth: MarketBreadth; label: string }) {
+  const total = breadth.up + breadth.flat + breadth.down;
+  const segments = [
+    { id: 'up', value: breadth.up, color: 'var(--color-danger)' },
+    { id: 'flat', value: breadth.flat, color: 'var(--color-text-tertiary)' },
+    { id: 'down', value: breadth.down, color: 'var(--color-success)' }
+  ];
+  let offset = 0;
+
+  return (
+    <div className="investments-market-breadth-chart" aria-label={`${label}涨跌分布`}>
+      <div className="investments-market-breadth-donut">
+        <svg viewBox="0 0 100 100" role="img" aria-label={`${label}涨平跌占比`}>
+          <circle className="investments-market-breadth-track" cx="50" cy="50" r="38" />
+          {total > 0
+            ? segments.map((segment) => {
+                const percentage = (segment.value / total) * 100;
+                const currentOffset = offset;
+                offset += percentage;
+                if (percentage <= 0) return null;
+                return (
+                  <circle
+                    key={segment.id}
+                    cx="50"
+                    cy="50"
+                    r="38"
+                    pathLength="100"
+                    stroke={segment.color}
+                    strokeDasharray={`${percentage} ${100 - percentage}`}
+                    strokeDashoffset={-currentOffset}
+                    transform="rotate(-90 50 50)"
+                  />
+                );
+              })
+            : null}
+        </svg>
+        <div>
+          <strong>{total || '--'}</strong>
+          <span>样本</span>
+        </div>
+      </div>
+      <div className="investments-market-breadth-legend">
+        <span className="is-up">
+          涨 <b>{breadth.up || '--'}</b>
+        </span>
+        <span>
+          平 <b>{breadth.flat || '--'}</b>
+        </span>
+        <span className="is-down">
+          跌 <b>{breadth.down || '--'}</b>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function MarketBoardsPanel({
+  themeBoards,
+  industryBoards,
+  view,
+  selectedThemeCode,
+  status,
+  error,
+  onSelectView,
+  onSelectTheme,
+  onRefresh
+}: {
+  themeBoards: EastmoneyMarketBoard[];
+  industryBoards: EastmoneyMarketBoard[];
+  view: MarketBoardView;
+  selectedThemeCode: string;
+  status: 'idle' | 'loading' | 'error';
+  error: string;
+  onSelectView: (view: MarketBoardView) => void;
+  onSelectTheme: (code: string) => void;
+  onRefresh: () => void;
+}) {
+  const selectedTheme =
+    themeBoards.find((item) => item.code === selectedThemeCode) || themeBoards[0] || null;
+  const industryLeader = industryBoards[0] || null;
+  const breadth = getMarketBreadth(
+    view === 'theme' ? (selectedTheme ? [selectedTheme] : []) : industryBoards
+  );
+
+  return (
+    <section
+      className={`panel investments-market-boards-panel ${status === 'loading' ? 'is-loading' : ''}`}
+      aria-label="行业和概念板块监控"
+    >
+      <div className="investments-market-news-head">
+        <div>
+          <h3>{view === 'theme' ? '热门题材' : '行业强弱'}</h3>
+          <p>{view === 'theme' ? '跟踪当前热门概念的涨跌结构' : '东方财富细分行业涨幅榜'}</p>
+        </div>
+        <button type="button" onClick={onRefresh} disabled={status === 'loading'}>
+          {status === 'loading' ? '刷新中' : '刷新'}
+        </button>
+      </div>
+
+      <div className="investments-market-board-tabs" role="tablist" aria-label="板块类型">
+        {(
+          [
+            ['theme', '热门题材'],
+            ['industry', '行业榜']
+          ] as const
+        ).map(([itemView, label]) => (
+          <button
+            key={itemView}
+            type="button"
+            role="tab"
+            aria-selected={view === itemView}
+            className={view === itemView ? 'is-active' : ''}
+            onClick={() => onSelectView(itemView)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {error && status === 'error' ? (
+        <p className="investments-market-news-error">{error}</p>
+      ) : null}
+
+      {view === 'theme' ? (
+        <>
+          <label className="investments-market-theme-select">
+            <span>跟踪题材</span>
+            <select
+              aria-label="选择热门题材"
+              value={selectedThemeCode}
+              onChange={(event) => onSelectTheme(event.target.value)}
+            >
+              {EASTMONEY_MARKET_THEMES.map((theme) => (
+                <option key={theme.code} value={theme.code}>
+                  {theme.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="investments-market-board-insight">
+            <MarketBreadthDonut breadth={breadth} label={selectedTheme?.name || '热门题材'} />
+            <div className="investments-market-board-headline">
+              <span>{selectedTheme?.name || '题材数据加载中'}</span>
+              <strong>{formatMarketIndexValue(selectedTheme?.value)}</strong>
+              <b className={getMarketTone(selectedTheme?.changePercent)}>
+                {formatMarketPercent(selectedTheme?.changePercent)}
+              </b>
+              <small>成交额 {formatMarketAmount(selectedTheme?.amount)}</small>
+            </div>
+          </div>
+        </>
+      ) : industryBoards.length === 0 && status !== 'loading' ? (
+        <div className="investments-market-news-empty">
+          <strong>暂无行业数据</strong>
+          <span>稍后刷新，或切换回热门题材。</span>
+        </div>
+      ) : (
+        <>
+          <div className="investments-market-board-insight">
+            <MarketBreadthDonut breadth={breadth} label="行业榜" />
+            <div className="investments-market-board-headline">
+              <span>{industryLeader?.name || '行业数据加载中'}</span>
+              <strong>{formatMarketIndexValue(industryLeader?.value)}</strong>
+              <b className={getMarketTone(industryLeader?.changePercent)}>
+                {formatMarketPercent(industryLeader?.changePercent)}
+              </b>
+              <small>领涨细分行业</small>
+            </div>
+          </div>
+          <div className="investments-market-board-list is-compact">
+            {industryBoards.slice(0, 3).map((board, index) => (
+              <article
+                className="investments-market-board-item"
+                key={board.code || `${board.name}-${index}`}
+              >
+                <div className="investments-market-board-name">
+                  <span>{String(index + 1).padStart(2, '0')}</span>
+                  <strong title={board.name}>{board.name}</strong>
+                </div>
+                <div
+                  className={`investments-market-board-change ${getMarketTone(board.changePercent)}`}
+                >
+                  <strong>{formatMarketPercent(board.changePercent)}</strong>
+                  <span>{formatMarketAmount(board.amount)}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        </>
+      )}
     </section>
   );
 }
@@ -817,6 +1143,16 @@ export function InvestmentsPage() {
   const [marketNews, setMarketNews] = useState<EastmoneyMarketNewsItem[]>([]);
   const [marketNewsStatus, setMarketNewsStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [marketNewsError, setMarketNewsError] = useState('');
+  const [marketBoardView, setMarketBoardView] = useState<MarketBoardView>('theme');
+  const [selectedMarketThemeCode, setSelectedMarketThemeCode] = useState(
+    EASTMONEY_MARKET_THEMES[0].code
+  );
+  const [marketThemeBoards, setMarketThemeBoards] = useState<EastmoneyMarketBoard[]>([]);
+  const [marketIndustryBoards, setMarketIndustryBoards] = useState<EastmoneyMarketBoard[]>([]);
+  const [marketBoardsStatus, setMarketBoardsStatus] = useState<'idle' | 'loading' | 'error'>(
+    'idle'
+  );
+  const [marketBoardsError, setMarketBoardsError] = useState('');
   const [analyzingWatchItemId, setAnalyzingWatchItemId] = useState<string | null>(null);
 
   const activePositions = useMemo(() => positions.filter((item) => item.isActive), [positions]);
@@ -902,8 +1238,6 @@ export function InvestmentsPage() {
   const investmentAssetRatio =
     estimatedNetAssets > 0 ? positionSummary.totalCurrentValue / estimatedNetAssets : 0;
 
-
-
   const watchCategoryCounts = useMemo<Record<WatchCategoryFilterId, number>>(() => {
     const counts: Record<WatchCategoryFilterId, number> = {
       all: investmentWatchlist.length,
@@ -932,23 +1266,50 @@ export function InvestmentsPage() {
   );
 
   const marketContextSummary = useMemo(() => {
-    const overviewSummary = marketOverview?.quotes
-      ?.slice(0, 4)
-      .map((quote) => {
-        const amount = formatMarketAmount(quote.amount);
-        const percent = formatMarketPercent(quote.changePercent);
-        const value = formatMarketIndexValue(quote.value);
-        return `${quote.name} ${value} ${percent} 成交额 ${amount}`;
-      })
-      .join('；');
+    const selectedTheme =
+      marketThemeBoards.find((item) => item.code === selectedMarketThemeCode) ||
+      marketThemeBoards[0] ||
+      null;
+    const toBoardContext = (board: EastmoneyMarketBoard) => ({
+      name: board.name,
+      code: board.code,
+      value: board.value,
+      changePercent: board.changePercent,
+      amount: board.amount,
+      upCount: board.upCount,
+      flatCount: board.flatCount,
+      downCount: board.downCount
+    });
 
-    const newsSummary = marketNews
-      .slice(0, 3)
-      .map((item) => `${formatMarketNewsTime(item.time)} ${item.title}`)
-      .join('；');
-
-    return [overviewSummary, newsSummary].filter(Boolean).join('\n');
-  }, [marketNews, marketOverview]);
+    return JSON.stringify(
+      {
+        source: '东方财富实时行情',
+        updatedAt: marketOverview?.updatedAt || new Date().toISOString(),
+        marketIndexes: (marketOverview?.quotes || []).slice(0, 4).map((quote) => ({
+          name: quote.name,
+          code: quote.code,
+          value: quote.value,
+          changePercent: quote.changePercent,
+          amount: quote.amount
+        })),
+        selectedHotTheme: selectedTheme ? toBoardContext(selectedTheme) : null,
+        hotThemes: marketThemeBoards.slice(0, 8).map(toBoardContext),
+        industryLeaders: marketIndustryBoards.slice(0, 5).map(toBoardContext),
+        marketNews: marketNews.slice(0, 3).map((item) => ({
+          time: formatMarketNewsTime(item.time),
+          title: item.title
+        }))
+      },
+      null,
+      2
+    );
+  }, [
+    marketIndustryBoards,
+    marketNews,
+    marketOverview,
+    marketThemeBoards,
+    selectedMarketThemeCode
+  ]);
 
   const hasInvestmentSummary =
     activePositions.length > 0 ||
@@ -1012,6 +1373,42 @@ export function InvestmentsPage() {
     };
   }, [selectedNewsCategoryId]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadMarketBoards() {
+      setMarketBoardsStatus('loading');
+      setMarketBoardsError('');
+
+      try {
+        const [themesResult, industriesResult] = await Promise.allSettled([
+          fetchEastmoneyMarketThemeBoards(),
+          fetchEastmoneyMarketBoards('industry')
+        ]);
+        if (cancelled) return;
+        if (themesResult.status === 'fulfilled') setMarketThemeBoards(themesResult.value);
+        if (industriesResult.status === 'fulfilled')
+          setMarketIndustryBoards(industriesResult.value);
+
+        if (themesResult.status === 'rejected' && industriesResult.status === 'rejected') {
+          throw new Error('板块行情加载失败，请稍后重试。');
+        }
+
+        setMarketBoardsStatus('idle');
+      } catch (error) {
+        if (cancelled) return;
+        const message = error instanceof Error ? error.message : '板块行情加载失败，请稍后重试。';
+        setMarketBoardsError(message);
+        setMarketBoardsStatus('error');
+      }
+    }
+
+    loadMarketBoards();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function setToastState(message: string, variant: ToastVariant = 'success') {
     setToast({ visible: true, message, variant });
@@ -1052,6 +1449,31 @@ export function InvestmentsPage() {
       const message = error instanceof Error ? error.message : '快讯加载失败，请稍后重试。';
       setMarketNewsError(message);
       setMarketNewsStatus('error');
+      setToastState(message, 'warning');
+    }
+  }
+
+  async function refreshMarketBoards() {
+    if (marketBoardsStatus === 'loading') return;
+
+    setMarketBoardsStatus('loading');
+    setMarketBoardsError('');
+
+    try {
+      const [themesResult, industriesResult] = await Promise.allSettled([
+        fetchEastmoneyMarketThemeBoards(),
+        fetchEastmoneyMarketBoards('industry')
+      ]);
+      if (themesResult.status === 'fulfilled') setMarketThemeBoards(themesResult.value);
+      if (industriesResult.status === 'fulfilled') setMarketIndustryBoards(industriesResult.value);
+      if (themesResult.status === 'rejected' && industriesResult.status === 'rejected') {
+        throw new Error('板块行情加载失败，请稍后重试。');
+      }
+      setMarketBoardsStatus('idle');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '板块行情加载失败，请稍后重试。';
+      setMarketBoardsError(message);
+      setMarketBoardsStatus('error');
       setToastState(message, 'warning');
     }
   }
@@ -1479,7 +1901,10 @@ export function InvestmentsPage() {
     <div className="page-stack investments-page investments-management-page">
       <section className="investments-management-grid">
         <aside className="investments-management-column investments-support-column">
-          <section className="investments-market-news-grid" aria-label="大盘和快讯">
+          <section
+            className="investments-market-news-grid investments-market-dashboard-grid"
+            aria-label="大盘和市场监控"
+          >
             <MarketOverviewPanel
               overview={marketOverview}
               selectedSecId={selectedMarketSecId}
@@ -1495,6 +1920,17 @@ export function InvestmentsPage() {
                 })
               }
             />
+            <MarketBoardsPanel
+              themeBoards={marketThemeBoards}
+              industryBoards={marketIndustryBoards}
+              view={marketBoardView}
+              selectedThemeCode={selectedMarketThemeCode}
+              status={marketBoardsStatus}
+              error={marketBoardsError}
+              onSelectView={setMarketBoardView}
+              onSelectTheme={setSelectedMarketThemeCode}
+              onRefresh={refreshMarketBoards}
+            />
             <MarketNewsPanel
               news={marketNews}
               selectedCategoryId={selectedNewsCategoryId}
@@ -1505,13 +1941,13 @@ export function InvestmentsPage() {
             />
           </section>
 
-          <section className="panel investments-hero investments-flat-section investments-support-summary-card">
-            <div className="investments-flat-head">
-              <div>{!hasInvestmentSummary ? <p>先添加基金代码或第一笔持仓。</p> : null}</div>
-              <span className="badge">{activePositions.length} 笔持仓</span>
-            </div>
+          {hasInvestmentSummary ? (
+            <section className="panel investments-hero investments-flat-section investments-support-summary-card">
+              <div className="investments-flat-head">
+                <div />
+                <span className="badge">{activePositions.length} 笔持仓</span>
+              </div>
 
-            {hasInvestmentSummary ? (
               <>
                 <div className="investments-flat-summary" aria-label="投资资产总览">
                   <article className="investments-flat-metric is-primary">
@@ -1546,24 +1982,8 @@ export function InvestmentsPage() {
                   </span>
                 </div>
               </>
-            ) : (
-              <div className="investments-watchlist-empty investments-summary-empty">
-                <strong>先录一笔，再看总览</strong>
-                <p>基金代码和持仓都能接进来，录入后这里才会展开成配置总览。</p>
-              </div>
-            )}
-
-            <div className="investments-flat-actions">
-              <button
-                type="button"
-                className="button-with-icon primary"
-                onClick={() => navigate('/investments/flow')}
-              >
-                <img src={INFO_ICON_URL} alt="" aria-hidden="true" />
-                投资风向
-              </button>
-            </div>
-          </section>
+            </section>
+          ) : null}
 
           <aside
             className="panel investments-watchlist-panel"
@@ -1600,11 +2020,12 @@ export function InvestmentsPage() {
                 </button>
                 <button
                   type="button"
-                  className="button-with-icon investments-watchlist-flow-btn"
+                  className="investments-watchlist-flow-btn"
                   onClick={() => navigate('/investments/flow')}
+                  aria-label="打开投资风向"
+                  title="打开投资风向"
                 >
                   <img src={INFO_ICON_URL} alt="" aria-hidden="true" />
-                  投资风向
                 </button>
               </div>
             </div>
@@ -1639,10 +2060,9 @@ export function InvestmentsPage() {
                   {fundLookupStatus === 'loading' ? '获取中' : '获取资料'}
                 </button>
               </div>
-              <p className={fundLookupError ? 'investments-fund-lookup-error' : ''}>
-                {fundLookupError ||
-                  '从东方财富读取净值、估算涨跌、费率和近期表现，添加到自选基金。'}
-              </p>
+              {fundLookupError ? (
+                <p className="investments-fund-lookup-error">{fundLookupError}</p>
+              ) : null}
             </form>
 
             {investmentWatchlist.length === 0 ? (
@@ -1653,29 +2073,31 @@ export function InvestmentsPage() {
             ) : (
               <>
                 <div className="investments-watchlist-tools">
-                  <div className="investments-watch-category-tabs" aria-label="自选基金分类">
-                    {WATCH_CATEGORY_FILTERS.map((category) => {
-                      const count = watchCategoryCounts[category.id];
-                      const isActive = selectedWatchCategoryId === category.id;
+                  <label className="investments-watch-category-select">
+                    <span>分类</span>
+                    <select
+                      aria-label="自选基金分类"
+                      value={selectedWatchCategoryId}
+                      onChange={(event) =>
+                        setSelectedWatchCategoryId(event.target.value as WatchCategoryFilterId)
+                      }
+                    >
+                      {WATCH_CATEGORY_FILTERS.map((category) => {
+                        const count = watchCategoryCounts[category.id];
 
-                      return (
-                        <button
-                          key={category.id}
-                          type="button"
-                          className={isActive ? 'is-active' : ''}
-                          onClick={() => setSelectedWatchCategoryId(category.id)}
-                          disabled={count === 0 && category.id !== 'all'}
-                          aria-pressed={isActive}
-                        >
-                          <span>{category.mark}</span>
-                          <strong>{category.label}</strong>
-                          <em>{count}</em>
-                        </button>
-                      );
-                    })}
-                  </div>
+                        return (
+                          <option
+                            key={category.id}
+                            disabled={count === 0 && category.id !== 'all'}
+                            value={category.id}
+                          >
+                            {category.label} {count}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </label>
                   <div className="investments-watch-grid-controls" aria-label="每行卡片数量">
-                    <span>每行</span>
                     {WATCH_GRID_COLUMN_OPTIONS.map((count) => (
                       <button
                         key={count}
@@ -2046,23 +2468,24 @@ export function InvestmentsPage() {
             )}
           </aside>
 
-            <section className="panel investments-quick-chat-panel" data-investment-support-title="快捷问答">
-              <div className="investments-section-head investments-quick-chat-head">
-                <div>
-                  <h3>快捷问答</h3>
-                </div>
-                <span className="badge">联网</span>
+          <section
+            className="panel investments-quick-chat-panel"
+            data-investment-support-title="快捷问答"
+          >
+            <div className="investments-section-head investments-quick-chat-head">
+              <div>
+                <h3>快捷问答</h3>
               </div>
-              <InvestmentChatPanel
-                showHero={false}
-                defaultWebEnabled
-                contextNote={marketContextSummary}
-              />
-            </section>
+              <span className="badge">联网</span>
+            </div>
+            <InvestmentChatPanel
+              showHero={false}
+              defaultWebEnabled
+              contextNote={marketContextSummary}
+            />
+          </section>
         </aside>
       </section>
-
-
 
       <Toast
         visible={toast.visible}
@@ -2070,7 +2493,6 @@ export function InvestmentsPage() {
         variant={toast.variant}
         onClose={() => setToast((prev) => ({ ...prev, visible: false }))}
       />
-
     </div>
   );
 }
