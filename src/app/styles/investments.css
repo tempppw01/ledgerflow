@@ -1896,24 +1896,25 @@
 
 .investment-ai-message-details {
   display: grid;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 4px;
+  margin-top: 6px;
 }
 
 .investment-ai-message-detail.chat-reasoning-collapse {
   margin: 0;
   border-style: solid;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--color-bg-subtle) 82%, var(--color-bg-elevated));
+  border-color: color-mix(in srgb, var(--color-border-light) 64%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 66%, var(--color-bg-elevated));
 }
 
 .investment-ai-message-detail.chat-reasoning-collapse summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  min-height: 48px;
-  padding: 7px 10px;
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 8px;
   color: var(--color-text-secondary);
   list-style: none;
 }
@@ -1926,24 +1927,24 @@
   display: inline-flex;
   min-width: 0;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .investment-ai-message-detail-icon {
   display: inline-flex;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   border: 1px solid color-mix(in srgb, var(--color-primary) 22%, var(--color-border-light));
-  border-radius: 7px;
+  border-radius: 6px;
   background: color-mix(in srgb, var(--color-primary-bg) 68%, var(--color-bg-elevated));
 }
 
 .investment-ai-message-detail-icon img {
-  width: 15px;
-  height: 15px;
+  width: 13px;
+  height: 13px;
 }
 
 .investment-ai-message-detail-copy {
@@ -1954,7 +1955,7 @@
 
 .investment-ai-message-detail-copy strong {
   color: var(--color-text-secondary);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 750;
   line-height: 1.25;
 }
@@ -1962,17 +1963,17 @@
 .investment-ai-message-detail-copy small {
   overflow: hidden;
   color: var(--color-text-tertiary);
-  font-size: 10px;
+  font-size: 9px;
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .investment-ai-message-detail-chevron {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   flex: 0 0 auto;
-  margin-right: 3px;
+  margin-right: 2px;
   border-right: 1.5px solid var(--color-text-tertiary);
   border-bottom: 1.5px solid var(--color-text-tertiary);
   transform: rotate(45deg) translateY(-2px);
@@ -1985,16 +1986,16 @@
 
 .investment-ai-message-detail.chat-reasoning-collapse pre {
   margin: 0;
-  padding: 8px 10px 10px 44px;
+  padding: 7px 8px 8px 36px;
   border-top: 1px solid color-mix(in srgb, var(--color-border-light) 78%, transparent);
   background: color-mix(in srgb, var(--color-bg-elevated) 82%, var(--color-bg-subtle));
   color: var(--color-text-secondary);
-  font-size: 11px;
+  font-size: 10px;
   line-height: 1.5;
 }
 
 .investment-ai-message-detail.is-web {
-  border-color: color-mix(in srgb, #2b8a8a 34%, var(--color-border-light));
+  border-color: color-mix(in srgb, #2b8a8a 22%, var(--color-border-light));
 }
 
 .investment-ai-message-detail.is-web .investment-ai-message-detail-icon {
@@ -2003,7 +2004,7 @@
 }
 
 .investment-ai-message-detail.is-news {
-  border-color: color-mix(in srgb, #4f8c4f 32%, var(--color-border-light));
+  border-color: color-mix(in srgb, #4f8c4f 20%, var(--color-border-light));
 }
 
 .investment-ai-message-detail.is-news .investment-ai-message-detail-icon {
