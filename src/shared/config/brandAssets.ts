@@ -121,6 +121,9 @@ export const ARCHIVE_ICON_URL =
 export const TRASH_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/trash.svg';
 
+export const TRASH_2_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/trash-2.svg';
+
 export const THUMBS_DOWN_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/thumbs-down.svg';
 

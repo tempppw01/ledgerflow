@@ -29,6 +29,7 @@ import {
   QUESTION_ICON_URL,
   SCALE_ICON_URL,
   SETTINGS_ICON_URL,
+  TRASH_2_ICON_URL,
   TRASH_ICON_URL,
   WALLET_CARDS_ICON_URL
 } from '../../shared/config/brandAssets';
@@ -88,6 +89,14 @@ export function AppLayout() {
   const [assistantWorkspaceTitle, setAssistantWorkspaceTitle] = useState(() =>
     getAssistantModeLabel(readAssistantModeFromSessionStorage(), t)
   );
+  const recycleBinItemCount = useFinanceStore(
+    (state) =>
+      state.trashedTransactions.length +
+      state.trashedCategories.length +
+      state.trashedAccounts.length +
+      state.trashedSubscriptions.length
+  );
+  const recycleBinIconUrl = recycleBinItemCount > 0 ? TRASH_2_ICON_URL : TRASH_ICON_URL;
 
   const navSections: Array<{ title: string; items: NavItem[] }> = useMemo(
     () => [
@@ -158,7 +167,7 @@ export function AppLayout() {
             icon: '🗄️',
             iconSrc: DATABASE_ICON_URL
           },
-          { to: '/recycle-bin', label: '回收站', icon: '🗑️', iconSrc: TRASH_ICON_URL },
+          { to: '/recycle-bin', label: '回收站', icon: '🗑️', iconSrc: recycleBinIconUrl },
           {
             to: '/exchange',
             label: tFallback('nav.exchange', '汇率工具'),
@@ -186,7 +195,7 @@ export function AppLayout() {
         ]
       }
     ],
-    [t]
+    [recycleBinIconUrl, t]
   );
 
   const mobileQuickGroups: Array<{ title: string; items: QuickEntry[] }> = useMemo(
@@ -266,7 +275,7 @@ export function AppLayout() {
             iconSrc: DATABASE_ICON_URL,
             to: '/database-settings'
           },
-          { label: '回收站', icon: '🗑️', iconSrc: TRASH_ICON_URL, to: '/recycle-bin' },
+          { label: '回收站', icon: '🗑️', iconSrc: recycleBinIconUrl, to: '/recycle-bin' },
           {
             label: tFallback('nav.about', '关于'),
             icon: 'ℹ️',
@@ -276,7 +285,7 @@ export function AppLayout() {
         ]
       }
     ],
-    [t]
+    [recycleBinIconUrl, t]
   );
 
   const currentWorkspaceTitle = useMemo(() => {
