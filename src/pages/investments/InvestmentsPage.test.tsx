@@ -389,6 +389,37 @@ describe('InvestmentsPage', () => {
     });
   });
 
+  it('可以在自选基金卡片内录入持有份额并持久化', async () => {
+    useAppPreferences.getState().setInvestmentWatchlist([
+      {
+        id: 'watch-holding',
+        name: '持有份额测试基金',
+        code: '000004',
+        platform: '东方财富',
+        tags: ['指数'],
+        createdAt: '2026-07-01T00:00:00.000Z',
+        updatedAt: '2026-07-01T00:00:00.000Z'
+      }
+    ]);
+
+    render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: '待获取' }));
+    const input = screen.getByLabelText('持有份额测试基金持有份额');
+    await userEvent.type(input, '1234.56{Enter}');
+
+    await waitFor(() => {
+      expect(useAppPreferences.getState().investmentWatchlist[0]).toMatchObject({
+        holdingShares: 1234.56
+      });
+    });
+    expect(screen.getByRole('button', { name: '1234.56 份' })).toBeInTheDocument();
+  });
+
   it('负收益历史业绩柱从零轴向下延伸', async () => {
     useAppPreferences.getState().setInvestmentWatchlist([
       {

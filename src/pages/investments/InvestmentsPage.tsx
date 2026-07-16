@@ -1403,6 +1403,8 @@ export function InvestmentsPage() {
   const [watchGridColumns, setWatchGridColumns] = useState<WatchGridColumnCount>(3);
   const [refreshingWatchItemId, setRefreshingWatchItemId] = useState<string | null>(null);
   const [refreshingAllWatchItems, setRefreshingAllWatchItems] = useState(false);
+  const [editingWatchHoldingId, setEditingWatchHoldingId] = useState<string | null>(null);
+  const [editingWatchHoldingValue, setEditingWatchHoldingValue] = useState('');
   const [toast, setToast] = useState<{ visible: boolean; message: string; variant: ToastVariant }>({
     visible: false,
     message: '',
@@ -1771,16 +1773,18 @@ export function InvestmentsPage() {
     toggleWatchItemDetails(itemId);
   }
 
-  function handleSetWatchItemHoldingShares(item: InvestmentWatchItem) {
-    const currentValue =
-      typeof item.holdingShares === 'number' && item.holdingShares > 0
+  function handleStartEditingWatchHoldingShares(item: InvestmentWatchItem) {
+    setEditingWatchHoldingId(item.id);
+    setEditingWatchHoldingValue(
+      typeof item.holdingShares === 'number' && Number.isFinite(item.holdingShares)
         ? String(item.holdingShares)
-        : '';
-    const nextValue = window.prompt(`请输入 ${item.name} 的持有份额`, currentValue);
-    if (nextValue === null) return;
+        : ''
+    );
+  }
 
-    const cleaned = nextValue.trim();
-    const shares = cleaned ? Number(cleaned.replace(/[^\d.-]/g, '')) : undefined;
+  function handleCommitWatchHoldingShares(item: InvestmentWatchItem) {
+    const cleaned = editingWatchHoldingValue.trim();
+    const shares = cleaned ? Number(cleaned.replace(/[，,\s]/g, '')) : undefined;
     if (cleaned && (!Number.isFinite(shares as number) || (shares as number) < 0)) {
       setToastState('请输入有效的持有份额。', 'warning');
       return;
@@ -1791,11 +1795,18 @@ export function InvestmentsPage() {
       holdingShares: shares === undefined ? undefined : Number((shares as number).toFixed(2)),
       updatedAt: new Date().toISOString()
     });
+    setEditingWatchHoldingId(null);
+    setEditingWatchHoldingValue('');
     setToastState(
       shares === undefined
         ? `已清空“${item.name}”的持有份额。`
         : `已更新“${item.name}”持有 ${formatHoldingShares(shares)}。`
     );
+  }
+
+  function handleCancelEditingWatchHoldingShares() {
+    setEditingWatchHoldingId(null);
+    setEditingWatchHoldingValue('');
   }
 
   function handleFollowWatchItem(item: InvestmentWatchItem) {
@@ -2416,24 +2427,44 @@ export function InvestmentsPage() {
                             </span>
                             <span>
                               <em>持有</em>
-                              <button
-                                type="button"
-                                className={`investments-watch-holding-btn ${
-                                  item.holdingShares ? 'has-value' : 'is-empty'
-                                }`}
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  handleSetWatchItemHoldingShares(item);
-                                }}
-                                onContextMenu={(event) => {
-                                  event.preventDefault();
-                                  event.stopPropagation();
-                                  handleSetWatchItemHoldingShares(item);
-                                }}
-                                title="右键或点击设置持有份额"
-                              >
-                                {formatHoldingShares(item.holdingShares) || '待获取'}
-                              </button>
+                              {editingWatchHoldingId === item.id ? (
+                                <input
+                                  autoFocus
+                                  aria-label={`${item.name}持有份额`}
+                                  className="investments-watch-holding-input"
+                                  inputMode="decimal"
+                                  onChange={(event) => setEditingWatchHoldingValue(event.target.value)}
+                                  onClick={(event) => event.stopPropagation()}
+                                  onKeyDown={(event) => {
+                                    event.stopPropagation();
+                                    if (event.key === 'Enter') {
+                                      event.preventDefault();
+                                      handleCommitWatchHoldingShares(item);
+                                    }
+                                    if (event.key === 'Escape') {
+                                      event.preventDefault();
+                                      handleCancelEditingWatchHoldingShares();
+                                    }
+                                  }}
+                                  placeholder="份额"
+                                  type="text"
+                                  value={editingWatchHoldingValue}
+                                />
+                              ) : (
+                                <button
+                                  type="button"
+                                  className={`investments-watch-holding-btn ${
+                                    item.holdingShares ? 'has-value' : 'is-empty'
+                                  }`}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleStartEditingWatchHoldingShares(item);
+                                  }}
+                                  title="点击输入持有份额"
+                                >
+                                  {formatHoldingShares(item.holdingShares) || '待获取'}
+                                </button>
+                              )}
                             </span>
                           </div>
                           <div className="investments-watch-card-split-grid">
