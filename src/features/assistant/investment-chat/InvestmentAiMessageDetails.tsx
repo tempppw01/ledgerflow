@@ -1,3 +1,9 @@
+import {
+  BRAIN_ICON_URL,
+  GLOBE_ICON_URL,
+  INFO_ICON_URL
+} from '../../../shared/config/brandAssets';
+
 type InvestmentAiMessageDetailsProps = {
   reasoning?: string;
   webTrace?: string;
@@ -6,14 +12,31 @@ type InvestmentAiMessageDetailsProps = {
 
 function DetailBlock({
   title,
+  description,
+  iconSrc,
+  variant,
   content
 }: {
   title: string;
+  description: string;
+  iconSrc: string;
+  variant: 'reasoning' | 'web' | 'news';
   content: string;
 }) {
   return (
-    <details className="chat-reasoning-collapse investment-ai-message-detail">
-      <summary>{title}</summary>
+    <details className={`chat-reasoning-collapse investment-ai-message-detail is-${variant}`}>
+      <summary>
+        <span className="investment-ai-message-detail-leading">
+          <span className="investment-ai-message-detail-icon" aria-hidden="true">
+            <img src={iconSrc} alt="" />
+          </span>
+          <span className="investment-ai-message-detail-copy">
+            <strong>{title}</strong>
+            <small>{description}</small>
+          </span>
+        </span>
+        <span className="investment-ai-message-detail-chevron" aria-hidden="true" />
+      </summary>
       <pre>{content}</pre>
     </details>
   );
@@ -34,10 +57,32 @@ export function InvestmentAiMessageDetails({
 
   return (
     <div className="investment-ai-message-details">
-      {hasReasoning ? <DetailBlock title="思考过程（点击展开）" content={reasoning!.trim()} /> : null}
-      {hasWebTrace ? <DetailBlock title="联网过程（点击展开）" content={webTrace!.trim()} /> : null}
+      {hasReasoning ? (
+        <DetailBlock
+          title="思考过程"
+          description="模型推理摘要"
+          iconSrc={BRAIN_ICON_URL}
+          variant="reasoning"
+          content={reasoning!.trim()}
+        />
+      ) : null}
+      {hasWebTrace ? (
+        <DetailBlock
+          title="联网过程"
+          description="检索与核验状态"
+          iconSrc={GLOBE_ICON_URL}
+          variant="web"
+          content={webTrace!.trim()}
+        />
+      ) : null}
       {hasAuxiliaryInfo ? (
-        <DetailBlock title="相关资讯数据（点击展开）" content={auxiliaryInfo!.trim()} />
+        <DetailBlock
+          title="相关资讯数据"
+          description="新闻、政策与市场上下文"
+          iconSrc={INFO_ICON_URL}
+          variant="news"
+          content={auxiliaryInfo!.trim()}
+        />
       ) : null}
     </div>
   );

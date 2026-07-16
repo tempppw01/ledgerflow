@@ -167,9 +167,12 @@ describe('Investment assistant chat', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('思考过程（点击展开）')).toBeInTheDocument();
-    expect(screen.getByText('联网过程（点击展开）')).toBeInTheDocument();
-    expect(screen.getByText('相关资讯数据（点击展开）')).toBeInTheDocument();
+    expect(screen.getByText('思考过程')).toBeInTheDocument();
+    expect(screen.getByText('联网过程')).toBeInTheDocument();
+    expect(screen.getByText('相关资讯数据')).toBeInTheDocument();
+    expect(screen.getByText('模型推理摘要')).toBeInTheDocument();
+    expect(screen.getByText('检索与核验状态')).toBeInTheDocument();
+    expect(screen.getByText('新闻、政策与市场上下文')).toBeInTheDocument();
   });
 
   it('shows an illustration before the first investment chat message', () => {
