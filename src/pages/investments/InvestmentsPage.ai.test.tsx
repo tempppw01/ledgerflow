@@ -4,7 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Account } from '../../entities/account/types';
 import type { TransactionItem } from '../../entities/transaction/types';
 import { InvestmentChatPanel } from '../../features/assistant/investment-chat/InvestmentChatPanel';
-import { INVESTMENT_HERO_ILLUSTRATION_URL } from '../../shared/config/brandAssets';
+import {
+  GLOBE_ICON_URL,
+  GLOBE_OFF_ICON_URL,
+  INVESTMENT_HERO_ILLUSTRATION_URL
+} from '../../shared/config/brandAssets';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { InvestmentsPage } from './InvestmentsPage';
@@ -144,6 +148,23 @@ describe('Investment assistant chat', () => {
     await waitFor(() => expect(sendAiChatStreamMock).toHaveBeenCalled());
     const request = sendAiChatStreamMock.mock.calls[0]?.[0] as { systemPrompt?: string };
     expect(request.systemPrompt).toContain('当前中国标准时间：2026-07-16 09:30:00（来源：测试）');
+  });
+
+  it('shows the web status icon for the current network verification state', () => {
+    render(
+      <MemoryRouter>
+        <InvestmentChatPanel />
+      </MemoryRouter>
+    );
+
+    const webButton = screen.getByRole('button', { name: '开启联网核验' });
+    expect(webButton.querySelector('img')).toHaveAttribute('src', GLOBE_OFF_ICON_URL);
+
+    fireEvent.click(webButton);
+    expect(screen.getByRole('button', { name: '关闭联网核验' }).querySelector('img')).toHaveAttribute(
+      'src',
+      GLOBE_ICON_URL
+    );
   });
 
   it('collapses reasoning and auxiliary investment details in assistant messages', () => {

@@ -31,6 +31,7 @@ import {
   CHEVRONS_DOWN_UP_ICON_URL,
   CHEVRONS_UP_DOWN_ICON_URL,
   GLOBE_ICON_URL,
+  GLOBE_OFF_ICON_URL,
   IMAGE_ICON_URL,
   INVESTMENT_HERO_ILLUSTRATION_URL,
   USER_ICON_URL
@@ -611,7 +612,7 @@ export function InvestmentChatComposer({
                 >
                   <img
                     className="chat-upload-icon"
-                    src={GLOBE_ICON_URL}
+                    src={webEnabled ? GLOBE_ICON_URL : GLOBE_OFF_ICON_URL}
                     alt=""
                     aria-hidden="true"
                   />
