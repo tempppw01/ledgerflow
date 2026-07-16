@@ -14,6 +14,7 @@ import { Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import {
   buildInvestmentAssistantPrompt,
+  buildInvestmentAssistantAuxiliaryInfo,
   buildInvestmentFollowUpFallback,
   createInvestmentAiMessage,
   extractInvestmentAnalysis,
@@ -38,6 +39,8 @@ import { useAppPreferences } from '../../../shared/store/useAppPreferences';
 import { useFinanceStore } from '../../../shared/store/useFinanceStore';
 import { Toast } from '../../../shared/ui/Toast';
 import type { ToastVariant } from '../../../shared/ui/Toast';
+import { buildTimeContext } from '../workbench/workbenchUtils';
+import { InvestmentAiMessageDetails } from './InvestmentAiMessageDetails';
 
 type Message = ReturnType<typeof createInvestmentAiMessage>;
 type InvestmentChatProgress = 'market' | 'web' | 'thinking' | 'answering' | '';
@@ -381,14 +384,22 @@ export function InvestmentChatComposer({
       }
       if (!isCurrentRequest()) return;
       setProgress('thinking');
+      const timeContext = await buildTimeContext();
+      const auxiliaryInfo = buildInvestmentAssistantAuxiliaryInfo({
+        webEnabled,
+        webQuery: cleanPrompt || requestText,
+        timeContext,
+        contextNote,
+        webSearchPrompt
+      });
       const result = await sendAiChatStream(
         {
           baseUrl,
           apiKey,
           model,
           systemPrompt: webEnabled
-            ? `${assistantPrompt}\n\n联网模式：用户已开启联网核验。请优先使用以下联网检索上下文核验基金净值、费率、持仓、基金公司和近期表现等最新信息。\n\n${webSearchPrompt}`
-            : assistantPrompt,
+            ? `${timeContext}\n\n${assistantPrompt}\n\n联网模式：用户已开启联网核验。请优先使用以下联网检索上下文核验基金净值、费率、持仓、基金公司和近期表现等最新信息。\n\n${webSearchPrompt}`
+            : `${timeContext}\n\n${assistantPrompt}`,
           messages: nextMessages.map((item) => ({
             role: item.role,
             text: item.text,
@@ -417,6 +428,8 @@ export function InvestmentChatComposer({
               text: answer || '已完成分析。',
               createdAt: new Date().toISOString(),
               reasoning,
+              webTrace: auxiliaryInfo.webTrace,
+              auxiliaryInfo: auxiliaryInfo.relatedData,
               followUpPrompts: parseInvestmentFollowUpPrompts(content),
               analysis
             });
@@ -881,6 +894,13 @@ export function InvestmentChatPanel({
                   <div className="chat-msg-content chat-msg-content-rich">
                     {renderMarkdownContent(item.text)}
                   </div>
+                  {item.role === 'assistant' ? (
+                    <InvestmentAiMessageDetails
+                      reasoning={item.reasoning}
+                      webTrace={item.webTrace}
+                      auxiliaryInfo={item.auxiliaryInfo}
+                    />
+                  ) : null}
                   {item.attachmentImages?.length ? (
                     <div className="investments-ai-message-attachments">
                       {item.attachmentImages.map((url, index) => (

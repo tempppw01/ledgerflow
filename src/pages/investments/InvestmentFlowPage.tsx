@@ -15,6 +15,7 @@ import type {
   InvestmentPositionHistoryEntry,
   InvestmentWatchItem
 } from '../../entities/investment/types';
+import { InvestmentAiMessageDetails } from '../../features/assistant/investment-chat/InvestmentAiMessageDetails';
 
 type WatchDetailSection = {
   title: string;
@@ -395,15 +396,11 @@ export function InvestmentFlowPage() {
                       <span className="investments-money">{formatFlowTime(item.createdAt)}</span>
                     </div>
                     <p>{item.text}</p>
-                    {item.reasoning ? (
-                      <details className="investments-flow-detail-toggle">
-                        <summary>
-                          <span>分析过程</span>
-                          <small>可展开</small>
-                        </summary>
-                        <div className="chat-thinking-scroll">{item.reasoning}</div>
-                      </details>
-                    ) : null}
+                    <InvestmentAiMessageDetails
+                      reasoning={item.reasoning}
+                      webTrace={item.webTrace}
+                      auxiliaryInfo={item.auxiliaryInfo}
+                    />
                     {item.followUpPrompts?.length ? (
                       <div className="investments-follow-up-list">
                         {item.followUpPrompts.map((prompt) => (

@@ -41,6 +41,10 @@ vi.mock('../../features/assistant/api/openaiCompatibleClient', () => ({
   sendAiChatStream: (...args: unknown[]) => sendAiChatStreamMock(...args)
 }));
 
+vi.mock('../../features/assistant/workbench/workbenchUtils', () => ({
+  buildTimeContext: vi.fn().mockResolvedValue('当前中国标准时间：2026-07-16 09:30:00（来源：测试）')
+}));
+
 describe('Investment assistant chat', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -121,6 +125,51 @@ describe('Investment assistant chat', () => {
         maxResults: 5
       }
     });
+  });
+
+  it('puts the current time into the investment chat system prompt', async () => {
+    sendAiChatStreamMock.mockResolvedValue({ content: '测试回复', reasoning: '' });
+
+    render(
+      <MemoryRouter>
+        <InvestmentChatPanel />
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByLabelText('基金分析输入框'), {
+      target: { value: '请看一下这个基金' }
+    });
+    fireEvent.click(screen.getByRole('button', { name: '开始分析' }));
+
+    await waitFor(() => expect(sendAiChatStreamMock).toHaveBeenCalled());
+    const request = sendAiChatStreamMock.mock.calls[0]?.[0] as { systemPrompt?: string };
+    expect(request.systemPrompt).toContain('当前中国标准时间：2026-07-16 09:30:00（来源：测试）');
+  });
+
+  it('collapses reasoning and auxiliary investment details in assistant messages', () => {
+    useAppPreferences.setState({
+      investmentAiMessages: [
+        {
+          id: 'assistant-1',
+          role: 'assistant',
+          text: '建议小额试。',
+          reasoning: '模型思考内容',
+          webTrace: '联网过程：已开启联网核验',
+          auxiliaryInfo: '相关资讯数据：\n测试资讯',
+          createdAt: '2026-07-16T09:31:00.000Z'
+        }
+      ]
+    });
+
+    render(
+      <MemoryRouter>
+        <InvestmentChatPanel showHero={false} />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('思考过程（点击展开）')).toBeInTheDocument();
+    expect(screen.getByText('联网过程（点击展开）')).toBeInTheDocument();
+    expect(screen.getByText('相关资讯数据（点击展开）')).toBeInTheDocument();
   });
 
   it('shows an illustration before the first investment chat message', () => {

@@ -1978,10 +1978,7 @@
 }
 
 .investments-ai-composer .chat-input-stack {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  position: relative;
 }
 
 .investments-ai-input-main {
@@ -2054,6 +2051,8 @@
 
 .investments-ai-composer.is-expanded {
   width: 100%;
+  height: auto;
+  min-height: 48px;
   margin-inline: auto;
   transform: translateY(0) scale(1);
 }

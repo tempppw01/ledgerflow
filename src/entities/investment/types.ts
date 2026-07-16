@@ -156,6 +156,8 @@ export interface InvestmentAiMessage {
   text: string;
   feedback?: 'up' | 'down';
   reasoning?: string;
+  webTrace?: string;
+  auxiliaryInfo?: string;
   followUpPrompts?: string[];
   attachmentCount?: number;
   attachmentImages?: string[];

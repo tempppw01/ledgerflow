@@ -46,6 +46,7 @@ import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { Toast, type ToastVariant } from '../../shared/ui/Toast';
 import {
+  buildInvestmentAssistantAuxiliaryInfo,
   buildInvestmentFundAnalysisPrompt,
   buildInvestmentWatchlistReviewPrompt,
   createInvestmentAiMessage,
@@ -58,6 +59,7 @@ import {
   ASSISTANT_ACTIVE_MODE_STORAGE_KEY,
   ASSISTANT_MODE_CHANGED_EVENT
 } from '../../features/assistant/shared/assistantMode';
+import { buildTimeContext } from '../../features/assistant/workbench/workbenchUtils';
 
 const POSITION_CATEGORY_LABELS: Record<InvestmentCategory, string> = {
   cash: '现金理财',
@@ -264,6 +266,12 @@ function formatMarketNewsTime(value?: string) {
   }
 
   return value;
+}
+
+function isPolicySignalText(value: string) {
+  return /政策|监管|国务院|证监|央行|财政|税务|发改|工信|降准|降息|印花税|利率|补贴|新规|支持|刺激|稳增长|房地产|地产|集采|国产替代/.test(
+    value
+  );
 }
 
 function getMarketTone(value?: number | null) {
@@ -1280,10 +1288,25 @@ export function InvestmentsPage() {
       flatCount: board.flatCount,
       downCount: board.downCount
     });
+    const recentMarketNews = marketNews.slice(0, 5).map((item) => ({
+      time: formatMarketNewsTime(item.time),
+      title: item.title,
+      summary: item.summary,
+      stocks: item.stocks.slice(0, 4)
+    }));
+    const policySignals = marketNews
+      .filter((item) => isPolicySignalText(`${item.title} ${item.summary}`))
+      .slice(0, 5)
+      .map((item) => ({
+        time: formatMarketNewsTime(item.time),
+        title: item.title,
+        summary: item.summary
+      }));
 
     return JSON.stringify(
       {
         source: '东方财富实时行情',
+        generatedAt: new Date().toISOString(),
         updatedAt: marketOverview?.updatedAt || new Date().toISOString(),
         marketIndexes: (marketOverview?.quotes || []).slice(0, 4).map((quote) => ({
           name: quote.name,
@@ -1295,10 +1318,11 @@ export function InvestmentsPage() {
         selectedHotTheme: selectedTheme ? toBoardContext(selectedTheme) : null,
         hotThemes: marketThemeBoards.slice(0, 8).map(toBoardContext),
         industryLeaders: marketIndustryBoards.slice(0, 5).map(toBoardContext),
-        marketNews: marketNews.slice(0, 3).map((item) => ({
-          time: formatMarketNewsTime(item.time),
-          title: item.title
-        }))
+        socialNews: recentMarketNews,
+        policySignals,
+        newsCategory:
+          EASTMONEY_MARKET_NEWS_CATEGORIES.find((item) => item.id === selectedNewsCategoryId)
+            ?.label || ''
       },
       null,
       2
@@ -1308,7 +1332,8 @@ export function InvestmentsPage() {
     marketNews,
     marketOverview,
     marketThemeBoards,
-    selectedMarketThemeCode
+    selectedMarketThemeCode,
+    selectedNewsCategoryId
   ]);
 
   const hasInvestmentSummary =
@@ -1547,12 +1572,23 @@ export function InvestmentsPage() {
     setInvestmentAiMessages(nextMessages);
 
     try {
+      const timeContext = await buildTimeContext();
       const webContext = buildWebSearchPrompt(
         await fetchWebSearchContext(
           [item.name, item.code, item.platform, '行业 政策 最新 影响'].filter(Boolean).join(' '),
           webSearch
         )
       );
+      const auxiliaryInfo = buildInvestmentAssistantAuxiliaryInfo({
+        webEnabled: true,
+        webQuery: [item.name, item.code, item.platform, '行业 政策 最新 影响']
+          .filter(Boolean)
+          .join(' '),
+        timeContext,
+        contextNote: marketContextSummary,
+        webSearchPrompt: webContext
+      });
+      let fullReasoning = '';
       let fullContent = '';
       const result = await sendAiChatStream(
         {
@@ -1563,6 +1599,7 @@ export function InvestmentsPage() {
             watchItem: item,
             positions: activePositions,
             marketContext: marketContextSummary,
+            timeContext,
             webContext
           }),
           messages: [
@@ -1576,6 +1613,9 @@ export function InvestmentsPage() {
           onDelta: (delta) => {
             fullContent += delta;
           },
+          onReasoningDelta: (delta) => {
+            fullReasoning += delta;
+          },
           onDone: (content) => {
             fullContent = content || fullContent;
           }
@@ -1583,6 +1623,7 @@ export function InvestmentsPage() {
       );
 
       const rawContent = result.content || fullContent;
+      const rawReasoning = result.reasoning || fullReasoning;
       const { displayText, analysis } = extractInvestmentAnalysis(rawContent);
       const analysisText = summarizeInvestmentAnalysis(displayText, analysis);
       const assistantMessage = createInvestmentAiMessage({
@@ -1590,6 +1631,9 @@ export function InvestmentsPage() {
         role: 'assistant',
         text: analysisText || analysis?.summary || rawContent.trim() || '已完成分析。',
         createdAt: new Date().toISOString(),
+        reasoning: rawReasoning,
+        webTrace: auxiliaryInfo.webTrace,
+        auxiliaryInfo: auxiliaryInfo.relatedData,
         analysis
       });
       setInvestmentAiMessages(trimInvestmentAiMessages([...nextMessages, assistantMessage]));
@@ -1847,6 +1891,7 @@ export function InvestmentsPage() {
     setWatchlistReviewError('');
 
     try {
+      const timeContext = await buildTimeContext();
       let fullContent = '';
       const result = await sendAiChatStream(
         {
@@ -1856,7 +1901,9 @@ export function InvestmentsPage() {
           systemPrompt: buildInvestmentWatchlistReviewPrompt({
             positions: activePositions,
             watchlist: investmentWatchlist,
-            monthlyInvestableCash
+            monthlyInvestableCash,
+            marketContext: marketContextSummary,
+            timeContext
           }),
           messages: [
             {
