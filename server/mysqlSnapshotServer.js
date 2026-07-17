@@ -4,6 +4,10 @@ import dns from 'node:dns/promises';
 import net from 'node:net';
 import { URL } from 'node:url';
 import mysql from 'mysql2/promise';
+import {
+  getDatabaseSetupStatus,
+  initializeDatabaseProvider
+} from './databaseProvider.js';
 
 const DEFAULT_PORT = 8787;
 const DEFAULT_USER_ID = 'default';
@@ -14,6 +18,17 @@ const WEBDAV_ALLOWED_HOSTS = String(process.env.LEDGERFLOW_WEBDAV_ALLOWED_HOSTS 
   .map((item) => item.trim().toLowerCase())
   .filter(Boolean);
 const WEBDAV_PROXY_METHODS = new Set(['GET', 'PUT', 'DELETE', 'MKCOL', 'MOVE', 'PROPFIND']);
+let sqliteDatabaseModulePromise;
+
+async function getSqliteDatabaseModule() {
+  sqliteDatabaseModulePromise ||= import('./sqliteDatabase.js');
+  return sqliteDatabaseModulePromise;
+}
+
+async function getActiveDatabaseProvider() {
+  const setup = await getDatabaseSetupStatus();
+  return setup.provider || 'mysql';
+}
 
 function jsonResponse(res, status, body) {
   const text = JSON.stringify(body);
@@ -287,6 +302,24 @@ async function testConnection() {
   });
 }
 
+async function testActiveDatabaseConnection() {
+  if ((await getActiveDatabaseProvider()) === 'sqlite') {
+    const { testSqliteDatabase } = await getSqliteDatabaseModule();
+    return testSqliteDatabase();
+  }
+  return testConnection();
+}
+
+async function validateDatabaseProvider(provider) {
+  if (provider === 'mysql') {
+    await testConnection();
+    return;
+  }
+
+  const { ensureSqliteDatabase } = await getSqliteDatabaseModule();
+  await ensureSqliteDatabase();
+}
+
 async function saveSnapshot(body) {
   if (!body || typeof body !== 'object' || !body.payload) {
     throw new Error('Missing snapshot payload.');
@@ -303,6 +336,19 @@ async function saveSnapshot(body) {
   const schemaVersion = Number(body.schemaVersion || 1);
   const source = String(body.source || 'manual').slice(0, 32);
   const exportedAt = parseDateOrNull(body.payload.exportedAt);
+
+  if ((await getActiveDatabaseProvider()) === 'sqlite') {
+    const { saveSqliteSnapshot } = await getSqliteDatabaseModule();
+    return saveSqliteSnapshot({
+      userId,
+      schemaVersion,
+      payloadText,
+      checksum,
+      payloadBytes,
+      source,
+      exportedAt: body.payload.exportedAt || null
+    });
+  }
 
   return withConnection(getEnvConnectionOptions(), async (connection) => {
     await ensureSnapshotTable(connection);
@@ -347,6 +393,11 @@ function normalizeSnapshotRow(row) {
 
 async function getLatestSnapshot(url) {
   const userId = String(url.searchParams.get('userId') || DEFAULT_USER_ID).slice(0, 128);
+
+  if ((await getActiveDatabaseProvider()) === 'sqlite') {
+    const { getLatestSqliteSnapshot } = await getSqliteDatabaseModule();
+    return getLatestSqliteSnapshot(userId);
+  }
 
   return withConnection(getEnvConnectionOptions(), async (connection) => {
     await ensureSnapshotTable(connection);
@@ -462,6 +513,26 @@ async function handleRequest(req, res) {
       return;
     }
 
+    if (req.method === 'GET' && pathname === '/setup/status') {
+      jsonResponse(res, 200, { ok: true, ...(await getDatabaseSetupStatus()) });
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/setup/initialize') {
+      const currentSetup = await getDatabaseSetupStatus();
+      if (currentSetup.initialized && !requireApiToken(req, res)) {
+        return;
+      }
+
+      const body = await readJsonBody(req);
+      const setup = await initializeDatabaseProvider({
+        provider: body.provider,
+        validateProvider: validateDatabaseProvider
+      });
+      jsonResponse(res, 200, { ok: true, ...setup });
+      return;
+    }
+
     if (!requireApiToken(req, res)) {
       return;
     }
@@ -475,7 +546,7 @@ async function handleRequest(req, res) {
       (req.method === 'POST' || req.method === 'PUT') &&
       ['/conn/test', '/connection/test', '/db/connection/test'].includes(pathname)
     ) {
-      jsonResponse(res, 200, await testConnection());
+      jsonResponse(res, 200, await testActiveDatabaseConnection());
       return;
     }
 

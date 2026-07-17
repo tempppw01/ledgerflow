@@ -1,5 +1,6 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { MysqlSnapshotPanel } from '../../features/mysql-snapshot/ui/MysqlSnapshotPanel';
+import { DatabaseProviderSetupPanel } from '../../features/database-provider/ui/DatabaseProviderSetupPanel';
 import {
   BACKUP_SCOPE_LABELS,
   BackupScopeSelector
@@ -1041,6 +1042,8 @@ export function DatabaseSettingsPage() {
           ) : null}
         </section>
       </div>
+
+      <DatabaseProviderSetupPanel />
 
       <MysqlSnapshotPanel
         disabled={!hasHydrated}

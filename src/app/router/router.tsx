@@ -1,4 +1,5 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom';
+import { DatabaseInitializationGate } from '../../features/database-provider/ui/DatabaseInitializationGate';
 import { AppLayout } from '../../widgets/layout/AppLayout';
 import {
   AboutPage,
@@ -27,7 +28,11 @@ import {
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <AppLayout />,
+    element: (
+      <DatabaseInitializationGate>
+        <AppLayout />
+      </DatabaseInitializationGate>
+    ),
     children: [
       { index: true, element: <DashboardPage /> },
       { path: 'transactions', element: <TransactionsPage /> },

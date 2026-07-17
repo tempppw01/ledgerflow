@@ -58,7 +58,7 @@ export function MysqlSnapshotPanel({
   const [restoreOpen, setRestoreOpen] = useState(false);
 
   const summary = useMemo(() => {
-    if (!lastSnapshot) return '尚未读取 MySQL 快照';
+    if (!lastSnapshot) return '尚未读取数据库快照';
     return `${formatTime(lastSnapshot.createdAt)} · ${formatBytes(lastSnapshot.payloadBytes)}`;
   }, [lastSnapshot]);
 
@@ -68,7 +68,7 @@ export function MysqlSnapshotPanel({
       return;
     }
     if (!apiToken.trim()) {
-      setStatus('请先填写 MySQL 快照 API 令牌。');
+      setStatus('请先填写数据库快照 API 令牌。');
       return;
     }
 
@@ -93,9 +93,9 @@ export function MysqlSnapshotPanel({
         exportedAt: response.exportedAt,
         createdAt: new Date().toISOString()
       });
-      setStatus(`已同步到 MySQL：${formatBytes(response.payloadBytes)}`);
+      setStatus(`已同步到数据库：${formatBytes(response.payloadBytes)}`);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : '同步到 MySQL 失败');
+      setStatus(error instanceof Error ? error.message : '同步到数据库失败');
     } finally {
       setBusy(false);
     }
@@ -103,23 +103,23 @@ export function MysqlSnapshotPanel({
 
   async function handleLoadLatest() {
     if (!apiToken.trim()) {
-      setStatus('请先填写 MySQL 快照 API 令牌。');
+      setStatus('请先填写数据库快照 API 令牌。');
       return;
     }
 
     try {
       setBusy(true);
-      setStatus('正在读取 MySQL 最新快照...');
+      setStatus('正在读取数据库最新快照...');
       const response = await downloadLatestMysqlSnapshot('default', apiToken);
       if (!response.ok || !response.snapshot) {
-        setStatus(response.message || 'MySQL 中还没有快照。');
+        setStatus(response.message || '数据库中还没有快照。');
         return;
       }
       setLastSnapshot(response.snapshot);
       setRestoreOpen(true);
-      setStatus('已读取最新快照，请确认后恢复。');
+      setStatus('已读取最新数据库快照，请确认后恢复。');
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : '读取 MySQL 快照失败');
+      setStatus(error instanceof Error ? error.message : '读取数据库快照失败');
     } finally {
       setBusy(false);
     }
@@ -129,7 +129,7 @@ export function MysqlSnapshotPanel({
     if (!lastSnapshot) return;
     onRestore(lastSnapshot.payload);
     setRestoreOpen(false);
-    setStatus('已从 MySQL 快照恢复到本地。');
+    setStatus('已从数据库快照恢复到本地。');
   }
 
   return (
@@ -137,13 +137,13 @@ export function MysqlSnapshotPanel({
       <div className="database-remote-backup-head">
         <div>
           <div className="row" style={{ gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
-            <h3 style={{ margin: 0 }}>MySQL 快照同步</h3>
+            <h3 style={{ margin: 0 }}>数据库快照同步</h3>
             <span className="sync-tip" style={{ whiteSpace: 'nowrap' }}>
               {summary}
             </span>
           </div>
           <p className="sync-tip" style={{ margin: '6px 0 0' }}>
-            先把当前 JSON 备份原样写入 MySQL，恢复前会校验快照完整性。
+            先把当前 JSON 备份原样写入已选数据库，恢复前会校验快照完整性。
           </p>
         </div>
       </div>
@@ -164,7 +164,7 @@ export function MysqlSnapshotPanel({
             showLabel="显示"
             hideLabel="隐藏"
           />
-          <small className="sync-tip">令牌只保存在当前浏览器，用于保护 MySQL 快照读写接口。</small>
+          <small className="sync-tip">令牌只保存在当前浏览器，用于保护数据库快照读写接口。</small>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
           <button
@@ -174,7 +174,7 @@ export function MysqlSnapshotPanel({
             disabled={disabled || busy || !canCreateBackup}
           >
             <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
-            同步到 MySQL
+            同步到数据库
           </button>
           <button
             type="button"
@@ -182,7 +182,8 @@ export function MysqlSnapshotPanel({
             onClick={() => void handleLoadLatest()}
             disabled={disabled || busy}
           >
-            <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />从 MySQL 恢复
+            <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
+            从数据库恢复
           </button>
           {status ? <span className="sync-tip">{status}</span> : null}
         </div>
@@ -190,11 +191,11 @@ export function MysqlSnapshotPanel({
 
       <ConfirmDialog
         open={restoreOpen}
-        title="确认从 MySQL 恢复"
+        title="确认从数据库恢复"
         description={
           <div>
             <p style={{ marginTop: 0 }}>
-              将用 MySQL 最新快照覆盖当前本地数据。建议确认已经导出本地备份后再继续。
+              将用数据库最新快照覆盖当前本地数据。建议确认已经导出本地备份后再继续。
             </p>
             <p className="sync-tip" style={{ marginBottom: 0 }}>
               快照时间：{formatTime(lastSnapshot?.createdAt)} · 大小：
