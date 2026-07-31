@@ -92,24 +92,12 @@ function parseHoldingsPageContent(raw: string): string {
 }
 
 async function fetchRealtimeSnapshot(code: string): Promise<EastmoneyRealtimePayload | null> {
-  const previousCallback = (window as unknown as { jsonpgz?: unknown }).jsonpgz;
-  let payload: EastmoneyRealtimePayload | null = null;
-
-  (window as unknown as { jsonpgz: (data: EastmoneyRealtimePayload) => void }).jsonpgz = (data) => {
-    payload = data;
-  };
-
-  try {
-    await appendScript(`https://fundgz.1234567.com.cn/js/${code}.js?rt=${Date.now()}`);
-  } finally {
-    if (previousCallback) {
-      (window as unknown as { jsonpgz?: unknown }).jsonpgz = previousCallback;
-    } else {
-      delete (window as unknown as { jsonpgz?: unknown }).jsonpgz;
-    }
+  const response = await fetch(`/api/market/fund-realtime?code=${encodeURIComponent(code)}`);
+  if (!response.ok) {
+    throw new Error('东方财富实时基金数据加载失败，请稍后重试。');
   }
-
-  return payload;
+  const body = (await response.json()) as { data?: EastmoneyRealtimePayload };
+  return body.data || null;
 }
 
 async function loadFundDetailGlobals(code: string) {

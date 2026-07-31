@@ -51,6 +51,66 @@ function normalizePath(pathname) {
   return pathname.startsWith('/api/') ? pathname.slice(4) : pathname;
 }
 
+function normalizeFundCode(value) {
+  const code = String(value || '').replace(/\D/g, '').slice(0, 6);
+  if (!/^\d{6}$/.test(code)) {
+    throw new Error('Fund code must contain exactly six digits.');
+  }
+  return code;
+}
+
+async function getEastmoneyFundRealtime(code) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+
+  try {
+    const headers = {
+      Referer: `https://fund.eastmoney.com/${code}.html`,
+      'User-Agent': 'Mozilla/5.0 LedgerFlow market-data-proxy'
+    };
+    const [profileResponse, netValueResponse] = await Promise.all([
+      fetch(`https://fund.eastmoney.com/pingzhongdata/${code}.js`, {
+        headers,
+        signal: controller.signal
+      }),
+      fetch(
+        `https://api.fund.eastmoney.com/f10/lsjz?fundCode=${code}&pageIndex=1&pageSize=1&startDate=&endDate=`,
+        { headers, signal: controller.signal }
+      )
+    ]);
+
+    if (!profileResponse.ok || !netValueResponse.ok) {
+      throw new Error('Eastmoney fund endpoint is unavailable.');
+    }
+
+    const [profileScript, netValuePayload] = await Promise.all([
+      profileResponse.text(),
+      netValueResponse.json()
+    ]);
+    const readProfileString = (key) => {
+      const match = profileScript.match(new RegExp(`var\\s+${key}\\s*=\\s*"([^"]*)"`));
+      return match?.[1]?.trim() || '';
+    };
+    const netValue = netValuePayload?.Data?.LSJZList?.[0];
+    const name = readProfileString('fS_name');
+    if (!name || !netValue) {
+      throw new Error('Eastmoney fund response format is invalid.');
+    }
+
+    return {
+      fundcode: readProfileString('fS_code') || code,
+      name,
+      jzrq: String(netValue.FSRQ || ''),
+      dwjz: String(netValue.DWJZ || ''),
+      gsz: String(netValue.DWJZ || ''),
+      gszzl: String(netValue.JZZZL || ''),
+      gztime: String(netValue.FSRQ || '')
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex');
 }
@@ -496,6 +556,12 @@ async function handleRequest(req, res) {
         ? await migrateRelationalDatabase(setup.provider)
         : null;
       jsonResponse(res, 200, { ok: true, ...setup, schema });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/market/fund-realtime') {
+      const code = normalizeFundCode(url.searchParams.get('code'));
+      jsonResponse(res, 200, { ok: true, data: await getEastmoneyFundRealtime(code) });
       return;
     }
 
