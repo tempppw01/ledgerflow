@@ -3,11 +3,15 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import dns from 'node:dns/promises';
 import net from 'node:net';
 import { URL } from 'node:url';
-import mysql from 'mysql2/promise';
+import { withMysqlConnection } from './databaseConnection.js';
 import {
   getDatabaseSetupStatus,
   initializeDatabaseProvider
 } from './databaseProvider.js';
+import {
+  getRelationalDatabaseStatus,
+  migrateRelationalDatabase
+} from './relationalDatabase.js';
 
 const DEFAULT_PORT = 8787;
 const DEFAULT_USER_ID = 'default';
@@ -200,25 +204,6 @@ function assertSafeRemotePath(encodedRemotePath) {
   }
 }
 
-function getEnvConnectionOptions() {
-  if (process.env.MYSQL_URL) {
-    return process.env.MYSQL_URL;
-  }
-
-  return {
-    host: process.env.MYSQL_HOST || '127.0.0.1',
-    port: Number(process.env.MYSQL_PORT || 3306),
-    user: process.env.MYSQL_USER || 'ledgerflow',
-    password: process.env.MYSQL_PASSWORD || '',
-    database: process.env.MYSQL_DATABASE || 'ledgerflow',
-    connectTimeout: Number(process.env.MYSQL_CONNECT_TIMEOUT_MS || 8000),
-    ssl:
-      process.env.MYSQL_SSL === 'true'
-        ? { rejectUnauthorized: process.env.MYSQL_SSL_REJECT_UNAUTHORIZED !== 'false' }
-        : undefined
-  };
-}
-
 async function readJsonBody(req) {
   let size = 0;
   const chunks = [];
@@ -254,15 +239,6 @@ async function readRawBody(req) {
   return Buffer.concat(chunks);
 }
 
-async function withConnection(options, handler) {
-  const connection = await mysql.createConnection(options);
-  try {
-    return await handler(connection);
-  } finally {
-    await connection.end();
-  }
-}
-
 async function ensureSnapshotTable(connection) {
   await connection.execute(`
     CREATE TABLE IF NOT EXISTS ledger_snapshots (
@@ -289,10 +265,9 @@ function parseDateOrNull(value) {
 }
 
 async function testConnection() {
-  const options = getEnvConnectionOptions();
   const start = Date.now();
 
-  return withConnection(options, async (connection) => {
+  return withMysqlConnection(async (connection) => {
     await connection.query('SELECT 1 AS ok');
     return {
       ok: true,
@@ -313,11 +288,13 @@ async function testActiveDatabaseConnection() {
 async function validateDatabaseProvider(provider) {
   if (provider === 'mysql') {
     await testConnection();
+    await migrateRelationalDatabase('mysql');
     return;
   }
 
   const { ensureSqliteDatabase } = await getSqliteDatabaseModule();
   await ensureSqliteDatabase();
+  await migrateRelationalDatabase('sqlite');
 }
 
 async function saveSnapshot(body) {
@@ -350,7 +327,7 @@ async function saveSnapshot(body) {
     });
   }
 
-  return withConnection(getEnvConnectionOptions(), async (connection) => {
+  return withMysqlConnection(async (connection) => {
     await ensureSnapshotTable(connection);
     const [result] = await connection.execute(
       `
@@ -399,7 +376,7 @@ async function getLatestSnapshot(url) {
     return getLatestSqliteSnapshot(userId);
   }
 
-  return withConnection(getEnvConnectionOptions(), async (connection) => {
+  return withMysqlConnection(async (connection) => {
     await ensureSnapshotTable(connection);
     const [rows] = await connection.execute(
       `
@@ -514,7 +491,11 @@ async function handleRequest(req, res) {
     }
 
     if (req.method === 'GET' && pathname === '/setup/status') {
-      jsonResponse(res, 200, { ok: true, ...(await getDatabaseSetupStatus()) });
+      const setup = await getDatabaseSetupStatus();
+      const schema = setup.initialized
+        ? await migrateRelationalDatabase(setup.provider)
+        : null;
+      jsonResponse(res, 200, { ok: true, ...setup, schema });
       return;
     }
 
@@ -534,6 +515,15 @@ async function handleRequest(req, res) {
     }
 
     if (!requireApiToken(req, res)) {
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/database/schema-status') {
+      const provider = await getActiveDatabaseProvider();
+      jsonResponse(res, 200, {
+        ok: true,
+        ...(await getRelationalDatabaseStatus(provider))
+      });
       return;
     }
 

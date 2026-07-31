@@ -1,5 +1,10 @@
 # LedgerFlow
 
+## Database architecture
+
+The database migration plan, provider rules, domain model, legacy import order, and Redis decision
+are documented in [docs/database-architecture.md](docs/database-architecture.md).
+
 > 面向个人长期财务管理的 AI-native 记账系统。快速记一笔、看懂现金流、管理负债和预算，并把 AI 深度接入账单识别、信贷整理、投资分析与财务复盘。
 
 LedgerFlow 当前版本：`0.6.2`
