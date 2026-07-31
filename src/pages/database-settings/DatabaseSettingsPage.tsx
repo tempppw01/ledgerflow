@@ -38,14 +38,11 @@ import {
   webdavUploadBackup,
   sanitizeWebdavConfig
 } from '../../shared/lib/backup';
-import {
-  BACKUP_ICON_URL,
-  CARD_SD_ICON_URL,
-  RESTORE_ICON_URL
-} from '../../shared/config/brandAssets';
+import { BACKUP_ICON_URL, RESTORE_ICON_URL } from '../../shared/config/brandAssets';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { useGlobalMemoryStore } from '../../shared/store/useGlobalMemoryStore';
+import { importRelationalData } from '../../shared/api/relationalDataClient';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { PasswordInput } from '../../shared/ui/PasswordInput';
 import { Toast, ToastVariant } from '../../shared/ui/Toast';
@@ -377,8 +374,9 @@ export function DatabaseSettingsPage() {
   >([]);
   const [selectedRestorePath, setSelectedRestorePath] = useState('');
   const [selectedObjectStorageRestorePath, setSelectedObjectStorageRestorePath] = useState('');
-  const [localBackupOpen, setLocalBackupOpen] = useState(false);
-  const [billImportOpen, setBillImportOpen] = useState(false);
+  const [backupWorkspace, setBackupWorkspace] = useState<
+    'local' | 'import' | 'database' | 'webdav' | 'object-storage'
+  >('local');
   const [webdavBackupOpen, setWebdavBackupOpen] = useState(false);
   const [objectStorageBackupOpen, setObjectStorageBackupOpen] = useState(false);
   const [webdavAdvancedOpen, setWebdavAdvancedOpen] = useState(false);
@@ -460,7 +458,7 @@ export function DatabaseSettingsPage() {
   const createScopedBackupPayload = () =>
     createFinanceBackupPayload(getCurrentBackupSnapshot(), backupScope);
 
-  const applyParsedBackup = (payload: FinanceBackupPayload, action: '导入' | '恢复') => {
+  const applyParsedBackup = async (payload: FinanceBackupPayload, action: '导入' | '恢复') => {
     const restored = applyFinanceBackupPayload(getCurrentBackupSnapshot(), payload);
     const {
       globalMemories: nextGlobalMemories,
@@ -471,6 +469,18 @@ export function DatabaseSettingsPage() {
       investmentAiMessages: nextInvestmentAiMessages,
       ...nextFinanceData
     } = restored;
+    await importRelationalData({
+      finance: nextFinanceData,
+      globalMemories: nextGlobalMemories,
+      preferences: {
+        ...useAppPreferences.getState(),
+        investmentPositions: nextInvestmentPositions,
+        investmentPositionHistory: nextInvestmentPositionHistory,
+        investmentGoals: nextInvestmentGoals,
+        investmentWatchlist: nextInvestmentWatchlist,
+        investmentAiMessages: nextInvestmentAiMessages
+      }
+    });
     replaceAllData(nextFinanceData);
     replaceAllGlobalMemories(nextGlobalMemories);
     replaceInvestmentData({
@@ -615,7 +625,7 @@ export function DatabaseSettingsPage() {
       ensureHydrated();
       const text = await file.text();
       const payload = parseFinanceBackupPayload(text);
-      applyParsedBackup(payload, '导入');
+      await applyParsedBackup(payload, '导入');
     } catch (error) {
       showToast(error instanceof Error ? error.message : '备份导入失败', 'error');
     }
@@ -814,7 +824,7 @@ export function DatabaseSettingsPage() {
       setBusy(true);
       showWebdavStatus('正在下载并恢复...');
       const payload = await webdavDownloadBackup(webdav, selectedRestorePath);
-      applyParsedBackup(payload, '恢复');
+      await applyParsedBackup(payload, '恢复');
       saveWebdavConfig(webdav);
       setWebdavRestoreDialogOpen(false);
       showWebdavStatus('恢复完成');
@@ -898,7 +908,7 @@ export function DatabaseSettingsPage() {
         objectStorage,
         selectedObjectStorageRestorePath
       );
-      applyParsedBackup(payload, '恢复');
+      await applyParsedBackup(payload, '恢复');
       saveObjectStorageConfig(objectStorage);
       setObjectStorageRestoreDialogOpen(false);
       showObjectStorageStatus('恢复完成');
@@ -924,140 +934,104 @@ export function DatabaseSettingsPage() {
 
   return (
     <div className="database-settings-page">
-      <div className="database-data-stack">
-        <section className="panel database-data-section">
+      <header className="database-console-header">
+        <div>
+          <p className="database-console-eyebrow">DATA CONTROL</p>
+          <h1>数据与备份</h1>
+          <p>管理账本数据、恢复点和异地副本。</p>
+        </div>
+        <div className="database-console-stat" aria-label="当前数据量">
+          <strong>{totalRows}</strong>
+          <span>条已纳管数据</span>
+        </div>
+      </header>
+
+      <nav className="database-console-tabs" aria-label="备份方式">
+        {[
+          ['local', '本地备份'],
+          ['import', '账单导入'],
+          ['database', '数据库'],
+          ['webdav', 'WebDAV'],
+          ['object-storage', '对象存储']
+        ].map(([key, label]) => (
           <button
+            key={key}
             type="button"
-            className="database-data-section-head"
-            aria-expanded={localBackupOpen}
-            aria-controls="database-local-backup-panel"
-            onClick={() => setLocalBackupOpen((prev) => !prev)}
+            className={backupWorkspace === key ? 'is-active' : undefined}
+            aria-current={backupWorkspace === key ? 'page' : undefined}
+            onClick={() => setBackupWorkspace(key as typeof backupWorkspace)}
           >
-            <span className="database-data-section-title">
-              <img src={CARD_SD_ICON_URL} alt="" aria-hidden="true" />
-              本地备份
-            </span>
-            <span className="database-data-section-meta">
-              当前共 {totalRows} 条数据 · {localBackupOpen ? '收起' : '展开'}
-            </span>
+            {label}
           </button>
+        ))}
+      </nav>
 
-          {localBackupOpen ? (
-            <div id="database-local-backup-panel" className="database-data-section-body">
-              <p className="sync-tip">导出的备份可直接导入恢复，WebDAV 也会沿用同一份范围设置。</p>
-              <BackupScopeSelector scope={backupScope} onChange={setBackupScope} />
-              <div className="database-data-hub-actions">
-                <button
-                  type="button"
-                  className="primary button-with-icon"
-                  onClick={handleExportJson}
-                  disabled={!hasHydrated || !canCreateBackup}
-                >
-                  <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
-                  导出备份文件
-                </button>
-                <button
-                  type="button"
-                  className="button-with-icon"
-                  onClick={() => backupInputRef.current?.click()}
-                >
-                  <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
-                  导入备份文件
-                </button>
-                <input
-                  ref={backupInputRef}
-                  type="file"
-                  title="导入 JSON 备份"
-                  aria-label="导入 JSON 备份"
-                  accept="application/json,.json"
-                  style={{ display: 'none' }}
-                  onChange={handleBackupFileImport}
-                />
-              </div>
+      {backupWorkspace === 'local' ? (
+        <section className="database-console-workspace">
+          <div className="database-console-workspace-head">
+            <div>
+              <span className="database-console-kicker">JSON ARCHIVE</span>
+              <h2>本地备份</h2>
             </div>
-          ) : null}
+            <span className="database-data-section-meta">当前 {totalRows} 条数据</span>
+          </div>
+          <p className="sync-tip">导出的备份可直接恢复，也可作为迁移至新数据库实例的原始文件。</p>
+          <BackupScopeSelector scope={backupScope} onChange={setBackupScope} />
+          <div className="database-data-hub-actions">
+            <button type="button" className="primary button-with-icon" onClick={handleExportJson} disabled={!hasHydrated || !canCreateBackup}>
+              <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
+              导出备份文件
+            </button>
+            <button type="button" className="button-with-icon" onClick={() => backupInputRef.current?.click()}>
+              <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
+              导入备份文件
+            </button>
+            <input ref={backupInputRef} type="file" title="导入 JSON 备份" aria-label="导入 JSON 备份" accept="application/json,.json" style={{ display: 'none' }} onChange={handleBackupFileImport} />
+          </div>
         </section>
+      ) : null}
 
-        <section className="panel database-data-section">
-          <button
-            type="button"
-            className="database-data-section-head"
-            aria-expanded={billImportOpen}
-            aria-controls="database-bill-import-panel"
-            onClick={() => setBillImportOpen((prev) => !prev)}
-          >
-            <span className="database-data-section-title">账单导入</span>
-            <span className="database-data-section-meta">{billImportOpen ? '收起' : '展开'}</span>
-          </button>
-
-          {billImportOpen ? (
-            <div id="database-bill-import-panel" className="database-data-section-body">
-              <p className="sync-tip">
-                支持微信、支付宝官方账单 CSV / TXT（含制表符），以及微信 XLSX。
-              </p>
-              <div className="database-import-actions">
-                <label className="field database-import-mode-field" style={{ marginBottom: 0 }}>
-                  遇到重复账单时
-                  <select
-                    aria-label="账单导入模式"
-                    value={importMode}
-                    onChange={(e) => setImportMode(e.target.value as BillImportMode)}
-                  >
-                    <option value="incremental">保留旧账单，重复但有变更时更新为最新</option>
-                    <option value="merge">用新账单覆盖重复账单的导入字段</option>
-                    <option value="overwrite">清空现有交易后重新导入</option>
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setImportSource('wechat');
-                    billInputRef.current?.click();
-                  }}
-                  disabled={!hasHydrated}
-                >
-                  导入微信账单
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setImportSource('alipay');
-                    billInputRef.current?.click();
-                  }}
-                  disabled={!hasHydrated}
-                >
-                  导入支付宝账单
-                </button>
-                <input
-                  ref={billInputRef}
-                  type="file"
-                  title="导入账单文件"
-                  aria-label="导入账单文件"
-                  accept=".csv,text/csv,.txt,text/plain,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                  style={{ display: 'none' }}
-                  onChange={handleImportBillFile}
-                />
-              </div>
-            </div>
-          ) : null}
+      {backupWorkspace === 'import' ? (
+        <section className="database-console-workspace">
+          <div className="database-console-workspace-head">
+            <div><span className="database-console-kicker">BILL INGESTION</span><h2>账单导入</h2></div>
+          </div>
+          <p className="sync-tip">支持微信、支付宝官方账单 CSV / TXT（含制表符）和微信 XLSX。</p>
+          <div className="database-import-actions">
+            <label className="field database-import-mode-field" style={{ marginBottom: 0 }}>
+              遇到重复账单时
+              <select aria-label="账单导入模式" value={importMode} onChange={(e) => setImportMode(e.target.value as BillImportMode)}>
+                <option value="incremental">保留旧账单，重复但有变更时更新为最新</option>
+                <option value="merge">用新账单覆盖重复账单的导入字段</option>
+                <option value="overwrite">清空现有交易后重新导入</option>
+              </select>
+            </label>
+            <button type="button" onClick={() => { setImportSource('wechat'); billInputRef.current?.click(); }} disabled={!hasHydrated}>导入微信账单</button>
+            <button type="button" onClick={() => { setImportSource('alipay'); billInputRef.current?.click(); }} disabled={!hasHydrated}>导入支付宝账单</button>
+            <input ref={billInputRef} type="file" title="导入账单文件" aria-label="导入账单文件" accept=".csv,text/csv,.txt,text/plain,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style={{ display: 'none' }} onChange={handleImportBillFile} />
+          </div>
         </section>
-      </div>
+      ) : null}
 
-      <DatabaseProviderSetupPanel />
+      {backupWorkspace === 'database' ? (
+        <div className="database-console-channel">
+          <DatabaseProviderSetupPanel />
+          <MysqlSnapshotPanel
+            disabled={!hasHydrated}
+            canCreateBackup={canCreateBackup}
+            backupScopeSummary={backupScopeSummary}
+            backupScope={backupScope}
+            onBackupScopeChange={setBackupScope}
+            apiToken={serverApiToken}
+            onApiTokenChange={handleServerApiTokenChange}
+            createPayload={createScopedBackupPayload}
+            onRestore={(payload) => applyParsedBackup(payload, '恢复')}
+          />
+        </div>
+      ) : null}
 
-      <MysqlSnapshotPanel
-        disabled={!hasHydrated}
-        canCreateBackup={canCreateBackup}
-        backupScopeSummary={backupScopeSummary}
-        backupScope={backupScope}
-        onBackupScopeChange={setBackupScope}
-        apiToken={serverApiToken}
-        onApiTokenChange={handleServerApiTokenChange}
-        createPayload={createScopedBackupPayload}
-        onRestore={(payload) => applyParsedBackup(payload, '恢复')}
-      />
-
-      <section className="panel database-remote-backup-card" style={{ marginTop: 12 }}>
+      {backupWorkspace === 'webdav' ? (
+      <section className="database-console-workspace database-remote-backup-card">
         <div className="database-remote-backup-head">
           <div>
             <div className="row" style={{ gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
@@ -1233,8 +1207,10 @@ export function DatabaseSettingsPage() {
           </div>
         ) : null}
       </section>
+      ) : null}
 
-      <section className="panel database-remote-backup-card" style={{ marginTop: 12 }}>
+      {backupWorkspace === 'object-storage' ? (
+      <section className="database-console-workspace database-remote-backup-card">
         <div className="database-remote-backup-head">
           <div>
             <div className="row" style={{ gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
@@ -1423,8 +1399,10 @@ export function DatabaseSettingsPage() {
           </div>
         ) : null}
       </section>
+      ) : null}
 
-      <section className="panel" style={{ marginTop: 12 }}>
+      {backupWorkspace === 'local' ? (
+      <section className="database-console-danger-zone">
         <h3 style={{ marginTop: 0 }}>数据重制</h3>
         <p className="sync-tip">清空所有账户账单（交易记录），保留账户与分类。</p>
         <button
@@ -1438,6 +1416,7 @@ export function DatabaseSettingsPage() {
           一键清空所有账户账单
         </button>
       </section>
+      ) : null}
 
       {webdavRestoreDialogOpen ? (
         <div

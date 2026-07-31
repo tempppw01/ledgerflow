@@ -20,7 +20,11 @@ import {
   buildWebSearchPrompt
 } from '../../features/assistant/api/webSearchClient';
 import { InvestmentChatPanel } from '../../features/assistant/investment-chat/InvestmentChatPanel';
-import { fetchEastmoneyFundSnapshot } from '../../features/investments/api/eastmoneyFundClient';
+import {
+  fetchEastmoneyFundSnapshot,
+  fetchEastmoneyHoldingStockQuotes,
+  type EastmoneyHoldingStockQuote
+} from '../../features/investments/api/eastmoneyFundClient';
 import {
   EASTMONEY_MARKET_INDEXES,
   EASTMONEY_MARKET_NEWS_CATEGORIES,
@@ -232,6 +236,55 @@ function formatWatchPreviewItem(value: string) {
   }
 
   return text;
+}
+
+function getFundHoldingStockCode(value: string) {
+  const match = String(value || '').match(/(?:\(|（)?(\d{6})(?:\)|）)?/);
+  return match?.[1] || '';
+}
+
+function getFundHoldingStockSecId(code: string) {
+  if (!/^\d{6}$/.test(code)) return '';
+  return /^(600|601|603|605|688|689|900)/.test(code) ? `1.${code}` : `0.${code}`;
+}
+
+function formatHoldingStockChange(value?: number | null) {
+  if (typeof value !== 'number') return '--';
+  return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
+}
+
+function WatchHoldingQuoteList({
+  holdings,
+  quotesByCode
+}: {
+  holdings: string[];
+  quotesByCode: Map<string, EastmoneyHoldingStockQuote>;
+}) {
+  return (
+    <div className="investments-watch-holding-quote-list" aria-label="基金持仓实时涨跌">
+      {holdings.map((value) => {
+        const displayValue = formatWatchPreviewItem(value);
+        const stockCode = getFundHoldingStockCode(value);
+        const quote = stockCode ? quotesByCode.get(stockCode) : undefined;
+        const changePercent = quote?.changePercent ?? null;
+        const changeClass =
+          changePercent === null
+            ? 'is-unavailable'
+            : changePercent > 0
+              ? 'is-positive'
+              : changePercent < 0
+                ? 'is-negative'
+                : 'is-flat';
+
+        return (
+          <span key={`${stockCode || value}-${value}`} title={displayValue}>
+            <strong>{displayValue}</strong>
+            <em className={changeClass}>{formatHoldingStockChange(changePercent)}</em>
+          </span>
+        );
+      })}
+    </div>
+  );
 }
 
 function formatMarketIndexValue(value?: number | null) {
@@ -1434,6 +1487,9 @@ export function InvestmentsPage() {
   );
   const [marketBoardsError, setMarketBoardsError] = useState('');
   const [analyzingWatchItemId, setAnalyzingWatchItemId] = useState<string | null>(null);
+  const [holdingStockQuotes, setHoldingStockQuotes] = useState<
+    Map<string, EastmoneyHoldingStockQuote>
+  >(() => new Map());
 
   const activePositions = useMemo(() => positions.filter((item) => item.isActive), [positions]);
 
@@ -1539,6 +1595,21 @@ export function InvestmentsPage() {
           ),
     [investmentWatchlist, selectedWatchCategoryId]
   );
+
+  const holdingStockSecIds = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          investmentWatchlist
+            .flatMap((item) => item.fundHoldings || [])
+            .map(getFundHoldingStockCode)
+            .map(getFundHoldingStockSecId)
+            .filter(Boolean)
+        )
+      ).slice(0, 32),
+    [investmentWatchlist]
+  );
+  const holdingStockSecIdsKey = holdingStockSecIds.join(',');
 
   const marketContextSummary = useMemo(() => {
     const selectedTheme =
@@ -1696,6 +1767,33 @@ export function InvestmentsPage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (holdingStockSecIds.length === 0) {
+      setHoldingStockQuotes(new Map());
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadHoldingStockQuotes() {
+      try {
+        const quotes = await fetchEastmoneyHoldingStockQuotes(holdingStockSecIds);
+        if (cancelled) return;
+        setHoldingStockQuotes(new Map(quotes.map((quote) => [quote.code, quote])));
+      } catch {
+        // Preserve the last successful quote while the upstream market feed recovers.
+      }
+    }
+
+    void loadHoldingStockQuotes();
+    const interval = window.setInterval(() => void loadHoldingStockQuotes(), 30_000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [holdingStockSecIds, holdingStockSecIdsKey]);
 
   function setToastState(message: string, variant: ToastVariant = 'success') {
     setToast({ visible: true, message, variant });
@@ -2431,14 +2529,12 @@ export function InvestmentsPage() {
                             </div>
                           </div>
                           <div className="investments-watch-card-brief">
+                            <span>AI 建议</span>
                             <strong>
                               {item.investmentAdvice || item.lastVerdict || '等待下一次分析'}
                             </strong>
-                            {primaryTag ? <span className="badge">{primaryTag}</span> : null}
+                            {primaryTag ? <em>{primaryTag}</em> : null}
                           </div>
-                          {item.lastSummary ? (
-                            <p className="investments-watch-card-summary">{item.lastSummary}</p>
-                          ) : null}
                           <div
                             className="investments-watch-card-mini-stats"
                             aria-label="基金关键数据"
@@ -2451,7 +2547,7 @@ export function InvestmentsPage() {
                               <em>收益</em>
                               <strong>{item.addedReturn || '待更新'}</strong>
                             </span>
-                            <span>
+                            <span className="is-holding">
                               <em>持有</em>
                               {editingWatchHoldingId === item.id ? (
                                 <input
@@ -2495,54 +2591,6 @@ export function InvestmentsPage() {
                               )}
                             </span>
                           </div>
-                          <div className="investments-watch-card-split-grid">
-                            <article className="investments-watch-card-split is-holdings">
-                              <span>重仓</span>
-                              {holdingsPreview.length > 0 ? (
-                                <div
-                                  className="investments-watch-chip-list"
-                                  aria-label="基金重仓股票"
-                                >
-                                  {holdingsPreview.map((value) => {
-                                    const displayValue = formatWatchPreviewItem(value);
-                                    return (
-                                      <strong
-                                        key={`${item.id}-holding-${value}`}
-                                        title={displayValue}
-                                      >
-                                        {displayValue}
-                                      </strong>
-                                    );
-                                  })}
-                                </div>
-                              ) : (
-                                <p>待更新</p>
-                              )}
-                            </article>
-                            <article className="investments-watch-card-split is-assets">
-                              <span>资产</span>
-                              {assetAllocationPreview.length > 0 ? (
-                                <div
-                                  className="investments-watch-chip-list"
-                                  aria-label="基金资产分布"
-                                >
-                                  {assetAllocationPreview.map((value) => {
-                                    const displayValue = formatWatchPreviewItem(value);
-                                    return (
-                                      <strong
-                                        key={`${item.id}-asset-${value}`}
-                                        title={displayValue}
-                                      >
-                                        {displayValue}
-                                      </strong>
-                                    );
-                                  })}
-                                </div>
-                              ) : (
-                                <p>待更新</p>
-                              )}
-                            </article>
-                          </div>
                           <div className="investments-watch-card-ai-actions">
                             <button
                               type="button"
@@ -2555,21 +2603,22 @@ export function InvestmentsPage() {
                                 void handleAnalyzeWatchItem(item);
                               }}
                               aria-label={`AI 分析 ${item.name}`}
-                              title="AI 分析"
+                              title={analyzingWatchItemId === item.id ? '正在分析' : 'AI 分析'}
                             >
                               <img src={BRAIN_ICON_URL} alt="" aria-hidden="true" />
-                              {analyzingWatchItemId === item.id ? '分析中' : 'AI 分析'}
                             </button>
                             {!isFollowing ? (
                               <button
                                 type="button"
                                 className="investments-watch-follow-btn"
+                                aria-label="添加关注"
+                                title="添加关注"
                                 onClick={(event) => {
                                   event.stopPropagation();
                                   handleFollowWatchItem(item);
                                 }}
                               >
-                                添加关注
+                                <span aria-hidden="true">+</span>
                               </button>
                             ) : null}
                             <button
@@ -2596,6 +2645,12 @@ export function InvestmentsPage() {
 
                           {isExpanded ? (
                             <div className="investments-watch-card-details">
+                              {item.lastSummary ? (
+                                <section className="investments-watch-card-expanded-summary">
+                                  <span>分析摘要</span>
+                                  <p>{item.lastSummary}</p>
+                                </section>
+                              ) : null}
                               {detailSections.length > 0 ? (
                                 <>
                                   {performanceSection && performancePoints.length > 0 ? (
@@ -2661,6 +2716,43 @@ export function InvestmentsPage() {
                                     </section>
                                   ) : null}
 
+                                  <div className="investments-watch-card-split-grid">
+                                    <section className="investments-watch-card-split is-holdings">
+                                      <span>重仓股票</span>
+                                      {holdingsPreview.length > 0 ? (
+                                        <WatchHoldingQuoteList
+                                          holdings={holdingsPreview}
+                                          quotesByCode={holdingStockQuotes}
+                                        />
+                                      ) : (
+                                        <p>待更新</p>
+                                      )}
+                                    </section>
+                                    <section className="investments-watch-card-split is-assets">
+                                      <span>资产分布</span>
+                                      {assetAllocationPreview.length > 0 ? (
+                                        <div
+                                          className="investments-watch-chip-list"
+                                          aria-label="基金资产分布"
+                                        >
+                                          {assetAllocationPreview.map((value) => {
+                                            const displayValue = formatWatchPreviewItem(value);
+                                            return (
+                                              <strong
+                                                key={`${item.id}-asset-${value}`}
+                                                title={displayValue}
+                                              >
+                                                {displayValue}
+                                              </strong>
+                                            );
+                                          })}
+                                        </div>
+                                      ) : (
+                                        <p>待更新</p>
+                                      )}
+                                    </section>
+                                  </div>
+
                                   <div className="investments-watch-detail-grid">
                                     {otherDetailSections.map((section) => (
                                       <section
@@ -2675,7 +2767,12 @@ export function InvestmentsPage() {
                                             <small>精选摘要</small>
                                           ) : null}
                                         </div>
-                                        {section.kind === 'chips' ? (
+                                        {section.title === '基金持仓' ? (
+                                          <WatchHoldingQuoteList
+                                            holdings={section.items}
+                                            quotesByCode={holdingStockQuotes}
+                                          />
+                                        ) : section.kind === 'chips' ? (
                                           <div className="investments-watch-chip-list">
                                             {section.items.map((value) => (
                                               <strong

@@ -12,6 +12,11 @@ import {
   getRelationalDatabaseStatus,
   migrateRelationalDatabase
 } from './relationalDatabase.js';
+import {
+  getRelationalBootstrap,
+  getRelationalDataStatus,
+  replaceRelationalData
+} from './relationalDataRepository.js';
 
 const DEFAULT_PORT = 8787;
 const DEFAULT_USER_ID = 'default';
@@ -23,6 +28,7 @@ const WEBDAV_ALLOWED_HOSTS = String(process.env.LEDGERFLOW_WEBDAV_ALLOWED_HOSTS 
   .filter(Boolean);
 const WEBDAV_PROXY_METHODS = new Set(['GET', 'PUT', 'DELETE', 'MKCOL', 'MOVE', 'PROPFIND']);
 let sqliteDatabaseModulePromise;
+const eastmoneyStockQuoteCache = new Map();
 
 async function getSqliteDatabaseModule() {
   sqliteDatabaseModulePromise ||= import('./sqliteDatabase.js');
@@ -57,6 +63,20 @@ function normalizeFundCode(value) {
     throw new Error('Fund code must contain exactly six digits.');
   }
   return code;
+}
+
+function normalizeStockSecIds(value) {
+  const secIds = String(value || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => /^[01]\.\d{6}$/.test(item));
+  const uniqueSecIds = [...new Set(secIds)].slice(0, 32);
+
+  if (uniqueSecIds.length === 0) {
+    throw new Error('Stock secids must contain one or more valid security identifiers.');
+  }
+
+  return uniqueSecIds;
 }
 
 async function getEastmoneyFundRealtime(code) {
@@ -106,6 +126,110 @@ async function getEastmoneyFundRealtime(code) {
       gszzl: String(netValue.JZZZL || ''),
       gztime: String(netValue.FSRQ || '')
     };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function getTencentStockSymbol(secId) {
+  const [market, code] = secId.split('.');
+  if (!code) return '';
+  if (market === '1') return `sh${code}`;
+  return /^(4|8|9)/.test(code) ? `bj${code}` : `sz${code}`;
+}
+
+async function getTencentStockQuotes(secIds) {
+  const symbols = secIds.map(getTencentStockSymbol).filter(Boolean);
+  if (symbols.length === 0) return [];
+
+  const response = await fetch(`https://qt.gtimg.cn/q=${encodeURIComponent(symbols.join(','))}`, {
+    headers: {
+      Referer: 'https://gu.qq.com/',
+      'User-Agent': 'Mozilla/5.0 LedgerFlow market-data-proxy'
+    }
+  });
+  if (!response.ok) {
+    throw new Error('Tencent stock quote endpoint is unavailable.');
+  }
+
+  const body = await response.text();
+  return body
+    .split(';')
+    .map((line) => {
+      const match = String(line || '').trim().match(/^v_([^=]+)="([\s\S]*)"$/);
+      if (!match?.[2]) return null;
+      const fields = match[2].split('~');
+      const code = String(fields[2] || '').trim();
+      const name = String(fields[1] || '').trim();
+      const changePercent = Number(fields[32]);
+      const secId = secIds.find((item) => item.endsWith(`.${code}`)) || '';
+      if (!code || !secId) return null;
+
+      return {
+        secId,
+        code,
+        name: name || code,
+        changePercent: Number.isFinite(changePercent) ? changePercent : null
+      };
+    })
+    .filter(Boolean);
+}
+
+async function getEastmoneyStockQuotes(secIds) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+
+  try {
+    const response = await fetch(
+      `https://push2.eastmoney.com/api/qt/ulist.np/get?secids=${encodeURIComponent(
+        secIds.join(',')
+      )}&fields=f12,f13,f14,f3&fltt=2&invt=2`,
+      {
+        headers: {
+          Referer: 'https://quote.eastmoney.com/',
+          'User-Agent': 'Mozilla/5.0 LedgerFlow market-data-proxy'
+        },
+        signal: controller.signal
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Eastmoney stock quote endpoint is unavailable.');
+    }
+
+    const payload = await response.json();
+    const quotes = (payload?.data?.diff || []).map((item) => {
+      const code = String(item?.f12 || '').trim();
+      const market = String(item?.f13 ?? '').trim();
+      const value = Number(item?.f3);
+      return {
+        secId: market && code ? `${market}.${code}` : '',
+        code,
+        name: String(item?.f14 || '').trim() || code,
+        changePercent: Number.isFinite(value) ? value : null
+      };
+    });
+    quotes.forEach((quote) => {
+      if (quote.secId) eastmoneyStockQuoteCache.set(quote.secId, quote);
+    });
+    return quotes;
+  } catch (error) {
+    try {
+      const fallbackQuotes = await getTencentStockQuotes(secIds);
+      if (fallbackQuotes.length > 0) {
+        fallbackQuotes.forEach((quote) => eastmoneyStockQuoteCache.set(quote.secId, quote));
+        return fallbackQuotes;
+      }
+    } catch {
+      // The cache below is the final recovery path for a temporary upstream outage.
+    }
+
+    const cachedQuotes = secIds.flatMap((secId) => {
+      const quote = eastmoneyStockQuoteCache.get(secId);
+      return quote ? [quote] : [];
+    });
+    if (cachedQuotes.length > 0) return cachedQuotes;
+    throw error;
   } finally {
     clearTimeout(timeout);
   }
@@ -565,6 +689,12 @@ async function handleRequest(req, res) {
       return;
     }
 
+    if (req.method === 'GET' && pathname === '/market/stock-quotes') {
+      const secIds = normalizeStockSecIds(url.searchParams.get('secids'));
+      jsonResponse(res, 200, { ok: true, data: { quotes: await getEastmoneyStockQuotes(secIds) } });
+      return;
+    }
+
     if (req.method === 'POST' && pathname === '/setup/initialize') {
       const currentSetup = await getDatabaseSetupStatus();
       if (currentSetup.initialized && !requireApiToken(req, res)) {
@@ -577,6 +707,64 @@ async function handleRequest(req, res) {
         validateProvider: validateDatabaseProvider
       });
       jsonResponse(res, 200, { ok: true, ...setup });
+      return;
+    }
+
+    // SQL is the application's source of truth. These local setup/data endpoints
+    // deliberately do not require a separate API token: initialization itself is
+    // already mandatory and the server is normally bound to localhost.
+    if (req.method === 'GET' && pathname === '/data/bootstrap') {
+      const setup = await getDatabaseSetupStatus();
+      if (!setup.initialized || setup.configurationMismatch) {
+        jsonResponse(res, 409, { ok: false, message: 'Database provider has not been initialized.' });
+        return;
+      }
+      await migrateRelationalDatabase(setup.provider);
+      jsonResponse(res, 200, await getRelationalBootstrap(setup.provider));
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/data/status') {
+      const setup = await getDatabaseSetupStatus();
+      if (!setup.initialized || setup.configurationMismatch) {
+        jsonResponse(res, 409, { ok: false, message: 'Database provider has not been initialized.' });
+        return;
+      }
+      await migrateRelationalDatabase(setup.provider);
+      jsonResponse(res, 200, await getRelationalDataStatus(setup.provider));
+      return;
+    }
+
+    if ((req.method === 'PUT' || req.method === 'POST') && pathname === '/data/import') {
+      const setup = await getDatabaseSetupStatus();
+      if (!setup.initialized || setup.configurationMismatch) {
+        jsonResponse(res, 409, { ok: false, message: 'Database provider has not been initialized.' });
+        return;
+      }
+      await migrateRelationalDatabase(setup.provider);
+      jsonResponse(res, 200, await replaceRelationalData(setup.provider, await readJsonBody(req)));
+      return;
+    }
+
+    if (
+      (req.method === 'POST' || req.method === 'PUT') &&
+      ['/snapshots', '/snapshots/upload', '/mysql/snapshots', '/mysql/snapshots/upload'].includes(
+        pathname
+      )
+    ) {
+      // A local SQLite deployment is already protected by the local machine. It should not make
+      // ordinary users configure an API token merely to create an extra restore point.
+      if ((await getActiveDatabaseProvider()) !== 'sqlite' && !requireApiToken(req, res)) return;
+      jsonResponse(res, 200, await saveSnapshot(await readJsonBody(req)));
+      return;
+    }
+
+    if (
+      req.method === 'GET' &&
+      ['/snapshots/latest', '/mysql/snapshots/latest'].includes(pathname)
+    ) {
+      if ((await getActiveDatabaseProvider()) !== 'sqlite' && !requireApiToken(req, res)) return;
+      jsonResponse(res, 200, await getLatestSnapshot(url));
       return;
     }
 
@@ -603,24 +791,6 @@ async function handleRequest(req, res) {
       ['/conn/test', '/connection/test', '/db/connection/test'].includes(pathname)
     ) {
       jsonResponse(res, 200, await testActiveDatabaseConnection());
-      return;
-    }
-
-    if (
-      (req.method === 'POST' || req.method === 'PUT') &&
-      ['/snapshots', '/snapshots/upload', '/mysql/snapshots', '/mysql/snapshots/upload'].includes(
-        pathname
-      )
-    ) {
-      jsonResponse(res, 200, await saveSnapshot(await readJsonBody(req)));
-      return;
-    }
-
-    if (
-      req.method === 'GET' &&
-      ['/snapshots/latest', '/mysql/snapshots/latest'].includes(pathname)
-    ) {
-      jsonResponse(res, 200, await getLatestSnapshot(url));
       return;
     }
 

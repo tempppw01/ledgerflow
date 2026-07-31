@@ -19,7 +19,7 @@ interface MysqlSnapshotPanelProps {
   apiToken: string;
   onApiTokenChange: (value: string) => void;
   createPayload: () => FinanceBackupPayload;
-  onRestore: (payload: FinanceBackupPayload) => void;
+  onRestore: (payload: FinanceBackupPayload) => Promise<void> | void;
 }
 
 function formatBytes(value: number) {
@@ -56,6 +56,7 @@ export function MysqlSnapshotPanel({
   const [status, setStatus] = useState('');
   const [lastSnapshot, setLastSnapshot] = useState<MysqlSnapshotRecord | null>(null);
   const [restoreOpen, setRestoreOpen] = useState(false);
+  const [technicalOptionsOpen, setTechnicalOptionsOpen] = useState(false);
 
   const summary = useMemo(() => {
     if (!lastSnapshot) return '尚未读取数据库快照';
@@ -67,11 +68,6 @@ export function MysqlSnapshotPanel({
       setStatus('请至少选择一个备份范围。');
       return;
     }
-    if (!apiToken.trim()) {
-      setStatus('请先填写数据库快照 API 令牌。');
-      return;
-    }
-
     try {
       setBusy(true);
       setStatus('正在生成快照...');
@@ -102,11 +98,6 @@ export function MysqlSnapshotPanel({
   }
 
   async function handleLoadLatest() {
-    if (!apiToken.trim()) {
-      setStatus('请先填写数据库快照 API 令牌。');
-      return;
-    }
-
     try {
       setBusy(true);
       setStatus('正在读取数据库最新快照...');
@@ -125,9 +116,9 @@ export function MysqlSnapshotPanel({
     }
   }
 
-  function handleConfirmRestore() {
+  async function handleConfirmRestore() {
     if (!lastSnapshot) return;
-    onRestore(lastSnapshot.payload);
+    await onRestore(lastSnapshot.payload);
     setRestoreOpen(false);
     setStatus('已从数据库快照恢复到本地。');
   }
@@ -137,35 +128,20 @@ export function MysqlSnapshotPanel({
       <div className="database-remote-backup-head">
         <div>
           <div className="row" style={{ gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
-            <h3 style={{ margin: 0 }}>数据库快照同步</h3>
+            <h3 style={{ margin: 0 }}>手动恢复点</h3>
             <span className="sync-tip" style={{ whiteSpace: 'nowrap' }}>
               {summary}
             </span>
           </div>
           <p className="sync-tip" style={{ margin: '6px 0 0' }}>
-            先把当前 JSON 备份原样写入已选数据库，恢复前会校验快照完整性。
+            日常数据已自动保存到当前数据库。需要额外保险时，在这里创建一个可手动恢复的副本。
           </p>
         </div>
       </div>
 
       <div className="database-remote-backup-body">
-        <p className="sync-tip" style={{ margin: '0 0 10px' }}>
-          当前备份范围：{backupScopeSummary}
-        </p>
+        <p className="sync-tip" style={{ margin: '0 0 10px' }}>恢复点将保存：{backupScopeSummary}</p>
         <BackupScopeSelector scope={backupScope} onChange={onBackupScopeChange} />
-        <div className="field" style={{ marginBottom: 10 }}>
-          <label>API 令牌</label>
-          <PasswordInput
-            value={apiToken}
-            placeholder="与服务端 LEDGERFLOW_API_TOKEN 保持一致"
-            onChange={(event) => {
-              onApiTokenChange(event.target.value);
-            }}
-            showLabel="显示"
-            hideLabel="隐藏"
-          />
-          <small className="sync-tip">令牌只保存在当前浏览器，用于保护数据库快照读写接口。</small>
-        </div>
         <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
           <button
             type="button"
@@ -174,7 +150,7 @@ export function MysqlSnapshotPanel({
             disabled={disabled || busy || !canCreateBackup}
           >
             <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
-            同步到数据库
+            创建恢复点
           </button>
           <button
             type="button"
@@ -183,9 +159,32 @@ export function MysqlSnapshotPanel({
             disabled={disabled || busy}
           >
             <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
-            从数据库恢复
+            恢复最近副本
           </button>
           {status ? <span className="sync-tip">{status}</span> : null}
+        </div>
+        <div className="database-technical-options">
+          <button
+            type="button"
+            className="database-technical-options-toggle"
+            aria-expanded={technicalOptionsOpen}
+            onClick={() => setTechnicalOptionsOpen((current) => !current)}
+          >
+            {technicalOptionsOpen ? '收起技术设置' : '技术设置'}
+          </button>
+          {technicalOptionsOpen ? (
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>服务访问令牌</label>
+              <PasswordInput
+                value={apiToken}
+                placeholder="仅远程 MySQL 服务需要"
+                onChange={(event) => onApiTokenChange(event.target.value)}
+                showLabel="显示"
+                hideLabel="隐藏"
+              />
+              <small className="sync-tip">本机 SQLite 无需填写。远程部署可由管理员提供该令牌。</small>
+            </div>
+          ) : null}
         </div>
       </div>
 

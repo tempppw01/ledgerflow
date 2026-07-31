@@ -170,13 +170,16 @@
     }
   },
   "about": {
+    "kicker": "About LedgerFlow",
     "title": "About LedgerFlow",
+    "intro": "A lighter, steadier finance workspace for daily records, long-term planning, and practical next steps.",
     "version": {
       "title": "Version",
       "current": "Current Version",
       "viewReleases": "View Releases"
     },
     "update": {
+      "idle": "Review the installed version or check for a new release.",
       "check": "Check Updates",
       "checking": "Checking updates…",
       "checkingBtn": "Checking…",
@@ -189,6 +192,10 @@
     },
     "home": {
       "title": "Project Home"
+    },
+    "openSource": {
+      "title": "Built in the open",
+      "description": "Source code, releases, and technical documentation are maintained openly on GitHub."
     },
     "why": {
       "title": "Why We Built This",

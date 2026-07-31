@@ -170,13 +170,16 @@
     }
   },
   "about": {
+    "kicker": "关于 LedgerFlow",
     "title": "关于 LedgerFlow",
+    "intro": "把日常收支、长期规划和需要行动的建议，放进一个更轻、更稳的财务工作台。",
     "version": {
       "title": "版本信息",
       "current": "当前版本",
       "viewReleases": "查看 Releases"
     },
     "update": {
+      "idle": "查看当前版本，或检查是否有新的正式发布。",
       "check": "检查更新",
       "checking": "正在检查更新…",
       "checkingBtn": "检查中…",
@@ -189,6 +192,10 @@
     },
     "home": {
       "title": "项目主页"
+    },
+    "openSource": {
+      "title": "开放协作，持续改进",
+      "description": "项目代码、版本发布和技术文档都在 GitHub 公开维护。"
     },
     "why": {
       "title": "我们为什么做这件事",

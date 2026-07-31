@@ -84,9 +84,41 @@ request limits and are never the only copy of a core record.
 6. Write a migration report with inserted, skipped, and rejected records. No source backup is
    deleted automatically.
 
-Until a module is switched to its repository API, browser state remains a compatibility cache. A
-module is considered migrated only after reads, writes, rollback behavior, and legacy import are
-covered by SQLite and MySQL tests.
+## Runtime repository contract
+
+`server/relationalDataRepository.js` is the single persistence boundary for the current
+single-user application. It supports SQLite and MySQL with the same business payload and has no
+browser storage dependency.
+
+- `GET /api/data/bootstrap` reads the relational rows and reconstructs the application state.
+- `PUT /api/data/import` replaces a user's data in one database transaction. It writes accounts,
+  categories, transactions, tags, attachments, balance changes, subscriptions, debts, repayments,
+  positions, position history, goals, and watchlists as rows.
+- `GET /api/data/status` returns SQL row counts. It is the diagnostic endpoint for confirming that
+  a deployment contains real relational data rather than only a snapshot.
+
+The application blocks normal pages until it has completed this bootstrap. On a fresh initialized
+database it imports the existing browser cache once; afterward SQL is authoritative. LocalStorage
+remains a fast startup/offline recovery cache only. Every business-state change is debounced and
+written back through the repository. Clearing local browser storage must therefore not delete a
+user's ledger.
+
+Legacy JSON, WebDAV, OSS, and snapshot restores are converted server-side through the same
+transaction before the browser state is replaced. A failed SQL write leaves both the previous SQL
+data and the displayed data unchanged.
+
+### Relation tables versus extensible settings
+
+`ledger_user_settings` is intentionally not a replacement for business tables. It currently holds
+only flexible settings with no stable query contract: RSS subscriptions, AI chat transcript UI
+payloads, global memories, category-learning hints, and the variable detail arrays on a fund
+watchlist. The watchlist's searchable identity, current recommendation, risk, timestamps, tags,
+and holding amount remain normalized columns. New queryable domain fields must get a migration and
+a column/table rather than being appended to a settings JSON document.
+
+AI workflow definitions, runs, messages, market quotes, news, and summaries already have their own
+schema tables. Their producer services should write those tables directly as the workflows and
+market ingestion jobs are enabled; they must not be stored in browser persistence.
 
 ## Redis decision
 

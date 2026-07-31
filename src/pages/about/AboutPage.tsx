@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { APP_GITHUB_URL, APP_LOGO_URL, APP_VERSION } from '../../shared/config/app';
-import { ABOUT_HAPPY_ILLUSTRATION_URL } from '../../shared/config/brandAssets';
 
 interface UpdateCheckResult {
   status: 'idle' | 'checking' | 'error' | 'up-to-date' | 'update-available';
@@ -44,22 +43,14 @@ export function AboutPage() {
     try {
       const response = await fetch(
         'https://api.github.com/repos/tempppw01/ledgerflow/releases/latest',
-        {
-          headers: {
-            Accept: 'application/vnd.github+json'
-          }
-        }
+        { headers: { Accept: 'application/vnd.github+json' } }
       );
 
       if (!response.ok) {
         throw new Error(t('about.update.httpError', { status: response.status }));
       }
 
-      const data = (await response.json()) as {
-        tag_name?: string;
-        html_url?: string;
-      };
-
+      const data = (await response.json()) as { tag_name?: string; html_url?: string };
       const latestTag = data.tag_name || '';
       if (!latestTag) {
         throw new Error(t('about.update.noVersion'));
@@ -91,145 +82,102 @@ export function AboutPage() {
   };
 
   return (
-    <section className="panel about-page">
-      <header className="about-header about-hero-card">
-        <div className="about-hero-copy">
-          <div className="about-brand-mark" aria-label="LedgerFlow">
+    <section className="about-page">
+      <header className="about-console-header">
+        <div>
+          <p className="about-console-eyebrow">{t('about.kicker')}</p>
+          <div className="about-product-title">
             <img src={APP_LOGO_URL} alt="" />
-            <span>LedgerFlow</span>
+            <h1>LedgerFlow</h1>
           </div>
-          <h2>{t('about.title')}</h2>
-          <p>
-            把记账做得更轻，更稳，也更像一个你愿意反复打开的产品，而不是只在月底想起一次的工具。
-          </p>
-          <div className="about-hero-meta">
-            <section className="about-inline-card">
-              <div className="about-inline-card-head">
-                <div>
-                  <span className="about-section-label">{t('about.version.title')}</span>
-                  <strong>v{APP_VERSION}</strong>
-                </div>
-                <button
-                  type="button"
-                  className="about-chip about-update-chip"
-                  onClick={() => void handleCheckUpdate()}
-                  disabled={updateResult.status === 'checking'}
-                >
-                  {updateResult.status === 'checking'
-                    ? t('about.update.checkingBtn')
-                    : t('about.update.check')}
-                </button>
-              </div>
-              {updateResult.message ? (
-                <p className={`about-update-message ${updateResult.status}`}>
-                  {updateResult.message}
-                </p>
-              ) : (
-                <p className="about-muted-note">
-                  你可以手动检查最新版本，看看最近新增了哪些更顺手的改动。
-                </p>
-              )}
-              {updateResult.status === 'update-available' && updateResult.latestUrl ? (
-                <a href={updateResult.latestUrl} target="_blank" rel="noreferrer">
-                  {t('about.update.goLatest', { version: updateResult.latestVersion })}
-                </a>
-              ) : null}
-            </section>
-
-            <section className="about-inline-card">
-              <span className="about-section-label">Links</span>
-              <div className="about-version-actions">
-                <a
-                  className="about-link-pill"
-                  href={APP_GITHUB_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {t('about.home.title')}
-                </a>
-                <a
-                  className="about-link-pill"
-                  href={`${APP_GITHUB_URL}/releases`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {t('about.version.viewReleases')}
-                </a>
-              </div>
-            </section>
-          </div>
+          <p>{t('about.intro')}</p>
         </div>
-        <div className="about-hero-illustration" aria-hidden="true">
-          <img src={ABOUT_HAPPY_ILLUSTRATION_URL} alt="" loading="lazy" />
+        <div className="about-console-stat">
+          <strong>v{APP_VERSION}</strong>
+          <span>{t('about.version.current')}</span>
         </div>
       </header>
 
-      <section className="about-block about-block-featured about-combined-card">
-        <div className="about-combined-columns about-combined-columns-wide">
-          <section className="about-subsection">
-            <div className="about-block-head">
-              <h3>{t('about.why.title')}</h3>
-              <span className="about-chip">Why</span>
-            </div>
-            <p>{t('about.why.p1')}</p>
-          </section>
+      <section className="about-workspace" aria-labelledby="about-product-heading">
+        <div className="about-workspace-head">
+          <div>
+            <p className="about-section-label">{t('about.version.title')}</p>
+            <h2 id="about-product-heading">{t('about.title')}</h2>
+            <p>{t('about.update.idle')}</p>
+          </div>
+          <button
+            type="button"
+            className="about-update-button"
+            onClick={() => void handleCheckUpdate()}
+            disabled={updateResult.status === 'checking'}
+          >
+            {updateResult.status === 'checking'
+              ? t('about.update.checkingBtn')
+              : t('about.update.check')}
+          </button>
+        </div>
 
-          <section className="about-subsection">
-            <div className="about-block-head">
-              <h3>{t('about.home.title')}</h3>
-              <span className="about-chip">Open</span>
-            </div>
-            <p>
-              GitHub：
-              <a href={APP_GITHUB_URL} target="_blank" rel="noreferrer">
-                {APP_GITHUB_URL}
+        {updateResult.message ? (
+          <div className={`about-update-result ${updateResult.status}`} role="status">
+            <p>{updateResult.message}</p>
+            {updateResult.status === 'update-available' && updateResult.latestUrl ? (
+              <a href={updateResult.latestUrl} target="_blank" rel="noreferrer">
+                {t('about.update.goLatest', { version: updateResult.latestVersion })}
               </a>
-            </p>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+
+      <section className="about-content-section about-foundation-grid">
+        <section className="about-subsection">
+          <p className="about-section-label">{t('about.why.title')}</p>
+          <h2>{t('about.why.p2')}</h2>
+          <p>{t('about.why.p1')}</p>
+        </section>
+
+        <section className="about-subsection about-open-source">
+          <p className="about-section-label">{t('about.home.title')}</p>
+          <h2>{t('about.openSource.title')}</h2>
+          <p>{t('about.openSource.description')}</p>
+          <div className="about-link-row">
+            <a href={APP_GITHUB_URL} target="_blank" rel="noreferrer">
+              {t('about.home.title')}
+            </a>
             <a href={`${APP_GITHUB_URL}/releases`} target="_blank" rel="noreferrer">
               {t('about.version.viewReleases')}
             </a>
-          </section>
-        </div>
+          </div>
+        </section>
       </section>
 
-      <section className="about-block about-combined-card">
-        <div className="about-combined-columns about-combined-columns-3">
-          <section className="about-subsection">
-            <div className="about-block-head">
-              <h3>{t('about.principles.title')}</h3>
-              <span className="about-chip">Principles</span>
-            </div>
-            <ul className="about-bullet-list">
-              <li>{t('about.principles.l1')}</li>
-              <li>{t('about.principles.l2')}</li>
-              <li>{t('about.principles.l3')}</li>
-            </ul>
-          </section>
+      <section className="about-content-section about-principles-grid">
+        <section className="about-subsection">
+          <p className="about-section-label">{t('about.principles.title')}</p>
+          <ul className="about-bullet-list">
+            <li>{t('about.principles.l1')}</li>
+            <li>{t('about.principles.l2')}</li>
+            <li>{t('about.principles.l3')}</li>
+          </ul>
+        </section>
 
-          <section className="about-subsection">
-            <div className="about-block-head">
-              <h3>{t('about.value.title')}</h3>
-              <span className="about-chip">Value</span>
-            </div>
-            <ul className="about-bullet-list">
-              <li>{t('about.value.l1')}</li>
-              <li>{t('about.value.l2')}</li>
-              <li>{t('about.value.l3')}</li>
-            </ul>
-          </section>
+        <section className="about-subsection">
+          <p className="about-section-label">{t('about.value.title')}</p>
+          <ul className="about-bullet-list">
+            <li>{t('about.value.l1')}</li>
+            <li>{t('about.value.l2')}</li>
+            <li>{t('about.value.l3')}</li>
+          </ul>
+        </section>
 
-          <section className="about-subsection">
-            <div className="about-block-head">
-              <h3>{t('about.privacy.title')}</h3>
-              <span className="about-chip">Privacy</span>
-            </div>
-            <ul className="about-bullet-list">
-              <li>{t('about.privacy.l1')}</li>
-              <li>{t('about.privacy.l2')}</li>
-              <li>{t('about.privacy.l3')}</li>
-            </ul>
-          </section>
-        </div>
+        <section className="about-subsection">
+          <p className="about-section-label">{t('about.privacy.title')}</p>
+          <ul className="about-bullet-list">
+            <li>{t('about.privacy.l1')}</li>
+            <li>{t('about.privacy.l2')}</li>
+            <li>{t('about.privacy.l3')}</li>
+          </ul>
+        </section>
       </section>
     </section>
   );

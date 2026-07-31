@@ -14,6 +14,13 @@ export interface EastmoneyFundSnapshot {
   assetAllocation: string[];
 }
 
+export interface EastmoneyHoldingStockQuote {
+  secId: string;
+  code: string;
+  name: string;
+  changePercent: number | null;
+}
+
 interface EastmoneyRealtimePayload {
   fundcode?: string;
   name?: string;
@@ -30,6 +37,12 @@ interface EastmoneyQuoteListPayload {
       f12?: string;
       f14?: string;
     }>;
+  };
+}
+
+interface EastmoneyHoldingStockQuoteResponse {
+  data?: {
+    quotes?: EastmoneyHoldingStockQuote[];
   };
 }
 
@@ -98,6 +111,38 @@ async function fetchRealtimeSnapshot(code: string): Promise<EastmoneyRealtimePay
   }
   const body = (await response.json()) as { data?: EastmoneyRealtimePayload };
   return body.data || null;
+}
+
+export async function fetchEastmoneyHoldingStockQuotes(
+  secIds: string[]
+): Promise<EastmoneyHoldingStockQuote[]> {
+  const normalizedSecIds = Array.from(
+    new Set(
+      secIds
+        .map((item) => String(item || '').trim())
+        .filter((item) => /^[01]\.\d{6}$/.test(item))
+    )
+  ).slice(0, 32);
+
+  if (normalizedSecIds.length === 0) return [];
+
+  const response = await fetch(
+    `/api/market/stock-quotes?secids=${encodeURIComponent(normalizedSecIds.join(','))}`
+  );
+  if (!response.ok) {
+    throw new Error('股票实时行情加载失败，请稍后重试。');
+  }
+
+  const body = (await response.json()) as EastmoneyHoldingStockQuoteResponse;
+  return (body.data?.quotes || []).map((item) => ({
+    secId: String(item.secId || '').trim(),
+    code: String(item.code || '').trim(),
+    name: String(item.name || '').trim(),
+    changePercent:
+      typeof item.changePercent === 'number' && Number.isFinite(item.changePercent)
+        ? item.changePercent
+        : null
+  }));
 }
 
 async function loadFundDetailGlobals(code: string) {

@@ -38,11 +38,11 @@ export function DashboardModuleCustomizer({
         </div>
         {shouldShowBadge ? (
           <span className="dashboard-module-customizer-badge">
-            {enabledCount}/{items.length} 已显示
+            {enabledCount}/{items.length}
           </span>
         ) : null}
       </div>
-      <div className="dashboard-module-manage-list" aria-label="模块配置列表">
+      <div className="dashboard-module-manage-list" aria-label={title}>
         {items.map((item) => (
           <label
             key={item.id}
@@ -57,7 +57,7 @@ export function DashboardModuleCustomizer({
           >
             <div className="dashboard-module-manage-main">
               <span className="dashboard-module-drag-handle" aria-hidden="true">
-                ⋮⋮
+                ::
               </span>
               <div className="dashboard-module-manage-copy">
                 <strong>{item.label}</strong>
@@ -65,17 +65,12 @@ export function DashboardModuleCustomizer({
               </div>
             </div>
             <div className="dashboard-module-manage-tail">
-              <span
-                className={`dashboard-module-state-dot ${item.checked ? 'is-enabled' : 'is-disabled'}`}
-                aria-hidden="true"
-              />
-              <span className="dashboard-module-state">{item.checked ? '显示' : '隐藏'}</span>
               <span className="dashboard-module-switch">
                 <input
                   type="checkbox"
                   checked={item.checked}
                   onChange={(event) => onToggle(item.id, event.target.checked)}
-                  aria-label={`${item.label}${item.checked ? '已显示' : '已隐藏'}`}
+                  aria-label={item.label}
                 />
                 <span aria-hidden="true" />
               </span>

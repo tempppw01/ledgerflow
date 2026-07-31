@@ -1296,7 +1296,7 @@ export function DashboardPage() {
         onNavigateToAssistant={() => navigate('/assistant')}
       />
 
-      <section className="panel">
+      <section className="dashboard-overview-workspace">
         <h2>{tFallback('dashboard.ui.corePanel', '今日财务看板')}</h2>
         <div className="grid grid-2 dashboard-stat-grid">
           <button

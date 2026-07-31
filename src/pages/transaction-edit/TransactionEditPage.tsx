@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { TransactionStatus } from '../../entities/transaction/types';
 import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
 import { extractJsonString } from '../../features/assistant/workbench/workbenchUtils';
+import { AmountKeypad } from '../../features/transactions/components/AmountKeypad';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 
@@ -17,7 +18,9 @@ const MIN_DATE = '2000-01-01T00:00';
 const MAX_DATE = '2100-12-31T23:59';
 const CALCULATOR_KEYS = ['C', '⌫', '7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3', '=', '0', '.'] as const;
 
-type CalculatorKey = (typeof CALCULATOR_KEYS)[number];
+type CalculatorKey = string;
+
+void CALCULATOR_KEYS;
 
 function normalizeExpression(input: string): string {
   return input;
@@ -288,6 +291,19 @@ export function TransactionEditPage() {
         return;
       }
 
+      if (key === 'backspace') {
+        setCalculatorError('');
+        setCalculatorExpression((prev) => {
+          const next = prev.length <= 1 ? '0' : prev.slice(0, -1);
+          if (!isCalculatorOperator(next.slice(-1))) {
+            setAmount(next === '0' ? '' : next);
+            if (amountError) setAmountError('');
+          }
+          return next;
+        });
+        return;
+      }
+
       if (key === '⌫') {
         setCalculatorError('');
         setCalculatorExpression((prev) => {
@@ -320,7 +336,14 @@ export function TransactionEditPage() {
       }
 
       setCalculatorError('');
-      setCalculatorExpression((prev) => appendCalculatorToken(prev, key));
+      setCalculatorExpression((prev) => {
+        const next = appendCalculatorToken(prev, key);
+        if (/^\d+(\.\d{0,2})?$/.test(next)) {
+          setAmount(next === '0' ? '' : next);
+          if (amountError) setAmountError('');
+        }
+        return next;
+      });
     },
     [amountError, calculatorExpression]
   );
@@ -628,28 +651,11 @@ export function TransactionEditPage() {
                 <div className="quick-add-amount-display transaction-edit-amount-display">
                   当前金额：¥{amount || '0'}
                 </div>
-                <div
-                  className="quick-add-keypad transaction-edit-keypad transaction-edit-calculator-keypad"
-                  role="group"
-                  aria-label="金额计算器键盘"
-                >
-                  {CALCULATOR_KEYS.map((key) => {
-                    const isOperator = ['-', '+'].includes(key);
-                    const isDanger = key === 'C' || key === '⌫';
-                    const isEqual = key === '=';
-                    const isZero = key === '0';
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        className={`quick-add-key ${isOperator || isDanger ? 'quick-add-key-muted' : ''} ${isEqual ? 'primary transaction-edit-calc-equal' : ''} ${isZero ? 'transaction-edit-calc-zero' : ''}`.trim()}
-                        onClick={() => handleAmountKeypadInput(key)}
-                      >
-                        {key}
-                      </button>
-                    );
-                  })}
-                </div>
+                <AmountKeypad
+                  className="transaction-edit-keypad"
+                  label="金额计算器键盘"
+                  onKey={(key) => handleAmountKeypadInput(key === 'clear' ? 'C' : key)}
+                />
               </div>
             </aside>
           ) : null}

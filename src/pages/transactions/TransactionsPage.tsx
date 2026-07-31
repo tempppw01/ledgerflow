@@ -21,6 +21,7 @@ import {
   TransactionDetailSectionKey
 } from '../../features/transactions/components/TransactionDetailDrawer';
 import { TransactionFilters } from '../../features/transactions/components/TransactionFilters';
+import { AmountKeypad } from '../../features/transactions/components/AmountKeypad';
 import {
   TransactionColumnKey,
   TransactionQuickFilters,
@@ -2768,136 +2769,132 @@ export function TransactionsPage() {
             </header>
 
             <div className="quick-add-body">
-              <div className="quick-add-amount-display">
-                {quickAddCalculatedAmount !== null ? quickAddCalculatedAmount : quickAddAmount || '0'}
-              </div>
-              <div className="field" style={{ marginBottom: 10 }}>
-                <label htmlFor="quick-add-expression">金额表达式（简易计算）</label>
-                <input
-                  id="quick-add-expression"
-                  placeholder="例如：100+20*3 或 (88+12)/2"
-                  value={quickAddExpression}
-                  onChange={(event) => setQuickAddExpression(event.target.value)}
-                />
-                <small style={{ color: 'var(--color-text-secondary)' }}>
-                  支持：+ - * / ( ) 和小数，回车可快速计算。
-                </small>
-              </div>
-              <div className="quick-add-grid quick-add-grid-wide">
-                <div className="field" style={{ marginBottom: 0 }}>
-                  <label htmlFor="quick-add-type">类型</label>
-                  <select
-                    id="quick-add-type"
-                    value={quickAddType}
-                    onChange={(event) => setQuickAddType(event.target.value as TransactionType)}
-                  >
-                    <option value="expense">支出</option>
-                    <option value="income">收入</option>
-                  </select>
+              <section className="quick-add-main">
+                <div className="quick-add-amount-stage">
+                  <div className="quick-add-type-tabs" role="group" aria-label="账目类型">
+                    <button
+                      type="button"
+                      className={quickAddType === 'expense' ? 'is-active' : ''}
+                      aria-pressed={quickAddType === 'expense'}
+                      onClick={() => setQuickAddType('expense')}
+                    >
+                      支出
+                    </button>
+                    <button
+                      type="button"
+                      className={quickAddType === 'income' ? 'is-active' : ''}
+                      aria-pressed={quickAddType === 'income'}
+                      onClick={() => setQuickAddType('income')}
+                    >
+                      收入
+                    </button>
+                  </div>
+                  <label htmlFor="quick-add-expression">金额</label>
+                  <div className="quick-add-amount-input">
+                    <span aria-hidden="true">¥</span>
+                    <input
+                      id="quick-add-expression"
+                      autoFocus
+                      inputMode="decimal"
+                      placeholder="0.00"
+                      value={quickAddExpression}
+                      onChange={(event) => setQuickAddExpression(event.target.value)}
+                    />
+                  </div>
+                  {quickAddExpression &&
+                  quickAddCalculatedAmount !== null &&
+                  quickAddExpression !== String(quickAddCalculatedAmount) ? (
+                    <small>合计 ¥{quickAddCalculatedAmount}</small>
+                  ) : null}
                 </div>
-                <div className="field" style={{ marginBottom: 0 }}>
-                  <label htmlFor="quick-add-date">日期</label>
-                  <input
-                    id="quick-add-date"
-                    type="date"
-                    value={quickAddDate}
-                    onChange={(event) => setQuickAddDate(event.target.value)}
-                  />
-                </div>
-                <div className="field" style={{ marginBottom: 0 }}>
-                  <label htmlFor="quick-add-category">分类</label>
-                  <select
-                    id="quick-add-category"
-                    value={quickAddCategoryId}
-                    onChange={(event) => setQuickAddCategoryId(event.target.value)}
-                  >
-                    {quickAddCategoryOptions.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="field" style={{ marginBottom: 0 }}>
-                  <label htmlFor="quick-add-account">账户</label>
-                  <select
-                    id="quick-add-account"
-                    value={quickAddAccountId}
-                    onChange={(event) => setQuickAddAccountId(event.target.value)}
-                  >
-                    {accounts.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
 
-              <div className="field" style={{ marginBottom: 0 }}>
-                <label htmlFor="quick-add-note">备注</label>
-                <input
-                  id="quick-add-note"
-                  placeholder="可选，默认快速记账"
-                  value={quickAddNote}
-                  onChange={(event) => setQuickAddNote(event.target.value)}
-                />
-              </div>
+                <div className="quick-add-grid quick-add-grid-primary">
+                  <div className="field">
+                    <label htmlFor="quick-add-category">分类</label>
+                    <select
+                      id="quick-add-category"
+                      value={quickAddCategoryId}
+                      onChange={(event) => setQuickAddCategoryId(event.target.value)}
+                    >
+                      {quickAddCategoryOptions.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label htmlFor="quick-add-account">账户</label>
+                    <select
+                      id="quick-add-account"
+                      value={quickAddAccountId}
+                      onChange={(event) => setQuickAddAccountId(event.target.value)}
+                    >
+                      {accounts.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-              <div className="quick-add-keypad" role="group" aria-label="金额键盘">
-                {[
-                  '(',
-                  ')',
-                  '7',
-                  '8',
-                  '9',
-                  '/',
-                  '4',
-                  '5',
-                  '6',
-                  '*',
-                  '1',
-                  '2',
-                  '3',
-                  '-',
-                  '00',
-                  '0',
-                  '.',
-                  '+',
-                ].map((key) => (
+                <div className="quick-add-grid quick-add-grid-secondary">
+                  <div className="field">
+                    <label htmlFor="quick-add-date">日期</label>
+                    <input
+                      id="quick-add-date"
+                      type="date"
+                      value={quickAddDate}
+                      onChange={(event) => setQuickAddDate(event.target.value)}
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="quick-add-note">备注</label>
+                    <input
+                      id="quick-add-note"
+                      placeholder="可选"
+                      value={quickAddNote}
+                      onChange={(event) => setQuickAddNote(event.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {quickAddError ? <small className="error">{quickAddError}</small> : null}
+              </section>
+
+              <section className="quick-add-keypad-panel" role="group" aria-label="金额键盘">
+                <AmountKeypad onKey={handleQuickAddKeypadInput} />
+                <div className="quick-add-keypad-actions">
                   <button
-                    key={key}
                     type="button"
-                    className="quick-add-key"
-                    onClick={() => handleQuickAddKeypadInput(key)}
+                    className="quick-add-key quick-add-key-muted"
+                    onClick={() => handleQuickAddKeypadInput('backspace')}
+                    aria-label="退格"
+                    title="退格"
                   >
-                    {key}
+                    ←
                   </button>
-                ))}
-                <button
-                  type="button"
-                  className="quick-add-key quick-add-key-muted"
-                  onClick={() => handleQuickAddKeypadInput('backspace')}
-                >
-                  退格
-                </button>
-                <button
-                  type="button"
-                  className="quick-add-key quick-add-key-muted"
-                  onClick={() => handleQuickAddKeypadInput('clear')}
-                >
-                  清空
-                </button>
-                <button
-                  type="button"
-                  className="quick-add-key quick-add-key-primary"
-                  onClick={() => handleQuickAddKeypadInput('=')}
-                >
-                  =
-                </button>
-              </div>
-
-              {quickAddError ? <small className="error">{quickAddError}</small> : null}
+                  <button
+                    type="button"
+                    className="quick-add-key quick-add-key-muted"
+                    onClick={() => handleQuickAddKeypadInput('clear')}
+                    aria-label="清空金额"
+                    title="清空"
+                  >
+                    C
+                  </button>
+                  <button
+                    type="button"
+                    className="quick-add-key quick-add-key-primary"
+                    onClick={() => handleQuickAddKeypadInput('=')}
+                    aria-label="计算金额"
+                    title="计算"
+                  >
+                    =
+                  </button>
+                </div>
+              </section>
             </div>
 
             <footer className="quick-add-footer">

@@ -308,7 +308,8 @@ describe('InvestmentsPage', () => {
     });
 
     expect(await screen.findByText('招商中证白酒指数(LOF)A')).toBeInTheDocument();
-    expect(screen.getByText(/单位净值 0\.5162/)).toBeInTheDocument();
+    await userEvent.click(screen.getByText('招商中证白酒指数(LOF)A'));
+    expect(screen.getByText('单位净值 0.5162（2026-06-25）')).toBeInTheDocument();
     expect(screen.getByText(/估算涨跌 -3\.10%/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '添加关注' }));
     expect(screen.getByText('关注中')).toBeInTheDocument();

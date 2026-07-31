@@ -6500,20 +6500,19 @@ input[type='date']:focus {
   inset: 0;
   background: rgba(15, 23, 42, 0.35);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
+  padding: var(--space-4);
   z-index: 320;
 }
 
 .quick-add-drawer {
-  width: min(760px, 100vw);
-  max-height: calc(100vh - 20px);
-  max-height: calc(100dvh - 20px);
+  width: min(720px, 100%);
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
   background: var(--color-bg-elevated);
   border: 1px solid var(--color-border);
-  border-bottom: none;
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
+  border-radius: 10px;
   box-shadow: var(--shadow-xl);
   display: flex;
   flex-direction: column;
@@ -6524,7 +6523,7 @@ input[type='date']:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-4);
+  padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--color-divider);
 }
 
@@ -6533,23 +6532,105 @@ input[type='date']:focus {
 }
 
 .quick-add-body {
-  padding: var(--space-4);
   display: grid;
-  gap: var(--space-3);
+  grid-template-columns: minmax(0, 1fr) minmax(188px, 224px);
+  gap: var(--space-4);
+  padding: var(--space-4);
   overflow: auto;
 }
 
-.quick-add-amount-display {
-  font-family: var(--font-number);
-  font-size: clamp(28px, 5vw, 40px);
+.quick-add-main {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.quick-add-main .field {
+  margin: 0;
+}
+
+.quick-add-amount-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.quick-add-amount-stage > label {
+  align-self: center;
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
   font-weight: 700;
-  text-align: right;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
+}
+
+.quick-add-type-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
   border: 1px solid var(--color-border-light);
+  border-radius: 7px;
   background: var(--color-bg-subtle);
-  letter-spacing: 0.02em;
+}
+
+.quick-add-type-tabs button {
+  min-height: 26px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.quick-add-type-tabs button.is-active {
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: none;
+}
+
+.quick-add-amount-input {
+  display: flex;
+  grid-column: 1 / -1;
+  gap: 8px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.quick-add-amount-input > span {
+  color: var(--color-text-secondary);
+  font-family: var(--font-number);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.quick-add-amount-input input {
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-text-primary);
+  font-family: var(--font-number);
+  font-size: 32px;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.quick-add-amount-input input:focus {
+  box-shadow: none;
+}
+
+.quick-add-amount-stage small {
+  grid-column: 1 / -1;
+  color: var(--color-text-secondary);
+  font-size: 12px;
 }
 
 .quick-add-row {
@@ -6567,15 +6648,48 @@ input[type='date']:focus {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.quick-add-grid-primary,
+.quick-add-grid-secondary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.quick-add-grid-secondary {
+  grid-template-columns: minmax(132px, 0.76fr) minmax(0, 1.24fr);
+}
+
+.quick-add-keypad-panel {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+  padding-left: var(--space-4);
+  border-left: 1px solid var(--color-divider);
+}
+
 .quick-add-keypad {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-2);
+  gap: 6px;
 }
 
 .quick-add-key {
-  min-height: 42px;
-  border-radius: var(--radius-sm);
+  display: inline-grid;
+  min-height: 34px;
+  padding: 0;
+  place-items: center;
+  border-radius: 6px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.quick-add-keypad-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.quick-add-keypad-panel > .quick-add-keypad-actions {
+  display: none;
 }
 
 .quick-add-key-muted {
@@ -6586,6 +6700,108 @@ input[type='date']:focus {
   background: var(--color-primary);
   color: #fff;
   border-color: var(--color-primary-border);
+}
+
+.amount-keypad {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-areas:
+    'clear backspace plus minus'
+    'seven eight nine confirm'
+    'four five six confirm'
+    'one two three confirm'
+    'double zero decimal confirm';
+  gap: 6px;
+}
+
+.amount-keypad button {
+  display: inline-grid;
+  min-height: 42px;
+  padding: 0;
+  place-items: center;
+  border-radius: 6px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.amount-keypad-action {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+}
+
+.amount-keypad-action.is-clear {
+  grid-area: clear;
+}
+
+.amount-keypad-action.is-backspace {
+  grid-area: backspace;
+}
+
+.amount-keypad-action:nth-child(3) {
+  grid-area: plus;
+}
+
+.amount-keypad-action:nth-child(4) {
+  grid-area: minus;
+}
+
+.amount-keypad-digit:nth-of-type(5) {
+  grid-area: seven;
+}
+
+.amount-keypad-digit:nth-of-type(6) {
+  grid-area: eight;
+}
+
+.amount-keypad-digit:nth-of-type(7) {
+  grid-area: nine;
+}
+
+.amount-keypad-digit:nth-of-type(8) {
+  grid-area: four;
+}
+
+.amount-keypad-digit:nth-of-type(9) {
+  grid-area: five;
+}
+
+.amount-keypad-digit:nth-of-type(10) {
+  grid-area: six;
+}
+
+.amount-keypad-digit:nth-of-type(11) {
+  grid-area: one;
+}
+
+.amount-keypad-digit:nth-of-type(12) {
+  grid-area: two;
+}
+
+.amount-keypad-digit:nth-of-type(13) {
+  grid-area: three;
+}
+
+.amount-keypad-digit:nth-of-type(14) {
+  grid-area: double;
+}
+
+.amount-keypad-digit:nth-of-type(15) {
+  grid-area: zero;
+}
+
+.amount-keypad-digit:nth-of-type(16) {
+  grid-area: decimal;
+}
+
+.amount-keypad-confirm {
+  grid-area: confirm;
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary-border);
+}
+
+.amount-keypad-confirm:hover {
+  background: var(--color-primary-hover);
 }
 
 .quick-add-footer {
@@ -6655,7 +6871,7 @@ input[type='date']:focus {
   font-variant-numeric: tabular-nums;
 }
 
-.transaction-edit-keypad .quick-add-key {
+.transaction-edit-keypad.amount-keypad button {
   min-height: 46px;
 }
 
@@ -8869,6 +9085,33 @@ body.categories-accounts-resizing {
   margin-top: 12px;
 }
 
+@media (max-width: 640px) {
+  .quick-add-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .quick-add-drawer {
+    width: 100%;
+    max-height: calc(100dvh - 12px);
+    border-bottom: 0;
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  .quick-add-body {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .quick-add-keypad-panel {
+    padding-top: var(--space-3);
+    padding-left: 0;
+    border-top: 1px solid var(--color-divider);
+    border-left: 0;
+  }
+}
+
 .database-provider-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -8983,6 +9226,278 @@ body.categories-accounts-resizing {
 
 .database-import-mode-field select {
   width: 100%;
+}
+
+/* Data and backup console: one workspace, with channels instead of stacked cards. */
+.database-settings-page {
+  display: grid;
+  gap: 20px;
+  max-width: 1180px;
+}
+
+.database-console-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 4px 0 18px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.database-console-header > div:first-child {
+  display: grid;
+  gap: 6px;
+}
+
+.database-console-eyebrow,
+.database-console-kicker {
+  margin: 0;
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.database-console-header h1,
+.database-console-header p,
+.database-console-workspace h2 {
+  margin: 0;
+}
+
+.database-console-header h1 {
+  color: var(--color-text-primary);
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.database-console-header p:not(.database-console-eyebrow) {
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.database-console-stat {
+  display: grid;
+  min-width: 132px;
+  gap: 2px;
+  padding-left: 18px;
+  border-left: 2px solid var(--color-primary);
+  text-align: right;
+}
+
+.database-console-stat strong {
+  color: var(--color-text-primary);
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.database-console-stat span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.database-console-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--color-divider);
+  scrollbar-width: none;
+}
+
+.database-console-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.database-console-tabs button {
+  position: relative;
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.database-console-tabs button::after {
+  position: absolute;
+  right: 14px;
+  bottom: -1px;
+  left: 14px;
+  height: 2px;
+  background: transparent;
+  content: '';
+}
+
+.database-console-tabs button:hover,
+.database-console-tabs button:focus-visible {
+  color: var(--color-text);
+  transform: none;
+  box-shadow: none;
+}
+
+.database-console-tabs button.is-active {
+  color: var(--color-text-primary);
+}
+
+.database-console-tabs button.is-active::after {
+  background: var(--color-primary);
+}
+
+.database-console-workspace,
+.database-console-danger-zone {
+  display: grid;
+  gap: 16px;
+  padding: 22px 0 2px;
+}
+
+.database-console-workspace-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.database-console-workspace-head > div {
+  display: grid;
+  gap: 5px;
+}
+
+.database-console-workspace h2 {
+  color: var(--color-text-primary);
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.database-console-workspace > .sync-tip {
+  margin: -8px 0 0;
+  max-width: 700px;
+}
+
+.database-console-workspace .database-backup-scope {
+  gap: 12px;
+  padding: 16px 0 0;
+  border: 0;
+  border-top: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: transparent;
+}
+
+.database-console-workspace .database-backup-scope-item {
+  min-height: 74px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--color-bg-subtle);
+}
+
+.database-console-workspace .database-backup-scope-item.is-active {
+  border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-primary-bg) 55%, var(--color-bg-subtle));
+}
+
+.database-console-channel {
+  display: grid;
+  gap: 0;
+}
+
+.database-console-channel .panel {
+  padding: 22px 0;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--color-divider);
+  background: transparent;
+  box-shadow: none;
+}
+
+.database-console-channel .panel:first-child {
+  padding-top: 2px;
+}
+
+.database-console-channel .database-remote-backup-card {
+  margin-top: 0 !important;
+}
+
+.database-console-workspace.database-remote-backup-card {
+  gap: 18px;
+}
+
+.database-console-workspace .database-remote-backup-body {
+  margin-top: 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-divider);
+}
+
+.database-console-workspace .database-remote-backup-toggle {
+  min-height: 30px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  background: var(--color-bg-subtle);
+}
+
+.database-technical-options {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.database-technical-options-toggle {
+  min-height: 28px;
+  padding: 4px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  box-shadow: none;
+}
+
+.database-technical-options-toggle:hover,
+.database-technical-options-toggle:focus-visible {
+  color: var(--color-text);
+  transform: none;
+  box-shadow: none;
+}
+
+.database-technical-options .field {
+  width: min(100%, 560px);
+}
+
+.database-console-danger-zone {
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid color-mix(in srgb, var(--color-danger) 30%, var(--color-divider));
+}
+
+.database-console-danger-zone h3,
+.database-console-danger-zone p {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .database-console-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .database-console-stat {
+    padding-left: 12px;
+    text-align: left;
+  }
+
+  .database-console-tabs button {
+    padding-inline: 12px;
+  }
+
+  .database-console-workspace-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 900px) {

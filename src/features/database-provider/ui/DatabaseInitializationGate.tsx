@@ -4,6 +4,7 @@ import {
   type DatabaseSetupStatus
 } from '../../../shared/api/databaseProviderClient';
 import { DatabaseProviderSetupPanel } from './DatabaseProviderSetupPanel';
+import { SqlDataSyncGate } from './SqlDataSyncGate';
 
 interface DatabaseInitializationGateProps {
   children: ReactNode;
@@ -32,7 +33,7 @@ export function DatabaseInitializationGate({ children }: DatabaseInitializationG
   }, [loadStatus]);
 
   if (status?.initialized && !status.configurationMismatch) {
-    return <>{children}</>;
+    return <SqlDataSyncGate>{children}</SqlDataSyncGate>;
   }
 
   return (
