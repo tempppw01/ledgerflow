@@ -90,6 +90,7 @@ const WATCH_CATEGORY_FILTERS: Array<{ id: WatchCategoryFilterId; label: string; 
 const WATCH_GRID_COLUMN_OPTIONS = [1, 2, 3] as const;
 
 type WatchGridColumnCount = (typeof WATCH_GRID_COLUMN_OPTIONS)[number];
+type WatchDisplayMode = 'grid' | 'list';
 
 function getMonthBounds() {
   const now = new Date();
@@ -1401,6 +1402,7 @@ export function InvestmentsPage() {
   const [selectedWatchCategoryId, setSelectedWatchCategoryId] =
     useState<WatchCategoryFilterId>('all');
   const [watchGridColumns, setWatchGridColumns] = useState<WatchGridColumnCount>(3);
+  const [watchDisplayMode, setWatchDisplayMode] = useState<WatchDisplayMode>('grid');
   const [refreshingWatchItemId, setRefreshingWatchItemId] = useState<string | null>(null);
   const [refreshingAllWatchItems, setRefreshingAllWatchItems] = useState(false);
   const [editingWatchHoldingId, setEditingWatchHoldingId] = useState<string | null>(null);
@@ -2301,17 +2303,39 @@ export function InvestmentsPage() {
                     </select>
                   </label>
                   <div className="investments-watch-grid-controls" aria-label="每行卡片数量">
-                    {WATCH_GRID_COLUMN_OPTIONS.map((count) => (
-                      <button
-                        key={count}
-                        type="button"
-                        className={watchGridColumns === count ? 'is-active' : ''}
-                        onClick={() => setWatchGridColumns(count)}
-                        aria-pressed={watchGridColumns === count}
-                      >
-                        {count}
-                      </button>
-                    ))}
+                    <button
+                      type="button"
+                      className={watchDisplayMode === 'grid' ? 'is-active' : ''}
+                      onClick={() => setWatchDisplayMode('grid')}
+                      aria-label="卡片监控视图"
+                      aria-pressed={watchDisplayMode === 'grid'}
+                      title="卡片监控视图"
+                    >
+                      <span aria-hidden="true">&#9638;</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={watchDisplayMode === 'list' ? 'is-active' : ''}
+                      onClick={() => setWatchDisplayMode('list')}
+                      aria-label="列表监控视图"
+                      aria-pressed={watchDisplayMode === 'list'}
+                      title="列表监控视图"
+                    >
+                      <span aria-hidden="true">&#9779;</span>
+                    </button>
+                    {watchDisplayMode === 'grid'
+                      ? WATCH_GRID_COLUMN_OPTIONS.map((count) => (
+                          <button
+                            key={count}
+                            type="button"
+                            className={watchGridColumns === count ? 'is-active' : ''}
+                            onClick={() => setWatchGridColumns(count)}
+                            aria-pressed={watchGridColumns === count}
+                          >
+                            {count}
+                          </button>
+                        ))
+                      : null}
                   </div>
                 </div>
 
@@ -2321,7 +2345,9 @@ export function InvestmentsPage() {
                     <p>切换到其他分类，或用基金代码添加一只新的。</p>
                   </div>
                 ) : (
-                  <div className={`investments-watchlist-list is-columns-${watchGridColumns}`}>
+                  <div
+                    className={`investments-watchlist-list is-${watchDisplayMode} is-columns-${watchGridColumns}`}
+                  >
                     {filteredInvestmentWatchlist.map((item) => {
                       const isExpanded = expandedWatchItemId === item.id;
                       const detailSections = compactWatchDetailSections(item);
@@ -2433,7 +2459,9 @@ export function InvestmentsPage() {
                                   aria-label={`${item.name}持有份额`}
                                   className="investments-watch-holding-input"
                                   inputMode="decimal"
-                                  onChange={(event) => setEditingWatchHoldingValue(event.target.value)}
+                                  onChange={(event) =>
+                                    setEditingWatchHoldingValue(event.target.value)
+                                  }
                                   onClick={(event) => event.stopPropagation()}
                                   onKeyDown={(event) => {
                                     event.stopPropagation();

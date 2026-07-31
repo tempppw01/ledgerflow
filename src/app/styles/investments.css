@@ -2762,6 +2762,85 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.investments-watchlist-list.is-list {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.investments-watchlist-list.is-list .investments-watch-card {
+  display: grid;
+  grid-template-columns: minmax(170px, 1.35fr) minmax(130px, 0.9fr) minmax(190px, 1fr) minmax(
+      154px,
+      auto
+    );
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 9px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--color-border-light);
+  border-radius: 0;
+  background: transparent;
+}
+
+.investments-watchlist-list.is-list .investments-watch-card:hover,
+.investments-watchlist-list.is-list .investments-watch-card.is-expanded {
+  background: color-mix(in srgb, var(--color-primary-bg) 35%, transparent);
+}
+
+.investments-watchlist-list.is-list .investments-watch-card-head,
+.investments-watchlist-list.is-list .investments-watch-card-brief,
+.investments-watchlist-list.is-list .investments-watch-card-mini-stats,
+.investments-watchlist-list.is-list .investments-watch-card-ai-actions {
+  min-width: 0;
+}
+
+.investments-watchlist-list.is-list .investments-watch-card-summary,
+.investments-watchlist-list.is-list .investments-watch-card-split-grid,
+.investments-watchlist-list.is-list .investments-watch-card-meta {
+  display: none;
+}
+
+.investments-watchlist-list.is-list .investments-watch-card-mini-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: visible;
+}
+
+.investments-watchlist-list.is-list .investments-watch-card-mini-stats span {
+  min-width: 0;
+  max-width: none;
+  padding: 0 8px;
+  border: 0;
+  border-left: 1px solid var(--color-border-light);
+  border-radius: 0;
+  background: transparent;
+}
+
+.investments-watchlist-list.is-list .investments-watch-card-mini-stats span:first-child {
+  border-left: 0;
+}
+
+.investments-watchlist-list.is-list .investments-watch-card-ai-actions {
+  justify-content: flex-end;
+}
+
+.investments-watchlist-list.is-list .investments-watch-card-details {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.investments-watchlist-list.is-list
+  .investments-watch-card-details
+  .investments-watch-performance-panel,
+.investments-watchlist-list.is-list
+  .investments-watch-card-details
+  .investments-watch-detail-section {
+  border-radius: 0;
+  box-shadow: none;
+}
+
 .investments-watchlist-actions {
   display: flex;
   gap: 6px;
@@ -4559,6 +4638,22 @@
 }
 
 @media (max-width: 900px) {
+  .investments-watchlist-list.is-list .investments-watch-card {
+    grid-template-columns: minmax(0, 1fr) minmax(132px, 0.8fr) auto;
+  }
+
+  .investments-watchlist-list.is-list .investments-watch-card-brief {
+    display: none;
+  }
+
+  .investments-watchlist-list.is-list .investments-watch-card-mini-stats {
+    grid-column: 2;
+  }
+
+  .investments-watchlist-list.is-list .investments-watch-card-ai-actions {
+    grid-column: 3;
+  }
+
   .investments-page {
     height: auto;
     min-height: auto;
@@ -4752,6 +4847,21 @@
 }
 
 @media (max-width: 640px) {
+  .investments-watchlist-list.is-list .investments-watch-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 10px;
+  }
+
+  .investments-watchlist-list.is-list .investments-watch-card-mini-stats {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .investments-watchlist-list.is-list .investments-watch-card-ai-actions {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
   .investments-today-summary {
     gap: 10px;
   }
