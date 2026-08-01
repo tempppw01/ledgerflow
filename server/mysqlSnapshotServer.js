@@ -3,6 +3,7 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import dns from 'node:dns/promises';
 import net from 'node:net';
 import { URL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import { withMysqlConnection } from './databaseConnection.js';
 import {
   getDatabaseSetupStatus,
@@ -17,9 +18,17 @@ import {
   getRelationalDataStatus,
   replaceRelationalData
 } from './relationalDataRepository.js';
+import {
+  authenticateSession,
+  changePassword,
+  getAuthStatus,
+  loginUser,
+  logoutSession,
+  registerUser,
+  revokeOtherSessions
+} from './authService.js';
 
 const DEFAULT_PORT = 8787;
-const DEFAULT_USER_ID = 'default';
 const MAX_BODY_BYTES = Number(process.env.LEDGERFLOW_MAX_BODY_BYTES || 50 * 1024 * 1024);
 const API_TOKEN = String(process.env.LEDGERFLOW_API_TOKEN || '').trim();
 const WEBDAV_ALLOWED_HOSTS = String(process.env.LEDGERFLOW_WEBDAV_ALLOWED_HOSTS || '')
@@ -40,21 +49,163 @@ async function getActiveDatabaseProvider() {
   return setup.provider || 'mysql';
 }
 
-function jsonResponse(res, status, body) {
+const SESSION_COOKIE_NAME = 'ledgerflow_session';
+const loginFailures = new Map();
+
+function corsHeaders(req) {
+  const requestOrigin = String(req.headers.origin || '').trim();
+  const allowedOrigins = String(process.env.LEDGERFLOW_CORS_ORIGIN || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const headers = {
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,MKCOL,MOVE,PROPFIND,OPTIONS',
+    'Access-Control-Allow-Headers':
+      'Content-Type, Authorization, X-LedgerFlow-Api-Token, X-WebDAV-Endpoint, Depth, Destination, Overwrite'
+  };
+  if (!requestOrigin || allowedOrigins.length === 0) return headers;
+  if (allowedOrigins.includes('*')) {
+    return { ...headers, 'Access-Control-Allow-Origin': '*' };
+  }
+  if (allowedOrigins.includes(requestOrigin)) {
+    return {
+      ...headers,
+      'Access-Control-Allow-Origin': requestOrigin,
+      'Access-Control-Allow-Credentials': 'true',
+      Vary: 'Origin'
+    };
+  }
+  return { ...headers, Vary: 'Origin' };
+}
+
+function jsonResponse(res, status, body, extraHeaders = {}) {
   const text = JSON.stringify(body);
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Content-Length': Buffer.byteLength(text),
-    'Access-Control-Allow-Origin': process.env.LEDGERFLOW_CORS_ORIGIN || '*',
-    'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,MKCOL,MOVE,PROPFIND,OPTIONS',
-    'Access-Control-Allow-Headers':
-      'Content-Type, Authorization, X-LedgerFlow-Api-Token, X-WebDAV-Endpoint, Depth, Destination, Overwrite'
+    ...(res.ledgerflowCorsHeaders || {}),
+    ...extraHeaders
   });
   res.end(text);
 }
 
 function normalizePath(pathname) {
   return pathname.startsWith('/api/') ? pathname.slice(4) : pathname;
+}
+
+function readCookies(req) {
+  const source = String(req.headers.cookie || '');
+  return Object.fromEntries(
+    source
+      .split(';')
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .map((item) => {
+        const separator = item.indexOf('=');
+        const key = separator >= 0 ? item.slice(0, separator) : item;
+        const value = separator >= 0 ? item.slice(separator + 1) : '';
+        try {
+          return [key, decodeURIComponent(value)];
+        } catch {
+          return [key, ''];
+        }
+      })
+  );
+}
+
+function readSessionToken(req) {
+  return String(readCookies(req)[SESSION_COOKIE_NAME] || '');
+}
+
+function secureCookiesEnabled(req) {
+  if (process.env.LEDGERFLOW_COOKIE_SECURE === 'true') return true;
+  if (process.env.LEDGERFLOW_COOKIE_SECURE === 'false') return false;
+  const forwardedProtocol = String(req?.headers?.['x-forwarded-proto'] || '')
+    .split(',')[0]
+    .trim()
+    .toLowerCase();
+  return forwardedProtocol === 'https' || process.env.NODE_ENV === 'production';
+}
+
+function sessionCookie(req, token, expiresAt) {
+  const expires = new Date(expiresAt);
+  const maxAge = Math.max(0, Math.floor((expires.getTime() - Date.now()) / 1000));
+  return [
+    `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}`,
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Lax',
+    `Max-Age=${maxAge}`,
+    `Expires=${expires.toUTCString()}`,
+    secureCookiesEnabled(req) ? 'Secure' : ''
+  ]
+    .filter(Boolean)
+    .join('; ');
+}
+
+function clearedSessionCookie(req) {
+  return [
+    `${SESSION_COOKIE_NAME}=`,
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Lax',
+    'Max-Age=0',
+    'Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+    secureCookiesEnabled(req) ? 'Secure' : ''
+  ].filter(Boolean).join('; ');
+}
+
+function loginRateLimitKey(req, email) {
+  const forwardedIp = String(req.headers['x-real-ip'] || '').trim();
+  const remoteIp = forwardedIp || req.socket.remoteAddress || 'unknown';
+  const emailHash = createHash('sha256')
+    .update(String(email || '').trim().toLowerCase())
+    .digest('hex');
+  return `${remoteIp}:${emailHash}`;
+}
+
+function loginRateLimit(req, email) {
+  const key = loginRateLimitKey(req, email);
+  const nowMs = Date.now();
+  const maxFailures = 8;
+  const entry = loginFailures.get(key);
+  if (!entry || entry.resetAt <= nowMs) {
+    loginFailures.delete(key);
+    return { key, blocked: false, retryAfter: 0 };
+  }
+  return {
+    key,
+    blocked: entry.failures >= maxFailures,
+    retryAfter: Math.max(1, Math.ceil((entry.resetAt - nowMs) / 1000))
+  };
+}
+
+function recordLoginFailure(key) {
+  const nowMs = Date.now();
+  if (loginFailures.size >= 10_000 && !loginFailures.has(key)) {
+    for (const [storedKey, entry] of loginFailures) {
+      if (entry.resetAt <= nowMs) loginFailures.delete(storedKey);
+    }
+    while (loginFailures.size >= 10_000) {
+      const oldestKey = loginFailures.keys().next().value;
+      if (!oldestKey) break;
+      loginFailures.delete(oldestKey);
+    }
+  }
+  const current = loginFailures.get(key);
+  loginFailures.set(key, {
+    failures: current && current.resetAt > nowMs ? current.failures + 1 : 1,
+    resetAt: current && current.resetAt > nowMs ? current.resetAt : nowMs + 15 * 60 * 1000
+  });
+}
+
+async function requireUserSession(req, res, provider) {
+  const session = await authenticateSession(provider, readSessionToken(req));
+  if (!session) {
+    jsonResponse(res, 401, { ok: false, message: '请先登录 LedgerFlow。' });
+    return null;
+  }
+  return session;
 }
 
 function normalizeFundCode(value) {
@@ -481,7 +632,7 @@ async function validateDatabaseProvider(provider) {
   await migrateRelationalDatabase('sqlite');
 }
 
-async function saveSnapshot(body) {
+async function saveSnapshot(body, userId) {
   if (!body || typeof body !== 'object' || !body.payload) {
     throw new Error('Missing snapshot payload.');
   }
@@ -493,7 +644,6 @@ async function saveSnapshot(body) {
   }
 
   const payloadBytes = Buffer.byteLength(payloadText);
-  const userId = String(body.userId || DEFAULT_USER_ID).slice(0, 128);
   const schemaVersion = Number(body.schemaVersion || 1);
   const source = String(body.source || 'manual').slice(0, 32);
   const exportedAt = parseDateOrNull(body.payload.exportedAt);
@@ -552,9 +702,7 @@ function normalizeSnapshotRow(row) {
   };
 }
 
-async function getLatestSnapshot(url) {
-  const userId = String(url.searchParams.get('userId') || DEFAULT_USER_ID).slice(0, 128);
-
+async function getLatestSnapshot(userId) {
   if ((await getActiveDatabaseProvider()) === 'sqlite') {
     const { getLatestSqliteSnapshot } = await getSqliteDatabaseModule();
     return getLatestSqliteSnapshot(userId);
@@ -659,7 +807,17 @@ async function proxyWebdavRequest(req, res, url, pathname) {
   res.end(responseBody);
 }
 
-async function handleRequest(req, res) {
+function statusForError(error) {
+  const message = error instanceof Error ? error.message : '';
+  if (/邮箱或密码不正确|当前密码不正确/.test(message)) return 401;
+  if (/未开放新账号注册/.test(message)) return 403;
+  if (/该邮箱无法注册/.test(message)) return 409;
+  if (/请输入有效|至少需要|不能超过/.test(message)) return 400;
+  return 500;
+}
+
+export async function handleRequest(req, res) {
+  res.ledgerflowCorsHeaders = corsHeaders(req);
   if (req.method === 'OPTIONS') {
     jsonResponse(res, 204, {});
     return;
@@ -710,9 +868,93 @@ async function handleRequest(req, res) {
       return;
     }
 
-    // SQL is the application's source of truth. These local setup/data endpoints
-    // deliberately do not require a separate API token: initialization itself is
-    // already mandatory and the server is normally bound to localhost.
+    if (
+      pathname === '/auth/status' ||
+      pathname === '/auth/me' ||
+      pathname === '/auth/register' ||
+      pathname === '/auth/login' ||
+      pathname === '/auth/logout' ||
+      pathname === '/auth/change-password' ||
+      pathname === '/auth/revoke-sessions'
+    ) {
+      const setup = await getDatabaseSetupStatus();
+      if (!setup.initialized || setup.configurationMismatch) {
+        jsonResponse(res, 409, { ok: false, message: '请先完成数据库初始化。' });
+        return;
+      }
+      await migrateRelationalDatabase(setup.provider);
+      const provider = setup.provider;
+
+      if (req.method === 'GET' && pathname === '/auth/status') {
+        jsonResponse(res, 200, { ok: true, ...(await getAuthStatus(provider, readSessionToken(req))) });
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/auth/me') {
+        const session = await requireUserSession(req, res, provider);
+        if (!session) return;
+        jsonResponse(res, 200, { ok: true, user: session.user });
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/auth/register') {
+        const result = await registerUser(provider, await readJsonBody(req));
+        jsonResponse(res, 200, { ok: true, user: result.user, claimedLegacyData: result.claimedLegacyData }, {
+          'Set-Cookie': sessionCookie(req, result.session.token, result.session.expiresAt)
+        });
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/auth/login') {
+        const body = await readJsonBody(req);
+        const limit = loginRateLimit(req, body?.email);
+        if (limit.blocked) {
+          jsonResponse(
+            res,
+            429,
+            { ok: false, message: '登录尝试过于频繁，请稍后再试。' },
+            { 'Retry-After': String(limit.retryAfter) }
+          );
+          return;
+        }
+        try {
+          const result = await loginUser(provider, body);
+          loginFailures.delete(limit.key);
+          jsonResponse(res, 200, { ok: true, user: result.user }, {
+            'Set-Cookie': sessionCookie(req, result.session.token, result.session.expiresAt)
+          });
+        } catch (error) {
+          recordLoginFailure(limit.key);
+          throw error;
+        }
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/auth/logout') {
+        await logoutSession(provider, readSessionToken(req));
+        jsonResponse(res, 200, { ok: true }, { 'Set-Cookie': clearedSessionCookie(req) });
+        return;
+      }
+
+      const session = await requireUserSession(req, res, provider);
+      if (!session) return;
+
+      if (req.method === 'POST' && pathname === '/auth/change-password') {
+        jsonResponse(res, 200, await changePassword(provider, session, await readJsonBody(req)));
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/auth/revoke-sessions') {
+        jsonResponse(res, 200, await revokeOtherSessions(provider, session));
+        return;
+      }
+
+      jsonResponse(res, 405, { ok: false, message: 'Auth method is not allowed.' });
+      return;
+    }
+
+    // SQL is the application's source of truth. Business data requires a user
+    // session; the service API token remains reserved for infrastructure routes.
     if (req.method === 'GET' && pathname === '/data/bootstrap') {
       const setup = await getDatabaseSetupStatus();
       if (!setup.initialized || setup.configurationMismatch) {
@@ -720,7 +962,9 @@ async function handleRequest(req, res) {
         return;
       }
       await migrateRelationalDatabase(setup.provider);
-      jsonResponse(res, 200, await getRelationalBootstrap(setup.provider));
+      const session = await requireUserSession(req, res, setup.provider);
+      if (!session) return;
+      jsonResponse(res, 200, await getRelationalBootstrap(setup.provider, process.env, session.user.ledgerUserId));
       return;
     }
 
@@ -731,7 +975,9 @@ async function handleRequest(req, res) {
         return;
       }
       await migrateRelationalDatabase(setup.provider);
-      jsonResponse(res, 200, await getRelationalDataStatus(setup.provider));
+      const session = await requireUserSession(req, res, setup.provider);
+      if (!session) return;
+      jsonResponse(res, 200, await getRelationalDataStatus(setup.provider, process.env, session.user.ledgerUserId));
       return;
     }
 
@@ -742,7 +988,18 @@ async function handleRequest(req, res) {
         return;
       }
       await migrateRelationalDatabase(setup.provider);
-      jsonResponse(res, 200, await replaceRelationalData(setup.provider, await readJsonBody(req)));
+      const session = await requireUserSession(req, res, setup.provider);
+      if (!session) return;
+      jsonResponse(
+        res,
+        200,
+        await replaceRelationalData(
+          setup.provider,
+          await readJsonBody(req),
+          process.env,
+          session.user.ledgerUserId
+        )
+      );
       return;
     }
 
@@ -752,10 +1009,10 @@ async function handleRequest(req, res) {
         pathname
       )
     ) {
-      // A local SQLite deployment is already protected by the local machine. It should not make
-      // ordinary users configure an API token merely to create an extra restore point.
-      if ((await getActiveDatabaseProvider()) !== 'sqlite' && !requireApiToken(req, res)) return;
-      jsonResponse(res, 200, await saveSnapshot(await readJsonBody(req)));
+      const provider = await getActiveDatabaseProvider();
+      const session = await requireUserSession(req, res, provider);
+      if (!session) return;
+      jsonResponse(res, 200, await saveSnapshot(await readJsonBody(req), session.user.ledgerUserId));
       return;
     }
 
@@ -763,8 +1020,10 @@ async function handleRequest(req, res) {
       req.method === 'GET' &&
       ['/snapshots/latest', '/mysql/snapshots/latest'].includes(pathname)
     ) {
-      if ((await getActiveDatabaseProvider()) !== 'sqlite' && !requireApiToken(req, res)) return;
-      jsonResponse(res, 200, await getLatestSnapshot(url));
+      const provider = await getActiveDatabaseProvider();
+      const session = await requireUserSession(req, res, provider);
+      if (!session) return;
+      jsonResponse(res, 200, await getLatestSnapshot(session.user.ledgerUserId));
       return;
     }
 
@@ -796,15 +1055,21 @@ async function handleRequest(req, res) {
 
     jsonResponse(res, 404, { ok: false, message: 'Route not found.' });
   } catch (error) {
-    jsonResponse(res, 500, {
+    jsonResponse(res, statusForError(error), {
       ok: false,
       message: error instanceof Error ? error.message : 'Unexpected server error.'
     });
   }
 }
 
-const port = Number(process.env.PORT || process.env.LEDGERFLOW_API_PORT || DEFAULT_PORT);
+export function createLedgerFlowServer() {
+  return http.createServer(handleRequest);
+}
 
-http.createServer(handleRequest).listen(port, () => {
-  console.log(`LedgerFlow MySQL snapshot API listening on http://127.0.0.1:${port}`);
-});
+const entryUrl = process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
+if (import.meta.url === entryUrl) {
+  const port = Number(process.env.PORT || process.env.LEDGERFLOW_API_PORT || DEFAULT_PORT);
+  createLedgerFlowServer().listen(port, () => {
+    console.log(`LedgerFlow API listening on http://127.0.0.1:${port}`);
+  });
+}

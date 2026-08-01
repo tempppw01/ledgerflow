@@ -79,7 +79,7 @@ export function WorkbenchSettingsDrawer(props: WorkbenchSettingsDrawerProps) {
             <input
               value={model}
               onChange={(e) => onChangeModel(e.target.value)}
-              placeholder="gpt-4o-mini"
+              placeholder="gpt-5.5"
             />
             {models.length > 0 ? (
               <div className="assistant-wb-model-chips">

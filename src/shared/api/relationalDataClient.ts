@@ -26,7 +26,9 @@ async function readResponse<T>(response: Response): Promise<T> {
 }
 
 export async function getRelationalBootstrap(): Promise<RelationalBootstrapResponse> {
-  return readResponse<RelationalBootstrapResponse>(await fetch(getUrl('/data/bootstrap')));
+  return readResponse<RelationalBootstrapResponse>(
+    await fetch(getUrl('/data/bootstrap'), { credentials: 'same-origin' })
+  );
 }
 
 export async function importRelationalData(payload: unknown): Promise<{
@@ -38,6 +40,7 @@ export async function importRelationalData(payload: unknown): Promise<{
   return readResponse(
     await fetch(getUrl('/data/import'), {
       method: 'PUT',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })

@@ -17,7 +17,7 @@ export const ENV = {
   logLevel: import.meta.env.VITE_LOG_LEVEL || 'info',
   aiBaseUrl: import.meta.env.VITE_AI_BASE_URL || 'https://ai.shuaihong.fun/v1',
   aiApiKey: import.meta.env.VITE_AI_API_KEY || '',
-  aiDefaultModel: import.meta.env.VITE_AI_DEFAULT_MODEL || 'gpt-5.4-mini',
+  aiDefaultModel: import.meta.env.VITE_AI_DEFAULT_MODEL || 'gpt-5.5',
   tavilyApiKey: import.meta.env.VITE_TAVILY_API_KEY || '',
   tavilyBaseUrl: import.meta.env.VITE_TAVILY_BASE_URL || 'https://api.tavily.com',
   localWebSearchEndpoint: import.meta.env.VITE_LOCAL_WEB_SEARCH_ENDPOINT || '/api/web-search',

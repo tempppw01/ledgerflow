@@ -199,6 +199,7 @@ async function postJsonWithFallback<T>(
       try {
         const response = await fetch(url, {
           method: 'POST',
+          credentials: 'same-origin',
           headers: buildAuthHeaders(apiToken),
           body: JSON.stringify(payload)
         });
@@ -229,6 +230,7 @@ async function getJsonWithFallback<T>(paths: string[], apiToken?: string): Promi
 
       try {
         const response = await fetch(url, {
+          credentials: 'same-origin',
           headers: buildAuthHeaders(apiToken)
         });
         return await parseResponse<T>(response);

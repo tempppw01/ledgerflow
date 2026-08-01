@@ -5,6 +5,7 @@ import {
 } from '../../../shared/api/databaseProviderClient';
 import { DatabaseProviderSetupPanel } from './DatabaseProviderSetupPanel';
 import { SqlDataSyncGate } from './SqlDataSyncGate';
+import { AuthGate } from '../../auth/ui/AuthGate';
 
 interface DatabaseInitializationGateProps {
   children: ReactNode;
@@ -33,7 +34,11 @@ export function DatabaseInitializationGate({ children }: DatabaseInitializationG
   }, [loadStatus]);
 
   if (status?.initialized && !status.configurationMismatch) {
-    return <SqlDataSyncGate>{children}</SqlDataSyncGate>;
+    return (
+      <AuthGate>
+        <SqlDataSyncGate>{children}</SqlDataSyncGate>
+      </AuthGate>
+    );
   }
 
   return (

@@ -24,8 +24,12 @@ The lock lives in `LEDGERFLOW_DATA_DIR`, which must be mounted as a persistent D
 
 ## Scope of this foundation
 
-The current application still stores business data in browser persistence. SQLite and MySQL both
-support the existing remote backup snapshot flow, while the next steps define shared business
-tables and route reads and writes through a server repository. This separation prevents the
-provider choice from changing user data behavior before the corresponding storage implementation
-exists.
+The relational repository is now the source of truth for the data-provider path. The first account
+claims the existing `ledger_users.id = 'default'` row so a deployment can add authentication without
+rewriting legacy business IDs. Later accounts receive independent ledger user IDs, and all business
+data routes resolve the user from the HttpOnly session cookie.
+
+The browser cache remains useful for offline recovery and legacy import/export, but it is no longer
+an authority for an initialized relational deployment. The provider lock and SQLite database file
+must live in persistent storage; otherwise a replacement container will require initialization again
+and a new SQLite database will be empty.

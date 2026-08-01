@@ -8,7 +8,7 @@ and AI workflow history. JSON backups remain an import/export and disaster-recov
 
 | Deployment | Provider | Intended use |
 | --- | --- | --- |
-| Single machine or private container | SQLite | Low-maintenance, one-user deployment with a persistent volume |
+| Single machine or private container | SQLite | Low-maintenance, single-instance deployment with a persistent volume |
 | Production, multiple devices, or managed cloud | MySQL 5.7.8+ | Aliyun RDS and other managed MySQL services |
 
 The first initialization writes `database-provider.json` to `LEDGERFLOW_DATA_DIR`. The provider
@@ -17,10 +17,13 @@ is immutable for that deployment. Changing it requires export, a new deployment,
 ## Schema migration
 
 `server/relationalDatabase.js` owns schema migrations. Each migration has a monotonic numeric
-version stored in `ledger_schema_migrations`.
+version stored in `ledger_schema_migrations`. V1 creates the ledger tables; V2 adds the account,
+session, password-reset placeholder, audit-log placeholder and performance indexes. Existing V1
+deployments run V2 only. SQLite serializes migration work with `BEGIN IMMEDIATE`; MySQL uses a
+named `GET_LOCK` before applying pending migrations.
 
 1. A new deployment validates the selected provider.
-2. The migration runner creates the schema and the default single-user row.
+2. The migration runner creates the schema and the legacy `default` ledger row.
 3. The provider lock is written only after validation and schema setup succeed.
 4. Every initialized service checks migrations through `GET /api/setup/status`.
 
@@ -47,6 +50,8 @@ erDiagram
   ledger_users ||--o{ ai_workflows : configures
   ai_workflows ||--o{ ai_workflow_runs : executes
   ai_workflow_runs ||--o{ ai_workflow_messages : contains
+  auth_users ||--|| ledger_users : authenticates
+  auth_users ||--o{ auth_sessions : owns
 ```
 
 The schema is grouped by ownership rather than by pages:
@@ -86,9 +91,10 @@ request limits and are never the only copy of a core record.
 
 ## Runtime repository contract
 
-`server/relationalDataRepository.js` is the single persistence boundary for the current
-single-user application. It supports SQLite and MySQL with the same business payload and has no
-browser storage dependency.
+`server/relationalDataRepository.js` is the persistence boundary for the authenticated
+multi-account application. It supports SQLite and MySQL with the same business payload and has no
+browser storage dependency. The authenticated ledger user ID is passed into every repository read,
+write and count operation.
 
 - `GET /api/data/bootstrap` reads the relational rows and reconstructs the application state.
 - `PUT /api/data/import` replaces a user's data in one database transaction. It writes accounts,
@@ -144,5 +150,7 @@ documented and tested.
 - Verify a legacy backup import and restore before switching users to the database repository.
 - Monitor migration version, connection failures, slow query time, backup freshness, and failed AI
   workflow runs.
-- Keep `LEDGERFLOW_API_TOKEN` secret. A public deployment needs real user authentication before it
-  can safely allow the first visitor to initialize an `auto` provider deployment.
+- Keep `LEDGERFLOW_API_TOKEN` secret. It is a service-level management token, not a user password.
+- Set `LEDGERFLOW_COOKIE_SECURE=true` for HTTPS deployments and configure
+  `LEDGERFLOW_CORS_ORIGIN` only when the frontend is on a different origin.
+- Configure a Railway/Docker persistent volume at `/app/data` for `LEDGERFLOW_DATA_DIR`.

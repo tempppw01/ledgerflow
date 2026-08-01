@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DatabaseInitializationGate } from './DatabaseInitializationGate';
 
@@ -7,6 +8,14 @@ const getDatabaseSetupStatusMock = vi.hoisted(() => vi.fn());
 vi.mock('../../../shared/api/databaseProviderClient', () => ({
   getDatabaseSetupStatus: () => getDatabaseSetupStatusMock(),
   initializeDatabaseProvider: vi.fn()
+}));
+
+vi.mock('../../auth/ui/AuthGate', () => ({
+  AuthGate: ({ children }: { children: ReactNode }) => children
+}));
+
+vi.mock('./SqlDataSyncGate', () => ({
+  SqlDataSyncGate: ({ children }: { children: ReactNode }) => children
 }));
 
 describe('DatabaseInitializationGate', () => {

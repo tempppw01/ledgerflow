@@ -3,11 +3,13 @@ import { mkdir } from 'node:fs/promises';
 import { getDatabaseDataDirectory, getSqliteDatabasePath } from './databaseProvider.js';
 import { withMysqlConnection } from './databaseConnection.js';
 
-export const RELATIONAL_SCHEMA_VERSION = 1;
+export const RELATIONAL_SCHEMA_VERSION = 2;
 const DEFAULT_USER_ID = 'default';
 
-const SQLITE_TABLES = [
-  `CREATE TABLE IF NOT EXISTS ledger_schema_migrations (id INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)`,
+const SQLITE_MIGRATION_TABLE =
+  `CREATE TABLE IF NOT EXISTS ledger_schema_migrations (id INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)`;
+
+const SQLITE_V1_TABLES = [
   `CREATE TABLE IF NOT EXISTS ledger_users (id TEXT PRIMARY KEY, display_name TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS ledger_user_settings (user_id TEXT NOT NULL, setting_key TEXT NOT NULL, setting_value TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (user_id, setting_key), FOREIGN KEY (user_id) REFERENCES ledger_users(id))`,
   `CREATE TABLE IF NOT EXISTS ledger_accounts (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, account_type TEXT, initial_balance REAL NOT NULL DEFAULT 0, balance REAL NOT NULL DEFAULT 0, sort_order INTEGER NOT NULL DEFAULT 0, trashed_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES ledger_users(id))`,
@@ -35,8 +37,15 @@ const SQLITE_TABLES = [
   `CREATE TABLE IF NOT EXISTS ai_workflow_context_refs (id TEXT PRIMARY KEY, run_id TEXT NOT NULL, context_type TEXT NOT NULL, reference_id TEXT, snapshot_text TEXT, created_at TEXT NOT NULL, FOREIGN KEY (run_id) REFERENCES ai_workflow_runs(id) ON DELETE CASCADE)`
 ];
 
-const MYSQL_TABLES = SQLITE_TABLES.map((statement, index) => {
-  if (index === 0) {
+const SQLITE_V2_TABLES = [
+  `CREATE TABLE IF NOT EXISTS auth_users (id TEXT PRIMARY KEY, ledger_user_id TEXT NOT NULL UNIQUE, email TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL, display_name TEXT NOT NULL, status TEXT NOT NULL, password_updated_at TEXT NOT NULL, last_login_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (ledger_user_id) REFERENCES ledger_users(id))`,
+  `CREATE TABLE IF NOT EXISTS auth_sessions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, expires_at TEXT NOT NULL, last_seen_at TEXT NOT NULL, revoked_at TEXT, created_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES auth_users(id) ON DELETE CASCADE)`,
+  `CREATE TABLE IF NOT EXISTS auth_password_reset_tokens (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, expires_at TEXT NOT NULL, used_at TEXT, created_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES auth_users(id) ON DELETE CASCADE)`,
+  `CREATE TABLE IF NOT EXISTS auth_audit_log (id TEXT PRIMARY KEY, user_id TEXT, event_type TEXT NOT NULL, success INTEGER NOT NULL, ip_hash TEXT, metadata_json TEXT, created_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES auth_users(id) ON DELETE SET NULL)`
+];
+
+function toMysqlTable(statement, migrationTable = false) {
+  if (migrationTable) {
     return `CREATE TABLE IF NOT EXISTS ledger_schema_migrations (id INT NOT NULL, applied_at DATETIME(3) NOT NULL, PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`;
   }
 
@@ -48,15 +57,25 @@ const MYSQL_TABLES = SQLITE_TABLES.map((statement, index) => {
     .replace(/\bINTEGER\b/g, 'BIGINT')
     .replace(/\b(display_name|name|note) LONGTEXT NOT NULL DEFAULT ''/g, '$1 VARCHAR(1024) NOT NULL DEFAULT \'\'')
     .replace(/\b(setting_key|tag) LONGTEXT NOT NULL/g, '$1 VARCHAR(64) NOT NULL')
+    .replace(/\bemail LONGTEXT/g, 'email VARCHAR(320)')
+    .replace(/\btoken_hash LONGTEXT/g, 'token_hash CHAR(64)')
+    .replace(/\bip_hash LONGTEXT/g, 'ip_hash CHAR(64)')
+    .replace(/\bevent_type LONGTEXT/g, 'event_type VARCHAR(64)')
+    .replace(/\b(status|[a-z][a-z0-9_]*_status|category_kind) LONGTEXT/g, '$1 VARCHAR(32)')
+    .replace(/\b([a-z][a-z0-9_]*_at) LONGTEXT/g, '$1 DATETIME(3)')
     .replace(/\bmarket LONGTEXT/g, 'market VARCHAR(24)')
     .replace(/\bsymbol LONGTEXT/g, 'symbol VARCHAR(40)')
     .replace(/\bsource LONGTEXT/g, 'source VARCHAR(48)')
     .replace(/\bexternal_id LONGTEXT/g, 'external_id VARCHAR(96)')
     .replace(/\b[a-z][a-z0-9_]*_id LONGTEXT/g, (column) => `${column.split(' ')[0]} VARCHAR(64)`)
     .replace(/\)$/, ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
-});
+}
 
-const INDEXES = [
+const MYSQL_MIGRATION_TABLE = toMysqlTable(SQLITE_MIGRATION_TABLE, true);
+const MYSQL_V1_TABLES = SQLITE_V1_TABLES.map((statement) => toMysqlTable(statement));
+const MYSQL_V2_TABLES = SQLITE_V2_TABLES.map((statement) => toMysqlTable(statement));
+
+const V1_INDEXES = [
   ['idx_accounts_user_sort', 'ledger_accounts', 'user_id, sort_order'],
   ['idx_categories_user_kind_sort', 'ledger_categories', 'user_id, category_kind, sort_order'],
   ['idx_transactions_user_occurred', 'ledger_transactions', 'user_id, occurred_at'],
@@ -75,13 +94,39 @@ const INDEXES = [
   ['idx_workflow_messages_run_created', 'ai_workflow_messages', 'run_id, created_at']
 ];
 
-function mysqlMigrationStatements() {
-  return MYSQL_TABLES;
+const V2_INDEXES = [
+  ['idx_transactions_user_occurred_created', 'ledger_transactions', 'user_id, occurred_at, created_at, id'],
+  ['idx_transaction_attachments_transaction', 'ledger_transaction_attachments', 'transaction_id'],
+  ['idx_balance_changes_transaction', 'ledger_balance_changes', 'transaction_id'],
+  ['idx_balance_changes_related_transaction', 'ledger_balance_changes', 'related_transaction_id'],
+  ['idx_subscriptions_account', 'ledger_subscriptions', 'account_id'],
+  ['idx_subscriptions_last_transaction', 'ledger_subscriptions', 'last_generated_transaction_id'],
+  ['idx_debt_repayments_transaction', 'ledger_debt_repayments', 'transaction_id'],
+  ['idx_debt_repayments_account', 'ledger_debt_repayments', 'payment_account_id'],
+  ['idx_positions_instrument', 'investment_positions', 'instrument_id'],
+  ['idx_positions_account', 'investment_positions', 'linked_account_id'],
+  ['idx_watchlists_instrument', 'investment_watchlists', 'instrument_id'],
+  ['idx_analysis_workflow_run', 'investment_analysis_runs', 'workflow_run_id'],
+  ['idx_workflow_context_refs_run_created', 'ai_workflow_context_refs', 'run_id, created_at'],
+  ['idx_auth_sessions_user_expires', 'auth_sessions', 'user_id, expires_at'],
+  ['idx_auth_sessions_expires', 'auth_sessions', 'expires_at'],
+  ['idx_auth_reset_user_expires', 'auth_password_reset_tokens', 'user_id, expires_at'],
+  ['idx_auth_audit_user_created', 'auth_audit_log', 'user_id, created_at'],
+  ['idx_auth_audit_event_created', 'auth_audit_log', 'event_type, created_at']
+];
+
+function migrationsFor(provider) {
+  const mysql = provider === 'mysql';
+  return [
+    { version: 1, tables: mysql ? MYSQL_V1_TABLES : SQLITE_V1_TABLES, indexes: V1_INDEXES, seedDefaultUser: true },
+    { version: 2, tables: mysql ? MYSQL_V2_TABLES : SQLITE_V2_TABLES, indexes: V2_INDEXES }
+  ];
 }
 
 export function getRelationalMigrationStatements(provider) {
   assertProvider(provider);
-  return provider === 'sqlite' ? [...SQLITE_TABLES] : mysqlMigrationStatements();
+  const migrationTable = provider === 'sqlite' ? SQLITE_MIGRATION_TABLE : MYSQL_MIGRATION_TABLE;
+  return [migrationTable, ...migrationsFor(provider).flatMap((migration) => migration.tables)];
 }
 
 function now() {
@@ -98,14 +143,14 @@ function assertProvider(provider) {
   }
 }
 
-function ensureSqliteIndexes(database) {
-  for (const [name, table, columns] of INDEXES) {
+function ensureSqliteIndexes(database, indexes) {
+  for (const [name, table, columns] of indexes) {
     database.exec(`CREATE INDEX IF NOT EXISTS ${name} ON ${table} (${columns})`);
   }
 }
 
-async function ensureMysqlIndexes(connection) {
-  for (const [name, table, columns] of INDEXES) {
+async function ensureMysqlIndexes(connection, indexes) {
+  for (const [name, table, columns] of indexes) {
     const [rows] = await connection.execute(`SHOW INDEX FROM ${table} WHERE Key_name = ?`, [name]);
     if (!Array.isArray(rows) || rows.length === 0) {
       await connection.query(`CREATE INDEX ${name} ON ${table} (${columns})`);
@@ -136,17 +181,25 @@ function migrateSqlite(env) {
   const database = openSqlite(env);
   try {
     database.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;');
-    database.exec(SQLITE_TABLES[0]);
-    const applied = database
-      .prepare('SELECT id FROM ledger_schema_migrations WHERE id = ?')
-      .get(RELATIONAL_SCHEMA_VERSION);
-    if (!applied) {
-      for (const statement of SQLITE_TABLES.slice(1)) database.exec(statement);
-      ensureSqliteIndexes(database);
-      seedSqliteDefaultUser(database);
-      database
-        .prepare('INSERT INTO ledger_schema_migrations (id, applied_at) VALUES (?, ?)')
-        .run(RELATIONAL_SCHEMA_VERSION, now());
+    database.exec(SQLITE_MIGRATION_TABLE);
+    const applied = new Set(
+      database.prepare('SELECT id FROM ledger_schema_migrations').all().map((row) => Number(row.id))
+    );
+    for (const migration of migrationsFor('sqlite')) {
+      if (applied.has(migration.version)) continue;
+      database.exec('BEGIN IMMEDIATE');
+      try {
+        for (const statement of migration.tables) database.exec(statement);
+        ensureSqliteIndexes(database, migration.indexes);
+        if (migration.seedDefaultUser) seedSqliteDefaultUser(database);
+        database
+          .prepare('INSERT INTO ledger_schema_migrations (id, applied_at) VALUES (?, ?)')
+          .run(migration.version, now());
+        database.exec('COMMIT');
+      } catch (error) {
+        database.exec('ROLLBACK');
+        throw error;
+      }
     }
     return {
       provider: 'sqlite',
@@ -162,20 +215,43 @@ function migrateSqlite(env) {
 
 async function migrateMysql(env) {
   return withMysqlConnection(async (connection) => {
-    const statements = mysqlMigrationStatements();
-    await connection.query(statements[0]);
-    const [rows] = await connection.execute(
-      'SELECT id FROM ledger_schema_migrations WHERE id = ?',
-      [RELATIONAL_SCHEMA_VERSION]
+    const lockName = 'ledgerflow_schema_migration';
+    const lockTimeout = Math.min(
+      Math.max(Number(env.LEDGERFLOW_MIGRATION_LOCK_TIMEOUT_SECONDS || 30), 1),
+      300
     );
-    if (!Array.isArray(rows) || rows.length === 0) {
-      for (const statement of statements.slice(1)) await connection.query(statement);
-      await ensureMysqlIndexes(connection);
-      await seedMysqlDefaultUser(connection);
-      await connection.execute('INSERT INTO ledger_schema_migrations (id, applied_at) VALUES (?, ?)', [
-        RELATIONAL_SCHEMA_VERSION,
-        now()
-      ]);
+    const [lockRows] = await connection.execute('SELECT GET_LOCK(?, ?) AS acquired', [
+      lockName,
+      lockTimeout
+    ]);
+    if (Number(lockRows?.[0]?.acquired) !== 1) {
+      throw new Error('Timed out while waiting for the database migration lock.');
+    }
+    try {
+      await connection.query(MYSQL_MIGRATION_TABLE);
+      const [rows] = await connection.query('SELECT id FROM ledger_schema_migrations');
+      const applied = new Set(
+        (Array.isArray(rows) ? rows : []).map((row) => Number(row.id))
+      );
+      for (const migration of migrationsFor('mysql')) {
+        if (applied.has(migration.version)) continue;
+        await connection.beginTransaction();
+        try {
+          for (const statement of migration.tables) await connection.query(statement);
+          await ensureMysqlIndexes(connection, migration.indexes);
+          if (migration.seedDefaultUser) await seedMysqlDefaultUser(connection);
+          await connection.execute(
+            'INSERT INTO ledger_schema_migrations (id, applied_at) VALUES (?, ?)',
+            [migration.version, toMysqlDate(now())]
+          );
+          await connection.commit();
+        } catch (error) {
+          await connection.rollback();
+          throw error;
+        }
+      }
+    } finally {
+      await connection.execute('SELECT RELEASE_LOCK(?)', [lockName]);
     }
     return {
       provider: 'mysql',

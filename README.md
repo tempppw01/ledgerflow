@@ -103,7 +103,7 @@ LedgerFlow 的目标不是做一个传统流水表，而是做一个更适合年
 
 ## 快速部署
 
-推荐使用 Docker Compose。当前镜像是一体化部署：Nginx 提供前端，Node API 负责 MySQL 快照、连接检查和受保护的 WebDAV 同源代理。
+推荐使用 Docker Compose。当前镜像是一体化部署：Nginx 提供前端，Node API 负责数据库、账号、快照、连接检查和受保护的 WebDAV 同源代理。首次打开会先选择 SQLite 或 MySQL，然后创建首个账号。
 
 ```yaml
 services:
@@ -113,16 +113,20 @@ services:
     ports:
       - '18080:80'
     environment:
+      DATABASE_PROVIDER: '${DATABASE_PROVIDER:-auto}'
+      LEDGERFLOW_DATA_DIR: '/app/data'
       LEDGERFLOW_API_PORT: '8787'
       LEDGERFLOW_MAX_BODY_BYTES: '52428800'
       LEDGERFLOW_API_TOKEN: '${LEDGERFLOW_API_TOKEN:?Set LEDGERFLOW_API_TOKEN to a long random value}'
       LEDGERFLOW_WEBDAV_ALLOWED_HOSTS: '${LEDGERFLOW_WEBDAV_ALLOWED_HOSTS:-}'
-      MYSQL_HOST: 'rm-xxxx.mysql.rds.aliyuncs.com'
-      MYSQL_PORT: '3306'
-      MYSQL_USER: 'ledgerflow'
-      MYSQL_PASSWORD: 'CHANGE_ME'
-      MYSQL_DATABASE: 'ledgerflow'
-      MYSQL_SSL: 'false'
+      MYSQL_HOST: '${MYSQL_HOST:-}'
+      MYSQL_PORT: '${MYSQL_PORT:-3306}'
+      MYSQL_USER: '${MYSQL_USER:-ledgerflow}'
+      MYSQL_PASSWORD: '${MYSQL_PASSWORD:-}'
+      MYSQL_DATABASE: '${MYSQL_DATABASE:-ledgerflow}'
+      MYSQL_SSL: '${MYSQL_SSL:-false}'
+    volumes:
+      - ./data:/app/data
     restart: unless-stopped
 ```
 
@@ -145,6 +149,10 @@ docker compose up -d
 http://localhost:18080
 ```
 
+不配置 MySQL 时保持 `DATABASE_PROVIDER=auto`，首次打开选择 SQLite 即可。`/app/data` 必须使用
+持久卷：本地 Compose 已映射到 `./data`；Railway 源码部署需要在服务设置中单独创建 Volume，挂载
+路径填写 `/app/data`。否则重新部署后 provider 锁、SQLite 账本和账号都会丢失。
+
 ## 必填与可选环境变量
 
 ### 必填
@@ -164,7 +172,18 @@ MYSQL_DATABASE=ledgerflow
 MYSQL_SSL=false
 ```
 
-MySQL 目前用于保存完整账本快照，不会直接替代浏览器本地数据。详见 [docs/mysql-snapshot-sync.md](docs/mysql-snapshot-sync.md)。
+选择 MySQL provider 后，关系表是业务数据源；MySQL 快照继续用于导出和灾难恢复。详见 [docs/database-architecture.md](docs/database-architecture.md) 和 [docs/mysql-snapshot-sync.md](docs/mysql-snapshot-sync.md)。
+
+### 账号服务
+
+```env
+LEDGERFLOW_REGISTRATION_MODE=first-user
+LEDGERFLOW_SESSION_DAYS=30
+LEDGERFLOW_COOKIE_SECURE=true
+LEDGERFLOW_CORS_ORIGIN=
+```
+
+同源部署不需要填写 `LEDGERFLOW_CORS_ORIGIN`。完整说明见 [docs/account-service.md](docs/account-service.md)。
 
 ### WebDAV 代理白名单
 

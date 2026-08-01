@@ -26,21 +26,68 @@ test('SQLite relational schema migrates and is idempotent', async () => {
         .map((row) => row.name);
       const user = database.prepare('SELECT id FROM ledger_users WHERE id = ?').get('default');
 
-      assert.equal(first.currentVersion, 1);
+      assert.equal(first.currentVersion, 2);
       assert.deepEqual(second, first);
       assert.deepEqual(status, {
         provider: 'sqlite',
-        currentVersion: 1,
-        expectedVersion: 1,
+        currentVersion: 2,
+        expectedVersion: 2,
         ready: true
       });
       assert.ok(tables.includes('ledger_transactions'));
+      assert.ok(tables.includes('auth_users'));
+      assert.ok(tables.includes('auth_sessions'));
+      assert.ok(tables.includes('auth_password_reset_tokens'));
+      assert.ok(tables.includes('auth_audit_log'));
       assert.ok(tables.includes('investment_positions'));
       assert.ok(tables.includes('market_quotes'));
       assert.ok(tables.includes('ai_workflow_runs'));
       assert.equal(user?.id, 'default');
     } finally {
       database.close();
+    }
+  } finally {
+    await rm(dataDirectory, { recursive: true, force: true });
+  }
+});
+
+test('SQLite upgrades a real V1 database through the V2 migration only', async () => {
+  const dataDirectory = await mkdtemp(path.join(os.tmpdir(), 'ledgerflow-relational-v1-'));
+  const env = { LEDGERFLOW_DATA_DIR: dataDirectory, SQLITE_PATH: '' };
+
+  try {
+    const statements = getRelationalMigrationStatements('sqlite');
+    const databasePath = path.join(dataDirectory, 'ledgerflow.sqlite');
+    const database = new DatabaseSync(databasePath);
+    try {
+      database.exec(statements[0]);
+      for (const statement of statements.slice(1).filter((item) => !item.includes('auth_'))) {
+        database.exec(statement);
+      }
+      database.exec(
+        `INSERT INTO ledger_users (id, display_name, created_at, updated_at)
+         VALUES ('default', '默认用户', '2026-08-01T00:00:00.000Z', '2026-08-01T00:00:00.000Z')`
+      );
+      database.exec(
+        `INSERT INTO ledger_schema_migrations (id, applied_at)
+         VALUES (1, '2026-08-01T00:00:00.000Z')`
+      );
+    } finally {
+      database.close();
+    }
+
+    const migrated = await migrateRelationalDatabase('sqlite', env);
+    const upgraded = new DatabaseSync(databasePath);
+    try {
+      const versions = upgraded
+        .prepare('SELECT id FROM ledger_schema_migrations ORDER BY id')
+        .all()
+        .map((row) => Number(row.id));
+      assert.equal(migrated.currentVersion, 2);
+      assert.deepEqual(versions, [1, 2]);
+      assert.equal(upgraded.prepare('SELECT COUNT(*) AS count FROM auth_users').get().count, 0);
+    } finally {
+      upgraded.close();
     }
   } finally {
     await rm(dataDirectory, { recursive: true, force: true });
@@ -57,5 +104,8 @@ test('MySQL schema keeps foreign-key ids indexable and avoids SQLite-only syntax
   assert.match(sql, /ledger_schema_migrations \(id INT NOT NULL/);
   assert.match(sql, /market VARCHAR\(24\)/);
   assert.match(sql, /symbol VARCHAR\(40\)/);
+  assert.match(sql, /email VARCHAR\(320\) NOT NULL UNIQUE/);
+  assert.match(sql, /token_hash CHAR\(64\) NOT NULL UNIQUE/);
+  assert.match(sql, /occurred_at DATETIME\(3\)/);
   assert.doesNotMatch(sql, /INSERT OR IGNORE/);
 });

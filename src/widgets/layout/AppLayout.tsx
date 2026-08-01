@@ -7,6 +7,7 @@ import {
   readAssistantModeFromSessionStorage
 } from '../../features/assistant/shared/assistantMode';
 import { ThemeSwitcher } from '../../features/theme-switcher/ThemeSwitcher';
+import { useAuth } from '../../features/auth/ui/authContext';
 import { SettingsPage } from '../../pages/settings/SettingsPage';
 import { APP_LOGO_URL } from '../../shared/config/app';
 import {
@@ -73,6 +74,7 @@ function renderNavIcon(item: { icon: string; iconSrc?: string }, className: stri
 
 export function AppLayout() {
   const { t, i18n } = useTranslation();
+  const { user, logout } = useAuth();
   const tFallback = (key: string, fallback: string) => {
     const translated = t(key);
     return translated === key ? fallback : translated;
@@ -729,6 +731,18 @@ export function AppLayout() {
           </div>
 
           <div className="topbar-right">
+            <div className="topbar-account">
+              <span className="topbar-account-name" title={user.email}>
+                {user.displayName}
+              </span>
+              <button
+                type="button"
+                className="secondary topbar-account-logout"
+                onClick={() => void logout()}
+              >
+                退出
+              </button>
+            </div>
             <ThemeSwitcher />
             <button
               type="button"
@@ -792,7 +806,7 @@ export function AppLayout() {
                 />
                 <div>
                   <p className="mobile-nav-name">
-                    {t('layout.drawerUser', { defaultValue: 'LedgerFlow 用户' })}
+                    {user.displayName}
                   </p>
                   <p className="mobile-nav-subtitle">
                     {t('layout.drawerSubtitle', {

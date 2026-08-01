@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "server:mysql": "node server/mysqlSnapshotServer.js",
+    "benchmark:database": "node server/relationalPerformanceBaseline.js",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "lint": "eslint . --max-warnings=0",

@@ -2,7 +2,9 @@
 
 This is the first production-safe MySQL integration step for LedgerFlow.
 
-The frontend still keeps the current browser data flow. MySQL stores full finance backup snapshots so existing JSON data can be saved and restored before any table-level migration happens.
+The relational tables are now the source of truth after database initialization. MySQL snapshots
+remain available as an export and disaster-recovery path, and are scoped to the authenticated user
+session.
 
 ## Run locally
 
@@ -17,8 +19,8 @@ npm run server:mysql
 ```
 
 The API server listens on `8787` by default. Set `LEDGERFLOW_API_PORT` or `PORT` to change it.
-All snapshot routes require `LEDGERFLOW_API_TOKEN`. Enter the same token in the MySQL snapshot panel before uploading or restoring.
-The same token also protects the WebDAV same-origin proxy at `/api/webdav/*`.
+Snapshot routes require a logged-in user session. `LEDGERFLOW_API_TOKEN` remains required for
+service-management routes and the WebDAV same-origin proxy at `/api/webdav/*`.
 
 For local Vite development, run both commands:
 
@@ -47,12 +49,16 @@ services:
       LEDGERFLOW_MAX_BODY_BYTES: '52428800'
       LEDGERFLOW_API_TOKEN: '${LEDGERFLOW_API_TOKEN:?Set LEDGERFLOW_API_TOKEN to a long random value}'
       LEDGERFLOW_WEBDAV_ALLOWED_HOSTS: '${LEDGERFLOW_WEBDAV_ALLOWED_HOSTS:-}'
-      MYSQL_HOST: 'rm-xxxx.mysql.rds.aliyuncs.com'
-      MYSQL_PORT: '3306'
-      MYSQL_USER: 'ledgerflow'
-      MYSQL_PASSWORD: 'CHANGE_ME'
-      MYSQL_DATABASE: 'ledgerflow'
-      MYSQL_SSL: 'false'
+      DATABASE_PROVIDER: '${DATABASE_PROVIDER:-auto}'
+      LEDGERFLOW_DATA_DIR: '/app/data'
+      MYSQL_HOST: '${MYSQL_HOST:-}'
+      MYSQL_PORT: '${MYSQL_PORT:-3306}'
+      MYSQL_USER: '${MYSQL_USER:-ledgerflow}'
+      MYSQL_PASSWORD: '${MYSQL_PASSWORD:-}'
+      MYSQL_DATABASE: '${MYSQL_DATABASE:-ledgerflow}'
+      MYSQL_SSL: '${MYSQL_SSL:-false}'
+    volumes:
+      - ./data:/app/data
     restart: unless-stopped
 ```
 
@@ -81,9 +87,10 @@ docker compose up -d
 - `POST /api/conn/test`
 - `POST /api/snapshots`
 - `POST /api/snapshots/upload`
-- `GET /api/snapshots/latest?userId=default`
+- `GET /api/snapshots/latest`
 
-Except for `GET /api/health`, every route requires `Authorization: Bearer <LEDGERFLOW_API_TOKEN>` or `X-LedgerFlow-Api-Token: <LEDGERFLOW_API_TOKEN>`.
+Except for `GET /api/health`, setup/status, and user-auth routes, infrastructure routes require
+`Authorization: Bearer <LEDGERFLOW_API_TOKEN>` or `X-LedgerFlow-Api-Token: <LEDGERFLOW_API_TOKEN>`.
 
 `POST /api/conn/test` only checks the MySQL credentials configured in server environment variables. It intentionally ignores browser-provided host, port, username, password, or connection string values to avoid turning the API into an arbitrary network probe.
 

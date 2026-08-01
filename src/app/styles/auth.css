@@ -1,0 +1,127 @@
+.auth-gate {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 15% 15%, color-mix(in srgb, var(--color-primary) 16%, transparent), transparent 34%),
+    var(--color-bg);
+}
+
+.auth-card {
+  width: min(100%, 480px);
+  display: grid;
+  gap: 22px;
+  padding: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.auth-card-head {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.auth-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+}
+
+.auth-card-head h1,
+.auth-card-head p {
+  margin: 0;
+}
+
+.auth-card-head h1 {
+  margin-top: 4px;
+  color: var(--color-text-primary);
+  font-size: clamp(24px, 5vw, 32px);
+}
+
+.auth-card-head > div > p:last-child {
+  margin-top: 8px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.auth-kicker {
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.auth-form {
+  display: grid;
+  gap: 16px;
+}
+
+.auth-form .field {
+  display: grid;
+  gap: 8px;
+}
+
+.auth-form input {
+  width: 100%;
+}
+
+.auth-submit {
+  width: 100%;
+  min-height: 44px;
+}
+
+.auth-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+}
+
+.auth-mode-button,
+.auth-retry-button {
+  justify-self: center;
+  border: 0;
+  color: var(--color-primary);
+  background: transparent;
+}
+
+.topbar-account {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.topbar-account-name {
+  max-width: 140px;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-account-logout {
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+
+@media (max-width: 720px) {
+  .auth-gate {
+    padding: 16px;
+  }
+
+  .auth-card {
+    padding: 20px;
+  }
+
+  .topbar-account-name {
+    display: none;
+  }
+}
