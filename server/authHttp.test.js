@@ -67,6 +67,10 @@ test('HTTP auth protects relational data and scopes it to the session user', asy
   try {
     const setup = await post('/api/setup/initialize', { provider: 'sqlite' });
     assert.equal(setup.status, 200);
+    const setupBody = await json(setup);
+    assert.equal(setupBody.initialized, true);
+    assert.equal(setupBody.provider, 'sqlite');
+    assert.equal(setupBody.created, true);
 
     const unauthorized = await request('/api/data/bootstrap');
     assert.equal(unauthorized.status, 401);

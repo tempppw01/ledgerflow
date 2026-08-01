@@ -860,11 +860,12 @@ export async function handleRequest(req, res) {
       }
 
       const body = await readJsonBody(req);
-      const setup = await initializeDatabaseProvider({
+      const initialization = await initializeDatabaseProvider({
         provider: body.provider,
         validateProvider: validateDatabaseProvider
       });
-      jsonResponse(res, 200, { ok: true, ...setup });
+      const setup = await getDatabaseSetupStatus();
+      jsonResponse(res, 200, { ok: true, ...setup, created: initialization.created });
       return;
     }
 
