@@ -732,11 +732,13 @@ function MarketSessionStatus() {
 
 function buildMarketTrendGeometry(points: EastmoneyMarketTrendPoint[]) {
   const width = 560;
-  const height = 176;
-  const paddingX = 6;
-  const paddingY = 12;
-  const usableWidth = width - paddingX * 2;
-  const usableHeight = height - paddingY * 2;
+  const height = 224;
+  const paddingLeft = 46;
+  const paddingRight = 10;
+  const paddingTop = 16;
+  const paddingBottom = 18;
+  const usableWidth = width - paddingLeft - paddingRight;
+  const usableHeight = height - paddingTop - paddingBottom;
   const values = points.map((item) => item.value).filter((value) => Number.isFinite(value));
 
   if (values.length < 2) {
@@ -748,6 +750,10 @@ function buildMarketTrendGeometry(points: EastmoneyMarketTrendPoint[]) {
       min: null as number | null,
       max: null as number | null,
       mid: null as number | null,
+      plotLeft: paddingLeft,
+      plotRight: width - paddingRight,
+      plotTop: paddingTop,
+      plotBottom: height - paddingBottom,
       points: [] as MarketTrendChartPoint[],
       labels: [] as string[]
     };
@@ -757,8 +763,8 @@ function buildMarketTrendGeometry(points: EastmoneyMarketTrendPoint[]) {
   const max = Math.max(...values);
   const spread = Math.max(max - min, 0.01);
   const coords = points.map((point, index) => {
-    const x = paddingX + (index / Math.max(points.length - 1, 1)) * usableWidth;
-    const y = paddingY + (1 - (point.value - min) / spread) * usableHeight;
+    const x = paddingLeft + (index / Math.max(points.length - 1, 1)) * usableWidth;
+    const y = paddingTop + (1 - (point.value - min) / spread) * usableHeight;
     return { ...point, x, y, index };
   });
   const linePath = coords
@@ -766,9 +772,9 @@ function buildMarketTrendGeometry(points: EastmoneyMarketTrendPoint[]) {
     .join(' ');
   const first = coords[0];
   const last = coords[coords.length - 1];
-  const areaPath = `${linePath} L ${last.x.toFixed(2)} ${height.toFixed(2)} L ${first.x.toFixed(
+  const areaPath = `${linePath} L ${last.x.toFixed(2)} ${(height - paddingBottom).toFixed(
     2
-  )} ${height.toFixed(2)} Z`;
+  )} L ${first.x.toFixed(2)} ${(height - paddingBottom).toFixed(2)} Z`;
   const middle = points[Math.floor(points.length / 2)];
 
   return {
@@ -779,6 +785,10 @@ function buildMarketTrendGeometry(points: EastmoneyMarketTrendPoint[]) {
     min,
     max,
     mid: min + spread / 2,
+    plotLeft: paddingLeft,
+    plotRight: width - paddingRight,
+    plotTop: paddingTop,
+    plotBottom: height - paddingBottom,
     points: coords,
     labels: [points[0]?.label, middle?.label, points[points.length - 1]?.label].filter(Boolean)
   };
@@ -823,6 +833,7 @@ function MarketOverviewPanel({
     chart.points[hoveredTrendIndex ?? chart.points.length - 1] ||
     chart.points[chart.points.length - 1] ||
     null;
+  const hoveredTrendPoint = hoveredTrendIndex === null ? null : activeTrendPoint;
 
   useEffect(() => {
     setHoveredTrendIndex(null);
@@ -966,46 +977,70 @@ function MarketOverviewPanel({
                     </linearGradient>
                   </defs>
                   <path className="investments-market-chart-area" d={chart.areaPath} />
-                  {[0.25, 0.5, 0.75].map((ratio) => (
+                  {[0, 0.5, 1].map((ratio) => (
                     <line
                       key={ratio}
                       className="investments-market-chart-grid"
-                      x1="0"
-                      x2={chart.width}
-                      y1={chart.height * ratio}
-                      y2={chart.height * ratio}
+                      x1={chart.plotLeft}
+                      x2={chart.plotRight}
+                      y1={chart.plotTop + (chart.plotBottom - chart.plotTop) * ratio}
+                      y2={chart.plotTop + (chart.plotBottom - chart.plotTop) * ratio}
                     />
                   ))}
-                  {activeTrendPoint ? (
+                  {chart.mid !== null ? (
+                    <line
+                      className="investments-market-chart-baseline"
+                      x1={chart.plotLeft}
+                      x2={chart.plotRight}
+                      y1={(chart.plotTop + chart.plotBottom) / 2}
+                      y2={(chart.plotTop + chart.plotBottom) / 2}
+                    />
+                  ) : null}
+                  {[
+                    { label: chart.max, y: chart.plotTop },
+                    { label: chart.mid, y: (chart.plotTop + chart.plotBottom) / 2 },
+                    { label: chart.min, y: chart.plotBottom }
+                  ].map((axis) => (
+                    <text
+                      key={`${axis.label}-${axis.y}`}
+                      className="investments-market-chart-axis-label"
+                      x="2"
+                      y={axis.y}
+                      dominantBaseline="middle"
+                    >
+                      {axis.label === null ? '' : formatMarketIndexValue(axis.label)}
+                    </text>
+                  ))}
+                  {hoveredTrendPoint ? (
                     <>
                       <line
                         className="investments-market-chart-cursor"
-                        x1={activeTrendPoint.x}
-                        x2={activeTrendPoint.x}
-                        y1="0"
-                        y2={chart.height}
+                        x1={hoveredTrendPoint.x}
+                        x2={hoveredTrendPoint.x}
+                        y1={chart.plotTop}
+                        y2={chart.plotBottom}
                       />
                       <circle
                         className="investments-market-chart-point"
-                        cx={activeTrendPoint.x}
-                        cy={activeTrendPoint.y}
+                        cx={hoveredTrendPoint.x}
+                        cy={hoveredTrendPoint.y}
                         r="4.5"
                       />
                     </>
                   ) : null}
                   <path className="investments-market-chart-line" d={chart.linePath} />
                 </svg>
-                {activeTrendPoint ? (
+                {hoveredTrendPoint ? (
                   <div
                     className="investments-market-chart-tooltip"
                     style={{
-                      left: `${(activeTrendPoint.x / chart.width) * 100}%`,
-                      top: `${Math.max(8, ((activeTrendPoint.y - 14) / chart.height) * 100)}%`
+                      left: `${(hoveredTrendPoint.x / chart.width) * 100}%`,
+                      top: `${Math.max(8, ((hoveredTrendPoint.y - 14) / chart.height) * 100)}%`
                     }}
                     aria-hidden="true"
                   >
-                    <strong>{activeTrendPoint.label}</strong>
-                    <span>{formatMarketIndexValue(activeTrendPoint.value)}</span>
+                    <strong>{hoveredTrendPoint.label}</strong>
+                    <span>{formatMarketIndexValue(hoveredTrendPoint.value)}</span>
                   </div>
                 ) : null}
               </div>

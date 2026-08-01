@@ -228,7 +228,7 @@ describe('InvestmentsPage', () => {
           right: 560,
           bottom: 176,
           width: 560,
-          height: 176,
+          height: 224,
           x: 0,
           y: 0,
           toJSON: () => ({})
@@ -458,9 +458,13 @@ describe('InvestmentsPage', () => {
     expect(await screen.findByText('大盘概览')).toBeInTheDocument();
     const stage = getMarketChartStage();
 
+    expect(document.querySelectorAll('.investments-market-chart-axis-label')).toHaveLength(3);
+    expect(document.querySelector('.investments-market-chart-tooltip')).not.toBeInTheDocument();
+
     fireEvent.mouseMove(stage, { clientX: 20 });
 
     expect(await screen.findByText('09:30 · 4031.54')).toBeInTheDocument();
+    expect(document.querySelector('.investments-market-chart-tooltip')).toBeInTheDocument();
     expect(screen.getByText(/均价 4033\.65/)).toBeInTheDocument();
   });
 
