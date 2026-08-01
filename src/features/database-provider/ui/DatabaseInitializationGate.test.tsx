@@ -22,6 +22,7 @@ describe('DatabaseInitializationGate', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    sessionStorage.clear();
   });
 
   it('blocks the application until a database provider is initialized', async () => {
@@ -62,5 +63,27 @@ describe('DatabaseInitializationGate', () => {
 
     await waitFor(() => expect(screen.getByText('应用内容')).toBeInTheDocument());
     expect(screen.queryByRole('heading', { name: '初始化数据存储' })).not.toBeInTheDocument();
+  });
+
+  it('uses the cached initialized status while the server status is revalidated', () => {
+    const cachedStatus = {
+      initialized: true,
+      provider: 'sqlite',
+      initializedAt: '2026-07-17T00:00:00.000Z',
+      allowedProviders: ['sqlite'],
+      configuredProvider: 'sqlite',
+      configurationMismatch: false
+    };
+    sessionStorage.setItem('ledgerflow-database-status-cache', JSON.stringify(cachedStatus));
+    getDatabaseSetupStatusMock.mockReturnValue(new Promise(() => undefined));
+
+    render(
+      <DatabaseInitializationGate>
+        <div>应用内容</div>
+      </DatabaseInitializationGate>
+    );
+
+    expect(screen.getByText('应用内容')).toBeInTheDocument();
+    expect(screen.queryByText('正在检查数据库初始化状态...')).not.toBeInTheDocument();
   });
 });

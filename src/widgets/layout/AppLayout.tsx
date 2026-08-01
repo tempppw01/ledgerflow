@@ -17,6 +17,7 @@ import {
   CALENDAR_ICON_URL,
   CARD_SD_ICON_URL,
   CHAT_ICON_URL,
+  CHEVRON_DOWN_ICON_URL,
   CHEVRONS_LEFT_RIGHT_ICON_URL,
   CHEVRONS_RIGHT_LEFT_ICON_URL,
   CIRCLE_USER_ICON_URL,
@@ -84,6 +85,7 @@ export function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(260);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [settingsOverlayOpen, setSettingsOverlayOpen] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px)').matches : false
@@ -99,6 +101,7 @@ export function AppLayout() {
       state.trashedSubscriptions.length
   );
   const recycleBinIconUrl = recycleBinItemCount > 0 ? TRASH_2_ICON_URL : TRASH_ICON_URL;
+  const accountMenuRef = useRef<HTMLDivElement>(null);
 
   const navSections: Array<{ title: string; items: NavItem[] }> = useMemo(
     () => [
@@ -312,7 +315,6 @@ export function AppLayout() {
 
     return matchedItem?.label ?? tFallback('layout.workspaceTitle', '智能记账工作台');
   }, [assistantWorkspaceTitle, location.pathname, navSections, t]);
-  const isStandaloneSettingsRoute = location.pathname === '/settings';
   const isInvestmentsRoute = location.pathname.startsWith('/investments');
 
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() =>
@@ -566,7 +568,33 @@ export function AppLayout() {
 
   useEffect(() => {
     setSettingsOverlayOpen(false);
+    setAccountMenuOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!accountMenuOpen) {
+      return;
+    }
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!accountMenuRef.current?.contains(event.target as Node)) {
+        setAccountMenuOpen(false);
+      }
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setAccountMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [accountMenuOpen]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 768px)');
@@ -599,6 +627,7 @@ export function AppLayout() {
 
   const openSettingsOverlay = () => {
     setMobileNavOpen(false);
+    setAccountMenuOpen(false);
     setSettingsOverlayOpen(true);
   };
 
@@ -731,36 +760,73 @@ export function AppLayout() {
           </div>
 
           <div className="topbar-right">
-            <div className="topbar-account">
-              <span className="topbar-account-name" title={user.email}>
-                {user.displayName}
-              </span>
+            <div className="topbar-account" ref={accountMenuRef}>
               <button
                 type="button"
-                className="secondary topbar-account-logout"
-                onClick={() => void logout()}
+                className={`topbar-account-trigger motion-pill-btn ${accountMenuOpen ? 'active' : ''}`.trim()}
+                onClick={() => setAccountMenuOpen((open) => !open)}
+                aria-haspopup="menu"
+                aria-expanded={accountMenuOpen}
               >
-                退出
+                <span className="topbar-account-avatar" aria-hidden="true">
+                  <img src={CIRCLE_USER_ICON_URL} alt="" />
+                </span>
+                <span className="topbar-account-name" title={user.email}>
+                  {user.displayName}
+                </span>
+                <img
+                  className={`topbar-account-chevron ${accountMenuOpen ? 'is-open' : ''}`.trim()}
+                  src={CHEVRON_DOWN_ICON_URL}
+                  alt=""
+                  aria-hidden="true"
+                />
               </button>
+
+              {accountMenuOpen ? (
+                <div className="topbar-account-menu" role="menu" aria-label="账号菜单">
+                  <div className="topbar-account-menu-head">
+                    <span className="topbar-account-menu-avatar" aria-hidden="true">
+                      <img src={CIRCLE_USER_ICON_URL} alt="" />
+                    </span>
+                    <div>
+                      <strong>{user.displayName}</strong>
+                      <span>{user.email}</span>
+                    </div>
+                  </div>
+                  <div className="topbar-account-menu-divider" />
+                  <button
+                    type="button"
+                    className="topbar-account-menu-item"
+                    role="menuitem"
+                    onClick={openSettingsOverlay}
+                  >
+                    <img src={SETTINGS_ICON_URL} alt="" aria-hidden="true" />
+                    <span>
+                      <strong>账号设置</strong>
+                      <small>账户与安全</small>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="topbar-account-menu-item is-danger"
+                    role="menuitem"
+                    onClick={() => {
+                      setAccountMenuOpen(false);
+                      void logout();
+                    }}
+                  >
+                    <span className="topbar-account-menu-symbol" aria-hidden="true">
+                      ↪
+                    </span>
+                    <span>
+                      <strong>退出登录</strong>
+                      <small>退出当前账号</small>
+                    </span>
+                  </button>
+                </div>
+              ) : null}
             </div>
             <ThemeSwitcher />
-            <button
-              type="button"
-              className={`topbar-settings-btn motion-pill-btn ${
-                settingsOverlayOpen || isStandaloneSettingsRoute ? 'active' : ''
-              }`.trim()}
-              onClick={openSettingsOverlay}
-              aria-haspopup="dialog"
-              aria-expanded={settingsOverlayOpen}
-              aria-label={t('nav.settings', { defaultValue: '设置' })}
-            >
-              <img
-                className="topbar-settings-icon"
-                src={SETTINGS_ICON_URL}
-                alt=""
-                aria-hidden="true"
-              />
-            </button>
           </div>
         </header>
 
@@ -805,9 +871,7 @@ export function AppLayout() {
                   aria-hidden="true"
                 />
                 <div>
-                  <p className="mobile-nav-name">
-                    {user.displayName}
-                  </p>
+                  <p className="mobile-nav-name">{user.displayName}</p>
                   <p className="mobile-nav-subtitle">
                     {t('layout.drawerSubtitle', {
                       today: todayLabel,

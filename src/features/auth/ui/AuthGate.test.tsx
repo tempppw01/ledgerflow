@@ -36,7 +36,11 @@ describe('AuthGate', () => {
       user: null
     });
 
-    render(<AuthGate><div>账本内容</div></AuthGate>);
+    render(
+      <AuthGate>
+        <div>账本内容</div>
+      </AuthGate>
+    );
 
     expect(await screen.findByRole('heading', { name: '创建第一个账号' })).toBeInTheDocument();
     expect(screen.queryByText('账本内容')).not.toBeInTheDocument();
@@ -50,9 +54,27 @@ describe('AuthGate', () => {
       user
     });
 
-    render(<AuthGate><div>账本内容</div></AuthGate>);
+    render(
+      <AuthGate>
+        <div>账本内容</div>
+      </AuthGate>
+    );
 
     expect(await screen.findByText('账本内容')).toBeInTheDocument();
+  });
+
+  it('keeps protected content visible while a cached session is revalidated', () => {
+    sessionStorage.setItem('ledgerflow-auth-user-cache', JSON.stringify(user));
+    mocks.getAuthStatus.mockReturnValue(new Promise(() => undefined));
+
+    render(
+      <AuthGate>
+        <div>账本内容</div>
+      </AuthGate>
+    );
+
+    expect(screen.getByText('账本内容')).toBeInTheDocument();
+    expect(screen.queryByText('正在检查账号状态...')).not.toBeInTheDocument();
   });
 
   it('logs in and then renders protected content', async () => {
@@ -65,7 +87,11 @@ describe('AuthGate', () => {
     mocks.loginAccount.mockResolvedValue({ ok: true, user });
     const actor = userEvent.setup();
 
-    render(<AuthGate><div>账本内容</div></AuthGate>);
+    render(
+      <AuthGate>
+        <div>账本内容</div>
+      </AuthGate>
+    );
     await screen.findByRole('heading', { name: '登录 LedgerFlow' });
     await actor.type(screen.getByLabelText('邮箱'), 'owner@example.com');
     await actor.type(screen.getByLabelText('密码'), 'a-secure-password');

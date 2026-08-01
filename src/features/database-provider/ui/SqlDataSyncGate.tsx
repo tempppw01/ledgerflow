@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { getRelationalBootstrap, importRelationalData } from '../../../shared/api/relationalDataClient';
+import {
+  getRelationalBootstrap,
+  importRelationalData
+} from '../../../shared/api/relationalDataClient';
 import { useAppPreferences } from '../../../shared/store/useAppPreferences';
 import { type FinanceDataSnapshot, useFinanceStore } from '../../../shared/store/useFinanceStore';
 import { useGlobalMemoryStore } from '../../../shared/store/useGlobalMemoryStore';
@@ -49,10 +52,7 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
   const initializedRef = useRef(false);
   const timerRef = useRef<number | null>(null);
 
-  const loadingText = useMemo(
-    () => (error ? error : '正在从 SQL 数据库载入账本数据...'),
-    [error]
-  );
+  const loadingText = useMemo(() => (error ? error : '正在从 SQL 数据库载入账本数据...'), [error]);
 
   useEffect(() => {
     if (!financeHydrated || initializedRef.current) return;
@@ -137,7 +137,9 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
         dirtyRef.current = false;
         syncingRef.current = true;
         void importRelationalData(getPayload())
-          .catch((reason) => setError(reason instanceof Error ? reason.message : 'SQL 数据库写入失败。'))
+          .catch((reason) =>
+            setError(reason instanceof Error ? reason.message : 'SQL 数据库写入失败。')
+          )
           .finally(() => {
             syncingRef.current = false;
             if (dirtyRef.current) scheduleSync();
@@ -157,16 +159,22 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
 
   if (!ready) {
     return (
-      <main className="database-initialization-gate">
-        <div className="database-initialization-gate-inner">
-          <p className="sync-tip">{loadingText}</p>
+      <>
+        {children}
+        <div
+          className={`sql-sync-notice ${error ? 'is-error' : ''}`.trim()}
+          role="status"
+          aria-live="polite"
+        >
+          <span className="sql-sync-notice-dot" aria-hidden="true" />
+          <span>{error ? loadingText : '正在同步账本数据...'}</span>
           {error ? (
             <button type="button" onClick={() => window.location.reload()}>
               重新连接
             </button>
           ) : null}
         </div>
-      </main>
+      </>
     );
   }
 

@@ -700,10 +700,68 @@ body {
   line-height: 1.65;
 }
 
+.settings-console-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: var(--space-4);
+  overflow-x: auto;
+  border-bottom: 1px solid var(--color-divider);
+  scrollbar-width: none;
+}
+
+.settings-console-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.settings-console-tabs button {
+  position: relative;
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.settings-console-tabs button::after {
+  position: absolute;
+  right: 14px;
+  bottom: -1px;
+  left: 14px;
+  height: 2px;
+  background: transparent;
+  content: '';
+}
+
+.settings-console-tabs button:hover,
+.settings-console-tabs button:focus-visible {
+  color: var(--color-text);
+  transform: none;
+  box-shadow: none;
+}
+
+.settings-console-tabs button.is-active {
+  color: var(--color-text);
+}
+
+.settings-console-tabs button.is-active::after {
+  background: var(--color-primary);
+}
+
+.settings-tab-panel {
+  display: grid;
+  gap: var(--space-4);
+  padding: 22px 0 2px;
+}
+
 .settings-account-section {
   display: grid;
   gap: var(--space-4);
-  margin-top: var(--space-5);
   padding: var(--space-4) 0;
   border-top: 1px solid var(--color-border-light);
   border-bottom: 1px solid var(--color-border-light);
@@ -9479,6 +9537,71 @@ body.categories-accounts-resizing {
   margin: 0;
   color: var(--color-text-secondary);
   line-height: 1.5;
+}
+
+.sql-sync-notice {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 340;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(420px, calc(100vw - 36px));
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+  color: var(--color-text-secondary);
+  background: color-mix(in srgb, var(--color-bg-elevated) 92%, transparent);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(10px);
+  font-size: 12px;
+}
+
+.sql-sync-notice-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  animation: sql-sync-pulse 1.2s ease-in-out infinite;
+}
+
+.sql-sync-notice.is-error {
+  border-color: color-mix(in srgb, var(--color-danger) 35%, var(--color-border));
+  color: var(--color-danger);
+}
+
+.sql-sync-notice.is-error .sql-sync-notice-dot {
+  background: var(--color-danger);
+  animation: none;
+}
+
+.sql-sync-notice button {
+  min-height: 26px;
+  padding: 3px 8px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  color: inherit;
+  background: transparent;
+  font-size: 11px;
+}
+
+@keyframes sql-sync-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sql-sync-notice-dot {
+    animation: none;
+  }
 }
 
 .database-data-hub-actions > button,

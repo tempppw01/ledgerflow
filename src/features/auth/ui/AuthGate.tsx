@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type FormEvent,
-  type ReactNode
-} from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import {
   getAuthStatus,
   loginAccount,
@@ -18,23 +11,50 @@ import { APP_LOGO_URL } from '../../../shared/config/app';
 import { PasswordInput } from '../../../shared/ui/PasswordInput';
 import { AuthContext } from './authContext';
 
+const AUTH_USER_CACHE_KEY = 'ledgerflow-auth-user-cache';
+
+function readCachedAuthUser(): AuthUser | null {
+  try {
+    const raw = window.sessionStorage.getItem(AUTH_USER_CACHE_KEY);
+    if (!raw) return null;
+    const user = JSON.parse(raw) as Partial<AuthUser>;
+    if (!user.id || !user.email || !user.displayName || !user.ledgerUserId) return null;
+    return user as AuthUser;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedAuthUser(user: AuthUser | null) {
+  try {
+    if (user) {
+      window.sessionStorage.setItem(AUTH_USER_CACHE_KEY, JSON.stringify(user));
+    } else {
+      window.sessionStorage.removeItem(AUTH_USER_CACHE_KEY);
+    }
+  } catch {
+    // The server session remains authoritative when browser storage is unavailable.
+  }
+}
+
 export function AuthGate({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(() => readCachedAuthUser());
   const [registrationOpen, setRegistrationOpen] = useState(false);
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !readCachedAuthUser());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const loadStatus = useCallback(async () => {
     try {
-      setLoading(true);
+      setLoading(!readCachedAuthUser());
       setError('');
       const status = await getAuthStatus();
       setUser(status.user);
+      writeCachedAuthUser(status.user);
       setRegistrationOpen(status.registrationOpen);
       setMode(status.registrationOpen ? 'register' : 'login');
     } catch (reason) {
@@ -58,6 +78,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
           ? await registerAccount({ email, password, displayName })
           : await loginAccount({ email, password });
       setUser(result.user);
+      writeCachedAuthUser(result.user);
       setPassword('');
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : '账号操作失败。');
@@ -70,6 +91,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     try {
       await logoutAccount();
     } finally {
+      writeCachedAuthUser(null);
       setUser(null);
       setMode('login');
       setPassword('');
@@ -79,6 +101,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const updateProfile = useCallback(async (input: { displayName: string }) => {
     const result = await updateAccountProfile(input);
     setUser(result.user);
+    writeCachedAuthUser(result.user);
     return result.user;
   }, []);
 
@@ -156,7 +179,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
             />
           </label>
 
-          {error ? <p className="auth-error" role="alert">{error}</p> : null}
+          {error ? (
+            <p className="auth-error" role="alert">
+              {error}
+            </p>
+          ) : null}
 
           <button type="submit" className="primary auth-submit" disabled={submitting}>
             {submitting ? '请稍候...' : mode === 'register' ? '创建账号并接管账本' : '登录'}

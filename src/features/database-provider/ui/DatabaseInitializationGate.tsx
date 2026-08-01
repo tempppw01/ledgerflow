@@ -11,16 +11,43 @@ interface DatabaseInitializationGateProps {
   children: ReactNode;
 }
 
+const DATABASE_STATUS_CACHE_KEY = 'ledgerflow-database-status-cache';
+
+function readCachedStatus(): DatabaseSetupStatus | null {
+  try {
+    const raw = window.sessionStorage.getItem(DATABASE_STATUS_CACHE_KEY);
+    if (!raw) return null;
+    const status = JSON.parse(raw) as DatabaseSetupStatus;
+    return status.initialized && !status.configurationMismatch ? status : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedStatus(status: DatabaseSetupStatus) {
+  try {
+    if (status.initialized && !status.configurationMismatch) {
+      window.sessionStorage.setItem(DATABASE_STATUS_CACHE_KEY, JSON.stringify(status));
+    } else {
+      window.sessionStorage.removeItem(DATABASE_STATUS_CACHE_KEY);
+    }
+  } catch {
+    // The setup endpoint remains authoritative when browser storage is unavailable.
+  }
+}
+
 export function DatabaseInitializationGate({ children }: DatabaseInitializationGateProps) {
-  const [status, setStatus] = useState<DatabaseSetupStatus | null>(null);
+  const [status, setStatus] = useState<DatabaseSetupStatus | null>(() => readCachedStatus());
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !readCachedStatus());
 
   const loadStatus = useCallback(async () => {
     try {
-      setLoading(true);
+      setLoading(!readCachedStatus());
       setError('');
-      setStatus(await getDatabaseSetupStatus());
+      const nextStatus = await getDatabaseSetupStatus();
+      writeCachedStatus(nextStatus);
+      setStatus(nextStatus);
     } catch (reason) {
       setStatus(null);
       setError(reason instanceof Error ? reason.message : '无法连接数据库初始化服务。');
@@ -32,6 +59,11 @@ export function DatabaseInitializationGate({ children }: DatabaseInitializationG
   useEffect(() => {
     void loadStatus();
   }, [loadStatus]);
+
+  const handleInitialized = (nextStatus: DatabaseSetupStatus) => {
+    writeCachedStatus(nextStatus);
+    setStatus(nextStatus);
+  };
 
   if (status?.initialized && !status.configurationMismatch) {
     return (
@@ -64,7 +96,7 @@ export function DatabaseInitializationGate({ children }: DatabaseInitializationG
           </section>
         ) : null}
         {status && !status.initialized ? (
-          <DatabaseProviderSetupPanel onInitialized={setStatus} />
+          <DatabaseProviderSetupPanel onInitialized={handleInitialized} />
         ) : null}
       </div>
     </main>
