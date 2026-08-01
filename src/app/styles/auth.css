@@ -168,14 +168,15 @@
 .topbar-account-menu {
   position: absolute;
   top: calc(100% + 9px);
-  right: 0;
+  left: 50%;
   z-index: 260;
-  width: min(292px, calc(100vw - 24px));
+  width: min(220px, calc(100vw - 24px));
   padding: 7px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-bg-elevated);
   box-shadow: var(--shadow-dropdown);
+  transform: translateX(-50%);
   animation: account-menu-in 140ms ease-out;
 }
 
@@ -324,11 +325,11 @@
 @keyframes account-menu-in {
   from {
     opacity: 0;
-    transform: translateY(-4px) scale(0.98);
+    transform: translateX(-50%) translateY(-4px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateX(-50%) translateY(0) scale(1);
   }
 }
 
@@ -361,5 +362,12 @@
   .topbar-account-name,
   .topbar-account-chevron {
     display: none;
+  }
+
+  .topbar-account-menu {
+    right: 0;
+    left: auto;
+    transform: none;
+    animation: none;
   }
 }

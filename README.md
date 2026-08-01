@@ -1,11 +1,6 @@
 # LedgerFlow
 
-## Database architecture
-
-The database migration plan, provider rules, domain model, legacy import order, and Redis decision
-are documented in [docs/database-architecture.md](docs/database-architecture.md).
-
-> 面向个人长期财务管理的 AI-native 记账系统。快速记一笔、看懂现金流、管理负债和预算，并把 AI 深度接入账单识别、信贷整理、投资分析与财务复盘。
+> 面向个人长期财务管理的 AI-native 财务工作台。快速记一笔、看懂现金流、管理负债与预算，并让 AI 参与账单识别、信贷整理、投资分析和财务复盘。
 
 LedgerFlow 当前版本：`0.6.2`
 
@@ -17,38 +12,38 @@ LedgerFlow 当前版本：`0.6.2`
 
 <table>
   <tr>
-    <th width="50%">AI 记账助手</th>
-    <th width="50%">交易流水管理</th>
+    <th width="50%">投资理财工作台</th>
+    <th width="50%">AI 财务助手</th>
   </tr>
   <tr>
-    <td><img src="docs/images/screenshot-1.png" alt="LedgerFlow AI 记账助手页面" /></td>
-    <td><img src="docs/images/screenshot-3.png" alt="LedgerFlow 交易流水管理页面" /></td>
+    <td><img src="docs/images/screenshot-1.png" alt="LedgerFlow 投资理财工作台" /></td>
+    <td><img src="docs/images/screenshot-2.png" alt="LedgerFlow AI 财务助手" /></td>
   </tr>
   <tr>
-    <td>自然语言或截图识别账单，核对后可直接写入账本。</td>
-    <td>筛选、排序、批量操作、状态统计和订单号检索集中在一个工作区。</td>
+    <td>把今日持仓、行情播报、操作规则、多指数走势和投资资讯放在同一张工作台。</td>
+    <td>在记账、财务问答、信贷和投资模式间切换，结合账本与联网资料生成可追溯回答。</td>
   </tr>
   <tr>
-    <th>全局记忆</th>
-    <th>财务趋势与预测</th>
+    <th>交易流水管理</th>
+    <th>数据库与备份</th>
   </tr>
   <tr>
-    <td><img src="docs/images/screenshot-2.png" alt="LedgerFlow 全局记忆页面" /></td>
-    <td><img src="docs/images/screenshot-4.png" alt="LedgerFlow 财务趋势与预测页面" /></td>
+    <td><img src="docs/images/screenshot-3.png" alt="LedgerFlow 交易流水管理" /></td>
+    <td><img src="docs/images/screenshot-4.png" alt="LedgerFlow 数据库与备份" /></td>
   </tr>
   <tr>
-    <td>沉淀长期偏好、账务习惯与展示偏好，可启用、停用、归档和批量管理。</td>
-    <td>聚合月度收支、分类结构、历史趋势和未来预测，支持 AI 进一步解读。</td>
+    <td>搜索、筛选、批量操作、隐私模式和新增账目集中在同一个工作区。</td>
+    <td>统一管理 JSON、账单导入、SQLite / MySQL、WebDAV 与对象存储备份。</td>
   </tr>
 </table>
 
 ### 0.6.2 功能亮点
 
-- 投资理财页提供四大指数分时走势、官方快讯分类、基金自选和持仓资料。
-- 自选基金支持一键刷新、历史业绩、重仓产品、资产配置和 AI 加减仓分析。
-- AI 记账、AI 助手、AI 信贷管家、投资理财助手均使用可折叠输入框。
-- 本地、MySQL、WebDAV、阿里云 OSS 与 S3 备份均可勾选备份内容。
-- 投资聊天已接入大盘、热门题材、行业板块与快讯上下文，支持联网资讯核验、过程状态和历史上下文清空。
+- 首次初始化可选择 SQLite 或 MySQL；初始化后 SQL 是业务数据源，本地缓存用于快速启动和离线恢复。
+- 账号、密码和登录会话由服务端管理，账号设置可查看当前设备并退出其他会话。
+- 投资理财页整合持仓收益、大白话行情、规则建议、多指数分时走势、基金自选和持仓资料。
+- 投资 AI 可通过 Tavily 同时核验同花顺与雪球，单一来源失败时自动使用另一来源，并展示引用与过程状态。
+- JSON、WebDAV、阿里云 OSS、S3 兼容存储和数据库快照均支持按范围备份；恢复内容会写回当前 SQL 数据库。
 
 ## 产品定位
 
@@ -57,7 +52,7 @@ LedgerFlow 的目标不是做一个传统流水表，而是做一个更适合年
 - 记账要快：手动录入、账单导入、AI 识别都能进入同一套交易数据。
 - 信息要少而准：默认展示关键结论，详情按需展开。
 - AI 要能真正介入：不仅聊天，还能识别账单、整理负债、分析基金、生成复盘建议。
-- 数据要可控：本地优先，支持 JSON、WebDAV、对象存储和 MySQL 快照备份。
+- 数据要可控：SQLite / MySQL 作为主存储，JSON、WebDAV、对象存储和数据库快照用于迁移与灾难恢复。
 - 结果要能追溯：交易、还款、附件、导入来源和备份版本尽量保留上下文。
 
 ## 主要能力
@@ -75,7 +70,15 @@ LedgerFlow 的目标不是做一个传统流水表，而是做一个更适合年
 - AI 问答：基于当前账本上下文做财务分析、趋势解释和行动建议。
 - AI 信贷管家：识别花呗、信用卡分期、消费贷、贷款账单，并可带去还款管理。
 - 支持 OpenAI-compatible 接口、自定义 Base URL / API Key / Model。
+- 支持 Tavily 联网检索；投资模式优先交叉核验同花顺与雪球资讯、公告和政策。
 - 支持全局记忆：长期偏好可沉淀、查看、启用/停用和管理。
+
+### 账号与数据
+
+- 首次启动选择 SQLite 或 MySQL，选择结果写入持久化目录并锁定，避免运行中误切数据库。
+- 注册、登录、资料修改、密码更新和会话撤销均由服务端处理。
+- 账号设置展示当前及其他登录设备，可单独退出设备或一键退出其他会话。
+- 业务数据按账号隔离；首次升级会导入旧浏览器数据，之后以 SQL 为准。
 
 ### 预算、负债与分析
 
@@ -86,19 +89,20 @@ LedgerFlow 的目标不是做一个传统流水表，而是做一个更适合年
 
 ### 投资理财
 
-- 四大指数行情、分时坐标提示和东方财富官方快讯分类。
+- 多指数行情、分时坐标提示、市场快讯、热门题材和行业板块。
 - 投资持仓、自选基金、持仓流水和基金资料一键刷新。
 - AI 基金分析与基金持仓分析，可沉淀加仓、减仓或继续观察建议。
 - 自选基金可沉淀历史业绩、资产分布、行业分布、重仓股票、费率、基金公司等信息。
-- 投资 AI 聊天支持图片、联网核验开关、停止请求、复制 / 重试 / 删除等消息操作。
+- 投资 AI 聊天支持图片、联网核验开关、可折叠检索过程、资讯引用、停止请求、复制 / 重试 / 删除等消息操作。
 
 ### 备份与同步
 
 - 本地 JSON 导出 / 导入。
 - WebDAV 备份与恢复，支持版本列表。
 - 阿里云 OSS / S3 兼容对象存储备份。
-- MySQL 快照同步：把完整备份快照写入 MySQL，恢复前校验 checksum。
+- 数据库快照同步：把完整备份快照写入当前 SQLite / MySQL，恢复前校验 checksum。
 - 所有备份方式都支持选择账本、订阅、AI 记忆和投资理财数据范围。
+- JSON、WebDAV 和对象存储恢复统一经过关系型仓库事务，不会只停留在浏览器缓存。
 - 生产镜像内置 Nginx + Node API，`/api/*` 走同容器内部 API。
 
 ## 快速部署
@@ -113,10 +117,19 @@ services:
     ports:
       - '18080:80'
     environment:
+      # auto 允许首次打开时选择 SQLite 或 MySQL；也可固定为 sqlite / mysql。
       DATABASE_PROVIDER: '${DATABASE_PROVIDER:-auto}'
       LEDGERFLOW_DATA_DIR: '/app/data'
+      SQLITE_PATH: '/app/data/ledgerflow.sqlite'
       LEDGERFLOW_API_PORT: '8787'
       LEDGERFLOW_MAX_BODY_BYTES: '52428800'
+      LEDGERFLOW_MIGRATION_LOCK_TIMEOUT_SECONDS: '30'
+      # first-user 仅开放首个账号注册；可改为 open 或 closed。
+      LEDGERFLOW_REGISTRATION_MODE: '${LEDGERFLOW_REGISTRATION_MODE:-first-user}'
+      LEDGERFLOW_SESSION_DAYS: '${LEDGERFLOW_SESSION_DAYS:-30}'
+      # 当前示例通过 HTTP 直连；HTTPS 反向代理部署请设为 true。
+      LEDGERFLOW_COOKIE_SECURE: '${LEDGERFLOW_COOKIE_SECURE:-false}'
+      LEDGERFLOW_CORS_ORIGIN: '${LEDGERFLOW_CORS_ORIGIN:-}'
       LEDGERFLOW_API_TOKEN: '${LEDGERFLOW_API_TOKEN:?Set LEDGERFLOW_API_TOKEN to a long random value}'
       LEDGERFLOW_WEBDAV_ALLOWED_HOSTS: '${LEDGERFLOW_WEBDAV_ALLOWED_HOSTS:-}'
       MYSQL_HOST: '${MYSQL_HOST:-}'
@@ -172,7 +185,7 @@ MYSQL_DATABASE=ledgerflow
 MYSQL_SSL=false
 ```
 
-选择 MySQL provider 后，关系表是业务数据源；MySQL 快照继续用于导出和灾难恢复。详见 [docs/database-architecture.md](docs/database-architecture.md) 和 [docs/mysql-snapshot-sync.md](docs/mysql-snapshot-sync.md)。
+选择 SQLite 或 MySQL provider 后，关系表就是业务数据源；快照继续用于导出和灾难恢复。Provider 规则、关系模型和旧数据迁移顺序详见 [docs/database-architecture.md](docs/database-architecture.md)，账号与会话见 [docs/account-service.md](docs/account-service.md)，MySQL 快照见 [docs/mysql-snapshot-sync.md](docs/mysql-snapshot-sync.md)。
 
 ### 账号服务
 
@@ -241,10 +254,11 @@ npm run lint
 ## 安全说明
 
 - LedgerFlow 是个人财务工具，请不要把测试令牌、AI Key、MySQL 密码提交到仓库。
-- `LEDGERFLOW_API_TOKEN` 不是登录系统，只是保护当前内置 API 的访问令牌。
+- `LEDGERFLOW_API_TOKEN` 不是用户密码，而是保护快照与 WebDAV 代理等基础设施接口的服务令牌。
 - WebDAV 同源代理已做服务端鉴权和公网 HTTPS 校验，但仍建议配置 `LEDGERFLOW_WEBDAV_ALLOWED_HOSTS`。
+- OpenAI、Tavily 和 Embedding 密钥保存在当前浏览器设置中，不会写入 SQL；请不要在共享设备上保持密钥明文可见。
 - AI 结果只作为辅助分析，涉及投资、借贷、还款等决策时请自行核对来源和数字。
-- 当前数据仍以浏览器本地持久化为主，远程备份建议作为安全副本使用。
+- 初始化完成后 SQL 是业务数据源，LocalStorage 只作为快速启动和离线恢复缓存；仍请定期保留异地备份。
 
 ## 项目结构
 

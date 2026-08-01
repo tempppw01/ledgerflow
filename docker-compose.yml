@@ -1,16 +1,39 @@
 services:
   ledgerflow:
+    # 一体化镜像：Nginx 前端 + Node API。升级时运行 docker compose pull && docker compose up -d。
     image: 34v0wphix/ledgerflow:latest
     container_name: ledgerflow
     ports:
+      # 浏览器访问 http://服务器地址:18080；可按需修改左侧宿主机端口。
       - '18080:80'
     environment:
+      # auto 会在首次打开时让用户选择 SQLite 或 MySQL；也可固定为 sqlite / mysql。
+      # 首次初始化后 provider 会写入 /app/data/database-provider.json，不可直接切换。
       DATABASE_PROVIDER: '${DATABASE_PROVIDER:-auto}'
+
+      # Provider 锁、SQLite 数据库及运行状态都在此目录，必须挂载持久化卷。
       LEDGERFLOW_DATA_DIR: '/app/data'
+      SQLITE_PATH: '/app/data/ledgerflow.sqlite'
+
+      # 容器内部 API 设置。50 MiB 上限用于导入完整 JSON 备份。
       LEDGERFLOW_API_PORT: '8787'
       LEDGERFLOW_MAX_BODY_BYTES: '52428800'
+      LEDGERFLOW_MIGRATION_LOCK_TIMEOUT_SECONDS: '30'
+
+      # 账号与会话：first-user 只允许创建首个账号；也可设为 open / closed。
+      LEDGERFLOW_REGISTRATION_MODE: '${LEDGERFLOW_REGISTRATION_MODE:-first-user}'
+      LEDGERFLOW_SESSION_DAYS: '${LEDGERFLOW_SESSION_DAYS:-30}'
+      # 直接通过上面的 HTTP 端口访问时保持 false；使用 HTTPS 反向代理时改为 true。
+      LEDGERFLOW_COOKIE_SECURE: '${LEDGERFLOW_COOKIE_SECURE:-false}'
+      # 前后端同源部署留空；分离部署时填写允许携带 Cookie 的前端 Origin。
+      LEDGERFLOW_CORS_ORIGIN: '${LEDGERFLOW_CORS_ORIGIN:-}'
+
+      # 必填：保护快照与 WebDAV 代理等管理接口。请在 .env 中设置长随机字符串。
       LEDGERFLOW_API_TOKEN: '${LEDGERFLOW_API_TOKEN:?Set LEDGERFLOW_API_TOKEN to a long random value}'
+      # 可选：限制 WebDAV 代理目标，多个域名使用英文逗号分隔。
       LEDGERFLOW_WEBDAV_ALLOWED_HOSTS: '${LEDGERFLOW_WEBDAV_ALLOWED_HOSTS:-}'
+
+      # 仅选择 MySQL 时需要填写；SQLite 用户可全部留空。
       MYSQL_HOST: '${MYSQL_HOST:-}'
       MYSQL_PORT: '${MYSQL_PORT:-3306}'
       MYSQL_USER: '${MYSQL_USER:-ledgerflow}'
@@ -18,5 +41,6 @@ services:
       MYSQL_DATABASE: '${MYSQL_DATABASE:-ledgerflow}'
       MYSQL_SSL: '${MYSQL_SSL:-false}'
     volumes:
+      # 请备份此目录；删除它会同时丢失 provider 锁、SQLite 账本和账号数据。
       - ./data:/app/data
     restart: unless-stopped
