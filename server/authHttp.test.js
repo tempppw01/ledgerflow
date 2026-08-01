@@ -100,6 +100,20 @@ test('HTTP auth protects relational data and scopes it to the session user', asy
     assert.equal(me.status, 200);
     assert.equal((await json(me)).user.email, 'owner@example.com');
 
+    const profile = await post('/api/auth/profile', { displayName: 'Updated Owner' }, ownerCookie);
+    assert.equal(profile.status, 200);
+    assert.equal((await json(profile)).user.displayName, 'Updated Owner');
+
+    const changedPassword = await post(
+      '/api/auth/change-password',
+      { currentPassword: 'owner-secure-password', newPassword: 'updated-owner-password' },
+      ownerCookie
+    );
+    assert.equal(changedPassword.status, 200);
+
+    const revokeOtherSessions = await post('/api/auth/revoke-sessions', {}, ownerCookie);
+    assert.equal(revokeOtherSessions.status, 200);
+
     const ownerData = await post('/api/data/import', payload('owner'), ownerCookie);
     assert.equal(ownerData.status, 200);
 

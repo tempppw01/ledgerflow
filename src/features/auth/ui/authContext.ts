@@ -4,6 +4,7 @@ import type { AuthUser } from '../../../shared/api/authClient';
 export interface AuthContextValue {
   user: AuthUser;
   logout: () => Promise<void>;
+  updateProfile: (input: { displayName: string }) => Promise<AuthUser>;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

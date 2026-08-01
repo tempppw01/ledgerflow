@@ -7,7 +7,8 @@ const mocks = vi.hoisted(() => ({
   getAuthStatus: vi.fn(),
   loginAccount: vi.fn(),
   logoutAccount: vi.fn(),
-  registerAccount: vi.fn()
+  registerAccount: vi.fn(),
+  updateAccountProfile: vi.fn()
 }));
 
 vi.mock('../../../shared/api/authClient', () => mocks);

@@ -25,7 +25,8 @@ import {
   loginUser,
   logoutSession,
   registerUser,
-  revokeOtherSessions
+  revokeOtherSessions,
+  updateUserProfile
 } from './authService.js';
 
 const DEFAULT_PORT = 8787;
@@ -875,6 +876,7 @@ export async function handleRequest(req, res) {
       pathname === '/auth/register' ||
       pathname === '/auth/login' ||
       pathname === '/auth/logout' ||
+      pathname === '/auth/profile' ||
       pathname === '/auth/change-password' ||
       pathname === '/auth/revoke-sessions'
     ) {
@@ -939,6 +941,11 @@ export async function handleRequest(req, res) {
 
       const session = await requireUserSession(req, res, provider);
       if (!session) return;
+
+      if (req.method === 'POST' && pathname === '/auth/profile') {
+        jsonResponse(res, 200, await updateUserProfile(provider, session, await readJsonBody(req)));
+        return;
+      }
 
       if (req.method === 'POST' && pathname === '/auth/change-password') {
         jsonResponse(res, 200, await changePassword(provider, session, await readJsonBody(req)));

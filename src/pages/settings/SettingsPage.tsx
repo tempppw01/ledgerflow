@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { fetchEmbeddings } from '../../features/assistant/api/openaiEmbeddingClient';
+import { useAuth } from '../../features/auth/ui/authContext';
+import { changeAccountPassword, revokeOtherAccountSessions } from '../../shared/api/authClient';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { PasswordInput } from '../../shared/ui/PasswordInput';
 import { Toast } from '../../shared/ui/Toast';
@@ -146,6 +148,7 @@ function ModelSelector({ label, hint, value, presets, onChange }: ModelSelectorP
 export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { user, updateProfile } = useAuth();
 
   const baseUrl = useAiSettings((s) => s.baseUrl);
   const apiKey = useAiSettings((s) => s.apiKey);
@@ -180,6 +183,16 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
 
   const currentLanguage = i18n.resolvedLanguage?.startsWith('en') ? 'en' : 'zh';
   const [toastVisible, setToastVisible] = useState(false);
+  const [displayName, setDisplayName] = useState(user.displayName);
+  const [profileStatus, setProfileStatus] = useState('');
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordStatus, setPasswordStatus] = useState('');
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [sessionStatus, setSessionStatus] = useState('');
+  const [sessionSaving, setSessionSaving] = useState(false);
   const [embeddingTestStatus, setEmbeddingTestStatus] = useState<{
     loading: boolean;
     ok: boolean;
@@ -267,6 +280,59 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
       }
     };
   }, []);
+
+  useEffect(() => {
+    setDisplayName(user.displayName);
+  }, [user.displayName]);
+
+  const handleSaveProfile = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    try {
+      setProfileSaving(true);
+      setProfileStatus('');
+      const updatedUser = await updateProfile({ displayName });
+      setDisplayName(updatedUser.displayName);
+      setProfileStatus('显示名称已保存。');
+    } catch (error) {
+      setProfileStatus(error instanceof Error ? error.message : '保存账户资料失败。');
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  const handleChangePassword = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setPasswordStatus('两次输入的新密码不一致。');
+      return;
+    }
+    try {
+      setPasswordSaving(true);
+      setPasswordStatus('');
+      await changeAccountPassword({ currentPassword, newPassword });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setPasswordStatus('密码已更新，其他已登录设备已退出。');
+    } catch (error) {
+      setPasswordStatus(error instanceof Error ? error.message : '修改密码失败。');
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
+
+  const handleRevokeOtherSessions = async () => {
+    try {
+      setSessionSaving(true);
+      setSessionStatus('');
+      await revokeOtherAccountSessions();
+      setSessionStatus('其他已登录设备已退出。');
+    } catch (error) {
+      setSessionStatus(error instanceof Error ? error.message : '退出其他设备失败。');
+    } finally {
+      setSessionSaving(false);
+    }
+  };
 
   const handleTestEmbeddingChannel = useCallback(async () => {
     const overrideActive =
@@ -381,6 +447,99 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
         <p className="settings-page-intro" style={{ marginTop: 16 }}>
           {t('settings.intro')}
         </p>
+
+        <section className="settings-account-section" aria-labelledby="account-settings-title">
+          <div className="settings-account-heading">
+            <div>
+              <h3 id="account-settings-title">账户与安全</h3>
+              <p>管理当前登录账号的名称、密码和其他登录设备。</p>
+            </div>
+            <span className="settings-account-email" title={user.email}>{user.email}</span>
+          </div>
+
+          <div className="settings-account-grid">
+            <form className="settings-account-form" onSubmit={handleSaveProfile}>
+              <label className="field">
+                <span>显示名称</span>
+                <input
+                  value={displayName}
+                  onChange={(event) => setDisplayName(event.target.value)}
+                  maxLength={80}
+                  autoComplete="name"
+                  required
+                />
+              </label>
+              <button type="submit" className="secondary" disabled={profileSaving}>
+                {profileSaving ? '保存中...' : '保存名称'}
+              </button>
+              {profileStatus ? <small className="settings-account-status">{profileStatus}</small> : null}
+            </form>
+
+            <form className="settings-account-form" onSubmit={handleChangePassword}>
+              <label className="field">
+                <span>当前密码</span>
+                <PasswordInput
+                  value={currentPassword}
+                  onChange={(event) => setCurrentPassword(event.target.value)}
+                  autoComplete="current-password"
+                  showLabel={t('settings.show')}
+                  hideLabel={t('settings.hide')}
+                  required
+                />
+              </label>
+              <label className="field">
+                <span>新密码</span>
+                <PasswordInput
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  autoComplete="new-password"
+                  minLength={10}
+                  maxLength={200}
+                  showLabel={t('settings.show')}
+                  hideLabel={t('settings.hide')}
+                  required
+                />
+              </label>
+              <label className="field">
+                <span>确认新密码</span>
+                <PasswordInput
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  autoComplete="new-password"
+                  minLength={10}
+                  maxLength={200}
+                  showLabel={t('settings.show')}
+                  hideLabel={t('settings.hide')}
+                  required
+                />
+              </label>
+              <button type="submit" className="secondary" disabled={passwordSaving}>
+                {passwordSaving ? '更新中...' : '更新密码'}
+              </button>
+              {passwordStatus ? <small className="settings-account-status">{passwordStatus}</small> : null}
+            </form>
+          </div>
+
+          <div className="settings-account-sessions">
+            <div>
+              <strong>登录设备</strong>
+              <small>当前设备会保留登录状态。</small>
+            </div>
+            <div>
+              {sessionStatus ? <small className="settings-account-status">{sessionStatus}</small> : null}
+              <button
+                type="button"
+                className="secondary"
+                disabled={sessionSaving}
+                onClick={() => void handleRevokeOtherSessions()}
+              >
+                {sessionSaving ? '处理中...' : '退出其他设备'}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <div className="settings-divider" />
 
         <div className="field">
           <label>{t('settings.baseUrl')}</label>

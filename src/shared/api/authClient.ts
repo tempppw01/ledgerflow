@@ -67,6 +67,20 @@ export function logoutAccount() {
   return request<{ ok: boolean }>('/auth/logout', { method: 'POST' });
 }
 
+export function updateAccountProfile(input: { displayName: string }) {
+  return request<{ ok: boolean; user: AuthUser }>('/auth/profile', {
+    method: 'POST',
+    body: JSON.stringify(input)
+  });
+}
+
+export function changeAccountPassword(input: { currentPassword: string; newPassword: string }) {
+  return request<{ ok: boolean }>('/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify(input)
+  });
+}
+
 export function revokeOtherAccountSessions() {
   return request<{ ok: boolean }>('/auth/revoke-sessions', { method: 'POST' });
 }

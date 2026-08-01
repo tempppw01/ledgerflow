@@ -11,6 +11,7 @@ import {
   loginAccount,
   logoutAccount,
   registerAccount,
+  updateAccountProfile,
   type AuthUser
 } from '../../../shared/api/authClient';
 import { APP_LOGO_URL } from '../../../shared/config/app';
@@ -75,7 +76,16 @@ export function AuthGate({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const contextValue = useMemo(() => (user ? { user, logout } : null), [logout, user]);
+  const updateProfile = useCallback(async (input: { displayName: string }) => {
+    const result = await updateAccountProfile(input);
+    setUser(result.user);
+    return result.user;
+  }, []);
+
+  const contextValue = useMemo(
+    () => (user ? { user, logout, updateProfile } : null),
+    [logout, updateProfile, user]
+  );
 
   if (loading) {
     return (

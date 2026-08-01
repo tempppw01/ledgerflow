@@ -700,6 +700,114 @@ body {
   line-height: 1.65;
 }
 
+.settings-account-section {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.settings-account-heading,
+.settings-account-sessions,
+.settings-account-sessions > div:last-child {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.settings-account-heading {
+  justify-content: space-between;
+}
+
+.settings-account-heading h3,
+.settings-account-heading p,
+.settings-account-sessions strong,
+.settings-account-sessions small {
+  margin: 0;
+}
+
+.settings-account-heading h3,
+.settings-account-sessions strong {
+  color: var(--color-text);
+  font-size: var(--font-base);
+}
+
+.settings-account-heading p,
+.settings-account-sessions small,
+.settings-account-status {
+  color: var(--color-text-secondary);
+  font-size: var(--font-xs);
+  line-height: 1.5;
+}
+
+.settings-account-email {
+  min-width: 0;
+  max-width: 40%;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-account-grid {
+  display: grid;
+  grid-template-columns: minmax(200px, 0.8fr) minmax(0, 1.6fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.settings-account-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  align-items: end;
+}
+
+.settings-account-form:first-child {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.settings-account-form .field {
+  min-width: 0;
+}
+
+.settings-account-form .settings-account-status {
+  grid-column: 1 / -1;
+}
+
+.settings-account-sessions {
+  justify-content: space-between;
+  border-top: 1px solid var(--color-border-light);
+  padding-top: var(--space-3);
+}
+
+@media (max-width: 920px) {
+  .settings-account-grid,
+  .settings-account-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .settings-account-form:first-child {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .settings-account-heading,
+  .settings-account-sessions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .settings-account-email {
+    max-width: 100%;
+  }
+
+  .settings-account-form:first-child {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .settings-page-close {
   min-height: 36px;
   padding: 0 14px;

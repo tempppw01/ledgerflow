@@ -374,6 +374,43 @@ export async function changePassword(provider, auth, input, env = process.env) {
   }, env);
 }
 
+export async function updateUserProfile(provider, auth, input, env = process.env) {
+  return withAuthDatabase(provider, async (database) => {
+    const currentUser = await database.get(
+      'SELECT * FROM auth_users WHERE id = ? AND status = ?',
+      [auth.user.id, 'active']
+    );
+    if (!currentUser) throw new Error('当前账号不可用，请重新登录。');
+
+    const displayName = normalizeDisplayName(input?.displayName, currentUser.email);
+    const timestamp = now();
+    await database.begin();
+    try {
+      await database.run('UPDATE auth_users SET display_name = ?, updated_at = ? WHERE id = ?', [
+        displayName,
+        database.date(timestamp),
+        auth.user.id
+      ]);
+      await database.run('UPDATE ledger_users SET display_name = ?, updated_at = ? WHERE id = ?', [
+        displayName,
+        database.date(timestamp),
+        currentUser.ledger_user_id
+      ]);
+      await database.commit();
+      return {
+        ok: true,
+        user: {
+          ...publicUser(currentUser),
+          displayName
+        }
+      };
+    } catch (error) {
+      await database.rollback();
+      throw error;
+    }
+  }, env);
+}
+
 export async function revokeOtherSessions(provider, auth, env = process.env) {
   await withAuthDatabase(provider, async (database) => {
     await database.run(
