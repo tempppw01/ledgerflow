@@ -173,14 +173,45 @@ function hashSessionToken(token) {
   return createHash('sha256').update(String(token || '')).digest('hex');
 }
 
-async function createSession(database, userId, env) {
+function deviceNameFromUserAgent(value) {
+  const userAgent = String(value || '').slice(0, 512);
+  const browser = /edg\//i.test(userAgent)
+    ? 'Microsoft Edge'
+    : /firefox\//i.test(userAgent)
+      ? 'Firefox'
+      : /chrome\//i.test(userAgent) || /crios\//i.test(userAgent)
+        ? 'Chrome'
+        : /safari\//i.test(userAgent)
+          ? 'Safari'
+          : 'Web 浏览器';
+  const platform = /iphone/i.test(userAgent)
+    ? 'iPhone'
+    : /ipad/i.test(userAgent)
+      ? 'iPad'
+      : /android/i.test(userAgent)
+        ? 'Android'
+        : /windows/i.test(userAgent)
+          ? 'Windows'
+          : /mac os|macintosh/i.test(userAgent)
+            ? 'macOS'
+            : /linux/i.test(userAgent)
+              ? 'Linux'
+              : '';
+  return platform ? `${browser} · ${platform}` : browser;
+}
+
+function sessionDeviceName(clientInfo) {
+  return deviceNameFromUserAgent(clientInfo?.userAgent);
+}
+
+async function createSession(database, userId, env, clientInfo) {
   const token = randomBytes(32).toString('base64url');
   const createdAt = now();
   const expiresAt = new Date(Date.now() + sessionDurationMs(env)).toISOString();
   await database.run(
     `INSERT INTO auth_sessions
-       (id, user_id, token_hash, expires_at, last_seen_at, revoked_at, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       (id, user_id, token_hash, expires_at, last_seen_at, revoked_at, created_at, device_name)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       randomUUID(),
       userId,
@@ -188,14 +219,15 @@ async function createSession(database, userId, env) {
       database.date(expiresAt),
       database.date(createdAt),
       null,
-      database.date(createdAt)
+      database.date(createdAt),
+      sessionDeviceName(clientInfo)
     ]
   );
   return { token, expiresAt };
 }
 
-export async function getAuthStatus(provider, token = '', env = process.env) {
-  const session = token ? await authenticateSession(provider, token, env) : null;
+export async function getAuthStatus(provider, token = '', env = process.env, clientInfo) {
+  const session = token ? await authenticateSession(provider, token, env, clientInfo) : null;
   const accountCount = await withAuthDatabase(provider, async (database) => {
     const row = await database.get('SELECT COUNT(*) AS count FROM auth_users');
     return Number(row?.count || 0);
@@ -208,7 +240,7 @@ export async function getAuthStatus(provider, token = '', env = process.env) {
   };
 }
 
-export async function registerUser(provider, input, env = process.env) {
+export async function registerUser(provider, input, env = process.env, clientInfo) {
   const email = normalizeEmail(input?.email);
   const passwordHash = await hashPassword(input?.password);
   const displayName = normalizeDisplayName(input?.displayName, email);
@@ -258,7 +290,7 @@ export async function registerUser(provider, input, env = process.env) {
           database.date(timestamp)
         ]
       );
-      const session = await createSession(database, authUserId, env);
+      const session = await createSession(database, authUserId, env, clientInfo);
       await database.commit();
       return {
         user: {
@@ -280,7 +312,7 @@ export async function registerUser(provider, input, env = process.env) {
   }, env);
 }
 
-export async function loginUser(provider, input, env = process.env) {
+export async function loginUser(provider, input, env = process.env, clientInfo) {
   const email = normalizeEmail(input?.email);
   const password = String(input?.password || '');
   return withAuthDatabase(provider, async (database) => {
@@ -298,7 +330,7 @@ export async function loginUser(provider, input, env = process.env) {
         database.date(timestamp),
         row.id
       ]);
-      const session = await createSession(database, row.id, env);
+      const session = await createSession(database, row.id, env, clientInfo);
       await database.commit();
       return { user: { ...publicUser(row), lastLoginAt: timestamp }, session };
     } catch (error) {
@@ -308,13 +340,13 @@ export async function loginUser(provider, input, env = process.env) {
   }, env);
 }
 
-export async function authenticateSession(provider, token, env = process.env) {
+export async function authenticateSession(provider, token, env = process.env, clientInfo) {
   const tokenHash = hashSessionToken(token);
   if (!token || tokenHash.length !== 64) return null;
   return withAuthDatabase(provider, async (database) => {
     const current = now();
     const row = await database.get(
-      `SELECT u.*, s.id AS session_id, s.expires_at, s.last_seen_at
+      `SELECT u.*, s.id AS session_id, s.expires_at, s.last_seen_at, s.device_name
        FROM auth_sessions s
        JOIN auth_users u ON u.id = s.user_id
        WHERE s.token_hash = ? AND s.revoked_at IS NULL AND s.expires_at > ? AND u.status = 'active'`,
@@ -323,6 +355,13 @@ export async function authenticateSession(provider, token, env = process.env) {
     if (!row) return null;
 
     const lastSeen = fromDbDate(row.last_seen_at);
+    const deviceName = row.device_name || sessionDeviceName(clientInfo);
+    if (!row.device_name && deviceName) {
+      await database.run('UPDATE auth_sessions SET device_name = ? WHERE id = ?', [
+        deviceName,
+        row.session_id
+      ]);
+    }
     if (!lastSeen || Date.now() - new Date(lastSeen).getTime() >= SESSION_LAST_SEEN_WRITE_INTERVAL_MS) {
       await database.run('UPDATE auth_sessions SET last_seen_at = ? WHERE id = ?', [
         database.date(current),
@@ -332,6 +371,7 @@ export async function authenticateSession(provider, token, env = process.env) {
     return {
       sessionId: row.session_id,
       expiresAt: fromDbDate(row.expires_at),
+      deviceName,
       user: publicUser(row)
     };
   }, env);
@@ -419,6 +459,48 @@ export async function revokeOtherSessions(provider, auth, env = process.env) {
     );
   }, env);
   return { ok: true };
+}
+
+export async function getUserSessions(provider, auth, env = process.env) {
+  return withAuthDatabase(provider, async (database) => {
+    const rows = await database.query(
+      `SELECT id, device_name, expires_at, last_seen_at, created_at
+       FROM auth_sessions
+       WHERE user_id = ? AND revoked_at IS NULL AND expires_at > ?
+       ORDER BY last_seen_at DESC, created_at DESC`,
+      [auth.user.id, database.date(now())]
+    );
+    return {
+      ok: true,
+      sessions: rows.map((row) => ({
+        id: row.id,
+        deviceName: row.device_name || 'Web 浏览器',
+        createdAt: fromDbDate(row.created_at),
+        lastSeenAt: fromDbDate(row.last_seen_at),
+        expiresAt: fromDbDate(row.expires_at),
+        current: row.id === auth.sessionId
+      }))
+    };
+  }, env);
+}
+
+export async function revokeUserSession(provider, auth, sessionId, env = process.env) {
+  const targetSessionId = String(sessionId || '').trim();
+  if (!targetSessionId || targetSessionId === auth.sessionId) {
+    throw new Error('当前设备不能从此处退出。');
+  }
+  return withAuthDatabase(provider, async (database) => {
+    const result = await database.run(
+      `UPDATE auth_sessions
+       SET revoked_at = ?
+       WHERE id = ? AND user_id = ? AND revoked_at IS NULL`,
+      [database.date(now()), targetSessionId, auth.user.id]
+    );
+    if (!Number(result?.changes || result?.affectedRows || 0)) {
+      throw new Error('该登录设备不存在或已退出。');
+    }
+    return { ok: true };
+  }, env);
 }
 
 export async function deleteExpiredSessions(provider, env = process.env) {

@@ -22,10 +22,12 @@ import {
   authenticateSession,
   changePassword,
   getAuthStatus,
+  getUserSessions,
   loginUser,
   logoutSession,
   registerUser,
   revokeOtherSessions,
+  revokeUserSession,
   updateUserProfile
 } from './authService.js';
 
@@ -201,7 +203,9 @@ function recordLoginFailure(key) {
 }
 
 async function requireUserSession(req, res, provider) {
-  const session = await authenticateSession(provider, readSessionToken(req));
+  const session = await authenticateSession(provider, readSessionToken(req), process.env, {
+    userAgent: req.headers['user-agent']
+  });
   if (!session) {
     jsonResponse(res, 401, { ok: false, message: '请先登录 LedgerFlow。' });
     return null;
@@ -878,7 +882,9 @@ export async function handleRequest(req, res) {
       pathname === '/auth/logout' ||
       pathname === '/auth/profile' ||
       pathname === '/auth/change-password' ||
-      pathname === '/auth/revoke-sessions'
+      pathname === '/auth/revoke-sessions' ||
+      pathname === '/auth/sessions' ||
+      pathname.startsWith('/auth/sessions/')
     ) {
       const setup = await getDatabaseSetupStatus();
       if (!setup.initialized || setup.configurationMismatch) {
@@ -889,7 +895,12 @@ export async function handleRequest(req, res) {
       const provider = setup.provider;
 
       if (req.method === 'GET' && pathname === '/auth/status') {
-        jsonResponse(res, 200, { ok: true, ...(await getAuthStatus(provider, readSessionToken(req))) });
+        jsonResponse(res, 200, {
+          ok: true,
+          ...(await getAuthStatus(provider, readSessionToken(req), process.env, {
+            userAgent: req.headers['user-agent']
+          }))
+        });
         return;
       }
 
@@ -901,7 +912,9 @@ export async function handleRequest(req, res) {
       }
 
       if (req.method === 'POST' && pathname === '/auth/register') {
-        const result = await registerUser(provider, await readJsonBody(req));
+        const result = await registerUser(provider, await readJsonBody(req), process.env, {
+          userAgent: req.headers['user-agent']
+        });
         jsonResponse(res, 200, { ok: true, user: result.user, claimedLegacyData: result.claimedLegacyData }, {
           'Set-Cookie': sessionCookie(req, result.session.token, result.session.expiresAt)
         });
@@ -921,7 +934,9 @@ export async function handleRequest(req, res) {
           return;
         }
         try {
-          const result = await loginUser(provider, body);
+          const result = await loginUser(provider, body, process.env, {
+            userAgent: req.headers['user-agent']
+          });
           loginFailures.delete(limit.key);
           jsonResponse(res, 200, { ok: true, user: result.user }, {
             'Set-Cookie': sessionCookie(req, result.session.token, result.session.expiresAt)
@@ -941,6 +956,17 @@ export async function handleRequest(req, res) {
 
       const session = await requireUserSession(req, res, provider);
       if (!session) return;
+
+      if (req.method === 'GET' && pathname === '/auth/sessions') {
+        jsonResponse(res, 200, await getUserSessions(provider, session));
+        return;
+      }
+
+      const revokeSessionMatch = pathname.match(/^\/auth\/sessions\/([^/]+)\/revoke$/);
+      if (req.method === 'POST' && revokeSessionMatch) {
+        jsonResponse(res, 200, await revokeUserSession(provider, session, revokeSessionMatch[1]));
+        return;
+      }
 
       if (req.method === 'POST' && pathname === '/auth/profile') {
         jsonResponse(res, 200, await updateUserProfile(provider, session, await readJsonBody(req)));

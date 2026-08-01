@@ -17,6 +17,15 @@ export interface AuthStatusResponse {
   user: AuthUser | null;
 }
 
+export interface AuthSession {
+  id: string;
+  deviceName: string;
+  createdAt: string | null;
+  lastSeenAt: string | null;
+  expiresAt: string | null;
+  current: boolean;
+}
+
 function getUrl(path: string) {
   const base = ENV.apiBaseUrl.endsWith('/') ? ENV.apiBaseUrl.slice(0, -1) : ENV.apiBaseUrl;
   return `${base}${path}`;
@@ -83,4 +92,14 @@ export function changeAccountPassword(input: { currentPassword: string; newPassw
 
 export function revokeOtherAccountSessions() {
   return request<{ ok: boolean }>('/auth/revoke-sessions', { method: 'POST' });
+}
+
+export function getAccountSessions() {
+  return request<{ ok: boolean; sessions: AuthSession[] }>('/auth/sessions');
+}
+
+export function revokeAccountSession(sessionId: string) {
+  return request<{ ok: boolean }>(`/auth/sessions/${encodeURIComponent(sessionId)}/revoke`, {
+    method: 'POST'
+  });
 }

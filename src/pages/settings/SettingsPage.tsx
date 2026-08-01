@@ -3,7 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { fetchEmbeddings } from '../../features/assistant/api/openaiEmbeddingClient';
 import { useAuth } from '../../features/auth/ui/authContext';
-import { changeAccountPassword, revokeOtherAccountSessions } from '../../shared/api/authClient';
+import {
+  changeAccountPassword,
+  getAccountSessions,
+  revokeAccountSession,
+  revokeOtherAccountSessions,
+  type AuthSession
+} from '../../shared/api/authClient';
+import { CIRCLE_USER_ICON_URL, MONITOR_ICON_URL } from '../../shared/config/brandAssets';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { PasswordInput } from '../../shared/ui/PasswordInput';
 import { Toast } from '../../shared/ui/Toast';
@@ -91,6 +98,18 @@ function getEmbeddingModelValidationMessage(modelId: string, candidates: string[
 
 function normalizeProviderBaseUrl(url: string): string {
   return url.trim().replace(/\/+$/, '');
+}
+
+function formatAccountSessionTime(value: string | null) {
+  if (!value) return '刚刚';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '刚刚';
+  return new Intl.DateTimeFormat('zh-CN', {
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
 }
 
 interface ModelSelectorProps {
@@ -193,6 +212,9 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [sessionStatus, setSessionStatus] = useState('');
   const [sessionSaving, setSessionSaving] = useState(false);
+  const [sessions, setSessions] = useState<AuthSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [sessionsError, setSessionsError] = useState('');
   const [embeddingTestStatus, setEmbeddingTestStatus] = useState<{
     loading: boolean;
     ok: boolean;
@@ -285,6 +307,23 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
     setDisplayName(user.displayName);
   }, [user.displayName]);
 
+  const loadAccountSessions = useCallback(async () => {
+    try {
+      setSessionsLoading(true);
+      setSessionsError('');
+      const result = await getAccountSessions();
+      setSessions(result.sessions);
+    } catch (error) {
+      setSessionsError(error instanceof Error ? error.message : '无法加载登录设备。');
+    } finally {
+      setSessionsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadAccountSessions();
+  }, [loadAccountSessions, user.id]);
+
   const handleSaveProfile = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
@@ -327,8 +366,23 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
       setSessionStatus('');
       await revokeOtherAccountSessions();
       setSessionStatus('其他已登录设备已退出。');
+      await loadAccountSessions();
     } catch (error) {
       setSessionStatus(error instanceof Error ? error.message : '退出其他设备失败。');
+    } finally {
+      setSessionSaving(false);
+    }
+  };
+
+  const handleRevokeSession = async (session: AuthSession) => {
+    try {
+      setSessionSaving(true);
+      setSessionStatus('');
+      await revokeAccountSession(session.id);
+      setSessionStatus(`${session.deviceName} 已退出。`);
+      await loadAccountSessions();
+    } catch (error) {
+      setSessionStatus(error instanceof Error ? error.message : '退出该设备失败。');
     } finally {
       setSessionSaving(false);
     }
@@ -449,16 +503,17 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
         </p>
 
         <section className="settings-account-section" aria-labelledby="account-settings-title">
-          <div className="settings-account-heading">
-            <div>
-              <h3 id="account-settings-title">账户与安全</h3>
-              <p>管理当前登录账号的名称、密码和其他登录设备。</p>
+          <div className="settings-account-identity">
+            <img className="settings-account-avatar" src={CIRCLE_USER_ICON_URL} alt="" />
+            <div className="settings-account-heading">
+              <div>
+                <p className="settings-account-eyebrow">ACCOUNT</p>
+                <h3 id="account-settings-title">账户与安全</h3>
+                <span className="settings-account-email" title={user.email}>{user.email}</span>
+              </div>
+              <span className="settings-account-current">当前登录</span>
             </div>
-            <span className="settings-account-email" title={user.email}>{user.email}</span>
-          </div>
-
-          <div className="settings-account-grid">
-            <form className="settings-account-form" onSubmit={handleSaveProfile}>
+            <form className="settings-account-profile-form" onSubmit={handleSaveProfile}>
               <label className="field">
                 <span>显示名称</span>
                 <input
@@ -470,72 +525,113 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                 />
               </label>
               <button type="submit" className="secondary" disabled={profileSaving}>
-                {profileSaving ? '保存中...' : '保存名称'}
+                {profileSaving ? '保存中...' : '保存'}
               </button>
               {profileStatus ? <small className="settings-account-status">{profileStatus}</small> : null}
             </form>
-
-            <form className="settings-account-form" onSubmit={handleChangePassword}>
-              <label className="field">
-                <span>当前密码</span>
-                <PasswordInput
-                  value={currentPassword}
-                  onChange={(event) => setCurrentPassword(event.target.value)}
-                  autoComplete="current-password"
-                  showLabel={t('settings.show')}
-                  hideLabel={t('settings.hide')}
-                  required
-                />
-              </label>
-              <label className="field">
-                <span>新密码</span>
-                <PasswordInput
-                  value={newPassword}
-                  onChange={(event) => setNewPassword(event.target.value)}
-                  autoComplete="new-password"
-                  minLength={10}
-                  maxLength={200}
-                  showLabel={t('settings.show')}
-                  hideLabel={t('settings.hide')}
-                  required
-                />
-              </label>
-              <label className="field">
-                <span>确认新密码</span>
-                <PasswordInput
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  autoComplete="new-password"
-                  minLength={10}
-                  maxLength={200}
-                  showLabel={t('settings.show')}
-                  hideLabel={t('settings.hide')}
-                  required
-                />
-              </label>
-              <button type="submit" className="secondary" disabled={passwordSaving}>
-                {passwordSaving ? '更新中...' : '更新密码'}
-              </button>
-              {passwordStatus ? <small className="settings-account-status">{passwordStatus}</small> : null}
-            </form>
           </div>
 
-          <div className="settings-account-sessions">
-            <div>
-              <strong>登录设备</strong>
-              <small>当前设备会保留登录状态。</small>
-            </div>
-            <div>
+          <div className="settings-account-content">
+            <section className="settings-account-panel" aria-labelledby="password-settings-title">
+              <div className="settings-account-panel-head">
+                <div>
+                  <h4 id="password-settings-title">密码保护</h4>
+                  <p>更新后，其他设备会自动退出。</p>
+                </div>
+              </div>
+              <form className="settings-password-form" onSubmit={handleChangePassword}>
+                <label className="field">
+                  <span>当前密码</span>
+                  <PasswordInput
+                    value={currentPassword}
+                    onChange={(event) => setCurrentPassword(event.target.value)}
+                    autoComplete="current-password"
+                    showLabel={t('settings.show')}
+                    hideLabel={t('settings.hide')}
+                    required
+                  />
+                </label>
+                <label className="field">
+                  <span>新密码</span>
+                  <PasswordInput
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    autoComplete="new-password"
+                    minLength={10}
+                    maxLength={200}
+                    showLabel={t('settings.show')}
+                    hideLabel={t('settings.hide')}
+                    required
+                  />
+                </label>
+                <label className="field">
+                  <span>确认新密码</span>
+                  <PasswordInput
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    autoComplete="new-password"
+                    minLength={10}
+                    maxLength={200}
+                    showLabel={t('settings.show')}
+                    hideLabel={t('settings.hide')}
+                    required
+                  />
+                </label>
+                <button type="submit" className="secondary" disabled={passwordSaving}>
+                  {passwordSaving ? '更新中...' : '更新密码'}
+                </button>
+                {passwordStatus ? <small className="settings-account-status">{passwordStatus}</small> : null}
+              </form>
+            </section>
+
+            <section className="settings-account-panel" aria-labelledby="device-settings-title">
+              <div className="settings-account-panel-head">
+                <div>
+                  <h4 id="device-settings-title">登录设备</h4>
+                  <p>可随时退出不再使用的设备。</p>
+                </div>
+                <button
+                  type="button"
+                  className="secondary settings-account-revoke-all"
+                  disabled={sessionSaving || sessions.filter((session) => !session.current).length === 0}
+                  onClick={() => void handleRevokeOtherSessions()}
+                >
+                  退出其他设备
+                </button>
+              </div>
+              <div className="settings-account-session-list" aria-live="polite">
+                {sessionsLoading ? <small>正在读取登录设备...</small> : null}
+                {sessionsError ? <small className="settings-account-status">{sessionsError}</small> : null}
+                {!sessionsLoading && !sessionsError && sessions.length === 0 ? (
+                  <small>暂未发现有效登录设备。</small>
+                ) : null}
+                {sessions.map((session) => (
+                  <div className="settings-account-session-row" key={session.id}>
+                    <img src={MONITOR_ICON_URL} alt="" aria-hidden="true" />
+                    <div className="settings-account-session-copy">
+                      <div>
+                        <strong>{session.deviceName}</strong>
+                        {session.current ? <span>当前设备</span> : null}
+                      </div>
+                      <small>
+                        最近活跃 {formatAccountSessionTime(session.lastSeenAt)} · 登录于 {formatAccountSessionTime(session.createdAt)}
+                      </small>
+                    </div>
+                    {session.current ? null : (
+                      <button
+                        type="button"
+                        className="settings-account-session-revoke"
+                        disabled={sessionSaving}
+                        onClick={() => void handleRevokeSession(session)}
+                      >
+                        退出
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
               {sessionStatus ? <small className="settings-account-status">{sessionStatus}</small> : null}
-              <button
-                type="button"
-                className="secondary"
-                disabled={sessionSaving}
-                onClick={() => void handleRevokeOtherSessions()}
-              >
-                {sessionSaving ? '处理中...' : '退出其他设备'}
-              </button>
-            </div>
+            </section>
           </div>
         </section>
 

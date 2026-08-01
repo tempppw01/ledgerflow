@@ -3,7 +3,7 @@ import { mkdir } from 'node:fs/promises';
 import { getDatabaseDataDirectory, getSqliteDatabasePath } from './databaseProvider.js';
 import { withMysqlConnection } from './databaseConnection.js';
 
-export const RELATIONAL_SCHEMA_VERSION = 2;
+export const RELATIONAL_SCHEMA_VERSION = 3;
 const DEFAULT_USER_ID = 'default';
 
 const SQLITE_MIGRATION_TABLE =
@@ -44,6 +44,10 @@ const SQLITE_V2_TABLES = [
   `CREATE TABLE IF NOT EXISTS auth_audit_log (id TEXT PRIMARY KEY, user_id TEXT, event_type TEXT NOT NULL, success INTEGER NOT NULL, ip_hash TEXT, metadata_json TEXT, created_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES auth_users(id) ON DELETE SET NULL)`
 ];
 
+const SQLITE_V3_STATEMENTS = [
+  `ALTER TABLE auth_sessions ADD COLUMN device_name TEXT`
+];
+
 function toMysqlTable(statement, migrationTable = false) {
   if (migrationTable) {
     return `CREATE TABLE IF NOT EXISTS ledger_schema_migrations (id INT NOT NULL, applied_at DATETIME(3) NOT NULL, PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`;
@@ -74,6 +78,7 @@ function toMysqlTable(statement, migrationTable = false) {
 const MYSQL_MIGRATION_TABLE = toMysqlTable(SQLITE_MIGRATION_TABLE, true);
 const MYSQL_V1_TABLES = SQLITE_V1_TABLES.map((statement) => toMysqlTable(statement));
 const MYSQL_V2_TABLES = SQLITE_V2_TABLES.map((statement) => toMysqlTable(statement));
+const MYSQL_V3_STATEMENTS = SQLITE_V3_STATEMENTS.map((statement) => toMysqlTable(statement));
 
 const V1_INDEXES = [
   ['idx_accounts_user_sort', 'ledger_accounts', 'user_id, sort_order'],
@@ -119,14 +124,21 @@ function migrationsFor(provider) {
   const mysql = provider === 'mysql';
   return [
     { version: 1, tables: mysql ? MYSQL_V1_TABLES : SQLITE_V1_TABLES, indexes: V1_INDEXES, seedDefaultUser: true },
-    { version: 2, tables: mysql ? MYSQL_V2_TABLES : SQLITE_V2_TABLES, indexes: V2_INDEXES }
+    { version: 2, tables: mysql ? MYSQL_V2_TABLES : SQLITE_V2_TABLES, indexes: V2_INDEXES },
+    { version: 3, statements: mysql ? MYSQL_V3_STATEMENTS : SQLITE_V3_STATEMENTS }
   ];
 }
 
 export function getRelationalMigrationStatements(provider) {
   assertProvider(provider);
   const migrationTable = provider === 'sqlite' ? SQLITE_MIGRATION_TABLE : MYSQL_MIGRATION_TABLE;
-  return [migrationTable, ...migrationsFor(provider).flatMap((migration) => migration.tables)];
+  return [
+    migrationTable,
+    ...migrationsFor(provider).flatMap((migration) => [
+      ...(migration.tables || []),
+      ...(migration.statements || [])
+    ])
+  ];
 }
 
 function now() {
@@ -189,8 +201,10 @@ function migrateSqlite(env) {
       if (applied.has(migration.version)) continue;
       database.exec('BEGIN IMMEDIATE');
       try {
-        for (const statement of migration.tables) database.exec(statement);
-        ensureSqliteIndexes(database, migration.indexes);
+        for (const statement of [...(migration.tables || []), ...(migration.statements || [])]) {
+          database.exec(statement);
+        }
+        ensureSqliteIndexes(database, migration.indexes || []);
         if (migration.seedDefaultUser) seedSqliteDefaultUser(database);
         database
           .prepare('INSERT INTO ledger_schema_migrations (id, applied_at) VALUES (?, ?)')
@@ -237,8 +251,10 @@ async function migrateMysql(env) {
         if (applied.has(migration.version)) continue;
         await connection.beginTransaction();
         try {
-          for (const statement of migration.tables) await connection.query(statement);
-          await ensureMysqlIndexes(connection, migration.indexes);
+          for (const statement of [...(migration.tables || []), ...(migration.statements || [])]) {
+            await connection.query(statement);
+          }
+          await ensureMysqlIndexes(connection, migration.indexes || []);
           if (migration.seedDefaultUser) await seedMysqlDefaultUser(connection);
           await connection.execute(
             'INSERT INTO ledger_schema_migrations (id, applied_at) VALUES (?, ?)',

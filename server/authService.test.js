@@ -5,11 +5,13 @@ import path from 'node:path';
 import test from 'node:test';
 import {
   authenticateSession,
+  getUserSessions,
   getAuthStatus,
   hashPassword,
   loginUser,
   logoutSession,
   registerUser,
+  revokeUserSession,
   verifyPassword
 } from './authService.js';
 import { migrateRelationalDatabase } from './relationalDatabase.js';
@@ -99,6 +101,35 @@ test('login rejects invalid credentials and issues a fresh session for valid cre
     );
     assert.equal(loggedIn.user.email, 'owner@example.com');
     assert.ok(await authenticateSession('sqlite', loggedIn.session.token, env));
+  });
+});
+
+test('account sessions keep device names and allow revoking another device', async () => {
+  await withDatabase(async (env) => {
+    const registered = await registerUser(
+      'sqlite',
+      { email: 'owner@example.com', password: 'a-secure-password', displayName: 'Owner' },
+      env,
+      { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit Safari/605.1.15' }
+    );
+    const loggedIn = await loginUser(
+      'sqlite',
+      { email: 'owner@example.com', password: 'a-secure-password' },
+      env,
+      { userAgent: 'Mozilla/5.0 (Windows NT 10.0) AppleWebKit Chrome/140.0.0.0 Safari/537.36' }
+    );
+    const current = await authenticateSession('sqlite', loggedIn.session.token, env);
+    const listed = await getUserSessions('sqlite', current, env);
+
+    assert.equal(listed.sessions.length, 2);
+    assert.equal(listed.sessions.find((item) => item.current)?.deviceName, 'Chrome · Windows');
+
+    const other = listed.sessions.find((item) => !item.current);
+    await revokeUserSession('sqlite', current, other?.id, env);
+    const afterRevoke = await getUserSessions('sqlite', current, env);
+    assert.equal(afterRevoke.sessions.length, 1);
+    assert.equal(afterRevoke.sessions[0].current, true);
+    assert.equal(await authenticateSession('sqlite', registered.session.token, env), null);
   });
 });
 

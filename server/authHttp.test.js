@@ -100,6 +100,10 @@ test('HTTP auth protects relational data and scopes it to the session user', asy
     assert.equal(me.status, 200);
     assert.equal((await json(me)).user.email, 'owner@example.com');
 
+    const sessions = await request('/api/auth/sessions', { headers: { Cookie: ownerCookie } });
+    assert.equal(sessions.status, 200);
+    assert.equal((await json(sessions)).sessions[0].current, true);
+
     const profile = await post('/api/auth/profile', { displayName: 'Updated Owner' }, ownerCookie);
     assert.equal(profile.status, 200);
     assert.equal((await json(profile)).user.displayName, 'Updated Owner');
