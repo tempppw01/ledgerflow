@@ -1980,7 +1980,9 @@ export function InvestmentsPage() {
       const webContext = buildWebSearchPrompt(
         await fetchWebSearchContext(
           [item.name, item.code, item.platform, '行业 政策 最新 影响'].filter(Boolean).join(' '),
-          webSearch
+          webSearch,
+          undefined,
+          { investmentNewsSources: ['10jqka', 'xueqiu'] }
         )
       );
       const auxiliaryInfo = buildInvestmentAssistantAuxiliaryInfo({

@@ -103,10 +103,10 @@
 
 .topbar-account-trigger {
   min-height: 38px;
-  max-width: 190px;
-  padding: 4px 9px 4px 6px;
+  max-width: 184px;
+  padding: 4px 8px 4px 5px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: 10px;
   color: var(--color-text);
   background: transparent;
   display: inline-flex;
@@ -134,17 +134,17 @@
   justify-content: center;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: var(--color-primary-bg);
+  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-bg-elevated));
+  color: var(--color-primary);
+  font-family: var(--font-sans);
+  font-weight: 800;
+  letter-spacing: 0;
 }
 
 .topbar-account-avatar {
   width: 28px;
   height: 28px;
-}
-
-.topbar-account-avatar img {
-  width: 17px;
-  height: 17px;
+  font-size: 10px;
 }
 
 .topbar-account-name {
@@ -170,8 +170,8 @@
   top: calc(100% + 9px);
   right: 0;
   z-index: 260;
-  width: min(278px, calc(100vw - 24px));
-  padding: 8px;
+  width: min(292px, calc(100vw - 24px));
+  padding: 7px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-bg-elevated);
@@ -181,25 +181,22 @@
 
 .topbar-account-menu-head {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 9px 10px;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 10px 10px 11px;
 }
 
 .topbar-account-menu-avatar {
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
+  font-size: 12px;
 }
 
-.topbar-account-menu-avatar img {
-  width: 19px;
-  height: 19px;
-}
-
-.topbar-account-menu-head > div {
+.topbar-account-menu-identity {
   min-width: 0;
   display: grid;
-  gap: 3px;
+  gap: 1px;
+  flex: 1;
 }
 
 .topbar-account-menu-head strong,
@@ -211,7 +208,8 @@
 
 .topbar-account-menu-head strong {
   color: var(--color-text);
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1.35;
 }
 
 .topbar-account-menu-head span {
@@ -219,23 +217,35 @@
   font-size: 11px;
 }
 
+.topbar-account-menu-identity small {
+  margin-bottom: 2px;
+  color: var(--color-primary);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
 .topbar-account-menu-divider {
   height: 1px;
-  margin: 0 4px 5px;
+  margin: 0 4px 6px;
   background: var(--color-divider);
+}
+
+.topbar-account-menu-divider.is-compact {
+  margin: 5px 4px 4px;
 }
 
 .topbar-account-menu-item {
   width: 100%;
-  min-height: 48px;
-  padding: 7px 9px;
+  min-height: 46px;
+  padding: 6px 8px;
   border: 0;
   border-radius: 6px;
   color: var(--color-text);
   background: transparent;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   text-align: left;
   transition:
     background 160ms ease,
@@ -247,27 +257,40 @@
   background: var(--color-bg-hover);
 }
 
-.topbar-account-menu-item > img,
+.topbar-account-menu-item-icon,
 .topbar-account-menu-symbol {
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
-  object-fit: contain;
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--color-primary) 9%, transparent);
   color: var(--color-primary);
 }
 
+.topbar-account-menu-item-icon img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
 .topbar-account-menu-symbol {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 21px;
+  font-size: 18px;
   line-height: 1;
 }
 
-.topbar-account-menu-item > span:last-child {
+.topbar-account-menu-item-copy {
   min-width: 0;
   display: grid;
   gap: 2px;
+  flex: 1;
+}
+
+.topbar-account-menu-item-copy > strong,
+.topbar-account-menu-item-copy > small {
+  display: block;
 }
 
 .topbar-account-menu-item strong {
@@ -280,12 +303,22 @@
   font-size: 11px;
 }
 
+.topbar-account-menu-item-chevron {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  opacity: 0.46;
+  transform: rotate(-90deg);
+}
+
 .topbar-account-menu-item.is-danger {
+  min-height: 40px;
   color: var(--color-danger);
 }
 
-.topbar-account-menu-item.is-danger small {
-  color: color-mix(in srgb, var(--color-danger) 68%, var(--color-text-tertiary));
+.topbar-account-menu-item.is-danger .topbar-account-menu-symbol {
+  background: color-mix(in srgb, var(--color-danger) 9%, transparent);
+  color: var(--color-danger);
 }
 
 @keyframes account-menu-in {

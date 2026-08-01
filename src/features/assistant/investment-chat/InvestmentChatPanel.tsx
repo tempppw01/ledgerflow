@@ -382,7 +382,9 @@ export function InvestmentChatComposer({
       if (webEnabled) {
         setProgress('web');
         webSearchPrompt = buildWebSearchPrompt(
-          await fetchWebSearchContext(cleanPrompt, webSearch, abortController.signal)
+          await fetchWebSearchContext(cleanPrompt, webSearch, abortController.signal, {
+            investmentNewsSources: ['10jqka', 'xueqiu']
+          })
         );
       }
       if (!isCurrentRequest()) return;

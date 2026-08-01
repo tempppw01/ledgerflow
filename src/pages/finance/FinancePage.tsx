@@ -19,6 +19,8 @@ type FeedLoadStatus = {
 const FINANCE_NEWS_CACHE_KEY = 'ledgerflow.finance.news-cache.v1';
 const FINANCE_ILLUSTRATION_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/scrum-board.svg';
+const TONGHUASHUN_HOME_URL = 'https://www.10jqka.com.cn/';
+const XUEQIU_HOME_URL = 'https://xueqiu.com/';
 
 function getDefaultFeedStatus(enabled: boolean): FeedLoadStatus {
   return { kind: enabled ? 'loading' : 'disabled' };
@@ -294,6 +296,26 @@ export function FinancePage() {
             alt=""
             aria-hidden="true"
           />
+        </div>
+
+        <div className="finance-source-strip" aria-label="内置资讯来源">
+          <div className="finance-source-strip-copy">
+            <span>双源资讯</span>
+            <strong>同花顺 + 雪球</strong>
+            <small>投资 AI 会同时核验两边；单个来源失败时，自动使用另一个继续回答。</small>
+          </div>
+          <nav aria-label="打开内置资讯网站">
+            <a href={TONGHUASHUN_HOME_URL} target="_blank" rel="noreferrer">
+              <span className="finance-source-site-mark is-tonghuashun" aria-hidden="true">同</span>
+              同花顺
+              <span aria-hidden="true">↗</span>
+            </a>
+            <a href={XUEQIU_HOME_URL} target="_blank" rel="noreferrer">
+              <span className="finance-source-site-mark is-xueqiu" aria-hidden="true">雪</span>
+              雪球
+              <span aria-hidden="true">↗</span>
+            </a>
+          </nav>
         </div>
 
         <details className="card" style={{ padding: 12, marginBottom: 12 }}>

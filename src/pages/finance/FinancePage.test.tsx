@@ -57,6 +57,24 @@ describe('FinancePage', () => {
     useAppPreferences.setState({ rssSubscriptions: [] });
   });
 
+  it('展示同花顺和雪球两个内置资讯入口', () => {
+    render(
+      <MemoryRouter>
+        <FinancePage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('同花顺 + 雪球')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /同花顺/ })).toHaveAttribute(
+      'href',
+      'https://www.10jqka.com.cn/'
+    );
+    expect(screen.getByRole('link', { name: /雪球/ })).toHaveAttribute(
+      'href',
+      'https://xueqiu.com/'
+    );
+  });
+
   it('新增 RSS 后应展示该订阅源的状态', async () => {
     fetchMock.mockResolvedValue({
       ok: true,

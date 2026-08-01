@@ -73,6 +73,22 @@ function renderNavIcon(item: { icon: string; iconSrc?: string }, className: stri
   return <span className={className}>{item.icon}</span>;
 }
 
+function getAccountInitials(displayName: string, email: string) {
+  const normalizedName = displayName.trim();
+  const nameParts = normalizedName.split(/\s+/).filter(Boolean);
+
+  if (nameParts.length > 1) {
+    return nameParts
+      .slice(0, 2)
+      .map((part) => part.slice(0, 1))
+      .join('')
+      .toUpperCase();
+  }
+
+  const source = normalizedName || email.split('@')[0] || 'LF';
+  return source.slice(-2).toUpperCase();
+}
+
 export function AppLayout() {
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
@@ -101,6 +117,7 @@ export function AppLayout() {
       state.trashedSubscriptions.length
   );
   const recycleBinIconUrl = recycleBinItemCount > 0 ? TRASH_2_ICON_URL : TRASH_ICON_URL;
+  const accountInitials = getAccountInitials(user.displayName, user.email);
   const accountMenuRef = useRef<HTMLDivElement>(null);
 
   const navSections: Array<{ title: string; items: NavItem[] }> = useMemo(
@@ -769,7 +786,7 @@ export function AppLayout() {
                 aria-expanded={accountMenuOpen}
               >
                 <span className="topbar-account-avatar" aria-hidden="true">
-                  <img src={CIRCLE_USER_ICON_URL} alt="" />
+                  {accountInitials.slice(0, 1)}
                 </span>
                 <span className="topbar-account-name" title={user.email}>
                   {user.displayName}
@@ -786,9 +803,10 @@ export function AppLayout() {
                 <div className="topbar-account-menu" role="menu" aria-label="账号菜单">
                   <div className="topbar-account-menu-head">
                     <span className="topbar-account-menu-avatar" aria-hidden="true">
-                      <img src={CIRCLE_USER_ICON_URL} alt="" />
+                      {accountInitials}
                     </span>
-                    <div>
+                    <div className="topbar-account-menu-identity">
+                      <small>当前账号</small>
                       <strong>{user.displayName}</strong>
                       <span>{user.email}</span>
                     </div>
@@ -800,12 +818,21 @@ export function AppLayout() {
                     role="menuitem"
                     onClick={openSettingsOverlay}
                   >
-                    <img src={SETTINGS_ICON_URL} alt="" aria-hidden="true" />
-                    <span>
-                      <strong>账号设置</strong>
-                      <small>账户与安全</small>
+                    <span className="topbar-account-menu-item-icon" aria-hidden="true">
+                      <img src={SETTINGS_ICON_URL} alt="" />
                     </span>
+                    <span className="topbar-account-menu-item-copy">
+                      <strong>账号设置</strong>
+                      <small>个人资料与账户安全</small>
+                    </span>
+                    <img
+                      className="topbar-account-menu-item-chevron"
+                      src={CHEVRON_DOWN_ICON_URL}
+                      alt=""
+                      aria-hidden="true"
+                    />
                   </button>
+                  <div className="topbar-account-menu-divider is-compact" />
                   <button
                     type="button"
                     className="topbar-account-menu-item is-danger"
@@ -818,9 +845,8 @@ export function AppLayout() {
                     <span className="topbar-account-menu-symbol" aria-hidden="true">
                       ↪
                     </span>
-                    <span>
+                    <span className="topbar-account-menu-item-copy">
                       <strong>退出登录</strong>
-                      <small>退出当前账号</small>
                     </span>
                   </button>
                 </div>
