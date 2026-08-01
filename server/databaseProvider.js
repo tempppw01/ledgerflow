@@ -3,6 +3,7 @@ import path from 'node:path';
 
 export const DATABASE_PROVIDERS = ['sqlite', 'mysql'];
 const SETUP_FILE_NAME = 'database-provider.json';
+const MYSQL_NOT_CONFIGURED_MESSAGE = '未检测到 MySQL 配置，请先设置 MYSQL_URL 或 MYSQL_HOST。';
 
 function normalizeProvider(value) {
   return String(value || '')
@@ -26,6 +27,19 @@ export function getConfiguredDatabaseProvider(env = process.env) {
 export function getAvailableDatabaseProviders(env = process.env) {
   const configuredProvider = getConfiguredDatabaseProvider(env);
   return configuredProvider ? [configuredProvider] : DATABASE_PROVIDERS;
+}
+
+export function getDatabaseProviderAvailability(env = process.env) {
+  return {
+    sqlite: {
+      configured: true,
+      message: ''
+    },
+    mysql: {
+      configured: Boolean(String(env.MYSQL_URL || env.MYSQL_HOST || '').trim()),
+      message: MYSQL_NOT_CONFIGURED_MESSAGE
+    }
+  };
 }
 
 export function getDatabaseDataDirectory(env = process.env) {
@@ -70,6 +84,7 @@ export async function getDatabaseSetupStatus(env = process.env) {
     provider: setup?.provider || null,
     initializedAt: setup?.initializedAt || null,
     allowedProviders: getAvailableDatabaseProviders(env),
+    providerAvailability: getDatabaseProviderAvailability(env),
     configuredProvider,
     configurationMismatch: Boolean(
       setup && configuredProvider && setup.provider !== configuredProvider
@@ -98,6 +113,11 @@ export async function initializeDatabaseProvider({
       );
     }
     return { ...existing, created: false };
+  }
+
+  const availability = getDatabaseProviderAvailability(env)[normalizedProvider];
+  if (!availability.configured) {
+    throw new Error(availability.message);
   }
 
   if (typeof validateProvider === 'function') {

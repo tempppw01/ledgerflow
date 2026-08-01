@@ -13,12 +13,16 @@ After initialization, the endpoint requires `LEDGERFLOW_API_TOKEN` for any repea
 The selected provider cannot be changed in place. A change requires exporting data, deploying a
 new instance with the target provider, and importing the backup into that instance.
 
-`DATABASE_PROVIDER` controls the choices exposed during initialization:
+`DATABASE_PROVIDER` controls the choices exposed during initialization. The service also reports
+whether each choice has the required environment configuration before the UI enables it:
 
 - `auto` or unset: SQLite and MySQL are offered.
 - `sqlite`: SQLite is the only permitted choice.
 - `mysql`: MySQL is the only permitted choice. Initialization executes `SELECT 1` with the
   server environment's MySQL credentials before locking the selection.
+- SQLite is always locally configurable.
+- MySQL requires `MYSQL_URL` or `MYSQL_HOST`. Without either value, MySQL is shown as unavailable
+  and initialization rejects it before attempting a connection.
 
 The lock lives in `LEDGERFLOW_DATA_DIR`, which must be mounted as a persistent Docker volume.
 

@@ -17,6 +17,8 @@ const PROVIDER_COPY: Record<DatabaseProvider, { label: string; description: stri
   }
 };
 
+const MYSQL_NOT_CONFIGURED_MESSAGE = '未检测到 MySQL 配置，请先设置 MYSQL_URL 或 MYSQL_HOST。';
+
 interface DatabaseProviderSetupPanelProps {
   onInitialized?: (status: DatabaseSetupStatus) => void;
 }
@@ -35,6 +37,12 @@ export function DatabaseProviderSetupPanel({ onInitialized }: DatabaseProviderSe
   const providerChoices = (status?.allowedProviders || []).filter(
     (provider): provider is DatabaseProvider => provider in PROVIDER_COPY
   );
+  const getProviderAvailability = (provider: DatabaseProvider) =>
+    status?.providerAvailability?.[provider] || {
+      configured: provider === 'sqlite',
+      message: provider === 'mysql' ? MYSQL_NOT_CONFIGURED_MESSAGE : ''
+    };
+  const selectedProviderIsConfigured = getProviderAvailability(selectedProvider).configured;
 
   useEffect(() => {
     let active = true;
@@ -43,9 +51,14 @@ export function DatabaseProviderSetupPanel({ onInitialized }: DatabaseProviderSe
         if (!active) return;
         setStatus(nextStatus);
         setSelectedProvider((current) =>
-          nextStatus.allowedProviders.includes(current)
+          nextStatus.allowedProviders.includes(current) &&
+          nextStatus.providerAvailability?.[current]?.configured
             ? current
-            : nextStatus.allowedProviders[0] || 'sqlite'
+            : nextStatus.allowedProviders.find(
+                (provider) => nextStatus.providerAvailability?.[provider]?.configured
+              ) ||
+              nextStatus.allowedProviders[0] ||
+              'sqlite'
         );
       })
       .catch((error) => {
@@ -60,6 +73,11 @@ export function DatabaseProviderSetupPanel({ onInitialized }: DatabaseProviderSe
   }, []);
 
   async function handleInitialize() {
+    if (!selectedProviderIsConfigured) {
+      setMessage(getProviderAvailability(selectedProvider).message);
+      return;
+    }
+
     if (
       !window.confirm(
         `确定初始化为 ${PROVIDER_COPY[selectedProvider].label} 吗？初始化后不能直接切换。`
@@ -115,25 +133,30 @@ export function DatabaseProviderSetupPanel({ onInitialized }: DatabaseProviderSe
               role="radiogroup"
               aria-label="选择数据存储类型"
             >
-              {providerChoices.map((provider) => (
-                <label
-                  key={provider}
-                  className={`database-provider-option ${selectedProvider === provider ? 'is-active' : ''}`}
-                >
-                  <input
-                    type="radio"
-                    name="database-provider"
-                    value={provider}
-                    checked={selectedProvider === provider}
-                    onChange={() => setSelectedProvider(provider)}
-                    disabled={busy}
-                  />
-                  <span>
-                    <strong>{PROVIDER_COPY[provider].label}</strong>
-                    <small>{PROVIDER_COPY[provider].description}</small>
-                  </span>
-                </label>
-              ))}
+              {providerChoices.map((provider) => {
+                const availability = getProviderAvailability(provider);
+                return (
+                  <label
+                    key={provider}
+                    className={`database-provider-option ${selectedProvider === provider ? 'is-active' : ''} ${!availability.configured ? 'is-unavailable' : ''}`}
+                    title={!availability.configured ? availability.message : undefined}
+                  >
+                    <input
+                      type="radio"
+                      name="database-provider"
+                      value={provider}
+                      checked={selectedProvider === provider}
+                      onChange={() => setSelectedProvider(provider)}
+                      disabled={busy || !availability.configured}
+                    />
+                    <span>
+                      <strong>{PROVIDER_COPY[provider].label}</strong>
+                      <small>{PROVIDER_COPY[provider].description}</small>
+                      {!availability.configured ? <em>{availability.message}</em> : null}
+                    </span>
+                  </label>
+                );
+              })}
             </div>
 
             <div className="sync-actions">
@@ -141,7 +164,7 @@ export function DatabaseProviderSetupPanel({ onInitialized }: DatabaseProviderSe
                 type="button"
                 className="primary"
                 onClick={() => void handleInitialize()}
-                disabled={busy}
+                disabled={busy || !selectedProviderIsConfigured}
               >
                 {busy ? '正在初始化...' : `初始化 ${PROVIDER_COPY[selectedProvider].label}`}
               </button>

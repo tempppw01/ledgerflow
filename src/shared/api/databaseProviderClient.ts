@@ -2,6 +2,11 @@ import { ENV } from '../config/env';
 
 export type DatabaseProvider = 'sqlite' | 'mysql';
 
+export interface DatabaseProviderAvailability {
+  configured: boolean;
+  message: string;
+}
+
 export interface DatabaseSetupStatus {
   initialized: boolean;
   provider: DatabaseProvider | null;
@@ -9,6 +14,7 @@ export interface DatabaseSetupStatus {
   allowedProviders: DatabaseProvider[];
   configuredProvider: DatabaseProvider | null;
   configurationMismatch: boolean;
+  providerAvailability: Record<DatabaseProvider, DatabaseProviderAvailability>;
 }
 
 function getSetupUrl(path: string) {

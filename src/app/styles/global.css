@@ -9135,6 +9135,18 @@ body.categories-accounts-resizing {
   background: color-mix(in srgb, var(--color-primary-bg) 62%, var(--color-bg-elevated));
 }
 
+.database-provider-option.is-unavailable {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.database-provider-option.is-unavailable em {
+  color: var(--color-danger);
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.4;
+}
+
 .database-provider-option input {
   margin-top: 3px;
   flex: 0 0 auto;

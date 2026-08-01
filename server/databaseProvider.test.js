@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import {
+  getDatabaseProviderAvailability,
   getDatabaseSetupStatus,
   getSqliteDatabasePath,
   initializeDatabaseProvider
@@ -28,6 +29,13 @@ test('initializes and locks the selected database provider', async () => {
     const before = await getDatabaseSetupStatus(env);
     assert.equal(before.initialized, false);
     assert.deepEqual(before.allowedProviders, ['sqlite', 'mysql']);
+    assert.equal(before.providerAvailability.sqlite.configured, true);
+    assert.equal(before.providerAvailability.mysql.configured, false);
+
+    await assert.rejects(
+      initializeDatabaseProvider({ provider: 'mysql', env }),
+      /未检测到 MySQL 配置/
+    );
 
     const created = await initializeDatabaseProvider({ provider: 'sqlite', env });
     assert.equal(created.created, true);
@@ -58,6 +66,19 @@ test('honors a deployment-level provider restriction', async () => {
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test('reports MySQL as configured only when a connection target is present', () => {
+  assert.equal(
+    getDatabaseProviderAvailability({ MYSQL_URL: 'mysql://user:password@db/ledgerflow' }).mysql
+      .configured,
+    true
+  );
+  assert.equal(
+    getDatabaseProviderAvailability({ MYSQL_HOST: 'db.example.com' }).mysql.configured,
+    true
+  );
+  assert.equal(getDatabaseProviderAvailability({ MYSQL_HOST: '  ' }).mysql.configured, false);
 });
 
 test('creates and reads SQLite snapshot storage', async () => {
