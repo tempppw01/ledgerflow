@@ -7,6 +7,9 @@ import type {
 import {
   buildInvestmentFundAnalysisPrompt,
   buildInvestmentWatchlistReviewPrompt,
+  extractInvestmentAnalysis,
+  getInvestmentAssistantDisplayText,
+  stripInvestmentAnalysisJson,
   summarizeInvestmentAnalysis
 } from './investmentAi';
 
@@ -38,6 +41,26 @@ describe('summarizeInvestmentAnalysis', () => {
 
   it('does not append the structured summary to the chat bubble fallback', () => {
     expect(summarizeInvestmentAnalysis('', baseAnalysis)).toBe('Keep watching before adding');
+  });
+
+  it('hides a structured JSON payload when the closing fence is missing', () => {
+    const raw = ['建议先观察，等波动收窄后再决定。', '```json', JSON.stringify(baseAnalysis)].join(
+      '\n'
+    );
+
+    const result = extractInvestmentAnalysis(raw);
+
+    expect(result.displayText).toBe('建议先观察，等波动收窄后再决定。');
+    expect(result.analysis).toMatchObject({ fundCode: '161706', riskLevel: 'medium' });
+    expect(stripInvestmentAnalysisJson(raw)).not.toContain('fundName');
+  });
+
+  it('uses the structured verdict instead of exposing a JSON-only response', () => {
+    const raw = ['```json', JSON.stringify(baseAnalysis)].join('\n');
+    const result = extractInvestmentAnalysis(raw);
+
+    expect(result.displayText).toBe('');
+    expect(getInvestmentAssistantDisplayText(raw)).toBe('Keep watching before adding');
   });
 });
 

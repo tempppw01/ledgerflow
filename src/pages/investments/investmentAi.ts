@@ -21,23 +21,72 @@ function normalizeOptionalString(value: unknown): string | undefined {
   return text || undefined;
 }
 
+function findLastJsonObject(raw: string): string {
+  const end = raw.lastIndexOf('}');
+  if (end < 0) return '';
+
+  let start = raw.lastIndexOf('{', end);
+  let attempts = 0;
+  while (start >= 0 && attempts < 80) {
+    const candidate = raw.slice(start, end + 1).trim();
+    try {
+      const parsed = JSON.parse(candidate) as unknown;
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return candidate;
+      }
+    } catch {
+      // Keep walking back until the outermost valid object is found.
+    }
+    start = raw.lastIndexOf('{', start - 1);
+    attempts += 1;
+  }
+
+  return '';
+}
+
+function looksLikeInvestmentPayload(raw: string): boolean {
+  return /"(?:fundName|fundCode|verdict|riskLevel|highlights|performanceHistory|items)"\s*:/.test(
+    raw
+  );
+}
+
 function extractJsonCodeBlock(raw: string): string {
   const matches = [...raw.matchAll(/```json\s*([\s\S]*?)```/gi)];
   if (matches.length > 0) {
     return matches[matches.length - 1]?.[1]?.trim() || '';
   }
 
-  const start = raw.indexOf('{');
-  const end = raw.lastIndexOf('}');
-  if (start >= 0 && end > start) {
-    return raw.slice(start, end + 1);
+  const openFences = [...raw.matchAll(/```json\s*/gi)];
+  if (openFences.length > 0) {
+    const lastFence = openFences[openFences.length - 1];
+    const contentStart = (lastFence?.index || 0) + (lastFence?.[0]?.length || 0);
+    const fencedObject = findLastJsonObject(raw.slice(contentStart));
+    if (fencedObject) return fencedObject;
   }
 
-  return '';
+  return findLastJsonObject(raw);
 }
 
 export function stripInvestmentAnalysisJson(raw: string): string {
-  return raw.replace(/\n?```json[\s\S]*?```/gi, '').trim();
+  const withoutCompleteBlocks = raw.replace(/\n?```json[\s\S]*?```/gi, '').trim();
+  if (withoutCompleteBlocks !== raw.trim()) return withoutCompleteBlocks;
+
+  const openFences = [...raw.matchAll(/```json\s*/gi)];
+  if (openFences.length > 0) {
+    const lastFence = openFences[openFences.length - 1];
+    const fenceStart = lastFence?.index || 0;
+    const tail = raw.slice(fenceStart);
+    if (looksLikeInvestmentPayload(tail)) {
+      return raw.slice(0, fenceStart).trim();
+    }
+  }
+
+  const jsonBlock = extractJsonCodeBlock(raw);
+  if (!jsonBlock || !looksLikeInvestmentPayload(jsonBlock)) return raw.trim();
+
+  const jsonStart = raw.lastIndexOf(jsonBlock);
+  if (jsonStart < 0) return raw.trim();
+  return `${raw.slice(0, jsonStart)}${raw.slice(jsonStart + jsonBlock.length)}`.trim();
 }
 
 export function buildInvestmentAssistantPrompt(input: {
@@ -219,24 +268,24 @@ export function buildInvestmentFundAnalysisPrompt(input: {
   webContext?: string;
 }) {
   const context = {
-      watchItem: {
-        id: input.watchItem.id,
-        name: input.watchItem.name,
-        code: input.watchItem.code || '',
-        platform: input.watchItem.platform || '',
-        tags: input.watchItem.tags || [],
-        note: input.watchItem.note || '',
-        lastVerdict: input.watchItem.lastVerdict || '',
-        lastSummary: input.watchItem.lastSummary || '',
-        lastRiskLevel: input.watchItem.lastRiskLevel || 'unknown',
-        investmentAdvice: input.watchItem.investmentAdvice || '',
-        adviceReasons: input.watchItem.adviceReasons || [],
-        riskNotes: input.watchItem.riskNotes || [],
-        nextActions: input.watchItem.nextActions || [],
-        holdingShares: input.watchItem.holdingShares || 0,
-        performanceHistory: input.watchItem.performanceHistory || [],
-        fundAnalysis: input.watchItem.fundAnalysis || [],
-        fundHoldings: input.watchItem.fundHoldings || [],
+    watchItem: {
+      id: input.watchItem.id,
+      name: input.watchItem.name,
+      code: input.watchItem.code || '',
+      platform: input.watchItem.platform || '',
+      tags: input.watchItem.tags || [],
+      note: input.watchItem.note || '',
+      lastVerdict: input.watchItem.lastVerdict || '',
+      lastSummary: input.watchItem.lastSummary || '',
+      lastRiskLevel: input.watchItem.lastRiskLevel || 'unknown',
+      investmentAdvice: input.watchItem.investmentAdvice || '',
+      adviceReasons: input.watchItem.adviceReasons || [],
+      riskNotes: input.watchItem.riskNotes || [],
+      nextActions: input.watchItem.nextActions || [],
+      holdingShares: input.watchItem.holdingShares || 0,
+      performanceHistory: input.watchItem.performanceHistory || [],
+      fundAnalysis: input.watchItem.fundAnalysis || [],
+      fundHoldings: input.watchItem.fundHoldings || [],
       assetAllocation: input.watchItem.assetAllocation || [],
       industryAllocation: input.watchItem.industryAllocation || [],
       netValue: input.watchItem.netValue || '',
@@ -455,6 +504,14 @@ export function summarizeInvestmentAnalysis(
   const verdict = analysis.verdict.trim();
   const summary = analysis.summary.trim();
   return verdict && verdict !== summary ? verdict : '';
+}
+
+export function getInvestmentAssistantDisplayText(
+  raw: string,
+  storedAnalysis?: InvestmentFundAnalysis | null
+): string {
+  const extracted = extractInvestmentAnalysis(raw);
+  return summarizeInvestmentAnalysis(extracted.displayText, storedAnalysis || extracted.analysis);
 }
 
 function normalizeInvestmentFollowUpPrompt(prompt: string): string {

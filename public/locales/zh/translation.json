@@ -123,8 +123,8 @@
     },
     "toastSaved": "设置已自动保存",
     "embeddingChannel": {
-      "title": "嵌入渠道（Embedding）",
-      "desc": "可选：为嵌入向量化/语义召回单独配置一套服务。",
+      "title": "独立嵌入服务",
+      "desc": "需要使用另一套模型做语义检索时，可在这里单独设置。",
       "enabledLabel": "启用嵌入渠道覆盖",
       "enabledHint": "开启后，只要填写了任意一项（baseUrl/apiKey/model），就会优先使用嵌入渠道配置。",
       "modelLabel": "嵌入模型（覆盖）",

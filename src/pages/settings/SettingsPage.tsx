@@ -802,60 +802,63 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
 
         {activeWorkspace === 'tavily' ? (
           <div className="settings-tab-panel" role="tabpanel">
-            <div className="settings-subpanel is-active">
+            <div className="settings-subpanel settings-subpanel--tavily is-active">
               <div className="settings-subpanel-toggle">
                 <div className="settings-subpanel-copy">
-                  <strong>联网核验服务</strong>
-                  <small>Tavily 作为联网服务商，本地同源接口作为兜底。</small>
+                  <strong>联网搜索</strong>
+                  <small>让 AI 在回答投资问题时，参考最新资讯、公告和政策。</small>
                 </div>
-                <span className="settings-subpanel-chip is-active">Tavily</span>
+                <span
+                  className={`settings-subpanel-chip ${webSearch.tavilyApiKey.trim() ? 'is-active' : ''}`}
+                >
+                  {webSearch.tavilyApiKey.trim() ? '已配置' : '待填写密钥'}
+                </span>
               </div>
               <div className="settings-subpanel-body">
-                <div className="settings-inline-grid settings-inline-grid--double">
-                  <div className="field">
-                    <label>服务商</label>
-                    <select value={webSearch.provider} onChange={() => undefined}>
-                      <option value="tavily">Tavily（本地兜底）</option>
-                    </select>
-                    <small>开启投资页“联网核验”后，会优先走 Tavily Search。</small>
-                  </div>
-                  <div className="field">
-                    <label>Tavily API Key</label>
-                    <PasswordInput
-                      value={webSearch.tavilyApiKey}
-                      placeholder="tvly-..."
-                      onChange={(e) => {
-                        setWebSearch({ tavilyApiKey: e.target.value });
-                        showSaveToast();
-                      }}
-                      showLabel={t('settings.show')}
-                      hideLabel={t('settings.hide')}
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Tavily Base URL</label>
-                    <input
-                      value={webSearch.tavilyBaseUrl}
-                      placeholder="https://api.tavily.com"
-                      onChange={(e) => {
-                        setWebSearch({ tavilyBaseUrl: e.target.value });
-                        showSaveToast();
-                      }}
-                    />
-                  </div>
-                  <div className="field">
-                    <label>本地联网兜底接口</label>
-                    <input
-                      value={webSearch.localEndpoint}
-                      placeholder="/api/web-search"
-                      onChange={(e) => {
-                        setWebSearch({ localEndpoint: e.target.value });
-                        showSaveToast();
-                      }}
-                    />
-                    <small>当 Tavily Key 缺失或请求失败时，会 POST 到这个同源接口。</small>
-                  </div>
+                <div className="field settings-tavily-key-field">
+                  <label>Tavily 密钥</label>
+                  <PasswordInput
+                    value={webSearch.tavilyApiKey}
+                    placeholder="tvly-..."
+                    onChange={(e) => {
+                      setWebSearch({ tavilyApiKey: e.target.value });
+                      showSaveToast();
+                    }}
+                    showLabel={t('settings.show')}
+                    hideLabel={t('settings.hide')}
+                  />
+                  <small>填写后，联网回答会优先参考实时网页信息。</small>
                 </div>
+
+                <details className="settings-connection-options">
+                  <summary>连接选项</summary>
+                  <p>默认值可直接使用，仅在自建代理或部署环境有特殊要求时修改。</p>
+                  <div className="settings-inline-grid settings-inline-grid--double">
+                    <div className="field">
+                      <label>Tavily 服务地址</label>
+                      <input
+                        value={webSearch.tavilyBaseUrl}
+                        placeholder="https://api.tavily.com"
+                        onChange={(e) => {
+                          setWebSearch({ tavilyBaseUrl: e.target.value });
+                          showSaveToast();
+                        }}
+                      />
+                    </div>
+                    <div className="field">
+                      <label>备用搜索地址</label>
+                      <input
+                        value={webSearch.localEndpoint}
+                        placeholder="/api/web-search"
+                        onChange={(e) => {
+                          setWebSearch({ localEndpoint: e.target.value });
+                          showSaveToast();
+                        }}
+                      />
+                      <small>Tavily 暂时不可用时，会自动切换到这里。</small>
+                    </div>
+                  </div>
+                </details>
               </div>
             </div>
           </div>
@@ -863,8 +866,6 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
 
         {activeWorkspace === 'embedding' ? (
           <div className="settings-tab-panel" role="tabpanel">
-            <div className="settings-divider" />
-
             <div
               className={`settings-subpanel settings-subpanel--embedding ${embeddingPanelExpanded ? 'is-expanded' : ''} ${
                 embeddingOverrideActive ? 'is-active' : ''
@@ -883,25 +884,26 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                   </span>
                 </button>
                 <span className="settings-subpanel-meta">
-                  {embeddingChannel.enabled ? (
-                    <span
-                      className={`settings-subpanel-chip ${embeddingOverrideActive ? 'is-active' : ''}`}
-                    >
-                      {embeddingPanelStatus}
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      className="settings-subpanel-primary-action"
-                      onClick={() => {
-                        setEmbeddingChannel({ enabled: true });
-                        setEmbeddingPanelExpanded(true);
+                  <span
+                    className={`settings-subpanel-chip ${embeddingOverrideActive ? 'is-active' : ''}`}
+                  >
+                    {embeddingPanelStatus}
+                  </span>
+                  <label className="settings-toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={embeddingChannel.enabled}
+                      onChange={(event) => {
+                        setEmbeddingChannel({ enabled: event.target.checked });
+                        if (event.target.checked) setEmbeddingPanelExpanded(true);
                         showSaveToast();
                       }}
-                    >
-                      {currentLanguage === 'en' ? 'Enable channel' : '启用嵌入渠道'}
-                    </button>
-                  )}
+                      aria-label={
+                        currentLanguage === 'en' ? 'Enable embedding service' : '启用独立嵌入服务'
+                      }
+                    />
+                    <span aria-hidden="true" />
+                  </label>
                   <button
                     type="button"
                     className="settings-subpanel-arrow"
@@ -921,38 +923,21 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                   </strong>
                 </span>
                 <span>
-                  Base URL：
+                  {currentLanguage === 'en' ? 'Service URL' : '服务地址'}：
                   <strong>
                     {embeddingEffectiveBaseUrl || (currentLanguage === 'en' ? 'Not set' : '未设置')}
                   </strong>
                 </span>
                 <small>
                   {currentLanguage === 'en'
-                    ? 'If you use a dedicated embedding service, just confirm its storage and logging policy.'
-                    : '如使用单独 embedding 服务，确认其数据存储与日志策略即可。'}
+                    ? 'Before using a dedicated service, review how it stores requests and logs.'
+                    : '使用独立服务前，建议确认它如何保存请求内容和日志。'}
                 </small>
               </div>
 
               {embeddingPanelExpanded ? (
                 <div className="settings-subpanel-body">
                   <div className="settings-inline-grid settings-inline-grid--double">
-                    <div className="field">
-                      <label
-                        style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={embeddingChannel.enabled}
-                          onChange={(e) => {
-                            setEmbeddingChannel({ enabled: e.target.checked });
-                            showSaveToast();
-                          }}
-                        />
-                        {t('settings.embeddingChannel.enabledLabel')}
-                      </label>
-                      <small>{t('settings.embeddingChannel.enabledHint')}</small>
-                    </div>
-
                     <div className="field">
                       <label>{t('settings.embeddingChannel.modelLabel')}</label>
                       <small>{t('settings.embeddingChannel.modelHint')}</small>
@@ -999,7 +984,7 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                       />
                     </div>
 
-                    <div className="field">
+                    <div className="field settings-embedding-api-field">
                       <label>{t('settings.embeddingChannel.apiKeyLabel')}</label>
                       <small>{t('settings.embeddingChannel.apiKeyHint')}</small>
                       <PasswordInput
@@ -1015,22 +1000,20 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                     </div>
                   </div>
 
-                  <div className="settings-embedding-effective-card">
+                  <div className="settings-embedding-note">
                     <div className="settings-embedding-effective-title">
-                      {currentLanguage === 'en' ? 'Effective rule' : '当前生效规则'}
+                      {currentLanguage === 'en' ? 'How it works' : '使用说明'}
                     </div>
                     <div className="settings-embedding-effective-copy">
                       {currentLanguage === 'en'
-                        ? 'The global Embedding model below is used by default. Once override is enabled and any dedicated baseUrl / apiKey / model is filled in, this embedding channel takes precedence.'
-                        : '默认优先使用下方全局 Embedding 模型；开启覆盖且填写了专用 baseUrl / apiKey / model 任一项后，会切到这套嵌入渠道配置。'}{' '}
-                      {currentLanguage === 'en'
-                        ? 'Current effective model'
-                        : '当前实际生效的模型为'}{' '}
+                        ? 'When disabled, LedgerFlow uses the embedding settings from OpenAI. When enabled, values entered here take priority and blank fields continue using the original settings.'
+                        : '关闭时沿用 OpenAI 页里的嵌入设置；开启后优先使用这里填写的内容，留空的项目继续沿用原配置。'}{' '}
+                      {currentLanguage === 'en' ? 'Currently using' : '当前使用'}{' '}
                       <strong>
                         {embeddingEffectiveModel ||
                           (currentLanguage === 'en' ? 'Not set' : '未设置')}
                       </strong>
-                      ，Base URL {currentLanguage === 'en' ? 'is' : '为'}{' '}
+                      ，{currentLanguage === 'en' ? 'service URL' : '服务地址'}{' '}
                       <strong>
                         {embeddingEffectiveBaseUrl ||
                           (currentLanguage === 'en' ? 'Not set' : '未设置')}

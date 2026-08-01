@@ -161,10 +161,9 @@ describe('Investment assistant chat', () => {
     expect(webButton.querySelector('img')).toHaveAttribute('src', GLOBE_OFF_ICON_URL);
 
     fireEvent.click(webButton);
-    expect(screen.getByRole('button', { name: '关闭联网核验' }).querySelector('img')).toHaveAttribute(
-      'src',
-      GLOBE_ICON_URL
-    );
+    expect(
+      screen.getByRole('button', { name: '关闭联网核验' }).querySelector('img')
+    ).toHaveAttribute('src', GLOBE_ICON_URL);
   });
 
   it('collapses reasoning and auxiliary investment details in assistant messages', () => {
@@ -195,6 +194,42 @@ describe('Investment assistant chat', () => {
     expect(screen.getByText('检索与核验状态')).toBeInTheDocument();
     expect(screen.getByText('新闻、政策与市场上下文')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '返回页面顶部' })).toBeInTheDocument();
+  });
+
+  it('hides structured JSON left in a persisted investment reply', () => {
+    useAppPreferences.setState({
+      investmentAiMessages: [
+        {
+          id: 'assistant-json',
+          role: 'assistant',
+          text: [
+            '建议继续观察，不要一次性重仓。',
+            '```json',
+            JSON.stringify({
+              fundName: '测试基金',
+              fundCode: '161723',
+              verdict: '继续观察',
+              summary: '等待实时数据恢复后再判断。',
+              riskLevel: 'medium',
+              highlights: [],
+              risks: [],
+              actions: []
+            })
+          ].join('\n'),
+          createdAt: '2026-07-16T09:31:00.000Z'
+        }
+      ]
+    });
+
+    render(
+      <MemoryRouter>
+        <InvestmentChatPanel showHero={false} />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('建议继续观察，不要一次性重仓。')).toBeInTheDocument();
+    expect(screen.queryByText(/"fundName"/)).not.toBeInTheDocument();
+    expect(screen.queryByText('```json')).not.toBeInTheDocument();
   });
 
   it('shows an illustration before the first investment chat message', () => {
@@ -377,9 +412,7 @@ describe('Investment assistant chat', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: '开始分析' }));
 
-    await waitFor(() =>
-      expect(screen.getByRole('status')).toHaveTextContent('正在思考投资结论')
-    );
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('正在思考投资结论'));
   });
 
   it('can stop a streaming investment analysis request', async () => {

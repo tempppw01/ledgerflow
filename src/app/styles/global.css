@@ -8956,6 +8956,16 @@ body.categories-accounts-resizing {
   overflow: hidden;
 }
 
+.settings-subpanel--tavily {
+  padding: 0;
+  overflow: hidden;
+}
+
+.settings-subpanel--embedding > .settings-subpanel-toggle,
+.settings-subpanel--tavily > .settings-subpanel-toggle {
+  background: transparent;
+}
+
 .settings-subpanel--embedding.is-active {
   border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border-light));
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 10%, transparent);
@@ -8982,11 +8992,21 @@ body.categories-accounts-resizing {
 .settings-subpanel-title-button {
   min-width: 0;
   flex: 1;
+  justify-content: flex-start;
   padding: 0;
   border: 0;
   background: transparent;
   color: inherit;
   text-align: left;
+}
+
+.settings-subpanel-title-button:hover:not(:disabled),
+.settings-subpanel-title-button:active:not(:disabled),
+.settings-subpanel-title-button:focus-visible {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
 }
 
 .settings-subpanel-copy {
@@ -9050,6 +9070,60 @@ body.categories-accounts-resizing {
   color: #fff;
 }
 
+.settings-toggle-switch {
+  position: relative;
+  width: 40px;
+  height: 24px;
+  display: inline-flex;
+  flex: 0 0 40px;
+  align-items: center;
+}
+
+.settings-toggle-switch input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.settings-toggle-switch > span {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--color-border-light);
+  border-radius: 999px;
+  background: var(--color-bg-subtle);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.settings-toggle-switch > span::after {
+  display: block;
+  width: 18px;
+  height: 18px;
+  margin: 2px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text) 14%, transparent);
+  content: '';
+  transition: transform var(--transition-fast);
+}
+
+.settings-toggle-switch input:checked + span {
+  border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border-light));
+  background: var(--color-primary);
+}
+
+.settings-toggle-switch input:checked + span::after {
+  transform: translateX(16px);
+}
+
+.settings-toggle-switch input:focus-visible + span {
+  box-shadow: 0 0 0 3px var(--color-primary-bg);
+}
+
 .settings-subpanel-arrow {
   min-height: 30px;
   padding: 0 4px;
@@ -9062,6 +9136,7 @@ body.categories-accounts-resizing {
 
 .settings-subpanel-summary {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4px;
   padding: 0 16px 14px;
   color: var(--color-text-secondary);
@@ -9074,6 +9149,7 @@ body.categories-accounts-resizing {
 }
 
 .settings-subpanel-summary small {
+  grid-column: 1 / -1;
   color: var(--color-text-tertiary);
 }
 
@@ -9084,11 +9160,43 @@ body.categories-accounts-resizing {
   border-top: 1px solid var(--color-border-light);
 }
 
-.settings-embedding-effective-card {
+.settings-subpanel--tavily .settings-subpanel-body {
+  padding-top: 16px;
+}
+
+.settings-tavily-key-field,
+.settings-embedding-api-field {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+}
+
+.settings-connection-options {
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.settings-connection-options summary {
+  width: fit-content;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: var(--font-sm);
+  font-weight: 600;
+}
+
+.settings-connection-options > p {
+  margin: 8px 0 14px;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-sm);
+  line-height: 1.5;
+}
+
+.settings-connection-options .field {
+  margin-bottom: 0;
+}
+
+.settings-embedding-note {
   padding: 10px 12px;
-  border-radius: var(--radius-md);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
-  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-bg-subtle));
+  border-left: 2px solid color-mix(in srgb, var(--color-primary) 54%, var(--color-border-light));
 }
 
 .settings-embedding-effective-title {
@@ -9138,6 +9246,16 @@ body.categories-accounts-resizing {
   .settings-inline-grid--double,
   .settings-inline-grid--triple {
     grid-template-columns: 1fr;
+  }
+
+  .settings-subpanel-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-subpanel-summary small,
+  .settings-tavily-key-field,
+  .settings-embedding-api-field {
+    grid-column: auto;
   }
 }
 

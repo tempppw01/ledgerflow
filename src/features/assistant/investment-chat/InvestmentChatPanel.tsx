@@ -18,6 +18,7 @@ import {
   buildInvestmentFollowUpFallback,
   createInvestmentAiMessage,
   extractInvestmentAnalysis,
+  getInvestmentAssistantDisplayText,
   parseInvestmentFollowUpPrompts,
   readImageAsDataUrl,
   trimInvestmentAiMessages
@@ -422,8 +423,9 @@ export function InvestmentChatComposer({
           },
           onDone: (content, reasoning) => {
             if (!isCurrentRequest()) return;
-            const analysis = extractInvestmentAnalysis(content).analysis;
-            const answer = extractInvestmentAnalysis(content).displayText.trim() || content.trim();
+            const extracted = extractInvestmentAnalysis(content);
+            const analysis = extracted.analysis;
+            const answer = getInvestmentAssistantDisplayText(content, analysis);
             const assistantMessage: Message = createInvestmentAiMessage({
               id: `investment-assistant-${Date.now()}`,
               role: 'assistant',
@@ -476,7 +478,9 @@ export function InvestmentChatComposer({
 
   const scrollToConversationTop = useCallback(() => {
     const targets = new Set<HTMLElement>();
-    const messagesArea = document.querySelector<HTMLElement>('.chat-messages-area.is-investment-mode');
+    const messagesArea = document.querySelector<HTMLElement>(
+      '.chat-messages-area.is-investment-mode'
+    );
     const supportColumn = textareaRef.current?.closest<HTMLElement>('.investments-support-column');
 
     if (messagesArea) targets.add(messagesArea);
@@ -919,7 +923,11 @@ export function InvestmentChatPanel({
                 <div className="chat-msg-body">
                   <div className="chat-msg-header">{item.role === 'user' ? '你' : '助手'}</div>
                   <div className="chat-msg-content chat-msg-content-rich">
-                    {renderMarkdownContent(item.text)}
+                    {renderMarkdownContent(
+                      item.role === 'assistant'
+                        ? getInvestmentAssistantDisplayText(item.text, item.analysis)
+                        : item.text
+                    )}
                   </div>
                   {item.role === 'assistant' ? (
                     <InvestmentAiMessageDetails

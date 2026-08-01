@@ -123,8 +123,8 @@
     },
     "toastSaved": "Settings saved automatically",
     "embeddingChannel": {
-      "title": "Embedding channel (advanced)",
-      "desc": "Optional: configure a dedicated service for embedding / semantic recall.",
+      "title": "Dedicated embedding service",
+      "desc": "Use a separate model and provider for semantic search when needed.",
       "enabledLabel": "Enable embedding override",
       "enabledHint": "When enabled, if any of baseUrl/apiKey/model is provided, the embedding channel config will take precedence.",
       "modelLabel": "Embedding model (override)",
