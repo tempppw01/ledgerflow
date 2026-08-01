@@ -74,7 +74,7 @@ describe('DatabaseInitializationGate', () => {
       configuredProvider: 'sqlite',
       configurationMismatch: false
     };
-    sessionStorage.setItem('ledgerflow-database-status-cache', JSON.stringify(cachedStatus));
+    localStorage.setItem('ledgerflow-database-status-cache', JSON.stringify(cachedStatus));
     getDatabaseSetupStatusMock.mockReturnValue(new Promise(() => undefined));
 
     render(
@@ -85,5 +85,59 @@ describe('DatabaseInitializationGate', () => {
 
     expect(screen.getByText('应用内容')).toBeInTheDocument();
     expect(screen.queryByText('正在检查数据库初始化状态...')).not.toBeInTheDocument();
+  });
+
+  it('keeps the application visible when status revalidation temporarily fails', async () => {
+    const cachedStatus = {
+      initialized: true,
+      provider: 'sqlite',
+      initializedAt: '2026-07-17T00:00:00.000Z',
+      allowedProviders: ['sqlite'],
+      configuredProvider: 'sqlite',
+      configurationMismatch: false
+    };
+    localStorage.setItem('ledgerflow-database-status-cache', JSON.stringify(cachedStatus));
+    getDatabaseSetupStatusMock.mockRejectedValue(new Error('network unavailable'));
+
+    render(
+      <DatabaseInitializationGate>
+        <div>应用内容</div>
+      </DatabaseInitializationGate>
+    );
+
+    expect(screen.getByText('应用内容')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '初始化数据存储' })).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('数据库状态检查暂时失败，已继续使用上次确认的配置。')
+    ).toBeInTheDocument();
+  });
+
+  it('reuses an initialized status after the gate is remounted', async () => {
+    getDatabaseSetupStatusMock.mockResolvedValue({
+      initialized: true,
+      provider: 'sqlite',
+      initializedAt: '2026-07-17T00:00:00.000Z',
+      allowedProviders: ['sqlite'],
+      configuredProvider: 'sqlite',
+      configurationMismatch: false
+    });
+
+    const firstRender = render(
+      <DatabaseInitializationGate>
+        <div>应用内容</div>
+      </DatabaseInitializationGate>
+    );
+    await screen.findByText('应用内容');
+    firstRender.unmount();
+
+    getDatabaseSetupStatusMock.mockReturnValue(new Promise(() => undefined));
+    render(
+      <DatabaseInitializationGate>
+        <div>应用内容</div>
+      </DatabaseInitializationGate>
+    );
+
+    expect(screen.getByText('应用内容')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '初始化数据存储' })).not.toBeInTheDocument();
   });
 });

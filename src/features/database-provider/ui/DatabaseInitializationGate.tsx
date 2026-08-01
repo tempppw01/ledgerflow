@@ -15,10 +15,15 @@ const DATABASE_STATUS_CACHE_KEY = 'ledgerflow-database-status-cache';
 
 function readCachedStatus(): DatabaseSetupStatus | null {
   try {
-    const raw = window.sessionStorage.getItem(DATABASE_STATUS_CACHE_KEY);
+    const raw =
+      window.localStorage.getItem(DATABASE_STATUS_CACHE_KEY) ||
+      window.sessionStorage.getItem(DATABASE_STATUS_CACHE_KEY);
     if (!raw) return null;
     const status = JSON.parse(raw) as DatabaseSetupStatus;
-    return status.initialized && !status.configurationMismatch ? status : null;
+    if (!status.initialized || status.configurationMismatch) return null;
+    window.localStorage.setItem(DATABASE_STATUS_CACHE_KEY, JSON.stringify(status));
+    window.sessionStorage.removeItem(DATABASE_STATUS_CACHE_KEY);
+    return status;
   } catch {
     return null;
   }
@@ -27,8 +32,10 @@ function readCachedStatus(): DatabaseSetupStatus | null {
 function writeCachedStatus(status: DatabaseSetupStatus) {
   try {
     if (status.initialized && !status.configurationMismatch) {
-      window.sessionStorage.setItem(DATABASE_STATUS_CACHE_KEY, JSON.stringify(status));
+      window.localStorage.setItem(DATABASE_STATUS_CACHE_KEY, JSON.stringify(status));
+      window.sessionStorage.removeItem(DATABASE_STATUS_CACHE_KEY);
     } else {
+      window.localStorage.removeItem(DATABASE_STATUS_CACHE_KEY);
       window.sessionStorage.removeItem(DATABASE_STATUS_CACHE_KEY);
     }
   } catch {
@@ -49,7 +56,6 @@ export function DatabaseInitializationGate({ children }: DatabaseInitializationG
       writeCachedStatus(nextStatus);
       setStatus(nextStatus);
     } catch (reason) {
-      setStatus(null);
       setError(reason instanceof Error ? reason.message : '无法连接数据库初始化服务。');
     } finally {
       setLoading(false);
@@ -67,9 +73,20 @@ export function DatabaseInitializationGate({ children }: DatabaseInitializationG
 
   if (status?.initialized && !status.configurationMismatch) {
     return (
-      <AuthGate>
-        <SqlDataSyncGate>{children}</SqlDataSyncGate>
-      </AuthGate>
+      <>
+        <AuthGate>
+          <SqlDataSyncGate>{children}</SqlDataSyncGate>
+        </AuthGate>
+        {error ? (
+          <div className="sql-sync-notice is-error" role="status" aria-live="polite">
+            <span className="sql-sync-notice-dot" aria-hidden="true" />
+            <span>数据库状态检查暂时失败，已继续使用上次确认的配置。</span>
+            <button type="button" onClick={() => void loadStatus()}>
+              重试
+            </button>
+          </div>
+        ) : null}
+      </>
     );
   }
 

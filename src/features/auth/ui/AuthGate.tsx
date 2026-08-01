@@ -15,10 +15,14 @@ const AUTH_USER_CACHE_KEY = 'ledgerflow-auth-user-cache';
 
 function readCachedAuthUser(): AuthUser | null {
   try {
-    const raw = window.sessionStorage.getItem(AUTH_USER_CACHE_KEY);
+    const raw =
+      window.localStorage.getItem(AUTH_USER_CACHE_KEY) ||
+      window.sessionStorage.getItem(AUTH_USER_CACHE_KEY);
     if (!raw) return null;
     const user = JSON.parse(raw) as Partial<AuthUser>;
     if (!user.id || !user.email || !user.displayName || !user.ledgerUserId) return null;
+    window.localStorage.setItem(AUTH_USER_CACHE_KEY, JSON.stringify(user));
+    window.sessionStorage.removeItem(AUTH_USER_CACHE_KEY);
     return user as AuthUser;
   } catch {
     return null;
@@ -28,8 +32,10 @@ function readCachedAuthUser(): AuthUser | null {
 function writeCachedAuthUser(user: AuthUser | null) {
   try {
     if (user) {
-      window.sessionStorage.setItem(AUTH_USER_CACHE_KEY, JSON.stringify(user));
+      window.localStorage.setItem(AUTH_USER_CACHE_KEY, JSON.stringify(user));
+      window.sessionStorage.removeItem(AUTH_USER_CACHE_KEY);
     } else {
+      window.localStorage.removeItem(AUTH_USER_CACHE_KEY);
       window.sessionStorage.removeItem(AUTH_USER_CACHE_KEY);
     }
   } catch {

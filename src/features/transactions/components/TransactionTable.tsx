@@ -264,6 +264,7 @@ interface TransactionTableProps {
   onFirstPage: () => void;
   onLastPage: () => void;
   onPageSizeChange: (size: number) => void;
+  onCreate?: () => void;
   onOpenDetail: (id: string) => void;
   onShare: (id: string) => void;
   onDelete: (id: string) => void;
@@ -338,6 +339,7 @@ export function TransactionTable({
   onFirstPage,
   onLastPage,
   onPageSizeChange,
+  onCreate = () => undefined,
   onOpenDetail,
   onShare,
   onDelete,
@@ -646,9 +648,7 @@ export function TransactionTable({
               ? undefined
               : {
                   label: '新增账目',
-                  onClick: () => {
-                    window.location.href = '/transactions/new';
-                  },
+                  onClick: onCreate,
                   variant: 'primary'
                 }
           }

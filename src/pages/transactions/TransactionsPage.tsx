@@ -1,6 +1,6 @@
 import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
 import { extractJsonString } from '../../features/assistant/workbench/workbenchUtils';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
@@ -354,6 +354,7 @@ function buildDuplicateGroups(rows: TransactionRowView[]): string[][] {
 }
 
 export function TransactionsPage() {
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const transactions = useFinanceStore((s) => s.transactions);
   const categories = useFinanceStore((s) => s.categories);
@@ -2498,6 +2499,7 @@ export function TransactionsPage() {
               setPageSize(size);
               setPage(1);
             }}
+            onCreate={() => navigate('/transactions/new')}
             onOpenDetail={setSelectedId}
             onShare={handleOpenShareDialogForId}
             selectedIds={selectedIds}

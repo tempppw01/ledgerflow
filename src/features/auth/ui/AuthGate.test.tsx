@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthGate } from './AuthGate';
@@ -26,6 +26,8 @@ const user = {
 describe('AuthGate', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
+    sessionStorage.clear();
   });
 
   it('shows first-account registration when no account exists', async () => {
@@ -64,7 +66,7 @@ describe('AuthGate', () => {
   });
 
   it('keeps protected content visible while a cached session is revalidated', () => {
-    sessionStorage.setItem('ledgerflow-auth-user-cache', JSON.stringify(user));
+    localStorage.setItem('ledgerflow-auth-user-cache', JSON.stringify(user));
     mocks.getAuthStatus.mockReturnValue(new Promise(() => undefined));
 
     render(
@@ -75,6 +77,21 @@ describe('AuthGate', () => {
 
     expect(screen.getByText('账本内容')).toBeInTheDocument();
     expect(screen.queryByText('正在检查账号状态...')).not.toBeInTheDocument();
+  });
+
+  it('keeps protected content visible when cached account revalidation fails', async () => {
+    localStorage.setItem('ledgerflow-auth-user-cache', JSON.stringify(user));
+    mocks.getAuthStatus.mockRejectedValue(new Error('network unavailable'));
+
+    render(
+      <AuthGate>
+        <div>账本内容</div>
+      </AuthGate>
+    );
+
+    expect(screen.getByText('账本内容')).toBeInTheDocument();
+    expect(screen.queryByText('正在检查账号状态...')).not.toBeInTheDocument();
+    await waitFor(() => expect(mocks.getAuthStatus).toHaveBeenCalledTimes(1));
   });
 
   it('logs in and then renders protected content', async () => {

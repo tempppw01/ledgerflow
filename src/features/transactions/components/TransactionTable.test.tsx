@@ -45,6 +45,7 @@ const baseProps = {
   onNextPage: vi.fn(),
   onLastPage: vi.fn(),
   onPageSizeChange: vi.fn(),
+  onCreate: vi.fn(),
   onOpenDetail: vi.fn(),
   onShare: vi.fn(),
   onDelete: vi.fn(),
