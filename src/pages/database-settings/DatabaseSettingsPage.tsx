@@ -18,6 +18,7 @@ import {
   type BackupWebdavConfig,
   createDefaultFinanceBackupScope,
   createFinanceBackupPayload,
+  countFinanceBackupRecords,
   downloadBackupJson,
   type FinanceBackupPayload,
   type FinanceBackupScope,
@@ -52,6 +53,7 @@ import {
 } from '../../shared/lib/ledgerflowApiToken';
 
 type BillSource = 'wechat' | 'alipay';
+type BackupImportPhase = 'importing' | 'complete' | 'error';
 
 const MAX_BACKUP_FILE_SIZE_MB = 50;
 const MAX_BACKUP_FILE_SIZE_BYTES = MAX_BACKUP_FILE_SIZE_MB * 1024 * 1024;
@@ -332,6 +334,11 @@ export function DatabaseSettingsPage() {
   const [importSource, setImportSource] = useState<BillSource | null>(null);
   const [importMode, setImportMode] = useState<BillImportMode>('incremental');
   const [busy, setBusy] = useState(false);
+  const [backupImportProgress, setBackupImportProgress] = useState<{
+    phase: BackupImportPhase;
+    completed: number;
+    total: number;
+  } | null>(null);
   const [webdavStatus, setWebdavStatus] = useState('');
   const [toast, setToast] = useState<{ visible: boolean; variant: ToastVariant; message: string }>({
     visible: false,
@@ -620,14 +627,27 @@ export function DatabaseSettingsPage() {
       return;
     }
 
+    let total = 0;
     try {
+      setBusy(true);
       validateBackupFile(file);
       ensureHydrated();
       const text = await file.text();
       const payload = parseFinanceBackupPayload(text);
+      total = countFinanceBackupRecords(payload);
+      setBackupImportProgress({ phase: 'importing', completed: 0, total });
       await applyParsedBackup(payload, '导入');
+      setBackupImportProgress({ phase: 'complete', completed: total, total });
     } catch (error) {
+      setBackupImportProgress((current) => ({
+        phase: 'error',
+        completed: current?.completed || 0,
+        total: current?.total || total
+      }));
       showToast(error instanceof Error ? error.message : '备份导入失败', 'error');
+    } finally {
+      setBusy(false);
+      window.setTimeout(() => setBackupImportProgress(null), 4000);
     }
   };
 
@@ -982,10 +1002,53 @@ export function DatabaseSettingsPage() {
               <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
               导出备份文件
             </button>
-            <button type="button" className="button-with-icon" onClick={() => backupInputRef.current?.click()}>
+            <button type="button" className="button-with-icon" onClick={() => backupInputRef.current?.click()} disabled={busy}>
               <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
               导入备份文件
             </button>
+            {backupImportProgress ? (
+              <div
+                className={`database-backup-import-progress is-${backupImportProgress.phase}`}
+                role="status"
+                aria-live="polite"
+              >
+                <div className="database-backup-import-progress-copy">
+                  <strong>
+                    {backupImportProgress.phase === 'complete'
+                      ? '导入完成'
+                      : backupImportProgress.phase === 'error'
+                        ? '导入失败'
+                        : '正在写入数据库'}
+                  </strong>
+                  <span>
+                    {backupImportProgress.completed} / {backupImportProgress.total} 条
+                    {backupImportProgress.phase === 'importing'
+                      ? ` · 剩余 ${Math.max(backupImportProgress.total - backupImportProgress.completed, 0)} 条`
+                      : ''}
+                  </span>
+                </div>
+                <div
+                  className="database-backup-import-progress-track"
+                  role="progressbar"
+                  aria-label="备份导入进度"
+                  aria-valuemin={0}
+                  aria-valuemax={backupImportProgress.total}
+                  aria-valuenow={backupImportProgress.completed}
+                >
+                  <span
+                    style={{
+                      width: `${
+                        backupImportProgress.phase === 'complete'
+                          ? 100
+                          : backupImportProgress.total > 0
+                            ? (backupImportProgress.completed / backupImportProgress.total) * 100
+                            : 0
+                      }%`
+                    }}
+                  />
+                </div>
+              </div>
+            ) : null}
             <input ref={backupInputRef} type="file" title="导入 JSON 备份" aria-label="导入 JSON 备份" accept="application/json,.json" style={{ display: 'none' }} onChange={handleBackupFileImport} />
           </div>
         </section>

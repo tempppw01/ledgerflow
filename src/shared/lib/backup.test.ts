@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   applyFinanceBackupPayload,
   type BackupObjectStorageConfig,
+  countFinanceBackupRecords,
   createDefaultFinanceBackupScope,
   createFinanceBackupPayload,
   listWebdavBackupVersions,
@@ -725,6 +726,61 @@ describe('parseFinanceBackupPayload', () => {
     expect(restored.globalMemories).toEqual(current.globalMemories);
     expect(restored.investmentPositions).toEqual(current.investmentPositions);
     expect(restored.investmentWatchlist).toEqual(current.investmentWatchlist);
+  });
+});
+
+describe('countFinanceBackupRecords', () => {
+  it('统计备份中所有可导入的数据条数', () => {
+    const payload = createFinanceBackupPayload({
+      transactions: [
+        {
+          id: 'tx-1',
+          type: 'expense',
+          categoryId: '',
+          accountId: '',
+          amount: 1,
+          date: '2026-08-01',
+          note: '',
+          tags: []
+        }
+      ],
+      categories: [{ id: 'cat-1', name: '其他', kind: 'expense', sortOrder: 0 }],
+      accounts: [{ id: 'account-1', name: '现金', type: 'cash', balance: 0 }],
+      subscriptions: [],
+      trashedTransactions: [],
+      trashedCategories: [],
+      trashedAccounts: [],
+      balanceChangeEntries: [],
+      trashedSubscriptions: [],
+      globalMemories: [
+        {
+          id: 'memory-1',
+          title: '偏好',
+          content: '简洁',
+          type: 'display_preference',
+          source: 'manual',
+          sourceTrace: [],
+          sourceIds: [],
+          confidence: 1,
+          score: 1,
+          status: 'active',
+          origin: 'manual',
+          pinned: false,
+          disabled: false,
+          embeddingText: '简洁',
+          lastUsedAt: null,
+          createdAt: '2026-08-01T00:00:00.000Z',
+          updatedAt: '2026-08-01T00:00:00.000Z'
+        }
+      ],
+      investmentPositions: [],
+      investmentPositionHistory: [],
+      investmentGoals: [],
+      investmentWatchlist: [],
+      investmentAiMessages: []
+    });
+
+    expect(countFinanceBackupRecords(payload)).toBe(4);
   });
 });
 

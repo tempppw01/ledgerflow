@@ -1438,6 +1438,13 @@ export function createFinanceBackupPayload(
   };
 }
 
+export function countFinanceBackupRecords(payload: FinanceBackupPayload): number {
+  return Object.values(payload.data).reduce(
+    (total, value) => total + (Array.isArray(value) ? value.length : 0),
+    0
+  );
+}
+
 export function parseFinanceBackupPayload(raw: string): FinanceBackupPayload {
   const normalizedRaw = raw.replace(/^\uFEFF/, '').trim();
   let parsed: unknown;

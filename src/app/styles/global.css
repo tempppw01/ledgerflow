@@ -9416,7 +9416,95 @@ body.categories-accounts-resizing {
 .database-data-hub-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
+}
+
+.database-backup-import-progress {
+  display: grid;
+  gap: 5px;
+  width: min(250px, 100%);
+  min-width: 210px;
+  padding: 6px 10px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.database-backup-import-progress-copy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  line-height: 1.35;
+}
+
+.database-backup-import-progress-copy strong {
+  color: var(--color-text-primary);
+  font-size: 11px;
+}
+
+.database-backup-import-progress-copy span {
+  white-space: nowrap;
+}
+
+.database-backup-import-progress-track {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--color-bg-subtle);
+}
+
+.database-backup-import-progress-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary);
+  transition: width 180ms ease;
+}
+
+.database-backup-import-progress.is-importing .database-backup-import-progress-track > span {
+  width: 32px !important;
+  animation: database-backup-import-pulse 1.1s ease-in-out infinite alternate;
+}
+
+.database-backup-import-progress.is-complete .database-backup-import-progress-track > span {
+  background: var(--color-success);
+}
+
+.database-backup-import-progress.is-error .database-backup-import-progress-copy strong {
+  color: var(--color-danger);
+}
+
+.database-backup-import-progress.is-error .database-backup-import-progress-track > span {
+  background: var(--color-danger);
+}
+
+@keyframes database-backup-import-pulse {
+  from {
+    transform: translateX(-32px);
+  }
+  to {
+    transform: translateX(210px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .database-backup-import-progress-track > span {
+    transition: none;
+  }
+
+  .database-backup-import-progress.is-importing .database-backup-import-progress-track > span {
+    animation: none;
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .database-backup-import-progress {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 0;
+  }
 }
 
 .database-backup-scope {
