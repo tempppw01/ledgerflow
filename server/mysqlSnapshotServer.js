@@ -5,14 +5,8 @@ import net from 'node:net';
 import { URL } from 'node:url';
 import { pathToFileURL } from 'node:url';
 import { withMysqlConnection } from './databaseConnection.js';
-import {
-  getDatabaseSetupStatus,
-  initializeDatabaseProvider
-} from './databaseProvider.js';
-import {
-  getRelationalDatabaseStatus,
-  migrateRelationalDatabase
-} from './relationalDatabase.js';
+import { getDatabaseSetupStatus, initializeDatabaseProvider } from './databaseProvider.js';
+import { getRelationalDatabaseStatus, migrateRelationalDatabase } from './relationalDatabase.js';
 import { createMysqlSqlExport, createSqliteDatabaseExport } from './sqlDatabaseExport.js';
 import {
   getRelationalBootstrap,
@@ -94,7 +88,10 @@ function jsonResponse(res, status, body, extraHeaders = {}) {
 }
 
 function sqlExportResponse(res, exportFile, provider) {
-  const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+  const timestamp = new Date()
+    .toISOString()
+    .replace(/[-:]/g, '')
+    .replace(/\.\d{3}Z$/, 'Z');
   const filename = `ledgerflow-${timestamp}.${exportFile.extension}`;
   res.writeHead(200, {
     'Content-Type': exportFile.contentType,
@@ -170,14 +167,20 @@ function clearedSessionCookie(req) {
     'Max-Age=0',
     'Expires=Thu, 01 Jan 1970 00:00:00 GMT',
     secureCookiesEnabled(req) ? 'Secure' : ''
-  ].filter(Boolean).join('; ');
+  ]
+    .filter(Boolean)
+    .join('; ');
 }
 
 function loginRateLimitKey(req, email) {
   const forwardedIp = String(req.headers['x-real-ip'] || '').trim();
   const remoteIp = forwardedIp || req.socket.remoteAddress || 'unknown';
   const emailHash = createHash('sha256')
-    .update(String(email || '').trim().toLowerCase())
+    .update(
+      String(email || '')
+        .trim()
+        .toLowerCase()
+    )
     .digest('hex');
   return `${remoteIp}:${emailHash}`;
 }
@@ -229,7 +232,9 @@ async function requireUserSession(req, res, provider) {
 }
 
 function normalizeFundCode(value) {
-  const code = String(value || '').replace(/\D/g, '').slice(0, 6);
+  const code = String(value || '')
+    .replace(/\D/g, '')
+    .slice(0, 6);
   if (!/^\d{6}$/.test(code)) {
     throw new Error('Fund code must contain exactly six digits.');
   }
@@ -250,53 +255,90 @@ function normalizeStockSecIds(value) {
   return uniqueSecIds;
 }
 
+async function getEastmoneyFundRealtimePrimary(code, signal) {
+  const headers = {
+    Referer: `https://fund.eastmoney.com/${code}.html`,
+    'User-Agent': 'Mozilla/5.0 LedgerFlow market-data-proxy'
+  };
+  const [profileResponse, netValueResponse] = await Promise.all([
+    fetch(`https://fund.eastmoney.com/pingzhongdata/${code}.js`, { headers, signal }),
+    fetch(
+      `https://api.fund.eastmoney.com/f10/lsjz?fundCode=${code}&pageIndex=1&pageSize=1&startDate=&endDate=`,
+      { headers, signal }
+    )
+  ]);
+
+  if (!profileResponse.ok || !netValueResponse.ok) {
+    throw new Error('Eastmoney fund endpoint is unavailable.');
+  }
+
+  const [profileScript, netValuePayload] = await Promise.all([
+    profileResponse.text(),
+    netValueResponse.json()
+  ]);
+  const readProfileString = (key) => {
+    const match = profileScript.match(new RegExp(`var\\s+${key}\\s*=\\s*"([^"]*)"`));
+    return match?.[1]?.trim() || '';
+  };
+  const netValue = netValuePayload?.Data?.LSJZList?.[0];
+  const name = readProfileString('fS_name');
+  if (!name || !netValue) {
+    throw new Error('Eastmoney fund response format is invalid.');
+  }
+
+  return {
+    fundcode: readProfileString('fS_code') || code,
+    name,
+    jzrq: String(netValue.FSRQ || ''),
+    dwjz: String(netValue.DWJZ || ''),
+    gsz: String(netValue.DWJZ || ''),
+    gszzl: String(netValue.JZZZL || ''),
+    gztime: String(netValue.FSRQ || '')
+  };
+}
+
+async function getTonghuashunFundRealtime(code, signal) {
+  const response = await fetch(`https://fund.10jqka.com.cn/data/client/myfund/${code}`, {
+    headers: { 'User-Agent': 'Mozilla/5.0 LedgerFlow market-data-proxy' },
+    signal
+  });
+  if (!response.ok) {
+    throw new Error('Tonghuashun fund endpoint is unavailable.');
+  }
+
+  const payload = await response.json();
+  const fund = payload?.data?.[0];
+  const name = String(fund?.name || '').trim();
+  const netValue = String(fund?.net || '').trim();
+  if (!name || !netValue) {
+    throw new Error('Tonghuashun fund response format is invalid.');
+  }
+
+  return {
+    fundcode: String(fund?.code || code).trim(),
+    name,
+    jzrq: String(fund?.enddate || '').trim(),
+    dwjz: netValue,
+    gsz: netValue,
+    gszzl: String(fund?.rate || '').trim(),
+    gztime: String(fund?.enddate || '').trim()
+  };
+}
+
 async function getEastmoneyFundRealtime(code) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
 
   try {
-    const headers = {
-      Referer: `https://fund.eastmoney.com/${code}.html`,
-      'User-Agent': 'Mozilla/5.0 LedgerFlow market-data-proxy'
-    };
-    const [profileResponse, netValueResponse] = await Promise.all([
-      fetch(`https://fund.eastmoney.com/pingzhongdata/${code}.js`, {
-        headers,
-        signal: controller.signal
-      }),
-      fetch(
-        `https://api.fund.eastmoney.com/f10/lsjz?fundCode=${code}&pageIndex=1&pageSize=1&startDate=&endDate=`,
-        { headers, signal: controller.signal }
-      )
-    ]);
-
-    if (!profileResponse.ok || !netValueResponse.ok) {
-      throw new Error('Eastmoney fund endpoint is unavailable.');
+    try {
+      return await getEastmoneyFundRealtimePrimary(code, controller.signal);
+    } catch (primaryError) {
+      try {
+        return await getTonghuashunFundRealtime(code, controller.signal);
+      } catch {
+        throw primaryError;
+      }
     }
-
-    const [profileScript, netValuePayload] = await Promise.all([
-      profileResponse.text(),
-      netValueResponse.json()
-    ]);
-    const readProfileString = (key) => {
-      const match = profileScript.match(new RegExp(`var\\s+${key}\\s*=\\s*"([^"]*)"`));
-      return match?.[1]?.trim() || '';
-    };
-    const netValue = netValuePayload?.Data?.LSJZList?.[0];
-    const name = readProfileString('fS_name');
-    if (!name || !netValue) {
-      throw new Error('Eastmoney fund response format is invalid.');
-    }
-
-    return {
-      fundcode: readProfileString('fS_code') || code,
-      name,
-      jzrq: String(netValue.FSRQ || ''),
-      dwjz: String(netValue.DWJZ || ''),
-      gsz: String(netValue.DWJZ || ''),
-      gszzl: String(netValue.JZZZL || ''),
-      gztime: String(netValue.FSRQ || '')
-    };
   } finally {
     clearTimeout(timeout);
   }
@@ -327,7 +369,9 @@ async function getTencentStockQuotes(secIds) {
   return body
     .split(';')
     .map((line) => {
-      const match = String(line || '').trim().match(/^v_([^=]+)="([\s\S]*)"$/);
+      const match = String(line || '')
+        .trim()
+        .match(/^v_([^=]+)="([\s\S]*)"$/);
       if (!match?.[2]) return null;
       const fields = match[2].split('~');
       const code = String(fields[2] || '').trim();
@@ -854,9 +898,7 @@ export async function handleRequest(req, res) {
 
     if (req.method === 'GET' && pathname === '/setup/status') {
       const setup = await getDatabaseSetupStatus();
-      const schema = setup.initialized
-        ? await migrateRelationalDatabase(setup.provider)
-        : null;
+      const schema = setup.initialized ? await migrateRelationalDatabase(setup.provider) : null;
       jsonResponse(res, 200, { ok: true, ...setup, schema });
       return;
     }
@@ -930,9 +972,14 @@ export async function handleRequest(req, res) {
         const result = await registerUser(provider, await readJsonBody(req), process.env, {
           userAgent: req.headers['user-agent']
         });
-        jsonResponse(res, 200, { ok: true, user: result.user, claimedLegacyData: result.claimedLegacyData }, {
-          'Set-Cookie': sessionCookie(req, result.session.token, result.session.expiresAt)
-        });
+        jsonResponse(
+          res,
+          200,
+          { ok: true, user: result.user, claimedLegacyData: result.claimedLegacyData },
+          {
+            'Set-Cookie': sessionCookie(req, result.session.token, result.session.expiresAt)
+          }
+        );
         return;
       }
 
@@ -953,9 +1000,14 @@ export async function handleRequest(req, res) {
             userAgent: req.headers['user-agent']
           });
           loginFailures.delete(limit.key);
-          jsonResponse(res, 200, { ok: true, user: result.user }, {
-            'Set-Cookie': sessionCookie(req, result.session.token, result.session.expiresAt)
-          });
+          jsonResponse(
+            res,
+            200,
+            { ok: true, user: result.user },
+            {
+              'Set-Cookie': sessionCookie(req, result.session.token, result.session.expiresAt)
+            }
+          );
         } catch (error) {
           recordLoginFailure(limit.key);
           throw error;
@@ -1007,33 +1059,50 @@ export async function handleRequest(req, res) {
     if (req.method === 'GET' && pathname === '/data/bootstrap') {
       const setup = await getDatabaseSetupStatus();
       if (!setup.initialized || setup.configurationMismatch) {
-        jsonResponse(res, 409, { ok: false, message: 'Database provider has not been initialized.' });
+        jsonResponse(res, 409, {
+          ok: false,
+          message: 'Database provider has not been initialized.'
+        });
         return;
       }
       await migrateRelationalDatabase(setup.provider);
       const session = await requireUserSession(req, res, setup.provider);
       if (!session) return;
-      jsonResponse(res, 200, await getRelationalBootstrap(setup.provider, process.env, session.user.ledgerUserId));
+      jsonResponse(
+        res,
+        200,
+        await getRelationalBootstrap(setup.provider, process.env, session.user.ledgerUserId)
+      );
       return;
     }
 
     if (req.method === 'GET' && pathname === '/data/status') {
       const setup = await getDatabaseSetupStatus();
       if (!setup.initialized || setup.configurationMismatch) {
-        jsonResponse(res, 409, { ok: false, message: 'Database provider has not been initialized.' });
+        jsonResponse(res, 409, {
+          ok: false,
+          message: 'Database provider has not been initialized.'
+        });
         return;
       }
       await migrateRelationalDatabase(setup.provider);
       const session = await requireUserSession(req, res, setup.provider);
       if (!session) return;
-      jsonResponse(res, 200, await getRelationalDataStatus(setup.provider, process.env, session.user.ledgerUserId));
+      jsonResponse(
+        res,
+        200,
+        await getRelationalDataStatus(setup.provider, process.env, session.user.ledgerUserId)
+      );
       return;
     }
 
     if ((req.method === 'PUT' || req.method === 'POST') && pathname === '/data/import') {
       const setup = await getDatabaseSetupStatus();
       if (!setup.initialized || setup.configurationMismatch) {
-        jsonResponse(res, 409, { ok: false, message: 'Database provider has not been initialized.' });
+        jsonResponse(res, 409, {
+          ok: false,
+          message: 'Database provider has not been initialized.'
+        });
         return;
       }
       await migrateRelationalDatabase(setup.provider);
@@ -1055,7 +1124,10 @@ export async function handleRequest(req, res) {
     if (req.method === 'GET' && pathname === '/data/export/sql') {
       const setup = await getDatabaseSetupStatus();
       if (!setup.initialized || setup.configurationMismatch) {
-        jsonResponse(res, 409, { ok: false, message: 'Database provider has not been initialized.' });
+        jsonResponse(res, 409, {
+          ok: false,
+          message: 'Database provider has not been initialized.'
+        });
         return;
       }
       await migrateRelationalDatabase(setup.provider);
@@ -1078,7 +1150,11 @@ export async function handleRequest(req, res) {
       const provider = await getActiveDatabaseProvider();
       const session = await requireUserSession(req, res, provider);
       if (!session) return;
-      jsonResponse(res, 200, await saveSnapshot(await readJsonBody(req), session.user.ledgerUserId));
+      jsonResponse(
+        res,
+        200,
+        await saveSnapshot(await readJsonBody(req), session.user.ledgerUserId)
+      );
       return;
     }
 

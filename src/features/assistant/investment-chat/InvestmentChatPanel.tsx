@@ -40,6 +40,7 @@ import {
 import { useAiSettings } from '../../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../../shared/store/useAppPreferences';
 import { useFinanceStore } from '../../../shared/store/useFinanceStore';
+import { ConfirmDialog } from '../../../shared/ui/ConfirmDialog';
 import { Toast } from '../../../shared/ui/Toast';
 import type { ToastVariant } from '../../../shared/ui/Toast';
 import { buildTimeContext } from '../workbench/workbenchUtils';
@@ -787,6 +788,7 @@ export function InvestmentChatPanel({
   const [activeTurnMessageId, setActiveTurnMessageId] = useState<string | null>(null);
   const [selectedHistoryMessageId, setSelectedHistoryMessageId] = useState('');
   const [clearContextVersion, setClearContextVersion] = useState(0);
+  const [clearContextConfirmOpen, setClearContextConfirmOpen] = useState(false);
   const historyTurns = useMemo(() => messages.filter((item) => item.role === 'user'), [messages]);
   const latestMessageId = messages[messages.length - 1]?.id || '';
 
@@ -816,13 +818,13 @@ export function InvestmentChatPanel({
   }, []);
 
   const clearContext = useCallback(() => {
-    if (!window.confirm('确定清空本次投资聊天上下文吗？此操作不可恢复。')) return;
     clearInvestmentAiMessages();
     messageRefs.current.clear();
     setActiveTurnMessageId(null);
     setPendingScrollMessageId(null);
     setSelectedHistoryMessageId('');
     setClearContextVersion((current) => current + 1);
+    setClearContextConfirmOpen(false);
   }, [clearInvestmentAiMessages]);
 
   useLayoutEffect(() => {
@@ -904,7 +906,7 @@ export function InvestmentChatPanel({
             <button
               type="button"
               className="investments-ai-clear-context"
-              onClick={clearContext}
+              onClick={() => setClearContextConfirmOpen(true)}
               aria-label="清空上下文"
               title="清空上下文"
             >
@@ -980,6 +982,16 @@ export function InvestmentChatPanel({
           clearContextVersion={clearContextVersion}
         />
       ) : null}
+
+      <ConfirmDialog
+        open={clearContextConfirmOpen}
+        title="清空聊天上下文"
+        description="确定清空本次投资聊天上下文吗？此操作不可恢复。"
+        confirmText="清空"
+        danger
+        onConfirm={clearContext}
+        onCancel={() => setClearContextConfirmOpen(false)}
+      />
     </section>
   );
 }

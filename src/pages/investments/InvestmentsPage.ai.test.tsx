@@ -371,7 +371,6 @@ describe('Investment assistant chat', () => {
   });
 
   it('clears persisted investment chat context from the message area', () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     useAppPreferences.setState({
       investmentAiMessages: [
         { id: 'user-1', role: 'user', text: '第一轮问题', createdAt: '2026-07-16T09:00:00.000Z' },
@@ -392,10 +391,13 @@ describe('Investment assistant chat', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '清空上下文' }));
 
-    expect(confirmSpy).toHaveBeenCalled();
+    expect(screen.getByRole('dialog', { name: '清空聊天上下文' })).toBeInTheDocument();
+    expect(useAppPreferences.getState().investmentAiMessages).toHaveLength(2);
+
+    fireEvent.click(screen.getByRole('button', { name: '清空' }));
+
     expect(useAppPreferences.getState().investmentAiMessages).toEqual([]);
     expect(screen.queryByText('第一轮问题')).not.toBeInTheDocument();
-    confirmSpy.mockRestore();
   });
 
   it('shows a progress stage while the investment answer is being generated', async () => {

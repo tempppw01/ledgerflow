@@ -1,4 +1,12 @@
-import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
+import {
+  ChangeEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
@@ -37,8 +45,21 @@ import {
 } from '../../features/transactions/model/exportTransactionsPdf';
 import { evaluateCalculatorExpression } from '../../features/transactions/model/calculator';
 import { buildPieGradient } from '../../features/transactions/model/chartUtils';
-import { buildBulkPrintStyles, printHtmlWithIframe } from '../../features/transactions/model/printUtils';
-import { txTypeLabel, txStatusLabel, maskShareText, buildTransactionShareText, type BillShareTemplate } from '../../features/transactions/model/shareUtils';
+import {
+  getDailyFlexibleBudget,
+  getQuickAddDailySpending
+} from '../../features/transactions/model/quickAddSummary';
+import {
+  buildBulkPrintStyles,
+  printHtmlWithIframe
+} from '../../features/transactions/model/printUtils';
+import {
+  txTypeLabel,
+  txStatusLabel,
+  maskShareText,
+  buildTransactionShareText,
+  type BillShareTemplate
+} from '../../features/transactions/model/shareUtils';
 import {
   resolveDateRange,
   useTransactionFilters
@@ -51,6 +72,7 @@ import {
   TransactionType
 } from '../../entities/transaction/types';
 import { useAiSettings } from '../../shared/store/useAiSettings';
+import { useSmartBudgetStore } from '../../shared/store/useSmartBudgetStore';
 import { useAuth } from '../../features/auth/ui/authContext';
 import {
   clearQuickTransactionDraft,
@@ -87,7 +109,6 @@ function easeOutCubic(t: number) {
   const p = Math.min(Math.max(t, 0), 1);
   return 1 - (1 - p) ** 3;
 }
-
 
 function escapeHtml(value: string) {
   return value
@@ -372,6 +393,7 @@ export function TransactionsPage() {
   const removeTransaction = useFinanceStore((s) => s.removeTransaction);
   const refundTransaction = useFinanceStore((s) => s.refundTransaction);
   const clearAllAccountBills = useFinanceStore((s) => s.clearAllAccountBills);
+  const confirmedSmartBudgetPlan = useSmartBudgetStore((s) => s.confirmedPlan);
 
   const aiBaseUrl = useAiSettings((s) => s.baseUrl);
   const aiApiKey = useAiSettings((s) => s.apiKey);
@@ -521,9 +543,7 @@ export function TransactionsPage() {
   const [quickAddAmount, setQuickAddAmount] = useState('');
   const [quickAddExpression, setQuickAddExpression] = useState(initialQuickDraft?.expression ?? '');
   const [quickAddCalculatedAmount, setQuickAddCalculatedAmount] = useState<number | null>(null);
-  const [quickAddDate, setQuickAddDate] = useState(
-    initialQuickDraft?.date ?? quickAddDefaultDate
-  );
+  const [quickAddDate, setQuickAddDate] = useState(initialQuickDraft?.date ?? quickAddDefaultDate);
   const [quickAddNote, setQuickAddNote] = useState(initialQuickDraft?.note ?? '');
   const [quickAddError, setQuickAddError] = useState('');
   const [quickAddDraftStatus, setQuickAddDraftStatus] = useState(
@@ -841,7 +861,11 @@ export function TransactionsPage() {
         income += amount;
         return;
       }
-      if (row.item.type === 'expense' || row.item.type === 'repayment' || row.item.type === 'budget') {
+      if (
+        row.item.type === 'expense' ||
+        row.item.type === 'repayment' ||
+        row.item.type === 'budget'
+      ) {
         expense += amount;
         if (!maxExpense || amount > maxExpense.item.amount) {
           maxExpense = row;
@@ -993,11 +1017,11 @@ export function TransactionsPage() {
 
   const quickAddDraftHasContent = Boolean(
     quickAddExpression.trim() ||
-      quickAddNote.trim() ||
-      quickAddType !== 'expense' ||
-      quickAddCategoryId !== (quickAddCategoryOptions[0]?.id ?? '') ||
-      quickAddAccountId !== (accounts[0]?.id ?? '') ||
-      quickAddDate !== quickAddDefaultDate
+    quickAddNote.trim() ||
+    quickAddType !== 'expense' ||
+    quickAddCategoryId !== (quickAddCategoryOptions[0]?.id ?? '') ||
+    quickAddAccountId !== (accounts[0]?.id ?? '') ||
+    quickAddDate !== quickAddDefaultDate
   );
 
   useEffect(() => {
@@ -1069,7 +1093,6 @@ export function TransactionsPage() {
     setQuickAddError('');
   }, []);
 
-
   useEffect(() => {
     const evaluated = evaluateCalculatorExpression(quickAddExpression);
     setQuickAddCalculatedAmount(evaluated);
@@ -1080,6 +1103,26 @@ export function TransactionsPage() {
     setQuickAddAmount(String(evaluated));
   }, [quickAddExpression]);
 
+  const quickAddBudgetSummary = useMemo(() => {
+    const proposedExpense = quickAddType === 'expense' ? Number(quickAddAmount) : 0;
+    const spending = getQuickAddDailySpending({
+      transactions,
+      date: quickAddDate,
+      proposedExpense
+    });
+    const dailyBudget = getDailyFlexibleBudget(
+      confirmedSmartBudgetPlan?.recommendation.flexibleBudget ?? null,
+      quickAddDate
+    );
+
+    return {
+      ...spending,
+      dailyBudget,
+      remaining:
+        dailyBudget === null ? null : Math.round((dailyBudget - spending.projected) * 100) / 100
+    };
+  }, [confirmedSmartBudgetPlan, quickAddAmount, quickAddDate, quickAddType, transactions]);
+
   useEffect(() => {
     if (!quickAddOpen) {
       return;
@@ -1087,7 +1130,11 @@ export function TransactionsPage() {
 
     const onKeyDown = (event: KeyboardEvent) => {
       const active = document.activeElement as HTMLElement | null;
-      if (active?.tagName === 'INPUT' || active?.tagName === 'TEXTAREA' || active?.tagName === 'SELECT') {
+      if (
+        active?.tagName === 'INPUT' ||
+        active?.tagName === 'TEXTAREA' ||
+        active?.tagName === 'SELECT'
+      ) {
         const id = active.getAttribute('id') || '';
         if (id && id !== 'quick-add-expression') {
           return;
@@ -1291,7 +1338,7 @@ export function TransactionsPage() {
     }
 
     const actionLabel = mode === 'overwrite' ? '覆盖' : mode === 'merge' ? '合并' : '增量导入';
-      const message = `第 3 步（导入完成）：新增 ${result.append.length} 条，更新 ${result.update.length} 条${result.skipped ? `，跳过 ${result.skipped} 条` : ''}（${actionLabel}）。`;
+    const message = `第 3 步（导入完成）：新增 ${result.append.length} 条，更新 ${result.update.length} 条${result.skipped ? `，跳过 ${result.skipped} 条` : ''}（${actionLabel}）。`;
     const report = [
       `导入报告`,
       `文件：${pendingImport.fileName}`,
@@ -1327,7 +1374,9 @@ export function TransactionsPage() {
 
     setSelectedIds((prev) => prev.filter((id) => !pendingDeleteIds.includes(id)));
     showToast(
-      pendingDeleteIds.length > 1 ? `已将 ${pendingDeleteIds.length} 条交易移入回收站。` : '交易已移入回收站。',
+      pendingDeleteIds.length > 1
+        ? `已将 ${pendingDeleteIds.length} 条交易移入回收站。`
+        : '交易已移入回收站。',
       'success'
     );
     setPendingDeleteIds([]);
@@ -1642,10 +1691,7 @@ export function TransactionsPage() {
       try {
         printHtmlWithIframe(html);
       } catch (error) {
-        showToast(
-          error instanceof Error ? error.message : '打印失败，请检查浏览器权限。',
-          'error'
-        );
+        showToast(error instanceof Error ? error.message : '打印失败，请检查浏览器权限。', 'error');
       }
       return;
     }
@@ -1661,7 +1707,6 @@ export function TransactionsPage() {
       printWindow.print();
     }, 120);
   };
-
 
   const recategorizeByAi = async (
     tx: TransactionItem,
@@ -2094,13 +2139,10 @@ export function TransactionsPage() {
     setShareDialogOpen(true);
   }, [selected]);
 
-  const handleOpenShareDialogForId = useCallback(
-    (id: string) => {
-      setSelectedId(id);
-      setShareDialogOpen(true);
-    },
-    []
-  );
+  const handleOpenShareDialogForId = useCallback((id: string) => {
+    setSelectedId(id);
+    setShareDialogOpen(true);
+  }, []);
 
   const handleCloseShareDialog = useCallback(() => {
     setShareDialogOpen(false);
@@ -2290,7 +2332,9 @@ export function TransactionsPage() {
           <strong>{pendingImportPreview.fileName}</strong>
           <p>{pendingImportPreview.modeHint}</p>
         </div>
-        <span className={`import-confirm-mode-badge ${pendingImport?.mode === 'overwrite' ? 'danger' : pendingImport?.mode === 'merge' ? 'warning' : 'safe'}`}>
+        <span
+          className={`import-confirm-mode-badge ${pendingImport?.mode === 'overwrite' ? 'danger' : pendingImport?.mode === 'merge' ? 'warning' : 'safe'}`}
+        >
           {pendingImportPreview.modeLabel}
         </span>
       </section>
@@ -2303,7 +2347,9 @@ export function TransactionsPage() {
         <div className="import-confirm-meta-card">
           <span>识别</span>
           <strong>{pendingImportPreview.parsedCount} 条</strong>
-          <small>数据行 {pendingImportPreview.dataLines} · 跳过 {pendingImportPreview.skippedCount}</small>
+          <small>
+            数据行 {pendingImportPreview.dataLines} · 跳过 {pendingImportPreview.skippedCount}
+          </small>
         </div>
         <div className="import-confirm-meta-card import-confirm-meta-card-accent">
           <span>新增</span>
@@ -2329,14 +2375,20 @@ export function TransactionsPage() {
             pendingImportPreview.previewLines.map((item, index) => {
               const sign = item.type === 'income' ? '+' : '-';
               return (
-                <div key={`preview-${index}-${item.date}-${item.amount}`} className="import-confirm-row">
+                <div
+                  key={`preview-${index}-${item.date}-${item.amount}`}
+                  className="import-confirm-row"
+                >
                   <span className="import-confirm-row-index">{index + 1}</span>
                   <div className="import-confirm-row-main">
                     <strong>{item.note || '无备注'}</strong>
                     <small>{item.date.slice(0, 10)}</small>
                   </div>
-                  <span className={`import-confirm-row-amount ${item.type === 'income' ? 'income' : 'expense'}`}>
-                    {sign}{formatCurrencyAuto(item.amount)}
+                  <span
+                    className={`import-confirm-row-amount ${item.type === 'income' ? 'income' : 'expense'}`}
+                  >
+                    {sign}
+                    {formatCurrencyAuto(item.amount)}
                   </span>
                 </div>
               );
@@ -2347,7 +2399,7 @@ export function TransactionsPage() {
         </div>
       </section>
 
-      {(pendingImportPreview.appendLines.length || pendingImportPreview.updateLines.length) ? (
+      {pendingImportPreview.appendLines.length || pendingImportPreview.updateLines.length ? (
         <section className="import-confirm-impact-grid">
           <div className="import-confirm-section">
             <div className="import-confirm-section-head">
@@ -2357,14 +2409,20 @@ export function TransactionsPage() {
             <div className="import-confirm-list compact">
               {pendingImportPreview.appendLines.length ? (
                 pendingImportPreview.appendLines.map((item, index) => (
-                  <div key={`append-${index}-${item.date}-${item.amount}`} className="import-confirm-row compact">
+                  <div
+                    key={`append-${index}-${item.date}-${item.amount}`}
+                    className="import-confirm-row compact"
+                  >
                     <span className="import-confirm-row-index positive">+{index + 1}</span>
                     <div className="import-confirm-row-main">
                       <strong>{item.note || '无备注'}</strong>
                       <small>{item.date.slice(0, 10)}</small>
                     </div>
-                    <span className={`import-confirm-row-amount ${item.type === 'income' ? 'income' : 'expense'}`}>
-                      {item.type === 'income' ? '+' : '-'}{formatCurrencyAuto(item.amount)}
+                    <span
+                      className={`import-confirm-row-amount ${item.type === 'income' ? 'income' : 'expense'}`}
+                    >
+                      {item.type === 'income' ? '+' : '-'}
+                      {formatCurrencyAuto(item.amount)}
                     </span>
                   </div>
                 ))
@@ -2382,14 +2440,20 @@ export function TransactionsPage() {
             <div className="import-confirm-list compact">
               {pendingImportPreview.updateLines.length ? (
                 pendingImportPreview.updateLines.map(({ payload }, index) => (
-                  <div key={`update-${index}-${payload.date}-${payload.amount}`} className="import-confirm-row compact">
+                  <div
+                    key={`update-${index}-${payload.date}-${payload.amount}`}
+                    className="import-confirm-row compact"
+                  >
                     <span className="import-confirm-row-index neutral">~{index + 1}</span>
                     <div className="import-confirm-row-main">
                       <strong>{payload.note || '无备注'}</strong>
                       <small>{payload.date.slice(0, 10)}</small>
                     </div>
-                    <span className={`import-confirm-row-amount ${payload.type === 'income' ? 'income' : 'expense'}`}>
-                      {payload.type === 'income' ? '+' : '-'}{formatCurrencyAuto(payload.amount)}
+                    <span
+                      className={`import-confirm-row-amount ${payload.type === 'income' ? 'income' : 'expense'}`}
+                    >
+                      {payload.type === 'income' ? '+' : '-'}
+                      {formatCurrencyAuto(payload.amount)}
                     </span>
                   </div>
                 ))
@@ -2401,8 +2465,9 @@ export function TransactionsPage() {
         </section>
       ) : null}
     </div>
-  ) : pendingImportDescription;
-
+  ) : (
+    pendingImportDescription
+  );
 
   return (
     <div className="transactions-page">
@@ -2441,8 +2506,13 @@ export function TransactionsPage() {
           </p>
         ) : null}
         {sidePanelVisible ? (
-          <div className="transactions-current-bill-strip" aria-label={t('transactions.ui.billFilterState')}>
-            <span>{t('transactions.ui.billPeriod')}: {currentPeriodLabel}</span>
+          <div
+            className="transactions-current-bill-strip"
+            aria-label={t('transactions.ui.billFilterState')}
+          >
+            <span>
+              {t('transactions.ui.billPeriod')}: {currentPeriodLabel}
+            </span>
             <span>
               {t('transactions.ui.filteredCount')}: {sortedRows.length} {t('transactions.ui.items')}
             </span>
@@ -2466,8 +2536,11 @@ export function TransactionsPage() {
                 {t('transactions.ui.processed')} {bulkAiProgress.processed} / {bulkAiProgress.total}
               </span>
               <span>
-                {t('transactions.ui.modelCount')} {bulkAiProgress.changed} · {t('transactions.ui.fallbackCount')} {bulkAiProgress.fallbackChanged}
-                {bulkAiProgress.aborted > 0 ? ` · ${t('transactions.ui.cancelled')} ${bulkAiProgress.aborted}` : ''}
+                {t('transactions.ui.modelCount')} {bulkAiProgress.changed} ·{' '}
+                {t('transactions.ui.fallbackCount')} {bulkAiProgress.fallbackChanged}
+                {bulkAiProgress.aborted > 0
+                  ? ` · ${t('transactions.ui.cancelled')} ${bulkAiProgress.aborted}`
+                  : ''}
               </span>
             </div>
             <div className="ai-progress-track" aria-label={t('transactions.ui.aiProgress')}>
@@ -2604,7 +2677,10 @@ export function TransactionsPage() {
               onMouseDown={handleSplitDividerMouseDown}
             />
 
-            <aside className="transactions-split-side panel" aria-label={t('transactions.ui.currentBillChartView')}>
+            <aside
+              className="transactions-split-side panel"
+              aria-label={t('transactions.ui.currentBillChartView')}
+            >
               <h3 style={{ marginTop: 0 }}>{t('transactions.ui.currentBillView')}</h3>
               <div className="transactions-side-chart-card transactions-current-bill-panel">
                 <h4>{t('transactions.ui.currentBillOverview')}</h4>
@@ -2701,8 +2777,8 @@ export function TransactionsPage() {
                     className="transactions-current-bill-max"
                     onClick={() => setSelectedId(currentBillSummary.maxExpense?.item.id || null)}
                   >
-                    {t('transactions.ui.maxExpense')}: {currentBillSummary.maxExpense.categoryName} ·{' '}
-                    {formatCurrencyAuto(currentBillSummary.maxExpense.item.amount)}
+                    {t('transactions.ui.maxExpense')}: {currentBillSummary.maxExpense.categoryName}{' '}
+                    · {formatCurrencyAuto(currentBillSummary.maxExpense.item.amount)}
                   </button>
                 ) : (
                   <small className="muted">{t('transactions.ui.noExpenseData')}</small>
@@ -2723,8 +2799,8 @@ export function TransactionsPage() {
                     {categoryPieData.length === 0 ? <p className="muted">暂无数据</p> : null}
                     {categoryPieData.map((item) => (
                       <p key={item.name}>
-                        <span style={{ color: item.color }}>●</span> {item.name} · {item.percent.toFixed(1)}% ·{' '}
-                        {formatCurrencyAuto(item.amount)}
+                        <span style={{ color: item.color }}>●</span> {item.name} ·{' '}
+                        {item.percent.toFixed(1)}% · {formatCurrencyAuto(item.amount)}
                       </p>
                     ))}
                   </div>
@@ -2819,19 +2895,23 @@ export function TransactionsPage() {
             onClick={(event) => event.stopPropagation()}
           >
             <header className="quick-add-header">
+              <button
+                type="button"
+                className="quick-add-header-action"
+                onClick={closeQuickAddDrawer}
+                aria-label="取消快速记账"
+              >
+                取消
+              </button>
               <h3>记一笔</h3>
               <button
                 type="button"
-                className="icon-btn"
-                onClick={closeQuickAddDrawer}
-                aria-label="关闭快速记账"
+                className="quick-add-header-action is-primary"
+                onClick={handleSaveQuickAdd}
               >
-                ✕
+                完成
               </button>
             </header>
-            <small className="quick-add-draft-status" role="status">
-              {quickAddDraftStatus || '输入内容会自动保存为草稿'}
-            </small>
 
             <div className="quick-add-body">
               <section className="quick-add-main">
@@ -2861,9 +2941,10 @@ export function TransactionsPage() {
                       id="quick-add-expression"
                       autoFocus
                       inputMode="decimal"
-                      placeholder="0.00"
+                      placeholder="0"
                       value={quickAddExpression}
                       onChange={(event) => setQuickAddExpression(event.target.value)}
+                      aria-describedby="quick-add-budget-hint"
                     />
                   </div>
                   {quickAddExpression &&
@@ -2873,8 +2954,52 @@ export function TransactionsPage() {
                   ) : null}
                 </div>
 
-                <div className="quick-add-grid quick-add-grid-primary">
-                  <div className="field">
+                <div className="quick-add-budget-hint" id="quick-add-budget-hint">
+                  {quickAddBudgetSummary.dailyBudget === null ? (
+                    <span>
+                      当日已支出 <strong>{formatCurrency(quickAddBudgetSummary.spent)}</strong>
+                      {quickAddType === 'expense' &&
+                      quickAddBudgetSummary.projected !== quickAddBudgetSummary.spent
+                        ? `，记入后 ${formatCurrency(quickAddBudgetSummary.projected)}`
+                        : ''}
+                    </span>
+                  ) : (
+                    <>
+                      <span>
+                        当日参考预算{' '}
+                        <strong>{formatCurrency(quickAddBudgetSummary.dailyBudget)}</strong>
+                      </span>
+                      <span>
+                        已支出 {formatCurrency(quickAddBudgetSummary.spent)}，记入后剩余{' '}
+                        <strong
+                          className={
+                            quickAddBudgetSummary.remaining !== null &&
+                            quickAddBudgetSummary.remaining < 0
+                              ? 'is-over'
+                              : ''
+                          }
+                        >
+                          {formatCurrency(quickAddBudgetSummary.remaining ?? 0)}
+                        </strong>
+                      </span>
+                    </>
+                  )}
+                  <i
+                    className="quick-add-budget-progress"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        quickAddBudgetSummary.dailyBudget
+                          ? (quickAddBudgetSummary.projected / quickAddBudgetSummary.dailyBudget) *
+                              100
+                          : 0
+                      )}%`
+                    }}
+                  />
+                </div>
+
+                <div className="quick-add-meta-grid">
+                  <div className="quick-add-meta-field">
                     <label htmlFor="quick-add-category">分类</label>
                     <select
                       id="quick-add-category"
@@ -2888,7 +3013,7 @@ export function TransactionsPage() {
                       ))}
                     </select>
                   </div>
-                  <div className="field">
+                  <div className="quick-add-meta-field">
                     <label htmlFor="quick-add-account">账户</label>
                     <select
                       id="quick-add-account"
@@ -2902,10 +3027,7 @@ export function TransactionsPage() {
                       ))}
                     </select>
                   </div>
-                </div>
-
-                <div className="quick-add-grid quick-add-grid-secondary">
-                  <div className="field">
+                  <div className="quick-add-meta-field">
                     <label htmlFor="quick-add-date">日期</label>
                     <input
                       id="quick-add-date"
@@ -2914,7 +3036,7 @@ export function TransactionsPage() {
                       onChange={(event) => setQuickAddDate(event.target.value)}
                     />
                   </div>
-                  <div className="field">
+                  <div className="quick-add-meta-field is-note">
                     <label htmlFor="quick-add-note">备注</label>
                     <input
                       id="quick-add-note"
@@ -2930,45 +3052,15 @@ export function TransactionsPage() {
 
               <section className="quick-add-keypad-panel" role="group" aria-label="金额键盘">
                 <AmountKeypad onKey={handleQuickAddKeypadInput} />
-                <div className="quick-add-keypad-actions">
-                  <button
-                    type="button"
-                    className="quick-add-key quick-add-key-muted"
-                    onClick={() => handleQuickAddKeypadInput('backspace')}
-                    aria-label="退格"
-                    title="退格"
-                  >
-                    ←
-                  </button>
-                  <button
-                    type="button"
-                    className="quick-add-key quick-add-key-muted"
-                    onClick={() => handleQuickAddKeypadInput('clear')}
-                    aria-label="清空金额"
-                    title="清空"
-                  >
-                    C
-                  </button>
-                  <button
-                    type="button"
-                    className="quick-add-key quick-add-key-primary"
-                    onClick={() => handleQuickAddKeypadInput('=')}
-                    aria-label="计算金额"
-                    title="计算"
-                  >
-                    =
-                  </button>
-                </div>
+                <p className="quick-add-keypad-tip">支持加减乘除；按 Enter 计算</p>
               </section>
             </div>
 
             <footer className="quick-add-footer">
-              <button type="button" onClick={closeQuickAddDrawer}>
-                取消
-              </button>
               <button type="button" className="primary" onClick={handleSaveQuickAdd}>
-                保存
+                完成记账
               </button>
+              <small role="status">{quickAddDraftStatus || '输入内容会自动保存为草稿'}</small>
             </footer>
           </aside>
         </div>
@@ -2978,7 +3070,11 @@ export function TransactionsPage() {
         open={Boolean(pendingImport)}
         title="第 2 步：导入预检确认"
         description={pendingImportDialogDescription}
-        confirmText={pendingImport?.mode === 'overwrite' ? '确认进入第 3 步（覆盖写入）' : '确认进入第 3 步（写入账本）'}
+        confirmText={
+          pendingImport?.mode === 'overwrite'
+            ? '确认进入第 3 步（覆盖写入）'
+            : '确认进入第 3 步（写入账本）'
+        }
         cancelText="取消"
         danger={pendingImport?.mode === 'overwrite'}
         onConfirm={handleConfirmPendingImport}
@@ -2999,13 +3095,25 @@ export function TransactionsPage() {
               <div style={{ display: 'grid', gap: 8 }}>
                 <strong>分享模板</strong>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button type="button" className={shareTemplate === 'full' ? 'primary' : ''} onClick={() => setShareTemplate('full')}>
+                  <button
+                    type="button"
+                    className={shareTemplate === 'full' ? 'primary' : ''}
+                    onClick={() => setShareTemplate('full')}
+                  >
                     完整
                   </button>
-                  <button type="button" className={shareTemplate === 'masked' ? 'primary' : ''} onClick={() => setShareTemplate('masked')}>
+                  <button
+                    type="button"
+                    className={shareTemplate === 'masked' ? 'primary' : ''}
+                    onClick={() => setShareTemplate('masked')}
+                  >
                     脱敏
                   </button>
-                  <button type="button" className={shareTemplate === 'summary' ? 'primary' : ''} onClick={() => setShareTemplate('summary')}>
+                  <button
+                    type="button"
+                    className={shareTemplate === 'summary' ? 'primary' : ''}
+                    onClick={() => setShareTemplate('summary')}
+                  >
                     摘要
                   </button>
                 </div>

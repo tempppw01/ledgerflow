@@ -6828,7 +6828,7 @@ input[type='date']:focus {
 }
 
 .quick-add-drawer {
-  width: min(720px, 100%);
+  width: min(760px, 100%);
   max-height: calc(100vh - 32px);
   max-height: calc(100dvh - 32px);
   background: var(--color-bg-elevated);
@@ -6841,28 +6841,37 @@ input[type='date']:focus {
 }
 
 .quick-add-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--color-divider);
 }
 
 .quick-add-header h3 {
   margin: 0;
+  font-size: var(--font-md);
 }
 
-.quick-add-draft-status {
-  display: block;
-  padding: var(--space-2) var(--space-4) 0;
+.quick-add-header-action {
+  justify-self: start;
+  min-height: auto;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
   color: var(--color-text-secondary);
+  font-weight: 700;
+}
+
+.quick-add-header-action.is-primary {
+  justify-self: end;
+  color: var(--color-primary);
 }
 
 .quick-add-body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(188px, 224px);
-  gap: var(--space-4);
-  padding: var(--space-4);
+  grid-template-columns: minmax(0, 1fr) minmax(232px, 276px);
+  gap: var(--space-5);
+  padding: 0 var(--space-5) var(--space-4);
   overflow: auto;
 }
 
@@ -6878,18 +6887,21 @@ input[type='date']:focus {
 }
 
 .quick-add-amount-stage {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 6px var(--space-3);
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--color-divider);
+  display: flex;
+  min-height: 178px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .quick-add-amount-stage > label {
-  align-self: center;
-  color: var(--color-text-secondary);
-  font-size: var(--font-sm);
-  font-weight: 700;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .quick-add-type-tabs {
@@ -6897,13 +6909,13 @@ input[type='date']:focus {
   gap: 2px;
   padding: 2px;
   border: 1px solid var(--color-border-light);
-  border-radius: 7px;
-  background: var(--color-bg-subtle);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary-bg) 68%, var(--color-bg-subtle));
 }
 
 .quick-add-type-tabs button {
-  min-height: 26px;
-  padding: 0 9px;
+  min-height: 28px;
+  padding: 0 12px;
   border: 0;
   border-radius: 5px;
   background: transparent;
@@ -6920,23 +6932,23 @@ input[type='date']:focus {
 
 .quick-add-amount-input {
   display: flex;
-  grid-column: 1 / -1;
   gap: 8px;
   align-items: baseline;
+  justify-content: center;
   min-width: 0;
 }
 
 .quick-add-amount-input > span {
   color: var(--color-text-secondary);
   font-family: var(--font-number);
-  font-size: 22px;
+  font-size: clamp(36px, 6vw, 56px);
   font-weight: 700;
 }
 
 .quick-add-amount-input input {
-  width: 100%;
-  min-width: 0;
-  height: 48px;
+  width: min(100%, 390px);
+  min-width: 120px;
+  height: 74px;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -6944,7 +6956,7 @@ input[type='date']:focus {
   box-shadow: none;
   color: var(--color-text-primary);
   font-family: var(--font-number);
-  font-size: 32px;
+  font-size: clamp(52px, 9vw, 76px);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
@@ -6955,9 +6967,53 @@ input[type='date']:focus {
 }
 
 .quick-add-amount-stage small {
-  grid-column: 1 / -1;
   color: var(--color-text-secondary);
   font-size: 12px;
+}
+
+.quick-add-budget-hint {
+  display: grid;
+  gap: 5px;
+  padding: 11px 12px 12px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 40%, var(--color-border-light));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-primary-bg) 45%, var(--color-bg-elevated));
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.quick-add-budget-hint strong {
+  color: var(--color-text-primary);
+  font-family: var(--font-number);
+}
+
+.quick-add-budget-hint strong.is-over {
+  color: var(--color-danger);
+}
+
+.quick-add-budget-progress {
+  display: block;
+  max-width: 100%;
+  height: 4px;
+  margin-top: 2px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  transition: width 160ms ease;
+}
+
+.quick-add-budget-hint::after {
+  content: '';
+  grid-row: 3;
+  height: 4px;
+  margin-top: -6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-bg-subtle));
+}
+
+.quick-add-budget-progress {
+  grid-row: 3;
+  z-index: 1;
 }
 
 .quick-add-row {
@@ -6984,13 +7040,74 @@ input[type='date']:focus {
   grid-template-columns: minmax(132px, 0.76fr) minmax(0, 1.24fr);
 }
 
+.quick-add-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.quick-add-meta-field {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.quick-add-meta-field label {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.quick-add-meta-field select,
+.quick-add-meta-field input {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 4px 8px;
+  border-color: transparent;
+  border-radius: 8px;
+  background: var(--color-bg-subtle);
+  font-size: 13px;
+}
+
+.quick-add-meta-field select:focus,
+.quick-add-meta-field input:focus {
+  border-color: var(--color-primary-border);
+}
+
 .quick-add-keypad-panel {
   display: grid;
-  align-content: start;
-  gap: 6px;
+  align-content: end;
+  gap: 10px;
   min-width: 0;
-  padding-left: var(--space-4);
+  padding-left: var(--space-5);
   border-left: 1px solid var(--color-divider);
+}
+
+.quick-add-keypad-panel .amount-keypad {
+  gap: 8px;
+}
+
+.quick-add-keypad-panel .amount-keypad button {
+  min-height: 46px;
+  border-color: transparent;
+  border-radius: 10px;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-primary);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.quick-add-keypad-panel .amount-keypad .amount-keypad-confirm {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.quick-add-keypad-tip {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  text-align: center;
 }
 
 .quick-add-keypad {
@@ -7133,11 +7250,22 @@ input[type='date']:focus {
 
 .quick-add-footer {
   display: flex;
-  justify-content: flex-end;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
   padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--color-divider);
+}
+
+.quick-add-footer small {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.quick-add-footer .primary {
+  order: 2;
+  min-width: 132px;
 }
 
 .transaction-edit-form {
