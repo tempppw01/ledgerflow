@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { DatabaseSync } from 'node:sqlite';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -141,6 +142,19 @@ test('HTTP auth protects relational data and scopes it to the session user', asy
     assert.equal(secondBootstrap.counts.transactions, 1);
     assert.equal(ownerBootstrap.data.finance.transactions[0].id, 'owner-transaction');
     assert.equal(secondBootstrap.data.finance.transactions[0].id, 'second-transaction');
+
+    const sqlExport = await request('/api/data/export/sql', { headers: { Cookie: ownerCookie } });
+    assert.equal(sqlExport.status, 200);
+    assert.equal(sqlExport.headers.get('x-ledgerflow-database-provider'), 'sqlite');
+    assert.match(sqlExport.headers.get('content-disposition') || '', /\.sqlite/);
+    const exportedDatabasePath = path.join(dataDirectory, 'exported.sqlite');
+    const exportedBytes = Buffer.from(await sqlExport.arrayBuffer());
+    await writeFile(exportedDatabasePath, exportedBytes);
+    const exportedDatabase = new DatabaseSync(exportedDatabasePath);
+    assert.equal(exportedDatabase.prepare("SELECT COUNT(*) AS count FROM ledger_transactions").get().count, 1);
+    assert.equal(exportedDatabase.prepare('SELECT COUNT(*) AS count FROM auth_users').get().count, 1);
+    assert.equal(exportedDatabase.prepare('SELECT id FROM ledger_transactions').get().id, 'owner-transaction');
+    exportedDatabase.close();
 
     const logout = await post('/api/auth/logout', {}, ownerCookie);
     assert.equal(logout.status, 200);

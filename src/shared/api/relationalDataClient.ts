@@ -25,6 +25,12 @@ async function readResponse<T>(response: Response): Promise<T> {
   return body;
 }
 
+function exportFilename(response: Response, fallbackExtension: string) {
+  const contentDisposition = response.headers.get('content-disposition') || '';
+  const match = contentDisposition.match(/filename="?([^";]+)"?/i);
+  return match?.[1] || `ledgerflow-export.${fallbackExtension}`;
+}
+
 export async function getRelationalBootstrap(): Promise<RelationalBootstrapResponse> {
   return readResponse<RelationalBootstrapResponse>(
     await fetch(getUrl('/data/bootstrap'), { credentials: 'same-origin' })
@@ -45,4 +51,24 @@ export async function importRelationalData(payload: unknown): Promise<{
       body: JSON.stringify(payload)
     })
   );
+}
+
+export async function downloadSqlDatabaseExport(): Promise<{ filename: string; provider: string }> {
+  const response = await fetch(getUrl('/data/export/sql'), { credentials: 'same-origin' });
+  if (!response.ok) {
+    await readResponse(response);
+  }
+
+  const provider = response.headers.get('x-ledgerflow-database-provider') || '';
+  const filename = exportFilename(response, provider === 'sqlite' ? 'sqlite' : 'sql');
+  const blob = await response.blob();
+  const href = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = href;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(href), 0);
+  return { filename, provider };
 }

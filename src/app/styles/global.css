@@ -6852,6 +6852,12 @@ input[type='date']:focus {
   margin: 0;
 }
 
+.quick-add-draft-status {
+  display: block;
+  padding: var(--space-2) var(--space-4) 0;
+  color: var(--color-text-secondary);
+}
+
 .quick-add-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(188px, 224px);

@@ -43,7 +43,10 @@ import { BACKUP_ICON_URL, RESTORE_ICON_URL } from '../../shared/config/brandAsse
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { useGlobalMemoryStore } from '../../shared/store/useGlobalMemoryStore';
-import { importRelationalData } from '../../shared/api/relationalDataClient';
+import {
+  downloadSqlDatabaseExport,
+  importRelationalData
+} from '../../shared/api/relationalDataClient';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { PasswordInput } from '../../shared/ui/PasswordInput';
 import { Toast, ToastVariant } from '../../shared/ui/Toast';
@@ -389,6 +392,8 @@ export function DatabaseSettingsPage() {
   const [webdavAdvancedOpen, setWebdavAdvancedOpen] = useState(false);
   const [objectStorageAdvancedOpen, setObjectStorageAdvancedOpen] = useState(false);
   const [objectStorageStatus, setObjectStorageStatus] = useState('');
+  const [sqlExporting, setSqlExporting] = useState(false);
+  const [sqlExportStatus, setSqlExportStatus] = useState('');
   const [backupScope, setBackupScope] = useState<FinanceBackupScope>(() => loadStoredBackupScope());
 
   const totalRows = useMemo(
@@ -442,6 +447,19 @@ export function DatabaseSettingsPage() {
   const handleServerApiTokenChange = (value: string) => {
     setServerApiToken(value);
     writeStoredLedgerflowApiToken(value);
+  };
+
+  const handleSqlDatabaseExport = async () => {
+    try {
+      setSqlExporting(true);
+      setSqlExportStatus('正在生成数据库文件...');
+      const result = await downloadSqlDatabaseExport();
+      setSqlExportStatus(`已下载 ${result.filename}`);
+    } catch (error) {
+      setSqlExportStatus(error instanceof Error ? error.message : 'SQL 数据库导出失败');
+    } finally {
+      setSqlExporting(false);
+    }
   };
 
   const getCurrentBackupSnapshot = () => ({
@@ -1079,6 +1097,35 @@ export function DatabaseSettingsPage() {
       {backupWorkspace === 'database' ? (
         <div className="database-console-channel">
           <DatabaseProviderSetupPanel />
+          <section className="panel database-remote-backup-card database-sql-export-card">
+            <div className="database-remote-backup-head">
+              <div>
+                <div className="row" style={{ gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                  <h3 style={{ margin: 0 }}>导出 SQL 数据库</h3>
+                  <span className="sync-tip" style={{ whiteSpace: 'nowrap' }}>
+                    SQLite 导出 .sqlite · MySQL 导出 .sql
+                  </span>
+                </div>
+                <p className="sync-tip" style={{ margin: '6px 0 0' }}>
+                  仅导出当前登录账号及其关联数据，并保留可导入所需的表结构。请妥善保管导出文件。
+                </p>
+              </div>
+            </div>
+            <div className="database-remote-backup-body">
+              <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="primary button-with-icon"
+                  onClick={() => void handleSqlDatabaseExport()}
+                  disabled={!hasHydrated || sqlExporting}
+                >
+                  <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
+                  {sqlExporting ? '正在导出...' : '下载 SQL 数据库'}
+                </button>
+                {sqlExportStatus ? <span className="sync-tip" role="status">{sqlExportStatus}</span> : null}
+              </div>
+            </div>
+          </section>
           <MysqlSnapshotPanel
             disabled={!hasHydrated}
             canCreateBackup={canCreateBackup}

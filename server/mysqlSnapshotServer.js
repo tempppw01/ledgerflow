@@ -13,6 +13,7 @@ import {
   getRelationalDatabaseStatus,
   migrateRelationalDatabase
 } from './relationalDatabase.js';
+import { createMysqlSqlExport, createSqliteDatabaseExport } from './sqlDatabaseExport.js';
 import {
   getRelationalBootstrap,
   getRelationalDataStatus,
@@ -90,6 +91,20 @@ function jsonResponse(res, status, body, extraHeaders = {}) {
     ...extraHeaders
   });
   res.end(text);
+}
+
+function sqlExportResponse(res, exportFile, provider) {
+  const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+  const filename = `ledgerflow-${timestamp}.${exportFile.extension}`;
+  res.writeHead(200, {
+    'Content-Type': exportFile.contentType,
+    'Content-Length': exportFile.content.length,
+    'Content-Disposition': `attachment; filename="${filename}"`,
+    'X-LedgerFlow-Database-Provider': provider,
+    'Cache-Control': 'no-store',
+    ...(res.ledgerflowCorsHeaders || {})
+  });
+  res.end(exportFile.content);
 }
 
 function normalizePath(pathname) {
@@ -1034,6 +1049,23 @@ export async function handleRequest(req, res) {
           session.user.ledgerUserId
         )
       );
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/data/export/sql') {
+      const setup = await getDatabaseSetupStatus();
+      if (!setup.initialized || setup.configurationMismatch) {
+        jsonResponse(res, 409, { ok: false, message: 'Database provider has not been initialized.' });
+        return;
+      }
+      await migrateRelationalDatabase(setup.provider);
+      const session = await requireUserSession(req, res, setup.provider);
+      if (!session) return;
+      const exportFile =
+        setup.provider === 'sqlite'
+          ? await createSqliteDatabaseExport(process.env, session.user.ledgerUserId)
+          : await createMysqlSqlExport(process.env, session.user.ledgerUserId);
+      sqlExportResponse(res, exportFile, setup.provider);
       return;
     }
 

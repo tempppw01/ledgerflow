@@ -4,8 +4,15 @@ import { TransactionStatus } from '../../entities/transaction/types';
 import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
 import { extractJsonString } from '../../features/assistant/workbench/workbenchUtils';
 import { AmountKeypad } from '../../features/transactions/components/AmountKeypad';
+import { useAuth } from '../../features/auth/ui/authContext';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { useAiSettings } from '../../shared/store/useAiSettings';
+import {
+  clearTransactionDraft,
+  readTransactionDraft,
+  writeTransactionDraft,
+  type TransactionDraft
+} from './transactionDraft';
 
 interface RecognitionSuggestion {
   merchant: string;
@@ -170,6 +177,7 @@ export function TransactionEditPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   const categories = useFinanceStore((s) => s.categories);
   const accounts = useFinanceStore((s) => s.accounts);
@@ -193,21 +201,36 @@ export function TransactionEditPage() {
       : null;
   const quickMode = !id && searchParams.get('quick') === '1';
 
-  const [type, setType] = useState<'income' | 'expense' | 'budget' | 'repayment'>(
-    current?.type ?? presetType ?? 'expense'
+  const initialDraft = useMemo(
+    () => (!id ? readTransactionDraft(user.ledgerUserId) : null),
+    [id, user.ledgerUserId]
   );
-  const [categoryId, setCategoryId] = useState(current?.categoryId ?? categories[0]?.id ?? '');
-  const [accountId, setAccountId] = useState(current?.accountId ?? accounts[0]?.id ?? '');
-  const [amount, setAmount] = useState(String(current?.amount ?? ''));
+  const draftStorageId = user.ledgerUserId;
+
+  const [type, setType] = useState<'income' | 'expense' | 'budget' | 'repayment'>(
+    current?.type ?? initialDraft?.type ?? presetType ?? 'expense'
+  );
+  const [categoryId, setCategoryId] = useState(
+    current?.categoryId ?? initialDraft?.categoryId ?? categories[0]?.id ?? ''
+  );
+  const [accountId, setAccountId] = useState(
+    current?.accountId ?? initialDraft?.accountId ?? accounts[0]?.id ?? ''
+  );
+  const [amount, setAmount] = useState(initialDraft?.amount ?? String(current?.amount ?? ''));
   const [date, setDate] = useState(() => {
+    if (initialDraft?.date) return initialDraft.date;
     const raw = current?.date ?? new Date().toISOString();
     return formatLocalDateTime(raw);
   });
-  const [note, setNote] = useState(current?.note ?? '');
-  const [tags, setTags] = useState(current?.tags.join(',') ?? '');
-  const [orderNo, setOrderNo] = useState(current?.orderNo ?? '');
-  const [merchantOrderNo, setMerchantOrderNo] = useState(current?.merchantOrderNo ?? '');
-  const [status, setStatus] = useState<TransactionStatus>(current?.status ?? 'completed');
+  const [note, setNote] = useState(initialDraft?.note ?? current?.note ?? '');
+  const [tags, setTags] = useState(initialDraft?.tags ?? current?.tags.join(',') ?? '');
+  const [orderNo, setOrderNo] = useState(initialDraft?.orderNo ?? current?.orderNo ?? '');
+  const [merchantOrderNo, setMerchantOrderNo] = useState(
+    initialDraft?.merchantOrderNo ?? current?.merchantOrderNo ?? ''
+  );
+  const [status, setStatus] = useState<TransactionStatus>(
+    initialDraft?.status ?? current?.status ?? 'completed'
+  );
   const [amountError, setAmountError] = useState('');
   const [calculatorError, setCalculatorError] = useState('');
   const [calculatorExpression, setCalculatorExpression] = useState(
@@ -218,6 +241,59 @@ export function TransactionEditPage() {
   const [recognizing, setRecognizing] = useState(false);
   const [suggestion, setSuggestion] = useState<RecognitionSuggestion | null>(null);
   const amountInputRef = useRef<HTMLInputElement | null>(null);
+  const [draftStatus, setDraftStatus] = useState(initialDraft ? '已恢复未完成草稿' : '');
+
+  const draftHasContent = Boolean(
+    amount.trim() ||
+      note.trim() ||
+      tags.trim() ||
+      orderNo.trim() ||
+      merchantOrderNo.trim() ||
+      type !== 'expense' ||
+      categoryId !== (categories[0]?.id ?? '') ||
+      accountId !== (accounts[0]?.id ?? '') ||
+      status !== 'completed'
+  );
+
+  useEffect(() => {
+    if (id) return;
+    if (!draftHasContent) {
+      clearTransactionDraft(draftStorageId);
+      return;
+    }
+    const draft: TransactionDraft = {
+      type,
+      categoryId,
+      accountId,
+      amount,
+      date,
+      note,
+      tags,
+      orderNo,
+      merchantOrderNo,
+      status,
+      calculatorExpression
+    };
+    writeTransactionDraft(draftStorageId, draft);
+    setDraftStatus('草稿已自动保存');
+  }, [
+    accountId,
+    amount,
+    accounts,
+    calculatorExpression,
+    categoryId,
+    categories,
+    date,
+    draftHasContent,
+    draftStorageId,
+    id,
+    merchantOrderNo,
+    note,
+    orderNo,
+    status,
+    tags,
+    type
+  ]);
 
   const suggestedTags = useMemo(
     () =>
@@ -397,6 +473,7 @@ export function TransactionEditPage() {
       updateTransaction(id, payload);
     } else {
       addTransaction(payload);
+      clearTransactionDraft(draftStorageId);
     }
     navigate('/transactions');
   }
@@ -413,6 +490,11 @@ export function TransactionEditPage() {
       {quickMode && !id ? (
         <small style={{ color: 'var(--color-text-secondary)', display: 'block', marginBottom: 10 }}>
           快速模式：仅需填写金额与必要字段，保存后自动返回交易页。
+        </small>
+      ) : null}
+      {!id ? (
+        <small style={{ color: 'var(--color-text-secondary)', display: 'block', marginBottom: 10 }} role="status">
+          {draftStatus || '输入内容会自动保存为草稿'}
         </small>
       ) : null}
       <form onSubmit={handleSubmit} className="transaction-edit-form">

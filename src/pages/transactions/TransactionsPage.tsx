@@ -51,6 +51,13 @@ import {
   TransactionType
 } from '../../entities/transaction/types';
 import { useAiSettings } from '../../shared/store/useAiSettings';
+import { useAuth } from '../../features/auth/ui/authContext';
+import {
+  clearQuickTransactionDraft,
+  readQuickTransactionDraft,
+  writeQuickTransactionDraft,
+  type QuickTransactionDraft
+} from '../transaction-edit/transactionDraft';
 
 const DEFAULT_PAGE_SIZE = 8;
 const PAGE_SIZE_OPTIONS = [8, 20, 50, 100] as const;
@@ -356,6 +363,7 @@ function buildDuplicateGroups(rows: TransactionRowView[]): string[][] {
 export function TransactionsPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { user } = useAuth();
   const transactions = useFinanceStore((s) => s.transactions);
   const categories = useFinanceStore((s) => s.categories);
   const accounts = useFinanceStore((s) => s.accounts);
@@ -499,16 +507,28 @@ export function TransactionsPage() {
   );
   // 页大小允许用户按账单密度自由切换，长列表下减少翻页成本。
   const [pageSize, setPageSize] = useState<number>(() => restorePageSize());
+  const initialQuickDraft = useMemo(
+    () => readQuickTransactionDraft(user.ledgerUserId),
+    [user.ledgerUserId]
+  );
+  const quickAddDefaultDate = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
-  const [quickAddType, setQuickAddType] = useState<TransactionType>('expense');
-  const [quickAddCategoryId, setQuickAddCategoryId] = useState('');
-  const [quickAddAccountId, setQuickAddAccountId] = useState('');
+  const [quickAddType, setQuickAddType] = useState<TransactionType>(
+    initialQuickDraft?.type ?? 'expense'
+  );
+  const [quickAddCategoryId, setQuickAddCategoryId] = useState(initialQuickDraft?.categoryId ?? '');
+  const [quickAddAccountId, setQuickAddAccountId] = useState(initialQuickDraft?.accountId ?? '');
   const [quickAddAmount, setQuickAddAmount] = useState('');
-  const [quickAddExpression, setQuickAddExpression] = useState('');
+  const [quickAddExpression, setQuickAddExpression] = useState(initialQuickDraft?.expression ?? '');
   const [quickAddCalculatedAmount, setQuickAddCalculatedAmount] = useState<number | null>(null);
-  const [quickAddDate, setQuickAddDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [quickAddNote, setQuickAddNote] = useState('');
+  const [quickAddDate, setQuickAddDate] = useState(
+    initialQuickDraft?.date ?? quickAddDefaultDate
+  );
+  const [quickAddNote, setQuickAddNote] = useState(initialQuickDraft?.note ?? '');
   const [quickAddError, setQuickAddError] = useState('');
+  const [quickAddDraftStatus, setQuickAddDraftStatus] = useState(
+    initialQuickDraft ? '已恢复未完成草稿' : ''
+  );
   const [tablePanelWidth, setTablePanelWidth] = useState(860);
   const [sidePanelVisible, setSidePanelVisible] = useState(() => restoreSidePanelVisible());
   const [pieAnimationProgress, setPieAnimationProgress] = useState(1);
@@ -971,14 +991,54 @@ export function TransactionsPage() {
     }
   }, [accounts, quickAddAccountId]);
 
+  const quickAddDraftHasContent = Boolean(
+    quickAddExpression.trim() ||
+      quickAddNote.trim() ||
+      quickAddType !== 'expense' ||
+      quickAddCategoryId !== (quickAddCategoryOptions[0]?.id ?? '') ||
+      quickAddAccountId !== (accounts[0]?.id ?? '') ||
+      quickAddDate !== quickAddDefaultDate
+  );
+
+  useEffect(() => {
+    if (!quickAddDraftHasContent) {
+      clearQuickTransactionDraft(user.ledgerUserId);
+      return;
+    }
+    const draft: QuickTransactionDraft = {
+      type: quickAddType === 'income' ? 'income' : 'expense',
+      categoryId: quickAddCategoryId,
+      accountId: quickAddAccountId,
+      expression: quickAddExpression,
+      date: quickAddDate,
+      note: quickAddNote
+    };
+    writeQuickTransactionDraft(user.ledgerUserId, draft);
+    setQuickAddDraftStatus('草稿已自动保存');
+  }, [
+    accounts,
+    quickAddAccountId,
+    quickAddCategoryId,
+    quickAddDate,
+    quickAddDefaultDate,
+    quickAddDraftHasContent,
+    quickAddExpression,
+    quickAddNote,
+    quickAddType,
+    quickAddCategoryOptions,
+    user.ledgerUserId
+  ]);
+
   const resetQuickAddForm = () => {
     setQuickAddType('expense');
     setQuickAddAmount('');
     setQuickAddExpression('');
     setQuickAddCalculatedAmount(null);
-    setQuickAddDate(new Date().toISOString().slice(0, 10));
+    setQuickAddDate(quickAddDefaultDate);
     setQuickAddNote('');
     setQuickAddError('');
+    setQuickAddDraftStatus('');
+    clearQuickTransactionDraft(user.ledgerUserId);
   };
 
   const openQuickAddDrawer = () => {
@@ -2769,6 +2829,9 @@ export function TransactionsPage() {
                 ✕
               </button>
             </header>
+            <small className="quick-add-draft-status" role="status">
+              {quickAddDraftStatus || '输入内容会自动保存为草稿'}
+            </small>
 
             <div className="quick-add-body">
               <section className="quick-add-main">
