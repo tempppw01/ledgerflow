@@ -16420,3 +16420,45 @@ body.categories-accounts-resizing {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── 浮动小字标签：输入框左上角 ── */
+.finance-unit-input,
+.finance-input-labeled {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.finance-input-floating-label {
+  position: absolute;
+  top: 3px;
+  left: 10px;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--color-text-tertiary);
+  font-weight: 600;
+  pointer-events: none;
+  z-index: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 28px);
+}
+
+.finance-unit-input .finance-debt-form-control,
+.finance-input-labeled .finance-debt-form-control {
+  padding-top: 16px;
+  padding-bottom: 5px;
+}
+
+.finance-unit-input .finance-input-floating-label {
+  max-width: calc(100% - 36px);
+}
+
+.finance-input-labeled {
+  width: 100%;
+}
+
+.finance-input-labeled .finance-debt-form-control {
+  width: 100%;
+}

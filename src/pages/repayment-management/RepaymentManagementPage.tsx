@@ -579,12 +579,13 @@ function RepaymentUnitInput(props: {
   inputMode?: 'decimal' | 'numeric';
   disabled?: boolean;
 }) {
-  const { value, onChange, unit, placeholder, ariaLabel, min, max, step, inputMode, disabled } =
+  const { value, onChange, unit, ariaLabel, min, max, step, inputMode, disabled } =
     props;
   return (
     <label
       className={`finance-unit-input ${disabled ? 'is-disabled' : ''} ${value.trim() ? 'is-filled' : ''}`}
     >
+      <span className="finance-input-floating-label">{ariaLabel}</span>
       <input
         className="finance-debt-form-control"
         type="number"
@@ -594,7 +595,7 @@ function RepaymentUnitInput(props: {
         value={value}
         onChange={(event) => onChange(event.target.value)}
         inputMode={inputMode}
-        placeholder={placeholder}
+        placeholder=""
         aria-label={ariaLabel}
         disabled={disabled}
       />
@@ -1932,16 +1933,19 @@ export function RepaymentManagementPage() {
             </p>
             <form onSubmit={onAddDebt} className="finance-debt-form-grid finance-debt-form-compact">
               <div className="finance-debt-form-row finance-debt-form-row-primary">
-                <input
-                  className="finance-debt-form-control"
-                  value={debtName}
-                  onChange={(event) => {
-                    setDebtName(event.target.value);
-                    setDebtFormError('');
-                  }}
-                  placeholder="名称（如：招商信用卡）"
-                  aria-label="负债名称"
-                />
+                <label className="finance-input-labeled">
+                  <span className="finance-input-floating-label">名称</span>
+                  <input
+                    className="finance-debt-form-control"
+                    value={debtName}
+                    onChange={(event) => {
+                      setDebtName(event.target.value);
+                      setDebtFormError('');
+                    }}
+                    placeholder=""
+                    aria-label="负债名称"
+                  />
+                </label>
                 <select
                   className="finance-debt-form-control finance-debt-form-type-select"
                   value={debtType}
@@ -1997,16 +2001,19 @@ export function RepaymentManagementPage() {
                     ariaLabel="账单日"
                     disabled={isLoanType}
                   />
-                  <input
-                    className="finance-debt-form-control"
-                    value={debtPaymentAccount}
-                    onChange={(event) => {
-                      setDebtPaymentAccount(event.target.value);
-                      setDebtFormError('');
-                    }}
-                    placeholder="扣款账户"
-                    aria-label="扣款账户"
-                  />
+                  <label className="finance-input-labeled">
+                    <span className="finance-input-floating-label">扣款账户</span>
+                    <input
+                      className="finance-debt-form-control"
+                      value={debtPaymentAccount}
+                      onChange={(event) => {
+                        setDebtPaymentAccount(event.target.value);
+                        setDebtFormError('');
+                      }}
+                      placeholder=""
+                      aria-label="扣款账户"
+                    />
+                  </label>
                   <select
                     className="finance-debt-form-control"
                     value={debtRepaymentMethod}
