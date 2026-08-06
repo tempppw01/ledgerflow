@@ -16462,3 +16462,178 @@ body.categories-accounts-resizing {
 .finance-input-labeled .finance-debt-form-control {
   width: 100%;
 }
+
+/* ── 还款表单：线条+字体布局（参考关于页风格） ── */
+.debt-form-line {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.debt-form-core {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 24px;
+  align-items: end;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.debt-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.debt-form-field-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+}
+
+.debt-form-input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-border-light);
+  border-radius: 0;
+  background: transparent;
+  padding: 6px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  outline: none;
+  transition: border-color 200ms ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.debt-form-input:focus {
+  border-bottom-color: var(--color-primary);
+  border-bottom-width: 2px;
+}
+
+.debt-form-input::placeholder {
+  color: var(--color-text-quaternary);
+  font-weight: 400;
+}
+
+.debt-form-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+select.debt-form-input {
+  cursor: pointer;
+  padding-right: 20px;
+  background-image: none;
+}
+
+.debt-form-money {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  border-bottom: 1px solid var(--color-border-light);
+  transition: border-color 200ms ease;
+}
+
+.debt-form-money:focus-within {
+  border-bottom-color: var(--color-primary);
+  border-bottom-width: 2px;
+}
+
+.debt-form-money-unit {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+
+.debt-form-input-money {
+  border: 0;
+  background: transparent;
+  width: 72px;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 6px 0;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.debt-form-input-money::placeholder {
+  color: var(--color-text-quaternary);
+  font-weight: 400;
+}
+
+.debt-form-advanced {
+  margin-top: 0;
+}
+
+.debt-form-advanced-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.debt-form-advanced-summary small {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.debt-form-advanced[open] .debt-form-advanced-summary {
+  border-bottom: 0;
+}
+
+.debt-form-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px 24px;
+  padding: 16px 0 20px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.debt-form-error {
+  margin: 10px 0 0;
+  color: var(--color-danger);
+  font-size: 13px;
+}
+
+.debt-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.debt-form-actions .primary {
+  min-width: 120px;
+}
+
+.debt-form-cancel-btn {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .debt-form-core {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .debt-form-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+}
