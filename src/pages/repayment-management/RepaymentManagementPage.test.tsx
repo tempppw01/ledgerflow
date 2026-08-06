@@ -77,9 +77,9 @@ describe('RepaymentManagementPage', () => {
     );
 
     expect(screen.getByLabelText('负债状态')).toHaveValue('active');
-    expect(screen.getByText('状态：进行中')).toBeInTheDocument();
-    expect(screen.getByText('状态：已结清')).toBeInTheDocument();
-    expect(screen.getByText('状态：已关闭')).toBeInTheDocument();
-    expect(screen.getByText('状态：暂缓处理')).toBeInTheDocument();
+    expect(screen.getByText('进行中')).toBeInTheDocument();
+    expect(screen.getByText('已结清')).toBeInTheDocument();
+    expect(screen.getByText('已关闭')).toBeInTheDocument();
+    expect(screen.getByText('暂缓处理')).toBeInTheDocument();
   });
 });

@@ -16359,3 +16359,64 @@ body.categories-accounts-resizing {
       'bars';
   }
 }
+
+/* ── 还款页：去嵌套 + 精简表单 ── */
+.repayment-management-page .finance-overview-panel {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+.finance-collapsible-section {
+  border: 1px solid color-mix(in srgb, var(--color-border) 90%, transparent);
+  border-radius: 14px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-bg-elevated) 96%, white),
+    color-mix(in srgb, var(--color-bg-subtle) 90%, var(--color-bg-elevated))
+  );
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--space-3);
+}
+
+.finance-debt-form-compact .finance-debt-form-row-primary {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.finance-debt-form-type-select {
+  min-width: 100px;
+}
+
+.finance-debt-form-compact .finance-debt-form-advanced {
+  margin-top: 10px;
+}
+
+.finance-debt-form-compact .finance-debt-form-advanced summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.finance-debt-form-compact .finance-debt-form-advanced summary .muted {
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.finance-debt-form-compact .finance-debt-form-actions {
+  margin-top: 12px;
+}
+
+@media (max-width: 640px) {
+  .finance-debt-form-compact .finance-debt-form-row-primary {
+    grid-template-columns: 1fr;
+  }
+}
