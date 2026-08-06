@@ -15924,3 +15924,438 @@ body.categories-accounts-resizing {
     padding: 12px 14px;
   }
 }
+
+/* ── 还款概览仪表盘 ── */
+.repayment-dashboard {
+  margin-bottom: 16px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 14%, var(--color-border));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-primary-bg)),
+    var(--color-bg-elevated)
+  );
+}
+
+.repayment-dashboard-title {
+  margin: 0 0 14px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.repayment-dashboard-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  grid-template-areas:
+    'hero timeline'
+    'donut bars';
+  gap: 16px;
+}
+
+.repayment-dashboard-hero {
+  grid-area: hero;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-primary-bg) 36%, var(--color-bg-elevated));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 12%, var(--color-border));
+}
+
+.repayment-dashboard-total {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.repayment-dashboard-total-label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+  font-weight: 700;
+}
+
+.repayment-dashboard-total-value {
+  font-family: var(--font-number);
+  font-size: clamp(28px, 4vw, 38px);
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--color-text-primary);
+}
+
+.repayment-dashboard-total-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.repayment-dashboard-sep {
+  opacity: 0.5;
+}
+
+.repayment-dashboard-next-due {
+  margin-top: 4px;
+  display: inline-flex;
+  width: fit-content;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-warning-bg) 60%, var(--color-bg-elevated));
+  color: var(--color-warning);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.repayment-ring {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.repayment-ring-progress {
+  transition: stroke-dasharray 800ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.repayment-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  pointer-events: none;
+}
+
+.repayment-ring-progress-text {
+  font-family: var(--font-number);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.repayment-ring-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.repayment-ring-sub {
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+}
+
+.repayment-dashboard-timeline {
+  grid-area: timeline;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.repayment-dashboard-section-title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.repayment-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.repayment-timeline-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--color-bg-subtle);
+  border: 1px solid transparent;
+  transition:
+    border-color 150ms ease,
+    transform 150ms ease;
+  animation: repayment-timeline-enter 0.3s ease both;
+}
+
+.repayment-timeline-item:hover {
+  transform: translateX(2px);
+}
+
+.repayment-timeline-item.is-danger {
+  border-color: color-mix(in srgb, var(--color-danger) 24%, transparent);
+}
+
+.repayment-timeline-item.is-warning {
+  border-color: color-mix(in srgb, var(--color-warning) 24%, transparent);
+}
+
+.repayment-timeline-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: var(--color-text-tertiary);
+}
+
+.repayment-timeline-item.is-danger .repayment-timeline-dot {
+  background: var(--color-danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-danger) 18%, transparent);
+}
+
+.repayment-timeline-item.is-warning .repayment-timeline-dot {
+  background: var(--color-warning);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-warning) 18%, transparent);
+}
+
+.repayment-timeline-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.repayment-timeline-name {
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.repayment-timeline-type {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+}
+
+.repayment-timeline-amount {
+  font-family: var(--font-number);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.repayment-timeline-due {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.repayment-timeline-due.is-danger {
+  color: var(--color-danger);
+}
+
+.repayment-timeline-due.is-warning {
+  color: var(--color-warning);
+}
+
+.repayment-timeline-due.is-safe {
+  color: var(--color-text-secondary);
+}
+
+@keyframes repayment-timeline-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.repayment-dashboard-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--color-bg-subtle);
+}
+
+.repayment-dashboard-chart:nth-child(3) {
+  grid-area: donut;
+}
+
+.repayment-dashboard-chart:nth-child(4) {
+  grid-area: bars;
+}
+
+.repayment-donut {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.repayment-donut svg {
+  flex-shrink: 0;
+}
+
+.repayment-donut-center {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.repayment-donut {
+  position: relative;
+}
+
+.repayment-donut-center {
+  width: 180px;
+  height: 180px;
+  top: 0;
+  left: 0;
+}
+
+.repayment-donut-total {
+  font-family: var(--font-number);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-text-primary);
+}
+
+.repayment-donut-label {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.repayment-donut-empty {
+  display: grid;
+  place-items: center;
+  min-height: 120px;
+  color: var(--color-text-tertiary);
+  font-size: 13px;
+}
+
+.repayment-donut-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+  flex: 1;
+}
+
+.repayment-donut-legend li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border-radius: 6px;
+  cursor: default;
+  transition: background 120ms ease;
+}
+
+.repayment-donut-legend li.is-active {
+  background: var(--color-bg-elevated);
+}
+
+.repayment-donut-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.repayment-donut-name {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.repayment-donut-value {
+  font-family: var(--font-number);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.repayment-donut-pct {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  width: 32px;
+  text-align: right;
+}
+
+.repayment-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 160px;
+  padding-top: 20px;
+}
+
+.repayment-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.repayment-bar-track {
+  width: 100%;
+  max-width: 36px;
+  height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  position: relative;
+  border-radius: 6px 6px 0 0;
+  background: color-mix(in srgb, var(--color-bg-elevated) 50%, transparent);
+}
+
+.repayment-bar-fill {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 6px 6px 0 0;
+  transition: height 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.repayment-bar-value {
+  position: absolute;
+  top: -18px;
+  font-family: var(--font-number);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.repayment-bar-label {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+}
+
+@media (max-width: 900px) {
+  .repayment-dashboard-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'hero'
+      'timeline'
+      'donut'
+      'bars';
+  }
+}
