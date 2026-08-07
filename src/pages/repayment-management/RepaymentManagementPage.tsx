@@ -316,7 +316,7 @@ function renderAiStructuredText(content: string): JSX.Element[] {
     const heading3 = line.match(/^###\s+(.+)/);
     const heading2 = line.match(/^##\s+(.+)/);
     const heading1 = line.match(/^#\s+(.+)/);
-    const ordered = line.match(/^\d+[\.、)]\s+(.+)/);
+    const ordered = line.match(/^\d+[.、)]\s+(.+)/);
     const unordered = line.match(/^[-*•]\s+(.+)/);
 
     if (heading3 || heading2 || heading1) {
@@ -741,7 +741,7 @@ export function RepaymentManagementPage() {
       ...item,
       recommendationTone: index === 0 ? 'danger' : index <= 2 ? 'warning' : 'safe'
     }));
-  }, [debtsWithStatus]);
+  }, [activeDebts]);
 
   const incomeSamples = useMemo(
     () =>
@@ -1588,7 +1588,7 @@ export function RepaymentManagementPage() {
 
   return (
     <div className="page-stack finance-page">
-      <section className="panel finance-page">
+      <section className="panel repayment-workspace">
         <h2 style={{ marginTop: 0 }}>💳 负债管理</h2>
         <p className="muted surface-note">
           支持信用卡、消费贷、贷款，自动计算每月最低还款额与总负债压力。
@@ -1597,11 +1597,8 @@ export function RepaymentManagementPage() {
         <RepaymentDashboard debts={debtsWithStatus} repaymentRecords={repaymentRecords} />
 
         {debts.length > 0 ? (
-          <div
-            className="finance-overview-grid finance-overview-grid-strong"
-            style={{ marginTop: 12 }}
-          >
-            <article className="finance-overview-metric-card">
+          <div className="repayment-overview-band">
+            <article className="repayment-overview-stat">
               <p className="finance-overview-label">💰 总负债</p>
               <p className="finance-overview-value">
                 <span className="finance-overview-number">{overviewTotalDebt.toFixed(2)}</span>
@@ -1611,7 +1608,7 @@ export function RepaymentManagementPage() {
                 仅统计进行中的负债
               </p>
             </article>
-            <article className="finance-overview-metric-card">
+            <article className="repayment-overview-stat">
               <p className="finance-overview-label">📉 每月最低还款</p>
               <p className="finance-overview-value">
                 <span className="finance-overview-number">
@@ -1621,7 +1618,7 @@ export function RepaymentManagementPage() {
               </p>
             </article>
             <article
-              className={`finance-overview-metric-card finance-overview-pressure-card finance-overview-pressure-${pressureLevel.tone}`}
+              className={`repayment-overview-stat repayment-overview-pressure-${pressureLevel.tone}`}
             >
               <p className="finance-overview-label">⚠️ 负债率（{pressureLevel.label}）</p>
               <p className="finance-overview-value">
@@ -1631,7 +1628,7 @@ export function RepaymentManagementPage() {
                 <span className="finance-overview-unit">%</span>
               </p>
             </article>
-            <article className="finance-overview-metric-card finance-overview-health-card">
+            <article className="repayment-overview-stat repayment-overview-health">
               <p className="finance-overview-label">
                 🩺 负债健康度
                 <span
@@ -1647,7 +1644,7 @@ export function RepaymentManagementPage() {
                 <span className="finance-overview-unit">/100</span>
               </p>
             </article>
-            <article className="finance-overview-metric-card">
+            <article className="repayment-overview-stat">
               <p className="finance-overview-label">🗂️ 历史负债</p>
               <p className="finance-overview-value">
                 <span className="finance-overview-number">{archivedDebts.length}</span>
@@ -1657,7 +1654,7 @@ export function RepaymentManagementPage() {
                 余额合计 ¥{archivedTotalDebt.toFixed(2)}
               </p>
             </article>
-            <article className="finance-overview-metric-card">
+            <article className="repayment-overview-stat repayment-overview-income">
               <p className="finance-overview-label">💼 月收入</p>
               <p className="finance-overview-value">
                 <span className="finance-overview-number">
@@ -1672,7 +1669,8 @@ export function RepaymentManagementPage() {
           </div>
         ) : null}
 
-        <div className="finance-overview-income-actions" style={{ marginTop: 12 }}>
+        <div className="finance-overview-income-actions repayment-income-toolbar">
+          <span className="repayment-income-toolbar-label">月收入设置</span>
           <button
             type="button"
             className="finance-income-inline-action"
@@ -2063,263 +2061,244 @@ export function RepaymentManagementPage() {
         </div>
 
         <section className="repayment-ai-section">
-          <h3 style={{ marginTop: 0 }}>🤖 AI 还款策略</h3>
-          <p className="muted" style={{ marginTop: 0 }}>
-            输出优先级排序、每月还款压力提示，并可模拟额外还款的提前结清效果。
-          </p>
-
-          <div className="finance-ai-insight-grid">
-            <div className="finance-ai-insight-card">
-              <h4 style={{ margin: '0 0 8px 0' }}>推荐还款优先级</h4>
-              {repaymentPriority.length === 0 ? (
-                <p className="muted" style={{ margin: 0 }}>
-                  你还未创建负债，点击“添加负债”或“上传账单自动识别”继续。
-                </p>
-              ) : (
-                <ol style={{ margin: 0, paddingInlineStart: 18 }}>
-                  {repaymentPriority.map((item) => (
-                    <li
-                      key={item.id}
-                      className={`finance-priority-item finance-priority-${item.recommendationTone}`}
-                    >
-                      <span className="finance-priority-badge" aria-hidden>
-                        {item.recommendationTone === 'danger'
-                          ? '⚠️'
-                          : item.recommendationTone === 'warning'
-                            ? '💡'
-                            : '✅'}
-                      </span>
-                      {item.name}（APR {item.annualRate.toFixed(1)}%，余额 ¥
-                      {item.balance.toFixed(0)}，最低 ¥{item.minimumPayment.toFixed(0)}
-                      {item.remainingInterestCost !== null
-                        ? `，剩余利息约 ¥${item.remainingInterestCost.toFixed(0)}`
-                        : ''}
-                      ）
-                    </li>
-                  ))}
-                </ol>
-              )}
+          <div className="repayment-ai-header">
+            <div>
+              <span className="repayment-ai-eyebrow">智能策略</span>
+              <h3>🤖 AI 还款策略</h3>
             </div>
-            <div className="finance-ai-insight-card">
-              <h4 style={{ margin: '0 0 8px 0' }}>每月还款压力提示</h4>
-              <p style={{ margin: 0 }}>
-                当前每月最低还款占收入
-                <strong> {(debtSummary.pressureRatio * 100).toFixed(1)}%</strong>， 负债余额占年收入
-                <strong> {(debtToIncomeRatio * 100).toFixed(1)}%</strong>。
-              </p>
-            </div>
-          </div>
-
-          <div className="finance-ai-insight-card" style={{ marginTop: 10 }}>
-            <h4 style={{ margin: '0 0 8px 0' }}>还款模拟器（策略对比）</h4>
-            <div className="finance-simulator-row">
-              <label htmlFor="simulator-extra">每月额外还款金额（¥）</label>
-              <input
-                id="simulator-extra"
-                className="finance-debt-form-control"
-                type="number"
-                min={0}
-                step="1"
-                value={simulatorExtraPayment}
-                onChange={(event) => setSimulatorExtraPayment(event.target.value)}
-              />
-            </div>
-            {simulatorResult.best ? (
-              <div className="finance-simulator-best-card">
-                <p className="muted" style={{ margin: 0 }}>
-                  最优策略：
-                  <strong>{REPAYMENT_STRATEGY_LABELS[simulatorResult.best.strategy]}</strong>
-                  ，预计提前还清
-                  <strong> {simulatorResult.best.savedMonths}</strong> 个月，预计节省利息
-                  <strong> ¥{simulatorResult.best.savedInterest.toFixed(2)}</strong>。
-                </p>
-                <p className="muted" style={{ margin: '6px 0 0' }}>
-                  这更接近“提前还款 / 压降利息”场景，不是单纯把月供平均摊开。
-                </p>
-              </div>
-            ) : null}
-            <div className="finance-strategy-compare-grid">
-              {simulatorResult.strategyComparison.map((result) => (
-                <article key={result.strategy} className="finance-strategy-card">
-                  <strong>{REPAYMENT_STRATEGY_LABELS[result.strategy]}</strong>
-                  <p className="muted" style={{ margin: '6px 0 0' }}>
-                    基线：{result.baseline.months} 个月 · 利息 ¥
-                    {result.baseline.totalInterest.toFixed(0)}
-                  </p>
-                  <p className="muted" style={{ margin: '4px 0 0' }}>
-                    加速后：{result.accelerated.months} 个月 · 利息 ¥
-                    {result.accelerated.totalInterest.toFixed(0)}
-                  </p>
-                  <p className="muted" style={{ margin: '4px 0 0' }}>
-                    节省：{result.savedMonths} 个月 / ¥{result.savedInterest.toFixed(0)}
-                  </p>
-                </article>
-              ))}
-            </div>
-            {repaymentPriority.length > 0 ? (
-              <div className="finance-prepay-focus-list">
-                <h5 style={{ margin: '12px 0 8px 0' }}>优先考虑提前处理</h5>
-                <div className="finance-prepay-focus-grid">
-                  {repaymentPriority.slice(0, 3).map((item) => (
-                    <article key={item.id} className="finance-prepay-focus-card">
-                      <strong>{item.name}</strong>
-                      <p className="muted" style={{ margin: '6px 0 0' }}>
-                        APR {item.annualRate.toFixed(2)}% · 余额 ¥{item.balance.toFixed(0)}
-                      </p>
-                      <p className="muted" style={{ margin: '4px 0 0' }}>
-                        {item.remainingInterestCost !== null
-                          ? `剩余利息约 ¥${item.remainingInterestCost.toFixed(0)}，更适合拿来做提前还款优先级。`
-                          : '当前缺少完整利息测算，建议先补齐期数/利率后再做提前结清决策。'}
-                      </p>
-                    </article>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          <div className="finance-ai-insight-card" style={{ marginTop: 10 }}>
-            <h4 style={{ margin: '0 0 8px 0' }}>风险标签与解释</h4>
-            {debtRiskTags.length === 0 ? (
-              <p className="muted" style={{ margin: 0 }}>
-                当前未发现明显的高利率、到期集中、账户缺失或已还流水缺口。
-              </p>
-            ) : (
-              <div className="finance-risk-tag-grid">
-                {debtRiskTags.map((tag) => (
-                  <article
-                    key={tag.id}
-                    className={`finance-risk-tag-card finance-risk-tag-${tag.tone}`}
-                  >
-                    <div className="finance-risk-tag-head">
-                      <strong>{tag.label}</strong>
-                      <span>
-                        {tag.dimension === 'rate'
-                          ? '利率'
-                          : tag.dimension === 'schedule'
-                            ? '计划'
-                            : tag.dimension === 'account'
-                              ? '账户'
-                              : tag.dimension === 'actual'
-                                ? '流水'
-                                : '资料'}
-                      </span>
-                    </div>
-                    <p className="muted" style={{ margin: '8px 0 0' }}>
-                      {tag.explanation}
-                    </p>
-                  </article>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="finance-ai-insight-card" style={{ marginTop: 10 }}>
-            <h4 style={{ margin: '0 0 8px 0' }}>严谨性审计提醒</h4>
-            {repaymentAuditItems.length === 0 ? (
-              <p className="muted" style={{ margin: 0 }}>
-                当前负债条目已具备基础的日期、扣款账户与计算依据字段。
-              </p>
-            ) : (
-              <ul className="finance-audit-list">
-                {repaymentAuditItems.map((item) => (
-                  <li key={item.id} className={`finance-audit-item finance-audit-${item.tone}`}>
-                    {item.text}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <div className="finance-ai-insight-card" style={{ marginTop: 10 }}>
-            <h4 style={{ margin: '0 0 8px 0' }}>计划 / 账户 / 已还流水上下文</h4>
-            {repaymentContextSnapshots.length === 0 ? (
-              <p className="muted" style={{ margin: 0 }}>
-                请先录入至少一笔负债。
-              </p>
-            ) : (
-              <div className="finance-risk-tag-grid">
-                {repaymentContextSnapshots.slice(0, 6).map((item) => (
-                  <article
-                    key={item.debtId}
-                    className="finance-risk-tag-card finance-risk-tag-info"
-                  >
-                    <div className="finance-risk-tag-head">
-                      <strong>{item.debtName}</strong>
-                      <span>3.4 预留</span>
-                    </div>
-                    <p className="muted" style={{ margin: '8px 0 0' }}>
-                      计划还款日：{item.plannedRepaymentDay || '--'} 日 · 计划账户：
-                      {item.plannedPaymentAccount || '未设置'}
-                    </p>
-                    <p className="muted" style={{ margin: '4px 0 0' }}>
-                      已发生还款：{item.actualRepaymentCount} 笔
-                      {item.latestActualRepaymentAt
-                        ? ` · 最近一次 ${item.latestActualRepaymentAt}`
-                        : ''}
-                    </p>
-                    <p className="muted" style={{ margin: '4px 0 0' }}>
-                      实际账户：
-                      {item.actualPaymentAccounts.length > 0
-                        ? item.actualPaymentAccounts.join(' / ')
-                        : '暂无流水记录'}
-                    </p>
-                  </article>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="finance-ai-insight-card" style={{ marginTop: 10 }}>
-            <h4 style={{ margin: '0 0 8px 0' }}>到期提醒</h4>
-            {repaymentLedgerPreview.length === 0 ? (
-              <p className="muted" style={{ margin: 0 }}>
-                请先在负债列表中创建至少一条记录。
-              </p>
-            ) : (
-              <ul style={{ margin: 0, paddingInlineStart: 18 }}>
-                {repaymentLedgerPreview.slice(0, 5).map((item) => (
-                  <li key={item.id}>
-                    {item.name}：账单日 {item.billDay || '--'} 日，还款日{' '}
-                    {item.repaymentDay || '--'} 日，
-                    {Number.isFinite(item.dueInDays)
-                      ? item.dueInDays === 0
-                        ? '今天到期'
-                        : `${item.dueInDays} 天后到期`
-                      : '待补还款日'}
-                    （最低 ¥{item.minimumPayment.toFixed(0)}）
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <div className="finance-ai-action-row">
             <button type="button" onClick={onGenerateRepaymentAdvice} disabled={repaymentLoading}>
-              {repaymentLoading ? '正在生成AI建议...' : '生成 AI 还款建议'}
+              {repaymentLoading ? '生成中…' : repaymentAdvice ? '更新建议' : '生成建议'}
             </button>
           </div>
+
+          <div className="repayment-ai-summary" aria-label="AI 还款策略摘要">
+            <div className="repayment-ai-summary-item">
+              <span>优先处理</span>
+              <strong>{repaymentPriority[0]?.name || '暂无负债'}</strong>
+              <small>
+                {repaymentPriority[0]
+                  ? `APR ${repaymentPriority[0].annualRate.toFixed(1)}% · ¥${repaymentPriority[0].balance.toFixed(0)}`
+                  : '录入负债后自动排序'}
+              </small>
+            </div>
+            <div className={`repayment-ai-summary-item tone-${pressureLevel.tone}`}>
+              <span>月供压力</span>
+              <strong>{(debtSummary.pressureRatio * 100).toFixed(1)}%</strong>
+              <small>
+                {pressureLevel.label} · 负债/年收入 {(debtToIncomeRatio * 100).toFixed(1)}%
+              </small>
+            </div>
+            <div className="repayment-ai-summary-item">
+              <span>推荐方案</span>
+              <strong>
+                {simulatorResult.best
+                  ? REPAYMENT_STRATEGY_LABELS[simulatorResult.best.strategy].split('（')[0]
+                  : '待测算'}
+              </strong>
+              <small>
+                {simulatorResult.best
+                  ? `少 ${simulatorResult.best.savedMonths} 个月 · 省 ¥${simulatorResult.best.savedInterest.toFixed(0)}`
+                  : '设置额外还款后测算'}
+              </small>
+            </div>
+            <label className="repayment-ai-extra" htmlFor="simulator-extra">
+              <span>每月多还</span>
+              <div className="repayment-ai-extra-input">
+                <span>¥</span>
+                <input
+                  id="simulator-extra"
+                  type="number"
+                  min={0}
+                  step="1"
+                  value={simulatorExtraPayment}
+                  onChange={(event) => setSimulatorExtraPayment(event.target.value)}
+                />
+              </div>
+            </label>
+          </div>
+
           {repaymentCacheHint ? (
-            <p className="muted" style={{ marginBottom: 0 }}>
-              {repaymentCacheHint}
-            </p>
+            <p className="muted repayment-ai-hint">{repaymentCacheHint}</p>
           ) : null}
-          {repaymentAdvice ? (
-            <>
-              <p className="finance-generate-done">✅ AI建议已生成，可继续调整参数后重新生成。</p>
-              <div className="finance-ai-result">{renderAiStructuredText(repaymentAdvice)}</div>
-            </>
-          ) : (
-            <p className="muted" style={{ marginBottom: 0 }}>
-              还没有策略建议，点击“生成 AI 还款建议”继续。
-            </p>
-          )}
-          {repaymentReasoning ? (
-            <details style={{ marginTop: 10 }}>
-              <summary style={{ cursor: 'pointer' }}>查看模型思考摘要</summary>
-              <div className="finance-ai-result">{renderAiStructuredText(repaymentReasoning)}</div>
-            </details>
-          ) : null}
+
+          <details className="repayment-ai-details">
+            <summary>
+              <span>查看完整分析</span>
+              <small>优先级 · 三种策略 · 风险 · 到期</small>
+            </summary>
+            <div className="repayment-ai-details-body">
+              <section className="repayment-ai-detail-block">
+                <h4>推荐还款优先级</h4>
+                {repaymentPriority.length === 0 ? (
+                  <p className="muted">请先创建至少一笔负债。</p>
+                ) : (
+                  <ol className="repayment-ai-priority-list">
+                    {repaymentPriority.map((item) => (
+                      <li key={item.id}>
+                        <strong>{item.name}</strong>
+                        <span>
+                          APR {item.annualRate.toFixed(1)}% · 余额 ¥{item.balance.toFixed(0)} · 最低
+                          ¥{item.minimumPayment.toFixed(0)}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </section>
+
+              <section className="repayment-ai-detail-block">
+                <h4>策略对比</h4>
+                <div className="repayment-ai-comparison">
+                  {simulatorResult.strategyComparison.map((result) => (
+                    <div key={result.strategy}>
+                      <strong>{REPAYMENT_STRATEGY_LABELS[result.strategy]}</strong>
+                      <span>加速后 {result.accelerated.months} 个月</span>
+                      <span>
+                        省 {result.savedMonths} 个月 / ¥{result.savedInterest.toFixed(0)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="repayment-ai-detail-block">
+                <h4>风险标签与解释</h4>
+                {debtRiskTags.length === 0 ? (
+                  <p className="muted" style={{ margin: 0 }}>
+                    当前未发现明显的高利率、到期集中、账户缺失或已还流水缺口。
+                  </p>
+                ) : (
+                  <div className="finance-risk-tag-grid">
+                    {debtRiskTags.map((tag) => (
+                      <div
+                        key={tag.id}
+                        className={`finance-risk-tag-card finance-risk-tag-${tag.tone}`}
+                      >
+                        <div className="finance-risk-tag-head">
+                          <strong>{tag.label}</strong>
+                          <span>
+                            {tag.dimension === 'rate'
+                              ? '利率'
+                              : tag.dimension === 'schedule'
+                                ? '计划'
+                                : tag.dimension === 'account'
+                                  ? '账户'
+                                  : tag.dimension === 'actual'
+                                    ? '流水'
+                                    : '资料'}
+                          </span>
+                        </div>
+                        <p className="muted" style={{ margin: '8px 0 0' }}>
+                          {tag.explanation}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className="repayment-ai-detail-block">
+                <h4>严谨性审计提醒</h4>
+                {repaymentAuditItems.length === 0 ? (
+                  <p className="muted" style={{ margin: 0 }}>
+                    当前负债条目已具备基础的日期、扣款账户与计算依据字段。
+                  </p>
+                ) : (
+                  <ul className="finance-audit-list">
+                    {repaymentAuditItems.map((item) => (
+                      <li key={item.id} className={`finance-audit-item finance-audit-${item.tone}`}>
+                        {item.text}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+
+              <section className="repayment-ai-detail-block">
+                <h4>计划 / 账户 / 已还流水</h4>
+                {repaymentContextSnapshots.length === 0 ? (
+                  <p className="muted" style={{ margin: 0 }}>
+                    请先录入至少一笔负债。
+                  </p>
+                ) : (
+                  <div className="finance-risk-tag-grid">
+                    {repaymentContextSnapshots.slice(0, 6).map((item) => (
+                      <div
+                        key={item.debtId}
+                        className="finance-risk-tag-card finance-risk-tag-info"
+                      >
+                        <div className="finance-risk-tag-head">
+                          <strong>{item.debtName}</strong>
+                          <span>3.4 预留</span>
+                        </div>
+                        <p className="muted" style={{ margin: '8px 0 0' }}>
+                          计划还款日：{item.plannedRepaymentDay || '--'} 日 · 计划账户：
+                          {item.plannedPaymentAccount || '未设置'}
+                        </p>
+                        <p className="muted" style={{ margin: '4px 0 0' }}>
+                          已发生还款：{item.actualRepaymentCount} 笔
+                          {item.latestActualRepaymentAt
+                            ? ` · 最近一次 ${item.latestActualRepaymentAt}`
+                            : ''}
+                        </p>
+                        <p className="muted" style={{ margin: '4px 0 0' }}>
+                          实际账户：
+                          {item.actualPaymentAccounts.length > 0
+                            ? item.actualPaymentAccounts.join(' / ')
+                            : '暂无流水记录'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className="repayment-ai-detail-block">
+                <h4>到期提醒</h4>
+                {repaymentLedgerPreview.length === 0 ? (
+                  <p className="muted" style={{ margin: 0 }}>
+                    请先在负债列表中创建至少一条记录。
+                  </p>
+                ) : (
+                  <ul style={{ margin: 0, paddingInlineStart: 18 }}>
+                    {repaymentLedgerPreview.slice(0, 5).map((item) => (
+                      <li key={item.id}>
+                        {item.name}：账单日 {item.billDay || '--'} 日，还款日{' '}
+                        {item.repaymentDay || '--'} 日，
+                        {Number.isFinite(item.dueInDays)
+                          ? item.dueInDays === 0
+                            ? '今天到期'
+                            : `${item.dueInDays} 天后到期`
+                          : '待补还款日'}
+                        （最低 ¥{item.minimumPayment.toFixed(0)}）
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+
+              {repaymentAdvice ? (
+                <>
+                  <p className="finance-generate-done">
+                    ✅ AI建议已生成，可继续调整参数后重新生成。
+                  </p>
+                  <div className="finance-ai-result">{renderAiStructuredText(repaymentAdvice)}</div>
+                </>
+              ) : (
+                <p className="muted" style={{ marginBottom: 0 }}>
+                  还没有策略建议，点击“生成 AI 还款建议”继续。
+                </p>
+              )}
+              {repaymentReasoning ? (
+                <details style={{ marginTop: 10 }}>
+                  <summary style={{ cursor: 'pointer' }}>查看模型思考摘要</summary>
+                  <div className="finance-ai-result">
+                    {renderAiStructuredText(repaymentReasoning)}
+                  </div>
+                </details>
+              ) : null}
+            </div>
+          </details>
         </section>
 
         {showAddDebtModal ? (

@@ -16873,10 +16873,9 @@ select.debt-form-input {
 
 .repayment-inline-form {
   display: grid;
-  grid-template-columns: minmax(110px, 0.8fr) minmax(130px, 0.9fr) minmax(140px, 1fr) minmax(
-      110px,
-      0.85fr
-    ) minmax(130px, 1fr) auto;
+  grid-template-columns:
+    minmax(110px, 0.8fr) minmax(130px, 0.9fr) minmax(140px, 1fr) minmax(110px, 0.85fr)
+    minmax(130px, 1fr) auto;
   gap: 8px;
   align-items: center;
 }
@@ -16895,6 +16894,381 @@ select.debt-form-input {
   margin-top: 24px;
   padding-top: 24px;
   border-top: 1px solid var(--color-divider);
+}
+
+/* 还款页：单层信息架构。用分隔线和留白替代嵌套卡片。 */
+.repayment-workspace {
+  padding: clamp(16px, 2vw, 28px);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.repayment-workspace .repayment-dashboard {
+  margin: 18px 0 0;
+  padding: 18px 0 20px;
+  border: 0;
+  border-top: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.repayment-workspace .repayment-dashboard-hero {
+  padding: 8px 20px 8px 0;
+  border: 0;
+  border-right: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: transparent;
+}
+
+.repayment-workspace .repayment-dashboard-chart {
+  padding: 16px 0 0;
+  border-top: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: transparent;
+}
+
+.repayment-overview-band {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin-top: 16px;
+  border-top: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.repayment-overview-stat {
+  min-width: 0;
+  padding: 14px 16px;
+  border-right: 1px solid var(--color-divider);
+}
+
+.repayment-overview-stat:last-child {
+  border-right: 0;
+}
+
+.repayment-overview-stat .finance-overview-number {
+  overflow: hidden;
+  font-size: clamp(1.25rem, 1.9vw, 1.7rem);
+  text-overflow: ellipsis;
+}
+
+.repayment-overview-pressure-safe .finance-overview-number {
+  color: var(--color-success);
+}
+
+.repayment-overview-pressure-warning .finance-overview-number {
+  color: var(--color-warning);
+}
+
+.repayment-overview-pressure-danger .finance-overview-number {
+  color: var(--color-danger);
+}
+
+.repayment-overview-health .finance-overview-number {
+  color: var(--color-primary);
+}
+
+.repayment-overview-income {
+  position: relative;
+  z-index: 0;
+}
+
+.finance-overview-income-actions.repayment-income-toolbar {
+  display: grid;
+  grid-template-columns: auto auto minmax(300px, 1fr);
+  gap: 10px;
+  margin: 0;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-bg-subtle) 62%, transparent);
+}
+
+.repayment-income-toolbar-label {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.finance-overview-income-actions.repayment-income-toolbar .finance-income-inline-manual {
+  grid-column: auto;
+  grid-template-columns: minmax(150px, 220px) auto;
+  justify-content: end;
+}
+
+.repayment-ai-section {
+  margin-top: 20px;
+  padding: 14px 0 0;
+}
+
+.repayment-ai-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.repayment-ai-header > div {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.repayment-ai-header h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.repayment-ai-eyebrow {
+  color: var(--color-primary);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+}
+
+.repayment-ai-header button {
+  min-height: 34px;
+  padding: 6px 12px;
+  border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.repayment-ai-summary {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 1fr minmax(170px, 0.72fr);
+  border-top: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.repayment-ai-summary-item,
+.repayment-ai-extra {
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  min-width: 0;
+  min-height: 76px;
+  padding: 10px 16px;
+  border-right: 1px solid var(--color-divider);
+}
+
+.repayment-ai-summary-item > span,
+.repayment-ai-extra > span {
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.repayment-ai-summary-item strong {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repayment-ai-summary-item small {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repayment-ai-summary-item.tone-safe strong {
+  color: var(--color-success);
+}
+
+.repayment-ai-summary-item.tone-warning strong {
+  color: var(--color-warning);
+}
+
+.repayment-ai-summary-item.tone-danger strong {
+  color: var(--color-danger);
+}
+
+.repayment-ai-extra {
+  border-right: 0;
+}
+
+.repayment-ai-extra-input {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  overflow: hidden;
+  height: 34px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-elevated);
+}
+
+.repayment-ai-extra-input span {
+  padding-left: 10px;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+}
+
+.repayment-ai-extra-input input {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  padding: 0 9px 0 5px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-weight: 700;
+  outline: 0;
+}
+
+.repayment-ai-hint {
+  margin: 7px 0 0;
+  font-size: 11px;
+}
+
+.repayment-ai-details {
+  margin-top: 7px;
+}
+
+.repayment-ai-details > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  padding: 5px 0;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  list-style: none;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.repayment-ai-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.repayment-ai-details > summary::before {
+  content: '›';
+  color: var(--color-primary);
+  font-size: 17px;
+  line-height: 1;
+  transition: transform 160ms ease;
+}
+
+.repayment-ai-details[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.repayment-ai-details > summary small {
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+}
+
+.repayment-ai-details-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+  margin-top: 4px;
+  border-top: 1px solid var(--color-divider);
+}
+
+.repayment-ai-detail-block {
+  min-width: 0;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.repayment-ai-detail-block h4 {
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+
+.repayment-ai-priority-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.repayment-ai-priority-list li {
+  padding-left: 3px;
+}
+
+.repayment-ai-priority-list strong,
+.repayment-ai-priority-list span {
+  display: block;
+}
+
+.repayment-ai-priority-list span {
+  margin-top: 2px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.repayment-ai-comparison {
+  display: grid;
+}
+
+.repayment-ai-comparison > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(100px, 0.8fr) minmax(120px, 1fr);
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-divider) 70%, transparent);
+  font-size: 11px;
+}
+
+.repayment-ai-comparison > div:last-child {
+  border-bottom: 0;
+}
+
+.repayment-ai-comparison span {
+  color: var(--color-text-secondary);
+}
+
+.repayment-ai-details .finance-risk-tag-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+.repayment-ai-details .finance-risk-tag-card {
+  padding: 9px 0;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-divider) 70%, transparent);
+  border-radius: 0;
+  background: transparent;
+}
+
+@media (max-width: 1180px) {
+  .repayment-overview-band {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .repayment-overview-stat:nth-child(3n) {
+    border-right: 0;
+  }
+
+  .repayment-overview-stat:nth-child(-n + 3) {
+    border-bottom: 1px solid var(--color-divider);
+  }
+
+  .repayment-ai-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .repayment-ai-summary-item:nth-child(2) {
+    border-right: 0;
+  }
+
+  .repayment-ai-summary-item:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--color-divider);
+  }
 }
 
 .repayment-debt-modal {
@@ -16930,6 +17304,78 @@ select.debt-form-input {
 }
 
 @media (max-width: 760px) {
+  .repayment-workspace {
+    padding: 14px 0;
+  }
+
+  .repayment-workspace .repayment-dashboard-hero {
+    padding-right: 0;
+    border-right: 0;
+  }
+
+  .repayment-overview-band {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .repayment-overview-stat,
+  .repayment-overview-stat:nth-child(3n) {
+    border-right: 1px solid var(--color-divider);
+    border-bottom: 1px solid var(--color-divider);
+  }
+
+  .repayment-overview-stat:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .repayment-overview-stat:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+
+  .finance-overview-income-actions.repayment-income-toolbar {
+    grid-template-columns: auto 1fr;
+  }
+
+  .finance-overview-income-actions.repayment-income-toolbar .finance-income-inline-manual {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) auto;
+    justify-content: stretch;
+  }
+
+  .repayment-ai-header > div {
+    display: grid;
+    gap: 2px;
+  }
+
+  .repayment-ai-summary-item,
+  .repayment-ai-extra {
+    min-height: 66px;
+  }
+
+  .repayment-ai-summary > :nth-child(odd) {
+    border-right: 1px solid var(--color-divider);
+  }
+
+  .repayment-ai-summary > :nth-child(-n + 2) {
+    border-bottom: 1px solid var(--color-divider);
+  }
+
+  .repayment-ai-summary > :nth-child(n + 3) {
+    border-bottom: 0;
+  }
+
+  .repayment-ai-details-body {
+    grid-template-columns: 1fr;
+  }
+
+  .repayment-ai-details > summary small {
+    display: none;
+  }
+
+  .repayment-ai-comparison > div {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
   .repayment-list-detail-layout {
     grid-template-columns: 1fr;
     min-height: 0;
