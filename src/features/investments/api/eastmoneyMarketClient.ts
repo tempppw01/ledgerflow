@@ -41,6 +41,7 @@ export interface GlobalMarketIndex {
   market: string;
   name: string;
   symbol: string;
+  flag: string;
 }
 
 export interface GlobalMarketQuote {
@@ -178,11 +179,11 @@ export const EASTMONEY_MARKET_INDEXES: EastmoneyMarketIndex[] = [
 ];
 
 export const GLOBAL_MARKET_INDEXES: GlobalMarketIndex[] = [
-  { id: 'us-dow', market: '美股', name: '道琼斯', symbol: '^DJI' },
-  { id: 'us-sp500', market: '美股', name: '标普 500', symbol: '^GSPC' },
-  { id: 'us-nasdaq', market: '美股', name: '纳斯达克', symbol: '^IXIC' },
-  { id: 'jp-nikkei', market: '日股', name: '日经 225', symbol: '^N225' },
-  { id: 'kr-kospi', market: '韩股', name: '韩国综合', symbol: '^KS11' }
+  { id: 'us-dow', market: '美股', name: '道琼斯', symbol: '^DJI', flag: '🇺🇸' },
+  { id: 'us-sp500', market: '美股', name: '标普 500', symbol: '^GSPC', flag: '🇺🇸' },
+  { id: 'us-nasdaq', market: '美股', name: '纳斯达克', symbol: '^IXIC', flag: '🇺🇸' },
+  { id: 'jp-nikkei', market: '日股', name: '日经 225', symbol: '^N225', flag: '🇯🇵' },
+  { id: 'kr-kospi', market: '韩股', name: '韩国综合', symbol: '^KS11', flag: '🇰🇷' }
 ];
 
 export const EASTMONEY_MARKET_NEWS_CATEGORIES: EastmoneyMarketNewsCategory[] = [

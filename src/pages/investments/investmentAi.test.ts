@@ -6,8 +6,10 @@ import type {
 } from '../../entities/investment/types';
 import {
   buildInvestmentFundAnalysisPrompt,
+  buildInvestmentMarketInsightPrompt,
   buildInvestmentWatchlistReviewPrompt,
   extractInvestmentAnalysis,
+  extractInvestmentMarketInsight,
   getInvestmentAssistantDisplayText,
   stripInvestmentAnalysisJson,
   summarizeInvestmentAnalysis
@@ -155,5 +157,57 @@ describe('investment prompt builders', () => {
     expect(prompt).toContain('socialNews');
     expect(prompt).toContain('policySignals');
     expect(prompt).toContain('监管部门发布新规');
+  });
+
+  it('builds a daily market prompt with algorithm, news and holding context', () => {
+    const prompt = buildInvestmentMarketInsightPrompt({
+      positions,
+      watchlist: [{ ...watchItem, holdingShares: 1200 }],
+      monthlyInvestableCash: 2500,
+      algorithmSignals: JSON.stringify({ score: 42, strongestTheme: '创新药 +2.10%' }),
+      marketContext: JSON.stringify({
+        socialNews: [{ title: '创新药审批提速', summary: '板块获得政策关注' }],
+        hotThemes: [{ name: '创新药', changePercent: 2.1 }]
+      }),
+      timeContext: '当前中国标准时间：2026-07-16 15:10:00（来源：测试）'
+    });
+
+    expect(prompt).toContain('创新药 +2.10%');
+    expect(prompt).toContain('创新药审批提速');
+    expect(prompt).toContain('holdingShares');
+    expect(prompt).toContain('15:10:00');
+  });
+
+  it('normalizes structured daily market insight output', () => {
+    const insight = extractInvestmentMarketInsight(
+      [
+        '```json',
+        JSON.stringify({
+          headline: '创新药领涨，但不要追高',
+          summary: '指数震荡，政策新闻让创新药成为当前热点。',
+          points: [
+            { label: '板块', text: '创新药上涨 2.10%，强于市场。' },
+            { label: '新闻', text: '审批提速带来政策催化。' }
+          ],
+          suggestions: [
+            {
+              tone: 'warning',
+              emoji: '🛑',
+              title: '不追盘中急涨',
+              reason: '强势板块波动也会放大。'
+            }
+          ],
+          confidence: 'high'
+        }),
+        '```'
+      ].join('\n')
+    );
+
+    expect(insight).toMatchObject({
+      headline: '创新药领涨，但不要追高',
+      confidence: 'high'
+    });
+    expect(insight?.points).toHaveLength(2);
+    expect(insight?.suggestions[0]).toMatchObject({ tone: 'warning', title: '不追盘中急涨' });
   });
 });

@@ -7,6 +7,23 @@ import type {
   InvestmentWatchlistReviewItem
 } from '../../entities/investment/types';
 
+export type InvestmentMarketInsightSuggestion = {
+  tone: 'positive' | 'warning' | 'neutral';
+  emoji: string;
+  title: string;
+  reason: string;
+};
+
+export type InvestmentMarketInsight = {
+  headline: string;
+  summary: string;
+  points: Array<{ label: string; text: string }>;
+  suggestions: InvestmentMarketInsightSuggestion[];
+  confidence: 'low' | 'medium' | 'high';
+  source?: 'ai' | 'algorithm';
+  generatedAt?: string;
+};
+
 function normalizeList(value: unknown, limit = 4): string[] {
   if (!Array.isArray(value)) return [];
 
@@ -65,6 +82,116 @@ function extractJsonCodeBlock(raw: string): string {
   }
 
   return findLastJsonObject(raw);
+}
+
+export function extractInvestmentMarketInsight(raw: string): InvestmentMarketInsight | null {
+  const jsonBlock = extractJsonCodeBlock(raw);
+  if (!jsonBlock) return null;
+
+  try {
+    const parsed = JSON.parse(jsonBlock) as Partial<InvestmentMarketInsight>;
+    const headline = String(parsed.headline || '').trim();
+    const summary = String(parsed.summary || '').trim();
+    if (!headline && !summary) return null;
+
+    const points = Array.isArray(parsed.points)
+      ? parsed.points
+          .map((item) => {
+            if (!item || typeof item !== 'object') return null;
+            const point = item as { label?: unknown; text?: unknown };
+            const text = String(point.text || '').trim();
+            return text
+              ? { label: String(point.label || '观察').trim() || '观察', text: text.slice(0, 120) }
+              : null;
+          })
+          .filter((item): item is { label: string; text: string } => Boolean(item))
+          .slice(0, 4)
+      : [];
+
+    const suggestions = Array.isArray(parsed.suggestions)
+      ? parsed.suggestions
+          .map((item) => {
+            if (!item || typeof item !== 'object') return null;
+            const suggestion = item as Partial<InvestmentMarketInsightSuggestion>;
+            const title = String(suggestion.title || '').trim();
+            if (!title) return null;
+            const tone =
+              suggestion.tone === 'positive' ||
+              suggestion.tone === 'warning' ||
+              suggestion.tone === 'neutral'
+                ? suggestion.tone
+                : 'neutral';
+            return {
+              tone,
+              emoji: String(suggestion.emoji || (tone === 'warning' ? '⚠️' : '🧭')).trim(),
+              title: title.slice(0, 40),
+              reason: String(suggestion.reason || '结合当前市场信号，先按计划执行。')
+                .trim()
+                .slice(0, 160)
+            } satisfies InvestmentMarketInsightSuggestion;
+          })
+          .filter((item): item is InvestmentMarketInsightSuggestion => Boolean(item))
+          .slice(0, 3)
+      : [];
+
+    return {
+      headline: headline.slice(0, 80) || '市场复合信号已更新',
+      summary: summary.slice(0, 180) || '结合大盘、板块和近期资讯给出今日参考。',
+      points,
+      suggestions,
+      confidence:
+        parsed.confidence === 'high' || parsed.confidence === 'medium' ? parsed.confidence : 'low'
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function buildInvestmentMarketInsightPrompt(input: {
+  marketContext: string;
+  algorithmSignals: string;
+  positions: InvestmentPosition[];
+  watchlist: InvestmentWatchItem[];
+  monthlyInvestableCash: number;
+  timeContext: string;
+}) {
+  const context = {
+    algorithmSignals: input.algorithmSignals,
+    marketContext: input.marketContext,
+    positions: input.positions.slice(0, 8).map((item) => ({
+      name: item.name,
+      category: item.category,
+      currentValue: Number(item.currentValue.toFixed(2)),
+      investedAmount: Number(item.investedAmount.toFixed(2)),
+      riskLevel: item.riskLevel,
+      monthlyContribution: item.monthlyContribution || 0
+    })),
+    watchlist: input.watchlist.slice(0, 10).map((item) => ({
+      name: item.name,
+      code: item.code || '',
+      holdingShares: item.holdingShares || 0,
+      netValue: item.netValue || '',
+      todayChange: item.addedReturn || '',
+      category: item.tags?.[0] || ''
+    })),
+    monthlyInvestableCash: Number(input.monthlyInvestableCash.toFixed(2)),
+    timeContext: input.timeContext
+  };
+
+  return [
+    '你是 LedgerFlow 的每日投资市场简报助手。请基于提供的真实行情、板块、新闻和算法信号，输出今天的市场解读和可执行建议。',
+    '必须遵守：',
+    '1. 只使用上下文中的事实，不要编造新闻、点位、基金收益或政策；信息不足时明确写“数据不足”。',
+    '2. 不能给出保证收益或绝对化买卖指令；建议要具体但保守，适合普通用户。',
+    '3. 重点解释近期热点、强弱板块、新闻/政策线索如何影响今天的节奏，并结合用户已有持仓和自选份额。',
+    '4. 每次输出必须有明显差异：至少引用一个当前板块或新闻事实，不能使用固定套话。',
+    '5. 只返回 JSON 代码块，不要返回 Markdown 代码块之外的内容。格式：',
+    '```json',
+    '{"headline":"","summary":"","points":[{"label":"板块|新闻|持仓|风险","text":""}],"suggestions":[{"tone":"positive|warning|neutral","emoji":"","title":"","reason":""}],"confidence":"low|medium|high"}',
+    '```',
+    '6. points 返回 2 到 4 条，suggestions 返回 2 到 3 条；每条简短、可读。',
+    `上下文：\n${JSON.stringify(context, null, 2)}`
+  ].join('\n');
 }
 
 export function stripInvestmentAnalysisJson(raw: string): string {

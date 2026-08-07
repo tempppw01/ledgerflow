@@ -57,8 +57,11 @@ import { Toast, type ToastVariant } from '../../shared/ui/Toast';
 import {
   buildInvestmentAssistantAuxiliaryInfo,
   buildInvestmentFundAnalysisPrompt,
+  buildInvestmentMarketInsightPrompt,
   createInvestmentAiMessage,
+  extractInvestmentMarketInsight,
   extractInvestmentAnalysis,
+  type InvestmentMarketInsight,
   summarizeInvestmentAnalysis,
   trimInvestmentAiMessages
 } from './investmentAi';
@@ -371,14 +374,171 @@ type RuleSuggestion = {
   reason: string;
 };
 
+type MarketAlgorithmSignals = {
+  score: number;
+  riskScore: number;
+  regime: string;
+  breadth: string;
+  strongestTheme: string;
+  weakestTheme: string;
+  newsSignal: string;
+  concentration: string;
+  formula: string;
+};
+
+type WatchHoldingSnapshot = {
+  id: string;
+  name: string;
+  category: string;
+  shares: number;
+  currentValue: number;
+  marketChange: number | null;
+  estimatedTodayProfit: number | null;
+};
+
+type MarketInsightStatus = 'disabled' | 'waiting' | 'loading' | 'ready' | 'error';
+
+function parseStoredPercent(value?: string) {
+  const match = String(value || '')
+    .replace(/,/g, '')
+    .match(/[-+]?\d+(?:\.\d+)?/);
+  if (!match) return null;
+  const parsed = Number(match[0]);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getWatchHoldingSnapshot(item: InvestmentWatchItem): WatchHoldingSnapshot | null {
+  if (typeof item.holdingShares !== 'number' || item.holdingShares <= 0) return null;
+  const netValue = Number(String(item.netValue || '').replace(/,/g, ''));
+  if (!Number.isFinite(netValue) || netValue <= 0) return null;
+
+  const currentValue = Number((item.holdingShares * netValue).toFixed(2));
+  const marketChange = parseStoredPercent(item.addedReturn);
+  return {
+    id: `watch-${item.id}`,
+    name: item.name,
+    category: item.tags?.[0] || '基金自选',
+    shares: item.holdingShares,
+    currentValue,
+    marketChange,
+    estimatedTodayProfit:
+      marketChange === null ? null : Number(((currentValue * marketChange) / 100).toFixed(2))
+  };
+}
+
+function clampSignal(value: number, min = -100, max = 100) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function buildMarketAlgorithmSignals({
+  marketChange,
+  themeBoards,
+  industryBoards,
+  news,
+  positions,
+  watchlist,
+  totalCurrentValue
+}: {
+  marketChange: number | null;
+  themeBoards: EastmoneyMarketBoard[];
+  industryBoards: EastmoneyMarketBoard[];
+  news: EastmoneyMarketNewsItem[];
+  positions: InvestmentPosition[];
+  watchlist: InvestmentWatchItem[];
+  totalCurrentValue: number;
+}): MarketAlgorithmSignals {
+  const boards = [...themeBoards, ...industryBoards].filter(
+    (item) => typeof item.changePercent === 'number' && Number.isFinite(item.changePercent)
+  );
+  const upBoards = boards.filter((item) => (item.changePercent || 0) > 0).length;
+  const downBoards = boards.filter((item) => (item.changePercent || 0) < 0).length;
+  const boardCount = boards.length || 1;
+  const breadthScore = ((upBoards - downBoards) / boardCount) * 100;
+  const averageBoardChange = boards.length
+    ? boards.reduce((sum, item) => sum + (item.changePercent || 0), 0) / boards.length
+    : 0;
+  const indexScore = (marketChange || 0) * 22;
+  const momentumScore = clampSignal(
+    indexScore * 0.45 + breadthScore * 0.35 + averageBoardChange * 12 * 0.2
+  );
+
+  const newsText = news
+    .slice(0, 12)
+    .map((item) => `${item.title} ${item.summary}`)
+    .join(' ');
+  const positiveNewsCount = (
+    newsText.match(/利好|增长|回暖|突破|支持|订单|创新|扩产|降息|降准/g) || []
+  ).length;
+  const negativeNewsCount = (
+    newsText.match(/风险|下滑|承压|处罚|监管|冲突|亏损|下跌|减持|加息/g) || []
+  ).length;
+  const newsScore = clampSignal((positiveNewsCount - negativeNewsCount) * 12, -30, 30);
+
+  const strongest = [...boards].sort(
+    (a, b) =>
+      (b.changePercent || Number.NEGATIVE_INFINITY) - (a.changePercent || Number.NEGATIVE_INFINITY)
+  )[0];
+  const weakest = [...boards].sort(
+    (a, b) =>
+      (a.changePercent || Number.POSITIVE_INFINITY) - (b.changePercent || Number.POSITIVE_INFINITY)
+  )[0];
+  const watchHoldingValue = watchlist.reduce((sum, item) => {
+    const snapshot = getWatchHoldingSnapshot(item);
+    return sum + (snapshot?.currentValue || 0);
+  }, 0);
+  const portfolioValue = totalCurrentValue + watchHoldingValue;
+  const largestPositionShare = portfolioValue
+    ? Math.max(
+        ...positions.map((item) => item.currentValue),
+        ...watchlist.map((item) => getWatchHoldingSnapshot(item)?.currentValue || 0),
+        0
+      ) / portfolioValue
+    : 0;
+  const volatilityScore = Math.min(
+    40,
+    Math.abs(marketChange || 0) * 18 + Math.abs(averageBoardChange) * 8
+  );
+  const score = Math.round(
+    clampSignal(momentumScore * 0.58 + newsScore * 0.22 - volatilityScore * 0.2)
+  );
+  const riskScore = Math.round(
+    clampSignal(50 - score * 0.35 + volatilityScore * 0.65 + largestPositionShare * 25, 0, 100)
+  );
+
+  return {
+    score,
+    riskScore,
+    regime:
+      score >= 35 ? '偏强但需防追高' : score <= -35 ? '偏弱，优先控风险' : '震荡分化，精选板块',
+    breadth: boards.length
+      ? `上涨 ${upBoards} / 下跌 ${downBoards} / 样本 ${boards.length}`
+      : '板块数据不足',
+    strongestTheme: strongest
+      ? `${strongest.name} ${formatMarketPercent(strongest.changePercent)}`
+      : '暂无强势板块',
+    weakestTheme: weakest
+      ? `${weakest.name} ${formatMarketPercent(weakest.changePercent)}`
+      : '暂无弱势板块',
+    newsSignal:
+      positiveNewsCount || negativeNewsCount
+        ? `利好词 ${positiveNewsCount} / 风险词 ${negativeNewsCount}`
+        : '新闻信号不足',
+    concentration: `${(largestPositionShare * 100).toFixed(0)}% 最大仓位占比`,
+    formula:
+      '综合分 = 指数动量×45% + 板块广度×35% + 板块均值×20%；再叠加新闻信号、波动率和集中度计算风险分。'
+  };
+}
+
 function buildRuleSuggestions({
   positions,
   marketChange,
-  monthlyInvestableCash
+  monthlyInvestableCash,
+  algorithmSignals
 }: {
   positions: InvestmentPosition[];
   marketChange: number | null;
   monthlyInvestableCash: number;
+  algorithmSignals?: MarketAlgorithmSignals;
 }): RuleSuggestion[] {
   const weakestPosition = positions
     .map((item) => ({
@@ -404,7 +564,7 @@ function buildRuleSuggestions({
         title: '把可投资金先留在手里',
         reason:
           monthlyInvestableCash > 0
-            ? `依据：本月可投 ${formatCurrencyAuto(monthlyInvestableCash)}，分批比一次性投入更从容。`
+            ? `依据：${algorithmSignals?.breadth || '市场'}；本月可投 ${formatCurrencyAuto(monthlyInvestableCash)}，分批比一次性投入更从容。`
             : '依据：本月没有额外可投资金，先观察已有仓位。'
       }
     ];
@@ -422,7 +582,7 @@ function buildRuleSuggestions({
         tone: 'neutral',
         emoji: '🔎',
         title: '重点看已有基金有没有跟上',
-        reason: '依据：先比较自己的浮盈和板块强弱，再决定是否调整。'
+        reason: `依据：${algorithmSignals?.strongestTheme || '先比较自己的浮盈和板块强弱'}，再决定是否调整。`
       }
     ];
   }
@@ -449,32 +609,62 @@ function buildRuleSuggestions({
       tone: 'positive',
       emoji: '✅',
       title: '今天可以按原计划定投',
-      reason: '依据：大盘波动不大，未触发追涨或急跌的暂停规则。'
+      reason: `依据：${algorithmSignals?.regime || '大盘波动不大'}；未触发追涨或急跌的暂停规则。`
     },
     {
       tone: 'neutral',
-      emoji: '🧭',
-      title: '不要临时加码',
-      reason: '依据：定投按节奏走，单日行情不决定长期计划。'
+      emoji: '🧩',
+      title: algorithmSignals?.strongestTheme
+        ? `重点观察 ${algorithmSignals.strongestTheme.split(' ')[0]}`
+        : '不要临时加码',
+      reason: algorithmSignals
+        ? `依据：${algorithmSignals.strongestTheme}；${algorithmSignals.newsSignal}，先确认热点持续性。`
+        : '依据：定投按节奏走，单日行情不决定长期计划。'
     }
   ];
 }
 
 function HoldingsTodayPanel({
   positions,
+  watchlist,
   totalCurrentValue,
   totalProfit,
   profitRate,
   marketChange
 }: {
   positions: InvestmentPosition[];
+  watchlist: InvestmentWatchItem[];
   totalCurrentValue: number;
   totalProfit: number;
   profitRate: number;
   marketChange: number | null;
 }) {
-  const estimatedTodayProfit =
+  const watchHoldings = watchlist
+    .map(getWatchHoldingSnapshot)
+    .filter((item): item is WatchHoldingSnapshot => Boolean(item));
+  const estimatedPositionProfit =
     marketChange === null ? null : (totalCurrentValue * marketChange) / 100;
+  const estimatedWatchProfit = watchHoldings.reduce(
+    (sum, item) => sum + (item.estimatedTodayProfit || 0),
+    0
+  );
+  const hasEstimatedWatchProfit = watchHoldings.some((item) => item.estimatedTodayProfit !== null);
+  const estimatedTodayProfit =
+    estimatedPositionProfit === null && !hasEstimatedWatchProfit
+      ? null
+      : Number(((estimatedPositionProfit || 0) + estimatedWatchProfit).toFixed(2));
+  const estimatedValueBase =
+    (estimatedPositionProfit === null ? 0 : totalCurrentValue) +
+    watchHoldings.reduce(
+      (sum, item) => sum + (item.estimatedTodayProfit === null ? 0 : item.currentValue),
+      0
+    );
+  const effectiveMarketChange =
+    estimatedTodayProfit !== null && estimatedValueBase > 0
+      ? (estimatedTodayProfit / estimatedValueBase) * 100
+      : marketChange;
+  const holdingCount = positions.length + watchHoldings.length;
+  const hasKnownCost = positions.length > 0;
 
   return (
     <section className="panel investments-today-holdings-panel" aria-label="今日持仓">
@@ -483,30 +673,30 @@ function HoldingsTodayPanel({
           <h2>今日持仓</h2>
           <p>先看自己今天大概赚了还是亏了。</p>
         </div>
-        <span className="badge">{positions.length} 笔</span>
+        <span className="badge">{holdingCount} 笔</span>
       </div>
 
       <div className="investments-today-summary">
         <div className={totalProfit >= 0 ? 'is-positive' : 'is-negative'}>
           <span>总浮盈浮亏</span>
-          <strong>{formatCurrencyAuto(totalProfit)}</strong>
-          <em>{(profitRate * 100).toFixed(1)}%</em>
+          <strong>{hasKnownCost ? formatCurrencyAuto(totalProfit) : '--'}</strong>
+          <em>{hasKnownCost ? `${(profitRate * 100).toFixed(1)}%` : '成本待录入'}</em>
         </div>
-        <div className={getMarketTone(marketChange)}>
+        <div className={getMarketTone(effectiveMarketChange)}>
           <span>今日市场估算</span>
           <strong>
             {estimatedTodayProfit === null ? '--' : formatCurrencyAuto(estimatedTodayProfit)}
           </strong>
           <em>
-            {marketChange === null
+            {effectiveMarketChange === null
               ? '等待行情'
-              : `${getMovementEmoji(marketChange)} ${formatMarketPercent(marketChange)}`}
+              : `${getMovementEmoji(effectiveMarketChange)} ${formatMarketPercent(effectiveMarketChange)}`}
           </em>
         </div>
       </div>
 
       <p className="investments-today-note">
-        今日估算按主要指数平均涨跌计算；基金逐日净值接入后会替换为真实收益。
+        今日估算优先采用自选基金的当日涨跌；没有基金行情时再按主要指数平均涨跌估算。
       </p>
 
       <div className="investments-position-glance-list">
@@ -539,6 +729,34 @@ function HoldingsTodayPanel({
             </article>
           );
         })}
+        {watchHoldings.slice(0, Math.max(0, 6 - positions.length)).map((holding) => (
+          <article key={holding.id} className="investments-position-glance-row is-watch-holding">
+            <span className="investments-position-glance-emoji" aria-hidden="true">
+              {getMovementEmoji(holding.marketChange)}
+            </span>
+            <div className="investments-position-glance-name">
+              <strong title={holding.name}>{holding.name}</strong>
+              <span>{holding.category} · 自选持仓</span>
+            </div>
+            <div>
+              <span>当前市值</span>
+              <strong>{formatCurrencyAuto(holding.currentValue)}</strong>
+            </div>
+            <div>
+              <span>持有份额</span>
+              <strong>{formatHoldingShares(holding.shares)}</strong>
+            </div>
+            <div className={getMarketTone(holding.marketChange)}>
+              <span>今日估算</span>
+              <strong>
+                {holding.estimatedTodayProfit === null
+                  ? '--'
+                  : formatCurrencyAuto(holding.estimatedTodayProfit)}
+              </strong>
+              <em>{formatMarketPercent(holding.marketChange)}</em>
+            </div>
+          </article>
+        ))}
       </div>
     </section>
   );
@@ -547,11 +765,17 @@ function HoldingsTodayPanel({
 function PlainMarketBriefingPanel({
   marketChange,
   themeBoards,
-  news
+  news,
+  insight,
+  algorithmSignals,
+  insightStatus
 }: {
   marketChange: number | null;
   themeBoards: EastmoneyMarketBoard[];
   news: EastmoneyMarketNewsItem[];
+  insight: InvestmentMarketInsight | null;
+  algorithmSignals: MarketAlgorithmSignals;
+  insightStatus: MarketInsightStatus;
 }) {
   const strongestTheme = [...themeBoards].sort(
     (a, b) =>
@@ -574,39 +798,79 @@ function PlainMarketBriefingPanel({
         <span aria-hidden="true">🗣️</span>
       </div>
       <strong className="investments-plain-briefing-lead">
-        {getPlainMarketLine(marketChange)}
+        {insight?.headline ||
+          (marketChange === null && news.length
+            ? '价格信号暂缺，先结合新闻热度观察，不做追涨判断。'
+            : getPlainMarketLine(marketChange))}
       </strong>
+      {insight?.summary ? <p className="investments-market-ai-summary">{insight.summary}</p> : null}
       <div className="investments-plain-briefing-points">
-        <p>
-          <span>板块</span>
-          {strongestTheme
-            ? `${strongestTheme.name} ${formatMarketPercent(strongestTheme.changePercent)}，今天相对有劲。`
-            : '板块数据还在加载。'}
-        </p>
-        <p>
-          <span>回避</span>
-          {weakestTheme && weakestTheme.code !== strongestTheme?.code
-            ? `${weakestTheme.name} ${formatMarketPercent(weakestTheme.changePercent)}，今天偏弱，别急着接。`
-            : '暂时没有明显的弱势板块。'}
-        </p>
-        <p>
-          <span>{policyNews ? '政策' : '资讯'}</span>
-          {topNews
-            ? topNews.summary || '有一条新资讯正在影响市场关注。'
-            : '资讯正在同步，稍后刷新看看。'}
-        </p>
+        {insight?.points.length
+          ? insight.points.map((point) => (
+              <p key={`${point.label}-${point.text}`}>
+                <span>{point.label}</span>
+                {point.text}
+              </p>
+            ))
+          : [
+              {
+                label: '板块',
+                text: strongestTheme
+                  ? `${strongestTheme.name} ${formatMarketPercent(strongestTheme.changePercent)}，今天相对有劲。`
+                  : '板块数据还在加载。'
+              },
+              {
+                label: '回避',
+                text:
+                  weakestTheme && weakestTheme.code !== strongestTheme?.code
+                    ? `${weakestTheme.name} ${formatMarketPercent(weakestTheme.changePercent)}，今天偏弱，别急着接。`
+                    : '暂时没有明显的弱势板块。'
+              },
+              {
+                label: policyNews ? '政策' : '资讯',
+                text: topNews
+                  ? topNews.summary || '有一条新资讯正在影响市场关注。'
+                  : '资讯正在同步，稍后刷新看看。'
+              }
+            ].map((point) => (
+              <p key={point.label}>
+                <span>{point.label}</span>
+                {point.text}
+              </p>
+            ))}
       </div>
+      <small className="investments-market-insight-meta">
+        {insightStatus === 'ready' && insight
+          ? `AI 复合分析 · 每 15 分钟最多 1 次 · 综合分 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
+          : insightStatus === 'disabled'
+            ? `本地复合算法 · 配置 AI 后每 15 分钟最多 1 次 · 综合分 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
+            : insightStatus === 'error'
+              ? `本地复合算法 · AI 暂不可用 · 综合分 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
+              : `正在准备 AI 复合分析 · 综合分 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`}
+      </small>
     </section>
   );
 }
 
-function RuleSuggestionsPanel({ suggestions }: { suggestions: RuleSuggestion[] }) {
+function RuleSuggestionsPanel({
+  suggestions,
+  insight,
+  algorithmSignals
+}: {
+  suggestions: RuleSuggestion[];
+  insight: InvestmentMarketInsight | null;
+  algorithmSignals: MarketAlgorithmSignals;
+}) {
   return (
     <section className="panel investments-rule-suggestions-panel" aria-label="规则提示">
       <div className="investments-today-panel-head">
         <div>
           <h2>今天怎么做</h2>
-          <p>按预设规则给的参考，不是交易指令。</p>
+          <p>
+            {insight
+              ? `AI 结合新闻、热点和板块算法生成 · 风险分 ${algorithmSignals.riskScore}，不是交易指令。`
+              : `复合算法给的参考 · 风险分 ${algorithmSignals.riskScore}，不是交易指令。`}
+          </p>
         </div>
         <span aria-hidden="true">🧠</span>
       </div>
@@ -1005,7 +1269,7 @@ function MarketOverviewPanel({
   error: string;
   onSelect: (secId: string) => void;
 }) {
-  const quotes = overview?.quotes || [];
+  const quotes = useMemo(() => overview?.quotes || [], [overview?.quotes]);
   const quoteBySecId = new Map(quotes.map((quote) => [quote.secId, quote]));
   const activeIndex = EASTMONEY_MARKET_INDEXES.find((item) => item.secId === selectedSecId);
   const selectedQuote =
@@ -1017,7 +1281,10 @@ function MarketOverviewPanel({
   const selectedTrend = isTrendCurrent ? overview?.trend || [] : [];
   const chart = buildMarketTrendGeometry(selectedTrend);
   const [hoveredTrendIndex, setHoveredTrendIndex] = useState<number | null>(null);
+  const [flashingQuoteIds, setFlashingQuoteIds] = useState<Set<string>>(() => new Set());
   const indexRailRef = useRef<HTMLDivElement | null>(null);
+  const previousQuoteValuesRef = useRef<Map<string, string>>(new Map());
+  const flashTimerRef = useRef<number | null>(null);
   const totalAmount = quotes.reduce((sum, item) => sum + (item.amount || 0), 0);
   const selectedQuoteData =
     selectedQuote && 'amount' in selectedQuote ? (selectedQuote as EastmoneyMarketQuote) : null;
@@ -1030,10 +1297,50 @@ function MarketOverviewPanel({
   const hoveredTrendPoint = hoveredTrendIndex === null ? null : activeTrendPoint;
   const globalQuoteById = new Map(globalQuotes.map((quote) => [quote.id, quote]));
   const isAnyMarketOpen = isLiveMarketPollingTime();
+  const quoteUpdateSignature = [
+    ...quotes.map((quote) => `cn:${quote.secId}:${quote.value ?? ''}:${quote.changePercent ?? ''}`),
+    ...globalQuotes.map(
+      (quote) => `global:${quote.id}:${quote.value ?? ''}:${quote.changePercent ?? ''}`
+    )
+  ].join('|');
 
   useEffect(() => {
     setHoveredTrendIndex(null);
   }, [selectedSecId]);
+
+  useEffect(() => {
+    const currentValues = new Map<string, string>();
+    quotes.forEach((quote) => {
+      currentValues.set(`cn:${quote.secId}`, `${quote.value ?? ''}:${quote.changePercent ?? ''}`);
+    });
+    globalQuotes.forEach((quote) => {
+      currentValues.set(`global:${quote.id}`, `${quote.value ?? ''}:${quote.changePercent ?? ''}`);
+    });
+
+    const previousValues = previousQuoteValuesRef.current;
+    const changedIds = new Set<string>();
+    if (previousValues.size > 0) {
+      currentValues.forEach((value, id) => {
+        if (previousValues.has(id) && previousValues.get(id) !== value) changedIds.add(id);
+      });
+    }
+    previousQuoteValuesRef.current = currentValues;
+
+    if (changedIds.size === 0) return;
+    setFlashingQuoteIds(changedIds);
+    if (flashTimerRef.current !== null) window.clearTimeout(flashTimerRef.current);
+    flashTimerRef.current = window.setTimeout(() => {
+      setFlashingQuoteIds(new Set());
+      flashTimerRef.current = null;
+    }, 920);
+  }, [globalQuotes, quoteUpdateSignature, quotes]);
+
+  useEffect(
+    () => () => {
+      if (flashTimerRef.current !== null) window.clearTimeout(flashTimerRef.current);
+    },
+    []
+  );
 
   function handleChartPointerMove(event: MouseEvent<HTMLDivElement>) {
     if (!chart.points.length) return;
@@ -1100,16 +1407,23 @@ function MarketOverviewPanel({
         <div className="investments-global-quote-grid">
           {GLOBAL_MARKET_INDEXES.map((index) => {
             const quote = globalQuoteById.get(index.id);
+            const tone = getMarketTone(quote?.changePercent ?? null);
             return (
-              <article key={index.id} className="investments-global-quote-card">
+              <article
+                key={index.id}
+                className={`investments-global-quote-card ${tone} ${
+                  flashingQuoteIds.has(`global:${index.id}`) ? 'is-updating' : ''
+                }`}
+              >
                 <div className="investments-global-quote-name">
-                  <span>{index.market}</span>
+                  <span>
+                    <i aria-hidden="true">{index.flag}</i>
+                    {index.market}
+                  </span>
                   <strong>{index.name}</strong>
                 </div>
                 <b>{quote ? formatMarketIndexValue(quote.value) : '--'}</b>
-                <span className={getMarketTone(quote?.changePercent ?? null)}>
-                  {formatMarketPercent(quote?.changePercent ?? null)}
-                </span>
+                <span className={tone}>{formatMarketPercent(quote?.changePercent ?? null)}</span>
               </article>
             );
           })}
@@ -1134,19 +1448,26 @@ function MarketOverviewPanel({
           {EASTMONEY_MARKET_INDEXES.map((item) => {
             const quote = quoteBySecId.get(item.secId);
             const changePercent = quote?.changePercent ?? null;
+            const tone = getMarketTone(changePercent);
             return (
               <button
                 key={item.secId}
                 type="button"
                 role="tab"
                 aria-selected={selectedSecId === item.secId}
-                className={`investments-market-tab ${selectedSecId === item.secId ? 'is-active' : ''} ${getMarketTone(
-                  changePercent
-                )}`}
+                className={`investments-market-tab ${
+                  selectedSecId === item.secId ? 'is-active' : ''
+                } ${tone} ${flashingQuoteIds.has(`cn:${item.secId}`) ? 'is-updating' : ''}`}
                 onClick={() => onSelect(item.secId)}
               >
-                <span>{item.name}</span>
-                <strong>{formatMarketPercent(changePercent)}</strong>
+                <div className="investments-market-tab-name">
+                  <span>
+                    <i aria-hidden="true">🇨🇳</i>A 股
+                  </span>
+                  <strong>{item.name}</strong>
+                </div>
+                <b>{formatMarketIndexValue(quote?.value)}</b>
+                <em>{formatMarketPercent(changePercent)}</em>
               </button>
             );
           })}
@@ -1758,6 +2079,10 @@ export function InvestmentsPage() {
   const [holdingStockQuotes, setHoldingStockQuotes] = useState<
     Map<string, EastmoneyHoldingStockQuote>
   >(() => new Map());
+  const [marketInsight, setMarketInsight] = useState<InvestmentMarketInsight | null>(null);
+  const [marketInsightStatus, setMarketInsightStatus] = useState<MarketInsightStatus>('disabled');
+  const marketInsightRequestAtRef = useRef(0);
+  const marketInsightRequestInFlightRef = useRef(false);
 
   const activePositions = useMemo(() => positions.filter((item) => item.isActive), [positions]);
 
@@ -1827,14 +2152,78 @@ export function InvestmentsPage() {
     [marketOverview]
   );
 
+  const marketAlgorithmSignals = useMemo(
+    () =>
+      buildMarketAlgorithmSignals({
+        marketChange: averageMarketChange,
+        themeBoards: marketThemeBoards,
+        industryBoards: marketIndustryBoards,
+        news: marketNews,
+        positions: activePositions,
+        watchlist: investmentWatchlist,
+        totalCurrentValue: positionSummary.totalCurrentValue
+      }),
+    [
+      activePositions,
+      averageMarketChange,
+      investmentWatchlist,
+      marketIndustryBoards,
+      marketNews,
+      marketThemeBoards,
+      positionSummary.totalCurrentValue
+    ]
+  );
+
+  const marketInsightFingerprint = useMemo(
+    () =>
+      JSON.stringify({
+        marketChange: averageMarketChange,
+        signals: marketAlgorithmSignals,
+        marketQuotes: (marketOverview?.quotes || []).map((item) => [
+          item.secId,
+          item.value,
+          item.changePercent
+        ]),
+        themes: marketThemeBoards.map((item) => [item.code, item.changePercent]),
+        industries: marketIndustryBoards.map((item) => [item.code, item.changePercent]),
+        news: marketNews.slice(0, 8).map((item) => [item.id, item.title, item.summary]),
+        positions: activePositions.map((item) => [item.id, item.currentValue, item.investedAmount]),
+        watchlist: investmentWatchlist.map((item) => [
+          item.id,
+          item.holdingShares,
+          item.netValue,
+          item.addedReturn
+        ])
+      }),
+    [
+      activePositions,
+      averageMarketChange,
+      investmentWatchlist,
+      marketAlgorithmSignals,
+      marketIndustryBoards,
+      marketNews,
+      marketOverview?.quotes,
+      marketThemeBoards
+    ]
+  );
+  const marketInsightProfileKey = useMemo(
+    () =>
+      JSON.stringify({
+        positions: activePositions.map((item) => item.id),
+        watchlist: investmentWatchlist.map((item) => item.id)
+      }),
+    [activePositions, investmentWatchlist]
+  );
+
   const ruleSuggestions = useMemo(
     () =>
       buildRuleSuggestions({
         positions: activePositions,
         marketChange: averageMarketChange,
-        monthlyInvestableCash
+        monthlyInvestableCash,
+        algorithmSignals: marketAlgorithmSignals
       }),
-    [activePositions, averageMarketChange, monthlyInvestableCash]
+    [activePositions, averageMarketChange, marketAlgorithmSignals, monthlyInvestableCash]
   );
 
   const watchCategoryCounts = useMemo<Record<WatchCategoryFilterId, number>>(() => {
@@ -1912,8 +2301,7 @@ export function InvestmentsPage() {
     return JSON.stringify(
       {
         source: '东方财富实时行情',
-        generatedAt: new Date().toISOString(),
-        updatedAt: marketOverview?.updatedAt || new Date().toISOString(),
+        updatedAt: marketOverview?.updatedAt || '',
         marketIndexes: (marketOverview?.quotes || []).slice(0, 4).map((quote) => ({
           name: quote.name,
           code: quote.code,
@@ -1950,6 +2338,153 @@ export function InvestmentsPage() {
     marketThemeBoards,
     selectedMarketThemeCode,
     selectedNewsCategoryId
+  ]);
+
+  useEffect(() => {
+    const minimumIntervalMs = 15 * 60 * 1000;
+    if (!apiKey.trim() || !baseUrl.trim()) {
+      setMarketInsightStatus('disabled');
+      return;
+    }
+    const hasAnyMarketContext = Boolean(
+      marketOverview || marketThemeBoards.length || marketIndustryBoards.length || marketNews.length
+    );
+    if (
+      !hasAnyMarketContext &&
+      (marketStatus === 'loading' ||
+        marketBoardsStatus === 'loading' ||
+        marketNewsStatus === 'loading')
+    ) {
+      setMarketInsightStatus('waiting');
+      return;
+    }
+
+    const cacheKey = 'ledgerflow-investment-market-insight-v1';
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(cacheKey) || 'null') as {
+        generatedAt?: string;
+        profileKey?: string;
+        insight?: InvestmentMarketInsight;
+      } | null;
+      const generatedAt = cached?.generatedAt ? Date.parse(cached.generatedAt) : 0;
+      if (
+        cached?.insight &&
+        cached.profileKey === marketInsightProfileKey &&
+        generatedAt > 0 &&
+        Date.now() - generatedAt < minimumIntervalMs
+      ) {
+        setMarketInsight({
+          ...cached.insight,
+          source: 'ai',
+          generatedAt: cached.generatedAt
+        });
+        setMarketInsightStatus('ready');
+        marketInsightRequestAtRef.current = generatedAt;
+        return;
+      }
+    } catch {
+      // Ignore malformed session cache and continue with a fresh, rate-limited request.
+    }
+
+    if (
+      marketInsightRequestInFlightRef.current ||
+      Date.now() - marketInsightRequestAtRef.current < minimumIntervalMs
+    ) {
+      setMarketInsightStatus((current) => {
+        if (marketInsight) return 'ready';
+        return current === 'error' || current === 'loading' ? current : 'waiting';
+      });
+      return;
+    }
+
+    setMarketInsightStatus('waiting');
+    const timer = window.setTimeout(() => {
+      if (marketInsightRequestInFlightRef.current) return;
+      marketInsightRequestInFlightRef.current = true;
+      marketInsightRequestAtRef.current = Date.now();
+      setMarketInsightStatus('loading');
+
+      void (async () => {
+        try {
+          const timeContext = await buildTimeContext();
+          let fullContent = '';
+          const result = await sendAiChatStream(
+            {
+              baseUrl,
+              apiKey,
+              model,
+              systemPrompt: buildInvestmentMarketInsightPrompt({
+                marketContext: marketContextSummary,
+                algorithmSignals: JSON.stringify(marketAlgorithmSignals, null, 2),
+                positions: activePositions,
+                watchlist: investmentWatchlist,
+                monthlyInvestableCash,
+                timeContext
+              }),
+              messages: [
+                {
+                  role: 'user',
+                  text: '请生成今天的市场简报和今天怎么做，必须结合最新新闻、热点和板块数据。'
+                }
+              ]
+            },
+            {
+              onDelta: (delta) => {
+                fullContent += delta;
+              }
+            }
+          );
+
+          const insight = extractInvestmentMarketInsight(result.content || fullContent);
+          if (!insight) {
+            setMarketInsightStatus('error');
+            return;
+          }
+          const generatedAt = new Date().toISOString();
+          const nextInsight = { ...insight, source: 'ai' as const, generatedAt };
+          setMarketInsight(nextInsight);
+          setMarketInsightStatus('ready');
+          try {
+            sessionStorage.setItem(
+              cacheKey,
+              JSON.stringify({
+                generatedAt,
+                profileKey: marketInsightProfileKey,
+                insight: nextInsight
+              })
+            );
+          } catch {
+            // Ignore storage quota or privacy-mode errors; the current page still shows the result.
+          }
+        } catch {
+          setMarketInsightStatus('error');
+          // Keep the local algorithm visible when the configured model is unavailable.
+        } finally {
+          marketInsightRequestInFlightRef.current = false;
+        }
+      })();
+    }, 700);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    activePositions,
+    apiKey,
+    baseUrl,
+    marketAlgorithmSignals,
+    marketBoardsStatus,
+    marketContextSummary,
+    marketIndustryBoards,
+    marketNewsStatus,
+    marketNews,
+    marketStatus,
+    marketInsight,
+    marketInsightProfileKey,
+    marketOverview,
+    marketThemeBoards,
+    model,
+    monthlyInvestableCash,
+    investmentWatchlist,
+    marketInsightFingerprint
   ]);
 
   useEffect(() => {
@@ -2520,6 +3055,7 @@ export function InvestmentsPage() {
           <section className="investments-core-grid" aria-label="今日投资看板">
             <HoldingsTodayPanel
               positions={activePositions}
+              watchlist={investmentWatchlist}
               totalCurrentValue={positionSummary.totalCurrentValue}
               totalProfit={positionSummary.totalProfit}
               profitRate={positionSummary.profitRate}
@@ -2529,8 +3065,17 @@ export function InvestmentsPage() {
               marketChange={averageMarketChange}
               themeBoards={marketThemeBoards}
               news={marketNews}
+              insight={marketInsight}
+              algorithmSignals={marketAlgorithmSignals}
+              insightStatus={marketInsightStatus}
             />
-            <RuleSuggestionsPanel suggestions={ruleSuggestions} />
+            <RuleSuggestionsPanel
+              suggestions={
+                marketInsight?.suggestions.length ? marketInsight.suggestions : ruleSuggestions
+              }
+              insight={marketInsight}
+              algorithmSignals={marketAlgorithmSignals}
+            />
           </section>
 
           <section

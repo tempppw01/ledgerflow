@@ -69,11 +69,11 @@ vi.mock('../../features/investments/api/eastmoneyMarketClient', () => ({
     { code: 'BK0877', name: 'PCB概念' }
   ],
   GLOBAL_MARKET_INDEXES: [
-    { id: 'us-dow', market: '美股', name: '道琼斯', symbol: '^DJI' },
-    { id: 'us-sp500', market: '美股', name: '标普 500', symbol: '^GSPC' },
-    { id: 'us-nasdaq', market: '美股', name: '纳斯达克', symbol: '^IXIC' },
-    { id: 'jp-nikkei', market: '日股', name: '日经 225', symbol: '^N225' },
-    { id: 'kr-kospi', market: '韩股', name: '韩国综合', symbol: '^KS11' }
+    { id: 'us-dow', market: '美股', name: '道琼斯', symbol: '^DJI', flag: '🇺🇸' },
+    { id: 'us-sp500', market: '美股', name: '标普 500', symbol: '^GSPC', flag: '🇺🇸' },
+    { id: 'us-nasdaq', market: '美股', name: '纳斯达克', symbol: '^IXIC', flag: '🇺🇸' },
+    { id: 'jp-nikkei', market: '日股', name: '日经 225', symbol: '^N225', flag: '🇯🇵' },
+    { id: 'kr-kospi', market: '韩股', name: '韩国综合', symbol: '^KS11', flag: '🇰🇷' }
   ],
   fetchEastmoneyMarketBoards: eastmoneyClientMock.fetchEastmoneyMarketBoards,
   fetchEastmoneyMarketOverview: eastmoneyClientMock.fetchEastmoneyMarketOverview,
@@ -307,6 +307,16 @@ describe('InvestmentsPage', () => {
     ).not.toBeInTheDocument();
     expect(within(marketPanel as HTMLElement).getByText('实时轮询')).toBeInTheDocument();
     expect(within(marketPanel as HTMLElement).getByLabelText('美日韩大盘行情')).toBeInTheDocument();
+    expect(
+      within(within(marketPanel as HTMLElement).getByLabelText('美日韩大盘行情')).getAllByText('🇺🇸')
+    ).toHaveLength(3);
+    expect(
+      within(screen.getByRole('tablist', { name: '大盘指数' })).getAllByText('🇨🇳')
+    ).toHaveLength(11);
+    const shanghaiIndexTab = within(marketPanel as HTMLElement).getByRole('tab', {
+      name: /A 股 上证指数 3996\.16 -1\.00%/
+    });
+    expect(shanghaiIndexTab).toHaveClass('is-negative');
     expect(screen.getAllByText('¥1.09万').length).toBeGreaterThan(0);
 
     expect(screen.queryByText('6 个月应急金')).not.toBeInTheDocument();
@@ -314,6 +324,68 @@ describe('InvestmentsPage', () => {
     expect(screen.getByText('快捷问答')).toBeInTheDocument();
     expect(screen.getByLabelText('基金分析输入框')).toBeInTheDocument();
     expect(container.querySelector('.investments-management-grid')).toBeInTheDocument();
+  });
+
+  it('行情数字变化时会短暂高亮对应指数格', async () => {
+    eastmoneyClientMock.fetchEastmoneyMarketOverview
+      .mockResolvedValueOnce({
+        selectedSecId: '1.000001',
+        updatedAt: '2026-07-10T15:10:00.000Z',
+        quotes: [
+          {
+            secId: '1.000001',
+            code: '000001',
+            name: '上证指数',
+            value: 3996.16,
+            change: -40.43,
+            changePercent: -1
+          }
+        ],
+        trend: []
+      })
+      .mockResolvedValueOnce({
+        selectedSecId: '0.399001',
+        updatedAt: '2026-07-10T15:10:10.000Z',
+        quotes: [
+          {
+            secId: '1.000001',
+            code: '000001',
+            name: '上证指数',
+            value: 4002.88,
+            change: 6.72,
+            changePercent: 0.17
+          },
+          {
+            secId: '0.399001',
+            code: '399001',
+            name: '深证成指',
+            value: 12701.22,
+            change: 24.12,
+            changePercent: 0.19
+          }
+        ],
+        trend: []
+      });
+
+    render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    const initialShanghaiTab = await screen.findByRole('tab', {
+      name: /A 股 上证指数 3996\.16 -1\.00%/
+    });
+    expect(initialShanghaiTab).not.toHaveClass('is-updating');
+
+    await userEvent.click(screen.getByRole('tab', { name: /A 股 深证成指/ }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /A 股 上证指数 4002\.88 \+0\.17%/ })).toHaveClass(
+        'is-updating',
+        'is-positive'
+      );
+    });
   });
 
   it('可以通过东方财富基金代码添加自选基金资料', async () => {
@@ -465,6 +537,44 @@ describe('InvestmentsPage', () => {
     expect(screen.getByRole('button', { name: '1234.56 份' })).toBeInTheDocument();
   });
 
+  it('自选基金填写持有份额后会计入顶部今日持仓估算', async () => {
+    useAppPreferences.setState({
+      investmentPositions: [],
+      investmentWatchlist: [
+        {
+          id: 'watch-estimate',
+          name: '测试估值基金',
+          code: '000009',
+          platform: '东方财富',
+          tags: ['指数'],
+          holdingShares: 100,
+          netValue: '2.0000',
+          addedReturn: '+1.50%',
+          createdAt: '2026-07-01T00:00:00.000Z',
+          updatedAt: '2026-07-01T00:00:00.000Z'
+        }
+      ]
+    });
+
+    render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    const todayHoldings = screen.getByLabelText('今日持仓');
+    await waitFor(() => {
+      expect(within(todayHoldings).getByText('今日市场估算')).toBeInTheDocument();
+    });
+    expect(within(todayHoldings).getByText('1 笔')).toBeInTheDocument();
+    expect(within(todayHoldings).getByText('¥200.00')).toBeInTheDocument();
+    expect(within(todayHoldings).getAllByText('¥3.00')).toHaveLength(2);
+    expect(within(todayHoldings).getByText('+1.50%')).toBeInTheDocument();
+    expect(within(todayHoldings).getByText('成本待录入')).toBeInTheDocument();
+    expect(within(todayHoldings).getByText('指数 · 自选持仓')).toBeInTheDocument();
+    expect(await screen.findByText(/液化天然气制甲烷/)).toBeInTheDocument();
+  });
+
   it('负收益历史业绩柱从零轴向下延伸', async () => {
     useAppPreferences.getState().setInvestmentWatchlist([
       {
@@ -519,8 +629,8 @@ describe('InvestmentsPage', () => {
       </MemoryRouter>
     );
 
-    const indexTab = await screen.findByRole('tab', { name: /^沪深300/ });
-    expect(screen.getByRole('tab', { name: /^上证50/ })).toBeInTheDocument();
+    const indexTab = await screen.findByRole('tab', { name: /A 股 沪深300/ });
+    expect(screen.getByRole('tab', { name: /A 股 上证50/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '查看上一组指数' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '查看下一组指数' })).toBeInTheDocument();
 
