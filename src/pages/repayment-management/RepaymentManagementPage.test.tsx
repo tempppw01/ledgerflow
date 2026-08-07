@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { RepaymentManagementPage } from './RepaymentManagementPage';
@@ -76,6 +76,9 @@ describe('RepaymentManagementPage', () => {
       </MemoryRouter>
     );
 
+    fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
+
+    expect(screen.getByRole('dialog', { name: '新增负债' })).toBeInTheDocument();
     expect(screen.getByLabelText('负债状态')).toHaveValue('active');
     expect(screen.getByText('进行中')).toBeInTheDocument();
     expect(screen.getByText('已结清')).toBeInTheDocument();
