@@ -16073,6 +16073,7 @@ body.categories-accounts-resizing {
 }
 
 .repayment-timeline-item {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -16084,10 +16085,31 @@ body.categories-accounts-resizing {
     border-color 150ms ease,
     transform 150ms ease;
   animation: repayment-timeline-enter 0.3s ease both;
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
-.repayment-timeline-item:hover {
+.repayment-timeline-item:hover:not(:disabled) {
   transform: translateX(2px);
+  border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary-bg) 42%, var(--color-bg-subtle));
+}
+
+.repayment-timeline-item:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.repayment-timeline-item.is-paid {
+  border-color: color-mix(in srgb, var(--color-success) 24%, transparent);
+  background: color-mix(in srgb, var(--color-success-bg) 48%, var(--color-bg-subtle));
+}
+
+.repayment-timeline-item.is-paid .repayment-timeline-dot {
+  background: var(--color-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 15%, transparent);
 }
 
 .repayment-timeline-item.is-danger {
@@ -16149,6 +16171,24 @@ body.categories-accounts-resizing {
   font-weight: 700;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+.repayment-timeline-status {
+  display: grid;
+  gap: 3px;
+  justify-items: end;
+  margin-left: auto;
+}
+
+.repayment-timeline-status strong {
+  color: var(--color-primary);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.repayment-timeline-item.is-paid .repayment-timeline-status strong {
+  color: var(--color-success);
 }
 
 .repayment-timeline-due.is-danger {
@@ -16347,6 +16387,118 @@ body.categories-accounts-resizing {
 .repayment-bar-label {
   font-size: 11px;
   color: var(--color-text-tertiary);
+}
+
+.repayment-projection {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  color: var(--color-primary);
+}
+
+.repayment-projection-stage {
+  position: relative;
+  min-width: 0;
+  min-height: 174px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 10%, var(--color-border-light));
+  border-radius: 12px;
+  background:
+    radial-gradient(
+      circle at 85% 0%,
+      color-mix(in srgb, var(--color-primary-bg) 70%, transparent),
+      transparent 46%
+    ),
+    color-mix(in srgb, var(--color-bg-elevated) 48%, transparent);
+}
+
+.repayment-projection-stage svg {
+  display: block;
+  width: 100%;
+  height: 190px;
+  overflow: visible;
+}
+
+.repayment-projection-grid {
+  stroke: color-mix(in srgb, var(--color-border-light) 72%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.repayment-projection-grid.is-vertical {
+  opacity: 0.45;
+}
+
+.repayment-projection-area {
+  fill: url(#repayment-projection-area);
+}
+
+.repayment-projection-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 4px 7px color-mix(in srgb, var(--color-primary) 22%, transparent));
+}
+
+.repayment-projection-point {
+  fill: var(--color-bg-elevated);
+  stroke: currentColor;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  transition: r 120ms ease;
+}
+
+.repayment-projection-point.is-active {
+  fill: var(--color-primary);
+}
+
+.repayment-projection-value {
+  fill: var(--color-text-secondary);
+  font-family: var(--font-number);
+  font-size: 9px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+
+.repayment-projection-cursor {
+  stroke: color-mix(in srgb, var(--color-primary) 48%, transparent);
+  stroke-dasharray: 4 4;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.repayment-projection-tooltip {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, var(--color-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-primary-bg));
+  color: var(--color-text-secondary);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+  font-size: 10px;
+  transform: translate(-50%, -110%);
+  pointer-events: none;
+}
+
+.repayment-projection-tooltip strong {
+  color: var(--color-primary);
+  font-family: var(--font-number);
+  font-size: 12px;
+}
+
+.repayment-projection-axis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  padding: 0 8px;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  text-align: center;
 }
 
 @media (max-width: 900px) {
@@ -16950,7 +17102,9 @@ select.debt-form-input {
 
 .repayment-overview-stat .finance-overview-number {
   overflow: hidden;
-  font-size: clamp(1.25rem, 1.9vw, 1.7rem);
+  min-width: 0;
+  white-space: nowrap;
+  font-size: clamp(1.05rem, 1.9vw, 1.7rem);
   text-overflow: ellipsis;
 }
 
@@ -16977,25 +17131,102 @@ select.debt-form-input {
 
 .finance-overview-income-actions.repayment-income-toolbar {
   display: grid;
-  grid-template-columns: auto auto minmax(300px, 1fr);
-  gap: 10px;
+  grid-template-columns: minmax(210px, 0.72fr) auto minmax(320px, 1fr);
+  gap: 12px;
   margin: 0;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--color-divider);
-  background: color-mix(in srgb, var(--color-bg-subtle) 62%, transparent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-primary-bg) 44%, transparent),
+    color-mix(in srgb, var(--color-bg-subtle) 48%, transparent)
+  );
 }
 
-.repayment-income-toolbar-label {
-  color: var(--color-text-secondary);
-  font-size: 12px;
+.repayment-income-toolbar-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.repayment-income-toolbar-copy strong {
+  color: var(--color-text-primary);
+  font-size: 13px;
   font-weight: 800;
-  white-space: nowrap;
 }
 
-.finance-overview-income-actions.repayment-income-toolbar .finance-income-inline-manual {
-  grid-column: auto;
-  grid-template-columns: minmax(150px, 220px) auto;
-  justify-content: end;
+.repayment-income-toolbar-copy span {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.repayment-income-ai-button {
+  min-height: 40px !important;
+  border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-border)) !important;
+  background: color-mix(in srgb, var(--color-primary-bg) 62%, var(--color-bg-elevated));
+  color: var(--color-primary);
+  font-weight: 800;
+}
+
+.repayment-income-editor {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  gap: 8px;
+  min-width: 0;
+}
+
+.repayment-income-field {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  min-width: 0;
+  min-height: 40px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg-elevated);
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.repayment-income-field:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 14%, transparent);
+}
+
+.repayment-income-currency {
+  display: grid;
+  place-items: center;
+  border-right: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-primary-bg) 64%, var(--color-bg-elevated));
+  color: var(--color-primary);
+  font-family: var(--font-number);
+  font-weight: 900;
+}
+
+.repayment-income-field input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-number);
+  font-size: 14px;
+  font-weight: 700;
+  outline: 0;
+  box-shadow: none;
+}
+
+.repayment-income-field input:focus {
+  outline: 0;
+  box-shadow: none;
+}
+
+.repayment-income-save-button {
+  min-height: 40px;
+  padding-inline: 16px;
+  white-space: nowrap;
 }
 
 .repayment-ai-section {
@@ -17332,13 +17563,12 @@ select.debt-form-input {
   }
 
   .finance-overview-income-actions.repayment-income-toolbar {
-    grid-template-columns: auto 1fr;
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .finance-overview-income-actions.repayment-income-toolbar .finance-income-inline-manual {
+  .repayment-income-editor {
     grid-column: 1 / -1;
     grid-template-columns: minmax(0, 1fr) auto;
-    justify-content: stretch;
   }
 
   .repayment-ai-header > div {

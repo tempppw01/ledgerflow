@@ -45,6 +45,33 @@ describe('getRepaymentOverview', () => {
     expect(result.progress).toBeCloseTo(300 / result.thisMonthTotal, 5);
     expect(result.monthlyProjection).toHaveLength(6);
     expect(result.nextDueDate).toBe('2026-08-15');
+    expect(result.breakdown[0]).toMatchObject({
+      paidAmount: 300,
+      isPaid: false
+    });
+  });
+
+  it('marks the current debt period paid after monthly records reach the payment amount', () => {
+    const from = new Date(2026, 7, 5);
+    const result = getRepaymentOverview({
+      debts: [debt({ customMinPayment: 300 })],
+      repaymentRecords: [
+        {
+          id: 'r1',
+          debtId: 'd1',
+          amount: 294,
+          paidAt: '2026-08-03',
+          recordMode: 'manual',
+          createdAt: '2026-08-03T00:00:00.000Z'
+        }
+      ],
+      fromDate: from
+    });
+
+    expect(result.breakdown[0]).toMatchObject({
+      paidAmount: 294,
+      isPaid: true
+    });
   });
 
   it('filters out settled debts', () => {

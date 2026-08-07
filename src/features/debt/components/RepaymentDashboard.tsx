@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import type { DebtItem, RepaymentRecord } from '../model/debtMetrics';
 import { getRepaymentBreakdownColor, getRepaymentOverview } from '../model/repaymentOverview';
 import { formatCurrency, formatCurrencyAuto } from '../../../shared/lib/format';
@@ -6,6 +6,7 @@ import { formatCurrency, formatCurrencyAuto } from '../../../shared/lib/format';
 interface RepaymentDashboardProps {
   debts: DebtItem[];
   repaymentRecords: RepaymentRecord[];
+  onMarkCurrentPayment?: (debtId: string, amount: number) => void;
 }
 
 const DEBT_TYPE_LABELS: Record<DebtItem['type'], string> = {
@@ -187,42 +188,136 @@ function BreakdownDonut({
   );
 }
 
-function ProjectionBars({ data }: { data: Array<{ monthLabel: string; total: number }> }) {
-  const [mounted, setMounted] = useState(false);
-  const max = Math.max(1, ...data.map((d) => d.total));
+function ProjectionLineChart({ data }: { data: Array<{ monthLabel: string; total: number }> }) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const width = 620;
+  const height = 190;
+  const padding = { top: 22, right: 20, bottom: 24, left: 18 };
+  const totals = data.map((item) => Math.max(0, item.total));
+  const rawMin = Math.min(...totals);
+  const rawMax = Math.max(...totals, 1);
+  const isFlat = rawMax - rawMin < Math.max(1, rawMax * 0.01);
+  const min = isFlat ? Math.max(0, rawMax * 0.9) : rawMin;
+  const max = isFlat ? rawMax * 1.1 : rawMax * 1.08;
+  const spread = Math.max(1, max - min);
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+  const points = data.map((item, index) => ({
+    ...item,
+    x: padding.left + (index / Math.max(1, data.length - 1)) * plotWidth,
+    y: padding.top + (1 - (Math.max(0, item.total) - min) / spread) * plotHeight
+  }));
+  const linePath = points
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
+    .join(' ');
+  const areaPath = points.length
+    ? `${linePath} L ${points[points.length - 1].x.toFixed(2)} ${(height - padding.bottom).toFixed(2)} L ${points[0].x.toFixed(2)} ${(height - padding.bottom).toFixed(2)} Z`
+    : '';
+  const activePoint = hoveredIndex === null ? null : points[hoveredIndex];
 
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setMounted(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
+  function handlePointerMove(event: MouseEvent<SVGSVGElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (rect.width <= 0 || points.length === 0) return;
+    const chartX = ((event.clientX - rect.left) / rect.width) * width;
+    const closestIndex = points.reduce(
+      (best, point, index) =>
+        Math.abs(point.x - chartX) < Math.abs(points[best].x - chartX) ? index : best,
+      0
+    );
+    setHoveredIndex(closestIndex);
+  }
 
   return (
-    <div className="repayment-bars">
-      {data.map((item, index) => {
-        const heightPct = max > 0 ? (item.total / max) * 100 : 0;
-        return (
-          <div className="repayment-bar-col" key={item.monthLabel}>
-            <div className="repayment-bar-track">
-              <div
-                className="repayment-bar-fill"
-                style={{
-                  height: mounted ? `${heightPct}%` : '0%',
-                  transitionDelay: `${index * 80}ms`,
-                  background:
-                    'linear-gradient(180deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 55%, var(--color-info)))'
-                }}
+    <div className="repayment-projection" onMouseLeave={() => setHoveredIndex(null)}>
+      <div className="repayment-projection-stage">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          role="img"
+          aria-label="未来六个月预计还款折线图"
+          onMouseMove={handlePointerMove}
+        >
+          <defs>
+            <linearGradient id="repayment-projection-area" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="currentColor" stopOpacity="0.28" />
+              <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" />
+            </linearGradient>
+          </defs>
+          {[0, 0.5, 1].map((ratio) => (
+            <line
+              key={ratio}
+              className="repayment-projection-grid"
+              x1={padding.left}
+              x2={width - padding.right}
+              y1={padding.top + plotHeight * ratio}
+              y2={padding.top + plotHeight * ratio}
+            />
+          ))}
+          {points.map((point) => (
+            <line
+              key={`vertical-${point.monthLabel}`}
+              className="repayment-projection-grid is-vertical"
+              x1={point.x}
+              x2={point.x}
+              y1={padding.top}
+              y2={height - padding.bottom}
+            />
+          ))}
+          <path className="repayment-projection-area" d={areaPath} />
+          <path className="repayment-projection-line" d={linePath} pathLength="1" />
+          {points.map((point, index) => (
+            <g key={point.monthLabel}>
+              <circle
+                className={`repayment-projection-point${hoveredIndex === index ? ' is-active' : ''}`}
+                cx={point.x}
+                cy={point.y}
+                r={hoveredIndex === index ? 5 : 3.5}
               />
-              <span className="repayment-bar-value">{formatCurrencyAuto(item.total)}</span>
-            </div>
-            <span className="repayment-bar-label">{item.monthLabel}</span>
+              <text
+                className="repayment-projection-value"
+                x={point.x}
+                y={Math.max(13, point.y - 12)}
+              >
+                {formatCurrencyAuto(point.total)}
+              </text>
+            </g>
+          ))}
+          {activePoint ? (
+            <line
+              className="repayment-projection-cursor"
+              x1={activePoint.x}
+              x2={activePoint.x}
+              y1={padding.top}
+              y2={height - padding.bottom}
+            />
+          ) : null}
+        </svg>
+        {activePoint ? (
+          <div
+            className="repayment-projection-tooltip"
+            style={{
+              left: `${(activePoint.x / width) * 100}%`,
+              top: `${Math.max(8, (activePoint.y / height) * 100)}%`
+            }}
+          >
+            <span>{activePoint.monthLabel}</span>
+            <strong>{formatCurrency(activePoint.total)}</strong>
           </div>
-        );
-      })}
+        ) : null}
+      </div>
+      <div className="repayment-projection-axis" aria-hidden="true">
+        {data.map((item) => (
+          <span key={item.monthLabel}>{item.monthLabel}</span>
+        ))}
+      </div>
     </div>
   );
 }
 
-export function RepaymentDashboard({ debts, repaymentRecords }: RepaymentDashboardProps) {
+export function RepaymentDashboard({
+  debts,
+  repaymentRecords,
+  onMarkCurrentPayment
+}: RepaymentDashboardProps) {
   const overview = useMemo(
     () => getRepaymentOverview({ debts, repaymentRecords }),
     [debts, repaymentRecords]
@@ -285,24 +380,37 @@ export function RepaymentDashboard({ debts, repaymentRecords }: RepaymentDashboa
           ) : (
             <ul className="repayment-timeline">
               {overview.breakdown.slice(0, 6).map((item) => (
-                <li key={item.id} className={`repayment-timeline-item is-${item.tone}`}>
-                  <span className="repayment-timeline-dot" />
-                  <div className="repayment-timeline-info">
-                    <span className="repayment-timeline-name">{item.name}</span>
-                    <span className="repayment-timeline-type">
-                      {DEBT_TYPE_LABELS[item.type] ?? item.type}
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    className={`repayment-timeline-item is-${item.tone}${item.isPaid ? ' is-paid' : ''}`}
+                    onClick={() =>
+                      onMarkCurrentPayment?.(item.id, Math.max(0, item.payment - item.paidAmount))
+                    }
+                    disabled={item.isPaid || !onMarkCurrentPayment}
+                    aria-label={item.isPaid ? `${item.name}本期已还` : `标记${item.name}本期已还`}
+                  >
+                    <span className="repayment-timeline-dot" />
+                    <span className="repayment-timeline-info">
+                      <span className="repayment-timeline-name">{item.name}</span>
+                      <span className="repayment-timeline-type">
+                        {DEBT_TYPE_LABELS[item.type] ?? item.type}
+                      </span>
+                      <span className="repayment-timeline-amount">
+                        {formatCurrency(item.payment)}
+                      </span>
                     </span>
-                    <span className="repayment-timeline-amount">
-                      {formatCurrency(item.payment)}
+                    <span className="repayment-timeline-status">
+                      <span className={`repayment-timeline-due is-${item.tone}`}>
+                        {item.dueInDays === null
+                          ? '未设还款日'
+                          : item.dueInDays === 0
+                            ? '今日应还'
+                            : `${item.dueInDays} 天后`}
+                      </span>
+                      <strong>{item.isPaid ? '✓ 已还' : '点按记账'}</strong>
                     </span>
-                  </div>
-                  <span className={`repayment-timeline-due is-${item.tone}`}>
-                    {item.dueInDays === null
-                      ? '未设还款日'
-                      : item.dueInDays === 0
-                        ? '今日应还'
-                        : `${item.dueInDays} 天后`}
-                  </span>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -316,7 +424,7 @@ export function RepaymentDashboard({ debts, repaymentRecords }: RepaymentDashboa
 
         <div className="repayment-dashboard-chart">
           <h3 className="repayment-dashboard-section-title">未来 6 个月预计还款</h3>
-          <ProjectionBars data={overview.monthlyProjection} />
+          <ProjectionLineChart data={overview.monthlyProjection} />
         </div>
       </div>
     </section>

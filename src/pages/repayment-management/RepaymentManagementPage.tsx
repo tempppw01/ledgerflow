@@ -16,6 +16,7 @@ import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { IMAGE_ICON_URL } from '../../shared/config/brandAssets';
+import { formatCurrency } from '../../shared/lib/format';
 import { Toast } from '../../shared/ui/Toast';
 import { RepaymentDashboard } from '../../features/debt/components/RepaymentDashboard';
 
@@ -1412,6 +1413,75 @@ export function RepaymentManagementPage() {
     setRepaymentRecordToastVisible(true);
   }
 
+  function onMarkCurrentPayment(debtId: string, requestedAmount: number) {
+    const targetDebt = debts.find((item) => item.id === debtId);
+    if (!targetDebt) {
+      setRepaymentRecordToastMessage('未找到对应负债，请刷新后重试。');
+      setRepaymentRecordToastVariant('warning');
+      setRepaymentRecordToastVisible(true);
+      return;
+    }
+
+    const amount = Math.min(
+      Math.max(0, Number(requestedAmount) || 0),
+      Math.max(0, targetDebt.balance)
+    );
+    if (amount <= 0) {
+      setRepaymentRecordToastMessage(`${targetDebt.name} 当前无需继续还款。`);
+      setRepaymentRecordToastVariant('warning');
+      setRepaymentRecordToastVisible(true);
+      return;
+    }
+
+    const now = new Date();
+    const paidAt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+      now.getDate()
+    ).padStart(2, '0')}`;
+    const alreadyPaidThisMonth = repaymentRecords
+      .filter((record) => {
+        if (record.debtId !== debtId) return false;
+        const paidDate = new Date(record.paidAt);
+        return (
+          paidDate.getFullYear() === now.getFullYear() && paidDate.getMonth() === now.getMonth()
+        );
+      })
+      .reduce((sum, record) => sum + Math.max(0, Number(record.amount) || 0), 0);
+    const minimumPayment = calculateDebtMinimumPayment(targetDebt);
+    const shouldAdvancePeriod = alreadyPaidThisMonth + amount >= Math.max(1, minimumPayment * 0.98);
+    const nextBalance = Math.max(0, Number((targetDebt.balance - amount).toFixed(2)));
+    const nextPaidPeriods = targetDebt.totalPeriods
+      ? Math.min(
+          targetDebt.totalPeriods,
+          (targetDebt.paidPeriods || 0) + (shouldAdvancePeriod ? 1 : 0)
+        )
+      : targetDebt.paidPeriods;
+    const nextRemainingMonths =
+      typeof targetDebt.remainingMonths === 'number'
+        ? Math.max(0, targetDebt.remainingMonths - (shouldAdvancePeriod ? 1 : 0))
+        : targetDebt.remainingMonths;
+
+    addRepaymentRecord({
+      debtId,
+      amount,
+      paidAt,
+      paymentAccount: targetDebt.paymentAccount,
+      note: '从未来还款快捷标记为本期已还',
+      recordMode: targetDebt.repaymentRecordMode || 'manual'
+    });
+    updateDebt(debtId, {
+      ...targetDebt,
+      balance: nextBalance,
+      paidPeriods: nextPaidPeriods,
+      remainingMonths: nextRemainingMonths
+    });
+
+    setRepaymentRecordToastMessage(
+      `${targetDebt.name} 本期已还 ${formatCurrency(amount)}，余额与还款进度已同步。`
+    );
+    setRepaymentRecordToastVariant('success');
+    setRepaymentRecordToastVisible(true);
+  }
+
   const onManualIncomeSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const nextIncome = Number(manualIncomeInput || 0);
@@ -1594,7 +1664,11 @@ export function RepaymentManagementPage() {
           支持信用卡、消费贷、贷款，自动计算每月最低还款额与总负债压力。
         </p>
 
-        <RepaymentDashboard debts={debtsWithStatus} repaymentRecords={repaymentRecords} />
+        <RepaymentDashboard
+          debts={debtsWithStatus}
+          repaymentRecords={repaymentRecords}
+          onMarkCurrentPayment={onMarkCurrentPayment}
+        />
 
         {debts.length > 0 ? (
           <div className="repayment-overview-band">
@@ -1670,26 +1744,35 @@ export function RepaymentManagementPage() {
         ) : null}
 
         <div className="finance-overview-income-actions repayment-income-toolbar">
-          <span className="repayment-income-toolbar-label">月收入设置</span>
+          <div className="repayment-income-toolbar-copy">
+            <strong>月收入设置</strong>
+            <span>用于计算负债压力和还款建议</span>
+          </div>
           <button
             type="button"
-            className="finance-income-inline-action"
+            className="finance-income-inline-action repayment-income-ai-button"
             onClick={() => void resolveMonthlyIncomeByAi(true)}
             disabled={incomeLoading}
           >
-            {incomeLoading ? '估算中...' : 'AI 月收入'}
+            <span aria-hidden="true">✦</span> {incomeLoading ? '估算中...' : 'AI 智能估算'}
           </button>
-          <form className="finance-income-inline-manual" onSubmit={onManualIncomeSubmit}>
-            <RepaymentUnitInput
-              value={manualIncomeInput}
-              onChange={setManualIncomeInput}
-              unit="¥"
-              min={0}
-              step="1"
-              placeholder="手动月收入"
-              ariaLabel="手动月收入"
-            />
-            <button type="submit" className="finance-income-inline-action">
+          <form className="repayment-income-editor" onSubmit={onManualIncomeSubmit}>
+            <label className="repayment-income-field">
+              <span className="repayment-income-currency" aria-hidden="true">
+                ¥
+              </span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                inputMode="decimal"
+                value={manualIncomeInput}
+                onChange={(event) => setManualIncomeInput(event.target.value)}
+                placeholder="输入每月税后收入"
+                aria-label="手动月收入"
+              />
+            </label>
+            <button type="submit" className="primary repayment-income-save-button">
               保存收入
             </button>
           </form>

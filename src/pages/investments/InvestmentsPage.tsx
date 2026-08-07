@@ -1,4 +1,5 @@
 import {
+  type CSSProperties,
   FormEvent,
   KeyboardEvent as ReactKeyboardEvent,
   MouseEvent,
@@ -625,107 +626,282 @@ function RuleSuggestionsPanel({ suggestions }: { suggestions: RuleSuggestion[] }
   );
 }
 
-function formatCountdown(milliseconds: number) {
-  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  return [hours, minutes, seconds].map((value) => String(value).padStart(2, '0')).join(':');
-}
-
-type MarketSession = {
-  isOpen: boolean;
-  label: string;
-  detail: string;
-  countdown: string;
+type GlobalMarketDefinition = {
+  id: string;
+  name: string;
+  shortName: string;
+  flag: string;
+  timeZone: string;
+  color: string;
+  sessions: Array<{ start: number; end: number }>;
 };
 
-function getNextWeekday(date: Date) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + 1);
-  next.setHours(9, 30, 0, 0);
-  while (next.getDay() === 0 || next.getDay() === 6) {
-    next.setDate(next.getDate() + 1);
+const GLOBAL_MARKETS: GlobalMarketDefinition[] = [
+  {
+    id: 'cn',
+    name: 'A 股',
+    shortName: '沪深',
+    flag: '🇨🇳',
+    timeZone: 'Asia/Shanghai',
+    color: '#f59e0b',
+    sessions: [
+      { start: 9 * 60 + 30, end: 11 * 60 + 30 },
+      { start: 13 * 60, end: 15 * 60 }
+    ]
+  },
+  {
+    id: 'hk',
+    name: '港股',
+    shortName: '香港',
+    flag: '🇭🇰',
+    timeZone: 'Asia/Hong_Kong',
+    color: '#e879f9',
+    sessions: [
+      { start: 9 * 60 + 30, end: 12 * 60 },
+      { start: 13 * 60, end: 16 * 60 }
+    ]
+  },
+  {
+    id: 'jp',
+    name: '日股',
+    shortName: '东京',
+    flag: '🇯🇵',
+    timeZone: 'Asia/Tokyo',
+    color: '#ef4444',
+    sessions: [
+      { start: 9 * 60, end: 11 * 60 + 30 },
+      { start: 12 * 60 + 30, end: 15 * 60 + 30 }
+    ]
+  },
+  {
+    id: 'uk',
+    name: '英股',
+    shortName: '伦敦',
+    flag: '🇬🇧',
+    timeZone: 'Europe/London',
+    color: '#f97316',
+    sessions: [{ start: 8 * 60, end: 16 * 60 + 30 }]
+  },
+  {
+    id: 'de',
+    name: '德股',
+    shortName: '法兰克福',
+    flag: '🇩🇪',
+    timeZone: 'Europe/Berlin',
+    color: '#8b5cf6',
+    sessions: [{ start: 9 * 60, end: 17 * 60 + 30 }]
+  },
+  {
+    id: 'us',
+    name: '美股',
+    shortName: '纽约',
+    flag: '🇺🇸',
+    timeZone: 'America/New_York',
+    color: '#3b82f6',
+    sessions: [{ start: 9 * 60 + 30, end: 16 * 60 }]
   }
-  return next;
-}
+];
 
-function getMarketSession(now = new Date()): MarketSession {
-  const day = now.getDay();
-  const minutes = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
-  const morningOpen = new Date(now);
-  morningOpen.setHours(9, 30, 0, 0);
-  const lunchOpen = new Date(now);
-  lunchOpen.setHours(13, 0, 0, 0);
-  const close = new Date(now);
-  close.setHours(15, 0, 0, 0);
-
-  if (day === 0 || day === 6) {
-    const nextOpen = getNextWeekday(now);
-    return {
-      isOpen: false,
-      label: '周末休市',
-      detail: '下个交易日 09:30 开盘',
-      countdown: formatCountdown(nextOpen.getTime() - now.getTime())
-    };
-  }
-
-  if (minutes >= 570 && minutes < 690) {
-    return {
-      isOpen: true,
-      label: '交易中',
-      detail: '距收盘',
-      countdown: formatCountdown(close.getTime() - now.getTime())
-    };
-  }
-
-  if (minutes >= 780 && minutes < 900) {
-    return {
-      isOpen: true,
-      label: '交易中',
-      detail: '距收盘',
-      countdown: formatCountdown(close.getTime() - now.getTime())
-    };
-  }
-
-  if (minutes >= 690 && minutes < 780) {
-    return {
-      isOpen: false,
-      label: '午间休市',
-      detail: '距下午开盘',
-      countdown: formatCountdown(lunchOpen.getTime() - now.getTime())
-    };
-  }
-
-  const nextOpen = minutes < 570 ? morningOpen : getNextWeekday(now);
+function getZonedClock(now: Date, timeZone: string) {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23'
+  });
+  const values = Object.fromEntries(
+    formatter
+      .formatToParts(now)
+      .filter((part) => part.type !== 'literal')
+      .map((part) => [part.type, Number(part.value)])
+  );
+  const year = values.year || now.getUTCFullYear();
+  const month = values.month || now.getUTCMonth() + 1;
+  const day = values.day || now.getUTCDate();
+  const hour = values.hour || 0;
+  const minute = values.minute || 0;
+  const second = values.second || 0;
   return {
-    isOpen: false,
-    label: minutes < 570 ? '未开盘' : '已收盘',
-    detail: minutes < 570 ? '距开盘' : '下个交易日开盘',
-    countdown: formatCountdown(nextOpen.getTime() - now.getTime())
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    second,
+    weekday: new Date(Date.UTC(year, month - 1, day)).getUTCDay(),
+    minutes: hour * 60 + minute + second / 60
   };
 }
 
-function MarketSessionStatus() {
-  const [session, setSession] = useState(() => getMarketSession());
+function getTimeZoneOffsetMinutes(now: Date, timeZone: string) {
+  const zoned = getZonedClock(now, timeZone);
+  const asUtc = Date.UTC(
+    zoned.year,
+    zoned.month - 1,
+    zoned.day,
+    zoned.hour,
+    zoned.minute,
+    zoned.second
+  );
+  return (asUtc - now.getTime()) / 60000;
+}
+
+function getGlobalMarketState(market: GlobalMarketDefinition, now: Date) {
+  const clock = getZonedClock(now, market.timeZone);
+  const isWeekend = clock.weekday === 0 || clock.weekday === 6;
+  const activeSession = isWeekend
+    ? null
+    : market.sessions.find(
+        (session) => clock.minutes >= session.start && clock.minutes < session.end
+      );
+  const nextSession = market.sessions.find((session) => clock.minutes < session.start);
+  const isLunchBreak =
+    !isWeekend &&
+    !activeSession &&
+    market.sessions.length > 1 &&
+    clock.minutes >= market.sessions[0].end &&
+    clock.minutes < market.sessions[1].start;
+  const label = activeSession
+    ? '交易中'
+    : isWeekend
+      ? '周末休市'
+      : isLunchBreak
+        ? '午间休市'
+        : nextSession
+          ? '未开盘'
+          : '已收盘';
+
+  return {
+    ...market,
+    isOpen: Boolean(activeSession),
+    label,
+    localTime: `${String(clock.hour).padStart(2, '0')}:${String(clock.minute).padStart(2, '0')}`
+  };
+}
+
+function buildViewerTimelineSegments(
+  market: GlobalMarketDefinition,
+  now: Date,
+  viewerTimeZone: string
+) {
+  const viewerOffset = getTimeZoneOffsetMinutes(now, viewerTimeZone);
+  const marketOffset = getTimeZoneOffsetMinutes(now, market.timeZone);
+  const shift = viewerOffset - marketOffset;
+
+  return market.sessions.flatMap((session, sessionIndex) =>
+    [-1440, 0, 1440]
+      .map((dayShift) => ({
+        key: `${sessionIndex}-${dayShift}`,
+        start: session.start + shift + dayShift,
+        end: session.end + shift + dayShift
+      }))
+      .filter((segment) => segment.end > 0 && segment.start < 1440)
+      .map((segment) => ({
+        ...segment,
+        start: Math.max(0, segment.start),
+        end: Math.min(1440, segment.end)
+      }))
+  );
+}
+
+function GlobalMarketClock() {
+  const [now, setNow] = useState(() => new Date());
+  const viewerTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Shanghai';
+  const viewerClock = getZonedClock(now, viewerTimeZone);
+  const marketStates = GLOBAL_MARKETS.map((market) => getGlobalMarketState(market, now));
+  const openMarkets = marketStates.filter((market) => market.isOpen);
+  const currentPosition = Math.min(100, Math.max(0, (viewerClock.minutes / 1440) * 100));
+  const viewerZoneLabel = new Intl.DateTimeFormat('zh-CN', {
+    timeZone: viewerTimeZone,
+    timeZoneName: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23'
+  }).format(now);
 
   useEffect(() => {
-    const update = () => setSession(getMarketSession());
-    const timer = window.setInterval(update, 1000);
+    const timer = window.setInterval(() => setNow(new Date()), 30_000);
     return () => window.clearInterval(timer);
   }, []);
 
   return (
-    <div
-      className={`investments-market-session ${session.isOpen ? 'is-open' : 'is-closed'}`}
-      data-testid="market-session-status"
-    >
-      <span className="investments-market-session-dot" aria-hidden="true" />
-      <div>
-        <strong>{session.label}</strong>
-        <span>{session.detail}</span>
+    <div className="investments-global-clock" data-testid="market-session-status">
+      <div className="investments-global-clock-head">
+        <div>
+          <span className="investments-global-clock-eyebrow">全球市场接力</span>
+          <strong>
+            {openMarkets.length > 0
+              ? `${openMarkets.map((market) => market.name).join('、')}正在交易`
+              : '当前常规交易时段均已休市'}
+          </strong>
+        </div>
+        <span className="investments-global-clock-zone">
+          当前时区 · {viewerTimeZone} · {viewerZoneLabel}
+        </span>
       </div>
-      <b>{session.countdown}</b>
+
+      <div className="investments-global-market-statuses" aria-label="全球股市开闭市状态">
+        {marketStates.map((market) => (
+          <div
+            key={market.id}
+            className={`investments-global-market-status ${market.isOpen ? 'is-open' : 'is-closed'}`}
+            style={{ '--market-color': market.color } as CSSProperties}
+          >
+            <span aria-hidden="true">{market.flag}</span>
+            <div>
+              <strong>{market.name}</strong>
+              <small>{market.localTime}</small>
+            </div>
+            <b>{market.label}</b>
+          </div>
+        ))}
+      </div>
+
+      <div className="investments-global-timeline" aria-label="按当前时区显示的全球市场时间轴">
+        <div className="investments-global-timeline-axis" aria-hidden="true">
+          {[0, 4, 8, 12, 16, 20, 24].map((hour) => (
+            <span key={hour} style={{ left: `${(hour / 24) * 100}%` }}>
+              {String(hour).padStart(2, '0')}:00
+            </span>
+          ))}
+        </div>
+        <div
+          className="investments-global-timeline-now"
+          style={{ left: `calc(84px + ${currentPosition}% - ${currentPosition * 0.84}px)` }}
+          aria-hidden="true"
+        >
+          <span>现在</span>
+        </div>
+        {marketStates.map((market) => (
+          <div
+            className={`investments-global-timeline-lane ${market.isOpen ? 'is-open' : ''}`}
+            key={market.id}
+            style={{ '--market-color': market.color } as CSSProperties}
+          >
+            <span className="investments-global-timeline-label">
+              {market.flag} {market.name}
+            </span>
+            <div className="investments-global-timeline-track">
+              {buildViewerTimelineSegments(market, now, viewerTimeZone).map((segment) => (
+                <i
+                  key={segment.key}
+                  style={{
+                    left: `${(segment.start / 1440) * 100}%`,
+                    width: `${((segment.end - segment.start) / 1440) * 100}%`
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="investments-global-clock-note">
+        常规交易时段 · 自动换算当前时区 · 不含节假日与盘前盘后
+      </p>
     </div>
   );
 }
@@ -880,7 +1056,6 @@ function MarketOverviewPanel({
           <p>{updatedAt ? `东方财富行情 · ${updatedAt}` : '东方财富行情'}</p>
         </div>
         <div className="investments-market-actions">
-          <MarketSessionStatus />
           <button type="button" onClick={onRefresh} disabled={status === 'loading'}>
             {status === 'loading' ? '刷新中' : '刷新'}
           </button>
@@ -889,6 +1064,8 @@ function MarketOverviewPanel({
           </button>
         </div>
       </div>
+
+      <GlobalMarketClock />
 
       <div className="investments-market-index-rail">
         <button

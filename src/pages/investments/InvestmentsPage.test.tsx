@@ -252,6 +252,13 @@ describe('InvestmentsPage', () => {
     expect(screen.getByRole('tab', { name: '热门题材' })).toBeInTheDocument();
     expect(screen.getByLabelText('选择热门题材')).toHaveValue('BK1106');
     expect(screen.getByTestId('market-session-status')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('market-session-status').querySelector('.investments-global-clock-zone')
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('按当前时区显示的全球市场时间轴')).toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText('全球股市开闭市状态')).getByText('美股')
+    ).toBeInTheDocument();
     expect(screen.getByText('7x24')).toBeInTheDocument();
     expect(screen.getByText(/液化天然气制甲烷/)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '今日持仓' })).toBeInTheDocument();

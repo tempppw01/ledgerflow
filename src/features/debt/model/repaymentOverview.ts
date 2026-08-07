@@ -15,6 +15,8 @@ export interface MonthlyPaymentBreakdownItem {
   repaymentDay?: number;
   dueInDays: number | null;
   tone: 'danger' | 'warning' | 'safe';
+  paidAmount: number;
+  isPaid: boolean;
 }
 
 export interface RepaymentOverviewResult {
@@ -98,6 +100,9 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
               : dueInDays <= 7
                 ? 'warning'
                 : 'safe';
+      const paidAmount = input.repaymentRecords
+        .filter((record) => record.debtId === item.id && isSameMonth(new Date(record.paidAt), from))
+        .reduce((sum, record) => sum + Math.max(0, Number(record.amount) || 0), 0);
       return {
         id: item.id,
         name: item.name,
@@ -105,7 +110,9 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
         payment,
         repaymentDay: item.repaymentDay,
         dueInDays,
-        tone
+        tone,
+        paidAmount,
+        isPaid: paidAmount >= Math.max(0.01, payment * 0.98)
       };
     })
     .filter((item) => item.payment > 0)
