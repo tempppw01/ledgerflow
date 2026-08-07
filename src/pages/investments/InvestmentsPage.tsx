@@ -30,15 +30,18 @@ import {
   EASTMONEY_MARKET_INDEXES,
   EASTMONEY_MARKET_NEWS_CATEGORIES,
   EASTMONEY_MARKET_THEMES,
+  GLOBAL_MARKET_INDEXES,
   fetchEastmoneyMarketBoards,
   fetchEastmoneyMarketOverview,
   fetchEastmoneyMarketNews,
   fetchEastmoneyMarketThemeBoards,
+  fetchGlobalMarketOverview,
   type EastmoneyMarketBoard,
   type EastmoneyMarketOverview,
   type EastmoneyMarketNewsItem,
   type EastmoneyMarketQuote,
-  type EastmoneyMarketTrendPoint
+  type EastmoneyMarketTrendPoint,
+  type GlobalMarketQuote
 } from '../../features/investments/api/eastmoneyMarketClient';
 import {
   BRAIN_ICON_URL,
@@ -59,10 +62,6 @@ import {
   summarizeInvestmentAnalysis,
   trimInvestmentAiMessages
 } from './investmentAi';
-import {
-  ASSISTANT_ACTIVE_MODE_STORAGE_KEY,
-  ASSISTANT_MODE_CHANGED_EVENT
-} from '../../features/assistant/shared/assistantMode';
 import { buildTimeContext } from '../../features/assistant/workbench/workbenchUtils';
 
 const POSITION_CATEGORY_LABELS: Record<InvestmentCategory, string> = {
@@ -674,6 +673,15 @@ const GLOBAL_MARKETS: GlobalMarketDefinition[] = [
     ]
   },
   {
+    id: 'kr',
+    name: '韩股',
+    shortName: '首尔',
+    flag: '🇰🇷',
+    timeZone: 'Asia/Seoul',
+    color: '#22c55e',
+    sessions: [{ start: 9 * 60, end: 15 * 60 + 30 }]
+  },
+  {
     id: 'uk',
     name: '英股',
     shortName: '伦敦',
@@ -701,6 +709,8 @@ const GLOBAL_MARKETS: GlobalMarketDefinition[] = [
     sessions: [{ start: 9 * 60 + 30, end: 16 * 60 }]
   }
 ];
+
+const AUTO_REFRESH_MARKET_IDS = new Set(['cn', 'jp', 'kr', 'us']);
 
 function getZonedClock(now: Date, timeZone: string) {
   const formatter = new Intl.DateTimeFormat('en-CA', {
@@ -781,6 +791,12 @@ function getGlobalMarketState(market: GlobalMarketDefinition, now: Date) {
     label,
     localTime: `${String(clock.hour).padStart(2, '0')}:${String(clock.minute).padStart(2, '0')}`
   };
+}
+
+function isLiveMarketPollingTime(now = new Date()) {
+  return GLOBAL_MARKETS.some(
+    (market) => AUTO_REFRESH_MARKET_IDS.has(market.id) && getGlobalMarketState(market, now).isOpen
+  );
 }
 
 function buildViewerTimelineSegments(
@@ -972,20 +988,22 @@ function buildMarketTrendGeometry(points: EastmoneyMarketTrendPoint[]) {
 
 function MarketOverviewPanel({
   overview,
+  globalQuotes,
+  globalStatus,
+  globalError,
   selectedSecId,
   status,
   error,
-  onSelect,
-  onRefresh,
-  onAskMarket
+  onSelect
 }: {
   overview: EastmoneyMarketOverview | null;
+  globalQuotes: GlobalMarketQuote[];
+  globalStatus: 'idle' | 'loading' | 'error';
+  globalError: string;
   selectedSecId: string;
   status: 'idle' | 'loading' | 'error';
   error: string;
   onSelect: (secId: string) => void;
-  onRefresh: () => void;
-  onAskMarket: () => void;
 }) {
   const quotes = overview?.quotes || [];
   const quoteBySecId = new Map(quotes.map((quote) => [quote.secId, quote]));
@@ -1010,6 +1028,8 @@ function MarketOverviewPanel({
     chart.points[chart.points.length - 1] ||
     null;
   const hoveredTrendPoint = hoveredTrendIndex === null ? null : activeTrendPoint;
+  const globalQuoteById = new Map(globalQuotes.map((quote) => [quote.id, quote]));
+  const isAnyMarketOpen = isLiveMarketPollingTime();
 
   useEffect(() => {
     setHoveredTrendIndex(null);
@@ -1055,17 +1075,46 @@ function MarketOverviewPanel({
           <h3>大盘概览</h3>
           <p>{updatedAt ? `东方财富行情 · ${updatedAt}` : '东方财富行情'}</p>
         </div>
-        <div className="investments-market-actions">
-          <button type="button" onClick={onRefresh} disabled={status === 'loading'}>
-            {status === 'loading' ? '刷新中' : '刷新'}
-          </button>
-          <button type="button" className="primary" onClick={onAskMarket}>
-            问 AI 怎么看
-          </button>
+        <div className="investments-market-live-status" aria-label="大盘自动更新状态">
+          <span className="investments-market-live-dot" aria-hidden="true" />
+          <div>
+            <strong>实时轮询</strong>
+            <small>
+              {isAnyMarketOpen ? '交易中 · 每 10 秒自动更新' : '非交易时段 · 保留最近行情'}
+            </small>
+          </div>
         </div>
       </div>
 
       <GlobalMarketClock />
+
+      <div className="investments-global-quotes" aria-label="美日韩大盘行情">
+        <div className="investments-global-quotes-head">
+          <div>
+            <strong>美日韩大盘</strong>
+            <span>Yahoo Finance · 同源代理</span>
+          </div>
+          {globalStatus === 'loading' ? <small>更新中…</small> : null}
+          {globalStatus === 'error' ? <small>{globalError || '暂时无法更新'}</small> : null}
+        </div>
+        <div className="investments-global-quote-grid">
+          {GLOBAL_MARKET_INDEXES.map((index) => {
+            const quote = globalQuoteById.get(index.id);
+            return (
+              <article key={index.id} className="investments-global-quote-card">
+                <div className="investments-global-quote-name">
+                  <span>{index.market}</span>
+                  <strong>{index.name}</strong>
+                </div>
+                <b>{quote ? formatMarketIndexValue(quote.value) : '--'}</b>
+                <span className={getMarketTone(quote?.changePercent ?? null)}>
+                  {formatMarketPercent(quote?.changePercent ?? null)}
+                </span>
+              </article>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="investments-market-index-rail">
         <button
@@ -1682,6 +1731,13 @@ export function InvestmentsPage() {
   const [marketOverview, setMarketOverview] = useState<EastmoneyMarketOverview | null>(null);
   const [marketStatus, setMarketStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [marketError, setMarketError] = useState('');
+  const [globalMarketQuotes, setGlobalMarketQuotes] = useState<GlobalMarketQuote[]>([]);
+  const [globalMarketStatus, setGlobalMarketStatus] = useState<'idle' | 'loading' | 'error'>(
+    'idle'
+  );
+  const [globalMarketError, setGlobalMarketError] = useState('');
+  const hasMarketOverviewRef = useRef(false);
+  const hasGlobalMarketQuotesRef = useRef(false);
   const [selectedNewsCategoryId, setSelectedNewsCategoryId] = useState(
     EASTMONEY_MARKET_NEWS_CATEGORIES[0].id
   );
@@ -1865,6 +1921,15 @@ export function InvestmentsPage() {
           changePercent: quote.changePercent,
           amount: quote.amount
         })),
+        globalIndexes: globalMarketQuotes.map((quote) => ({
+          market: quote.market,
+          name: quote.name,
+          symbol: quote.symbol,
+          value: quote.value,
+          changePercent: quote.changePercent,
+          updatedAt: quote.updatedAt,
+          source: quote.source
+        })),
         selectedHotTheme: selectedTheme ? toBoardContext(selectedTheme) : null,
         hotThemes: marketThemeBoards.slice(0, 8).map(toBoardContext),
         industryLeaders: marketIndustryBoards.slice(0, 5).map(toBoardContext),
@@ -1879,6 +1944,7 @@ export function InvestmentsPage() {
     );
   }, [
     marketIndustryBoards,
+    globalMarketQuotes,
     marketNews,
     marketOverview,
     marketThemeBoards,
@@ -1888,28 +1954,62 @@ export function InvestmentsPage() {
 
   useEffect(() => {
     let cancelled = false;
+    let requestInFlight = false;
 
-    async function loadMarketOverview() {
-      setMarketStatus('loading');
+    async function loadMarketData(showLoading = false) {
+      if (requestInFlight) return;
+      requestInFlight = true;
+      if (showLoading) {
+        setMarketStatus('loading');
+        setGlobalMarketStatus('loading');
+      }
       setMarketError('');
+      setGlobalMarketError('');
 
-      try {
-        const overview = await fetchEastmoneyMarketOverview(selectedMarketSecId);
-        if (cancelled) return;
-        setMarketOverview(overview);
+      const [marketResult, globalResult] = await Promise.allSettled([
+        fetchEastmoneyMarketOverview(selectedMarketSecId),
+        fetchGlobalMarketOverview()
+      ]);
+      if (cancelled) return;
+
+      if (marketResult.status === 'fulfilled') {
+        setMarketOverview(marketResult.value);
+        hasMarketOverviewRef.current = true;
         setMarketStatus('idle');
-      } catch (error) {
-        if (cancelled) return;
-        const message = error instanceof Error ? error.message : '大盘行情加载失败，请稍后重试。';
-        setMarketError(message);
+      } else if (!hasMarketOverviewRef.current) {
+        setMarketError(
+          marketResult.reason instanceof Error
+            ? marketResult.reason.message
+            : '大盘行情加载失败，请稍后重试。'
+        );
         setMarketStatus('error');
       }
+
+      if (globalResult.status === 'fulfilled' && globalResult.value.quotes.length > 0) {
+        setGlobalMarketQuotes(globalResult.value.quotes);
+        hasGlobalMarketQuotesRef.current = true;
+        setGlobalMarketStatus('idle');
+      } else if (!hasGlobalMarketQuotesRef.current) {
+        setGlobalMarketError(
+          globalResult.status === 'rejected' && globalResult.reason instanceof Error
+            ? globalResult.reason.message
+            : '美日韩大盘暂时无法更新。'
+        );
+        setGlobalMarketStatus('error');
+      }
+      requestInFlight = false;
     }
 
-    loadMarketOverview();
+    void loadMarketData(true);
+    const interval = window.setInterval(() => {
+      if (document.visibilityState !== 'hidden' && isLiveMarketPollingTime()) {
+        void loadMarketData();
+      }
+    }, 10_000);
 
     return () => {
       cancelled = true;
+      window.clearInterval(interval);
     };
   }, [selectedMarketSecId]);
 
@@ -2009,24 +2109,6 @@ export function InvestmentsPage() {
 
   function setToastState(message: string, variant: ToastVariant = 'success') {
     setToast({ visible: true, message, variant });
-  }
-
-  async function refreshMarketOverview() {
-    if (marketStatus === 'loading') return;
-
-    setMarketStatus('loading');
-    setMarketError('');
-
-    try {
-      const overview = await fetchEastmoneyMarketOverview(selectedMarketSecId);
-      setMarketOverview(overview);
-      setMarketStatus('idle');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : '大盘行情加载失败，请稍后重试。';
-      setMarketError(message);
-      setMarketStatus('error');
-      setToastState(message, 'warning');
-    }
   }
 
   async function refreshMarketNews() {
@@ -2355,30 +2437,6 @@ export function InvestmentsPage() {
     }
   }
 
-  function handleActionSuggestionClick(item: {
-    label: string;
-    hint: string;
-    to?: string;
-    action?: 'open-investment-assistant';
-  }) {
-    if (item.action === 'open-investment-assistant') {
-      try {
-        window.sessionStorage.setItem(ASSISTANT_ACTIVE_MODE_STORAGE_KEY, 'investment');
-      } catch {
-        // ignore storage write errors
-      }
-      window.dispatchEvent(
-        new CustomEvent(ASSISTANT_MODE_CHANGED_EVENT, { detail: { mode: 'investment' } })
-      );
-      navigate('/assistant');
-      return;
-    }
-
-    if (item.to) {
-      navigate(item.to);
-    }
-  }
-
   async function handleFundLookupSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (fundLookupStatus === 'loading') return;
@@ -2481,18 +2539,13 @@ export function InvestmentsPage() {
           >
             <MarketOverviewPanel
               overview={marketOverview}
+              globalQuotes={globalMarketQuotes}
+              globalStatus={globalMarketStatus}
+              globalError={globalMarketError}
               selectedSecId={selectedMarketSecId}
               status={marketStatus}
               error={marketError}
               onSelect={setSelectedMarketSecId}
-              onRefresh={refreshMarketOverview}
-              onAskMarket={() =>
-                handleActionSuggestionClick({
-                  label: '问 AI 怎么看大盘',
-                  hint: '带着当前大盘概览去投资助手里继续分析。',
-                  action: 'open-investment-assistant'
-                })
-              }
             />
             <MarketBoardsPanel
               themeBoards={marketThemeBoards}

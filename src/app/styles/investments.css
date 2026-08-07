@@ -583,6 +583,131 @@
   font-size: 12px;
 }
 
+.investments-market-live-status {
+  display: inline-flex;
+  gap: 8px;
+  flex: 0 0 auto;
+  align-items: center;
+  min-width: 170px;
+  padding: 7px 10px;
+  border: 1px solid color-mix(in srgb, var(--color-success) 24%, var(--color-border-light));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-success-bg) 48%, transparent);
+}
+
+.investments-market-live-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 15%, transparent);
+}
+
+.investments-market-live-status div,
+.investments-global-quotes-head div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.investments-market-live-status strong,
+.investments-market-live-status small {
+  color: var(--color-text-primary);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.investments-market-live-status small {
+  color: var(--color-text-secondary);
+}
+
+.investments-global-quotes {
+  display: grid;
+  gap: 10px;
+  padding: 12px 0 2px;
+  border-top: 1px solid color-mix(in srgb, var(--color-border-light) 62%, transparent);
+}
+
+.investments-global-quotes-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.investments-global-quotes-head strong,
+.investments-global-quotes-head span,
+.investments-global-quotes-head small {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.investments-global-quotes-head strong {
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.investments-global-quotes-head small {
+  color: var(--color-warning);
+}
+
+.investments-global-quote-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.investments-global-quote-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 8px;
+  align-items: end;
+  min-width: 0;
+  padding: 9px 10px;
+  border-left: 2px solid color-mix(in srgb, var(--color-border-light) 76%, transparent);
+  background: color-mix(in srgb, var(--color-bg-subtle) 45%, transparent);
+}
+
+.investments-global-quote-name {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.investments-global-quote-name span,
+.investments-global-quote-card > span {
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.investments-global-quote-name strong {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: 11px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.investments-global-quote-card > b {
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.investments-global-quote-card > span {
+  justify-self: end;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .investments-market-session {
   display: inline-flex;
   gap: 7px;
@@ -5358,6 +5483,19 @@
 
   .investments-market-head {
     flex-direction: column;
+  }
+
+  .investments-market-live-status {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .investments-global-quote-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .investments-global-quote-card:last-child {
+    grid-column: span 2;
   }
 
   .investments-market-actions {

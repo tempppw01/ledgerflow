@@ -25,7 +25,8 @@ const eastmoneyClientMock = vi.hoisted(() => ({
   fetchEastmoneyMarketBoards: vi.fn(),
   fetchEastmoneyMarketOverview: vi.fn(),
   fetchEastmoneyMarketNews: vi.fn(),
-  fetchEastmoneyMarketThemeBoards: vi.fn()
+  fetchEastmoneyMarketThemeBoards: vi.fn(),
+  fetchGlobalMarketOverview: vi.fn()
 }));
 
 vi.mock('../../shared/store/useFinanceStore', () => ({
@@ -67,10 +68,18 @@ vi.mock('../../features/investments/api/eastmoneyMarketClient', () => ({
     { code: 'BK1128', name: 'CPO概念' },
     { code: 'BK0877', name: 'PCB概念' }
   ],
+  GLOBAL_MARKET_INDEXES: [
+    { id: 'us-dow', market: '美股', name: '道琼斯', symbol: '^DJI' },
+    { id: 'us-sp500', market: '美股', name: '标普 500', symbol: '^GSPC' },
+    { id: 'us-nasdaq', market: '美股', name: '纳斯达克', symbol: '^IXIC' },
+    { id: 'jp-nikkei', market: '日股', name: '日经 225', symbol: '^N225' },
+    { id: 'kr-kospi', market: '韩股', name: '韩国综合', symbol: '^KS11' }
+  ],
   fetchEastmoneyMarketBoards: eastmoneyClientMock.fetchEastmoneyMarketBoards,
   fetchEastmoneyMarketOverview: eastmoneyClientMock.fetchEastmoneyMarketOverview,
   fetchEastmoneyMarketNews: eastmoneyClientMock.fetchEastmoneyMarketNews,
-  fetchEastmoneyMarketThemeBoards: eastmoneyClientMock.fetchEastmoneyMarketThemeBoards
+  fetchEastmoneyMarketThemeBoards: eastmoneyClientMock.fetchEastmoneyMarketThemeBoards,
+  fetchGlobalMarketOverview: eastmoneyClientMock.fetchGlobalMarketOverview
 }));
 
 describe('InvestmentsPage', () => {
@@ -111,6 +120,26 @@ describe('InvestmentsPage', () => {
           volume: 5279461,
           amount: 23614469632,
           average: 4010.65
+        }
+      ]
+    });
+    eastmoneyClientMock.fetchGlobalMarketOverview.mockResolvedValue({
+      updatedAt: '2026-07-10T15:10:00.000Z',
+      source: 'Yahoo Finance',
+      quotes: [
+        {
+          id: 'us-dow',
+          market: '美股',
+          name: '道琼斯',
+          symbol: '^DJI',
+          value: 44200,
+          change: 120,
+          changePercent: 0.27,
+          high: 44300,
+          low: 44000,
+          previousClose: 44080,
+          updatedAt: '2026-07-10T15:10:00.000Z',
+          source: 'Yahoo Finance'
         }
       ]
     });
@@ -268,8 +297,16 @@ describe('InvestmentsPage', () => {
     expect(screen.getByText('板块健康度')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'AI 排序' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '打开投资风向' })).toBeInTheDocument();
-    expect(screen.getByText('大盘概览')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '问 AI 怎么看' })).toBeInTheDocument();
+    const marketPanel = screen.getByText('大盘概览').closest('section');
+    expect(marketPanel).toBeInTheDocument();
+    expect(
+      within(marketPanel as HTMLElement).queryByRole('button', { name: '刷新' })
+    ).not.toBeInTheDocument();
+    expect(
+      within(marketPanel as HTMLElement).queryByRole('button', { name: '问 AI 怎么看' })
+    ).not.toBeInTheDocument();
+    expect(within(marketPanel as HTMLElement).getByText('实时轮询')).toBeInTheDocument();
+    expect(within(marketPanel as HTMLElement).getByLabelText('美日韩大盘行情')).toBeInTheDocument();
     expect(screen.getAllByText('¥1.09万').length).toBeGreaterThan(0);
 
     expect(screen.queryByText('6 个月应急金')).not.toBeInTheDocument();

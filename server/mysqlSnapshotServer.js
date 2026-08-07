@@ -36,6 +36,15 @@ const WEBDAV_ALLOWED_HOSTS = String(process.env.LEDGERFLOW_WEBDAV_ALLOWED_HOSTS 
 const WEBDAV_PROXY_METHODS = new Set(['GET', 'PUT', 'DELETE', 'MKCOL', 'MOVE', 'PROPFIND']);
 let sqliteDatabaseModulePromise;
 const eastmoneyStockQuoteCache = new Map();
+const globalMarketQuoteCache = new Map();
+
+const GLOBAL_MARKET_INDEXES = [
+  { id: 'us-dow', market: '美股', name: '道琼斯', symbol: '^DJI' },
+  { id: 'us-sp500', market: '美股', name: '标普 500', symbol: '^GSPC' },
+  { id: 'us-nasdaq', market: '美股', name: '纳斯达克', symbol: '^IXIC' },
+  { id: 'jp-nikkei', market: '日股', name: '日经 225', symbol: '^N225' },
+  { id: 'kr-kospi', market: '韩股', name: '韩国综合', symbol: '^KS11' }
+];
 
 async function getSqliteDatabaseModule() {
   sqliteDatabaseModulePromise ||= import('./sqliteDatabase.js');
@@ -445,6 +454,85 @@ async function getEastmoneyStockQuotes(secIds) {
     });
     if (cachedQuotes.length > 0) return cachedQuotes;
     throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function parseYahooMarketQuote(index, payload) {
+  const result = payload?.chart?.result?.[0];
+  const meta = result?.meta || {};
+  const quote = result?.indicators?.quote?.[0] || {};
+  const closes = Array.isArray(quote.close) ? quote.close : [];
+  const latestClose = [...closes].reverse().find((value) => Number.isFinite(Number(value)));
+  const value = Number(meta.regularMarketPrice ?? latestClose);
+  const previousClose = Number(meta.chartPreviousClose ?? meta.previousClose);
+  if (!Number.isFinite(value) || !Number.isFinite(previousClose)) {
+    throw new Error(`Yahoo Finance response for ${index.symbol} is invalid.`);
+  }
+
+  const change = Number(meta.regularMarketChange ?? value - previousClose);
+  const changePercent = Number(meta.regularMarketChangePercent ?? (change / previousClose) * 100);
+  const highs = (Array.isArray(quote.high) ? quote.high : []).map(Number).filter(Number.isFinite);
+  const lows = (Array.isArray(quote.low) ? quote.low : []).map(Number).filter(Number.isFinite);
+  const timestamps = Array.isArray(result.timestamp) ? result.timestamp : [];
+  const lastTimestamp = [...timestamps]
+    .reverse()
+    .find((timestamp) => Number.isFinite(Number(timestamp)));
+
+  return {
+    id: index.id,
+    market: index.market,
+    name: String(meta.longName || meta.shortName || index.name),
+    symbol: index.symbol,
+    value,
+    change: Number.isFinite(change) ? change : value - previousClose,
+    changePercent: Number.isFinite(changePercent)
+      ? changePercent
+      : ((value - previousClose) / previousClose) * 100,
+    high: Number(meta.regularMarketDayHigh ?? (highs.length ? Math.max(...highs) : NaN)),
+    low: Number(meta.regularMarketDayLow ?? (lows.length ? Math.min(...lows) : NaN)),
+    previousClose,
+    updatedAt: lastTimestamp
+      ? new Date(Number(lastTimestamp) * 1000).toISOString()
+      : new Date().toISOString(),
+    source: 'Yahoo Finance'
+  };
+}
+
+async function getYahooGlobalMarketQuotes() {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const results = await Promise.allSettled(
+      GLOBAL_MARKET_INDEXES.map(async (index) => {
+        const response = await fetch(
+          `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(index.symbol)}?interval=1m&range=1d`,
+          {
+            headers: {
+              Accept: 'application/json',
+              'User-Agent': 'Mozilla/5.0 LedgerFlow market-data-proxy'
+            },
+            signal: controller.signal
+          }
+        );
+        if (!response.ok) throw new Error(`Yahoo Finance ${index.symbol} is unavailable.`);
+        return parseYahooMarketQuote(index, await response.json());
+      })
+    );
+
+    const quotes = results.flatMap((result) => {
+      if (result.status !== 'fulfilled') return [];
+      globalMarketQuoteCache.set(result.value.id, result.value);
+      return [result.value];
+    });
+    const merged = GLOBAL_MARKET_INDEXES.flatMap((index) =>
+      globalMarketQuoteCache.has(index.id) ? [globalMarketQuoteCache.get(index.id)] : []
+    );
+    if (merged.length === 0) {
+      throw new Error('全球市场行情暂时无法更新。');
+    }
+    return { quotes: merged, updatedAt: new Date().toISOString(), source: 'Yahoo Finance' };
   } finally {
     clearTimeout(timeout);
   }
@@ -912,6 +1000,11 @@ export async function handleRequest(req, res) {
     if (req.method === 'GET' && pathname === '/market/stock-quotes') {
       const secIds = normalizeStockSecIds(url.searchParams.get('secids'));
       jsonResponse(res, 200, { ok: true, data: { quotes: await getEastmoneyStockQuotes(secIds) } });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/market/global-quotes') {
+      jsonResponse(res, 200, { ok: true, data: await getYahooGlobalMarketQuotes() });
       return;
     }
 

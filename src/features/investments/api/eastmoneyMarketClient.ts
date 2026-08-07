@@ -36,6 +36,34 @@ export interface EastmoneyMarketOverview {
   updatedAt: string;
 }
 
+export interface GlobalMarketIndex {
+  id: string;
+  market: string;
+  name: string;
+  symbol: string;
+}
+
+export interface GlobalMarketQuote {
+  id: string;
+  market: string;
+  name: string;
+  symbol: string;
+  value: number | null;
+  change: number | null;
+  changePercent: number | null;
+  high: number | null;
+  low: number | null;
+  previousClose: number | null;
+  updatedAt: string;
+  source: string;
+}
+
+export interface GlobalMarketOverview {
+  quotes: GlobalMarketQuote[];
+  updatedAt: string;
+  source: string;
+}
+
 export interface EastmoneyMarketNewsCategory {
   id: string;
   label: string;
@@ -127,6 +155,14 @@ type EastmoneyBoardPayload = {
   };
 };
 
+type GlobalMarketPayload = {
+  data?: {
+    quotes?: Array<Partial<GlobalMarketQuote>>;
+    updatedAt?: string;
+    source?: string;
+  };
+};
+
 export const EASTMONEY_MARKET_INDEXES: EastmoneyMarketIndex[] = [
   { secId: '1.000001', code: '000001', name: '上证指数', shortName: '上证' },
   { secId: '0.399001', code: '399001', name: '深证成指', shortName: '深证' },
@@ -139,6 +175,14 @@ export const EASTMONEY_MARKET_INDEXES: EastmoneyMarketIndex[] = [
   { secId: '1.000852', code: '000852', name: '中证1000', shortName: '中证1000' },
   { secId: '0.399330', code: '399330', name: '深证100', shortName: '深证100' },
   { secId: '0.399673', code: '399673', name: '创业板50', shortName: '创业板50' }
+];
+
+export const GLOBAL_MARKET_INDEXES: GlobalMarketIndex[] = [
+  { id: 'us-dow', market: '美股', name: '道琼斯', symbol: '^DJI' },
+  { id: 'us-sp500', market: '美股', name: '标普 500', symbol: '^GSPC' },
+  { id: 'us-nasdaq', market: '美股', name: '纳斯达克', symbol: '^IXIC' },
+  { id: 'jp-nikkei', market: '日股', name: '日经 225', symbol: '^N225' },
+  { id: 'kr-kospi', market: '韩股', name: '韩国综合', symbol: '^KS11' }
 ];
 
 export const EASTMONEY_MARKET_NEWS_CATEGORIES: EastmoneyMarketNewsCategory[] = [
@@ -320,6 +364,37 @@ export async function fetchEastmoneyMarketOverview(
     quotes,
     trend,
     updatedAt: new Date().toISOString()
+  };
+}
+
+export async function fetchGlobalMarketOverview(): Promise<GlobalMarketOverview> {
+  const response = await fetch('/api/market/global-quotes');
+  if (!response.ok) throw new Error('美日韩大盘暂时无法更新。');
+
+  const payload = (await response.json()) as GlobalMarketPayload;
+  const quotes = (payload.data?.quotes || [])
+    .map((item) => ({
+      id: String(item.id || '').trim(),
+      market: String(item.market || '').trim(),
+      name: String(item.name || '').trim(),
+      symbol: String(item.symbol || '').trim(),
+      value: toNullableNumber(item.value),
+      change: toNullableNumber(item.change),
+      changePercent: toNullableNumber(item.changePercent),
+      high: toNullableNumber(item.high),
+      low: toNullableNumber(item.low),
+      previousClose: toNullableNumber(item.previousClose),
+      updatedAt: String(item.updatedAt || '').trim(),
+      source: String(item.source || payload.data?.source || 'Yahoo Finance').trim()
+    }))
+    .filter((item) => item.id && item.value !== null);
+
+  if (quotes.length === 0) throw new Error('美日韩大盘暂时没有可用数据。');
+
+  return {
+    quotes,
+    updatedAt: String(payload.data?.updatedAt || new Date().toISOString()),
+    source: String(payload.data?.source || quotes[0].source || 'Yahoo Finance')
   };
 }
 
