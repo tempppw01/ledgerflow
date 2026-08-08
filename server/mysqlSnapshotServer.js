@@ -37,6 +37,7 @@ const WEBDAV_PROXY_METHODS = new Set(['GET', 'PUT', 'DELETE', 'MKCOL', 'MOVE', '
 let sqliteDatabaseModulePromise;
 const eastmoneyStockQuoteCache = new Map();
 const globalMarketQuoteCache = new Map();
+const globalMarketHistoryCache = new Map();
 const eastmoneyMarketProxyCache = new Map();
 
 const GLOBAL_MARKET_INDEXES = [
@@ -597,6 +598,40 @@ function parseYahooMarketQuote(index, payload) {
   };
 }
 
+function parseYahooMarketHistory(payload) {
+  const result = payload?.chart?.result?.[0];
+  const timestamps = Array.isArray(result?.timestamp) ? result.timestamp : [];
+  const quote = result?.indicators?.quote?.[0] || {};
+  const closes = Array.isArray(quote.close) ? quote.close : [];
+  const opens = Array.isArray(quote.open) ? quote.open : [];
+  const highs = Array.isArray(quote.high) ? quote.high : [];
+  const lows = Array.isArray(quote.low) ? quote.low : [];
+  const volumes = Array.isArray(quote.volume) ? quote.volume : [];
+
+  return timestamps
+    .map((timestamp, index) => {
+      const date = new Date(Number(timestamp) * 1000);
+      const value = Number(closes[index]);
+      if (!Number.isFinite(date.getTime()) || !Number.isFinite(value)) return null;
+      const previousValue = Number(closes[index - 1]);
+      const changePercent =
+        Number.isFinite(previousValue) && previousValue !== 0
+          ? ((value - previousValue) / previousValue) * 100
+          : null;
+      return {
+        date: date.toISOString().slice(0, 10),
+        value,
+        open: Number.isFinite(Number(opens[index])) ? Number(opens[index]) : null,
+        high: Number.isFinite(Number(highs[index])) ? Number(highs[index]) : null,
+        low: Number.isFinite(Number(lows[index])) ? Number(lows[index]) : null,
+        changePercent,
+        volume: Number.isFinite(Number(volumes[index])) ? Number(volumes[index]) : null,
+        amount: null
+      };
+    })
+    .filter(Boolean);
+}
+
 async function getYahooGlobalMarketQuotes() {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
@@ -630,6 +665,42 @@ async function getYahooGlobalMarketQuotes() {
       throw new Error('全球市场行情暂时无法更新。');
     }
     return { quotes: merged, updatedAt: new Date().toISOString(), source: 'Yahoo Finance' };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function getYahooGlobalMarketHistory(index, dates) {
+  const cacheKey = `global-history:${index.id}:${dates.start}:${dates.end}`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const startDate = new Date(
+      `${dates.start.slice(0, 4)}-${dates.start.slice(4, 6)}-${dates.start.slice(6)}T00:00:00.000Z`
+    );
+    const endDate = new Date(
+      `${dates.end.slice(0, 4)}-${dates.end.slice(4, 6)}-${dates.end.slice(6)}T00:00:00.000Z`
+    );
+    endDate.setUTCDate(endDate.getUTCDate() + 1);
+    const response = await fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(index.symbol)}?interval=1d&period1=${Math.floor(startDate.getTime() / 1000)}&period2=${Math.floor(endDate.getTime() / 1000)}`,
+      {
+        headers: {
+          Accept: 'application/json',
+          'User-Agent': 'Mozilla/5.0 LedgerFlow market-data-proxy'
+        },
+        signal: controller.signal
+      }
+    );
+    if (!response.ok) throw new Error(`Yahoo Finance history ${index.symbol} is unavailable.`);
+    const points = parseYahooMarketHistory(await response.json());
+    if (points.length === 0) throw new Error(`Yahoo Finance history ${index.symbol} is empty.`);
+    const result = { points, updatedAt: new Date().toISOString(), source: 'Yahoo Finance' };
+    globalMarketHistoryCache.set(cacheKey, result);
+    return result;
+  } catch (error) {
+    if (globalMarketHistoryCache.has(cacheKey)) return globalMarketHistoryCache.get(cacheKey);
+    throw error;
   } finally {
     clearTimeout(timeout);
   }
@@ -1228,6 +1299,24 @@ export async function handleRequest(req, res) {
 
     if (req.method === 'GET' && pathname === '/market/global-quotes') {
       jsonResponse(res, 200, { ok: true, data: await getYahooGlobalMarketQuotes() });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/market/global-history') {
+      const index = GLOBAL_MARKET_INDEXES.find(
+        (item) => item.id === String(url.searchParams.get('id') || '').trim()
+      );
+      const dates = resolveEastmoneyHistoryDates(url.searchParams);
+      if (!index || !dates) {
+        jsonResponse(res, 400, { ok: false, message: 'Missing or invalid global market history parameters.' });
+        return;
+      }
+      const data = await getYahooGlobalMarketHistory(index, dates);
+      jsonResponse(res, 200, {
+        ok: true,
+        data,
+        meta: { id: index.id, symbol: index.symbol, start: dates.start, end: dates.end, range: dates.range }
+      });
       return;
     }
 

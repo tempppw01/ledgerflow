@@ -129,6 +129,76 @@ test('global market endpoint aggregates US, Japan and Korea indexes through Yaho
   }
 });
 
+test('global market history endpoint proxies Yahoo daily candles for simulation', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async (input) => {
+    const url = String(input);
+    assert.match(url, /query1\.finance\.yahoo\.com\/v8\/finance\/chart\/%5EDJI/);
+    assert.match(url, /interval=1d/);
+    return new Response(
+      JSON.stringify({
+        chart: {
+          result: [
+            {
+              timestamp: [Date.parse('2026-01-02T21:00:00Z') / 1000, Date.parse('2026-01-05T21:00:00Z') / 1000],
+              indicators: {
+                quote: [
+                  {
+                    open: [100, 105],
+                    close: [102, 107],
+                    high: [103, 108],
+                    low: [99, 104],
+                    volume: [1000, 1200]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  };
+
+  const server = createLedgerFlowServer();
+  try {
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const address = server.address();
+    const response = await originalFetch(
+      `http://127.0.0.1:${address.port}/api/market/global-history?id=us-dow&start=2026-01-01&end=2026-01-05`
+    );
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(body.meta.symbol, '^DJI');
+    assert.deepEqual(body.data.points, [
+      {
+        date: '2026-01-02',
+        value: 102,
+        open: 100,
+        high: 103,
+        low: 99,
+        changePercent: null,
+        volume: 1000,
+        amount: null
+      },
+      {
+        date: '2026-01-05',
+        value: 107,
+        open: 105,
+        high: 108,
+        low: 104,
+        changePercent: (107 - 102) / 102 * 100,
+        volume: 1200,
+        amount: null
+      }
+    ]);
+  } finally {
+    global.fetch = originalFetch;
+    await closeServer(server);
+  }
+});
+
 test('A-share market history endpoint proxies daily kline ranges', async () => {
   const originalFetch = global.fetch;
   global.fetch = async (input) => {

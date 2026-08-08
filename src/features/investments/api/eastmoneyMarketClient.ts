@@ -78,6 +78,8 @@ export interface GlobalMarketOverview {
   source: string;
 }
 
+export type GlobalMarketHistoryPoint = EastmoneyMarketHistoryPoint;
+
 export interface EastmoneyMarketNewsCategory {
   id: string;
   label: string;
@@ -180,6 +182,12 @@ type GlobalMarketPayload = {
     quotes?: Array<Partial<GlobalMarketQuote>>;
     updatedAt?: string;
     source?: string;
+  };
+};
+
+type GlobalMarketHistoryPayload = {
+  data?: {
+    points?: Array<Partial<GlobalMarketHistoryPoint>>;
   };
 };
 
@@ -448,6 +456,41 @@ export async function fetchGlobalMarketOverview(): Promise<GlobalMarketOverview>
     updatedAt: String(payload.data?.updatedAt || new Date().toISOString()),
     source: String(payload.data?.source || quotes[0].source || 'Yahoo Finance')
   };
+}
+
+export async function fetchGlobalMarketHistory(
+  indexId: string,
+  options: {
+    range?: EastmoneyMarketHistoryRange;
+    startDate?: string;
+    endDate?: string;
+  } = {}
+): Promise<GlobalMarketHistoryPoint[]> {
+  const params = new URLSearchParams({ id: indexId });
+  if (options.range) params.set('range', options.range);
+  if (options.startDate) params.set('start', options.startDate);
+  if (options.endDate) params.set('end', options.endDate);
+  const response = await fetch(`/api/market/global-history?${params.toString()}`);
+  if (!response.ok) throw new Error('国际大盘历史行情加载失败，请稍后重试。');
+
+  const payload = (await response.json()) as GlobalMarketHistoryPayload;
+  return (payload.data?.points || [])
+    .map((item) => {
+      const date = String(item.date || '').trim();
+      const value = toNullableNumber(item.value);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || value === null) return null;
+      return {
+        date,
+        value,
+        open: toNullableNumber(item.open),
+        high: toNullableNumber(item.high),
+        low: toNullableNumber(item.low),
+        changePercent: toNullableNumber(item.changePercent),
+        volume: toNullableNumber(item.volume),
+        amount: toNullableNumber(item.amount)
+      } satisfies GlobalMarketHistoryPoint;
+    })
+    .filter((item): item is GlobalMarketHistoryPoint => Boolean(item));
 }
 
 export async function fetchEastmoneyMarketNews(

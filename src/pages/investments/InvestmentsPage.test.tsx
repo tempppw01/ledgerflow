@@ -23,6 +23,7 @@ const financeStoreMock = vi.hoisted(() => ({
 const eastmoneyClientMock = vi.hoisted(() => ({
   fetchEastmoneyFundSnapshot: vi.fn(),
   fetchEastmoneyIndexHistory: vi.fn(),
+  fetchGlobalMarketHistory: vi.fn(),
   fetchEastmoneyMarketBoards: vi.fn(),
   fetchEastmoneyMarketOverview: vi.fn(),
   fetchEastmoneyMarketNews: vi.fn(),
@@ -79,6 +80,7 @@ vi.mock('../../features/investments/api/eastmoneyMarketClient', () => ({
   ],
   fetchEastmoneyMarketBoards: eastmoneyClientMock.fetchEastmoneyMarketBoards,
   fetchEastmoneyIndexHistory: eastmoneyClientMock.fetchEastmoneyIndexHistory,
+  fetchGlobalMarketHistory: eastmoneyClientMock.fetchGlobalMarketHistory,
   fetchEastmoneyMarketOverview: eastmoneyClientMock.fetchEastmoneyMarketOverview,
   fetchEastmoneyMarketNews: eastmoneyClientMock.fetchEastmoneyMarketNews,
   fetchEastmoneyMarketThemeBoards: eastmoneyClientMock.fetchEastmoneyMarketThemeBoards,
@@ -156,6 +158,28 @@ describe('InvestmentsPage', () => {
         changePercent: 2.5,
         volume: 140,
         amount: 1400
+      }
+    ]);
+    eastmoneyClientMock.fetchGlobalMarketHistory.mockResolvedValue([
+      {
+        date: '2026-01-02',
+        value: 39000,
+        open: 38900,
+        high: 39100,
+        low: 38800,
+        changePercent: 0.2,
+        volume: 100,
+        amount: null
+      },
+      {
+        date: '2026-02-02',
+        value: 40000,
+        open: 39900,
+        high: 40100,
+        low: 39800,
+        changePercent: 2.5,
+        volume: 120,
+        amount: null
       }
     ]);
     eastmoneyClientMock.fetchGlobalMarketOverview.mockResolvedValue({
@@ -333,7 +357,7 @@ describe('InvestmentsPage', () => {
     expect(screen.getByRole('heading', { name: '今天怎么做' })).toBeInTheDocument();
     expect(screen.getByText('板块健康度')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'AI 排序' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '打开投资风向' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '打开投资风向' })).not.toBeInTheDocument();
     const marketPanel = screen.getByText('大盘概览').closest('section');
     expect(marketPanel).toBeInTheDocument();
     expect(
@@ -742,6 +766,22 @@ describe('InvestmentsPage', () => {
         range: '3m'
       });
     });
+
+    const frequency = screen.getByLabelText('频率');
+    expect(screen.getByLabelText('定投每月几号')).toBeInTheDocument();
+    await userEvent.selectOptions(frequency, 'weekly');
+    expect(screen.getByLabelText('定投每周几')).toBeInTheDocument();
+    await userEvent.selectOptions(frequency, 'trading-daily');
+    expect(screen.queryByLabelText('定投每周几')).not.toBeInTheDocument();
+    await userEvent.selectOptions(frequency, 'monthly');
+
+    await userEvent.selectOptions(screen.getByLabelText('历史模拟标的'), 'global:us-dow');
+    await waitFor(() => {
+      expect(eastmoneyClientMock.fetchGlobalMarketHistory).toHaveBeenCalledWith('us-dow', {
+        range: '3m'
+      });
+    });
+    expect(await screen.findByRole('img', { name: /道琼斯近 3 月历史走势/ })).toBeInTheDocument();
 
     await userEvent.clear(screen.getByLabelText('定投每期金额'));
     await userEvent.type(screen.getByLabelText('定投每期金额'), '1000');

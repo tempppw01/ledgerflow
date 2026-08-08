@@ -6,7 +6,8 @@ import {
   fetchEastmoneyMarketBoards,
   fetchEastmoneyIndexHistory,
   fetchEastmoneyMarketThemeBoards,
-  fetchEastmoneyMarketQuotes
+  fetchEastmoneyMarketQuotes,
+  fetchGlobalMarketHistory
 } from './eastmoneyMarketClient';
 
 describe('fetchEastmoneyIndexHistory', () => {
@@ -111,6 +112,52 @@ describe('fetchEastmoneyMarketQuotes', () => {
 
     expect(quotes.map((quote) => quote.secId)).toEqual(['1.000001', '0.399001']);
     expect(fetchMock).toHaveBeenCalledTimes(11);
+  });
+});
+
+describe('fetchGlobalMarketHistory', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('通过同源接口获取并解析国际指数日线', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            points: [
+              {
+                date: '2026-08-07',
+                value: 100,
+                open: 98,
+                high: 101,
+                low: 97,
+                changePercent: 1.5,
+                volume: 1000,
+                amount: null
+              }
+            ]
+          }
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+
+    await expect(fetchGlobalMarketHistory('us-dow', { range: '1y' })).resolves.toEqual([
+      {
+        date: '2026-08-07',
+        value: 100,
+        open: 98,
+        high: 101,
+        low: 97,
+        changePercent: 1.5,
+        volume: 1000,
+        amount: null
+      }
+    ]);
+    expect(String(fetchMock.mock.calls[0][0])).toContain(
+      '/api/market/global-history?id=us-dow&range=1y'
+    );
   });
 });
 

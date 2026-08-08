@@ -76,6 +76,39 @@ test('relational repository imports and rebuilds core business data from SQLite 
   }
 });
 
+test('relational repository ignores duplicate rows shared by active and trashed collections', async () => {
+  const dataDirectory = await mkdtemp(path.join(os.tmpdir(), 'ledgerflow-relational-dedup-'));
+  const env = { LEDGERFLOW_DATA_DIR: dataDirectory, SQLITE_PATH: '' };
+  try {
+    await migrateRelationalDatabase('sqlite', env);
+    await replaceRelationalData(
+      'sqlite',
+      {
+        finance: {
+          accounts: [{ id: 'duplicate-account', name: 'Cash', type: 'cash' }],
+          trashedAccounts: [
+            {
+              id: 'duplicate-account',
+              name: 'Old Cash',
+              type: 'cash',
+              trashedAt: '2026-08-01T00:00:00.000Z'
+            }
+          ]
+        },
+        preferences: {}
+      },
+      env,
+      'default'
+    );
+
+    const bootstrap = await getRelationalBootstrap('sqlite', env, 'default');
+    assert.equal(bootstrap.data.finance.accounts.length, 1);
+    assert.equal(bootstrap.data.finance.trashedAccounts.length, 0);
+  } finally {
+    await rm(dataDirectory, { recursive: true, force: true });
+  }
+});
+
 test('relational repository keeps separate users isolated during replacement and bootstrap', async () => {
   const dataDirectory = await mkdtemp(path.join(os.tmpdir(), 'ledgerflow-relational-isolation-'));
   const env = {

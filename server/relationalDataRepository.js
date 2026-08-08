@@ -157,6 +157,16 @@ function splitTrashed(rows) {
   return [active, trashed];
 }
 
+function uniqueById(rows) {
+  const seen = new Set();
+  return rows.filter((row) => {
+    const rowId = id(row?.id);
+    if (!rowId || seen.has(rowId)) return !rowId;
+    seen.add(rowId);
+    return true;
+  });
+}
+
 function watchlistExtra(item) {
   const {
     id: _id,
@@ -217,17 +227,17 @@ export async function replaceRelationalData(
   const finance = payload?.finance && typeof payload.finance === 'object' ? payload.finance : payload || {};
   const preferences = payload?.preferences && typeof payload.preferences === 'object' ? payload.preferences : {};
   const globalMemories = list(payload?.globalMemories);
-  const accounts = [...list(finance.accounts), ...list(finance.trashedAccounts)];
-  const categories = [...list(finance.categories), ...list(finance.trashedCategories)];
-  const transactions = [...list(finance.transactions), ...list(finance.trashedTransactions)];
-  const subscriptions = [...list(finance.subscriptions), ...list(finance.trashedSubscriptions)];
-  const balanceChanges = list(finance.balanceChangeEntries);
-  const positions = list(preferences.investmentPositions);
-  const histories = list(preferences.investmentPositionHistory);
-  const goals = list(preferences.investmentGoals);
-  const watchlist = list(preferences.investmentWatchlist);
-  const debts = list(preferences.debts);
-  const repayments = list(preferences.repaymentRecords);
+  const accounts = uniqueById([...list(finance.accounts), ...list(finance.trashedAccounts)]);
+  const categories = uniqueById([...list(finance.categories), ...list(finance.trashedCategories)]);
+  const transactions = uniqueById([...list(finance.transactions), ...list(finance.trashedTransactions)]);
+  const subscriptions = uniqueById([...list(finance.subscriptions), ...list(finance.trashedSubscriptions)]);
+  const balanceChanges = uniqueById(list(finance.balanceChangeEntries));
+  const positions = uniqueById(list(preferences.investmentPositions));
+  const histories = uniqueById(list(preferences.investmentPositionHistory));
+  const goals = uniqueById(list(preferences.investmentGoals));
+  const watchlist = uniqueById(list(preferences.investmentWatchlist));
+  const debts = uniqueById(list(preferences.debts));
+  const repayments = uniqueById(list(preferences.repaymentRecords));
 
   const validAccountIds = new Set(accounts.map((item) => id(item.id)).filter(Boolean));
   const validCategoryIds = new Set(categories.map((item) => id(item.id)).filter(Boolean));

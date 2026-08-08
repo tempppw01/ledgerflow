@@ -8,7 +8,6 @@ import {
   useRef,
   useState
 } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type {
   InvestmentCategory,
   InvestmentFundAnalysis,
@@ -36,6 +35,7 @@ import {
   fetchEastmoneyMarketOverview,
   fetchEastmoneyMarketNews,
   fetchEastmoneyMarketThemeBoards,
+  fetchGlobalMarketHistory,
   fetchGlobalMarketOverview,
   type EastmoneyMarketBoard,
   type EastmoneyMarketHistoryPoint,
@@ -1397,6 +1397,39 @@ const MARKET_HISTORY_RANGES: Array<{
   { id: '3y', label: '近 3 年' }
 ];
 
+const SIMULATION_WEEKDAYS = [
+  { value: 1, label: '周一' },
+  { value: 2, label: '周二' },
+  { value: 3, label: '周三' },
+  { value: 4, label: '周四' },
+  { value: 5, label: '周五' },
+  { value: 6, label: '周六' },
+  { value: 7, label: '周日' }
+];
+const SIMULATION_MONTH_DAYS = Array.from({ length: 31 }, (_, index) => index + 1);
+
+type MarketHistoryTarget = {
+  id: string;
+  provider: 'eastmoney' | 'yahoo';
+  identifier: string;
+  label: string;
+};
+
+const MARKET_HISTORY_TARGETS: MarketHistoryTarget[] = [
+  ...EASTMONEY_MARKET_INDEXES.map((item) => ({
+    id: `cn:${item.secId}`,
+    provider: 'eastmoney' as const,
+    identifier: item.secId,
+    label: `🇨🇳 A 股 · ${item.name}`
+  })),
+  ...GLOBAL_MARKET_INDEXES.map((item) => ({
+    id: `global:${item.id}`,
+    provider: 'yahoo' as const,
+    identifier: item.id,
+    label: `${item.flag} ${item.market} · ${item.name}`
+  }))
+];
+
 function formatDateInputValue(date: Date) {
   return date.toISOString().slice(0, 10);
 }
@@ -1411,28 +1444,55 @@ function formatHistoryDateLabel(value: string) {
   return value.slice(0, 7).replace('-', '/');
 }
 
+function getDateInputWeekday(value: string) {
+  const date = new Date(`${value}T00:00:00.000Z`);
+  const weekday = date.getUTCDay();
+  return weekday === 0 ? 7 : weekday;
+}
+
 function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexName: string }) {
   const today = useMemo(() => new Date(), []);
+  const defaultStartDate = formatDateInputValue(shiftDateByYears(today, 1));
   const [historyRange, setHistoryRange] = useState<EastmoneyMarketHistoryRange>('1y');
+  const [historyTargetId, setHistoryTargetId] = useState(`cn:${secId}`);
   const [historyPoints, setHistoryPoints] = useState<EastmoneyMarketHistoryPoint[]>([]);
   const [historyStatus, setHistoryStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [historyError, setHistoryError] = useState('');
   const [simulationFrequency, setSimulationFrequency] =
     useState<InvestmentSimulationFrequency>('monthly');
+  const [simulationWeekday, setSimulationWeekday] = useState(() =>
+    getDateInputWeekday(defaultStartDate)
+  );
+  const [simulationDayOfMonth, setSimulationDayOfMonth] = useState(() =>
+    Number(defaultStartDate.slice(-2))
+  );
   const [simulationAmount, setSimulationAmount] = useState('1000');
   const [simulationStartDate, setSimulationStartDate] = useState(() =>
-    formatDateInputValue(shiftDateByYears(today, 1))
+    defaultStartDate
   );
   const [simulationEndDate, setSimulationEndDate] = useState(() => formatDateInputValue(today));
   const [simulationStatus, setSimulationStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [simulationError, setSimulationError] = useState('');
   const [simulationResult, setSimulationResult] = useState<InvestmentSimulationResult | null>(null);
+  const historyTarget =
+    MARKET_HISTORY_TARGETS.find((item) => item.id === historyTargetId) || {
+      id: `cn:${secId}`,
+      provider: 'eastmoney' as const,
+      identifier: secId,
+      label: `🇨🇳 A 股 · ${indexName}`
+    };
+
+  useEffect(() => {
+    setHistoryTargetId((current) => (current.startsWith('cn:') ? `cn:${secId}` : current));
+  }, [secId]);
 
   useEffect(() => {
     let cancelled = false;
     setHistoryStatus('loading');
     setHistoryError('');
-    void fetchEastmoneyIndexHistory(secId, { range: historyRange })
+    const fetchHistory =
+      historyTarget.provider === 'yahoo' ? fetchGlobalMarketHistory : fetchEastmoneyIndexHistory;
+    void fetchHistory(historyTarget.identifier, { range: historyRange })
       .then((points) => {
         if (cancelled) return;
         setHistoryPoints(points);
@@ -1447,7 +1507,7 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
     return () => {
       cancelled = true;
     };
-  }, [historyRange, secId]);
+  }, [historyRange, historyTarget.identifier, historyTarget.provider]);
 
   const historyTrend = useMemo<EastmoneyMarketTrendPoint[]>(
     () =>
@@ -1476,7 +1536,9 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
     setSimulationError('');
     setSimulationResult(null);
     try {
-      const points = await fetchEastmoneyIndexHistory(secId, {
+      const fetchHistory =
+        historyTarget.provider === 'yahoo' ? fetchGlobalMarketHistory : fetchEastmoneyIndexHistory;
+      const points = await fetchHistory(historyTarget.identifier, {
         startDate: simulationStartDate,
         endDate: simulationEndDate
       });
@@ -1485,7 +1547,9 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
         startDate: simulationStartDate,
         endDate: simulationEndDate,
         amount: Number(simulationAmount),
-        frequency: simulationFrequency
+        frequency: simulationFrequency,
+        weekday: simulationWeekday,
+        dayOfMonth: simulationDayOfMonth
       });
       if (!result) {
         throw new Error('所选区间没有足够的交易日数据，请调整日期或金额。');
@@ -1502,25 +1566,46 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
     <section className="investments-market-history-section" aria-label="大盘历史行情和投资模拟">
       <div className="investments-market-history-head">
         <div>
-          <h4>{indexName}历史走势</h4>
-          <p>东方财富日线数据 · 按需获取并缓存，不写入用户业务数据库</p>
+          <h4>{historyTarget.label.replace(/^.+?·\s*/, '')}历史走势</h4>
+          <p>
+            {historyTarget.provider === 'yahoo' ? 'Yahoo Finance 日线数据' : '东方财富日线数据'} · 按需获取并缓存，不写入用户业务数据库
+          </p>
         </div>
-        <div
-          className="investments-market-history-range-tabs"
-          role="tablist"
-          aria-label="历史行情区间"
-        >
-          {MARKET_HISTORY_RANGES.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              role="tab"
-              aria-selected={historyRange === item.id}
-              onClick={() => setHistoryRange(item.id)}
+        <div className="investments-market-history-controls">
+          <label className="investments-market-history-target">
+            <span>历史模拟标的</span>
+            <select
+              value={historyTargetId}
+              onChange={(event) => {
+                setHistoryTargetId(event.target.value);
+                setSimulationResult(null);
+              }}
+              aria-label="历史模拟标的"
             >
-              {item.label}
-            </button>
-          ))}
+              {MARKET_HISTORY_TARGETS.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div
+            className="investments-market-history-range-tabs"
+            role="tablist"
+            aria-label="历史行情区间"
+          >
+            {MARKET_HISTORY_RANGES.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                aria-selected={historyRange === item.id}
+                onClick={() => setHistoryRange(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -1543,7 +1628,7 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
                 className={`investments-market-history-chart ${historyTone}`}
                 viewBox={`0 0 ${historyChart.width} ${historyChart.height}`}
                 role="img"
-                aria-label={`${indexName}${MARKET_HISTORY_RANGES.find((item) => item.id === historyRange)?.label || ''}历史走势`}
+                aria-label={`${historyTarget.label.replace(/^.+?·\s*/, '')}${MARKET_HISTORY_RANGES.find((item) => item.id === historyRange)?.label || ''}历史走势`}
               >
                 <defs>
                   <linearGradient id="investments-market-history-area" x1="0" x2="0" y1="0" y2="1">
@@ -1612,16 +1697,49 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
                   setSimulationFrequency(event.target.value as InvestmentSimulationFrequency)
                 }
               >
+                <option value="trading-daily">每个交易日</option>
                 <option value="monthly">每月</option>
                 <option value="weekly">每周</option>
               </select>
             </label>
+            {simulationFrequency === 'weekly' ? (
+              <label>
+                <span>每周几</span>
+                <select
+                  value={simulationWeekday}
+                  onChange={(event) => setSimulationWeekday(Number(event.target.value))}
+                  aria-label="定投每周几"
+                >
+                  {SIMULATION_WEEKDAYS.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            {simulationFrequency === 'monthly' ? (
+              <label>
+                <span>每月几号</span>
+                <select
+                  value={simulationDayOfMonth}
+                  onChange={(event) => setSimulationDayOfMonth(Number(event.target.value))}
+                  aria-label="定投每月几号"
+                >
+                  {SIMULATION_MONTH_DAYS.map((day) => (
+                    <option key={day} value={day}>
+                      {day} 号
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <label>
               <span>每期金额</span>
               <input
                 type="number"
                 min="1"
-                step="100"
+                step="1"
                 value={simulationAmount}
                 onChange={(event) => setSimulationAmount(event.target.value)}
                 aria-label="定投每期金额"
@@ -1674,14 +1792,14 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
               </div>
               <small>
                 共 {simulationResult.contributionCount} 次 · {simulationResult.firstBuyDate} 至{' '}
-                {simulationResult.lastBuyDate}
+                {simulationResult.lastBuyDate} · 估值日 {simulationResult.valuationDate}
               </small>
             </div>
           ) : null}
         </form>
       </div>
-      <p className="investments-market-source-note">
-        模拟仅按历史收盘价计算，不含申购费、分红、税费和滑点；历史收益不代表未来收益。
+      <p className="investments-market-source-note investments-simulation-method-note">
+        计算口径：按计划日在历史日线中顺延到下一个可用交易日买入，期末按结束日前最后收盘价估值；收益率为模拟盈亏 ÷ 累计投入，未年化。仅模拟指数点位，不代表实际基金收益，且不含申购费、分红、税费和滑点。
       </p>
     </section>
   );
@@ -2535,7 +2653,6 @@ function formatHoldingShares(value?: number) {
 }
 
 export function InvestmentsPage() {
-  const navigate = useNavigate();
   const transactions = useFinanceStore((state) => state.transactions);
   const positions = useAppPreferences((state) => state.investmentPositions);
   const investmentWatchlist = useAppPreferences((state) => state.investmentWatchlist);
@@ -3718,15 +3835,6 @@ export function InvestmentsPage() {
                   title="刷新全部自选基金资料"
                 >
                   <img src={ROTATE_CCW_ICON_URL} alt="" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className="investments-watchlist-flow-btn"
-                  onClick={() => navigate('/investments/flow')}
-                  aria-label="打开投资风向"
-                  title="打开投资风向"
-                >
-                  <img src={INFO_ICON_URL} alt="" aria-hidden="true" />
                 </button>
               </div>
             </div>
