@@ -4202,13 +4202,13 @@
 
 .investment-chat-floating-launcher {
   position: fixed;
-  right: 24px;
-  bottom: 24px;
+  right: 20px;
+  bottom: 20px;
   z-index: 80;
   display: inline-grid;
   place-items: center;
-  width: 58px;
-  height: 58px;
+  width: 48px;
+  height: 48px;
   padding: 0;
   border: 1px solid color-mix(in srgb, var(--color-primary) 42%, var(--color-border-light));
   border-radius: 50%;
@@ -4217,8 +4217,8 @@
     linear-gradient(145deg, var(--color-primary), color-mix(in srgb, var(--color-accent) 72%, var(--color-primary)));
   color: #fff;
   box-shadow:
-    0 14px 30px color-mix(in srgb, var(--color-primary) 28%, transparent),
-    0 0 0 7px color-mix(in srgb, var(--color-primary-bg) 76%, transparent);
+    0 12px 26px color-mix(in srgb, var(--color-primary) 26%, transparent),
+    0 0 0 5px color-mix(in srgb, var(--color-primary-bg) 72%, transparent);
   cursor: pointer;
   transition:
     transform 180ms ease,
@@ -4231,8 +4231,8 @@
   transform: translateY(-3px) scale(1.04);
   filter: saturate(1.08);
   box-shadow:
-    0 18px 36px color-mix(in srgb, var(--color-primary) 34%, transparent),
-    0 0 0 9px color-mix(in srgb, var(--color-primary-bg) 86%, transparent);
+    0 16px 32px color-mix(in srgb, var(--color-primary) 32%, transparent),
+    0 0 0 7px color-mix(in srgb, var(--color-primary-bg) 82%, transparent);
 }
 
 .investment-chat-floating-launcher:focus-visible {
@@ -4242,7 +4242,7 @@
 
 .investment-chat-floating-launcher > span {
   font-family: Georgia, serif;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 800;
   line-height: 1;
   transform: translateY(-1px);
@@ -4250,10 +4250,10 @@
 
 .investment-chat-floating-launcher > i {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 12px;
-  height: 12px;
+  top: 1px;
+  right: 1px;
+  width: 10px;
+  height: 10px;
   border: 2px solid var(--color-bg-elevated);
   border-radius: 50%;
   background: var(--color-danger);
@@ -4350,6 +4350,14 @@
   white-space: nowrap;
 }
 
+.investment-chat-floating-head-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.investment-chat-floating-pin,
 .investment-chat-floating-close {
   display: inline-grid;
   flex: 0 0 auto;
@@ -4361,19 +4369,48 @@
   border-radius: 50%;
   background: color-mix(in srgb, var(--color-bg-subtle) 68%, transparent);
   color: var(--color-text-secondary);
-  font-size: 20px;
   line-height: 1;
   cursor: pointer;
   transition:
     color 160ms ease,
+    border-color 160ms ease,
     background 160ms ease,
     transform 160ms ease;
 }
 
+.investment-chat-floating-pin svg {
+  width: 15px;
+  height: 15px;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.investment-chat-floating-pin:hover,
+.investment-chat-floating-pin:focus-visible,
 .investment-chat-floating-close:hover,
 .investment-chat-floating-close:focus-visible {
+  border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-primary-bg) 80%, var(--color-bg-elevated));
   color: var(--color-primary);
+}
+
+.investment-chat-floating-pin.is-active {
+  border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border-light));
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--color-primary) 24%, transparent);
+}
+
+.investment-chat-floating-close {
+  font-size: 20px;
+}
+
+.investment-chat-floating-close:hover,
+.investment-chat-floating-close:focus-visible {
   transform: rotate(8deg);
 }
 

@@ -788,14 +788,35 @@ export function InvestmentChatPanel({
   const clearInvestmentAiMessages = useAppPreferences((s) => s.clearInvestmentAiMessages);
   const isCompact = !showHero;
   const messageRefs = useRef(new Map<string, HTMLElement>());
+  const floatingPanelRef = useRef<HTMLElement | null>(null);
   const [pendingScrollMessageId, setPendingScrollMessageId] = useState<string | null>(null);
   const [activeTurnMessageId, setActiveTurnMessageId] = useState<string | null>(null);
   const [selectedHistoryMessageId, setSelectedHistoryMessageId] = useState('');
   const [clearContextVersion, setClearContextVersion] = useState(0);
   const [clearContextConfirmOpen, setClearContextConfirmOpen] = useState(false);
   const [floatingOpen, setFloatingOpen] = useState(false);
+  const [floatingPinned, setFloatingPinned] = useState(false);
   const historyTurns = useMemo(() => messages.filter((item) => item.role === 'user'), [messages]);
   const latestMessageId = messages[messages.length - 1]?.id || '';
+
+  const minimizeFloatingPanel = useCallback(() => {
+    setFloatingOpen(false);
+    setFloatingPinned(false);
+  }, []);
+
+  useEffect(() => {
+    if (!floating || !floatingOpen || floatingPinned) return;
+
+    const handleOutsidePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element) || floatingPanelRef.current?.contains(target)) return;
+      if (target.closest('.chat-model-dropdown, [role="dialog"], .toast')) return;
+      setFloatingOpen(false);
+    };
+
+    document.addEventListener('pointerdown', handleOutsidePointerDown);
+    return () => document.removeEventListener('pointerdown', handleOutsidePointerDown);
+  }, [floating, floatingOpen, floatingPinned]);
 
   const scrollToMessage = useCallback(
     (messageId: string, block: ScrollLogicalPosition = 'start') => {
@@ -877,6 +898,7 @@ export function InvestmentChatPanel({
       ) : null}
 
       <section
+        ref={floatingPanelRef}
         className={`${showHero ? 'chat-kawaii-panel chat-assistant-panel ' : ''}chat-investment-panel ${
           isCompact ? 'is-compact' : ''
         } ${messages.length === 0 ? 'is-empty' : ''} ${activeTurnMessageId ? 'has-active-turn' : ''} ${
@@ -896,15 +918,30 @@ export function InvestmentChatPanel({
                 <small>结合大盘与持仓，随时问一句</small>
               </div>
             </div>
-            <button
-              type="button"
-              className="investment-chat-floating-close"
-              aria-label="收起快捷问答"
-              title="收起快捷问答"
-              onClick={() => setFloatingOpen(false)}
-            >
-              ×
-            </button>
+            <div className="investment-chat-floating-head-actions">
+              <button
+                type="button"
+                className={`investment-chat-floating-pin ${floatingPinned ? 'is-active' : ''}`}
+                aria-label={floatingPinned ? '取消置顶快捷问答' : '置顶快捷问答'}
+                title={floatingPinned ? '取消置顶，点击外围可自动收起' : '置顶，点击外围不收起'}
+                aria-pressed={floatingPinned}
+                onClick={() => setFloatingPinned((current) => !current)}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M9 3h6l-1.2 6 3.2 3v2H7v-2l3.2-3L9 3Z" />
+                  <path d="M12 14v7" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                className="investment-chat-floating-close"
+                aria-label="收起快捷问答"
+                title="收起快捷问答"
+                onClick={minimizeFloatingPanel}
+              >
+                ×
+              </button>
+            </div>
           </header>
         ) : null}
 
