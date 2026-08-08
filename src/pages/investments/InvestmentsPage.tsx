@@ -32,11 +32,14 @@ import {
   EASTMONEY_MARKET_THEMES,
   GLOBAL_MARKET_INDEXES,
   fetchEastmoneyMarketBoards,
+  fetchEastmoneyIndexHistory,
   fetchEastmoneyMarketOverview,
   fetchEastmoneyMarketNews,
   fetchEastmoneyMarketThemeBoards,
   fetchGlobalMarketOverview,
   type EastmoneyMarketBoard,
+  type EastmoneyMarketHistoryPoint,
+  type EastmoneyMarketHistoryRange,
   type EastmoneyMarketOverview,
   type EastmoneyMarketNewsItem,
   type EastmoneyMarketQuote,
@@ -44,6 +47,11 @@ import {
   type EastmoneyMarketTrendPoint,
   type GlobalMarketQuote
 } from '../../features/investments/api/eastmoneyMarketClient';
+import {
+  simulateInvestmentPlan,
+  type InvestmentSimulationFrequency,
+  type InvestmentSimulationResult
+} from '../../features/investments/model/investmentSimulator';
 import {
   BRAIN_ICON_URL,
   INFO_ICON_URL,
@@ -268,7 +276,13 @@ function WatchPerformanceLineChart({ points }: { points: WatchPerformancePoint[]
   return (
     <div className="investments-watch-performance-line">
       <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="历史业绩走线图">
-        <line className="investments-watch-performance-zero-line" x1={paddingX} x2={width - paddingX} y1={zeroY} y2={zeroY} />
+        <line
+          className="investments-watch-performance-zero-line"
+          x1={paddingX}
+          x2={width - paddingX}
+          y1={zeroY}
+          y2={zeroY}
+        />
         <path className="investments-watch-performance-area" d={areaPath} />
         <path className="investments-watch-performance-line-path" d={linePath} />
         {coords.map((point, index) => (
@@ -282,7 +296,10 @@ function WatchPerformanceLineChart({ points }: { points: WatchPerformancePoint[]
       </svg>
       <div className="investments-watch-performance-values" aria-label="历史业绩数值">
         {points.map((point, index) => (
-          <span className={point.value >= 0 ? 'is-positive' : 'is-negative'} key={`${point.label}-${index}`}>
+          <span
+            className={point.value >= 0 ? 'is-positive' : 'is-negative'}
+            key={`${point.label}-${index}`}
+          >
             <strong>{point.label}</strong>
             <em>{point.caption}</em>
           </span>
@@ -324,10 +341,7 @@ function getFundHoldingStockCode(value: string) {
   return match?.[1] || '';
 }
 
-function formatFundHoldingStockName(
-  value: string,
-  quote?: EastmoneyHoldingStockQuote
-) {
+function formatFundHoldingStockName(value: string, quote?: EastmoneyHoldingStockQuote) {
   const original = formatWatchPreviewItem(value);
   const code = getFundHoldingStockCode(original);
   const withoutCode = original
@@ -1247,10 +1261,7 @@ function GlobalMarketClock() {
       </div>
 
       {timelineExpanded ? (
-        <div
-          className="investments-global-timeline"
-          aria-label="按当前时区显示的全球市场时间轴"
-        >
+        <div className="investments-global-timeline" aria-label="按当前时区显示的全球市场时间轴">
           <div className="investments-global-timeline-axis" aria-hidden="true">
             {[0, 4, 8, 12, 16, 20, 24].map((hour) => (
               <span key={hour} style={{ left: `${(hour / 24) * 100}%` }}>
@@ -1373,6 +1384,307 @@ function buildMarketTrendGeometry(points: EastmoneyMarketTrendPoint[]) {
     points: coords,
     labels: [points[0]?.label, middle?.label, points[points.length - 1]?.label].filter(Boolean)
   };
+}
+
+const MARKET_HISTORY_RANGES: Array<{
+  id: EastmoneyMarketHistoryRange;
+  label: string;
+}> = [
+  { id: '1m', label: '近 1 月' },
+  { id: '3m', label: '近 3 月' },
+  { id: '6m', label: '近 6 月' },
+  { id: '1y', label: '近 1 年' },
+  { id: '3y', label: '近 3 年' }
+];
+
+function formatDateInputValue(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function shiftDateByYears(date: Date, years: number) {
+  const shifted = new Date(date);
+  shifted.setUTCFullYear(shifted.getUTCFullYear() - years);
+  return shifted;
+}
+
+function formatHistoryDateLabel(value: string) {
+  return value.slice(0, 7).replace('-', '/');
+}
+
+function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexName: string }) {
+  const today = useMemo(() => new Date(), []);
+  const [historyRange, setHistoryRange] = useState<EastmoneyMarketHistoryRange>('1y');
+  const [historyPoints, setHistoryPoints] = useState<EastmoneyMarketHistoryPoint[]>([]);
+  const [historyStatus, setHistoryStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [historyError, setHistoryError] = useState('');
+  const [simulationFrequency, setSimulationFrequency] =
+    useState<InvestmentSimulationFrequency>('monthly');
+  const [simulationAmount, setSimulationAmount] = useState('1000');
+  const [simulationStartDate, setSimulationStartDate] = useState(() =>
+    formatDateInputValue(shiftDateByYears(today, 1))
+  );
+  const [simulationEndDate, setSimulationEndDate] = useState(() => formatDateInputValue(today));
+  const [simulationStatus, setSimulationStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [simulationError, setSimulationError] = useState('');
+  const [simulationResult, setSimulationResult] = useState<InvestmentSimulationResult | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setHistoryStatus('loading');
+    setHistoryError('');
+    void fetchEastmoneyIndexHistory(secId, { range: historyRange })
+      .then((points) => {
+        if (cancelled) return;
+        setHistoryPoints(points);
+        setHistoryStatus('idle');
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setHistoryPoints([]);
+        setHistoryStatus('error');
+        setHistoryError(error instanceof Error ? error.message : '大盘历史行情加载失败。');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [historyRange, secId]);
+
+  const historyTrend = useMemo<EastmoneyMarketTrendPoint[]>(
+    () =>
+      historyPoints.map((point) => ({
+        time: `${point.date} 00:00`,
+        label: formatHistoryDateLabel(point.date),
+        value: point.value,
+        volume: point.volume,
+        amount: point.amount,
+        average: null
+      })),
+    [historyPoints]
+  );
+  const historyChart = buildMarketTrendGeometry(historyTrend);
+  const firstHistoryPoint = historyPoints[0];
+  const lastHistoryPoint = historyPoints.at(-1);
+  const historyChange =
+    firstHistoryPoint && lastHistoryPoint && firstHistoryPoint.value > 0
+      ? (lastHistoryPoint.value - firstHistoryPoint.value) / firstHistoryPoint.value
+      : null;
+  const historyTone = getMarketTone(historyChange === null ? null : historyChange * 100);
+
+  async function runSimulation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSimulationStatus('loading');
+    setSimulationError('');
+    setSimulationResult(null);
+    try {
+      const points = await fetchEastmoneyIndexHistory(secId, {
+        startDate: simulationStartDate,
+        endDate: simulationEndDate
+      });
+      const result = simulateInvestmentPlan({
+        points,
+        startDate: simulationStartDate,
+        endDate: simulationEndDate,
+        amount: Number(simulationAmount),
+        frequency: simulationFrequency
+      });
+      if (!result) {
+        throw new Error('所选区间没有足够的交易日数据，请调整日期或金额。');
+      }
+      setSimulationResult(result);
+      setSimulationStatus('idle');
+    } catch (error) {
+      setSimulationStatus('error');
+      setSimulationError(error instanceof Error ? error.message : '定投模拟失败，请稍后重试。');
+    }
+  }
+
+  return (
+    <section className="investments-market-history-section" aria-label="大盘历史行情和投资模拟">
+      <div className="investments-market-history-head">
+        <div>
+          <h4>{indexName}历史走势</h4>
+          <p>东方财富日线数据 · 按需获取并缓存，不写入用户业务数据库</p>
+        </div>
+        <div
+          className="investments-market-history-range-tabs"
+          role="tablist"
+          aria-label="历史行情区间"
+        >
+          {MARKET_HISTORY_RANGES.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={historyRange === item.id}
+              onClick={() => setHistoryRange(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="investments-market-history-grid">
+        <div className="investments-market-history-chart-card">
+          {historyChart.linePath ? (
+            <>
+              <div className="investments-market-history-summary">
+                <span>
+                  起点 <strong>{formatMarketIndexValue(firstHistoryPoint?.value)}</strong>
+                </span>
+                <span>
+                  最新 <strong>{formatMarketIndexValue(lastHistoryPoint?.value)}</strong>
+                </span>
+                <strong className={historyTone}>
+                  {historyChange === null ? '--' : formatMarketPercent(historyChange * 100)}
+                </strong>
+              </div>
+              <svg
+                className={`investments-market-history-chart ${historyTone}`}
+                viewBox={`0 0 ${historyChart.width} ${historyChart.height}`}
+                role="img"
+                aria-label={`${indexName}${MARKET_HISTORY_RANGES.find((item) => item.id === historyRange)?.label || ''}历史走势`}
+              >
+                <defs>
+                  <linearGradient id="investments-market-history-area" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stopColor="currentColor" stopOpacity="0.2" />
+                    <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" />
+                  </linearGradient>
+                </defs>
+                {[0, 0.5, 1].map((ratio) => (
+                  <line
+                    key={ratio}
+                    className="investments-market-chart-grid"
+                    x1={historyChart.plotLeft}
+                    x2={historyChart.plotRight}
+                    y1={
+                      historyChart.plotTop +
+                      (historyChart.plotBottom - historyChart.plotTop) * ratio
+                    }
+                    y2={
+                      historyChart.plotTop +
+                      (historyChart.plotBottom - historyChart.plotTop) * ratio
+                    }
+                  />
+                ))}
+                <path className="investments-market-chart-area" d={historyChart.areaPath} />
+                <path className="investments-market-chart-line" d={historyChart.linePath} />
+                {[historyChart.min, historyChart.mid, historyChart.max].map((value, index) => (
+                  <text
+                    key={`${value}-${index}`}
+                    className="investments-market-chart-axis-label"
+                    x="2"
+                    y={
+                      historyChart.plotBottom -
+                      (index / 2) * (historyChart.plotBottom - historyChart.plotTop)
+                    }
+                    dominantBaseline="middle"
+                  >
+                    {formatMarketIndexValue(value)}
+                  </text>
+                ))}
+              </svg>
+              <div className="investments-market-history-axis" aria-hidden="true">
+                {historyChart.labels.map((label, index) => (
+                  <span key={`${label}-${index}`}>{label}</span>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="investments-market-chart-empty">
+              <strong>{historyStatus === 'loading' ? '历史数据加载中' : '暂无历史数据'}</strong>
+              <span>{historyError || '选择区间后会显示日线走势。'}</span>
+            </div>
+          )}
+        </div>
+
+        <form className="investments-simulation-panel" onSubmit={runSimulation}>
+          <div>
+            <h4>定投模拟</h4>
+            <p>用历史收盘价估算：按计划投入后，期末大约剩多少。</p>
+          </div>
+          <div className="investments-simulation-fields">
+            <label>
+              <span>频率</span>
+              <select
+                value={simulationFrequency}
+                onChange={(event) =>
+                  setSimulationFrequency(event.target.value as InvestmentSimulationFrequency)
+                }
+              >
+                <option value="monthly">每月</option>
+                <option value="weekly">每周</option>
+              </select>
+            </label>
+            <label>
+              <span>每期金额</span>
+              <input
+                type="number"
+                min="1"
+                step="100"
+                value={simulationAmount}
+                onChange={(event) => setSimulationAmount(event.target.value)}
+                aria-label="定投每期金额"
+              />
+            </label>
+            <label>
+              <span>开始日期</span>
+              <input
+                type="date"
+                value={simulationStartDate}
+                onChange={(event) => setSimulationStartDate(event.target.value)}
+                aria-label="定投开始日期"
+              />
+            </label>
+            <label>
+              <span>结束日期</span>
+              <input
+                type="date"
+                value={simulationEndDate}
+                onChange={(event) => setSimulationEndDate(event.target.value)}
+                aria-label="定投结束日期"
+              />
+            </label>
+          </div>
+          <button
+            type="submit"
+            className="primary investments-simulation-submit"
+            disabled={simulationStatus === 'loading'}
+          >
+            {simulationStatus === 'loading' ? '模拟中…' : '开始模拟'}
+          </button>
+          {simulationError ? <p className="investments-market-error">{simulationError}</p> : null}
+          {simulationResult ? (
+            <div className="investments-simulation-result" aria-label="定投模拟结果">
+              <div>
+                <span>累计投入</span>
+                <strong>{formatCurrencyAuto(simulationResult.investedAmount)}</strong>
+              </div>
+              <div>
+                <span>期末资产</span>
+                <strong>{formatCurrencyAuto(simulationResult.endingValue)}</strong>
+              </div>
+              <div className={simulationResult.profit >= 0 ? 'is-positive' : 'is-negative'}>
+                <span>模拟盈亏</span>
+                <strong>{formatCurrencyAuto(simulationResult.profit)}</strong>
+              </div>
+              <div className={simulationResult.returnRate >= 0 ? 'is-positive' : 'is-negative'}>
+                <span>收益率</span>
+                <strong>{formatMarketPercent(simulationResult.returnRate * 100)}</strong>
+              </div>
+              <small>
+                共 {simulationResult.contributionCount} 次 · {simulationResult.firstBuyDate} 至{' '}
+                {simulationResult.lastBuyDate}
+              </small>
+            </div>
+          ) : null}
+        </form>
+      </div>
+      <p className="investments-market-source-note">
+        模拟仅按历史收盘价计算，不含申购费、分红、税费和滑点；历史收益不代表未来收益。
+      </p>
+    </section>
+  );
 }
 
 function MarketOverviewPanel({
@@ -1551,11 +1863,7 @@ function MarketOverviewPanel({
       </div>
 
       <div className="investments-market-index-rail">
-        <div
-          className="investments-market-tabs"
-          role="tablist"
-          aria-label="大盘指数"
-        >
+        <div className="investments-market-tabs" role="tablist" aria-label="大盘指数">
           {EASTMONEY_MARKET_INDEXES.map((item) => {
             const quote = quoteBySecId.get(item.secId);
             const changePercent = quote?.changePercent ?? null;
@@ -1757,6 +2065,11 @@ function MarketOverviewPanel({
           </div>
         </aside>
       </div>
+
+      <MarketHistoryAndSimulator
+        secId={selectedSecId}
+        indexName={activeIndex?.name || '大盘指数'}
+      />
 
       {error && status === 'error' ? <p className="investments-market-error">{error}</p> : null}
     </section>
@@ -2268,9 +2581,8 @@ export function InvestmentsPage() {
   const [marketNewsStatus, setMarketNewsStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [marketNewsError, setMarketNewsError] = useState('');
   const [marketBoardView, setMarketBoardView] = useState<MarketBoardView>('theme');
-  const [trackedMarketThemes, setTrackedMarketThemes] = useState<EastmoneyMarketTheme[]>(
-    readTrackedMarketThemes
-  );
+  const [trackedMarketThemes, setTrackedMarketThemes] =
+    useState<EastmoneyMarketTheme[]>(readTrackedMarketThemes);
   const [selectedMarketThemeCode, setSelectedMarketThemeCode] = useState(
     () => readTrackedMarketThemes()[0]?.code || ''
   );
@@ -2934,10 +3246,7 @@ export function InvestmentsPage() {
   function handleAddMarketTheme(code: string) {
     const theme = marketConceptBoards.find((item) => item.code === code);
     if (!theme || trackedMarketThemes.some((item) => item.code === code)) return;
-    setTrackedMarketThemes((current) => [
-      ...current,
-      { code: theme.code, name: theme.name }
-    ]);
+    setTrackedMarketThemes((current) => [...current, { code: theme.code, name: theme.name }]);
     setSelectedMarketThemeCode(theme.code);
     setToastState(`已添加题材“${theme.name}”。`);
   }

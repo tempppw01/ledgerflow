@@ -36,6 +36,19 @@ export interface EastmoneyMarketOverview {
   updatedAt: string;
 }
 
+export type EastmoneyMarketHistoryRange = '1m' | '3m' | '6m' | '1y' | '3y';
+
+export interface EastmoneyMarketHistoryPoint {
+  date: string;
+  value: number;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  changePercent: number | null;
+  volume: number | null;
+  amount: number | null;
+}
+
 export interface GlobalMarketIndex {
   id: string;
   market: string;
@@ -122,6 +135,12 @@ type EastmoneyQuotePayload = {
 type EastmoneyTrendPayload = {
   data?: {
     trends?: string[];
+  };
+};
+
+type EastmoneyHistoryPayload = {
+  data?: {
+    klines?: string[];
   };
 };
 
@@ -316,9 +335,7 @@ export async function fetchEastmoneyMarketQuotes(): Promise<EastmoneyMarketQuote
 export async function fetchEastmoneyIndexTrend(
   secId: string
 ): Promise<EastmoneyMarketTrendPoint[]> {
-  const response = await fetch(
-    `/api/market/eastmoney/trend?secid=${encodeURIComponent(secId)}`
-  );
+  const response = await fetch(`/api/market/eastmoney/trend?secid=${encodeURIComponent(secId)}`);
 
   if (!response.ok) {
     throw new Error('大盘分时加载失败，请稍后重试。');
@@ -342,6 +359,41 @@ export async function fetchEastmoneyIndexTrend(
       };
     })
     .filter((item): item is EastmoneyMarketTrendPoint => Boolean(item));
+}
+
+export async function fetchEastmoneyIndexHistory(
+  secId: string,
+  options: {
+    range?: EastmoneyMarketHistoryRange;
+    startDate?: string;
+    endDate?: string;
+  } = {}
+): Promise<EastmoneyMarketHistoryPoint[]> {
+  const params = new URLSearchParams({ secid: secId });
+  if (options.range) params.set('range', options.range);
+  if (options.startDate) params.set('start', options.startDate);
+  if (options.endDate) params.set('end', options.endDate);
+  const response = await fetch(`/api/market/eastmoney/history?${params.toString()}`);
+  if (!response.ok) throw new Error('大盘历史行情加载失败，请稍后重试。');
+
+  const body = (await response.json()) as { data?: EastmoneyHistoryPayload };
+  return (body.data?.data?.klines || [])
+    .map((item) => {
+      const [date = '', open, close, high, low, volume, amount, , changePercent] = item.split(',');
+      const value = toNullableNumber(close);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || value === null) return null;
+      return {
+        date,
+        value,
+        open: toNullableNumber(open),
+        high: toNullableNumber(high),
+        low: toNullableNumber(low),
+        changePercent: toNullableNumber(changePercent),
+        volume: toNullableNumber(volume),
+        amount: toNullableNumber(amount)
+      };
+    })
+    .filter((item): item is EastmoneyMarketHistoryPoint => Boolean(item));
 }
 
 export async function fetchEastmoneyMarketOverview(
@@ -439,9 +491,7 @@ export async function fetchEastmoneyMarketBoards(
   type: EastmoneyMarketBoardType = 'industry',
   pageSize = 8
 ): Promise<EastmoneyMarketBoard[]> {
-  const response = await fetch(
-    `/api/market/eastmoney/boards?type=${type}&pageSize=${pageSize}`
-  );
+  const response = await fetch(`/api/market/eastmoney/boards?type=${type}&pageSize=${pageSize}`);
 
   if (!response.ok) throw new Error('板块行情加载失败，请稍后重试。');
 

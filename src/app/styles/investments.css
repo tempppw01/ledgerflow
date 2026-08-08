@@ -1575,6 +1575,223 @@
   font-weight: 800;
 }
 
+.investments-market-history-section {
+  display: grid;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 16px;
+  border-top: 1px solid color-mix(in srgb, var(--color-border-light) 68%, transparent);
+}
+
+.investments-market-history-head,
+.investments-market-history-range-tabs,
+.investments-market-history-summary,
+.investments-market-history-axis {
+  display: flex;
+  min-width: 0;
+}
+
+.investments-market-history-head {
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.investments-market-history-head h4,
+.investments-market-history-head p,
+.investments-simulation-panel h4,
+.investments-simulation-panel p {
+  margin: 0;
+}
+
+.investments-market-history-head h4,
+.investments-simulation-panel h4 {
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.investments-market-history-head p,
+.investments-simulation-panel p {
+  margin-top: 3px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.investments-market-history-range-tabs {
+  flex: 0 0 auto;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.investments-market-history-range-tabs button {
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: var(--color-text-secondary);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.investments-market-history-range-tabs button[aria-selected='true'] {
+  border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-border));
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary-bg) 65%, transparent);
+}
+
+.investments-market-history-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+  gap: 14px;
+  min-width: 0;
+}
+
+.investments-market-history-chart-card,
+.investments-simulation-panel {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 72%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 42%, transparent);
+}
+
+.investments-market-history-chart-card {
+  display: grid;
+  gap: 6px;
+  align-content: center;
+}
+
+.investments-market-history-summary {
+  gap: 14px;
+  align-items: baseline;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.investments-market-history-summary strong {
+  color: var(--color-text-primary);
+  font-family: var(--font-number);
+  font-size: 13px;
+}
+
+.investments-market-history-summary > strong {
+  margin-left: auto;
+}
+
+.investments-market-history-summary > strong.is-positive,
+.investments-simulation-result .is-positive strong {
+  color: var(--color-success);
+}
+
+.investments-market-history-summary > strong.is-negative,
+.investments-simulation-result .is-negative strong {
+  color: var(--color-danger);
+}
+
+.investments-market-history-chart {
+  display: block;
+  width: 100%;
+  min-height: 175px;
+  overflow: visible;
+  color: var(--color-text-secondary);
+}
+
+.investments-market-history-chart.is-positive {
+  color: var(--color-danger);
+}
+
+.investments-market-history-chart.is-negative {
+  color: var(--color-success);
+}
+
+.investments-market-history-axis {
+  justify-content: space-between;
+  padding: 0 10px 0 46px;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+}
+
+.investments-simulation-panel {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.investments-simulation-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.investments-simulation-fields label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.investments-simulation-fields label > span {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.investments-simulation-fields input,
+.investments-simulation-fields select {
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text-primary);
+  background: var(--color-bg-elevated);
+  font-size: 12px;
+}
+
+.investments-simulation-submit {
+  min-height: 36px;
+  justify-self: start;
+  padding-inline: 14px;
+  font-size: 12px;
+}
+
+.investments-simulation-result {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-divider);
+}
+
+.investments-simulation-result > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.investments-simulation-result span,
+.investments-simulation-result small {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+}
+
+.investments-simulation-result strong {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-family: var(--font-number);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.investments-simulation-result small {
+  grid-column: 1 / -1;
+  line-height: 1.4;
+}
+
 .investments-market-side {
   display: grid;
   gap: 8px;
@@ -4336,7 +4553,11 @@
   border-radius: 50%;
   background:
     radial-gradient(circle at 32% 22%, color-mix(in srgb, white 72%, transparent), transparent 35%),
-    linear-gradient(145deg, var(--color-primary), color-mix(in srgb, var(--color-accent) 72%, var(--color-primary)));
+    linear-gradient(
+      145deg,
+      var(--color-primary),
+      color-mix(in srgb, var(--color-accent) 72%, var(--color-primary))
+    );
   color: #fff;
   box-shadow:
     0 12px 26px color-mix(in srgb, var(--color-primary) 26%, transparent),
@@ -4399,7 +4620,11 @@
   border: 1px solid color-mix(in srgb, var(--color-primary) 22%, var(--color-border-light));
   border-radius: 24px;
   background:
-    radial-gradient(circle at 90% 0%, color-mix(in srgb, var(--color-primary-bg) 70%, transparent), transparent 43%),
+    radial-gradient(
+      circle at 90% 0%,
+      color-mix(in srgb, var(--color-primary-bg) 70%, transparent),
+      transparent 43%
+    ),
     var(--color-bg-elevated);
   box-shadow:
     0 28px 70px color-mix(in srgb, var(--color-text-primary) 22%, transparent),
@@ -5910,6 +6135,10 @@
 }
 
 @media (max-width: 900px) {
+  .investments-market-history-grid {
+    grid-template-columns: 1fr;
+  }
+
   .investments-global-market-statuses {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -6124,6 +6353,18 @@
 }
 
 @media (max-width: 640px) {
+  .investments-market-history-head {
+    display: grid;
+  }
+
+  .investments-market-history-range-tabs {
+    justify-content: flex-start;
+  }
+
+  .investments-simulation-fields {
+    grid-template-columns: 1fr;
+  }
+
   .investments-global-clock {
     gap: 10px;
     padding: 12px 10px;

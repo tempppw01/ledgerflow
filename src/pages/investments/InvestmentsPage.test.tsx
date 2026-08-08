@@ -22,6 +22,7 @@ const financeStoreMock = vi.hoisted(() => ({
 
 const eastmoneyClientMock = vi.hoisted(() => ({
   fetchEastmoneyFundSnapshot: vi.fn(),
+  fetchEastmoneyIndexHistory: vi.fn(),
   fetchEastmoneyMarketBoards: vi.fn(),
   fetchEastmoneyMarketOverview: vi.fn(),
   fetchEastmoneyMarketNews: vi.fn(),
@@ -77,6 +78,7 @@ vi.mock('../../features/investments/api/eastmoneyMarketClient', () => ({
     { id: 'kr-kospi', market: '韩股', name: '韩国综合', symbol: '^KS11', flag: '🇰🇷' }
   ],
   fetchEastmoneyMarketBoards: eastmoneyClientMock.fetchEastmoneyMarketBoards,
+  fetchEastmoneyIndexHistory: eastmoneyClientMock.fetchEastmoneyIndexHistory,
   fetchEastmoneyMarketOverview: eastmoneyClientMock.fetchEastmoneyMarketOverview,
   fetchEastmoneyMarketNews: eastmoneyClientMock.fetchEastmoneyMarketNews,
   fetchEastmoneyMarketThemeBoards: eastmoneyClientMock.fetchEastmoneyMarketThemeBoards,
@@ -124,6 +126,38 @@ describe('InvestmentsPage', () => {
         }
       ]
     });
+    eastmoneyClientMock.fetchEastmoneyIndexHistory.mockResolvedValue([
+      {
+        date: '2026-01-02',
+        value: 3900,
+        open: 3890,
+        high: 3920,
+        low: 3880,
+        changePercent: 0.2,
+        volume: 100,
+        amount: 1000
+      },
+      {
+        date: '2026-02-02',
+        value: 4000,
+        open: 3990,
+        high: 4020,
+        low: 3980,
+        changePercent: 2.5,
+        volume: 120,
+        amount: 1200
+      },
+      {
+        date: '2026-03-02',
+        value: 4100,
+        open: 4090,
+        high: 4120,
+        low: 4080,
+        changePercent: 2.5,
+        volume: 140,
+        amount: 1400
+      }
+    ]);
     eastmoneyClientMock.fetchGlobalMarketOverview.mockResolvedValue({
       updatedAt: '2026-07-10T15:10:00.000Z',
       source: 'Yahoo Finance',
@@ -617,7 +651,11 @@ describe('InvestmentsPage', () => {
     expect(await screen.findByText('大盘概览')).toBeInTheDocument();
     const stage = getMarketChartStage();
 
-    expect(document.querySelectorAll('.investments-market-chart-axis-label')).toHaveLength(3);
+    expect(
+      document.querySelectorAll(
+        '.investments-market-chart-stage .investments-market-chart-axis-label'
+      )
+    ).toHaveLength(3);
     expect(document.querySelector('.investments-market-chart-tooltip')).not.toBeInTheDocument();
 
     fireEvent.mouseMove(stage, { clientX: 20 });
@@ -688,6 +726,37 @@ describe('InvestmentsPage', () => {
 
     expect(themeSelect).toHaveValue('BK1128');
     expect(screen.getByLabelText('CPO概念涨跌分布')).toBeInTheDocument();
+  });
+
+  it('可以切换大盘历史区间并运行定投模拟', async () => {
+    render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole('img', { name: /上证指数近 1 年历史走势/ })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('tab', { name: '近 3 月' }));
+    await waitFor(() => {
+      expect(eastmoneyClientMock.fetchEastmoneyIndexHistory).toHaveBeenCalledWith('1.000001', {
+        range: '3m'
+      });
+    });
+
+    await userEvent.clear(screen.getByLabelText('定投每期金额'));
+    await userEvent.type(screen.getByLabelText('定投每期金额'), '1000');
+    fireEvent.change(screen.getByLabelText('定投开始日期'), {
+      target: { value: '2026-01-01' }
+    });
+    fireEvent.change(screen.getByLabelText('定投结束日期'), {
+      target: { value: '2026-03-02' }
+    });
+    expect(screen.getByLabelText('定投开始日期')).toHaveValue('2026-01-01');
+    expect(screen.getByLabelText('定投结束日期')).toHaveValue('2026-03-02');
+    fireEvent.submit(screen.getByRole('button', { name: '开始模拟' }).closest('form')!);
+    expect(await screen.findByLabelText('定投模拟结果')).toBeInTheDocument();
+    expect(screen.getByText('累计投入')).toBeInTheDocument();
+    expect(screen.getByText('模拟盈亏')).toBeInTheDocument();
   });
 
   it('可以增删改自选题材并保留数据来源', async () => {

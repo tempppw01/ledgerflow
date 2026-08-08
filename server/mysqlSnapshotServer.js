@@ -483,6 +483,51 @@ function normalizeEastmoneyThemeCodes(value) {
   ).slice(0, 24);
 }
 
+const EASTMONEY_HISTORY_RANGE_DAYS = {
+  '1m': 31,
+  '3m': 93,
+  '6m': 186,
+  '1y': 366,
+  '3y': 1098
+};
+
+function formatEastmoneyHistoryDate(date) {
+  return date.toISOString().slice(0, 10).replaceAll('-', '');
+}
+
+function normalizeEastmoneyHistoryDate(value) {
+  const normalized = String(value || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return '';
+  const date = new Date(`${normalized}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== normalized) return '';
+  return normalized.replaceAll('-', '');
+}
+
+function resolveEastmoneyHistoryDates(searchParams) {
+  const requestedEnd = normalizeEastmoneyHistoryDate(searchParams.get('end'));
+  const endDate = requestedEnd
+    ? new Date(
+        `${requestedEnd.slice(0, 4)}-${requestedEnd.slice(4, 6)}-${requestedEnd.slice(6)}T00:00:00.000Z`
+      )
+    : new Date();
+  const requestedStart = normalizeEastmoneyHistoryDate(searchParams.get('start'));
+  const range = String(searchParams.get('range') || '1y').trim();
+  const days = EASTMONEY_HISTORY_RANGE_DAYS[range] || EASTMONEY_HISTORY_RANGE_DAYS['1y'];
+  const startDate = requestedStart
+    ? new Date(
+        `${requestedStart.slice(0, 4)}-${requestedStart.slice(4, 6)}-${requestedStart.slice(6)}T00:00:00.000Z`
+      )
+    : new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000);
+  const earliestAllowed = new Date(endDate);
+  earliestAllowed.setUTCFullYear(earliestAllowed.getUTCFullYear() - 10);
+  if (startDate > endDate || startDate < earliestAllowed) return null;
+  return {
+    start: formatEastmoneyHistoryDate(startDate),
+    end: formatEastmoneyHistoryDate(endDate),
+    range
+  };
+}
+
 async function getEastmoneyMarketProxyPayload(cacheKey, upstreamUrl) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
@@ -1085,6 +1130,36 @@ export async function handleRequest(req, res) {
         '&fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11&fields2=f51,f52,f53,f54,f55,f56,f57,f58&iscr=0&iscca=0&ndays=1';
       const payload = await getEastmoneyMarketProxyPayload('trend:' + secId, upstreamUrl);
       jsonResponse(res, 200, { ok: true, data: payload });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/market/eastmoney/history') {
+      const secId = normalizeEastmoneyMarketSecIds(url.searchParams.get('secid'), 1)[0];
+      const dates = resolveEastmoneyHistoryDates(url.searchParams);
+      if (!secId || !dates) {
+        jsonResponse(res, 400, {
+          ok: false,
+          message: 'Missing or invalid Eastmoney market history parameters.'
+        });
+        return;
+      }
+      const upstreamUrl =
+        'https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=' +
+        encodeURIComponent(secId) +
+        '&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61' +
+        '&klt=101&fqt=1&beg=' +
+        dates.start +
+        '&end=' +
+        dates.end;
+      const payload = await getEastmoneyMarketProxyPayload(
+        `history:${secId}:${dates.start}:${dates.end}`,
+        upstreamUrl
+      );
+      jsonResponse(res, 200, {
+        ok: true,
+        data: payload,
+        meta: { secId, start: dates.start, end: dates.end, range: dates.range }
+      });
       return;
     }
 

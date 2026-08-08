@@ -128,3 +128,43 @@ test('global market endpoint aggregates US, Japan and Korea indexes through Yaho
     await closeServer(server);
   }
 });
+
+test('A-share market history endpoint proxies daily kline ranges', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async (input) => {
+    const url = String(input);
+    assert.match(url, /push2his\.eastmoney\.com\/api\/qt\/stock\/kline\/get/);
+    assert.match(url, /secid=1\.000001/);
+    assert.match(url, /beg=20260101/);
+    assert.match(url, /end=20260807/);
+    return new Response(
+      JSON.stringify({
+        data: {
+          code: '000001',
+          name: '上证指数',
+          klines: ['2026-08-07,3980,4000,4010,3970,120000,300000000,1.00,0.50,20,0.80']
+        }
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  };
+
+  const server = createLedgerFlowServer();
+  try {
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const address = server.address();
+    const response = await originalFetch(
+      `http://127.0.0.1:${address.port}/api/market/eastmoney/history?secid=1.000001&start=2026-01-01&end=2026-08-07`
+    );
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(body.meta.secId, '1.000001');
+    assert.equal(body.meta.start, '20260101');
+    assert.equal(body.meta.end, '20260807');
+    assert.equal(body.data.data.klines.length, 1);
+  } finally {
+    global.fetch = originalFetch;
+    await closeServer(server);
+  }
+});

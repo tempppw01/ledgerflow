@@ -4,9 +4,49 @@ import {
   EASTMONEY_MARKET_THEMES,
   EASTMONEY_MARKET_NEWS_CATEGORIES,
   fetchEastmoneyMarketBoards,
+  fetchEastmoneyIndexHistory,
   fetchEastmoneyMarketThemeBoards,
   fetchEastmoneyMarketQuotes
 } from './eastmoneyMarketClient';
+
+describe('fetchEastmoneyIndexHistory', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('通过同源接口获取并解析指数日线', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            data: {
+              klines: ['2026-08-07,3980,4000,4010,3970,120000,300000000,1.00,0.50,20,0.80']
+            }
+          }
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+
+    const points = await fetchEastmoneyIndexHistory('1.000001', { range: '3m' });
+
+    expect(points).toEqual([
+      {
+        date: '2026-08-07',
+        value: 4000,
+        open: 3980,
+        high: 4010,
+        low: 3970,
+        changePercent: 0.5,
+        volume: 120000,
+        amount: 300000000
+      }
+    ]);
+    expect(String(fetchMock.mock.calls[0][0])).toContain(
+      '/api/market/eastmoney/history?secid=1.000001&range=3m'
+    );
+  });
+});
 
 describe('fetchEastmoneyMarketQuotes', () => {
   afterEach(() => {
