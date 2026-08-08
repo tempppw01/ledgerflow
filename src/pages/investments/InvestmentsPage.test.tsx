@@ -72,6 +72,7 @@ vi.mock('../../features/investments/api/eastmoneyMarketClient', () => ({
     { id: 'us-dow', market: '美股', name: '道琼斯', symbol: '^DJI', flag: '🇺🇸' },
     { id: 'us-sp500', market: '美股', name: '标普 500', symbol: '^GSPC', flag: '🇺🇸' },
     { id: 'us-nasdaq', market: '美股', name: '纳斯达克', symbol: '^IXIC', flag: '🇺🇸' },
+    { id: 'us-nasdaq100', market: '美股', name: '纳斯达克 100', symbol: '^NDX', flag: '🇺🇸' },
     { id: 'jp-nikkei', market: '日股', name: '日经 225', symbol: '^N225', flag: '🇯🇵' },
     { id: 'kr-kospi', market: '韩股', name: '韩国综合', symbol: '^KS11', flag: '🇰🇷' }
   ],
@@ -284,6 +285,8 @@ describe('InvestmentsPage', () => {
     expect(
       screen.getByTestId('market-session-status').querySelector('.investments-global-clock-zone')
     ).toBeInTheDocument();
+    expect(screen.getByLabelText('折叠的全球市场时间轴')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '展开时间轴' }));
     expect(screen.getByLabelText('按当前时区显示的全球市场时间轴')).toBeInTheDocument();
     expect(
       within(screen.getByLabelText('全球股市开闭市状态')).getByText('美股')
@@ -309,7 +312,7 @@ describe('InvestmentsPage', () => {
     expect(within(marketPanel as HTMLElement).getByLabelText('美日韩大盘行情')).toBeInTheDocument();
     expect(
       within(within(marketPanel as HTMLElement).getByLabelText('美日韩大盘行情')).getAllByText('🇺🇸')
-    ).toHaveLength(3);
+    ).toHaveLength(4);
     expect(
       within(screen.getByRole('tablist', { name: '大盘指数' })).getAllByText('🇨🇳')
     ).toHaveLength(11);
@@ -527,7 +530,7 @@ describe('InvestmentsPage', () => {
       </MemoryRouter>
     );
 
-    await userEvent.click(screen.getByRole('button', { name: '待获取' }));
+    await userEvent.click(screen.getByRole('button', { name: '待填写' }));
     const input = screen.getByLabelText('持有份额测试基金持有份额');
     await userEvent.type(input, '1234.56{Enter}');
 
@@ -577,7 +580,7 @@ describe('InvestmentsPage', () => {
     expect(await screen.findByText(/液化天然气制甲烷/)).toBeInTheDocument();
   });
 
-  it('负收益历史业绩柱从零轴向下延伸', async () => {
+  it('负收益历史业绩走线图显示负收益', async () => {
     useAppPreferences.getState().setInvestmentWatchlist([
       {
         id: 'watch-negative',
@@ -599,9 +602,9 @@ describe('InvestmentsPage', () => {
 
     await userEvent.click(screen.getByText('负收益测试基金'));
 
-    const chart = await screen.findByRole('list', { name: '历史业绩图表' });
-    const negativeBar = chart.querySelector('.investments-watch-performance-bar.is-negative i');
-    expect(negativeBar).toHaveStyle({ top: '6%', bottom: '' });
+    const chart = await screen.findByRole('img', { name: '历史业绩走线图' });
+    expect(chart.querySelector('.investments-watch-performance-line-path')).toBeInTheDocument();
+    expect(screen.getByLabelText('历史业绩数值')).toHaveTextContent('-8.43%');
   });
 
   it('鼠标悬停大盘分时图时会显示对应坐标的数值', async () => {
@@ -633,8 +636,9 @@ describe('InvestmentsPage', () => {
 
     const indexTab = await screen.findByRole('tab', { name: /A 股 沪深300/ });
     expect(screen.getByRole('tab', { name: /A 股 上证50/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '查看上一组指数' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '查看下一组指数' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '查看上一组指数' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '查看下一组指数' })).not.toBeInTheDocument();
+    expect(screen.getByText('纳斯达克 100')).toBeInTheDocument();
 
     await userEvent.click(indexTab);
 
@@ -684,5 +688,33 @@ describe('InvestmentsPage', () => {
 
     expect(themeSelect).toHaveValue('BK1128');
     expect(screen.getByLabelText('CPO概念涨跌分布')).toBeInTheDocument();
+  });
+
+  it('可以增删改自选题材并保留数据来源', async () => {
+    render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('大盘概览');
+    const addTheme = screen.getByLabelText('添加可跟踪题材');
+    await userEvent.selectOptions(addTheme, 'BK0001');
+    await userEvent.click(screen.getByRole('button', { name: '添加' }));
+    expect(screen.getByRole('option', { name: '测试细分行业' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('管理已跟踪题材'));
+    const editButtons = screen.getAllByRole('button', { name: '修改' });
+    await userEvent.click(editButtons[editButtons.length - 1]);
+    const editInput = screen.getByLabelText('修改 测试细分行业 的显示名称');
+    await userEvent.clear(editInput);
+    await userEvent.type(editInput, '测试行业');
+    await userEvent.click(screen.getByRole('button', { name: '保存' }));
+    expect(screen.getAllByText('测试行业').length).toBeGreaterThan(0);
+
+    const deleteButtons = screen.getAllByRole('button', { name: '删除' });
+    await userEvent.click(deleteButtons[deleteButtons.length - 1]);
+    expect(screen.queryByText('测试行业')).not.toBeInTheDocument();
+    expect(screen.getAllByText(/服务端同源代理/).length).toBeGreaterThan(0);
   });
 });

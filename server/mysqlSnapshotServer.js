@@ -37,11 +37,13 @@ const WEBDAV_PROXY_METHODS = new Set(['GET', 'PUT', 'DELETE', 'MKCOL', 'MOVE', '
 let sqliteDatabaseModulePromise;
 const eastmoneyStockQuoteCache = new Map();
 const globalMarketQuoteCache = new Map();
+const eastmoneyMarketProxyCache = new Map();
 
 const GLOBAL_MARKET_INDEXES = [
   { id: 'us-dow', market: '美股', name: '道琼斯', symbol: '^DJI' },
   { id: 'us-sp500', market: '美股', name: '标普 500', symbol: '^GSPC' },
   { id: 'us-nasdaq', market: '美股', name: '纳斯达克', symbol: '^IXIC' },
+  { id: 'us-nasdaq100', market: '美股', name: '纳斯达克 100', symbol: '^NDX' },
   { id: 'jp-nikkei', market: '日股', name: '日经 225', symbol: '^N225' },
   { id: 'kr-kospi', market: '韩股', name: '韩国综合', symbol: '^KS11' }
 ];
@@ -453,6 +455,56 @@ async function getEastmoneyStockQuotes(secIds) {
       return quote ? [quote] : [];
     });
     if (cachedQuotes.length > 0) return cachedQuotes;
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function normalizeEastmoneyMarketSecIds(value, maxItems = 32) {
+  return Array.from(
+    new Set(
+      String(value || '')
+        .split(',')
+        .map((item) => item.trim())
+        .filter((item) => /^(?:0|1|90)\.[A-Za-z0-9]+$/.test(item))
+    )
+  ).slice(0, maxItems);
+}
+
+function normalizeEastmoneyThemeCodes(value) {
+  return Array.from(
+    new Set(
+      String(value || '')
+        .split(',')
+        .map((item) => item.trim().toUpperCase())
+        .filter((item) => /^BK\d{4}$/.test(item))
+    )
+  ).slice(0, 24);
+}
+
+async function getEastmoneyMarketProxyPayload(cacheKey, upstreamUrl) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch(upstreamUrl, {
+      headers: {
+        Accept: 'application/json,text/plain,*/*',
+        Referer: 'https://quote.eastmoney.com/',
+        'User-Agent': 'Mozilla/5.0 LedgerFlow market-data-proxy'
+      },
+      signal: controller.signal
+    });
+    if (!response.ok) {
+      throw new Error(`Eastmoney market endpoint returned HTTP ${response.status}.`);
+    }
+    const payload = await response.json();
+    eastmoneyMarketProxyCache.set(cacheKey, payload);
+    return payload;
+  } catch (error) {
+    if (eastmoneyMarketProxyCache.has(cacheKey)) {
+      return eastmoneyMarketProxyCache.get(cacheKey);
+    }
     throw error;
   } finally {
     clearTimeout(timeout);
@@ -1000,6 +1052,102 @@ export async function handleRequest(req, res) {
     if (req.method === 'GET' && pathname === '/market/stock-quotes') {
       const secIds = normalizeStockSecIds(url.searchParams.get('secids'));
       jsonResponse(res, 200, { ok: true, data: { quotes: await getEastmoneyStockQuotes(secIds) } });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/market/eastmoney/quotes') {
+      const secIds = normalizeEastmoneyMarketSecIds(url.searchParams.get('secids'));
+      if (secIds.length === 0) {
+        jsonResponse(res, 400, { ok: false, message: 'Missing Eastmoney market secids.' });
+        return;
+      }
+      const upstreamUrl =
+        'https://push2.eastmoney.com/api/qt/ulist.np/get?secids=' +
+        encodeURIComponent(secIds.join(',')) +
+        '&fields=f12,f13,f14,f2,f3,f4,f5,f6,f15,f16,f17,f18,f104,f105,f106&fltt=2&invt=2';
+      const payload = await getEastmoneyMarketProxyPayload(
+        'quotes:' + secIds.join(','),
+        upstreamUrl
+      );
+      jsonResponse(res, 200, { ok: true, data: payload });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/market/eastmoney/trend') {
+      const secId = normalizeEastmoneyMarketSecIds(url.searchParams.get('secid'), 1)[0];
+      if (!secId) {
+        jsonResponse(res, 400, { ok: false, message: 'Missing Eastmoney market secid.' });
+        return;
+      }
+      const upstreamUrl =
+        'https://push2his.eastmoney.com/api/qt/stock/trends2/get?secid=' +
+        encodeURIComponent(secId) +
+        '&fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11&fields2=f51,f52,f53,f54,f55,f56,f57,f58&iscr=0&iscca=0&ndays=1';
+      const payload = await getEastmoneyMarketProxyPayload('trend:' + secId, upstreamUrl);
+      jsonResponse(res, 200, { ok: true, data: payload });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/market/eastmoney/fast-news') {
+      const column =
+        String(url.searchParams.get('column') || '102').match(/^\d{1,4}$/)?.[0] || '102';
+      const pageSize = Math.min(
+        32,
+        Math.max(1, Number(url.searchParams.get('pageSize') || 12) || 12)
+      );
+      const trace = String(Date.now()) + Math.random().toString(16).slice(2);
+      const upstreamUrl =
+        'https://np-weblist.eastmoney.com/comm/web/getFastNewsList?client=web&biz=web_724&fastColumn=' +
+        encodeURIComponent(column) +
+        '&sortEnd=&pageSize=' +
+        pageSize +
+        '&req_trace=' +
+        encodeURIComponent(trace);
+      const payload = await getEastmoneyMarketProxyPayload(
+        'news:' + column + ':' + pageSize,
+        upstreamUrl
+      );
+      jsonResponse(res, 200, { ok: true, data: payload });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/market/eastmoney/boards') {
+      const type = url.searchParams.get('type') === 'concept' ? 'concept' : 'industry';
+      const pageSize = Math.min(
+        200,
+        Math.max(1, Number(url.searchParams.get('pageSize') || 8) || 8)
+      );
+      const sectorType = type === 'concept' ? '3' : '2';
+      const upstreamUrl =
+        'https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=' +
+        pageSize +
+        '&po=1&np=1&fltt=2&invt=2&fid=f3&fs=m:90+t:' +
+        sectorType +
+        '&fields=f12,f14,f2,f3,f4,f5,f6,f104,f105,f106';
+      const payload = await getEastmoneyMarketProxyPayload(
+        'boards:' + type + ':' + pageSize,
+        upstreamUrl
+      );
+      jsonResponse(res, 200, { ok: true, data: payload });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/market/eastmoney/theme-quotes') {
+      const codes = normalizeEastmoneyThemeCodes(url.searchParams.get('codes'));
+      if (codes.length === 0) {
+        jsonResponse(res, 400, { ok: false, message: 'Missing Eastmoney theme codes.' });
+        return;
+      }
+      const secIds = codes.map((code) => '90.' + code).join(',');
+      const upstreamUrl =
+        'https://push2.eastmoney.com/api/qt/ulist.np/get?secids=' +
+        encodeURIComponent(secIds) +
+        '&fields=f12,f13,f14,f2,f3,f4,f5,f6,f104,f105,f106&fltt=2&invt=2';
+      const payload = await getEastmoneyMarketProxyPayload(
+        'themes:' + codes.join(','),
+        upstreamUrl
+      );
+      jsonResponse(res, 200, { ok: true, data: payload });
       return;
     }
 

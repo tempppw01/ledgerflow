@@ -19,22 +19,24 @@ describe('fetchEastmoneyMarketQuotes', () => {
       new Response(
         JSON.stringify({
           data: {
-            diff: [
-              {
-                f12: '399001',
-                f13: 0,
-                f14: '深证成指',
-                f2: 14654.49,
-                f3: -2.61
-              },
-              {
-                f12: '399006',
-                f13: 0,
-                f14: '创业板指',
-                f2: 3751.33,
-                f3: -2.38
-              }
-            ]
+            data: {
+              diff: [
+                {
+                  f12: '399001',
+                  f13: 0,
+                  f14: '深证成指',
+                  f2: 14654.49,
+                  f3: -2.61
+                },
+                {
+                  f12: '399006',
+                  f13: 0,
+                  f14: '创业板指',
+                  f2: 3751.33,
+                  f3: -2.38
+                }
+              ]
+            }
           }
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -54,9 +56,11 @@ describe('fetchEastmoneyMarketQuotes', () => {
       return new Response(
         JSON.stringify({
           data: {
-            diff: isSingleQuoteRequest
-              ? [{ f12: '000001', f13: 1, f14: '上证指数', f2: 3900, f3: 0.5 }]
-              : [{ f12: '399001', f13: 0, f14: '深证成指', f2: 14600, f3: -1.2 }]
+            data: {
+              diff: isSingleQuoteRequest
+                ? [{ f12: '000001', f13: 1, f14: '上证指数', f2: 3900, f3: 0.5 }]
+                : [{ f12: '399001', f13: 0, f14: '深证成指', f2: 14600, f3: -1.2 }]
+            }
           }
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -66,7 +70,7 @@ describe('fetchEastmoneyMarketQuotes', () => {
     const quotes = await fetchEastmoneyMarketQuotes();
 
     expect(quotes.map((quote) => quote.secId)).toEqual(['1.000001', '0.399001']);
-    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(fetchMock).toHaveBeenCalledTimes(11);
   });
 });
 
@@ -80,20 +84,22 @@ describe('fetchEastmoneyMarketBoards', () => {
       new Response(
         JSON.stringify({
           data: {
-            diff: [
-              {
-                f12: 'BK0001',
-                f14: '人工智能',
-                f2: 1200,
-                f3: 2.5,
-                f4: 30,
-                f5: 1000,
-                f6: 200000000,
-                f104: 20,
-                f105: 3,
-                f106: 1
-              }
-            ]
+            data: {
+              diff: [
+                {
+                  f12: 'BK0001',
+                  f14: '人工智能',
+                  f2: 1200,
+                  f3: 2.5,
+                  f4: 30,
+                  f5: 1000,
+                  f6: 200000000,
+                  f104: 20,
+                  f105: 3,
+                  f106: 1
+                }
+              ]
+            }
           }
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -110,7 +116,7 @@ describe('fetchEastmoneyMarketBoards', () => {
       downCount: 3,
       flatCount: 1
     });
-    expect(String(vi.mocked(fetch).mock.calls[0][0])).toContain('fs=m:90+t:3');
+    expect(String(vi.mocked(fetch).mock.calls[0][0])).toContain('type=concept');
   });
 });
 
@@ -124,20 +130,22 @@ describe('热门题材行情', () => {
       new Response(
         JSON.stringify({
           data: {
-            diff: [
-              {
-                f12: 'BK1106',
-                f14: '创新药',
-                f2: 1500,
-                f3: 1.2,
-                f4: 18,
-                f5: 1000,
-                f6: 100000000,
-                f104: 20,
-                f105: 4,
-                f106: 1
-              }
-            ]
+            data: {
+              diff: [
+                {
+                  f12: 'BK1106',
+                  f14: '创新药',
+                  f2: 1500,
+                  f3: 1.2,
+                  f4: 18,
+                  f5: 1000,
+                  f6: 100000000,
+                  f104: 20,
+                  f105: 4,
+                  f106: 1
+                }
+              ]
+            }
           }
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -149,7 +157,7 @@ describe('热门题材行情', () => {
     expect(boards).toEqual([
       expect.objectContaining({ code: 'BK1106', name: '创新药', changePercent: 1.2 })
     ]);
-    expect(String(fetchMock.mock.calls[0][0])).toContain('90.BK1106');
+    expect(String(fetchMock.mock.calls[0][0])).toContain('codes=BK1106');
     expect(EASTMONEY_MARKET_THEMES.map((theme) => theme.name)).toContain('CPO概念');
   });
 });

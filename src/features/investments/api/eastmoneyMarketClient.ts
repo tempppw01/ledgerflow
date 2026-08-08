@@ -182,6 +182,7 @@ export const GLOBAL_MARKET_INDEXES: GlobalMarketIndex[] = [
   { id: 'us-dow', market: '美股', name: '道琼斯', symbol: '^DJI', flag: '🇺🇸' },
   { id: 'us-sp500', market: '美股', name: '标普 500', symbol: '^GSPC', flag: '🇺🇸' },
   { id: 'us-nasdaq', market: '美股', name: '纳斯达克', symbol: '^IXIC', flag: '🇺🇸' },
+  { id: 'us-nasdaq100', market: '美股', name: '纳斯达克 100', symbol: '^NDX', flag: '🇺🇸' },
   { id: 'jp-nikkei', market: '日股', name: '日经 225', symbol: '^N225', flag: '🇯🇵' },
   { id: 'kr-kospi', market: '韩股', name: '韩国综合', symbol: '^KS11', flag: '🇰🇷' }
 ];
@@ -261,15 +262,14 @@ function parseMarketQuote(
 }
 
 function buildMarketQuoteUrl(secids: string) {
-  return `https://push2.eastmoney.com/api/qt/ulist.np/get?secids=${encodeURIComponent(
-    secids
-  )}&fields=f12,f13,f14,f2,f3,f4,f5,f6,f15,f16,f17,f18&fltt=2&invt=2`;
+  return `/api/market/eastmoney/quotes?secids=${encodeURIComponent(secids)}`;
 }
 
 async function fetchMarketQuotePayload(secids: string) {
   const response = await fetch(buildMarketQuoteUrl(secids));
   if (!response.ok) throw new Error('大盘行情加载失败，请稍后重试。');
-  return (await response.json()) as EastmoneyQuotePayload;
+  const body = (await response.json()) as { data?: EastmoneyQuotePayload };
+  return body.data || {};
 }
 
 export async function fetchEastmoneyMarketQuotes(): Promise<EastmoneyMarketQuote[]> {
@@ -317,16 +317,15 @@ export async function fetchEastmoneyIndexTrend(
   secId: string
 ): Promise<EastmoneyMarketTrendPoint[]> {
   const response = await fetch(
-    `https://push2his.eastmoney.com/api/qt/stock/trends2/get?secid=${encodeURIComponent(
-      secId
-    )}&fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11&fields2=f51,f52,f53,f54,f55,f56,f57,f58&iscr=0&iscca=0&ndays=1`
+    `/api/market/eastmoney/trend?secid=${encodeURIComponent(secId)}`
   );
 
   if (!response.ok) {
     throw new Error('大盘分时加载失败，请稍后重试。');
   }
 
-  const payload = (await response.json()) as EastmoneyTrendPayload;
+  const body = (await response.json()) as { data?: EastmoneyTrendPayload };
+  const payload = body.data || {};
   return (payload.data?.trends || [])
     .map((item) => {
       const [time = '', , close, , , volume, amount, average] = item.split(',');
@@ -405,16 +404,17 @@ export async function fetchEastmoneyMarketNews(
 ): Promise<EastmoneyMarketNewsItem[]> {
   const trace = `${Date.now()}${Math.random().toString(16).slice(2)}`;
   const response = await fetch(
-    `https://np-weblist.eastmoney.com/comm/web/getFastNewsList?client=web&biz=web_724&fastColumn=${encodeURIComponent(
+    `/api/market/eastmoney/fast-news?column=${encodeURIComponent(
       column
-    )}&sortEnd=&pageSize=${pageSize}&req_trace=${encodeURIComponent(trace)}`
+    )}&pageSize=${pageSize}&trace=${encodeURIComponent(trace)}`
   );
 
   if (!response.ok) {
     throw new Error('快讯加载失败，请稍后重试。');
   }
 
-  const payload = (await response.json()) as EastmoneyFastNewsPayload;
+  const body = (await response.json()) as { data?: EastmoneyFastNewsPayload };
+  const payload = body.data || {};
   if (payload.code !== '1') {
     throw new Error(payload.message || '快讯加载失败，请稍后重试。');
   }
@@ -439,14 +439,14 @@ export async function fetchEastmoneyMarketBoards(
   type: EastmoneyMarketBoardType = 'industry',
   pageSize = 8
 ): Promise<EastmoneyMarketBoard[]> {
-  const sectorType = type === 'concept' ? '3' : '2';
   const response = await fetch(
-    `https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=${pageSize}&po=1&np=1&fltt=2&invt=2&fid=f3&fs=m:90+t:${sectorType}&fields=f12,f14,f2,f3,f4,f5,f6,f104,f105,f106`
+    `/api/market/eastmoney/boards?type=${type}&pageSize=${pageSize}`
   );
 
   if (!response.ok) throw new Error('板块行情加载失败，请稍后重试。');
 
-  const payload = (await response.json()) as EastmoneyBoardPayload;
+  const body = (await response.json()) as { data?: EastmoneyBoardPayload };
+  const payload = body.data || {};
   return (payload.data?.diff || []).map((item) => ({
     code: String(item.f12 || '').trim(),
     name: String(item.f14 || '').trim() || '未命名板块',
@@ -461,17 +461,20 @@ export async function fetchEastmoneyMarketBoards(
   }));
 }
 
-export async function fetchEastmoneyMarketThemeBoards(): Promise<EastmoneyMarketBoard[]> {
-  const secids = EASTMONEY_MARKET_THEMES.map((item) => `90.${item.code}`).join(',');
+export async function fetchEastmoneyMarketThemeBoards(
+  themes: EastmoneyMarketTheme[] = EASTMONEY_MARKET_THEMES
+): Promise<EastmoneyMarketBoard[]> {
+  if (themes.length === 0) return [];
   const response = await fetch(
-    `https://push2.eastmoney.com/api/qt/ulist.np/get?secids=${encodeURIComponent(
-      secids
-    )}&fields=f12,f13,f14,f2,f3,f4,f5,f6,f104,f105,f106&fltt=2&invt=2`
+    `/api/market/eastmoney/theme-quotes?codes=${encodeURIComponent(
+      themes.map((item) => item.code).join(',')
+    )}`
   );
 
   if (!response.ok) throw new Error('热门题材加载失败，请稍后重试。');
 
-  const payload = (await response.json()) as EastmoneyBoardPayload;
+  const body = (await response.json()) as { data?: EastmoneyBoardPayload };
+  const payload = body.data || {};
   const byCode = new Map(
     (payload.data?.diff || []).map((item) => [
       String(item.f12 || '').trim(),
@@ -490,7 +493,7 @@ export async function fetchEastmoneyMarketThemeBoards(): Promise<EastmoneyMarket
     ])
   );
 
-  return EASTMONEY_MARKET_THEMES.flatMap((theme) => {
+  return themes.flatMap((theme) => {
     const board = byCode.get(theme.code);
     return board ? [board] : [];
   });

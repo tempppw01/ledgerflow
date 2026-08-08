@@ -69,6 +69,7 @@ test('global market endpoint aggregates US, Japan and Korea indexes through Yaho
       '^DJI': 'Dow Jones Industrial Average',
       '^GSPC': 'S&P 500',
       '^IXIC': 'NASDAQ Composite',
+      '^NDX': 'NASDAQ 100',
       '^N225': 'Nikkei 225',
       '^KS11': 'KOSPI Composite Index'
     };
@@ -107,7 +108,7 @@ test('global market endpoint aggregates US, Japan and Korea indexes through Yaho
 
     assert.equal(response.status, 200);
     assert.equal(body.data.source, 'Yahoo Finance');
-    assert.equal(body.data.quotes.length, 5);
+    assert.equal(body.data.quotes.length, 6);
     assert.deepEqual(body.data.quotes[0], {
       id: 'us-dow',
       market: '美股',

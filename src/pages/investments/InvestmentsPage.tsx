@@ -40,12 +40,12 @@ import {
   type EastmoneyMarketOverview,
   type EastmoneyMarketNewsItem,
   type EastmoneyMarketQuote,
+  type EastmoneyMarketTheme,
   type EastmoneyMarketTrendPoint,
   type GlobalMarketQuote
 } from '../../features/investments/api/eastmoneyMarketClient';
 import {
   BRAIN_ICON_URL,
-  CHEVRON_UP_ICON_URL,
   INFO_ICON_URL,
   ROTATE_CCW_ICON_URL
 } from '../../shared/config/brandAssets';
@@ -95,9 +95,35 @@ const WATCH_CATEGORY_FILTERS: Array<{ id: WatchCategoryFilterId; label: string; 
 ];
 
 const WATCH_GRID_COLUMN_OPTIONS = [1, 2, 3] as const;
+const MARKET_THEME_STORAGE_KEY = 'ledgerflow-investment-market-themes-v1';
 
 type WatchGridColumnCount = (typeof WATCH_GRID_COLUMN_OPTIONS)[number];
 type WatchDisplayMode = 'grid' | 'list';
+
+function normalizeTrackedMarketThemes(value: unknown): EastmoneyMarketTheme[] {
+  if (!Array.isArray(value)) return EASTMONEY_MARKET_THEMES;
+  const themes = value
+    .map((item) => {
+      const source = item as Partial<EastmoneyMarketTheme>;
+      const code = String(source?.code || '')
+        .trim()
+        .toUpperCase();
+      const name = String(source?.name || '').trim();
+      return /^BK\d{4}$/.test(code) && name ? { code, name } : null;
+    })
+    .filter((item): item is EastmoneyMarketTheme => Boolean(item));
+  return Array.from(new Map(themes.map((item) => [item.code, item])).values()).slice(0, 16);
+}
+
+function readTrackedMarketThemes() {
+  try {
+    const stored = localStorage.getItem(MARKET_THEME_STORAGE_KEY);
+    if (!stored) return EASTMONEY_MARKET_THEMES;
+    return normalizeTrackedMarketThemes(JSON.parse(stored));
+  } catch {
+    return EASTMONEY_MARKET_THEMES;
+  }
+}
 
 function getMonthBounds() {
   const now = new Date();
@@ -214,6 +240,58 @@ function parseWatchPerformancePoints(items: string[]): WatchPerformancePoint[] {
     .filter((point) => Number.isFinite(point.value));
 }
 
+function WatchPerformanceLineChart({ points }: { points: WatchPerformancePoint[] }) {
+  const width = 420;
+  const height = 150;
+  const paddingX = 18;
+  const paddingTop = 16;
+  const paddingBottom = 24;
+  const values = points.map((point) => point.value);
+  const min = Math.min(0, ...values);
+  const max = Math.max(0, ...values);
+  const spread = Math.max(max - min, 0.01);
+  const plotHeight = height - paddingTop - paddingBottom;
+  const plotWidth = width - paddingX * 2;
+  const coords = points.map((point, index) => ({
+    ...point,
+    x: paddingX + (index / Math.max(points.length - 1, 1)) * plotWidth,
+    y: paddingTop + (1 - (point.value - min) / spread) * plotHeight
+  }));
+  const zeroY = paddingTop + (1 - (0 - min) / spread) * plotHeight;
+  const linePath = coords
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
+    .join(' ');
+  const areaPath = linePath
+    ? `${linePath} L ${coords[coords.length - 1].x} ${zeroY} L ${coords[0].x} ${zeroY} Z`
+    : '';
+
+  return (
+    <div className="investments-watch-performance-line">
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="历史业绩走线图">
+        <line className="investments-watch-performance-zero-line" x1={paddingX} x2={width - paddingX} y1={zeroY} y2={zeroY} />
+        <path className="investments-watch-performance-area" d={areaPath} />
+        <path className="investments-watch-performance-line-path" d={linePath} />
+        {coords.map((point, index) => (
+          <g key={`${point.label}-${index}`}>
+            <circle cx={point.x} cy={point.y} r="4" />
+            <text x={point.x} y={height - 6} textAnchor="middle">
+              {point.label}
+            </text>
+          </g>
+        ))}
+      </svg>
+      <div className="investments-watch-performance-values" aria-label="历史业绩数值">
+        {points.map((point, index) => (
+          <span className={point.value >= 0 ? 'is-positive' : 'is-negative'} key={`${point.label}-${index}`}>
+            <strong>{point.label}</strong>
+            <em>{point.caption}</em>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function getWatchSectionClassName(kind: WatchDetailSection['kind']) {
   if (kind === 'chart') return 'is-chart';
   if (kind === 'chips') return 'is-chips';
@@ -246,6 +324,22 @@ function getFundHoldingStockCode(value: string) {
   return match?.[1] || '';
 }
 
+function formatFundHoldingStockName(
+  value: string,
+  quote?: EastmoneyHoldingStockQuote
+) {
+  const original = formatWatchPreviewItem(value);
+  const code = getFundHoldingStockCode(original);
+  const withoutCode = original
+    .replace(new RegExp(`[（(]?${code || '\\d{6}'}[）)]?`), '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!quote?.name) return withoutCode || original;
+  if (!withoutCode || withoutCode === quote.name) return quote.name;
+  if (withoutCode.startsWith(quote.name)) return withoutCode;
+  return `${quote.name} ${withoutCode}`.trim();
+}
+
 function getFundHoldingStockSecId(code: string) {
   if (!/^\d{6}$/.test(code)) return '';
   return /^(600|601|603|605|688|689|900)/.test(code) ? `1.${code}` : `0.${code}`;
@@ -266,9 +360,9 @@ function WatchHoldingQuoteList({
   return (
     <div className="investments-watch-holding-quote-list" aria-label="基金持仓实时涨跌">
       {holdings.map((value) => {
-        const displayValue = formatWatchPreviewItem(value);
         const stockCode = getFundHoldingStockCode(value);
         const quote = stockCode ? quotesByCode.get(stockCode) : undefined;
+        const displayValue = formatFundHoldingStockName(value, quote);
         const changePercent = quote?.changePercent ?? null;
         const changeClass =
           changePercent === null
@@ -1090,6 +1184,7 @@ function buildViewerTimelineSegments(
 
 function GlobalMarketClock() {
   const [now, setNow] = useState(() => new Date());
+  const [timelineExpanded, setTimelineExpanded] = useState(false);
   const viewerTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Shanghai';
   const viewerClock = getZonedClock(now, viewerTimeZone);
   const isWeekend = viewerClock.weekday === 0 || viewerClock.weekday === 6;
@@ -1120,9 +1215,18 @@ function GlobalMarketClock() {
               : '当前常规交易时段均已休市'}
           </strong>
         </div>
-        <span className="investments-global-clock-zone">
-          当前时区 · {viewerTimeZone} · {viewerZoneLabel}
-        </span>
+        <div className="investments-global-clock-actions">
+          <span className="investments-global-clock-zone">
+            当前时区 · {viewerTimeZone} · {viewerZoneLabel}
+          </span>
+          <button
+            type="button"
+            aria-expanded={timelineExpanded}
+            onClick={() => setTimelineExpanded((current) => !current)}
+          >
+            {timelineExpanded ? '收起时间轴' : '展开时间轴'}
+          </button>
+        </div>
       </div>
 
       <div className="investments-global-market-statuses" aria-label="全球股市开闭市状态">
@@ -1142,46 +1246,64 @@ function GlobalMarketClock() {
         ))}
       </div>
 
-      <div className="investments-global-timeline" aria-label="按当前时区显示的全球市场时间轴">
-        <div className="investments-global-timeline-axis" aria-hidden="true">
-          {[0, 4, 8, 12, 16, 20, 24].map((hour) => (
-            <span key={hour} style={{ left: `${(hour / 24) * 100}%` }}>
-              {String(hour).padStart(2, '0')}:00
+      {timelineExpanded ? (
+        <div
+          className="investments-global-timeline"
+          aria-label="按当前时区显示的全球市场时间轴"
+        >
+          <div className="investments-global-timeline-axis" aria-hidden="true">
+            {[0, 4, 8, 12, 16, 20, 24].map((hour) => (
+              <span key={hour} style={{ left: `${(hour / 24) * 100}%` }}>
+                {String(hour).padStart(2, '0')}:00
+              </span>
+            ))}
+          </div>
+          {!isWeekend ? (
+            <div
+              className="investments-global-timeline-now"
+              style={{ left: `calc(84px + ${currentPosition}% - ${currentPosition * 0.84}px)` }}
+              aria-hidden="true"
+            >
+              <span>现在</span>
+            </div>
+          ) : null}
+          {marketStates.map((market) => (
+            <div
+              className={`investments-global-timeline-lane ${market.isOpen ? 'is-open' : ''}`}
+              key={market.id}
+              style={{ '--market-color': market.color } as CSSProperties}
+            >
+              <span className="investments-global-timeline-label">
+                {market.flag} {market.name}
+              </span>
+              <div className="investments-global-timeline-track">
+                {buildViewerTimelineSegments(market, now, viewerTimeZone).map((segment) => (
+                  <i
+                    key={segment.key}
+                    style={{
+                      left: `${(segment.start / 1440) * 100}%`,
+                      width: `${((segment.end - segment.start) / 1440) * 100}%`
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="investments-global-timeline-summary" aria-label="折叠的全球市场时间轴">
+          <strong>交易时间轴</strong>
+          {marketStates.map((market) => (
+            <span
+              className={market.isOpen ? 'is-open' : ''}
+              key={market.id}
+              style={{ '--market-color': market.color } as CSSProperties}
+            >
+              {market.flag} {market.name} {market.localTime}
             </span>
           ))}
         </div>
-        {!isWeekend ? (
-          <div
-            className="investments-global-timeline-now"
-            style={{ left: `calc(84px + ${currentPosition}% - ${currentPosition * 0.84}px)` }}
-            aria-hidden="true"
-          >
-            <span>现在</span>
-          </div>
-        ) : null}
-        {marketStates.map((market) => (
-          <div
-            className={`investments-global-timeline-lane ${market.isOpen ? 'is-open' : ''}`}
-            key={market.id}
-            style={{ '--market-color': market.color } as CSSProperties}
-          >
-            <span className="investments-global-timeline-label">
-              {market.flag} {market.name}
-            </span>
-            <div className="investments-global-timeline-track">
-              {buildViewerTimelineSegments(market, now, viewerTimeZone).map((segment) => (
-                <i
-                  key={segment.key}
-                  style={{
-                    left: `${(segment.start / 1440) * 100}%`,
-                    width: `${((segment.end - segment.start) / 1440) * 100}%`
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+      )}
       <p className="investments-global-clock-note">
         常规交易时段 · 自动换算当前时区 · 不含节假日与盘前盘后
       </p>
@@ -1285,7 +1407,6 @@ function MarketOverviewPanel({
   const chart = buildMarketTrendGeometry(selectedTrend);
   const [hoveredTrendIndex, setHoveredTrendIndex] = useState<number | null>(null);
   const [flashingQuoteIds, setFlashingQuoteIds] = useState<Set<string>>(() => new Set());
-  const indexRailRef = useRef<HTMLDivElement | null>(null);
   const previousQuoteValuesRef = useRef<Map<string, string>>(new Map());
   const flashTimerRef = useRef<number | null>(null);
   const totalAmount = quotes.reduce((sum, item) => sum + (item.amount || 0), 0);
@@ -1366,10 +1487,6 @@ function MarketOverviewPanel({
     setHoveredTrendIndex(closestIndex);
   }
 
-  function scrollIndexRail(direction: -1 | 1) {
-    indexRailRef.current?.scrollBy({ left: direction * 276, behavior: 'smooth' });
-  }
-
   const activeTrendText =
     activeTrendPoint && Number.isFinite(activeTrendPoint.value)
       ? `${activeTrendPoint.label || '当前'} · ${formatMarketIndexValue(activeTrendPoint.value)}`
@@ -1434,16 +1551,7 @@ function MarketOverviewPanel({
       </div>
 
       <div className="investments-market-index-rail">
-        <button
-          type="button"
-          className="investments-market-rail-control is-previous"
-          aria-label="查看上一组指数"
-          onClick={() => scrollIndexRail(-1)}
-        >
-          <img src={CHEVRON_UP_ICON_URL} alt="" aria-hidden="true" />
-        </button>
         <div
-          ref={indexRailRef}
           className="investments-market-tabs"
           role="tablist"
           aria-label="大盘指数"
@@ -1475,14 +1583,6 @@ function MarketOverviewPanel({
             );
           })}
         </div>
-        <button
-          type="button"
-          className="investments-market-rail-control is-next"
-          aria-label="查看下一组指数"
-          onClick={() => scrollIndexRail(1)}
-        >
-          <img src={CHEVRON_UP_ICON_URL} alt="" aria-hidden="true" />
-        </button>
       </div>
 
       <div className="investments-market-body">
@@ -1741,26 +1841,44 @@ function MarketBreadthDonut({ breadth, label }: { breadth: MarketBreadth; label:
 function MarketBoardsPanel({
   themeBoards,
   industryBoards,
+  trackedThemes,
+  conceptBoards,
   view,
   selectedThemeCode,
   status,
   error,
   onSelectView,
   onSelectTheme,
+  onAddTheme,
+  onRenameTheme,
+  onRemoveTheme,
   onRefresh
 }: {
   themeBoards: EastmoneyMarketBoard[];
   industryBoards: EastmoneyMarketBoard[];
+  trackedThemes: EastmoneyMarketTheme[];
+  conceptBoards: EastmoneyMarketBoard[];
   view: MarketBoardView;
   selectedThemeCode: string;
   status: 'idle' | 'loading' | 'error';
   error: string;
   onSelectView: (view: MarketBoardView) => void;
   onSelectTheme: (code: string) => void;
+  onAddTheme: (code: string) => void;
+  onRenameTheme: (code: string, name: string) => void;
+  onRemoveTheme: (code: string) => void;
   onRefresh: () => void;
 }) {
+  const [newThemeCode, setNewThemeCode] = useState('');
+  const [editingThemeCode, setEditingThemeCode] = useState('');
+  const [editingThemeName, setEditingThemeName] = useState('');
   const selectedTheme =
     themeBoards.find((item) => item.code === selectedThemeCode) || themeBoards[0] || null;
+  const selectedThemeConfig =
+    trackedThemes.find((item) => item.code === selectedThemeCode) || trackedThemes[0] || null;
+  const availableConceptBoards = conceptBoards.filter(
+    (board) => !trackedThemes.some((theme) => theme.code === board.code)
+  );
   const industryLeader = industryBoards[0] || null;
   const breadth = getMarketBreadth(
     view === 'theme' ? (selectedTheme ? [selectedTheme] : []) : industryBoards
@@ -1814,7 +1932,8 @@ function MarketBoardsPanel({
               value={selectedThemeCode}
               onChange={(event) => onSelectTheme(event.target.value)}
             >
-              {EASTMONEY_MARKET_THEMES.map((theme) => (
+              {trackedThemes.length === 0 ? <option value="">暂未跟踪题材</option> : null}
+              {trackedThemes.map((theme) => (
                 <option key={theme.code} value={theme.code}>
                   {theme.name}
                 </option>
@@ -1822,10 +1941,84 @@ function MarketBoardsPanel({
             </select>
           </label>
 
+          <div className="investments-market-theme-actions">
+            <select
+              aria-label="添加可跟踪题材"
+              value={newThemeCode}
+              onChange={(event) => setNewThemeCode(event.target.value)}
+            >
+              <option value="">从东方财富概念板块中选择</option>
+              {availableConceptBoards.map((theme) => (
+                <option key={theme.code} value={theme.code}>
+                  {theme.name} · {theme.code}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              disabled={!newThemeCode}
+              onClick={() => {
+                onAddTheme(newThemeCode);
+                setNewThemeCode('');
+              }}
+            >
+              添加
+            </button>
+          </div>
+
+          <details className="investments-market-theme-manager">
+            <summary>管理已跟踪题材</summary>
+            <div>
+              {trackedThemes.map((theme) => (
+                <div className="investments-market-theme-manager-row" key={theme.code}>
+                  {editingThemeCode === theme.code ? (
+                    <input
+                      aria-label={`修改 ${theme.name} 的显示名称`}
+                      value={editingThemeName}
+                      onChange={(event) => setEditingThemeName(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          onRenameTheme(theme.code, editingThemeName);
+                          setEditingThemeCode('');
+                        }
+                        if (event.key === 'Escape') setEditingThemeCode('');
+                      }}
+                    />
+                  ) : (
+                    <span>
+                      <strong>{theme.name}</strong>
+                      <small>{theme.code}</small>
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (editingThemeCode === theme.code) {
+                        onRenameTheme(theme.code, editingThemeName);
+                        setEditingThemeCode('');
+                        return;
+                      }
+                      setEditingThemeCode(theme.code);
+                      setEditingThemeName(theme.name);
+                    }}
+                  >
+                    {editingThemeCode === theme.code ? '保存' : '修改'}
+                  </button>
+                  <button type="button" onClick={() => onRemoveTheme(theme.code)}>
+                    删除
+                  </button>
+                </div>
+              ))}
+            </div>
+          </details>
+
           <div className="investments-market-board-insight">
-            <MarketBreadthDonut breadth={breadth} label={selectedTheme?.name || '热门题材'} />
+            <MarketBreadthDonut
+              breadth={breadth}
+              label={selectedThemeConfig?.name || selectedTheme?.name || '热门题材'}
+            />
             <div className="investments-market-board-headline">
-              <span>{selectedTheme?.name || '题材数据加载中'}</span>
+              <span>{selectedThemeConfig?.name || selectedTheme?.name || '题材数据加载中'}</span>
               <strong>{formatMarketIndexValue(selectedTheme?.value)}</strong>
               <b className={getMarketTone(selectedTheme?.changePercent)}>
                 {formatMarketPercent(selectedTheme?.changePercent)}
@@ -1838,6 +2031,9 @@ function MarketBoardsPanel({
               </small>
             </div>
           </div>
+          <p className="investments-market-source-note">
+            数据源：东方财富公开概念板块行情 · 服务端同源代理 · 按板块代码核验
+          </p>
         </>
       ) : industryBoards.length === 0 && status !== 'loading' ? (
         <div className="investments-market-news-empty">
@@ -1971,6 +2167,9 @@ function MarketNewsPanel({
           ))}
         </div>
       )}
+      <p className="investments-market-source-note">
+        数据源：东方财富 7×24 快讯 · 服务端同源代理，避免部署环境浏览器跨域拦截
+      </p>
     </section>
   );
 }
@@ -2069,11 +2268,15 @@ export function InvestmentsPage() {
   const [marketNewsStatus, setMarketNewsStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [marketNewsError, setMarketNewsError] = useState('');
   const [marketBoardView, setMarketBoardView] = useState<MarketBoardView>('theme');
+  const [trackedMarketThemes, setTrackedMarketThemes] = useState<EastmoneyMarketTheme[]>(
+    readTrackedMarketThemes
+  );
   const [selectedMarketThemeCode, setSelectedMarketThemeCode] = useState(
-    EASTMONEY_MARKET_THEMES[0].code
+    () => readTrackedMarketThemes()[0]?.code || ''
   );
   const [marketThemeBoards, setMarketThemeBoards] = useState<EastmoneyMarketBoard[]>([]);
   const [marketIndustryBoards, setMarketIndustryBoards] = useState<EastmoneyMarketBoard[]>([]);
+  const [marketConceptBoards, setMarketConceptBoards] = useState<EastmoneyMarketBoard[]>([]);
   const [marketBoardsStatus, setMarketBoardsStatus] = useState<'idle' | 'loading' | 'error'>(
     'idle'
   );
@@ -2086,6 +2289,9 @@ export function InvestmentsPage() {
   const [marketInsightStatus, setMarketInsightStatus] = useState<MarketInsightStatus>('disabled');
   const marketInsightRequestAtRef = useRef(0);
   const marketInsightRequestInFlightRef = useRef(false);
+  const trackedMarketThemesKey = trackedMarketThemes
+    .map((theme) => `${theme.code}:${theme.name}`)
+    .join('|');
 
   const activePositions = useMemo(() => positions.filter((item) => item.isActive), [positions]);
 
@@ -2582,6 +2788,20 @@ export function InvestmentsPage() {
   }, [selectedNewsCategoryId]);
 
   useEffect(() => {
+    try {
+      localStorage.setItem(MARKET_THEME_STORAGE_KEY, JSON.stringify(trackedMarketThemes));
+    } catch {
+      // The current session still keeps the customized list when storage is unavailable.
+    }
+    if (
+      trackedMarketThemes.length > 0 &&
+      !trackedMarketThemes.some((theme) => theme.code === selectedMarketThemeCode)
+    ) {
+      setSelectedMarketThemeCode(trackedMarketThemes[0].code);
+    }
+  }, [selectedMarketThemeCode, trackedMarketThemes, trackedMarketThemesKey]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function loadMarketBoards() {
@@ -2589,16 +2809,22 @@ export function InvestmentsPage() {
       setMarketBoardsError('');
 
       try {
-        const [themesResult, industriesResult] = await Promise.allSettled([
-          fetchEastmoneyMarketThemeBoards(),
-          fetchEastmoneyMarketBoards('industry')
+        const [themesResult, industriesResult, conceptsResult] = await Promise.allSettled([
+          fetchEastmoneyMarketThemeBoards(trackedMarketThemes),
+          fetchEastmoneyMarketBoards('industry'),
+          fetchEastmoneyMarketBoards('concept', 200)
         ]);
         if (cancelled) return;
         if (themesResult.status === 'fulfilled') setMarketThemeBoards(themesResult.value);
         if (industriesResult.status === 'fulfilled')
           setMarketIndustryBoards(industriesResult.value);
+        if (conceptsResult.status === 'fulfilled') setMarketConceptBoards(conceptsResult.value);
 
-        if (themesResult.status === 'rejected' && industriesResult.status === 'rejected') {
+        if (
+          themesResult.status === 'rejected' &&
+          industriesResult.status === 'rejected' &&
+          conceptsResult.status === 'rejected'
+        ) {
           throw new Error('板块行情加载失败，请稍后重试。');
         }
 
@@ -2616,7 +2842,7 @@ export function InvestmentsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [trackedMarketThemes, trackedMarketThemesKey]);
 
   useEffect(() => {
     if (holdingStockSecIds.length === 0) {
@@ -2637,7 +2863,11 @@ export function InvestmentsPage() {
     }
 
     void loadHoldingStockQuotes();
-    const interval = window.setInterval(() => void loadHoldingStockQuotes(), 30_000);
+    const interval = window.setInterval(() => {
+      if (document.visibilityState !== 'hidden' && isLiveMarketPollingTime()) {
+        void loadHoldingStockQuotes();
+      }
+    }, 10_000);
 
     return () => {
       cancelled = true;
@@ -2677,13 +2907,19 @@ export function InvestmentsPage() {
     setMarketBoardsError('');
 
     try {
-      const [themesResult, industriesResult] = await Promise.allSettled([
-        fetchEastmoneyMarketThemeBoards(),
-        fetchEastmoneyMarketBoards('industry')
+      const [themesResult, industriesResult, conceptsResult] = await Promise.allSettled([
+        fetchEastmoneyMarketThemeBoards(trackedMarketThemes),
+        fetchEastmoneyMarketBoards('industry'),
+        fetchEastmoneyMarketBoards('concept', 200)
       ]);
       if (themesResult.status === 'fulfilled') setMarketThemeBoards(themesResult.value);
       if (industriesResult.status === 'fulfilled') setMarketIndustryBoards(industriesResult.value);
-      if (themesResult.status === 'rejected' && industriesResult.status === 'rejected') {
+      if (conceptsResult.status === 'fulfilled') setMarketConceptBoards(conceptsResult.value);
+      if (
+        themesResult.status === 'rejected' &&
+        industriesResult.status === 'rejected' &&
+        conceptsResult.status === 'rejected'
+      ) {
         throw new Error('板块行情加载失败，请稍后重试。');
       }
       setMarketBoardsStatus('idle');
@@ -2693,6 +2929,35 @@ export function InvestmentsPage() {
       setMarketBoardsStatus('error');
       setToastState(message, 'warning');
     }
+  }
+
+  function handleAddMarketTheme(code: string) {
+    const theme = marketConceptBoards.find((item) => item.code === code);
+    if (!theme || trackedMarketThemes.some((item) => item.code === code)) return;
+    setTrackedMarketThemes((current) => [
+      ...current,
+      { code: theme.code, name: theme.name }
+    ]);
+    setSelectedMarketThemeCode(theme.code);
+    setToastState(`已添加题材“${theme.name}”。`);
+  }
+
+  function handleRenameMarketTheme(code: string, name: string) {
+    const normalizedName = name.trim().slice(0, 24);
+    if (!normalizedName) return;
+    setTrackedMarketThemes((current) =>
+      current.map((item) => (item.code === code ? { ...item, name: normalizedName } : item))
+    );
+  }
+
+  function handleRemoveMarketTheme(code: string) {
+    const target = trackedMarketThemes.find((item) => item.code === code);
+    const nextThemes = trackedMarketThemes.filter((item) => item.code !== code);
+    setTrackedMarketThemes(nextThemes);
+    if (selectedMarketThemeCode === code) {
+      setSelectedMarketThemeCode(nextThemes[0]?.code || '');
+    }
+    if (target) setToastState(`已移除题材“${target.name}”。`);
   }
 
   function toggleWatchItemDetails(itemId: string) {
@@ -3098,12 +3363,17 @@ export function InvestmentsPage() {
             <MarketBoardsPanel
               themeBoards={marketThemeBoards}
               industryBoards={marketIndustryBoards}
+              trackedThemes={trackedMarketThemes}
+              conceptBoards={marketConceptBoards}
               view={marketBoardView}
               selectedThemeCode={selectedMarketThemeCode}
               status={marketBoardsStatus}
               error={marketBoardsError}
               onSelectView={setMarketBoardView}
               onSelectTheme={setSelectedMarketThemeCode}
+              onAddTheme={handleAddMarketTheme}
+              onRenameTheme={handleRenameMarketTheme}
+              onRemoveTheme={handleRemoveMarketTheme}
               onRefresh={refreshMarketBoards}
             />
             <MarketNewsPanel
@@ -3276,22 +3546,6 @@ export function InvestmentsPage() {
                       const performancePoints = parseWatchPerformancePoints(
                         performanceSection?.items || []
                       );
-                      const maxPositivePerformance = Math.max(
-                        ...performancePoints.map((point) => Math.max(point.value, 0)),
-                        0
-                      );
-                      const maxNegativePerformance = Math.max(
-                        ...performancePoints.map((point) => Math.max(-point.value, 0)),
-                        0
-                      );
-                      const performanceZeroPosition =
-                        maxPositivePerformance > 0 && maxNegativePerformance > 0
-                          ? (maxPositivePerformance /
-                              (maxPositivePerformance + maxNegativePerformance)) *
-                            100
-                          : maxPositivePerformance > 0
-                            ? 94
-                            : 6;
                       const watchCategory =
                         WATCH_CATEGORY_FILTERS.find(
                           (category) => category.id === getWatchItemCategoryId(item)
@@ -3399,9 +3653,9 @@ export function InvestmentsPage() {
                                     event.stopPropagation();
                                     handleStartEditingWatchHoldingShares(item);
                                   }}
-                                  title="点击输入持有份额"
+                                  title="点击填写持有份额"
                                 >
-                                  {formatHoldingShares(item.holdingShares) || '待获取'}
+                                  {formatHoldingShares(item.holdingShares) || '待填写'}
                                 </button>
                               )}
                             </span>
@@ -3472,62 +3726,9 @@ export function InvestmentsPage() {
                                     <section className="investments-watch-performance-panel">
                                       <div className="investments-watch-detail-head">
                                         <span>{performanceSection.title}</span>
-                                        <small>最近四个区间的表现</small>
+                                        <small>按不同时间区间连接走势</small>
                                       </div>
-                                      <div
-                                        className="investments-watch-performance-chart"
-                                        role="list"
-                                        aria-label="历史业绩图表"
-                                      >
-                                        {performancePoints.map((point, index) => {
-                                          const isPositive = point.value >= 0;
-                                          const scaleMax = isPositive
-                                            ? maxPositivePerformance
-                                            : maxNegativePerformance;
-                                          const availableHeight = isPositive
-                                            ? performanceZeroPosition
-                                            : 100 - performanceZeroPosition;
-                                          const height =
-                                            point.value === 0 || scaleMax === 0
-                                              ? 0
-                                              : Math.max(
-                                                  6,
-                                                  (Math.abs(point.value) / scaleMax) *
-                                                    availableHeight
-                                                );
-
-                                          return (
-                                            <div
-                                              key={`${item.id}-performance-${point.label}-${index}`}
-                                              className={`investments-watch-performance-bar ${
-                                                point.value >= 0 ? 'is-positive' : 'is-negative'
-                                              }`}
-                                              role="listitem"
-                                              title={`${point.label} ${point.caption}`}
-                                            >
-                                              <span className="investments-watch-performance-track">
-                                                <span
-                                                  className="investments-watch-performance-zero"
-                                                  style={{ top: `${performanceZeroPosition}%` }}
-                                                  aria-hidden="true"
-                                                />
-                                                <i
-                                                  style={{
-                                                    height: `${height}%`,
-                                                    ...(isPositive
-                                                      ? {
-                                                          bottom: `${100 - performanceZeroPosition}%`
-                                                        }
-                                                      : { top: `${performanceZeroPosition}%` })
-                                                  }}
-                                                />
-                                              </span>
-                                              <strong>{point.label}</strong>
-                                              <em>{point.caption}</em>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
+                                      <WatchPerformanceLineChart points={performancePoints} />
                                     </section>
                                   ) : null}
 
