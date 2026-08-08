@@ -1092,6 +1092,7 @@ function GlobalMarketClock() {
   const [now, setNow] = useState(() => new Date());
   const viewerTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Shanghai';
   const viewerClock = getZonedClock(now, viewerTimeZone);
+  const isWeekend = viewerClock.weekday === 0 || viewerClock.weekday === 6;
   const marketStates = GLOBAL_MARKETS.map((market) => getGlobalMarketState(market, now));
   const openMarkets = marketStates.filter((market) => market.isOpen);
   const currentPosition = Math.min(100, Math.max(0, (viewerClock.minutes / 1440) * 100));
@@ -1104,7 +1105,7 @@ function GlobalMarketClock() {
   }).format(now);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 30_000);
+    const timer = window.setInterval(() => setNow(new Date()), 1_000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -1149,13 +1150,15 @@ function GlobalMarketClock() {
             </span>
           ))}
         </div>
-        <div
-          className="investments-global-timeline-now"
-          style={{ left: `calc(84px + ${currentPosition}% - ${currentPosition * 0.84}px)` }}
-          aria-hidden="true"
-        >
-          <span>现在</span>
-        </div>
+        {!isWeekend ? (
+          <div
+            className="investments-global-timeline-now"
+            style={{ left: `calc(84px + ${currentPosition}% - ${currentPosition * 0.84}px)` }}
+            aria-hidden="true"
+          >
+            <span>现在</span>
+          </div>
+        ) : null}
         {marketStates.map((market) => (
           <div
             className={`investments-global-timeline-lane ${market.isOpen ? 'is-open' : ''}`}

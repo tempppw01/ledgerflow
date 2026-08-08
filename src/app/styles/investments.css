@@ -1110,7 +1110,8 @@
   top: 13px;
   bottom: 0;
   width: 1px;
-  background: var(--color-text-primary);
+  background: var(--color-danger);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--color-danger) 48%, transparent);
   pointer-events: none;
 }
 
@@ -1122,7 +1123,7 @@
   height: 7px;
   border: 2px solid var(--color-bg-elevated);
   border-radius: 50%;
-  background: var(--color-text-primary);
+  background: var(--color-danger);
   content: '';
   transform: translate(-50%, -50%);
 }
@@ -1133,7 +1134,7 @@
   left: 50%;
   padding: 1px 4px;
   border-radius: 4px;
-  background: var(--color-text-primary);
+  background: var(--color-danger);
   color: var(--color-bg-elevated);
   font-size: 8px;
   font-weight: 800;
