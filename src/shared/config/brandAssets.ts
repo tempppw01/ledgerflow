@@ -16,6 +16,8 @@ export const BOT_ICON_URL =
 export const CIRCLE_USER_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/circle-user.svg';
 
+export const DEFAULT_ANIME_AVATAR_URL = '/default-anime-avatar.svg';
+
 export const CLOUD_SYNC_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/cloud-sync.svg';
 

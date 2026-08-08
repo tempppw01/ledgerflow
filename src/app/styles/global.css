@@ -17532,6 +17532,15 @@ select.debt-form-input {
   .repayment-inline-form .primary {
     justify-self: start;
   }
+
+  .finance-overview-income-actions.repayment-income-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .repayment-income-editor {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
 }
 
 @media (max-width: 760px) {

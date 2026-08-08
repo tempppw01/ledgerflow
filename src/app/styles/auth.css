@@ -139,6 +139,16 @@
   font-family: var(--font-sans);
   font-weight: 800;
   letter-spacing: 0;
+  overflow: hidden;
+  line-height: 1;
+}
+
+.topbar-account-avatar img,
+.topbar-account-menu-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .topbar-account-avatar {
@@ -182,7 +192,7 @@
 
 .topbar-account-menu-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 11px;
   padding: 10px 10px 11px;
 }

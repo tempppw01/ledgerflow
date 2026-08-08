@@ -20,11 +20,11 @@ import {
   CHEVRON_DOWN_ICON_URL,
   CHEVRONS_LEFT_RIGHT_ICON_URL,
   CHEVRONS_RIGHT_LEFT_ICON_URL,
-  CIRCLE_USER_ICON_URL,
   CREDIT_CARDS_ICON_URL,
   DASHBOARD_ICON_URL,
   DATA_INPUT_ILLUSTRATION_URL,
   DATABASE_ICON_URL,
+  DEFAULT_ANIME_AVATAR_URL,
   GLOBE_ICON_URL,
   INFO_ICON_URL,
   INVESTMENTS_ICON_URL,
@@ -73,22 +73,6 @@ function renderNavIcon(item: { icon: string; iconSrc?: string }, className: stri
   return <span className={className}>{item.icon}</span>;
 }
 
-function getAccountInitials(displayName: string, email: string) {
-  const normalizedName = displayName.trim();
-  const nameParts = normalizedName.split(/\s+/).filter(Boolean);
-
-  if (nameParts.length > 1) {
-    return nameParts
-      .slice(0, 2)
-      .map((part) => part.slice(0, 1))
-      .join('')
-      .toUpperCase();
-  }
-
-  const source = normalizedName || email.split('@')[0] || 'LF';
-  return source.slice(-2).toUpperCase();
-}
-
 export function AppLayout() {
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
@@ -117,7 +101,6 @@ export function AppLayout() {
       state.trashedSubscriptions.length
   );
   const recycleBinIconUrl = recycleBinItemCount > 0 ? TRASH_2_ICON_URL : TRASH_ICON_URL;
-  const accountInitials = getAccountInitials(user.displayName, user.email);
   const accountMenuRef = useRef<HTMLDivElement>(null);
 
   const navSections: Array<{ title: string; items: NavItem[] }> = useMemo(
@@ -786,7 +769,7 @@ export function AppLayout() {
                 aria-expanded={accountMenuOpen}
               >
                 <span className="topbar-account-avatar" aria-hidden="true">
-                  {accountInitials.slice(0, 1)}
+                  <img src={DEFAULT_ANIME_AVATAR_URL} alt="" />
                 </span>
                 <span className="topbar-account-name" title={user.email}>
                   {user.displayName}
@@ -803,7 +786,7 @@ export function AppLayout() {
                 <div className="topbar-account-menu" role="menu" aria-label="账号菜单">
                   <div className="topbar-account-menu-head">
                     <span className="topbar-account-menu-avatar" aria-hidden="true">
-                      {accountInitials}
+                      <img src={DEFAULT_ANIME_AVATAR_URL} alt="" />
                     </span>
                     <div className="topbar-account-menu-identity">
                       <small>当前账号</small>
@@ -892,7 +875,7 @@ export function AppLayout() {
               <div className="mobile-nav-profile-copy">
                 <img
                   className="mobile-nav-profile-mark"
-                  src={CIRCLE_USER_ICON_URL}
+                  src={DEFAULT_ANIME_AVATAR_URL}
                   alt=""
                   aria-hidden="true"
                 />
