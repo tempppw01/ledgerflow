@@ -262,6 +262,29 @@ describe('Investment assistant chat', () => {
     );
   });
 
+  it('collapses the floating investment chat into a question mark launcher', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <InvestmentChatPanel showHero={false} floating />
+      </MemoryRouter>
+    );
+
+    const launcher = screen.getByRole('button', { name: '打开快捷问答' });
+    expect(launcher).toBeInTheDocument();
+    expect(container.querySelector('.chat-investment-panel')).toHaveClass('is-floating-hidden');
+
+    fireEvent.click(launcher);
+
+    expect(screen.getByText('快捷问答')).toBeInTheDocument();
+    expect(screen.getByLabelText('基金分析输入框')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '打开快捷问答' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '收起快捷问答' }));
+
+    expect(screen.getByRole('button', { name: '打开快捷问答' })).toBeInTheDocument();
+    expect(container.querySelector('.chat-investment-panel')).toHaveClass('is-floating-hidden');
+  });
+
   it('clears the composer immediately after sending a typed question', async () => {
     sendAiChatStreamMock.mockReturnValue(new Promise(() => undefined));
 

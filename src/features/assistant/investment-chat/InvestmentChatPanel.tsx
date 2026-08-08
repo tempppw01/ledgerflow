@@ -772,13 +772,17 @@ type InvestmentChatPanelProps = {
   showHero?: boolean;
   defaultWebEnabled?: boolean;
   contextNote?: string;
+  floating?: boolean;
+  floatingPosition?: 'bottom-right' | 'bottom-left';
 };
 
 export function InvestmentChatPanel({
   showComposer = true,
   showHero = true,
   defaultWebEnabled = false,
-  contextNote = ''
+  contextNote = '',
+  floating = false,
+  floatingPosition = 'bottom-right'
 }: InvestmentChatPanelProps) {
   const messages = useAppPreferences((s) => s.investmentAiMessages);
   const clearInvestmentAiMessages = useAppPreferences((s) => s.clearInvestmentAiMessages);
@@ -789,6 +793,7 @@ export function InvestmentChatPanel({
   const [selectedHistoryMessageId, setSelectedHistoryMessageId] = useState('');
   const [clearContextVersion, setClearContextVersion] = useState(0);
   const [clearContextConfirmOpen, setClearContextConfirmOpen] = useState(false);
+  const [floatingOpen, setFloatingOpen] = useState(false);
   const historyTurns = useMemo(() => messages.filter((item) => item.role === 'user'), [messages]);
   const latestMessageId = messages[messages.length - 1]?.id || '';
 
@@ -857,12 +862,52 @@ export function InvestmentChatPanel({
   );
 
   return (
-    <section
-      className={`${showHero ? 'chat-kawaii-panel chat-assistant-panel ' : ''}chat-investment-panel ${
-        isCompact ? 'is-compact' : ''
-      } ${messages.length === 0 ? 'is-empty' : ''} ${activeTurnMessageId ? 'has-active-turn' : ''}`}
-      onWheelCapture={handleCompactWheelCapture}
-    >
+    <>
+      {floating && !floatingOpen ? (
+        <button
+          type="button"
+          className="investment-chat-floating-launcher"
+          aria-label="打开快捷问答"
+          aria-expanded={false}
+          onClick={() => setFloatingOpen(true)}
+        >
+          <span aria-hidden="true">?</span>
+          {messages.length > 0 ? <i aria-label={`${messages.length} 条对话`} /> : null}
+        </button>
+      ) : null}
+
+      <section
+        className={`${showHero ? 'chat-kawaii-panel chat-assistant-panel ' : ''}chat-investment-panel ${
+          isCompact ? 'is-compact' : ''
+        } ${messages.length === 0 ? 'is-empty' : ''} ${activeTurnMessageId ? 'has-active-turn' : ''} ${
+          floating ? `is-floating is-floating-${floatingPosition}` : ''
+        } ${floating && !floatingOpen ? 'is-floating-hidden' : ''}`}
+        data-floating-position={floating ? floatingPosition : undefined}
+        onWheelCapture={handleCompactWheelCapture}
+      >
+        {floating ? (
+          <header className="investment-chat-floating-head">
+            <div className="investment-chat-floating-title">
+              <span className="investment-chat-floating-title-icon" aria-hidden="true">
+                ?
+              </span>
+              <div>
+                <strong>快捷问答</strong>
+                <small>结合大盘与持仓，随时问一句</small>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="investment-chat-floating-close"
+              aria-label="收起快捷问答"
+              title="收起快捷问答"
+              onClick={() => setFloatingOpen(false)}
+            >
+              ×
+            </button>
+          </header>
+        ) : null}
+
       {showHero ? (
         <div className="chat-assistant-hero">
           <h2>助手</h2>
@@ -992,7 +1037,8 @@ export function InvestmentChatPanel({
         onConfirm={clearContext}
         onCancel={() => setClearContextConfirmOpen(false)}
       />
-    </section>
+      </section>
+    </>
   );
 }
 

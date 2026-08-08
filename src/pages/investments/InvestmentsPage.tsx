@@ -3631,22 +3631,13 @@ export function InvestmentsPage() {
             )}
           </aside>
 
-          <section
-            className="panel investments-quick-chat-panel"
-            data-investment-support-title="快捷问答"
-          >
-            <div className="investments-section-head investments-quick-chat-head">
-              <div>
-                <h3>快捷问答</h3>
-              </div>
-              <span className="badge">联网</span>
-            </div>
-            <InvestmentChatPanel
-              showHero={false}
-              defaultWebEnabled
-              contextNote={marketContextSummary}
-            />
-          </section>
+          <InvestmentChatPanel
+            showHero={false}
+            floating
+            floatingPosition="bottom-right"
+            defaultWebEnabled
+            contextNote={marketContextSummary}
+          />
         </aside>
       </section>
 

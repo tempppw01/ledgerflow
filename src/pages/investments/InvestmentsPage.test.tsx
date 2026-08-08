@@ -321,7 +321,9 @@ describe('InvestmentsPage', () => {
 
     expect(screen.queryByText('6 个月应急金')).not.toBeInTheDocument();
     expect(screen.getByText('基金自选')).toBeInTheDocument();
-    expect(screen.getByText('快捷问答')).toBeInTheDocument();
+    const quickChatLauncher = screen.getByRole('button', { name: '打开快捷问答' });
+    expect(quickChatLauncher).toBeInTheDocument();
+    fireEvent.click(quickChatLauncher);
     expect(screen.getByLabelText('基金分析输入框')).toBeInTheDocument();
     expect(container.querySelector('.investments-management-grid')).toBeInTheDocument();
   });
