@@ -13,9 +13,10 @@ vi.mock('../../shared/store/useAiSettings', () => ({
 }));
 
 vi.mock('../../shared/store/useFinanceStore', () => ({
-  useFinanceStore: (selector: (state: { transactions: never[] }) => unknown) =>
+  useFinanceStore: (selector: (state: { transactions: never[]; accounts: { id: string; name: string }[] }) => unknown) =>
     selector({
-      transactions: []
+      transactions: [],
+      accounts: [{ id: 'account-1', name: '工资卡' }]
     })
 }));
 
@@ -148,5 +149,97 @@ describe('RepaymentManagementPage', () => {
         remainingMonths: 9
       })
     );
+  });
+
+  it('应支持从未来还款卡片快捷设置还款日', () => {
+    appPreferencesMock.state.debts = [
+      {
+        id: 'debt-2',
+        name: '待补日期消费贷',
+        type: 'consumer-loan',
+        status: 'active',
+        balance: 1800,
+        customMinPayment: 180
+      }
+    ];
+
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '设置待补日期消费贷还款日' }));
+    fireEvent.change(screen.getByRole('spinbutton', { name: '待补日期消费贷还款日' }), {
+      target: { value: '15' }
+    });
+    fireEvent.click(screen.getByText('保存', { exact: true }));
+
+    expect(appPreferencesMock.state.updateDebt).toHaveBeenCalledWith(
+      'debt-2',
+      expect.objectContaining({ repaymentDay: 15 })
+    );
+  });
+
+  it('贷款填写借款金额、总期数和已还期数后应自动计算剩余本金', () => {
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
+    fireEvent.change(screen.getByLabelText('负债类型'), { target: { value: 'loan' } });
+    fireEvent.change(screen.getByLabelText('负债名称'), { target: { value: '测试贷款' } });
+    fireEvent.click(screen.getByText('更多设置', { exact: true }));
+    fireEvent.change(screen.getByLabelText('剩余期数'), { target: { value: '4' } });
+    fireEvent.change(screen.getByLabelText('年化利率'), { target: { value: '0' } });
+    fireEvent.change(screen.getByLabelText('总期数'), { target: { value: '12' } });
+    fireEvent.change(screen.getByLabelText('已还期数'), { target: { value: '8' } });
+    fireEvent.change(screen.getByLabelText('借款金额'), { target: { value: '4129' } });
+
+    expect(screen.getByLabelText('剩余本金')).toHaveValue(1376.33);
+    expect(screen.getByText(/已自动估算：¥1376\.33/)).toBeInTheDocument();
+  });
+
+  it('扣款账户来自已有账户候补且可以留空提交', () => {
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
+    const accountInput = screen.getByLabelText('扣款账户');
+    const datalist = document.getElementById('repayment-account-options');
+    expect(accountInput).toHaveValue('');
+    expect(datalist?.querySelector('option')?.getAttribute('value')).toBe('工资卡');
+
+    fireEvent.change(screen.getByLabelText('负债名称'), { target: { value: '无账户负债' } });
+    fireEvent.change(screen.getByLabelText('剩余本金'), { target: { value: '1000' } });
+    fireEvent.click(screen.getByRole('button', { name: '+ 添加负债' }));
+
+    expect(appPreferencesMock.state.addDebt).toHaveBeenCalledWith(
+      expect.objectContaining({ name: '无账户负债', paymentAccount: undefined })
+    );
+  });
+
+  it('新增负债表单不再展示宽限期', () => {
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
+    expect(screen.queryByText('宽限期')).not.toBeInTheDocument();
   });
 });

@@ -16704,6 +16704,14 @@ select.debt-form-input {
   flex-shrink: 0;
 }
 
+.debt-form-auto-hint {
+  display: block;
+  margin-top: 5px;
+  color: var(--color-primary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .debt-form-input-money {
   border: 0;
   background: transparent;
@@ -17653,4 +17661,172 @@ select.debt-form-input {
   .repayment-inline-form {
     grid-template-columns: 1fr;
   }
+}
+
+/* 还款页交互与窄栏保护：日期快捷编辑、详情收敛、输入不再被挤压。 */
+.repayment-timeline-item-wrap {
+  position: relative;
+}
+
+.repayment-timeline-day-editor {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 4px 0 0 18px;
+  padding: 7px 9px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 24%, var(--color-border));
+  border-radius: 9px;
+  background: var(--color-bg-elevated);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+  font-size: 11px;
+}
+
+.repayment-timeline-day-editor label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+
+.repayment-timeline-day-editor input {
+  width: 58px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-primary);
+  font-weight: 700;
+}
+
+.repayment-timeline-day-editor button {
+  min-height: 28px;
+  padding: 3px 8px;
+  font-size: 11px;
+}
+
+.repayment-projection-value {
+  font-size: 24px;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: var(--color-bg-elevated);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+.repayment-projection-value.is-active {
+  fill: var(--color-primary);
+  font-size: 28px;
+}
+
+.repayment-debt-more-details {
+  margin-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--color-divider) 75%, transparent);
+}
+
+.repayment-debt-more-details > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 0 2px;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  list-style: none;
+}
+
+.repayment-debt-more-details > summary::-webkit-details-marker { display: none; }
+.repayment-debt-more-details > summary::before { content: '›'; font-size: 17px; transition: transform 160ms ease; }
+.repayment-debt-more-details[open] > summary::before { transform: rotate(90deg); }
+.repayment-debt-more-details summary small { color: var(--color-text-tertiary); font-weight: 500; }
+.repayment-debt-detail-metrics-secondary { margin-top: 3px; }
+
+.repayment-debt-list-tools {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px 8px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.repayment-debt-list-tools label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.repayment-debt-list-tools select {
+  min-width: 0;
+  height: 30px;
+  padding: 0 22px 0 7px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  font-size: 11px;
+}
+
+.repayment-debt-context-menu {
+  position: fixed;
+  z-index: 30;
+  display: grid;
+  min-width: 132px;
+  padding: 5px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: var(--color-bg-elevated);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--color-text-primary) 18%, transparent);
+}
+
+.repayment-debt-context-menu button {
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-primary);
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.repayment-debt-context-menu button:hover { background: var(--color-bg-subtle); }
+.repayment-debt-context-menu button.is-danger { color: var(--color-danger); }
+
+.repayment-inline-form .finance-unit-input > .finance-input-floating-label {
+  right: auto;
+  top: 3px;
+  transform: none;
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-tertiary);
+}
+
+@media (max-width: 1280px) {
+  .repayment-inline-form {
+    grid-template-columns: repeat(2, minmax(150px, 1fr));
+  }
+
+  .repayment-inline-form .primary {
+    justify-self: start;
+  }
+
+  .repayment-income-editor {
+    grid-template-columns: minmax(220px, 1fr) auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .repayment-debt-list-tools { padding-right: 0; }
+  .repayment-debt-list-tools label { flex: 1; }
+  .repayment-timeline-day-editor { margin-left: 0; flex-wrap: wrap; }
 }

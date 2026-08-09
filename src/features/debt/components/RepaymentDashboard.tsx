@@ -7,6 +7,7 @@ interface RepaymentDashboardProps {
   debts: DebtItem[];
   repaymentRecords: RepaymentRecord[];
   onMarkCurrentPayment?: (debtId: string, amount: number) => void;
+  onSetRepaymentDay?: (debtId: string, day: number) => void;
 }
 
 const DEBT_TYPE_LABELS: Record<DebtItem['type'], string> = {
@@ -214,6 +215,8 @@ function ProjectionLineChart({ data }: { data: Array<{ monthLabel: string; total
     ? `${linePath} L ${points[points.length - 1].x.toFixed(2)} ${(height - padding.bottom).toFixed(2)} L ${points[0].x.toFixed(2)} ${(height - padding.bottom).toFixed(2)} Z`
     : '';
   const activePoint = hoveredIndex === null ? null : points[hoveredIndex];
+  const peakIndex = totals.indexOf(rawMax);
+  const labelIndices = new Set([0, points.length - 1, peakIndex]);
 
   function handlePointerMove(event: MouseEvent<SVGSVGElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -272,13 +275,15 @@ function ProjectionLineChart({ data }: { data: Array<{ monthLabel: string; total
                 cy={point.y}
                 r={hoveredIndex === index ? 5 : 3.5}
               />
-              <text
-                className="repayment-projection-value"
-                x={point.x}
-                y={Math.max(13, point.y - 12)}
-              >
-                {formatCurrencyAuto(point.total)}
-              </text>
+              {labelIndices.has(index) || hoveredIndex === index ? (
+                <text
+                  className={`repayment-projection-value${hoveredIndex === index ? ' is-active' : ''}`}
+                  x={point.x}
+                  y={Math.max(20, point.y - 15)}
+                >
+                  {formatCurrencyAuto(point.total)}
+                </text>
+              ) : null}
             </g>
           ))}
           {activePoint ? (
@@ -316,8 +321,11 @@ function ProjectionLineChart({ data }: { data: Array<{ monthLabel: string; total
 export function RepaymentDashboard({
   debts,
   repaymentRecords,
-  onMarkCurrentPayment
+  onMarkCurrentPayment,
+  onSetRepaymentDay
 }: RepaymentDashboardProps) {
+  const [editingRepaymentDayId, setEditingRepaymentDayId] = useState<string | null>(null);
+  const [repaymentDayDraft, setRepaymentDayDraft] = useState('');
   const overview = useMemo(
     () => getRepaymentOverview({ debts, repaymentRecords }),
     [debts, repaymentRecords]
@@ -381,36 +389,73 @@ export function RepaymentDashboard({
             <ul className="repayment-timeline">
               {overview.breakdown.slice(0, 6).map((item) => (
                 <li key={item.id}>
-                  <button
-                    type="button"
-                    className={`repayment-timeline-item is-${item.tone}${item.isPaid ? ' is-paid' : ''}`}
-                    onClick={() =>
-                      onMarkCurrentPayment?.(item.id, Math.max(0, item.payment - item.paidAmount))
-                    }
-                    disabled={item.isPaid || !onMarkCurrentPayment}
-                    aria-label={item.isPaid ? `${item.name}本期已还` : `标记${item.name}本期已还`}
-                  >
-                    <span className="repayment-timeline-dot" />
-                    <span className="repayment-timeline-info">
-                      <span className="repayment-timeline-name">{item.name}</span>
-                      <span className="repayment-timeline-type">
-                        {DEBT_TYPE_LABELS[item.type] ?? item.type}
+                  <div className="repayment-timeline-item-wrap">
+                    <button
+                      type="button"
+                      className={`repayment-timeline-item is-${item.tone}${item.isPaid ? ' is-paid' : ''}`}
+                      onClick={() => {
+                        if (item.dueInDays === null && onSetRepaymentDay) {
+                          setEditingRepaymentDayId(item.id);
+                          setRepaymentDayDraft('');
+                          return;
+                        }
+                        onMarkCurrentPayment?.(item.id, Math.max(0, item.payment - item.paidAmount));
+                      }}
+                      disabled={item.isPaid ? item.dueInDays !== null : !onMarkCurrentPayment && !onSetRepaymentDay}
+                      aria-label={item.dueInDays === null ? `设置${item.name}还款日` : item.isPaid ? `${item.name}本期已还` : `标记${item.name}本期已还`}
+                    >
+                      <span className="repayment-timeline-dot" />
+                      <span className="repayment-timeline-info">
+                        <span className="repayment-timeline-name">{item.name}</span>
+                        <span className="repayment-timeline-type">
+                          {DEBT_TYPE_LABELS[item.type] ?? item.type}
+                        </span>
+                        <span className="repayment-timeline-amount">
+                          {formatCurrency(item.payment)}
+                        </span>
                       </span>
-                      <span className="repayment-timeline-amount">
-                        {formatCurrency(item.payment)}
+                      <span className="repayment-timeline-status">
+                        <span className={`repayment-timeline-due is-${item.tone}`}>
+                          {item.dueInDays === null
+                            ? '未设还款日'
+                            : item.dueInDays === 0
+                              ? '今日应还'
+                              : `${item.dueInDays} 天后`}
+                        </span>
+                        <strong>{item.dueInDays === null ? '设置还款日' : item.isPaid ? '✓ 已还' : '点按记账'}</strong>
                       </span>
-                    </span>
-                    <span className="repayment-timeline-status">
-                      <span className={`repayment-timeline-due is-${item.tone}`}>
-                        {item.dueInDays === null
-                          ? '未设还款日'
-                          : item.dueInDays === 0
-                            ? '今日应还'
-                            : `${item.dueInDays} 天后`}
-                      </span>
-                      <strong>{item.isPaid ? '✓ 已还' : '点按记账'}</strong>
-                    </span>
-                  </button>
+                    </button>
+                    {editingRepaymentDayId === item.id ? (
+                      <form
+                        className="repayment-timeline-day-editor"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          const day = Number(repaymentDayDraft);
+                          if (Number.isInteger(day) && day >= 1 && day <= 31) {
+                            onSetRepaymentDay?.(item.id, day);
+                            setEditingRepaymentDayId(null);
+                          }
+                        }}
+                      >
+                        <label>
+                          还款日
+                          <input
+                            autoFocus
+                            type="number"
+                            min="1"
+                            max="31"
+                            value={repaymentDayDraft}
+                            onChange={(event) => setRepaymentDayDraft(event.target.value)}
+                            placeholder="1-31"
+                            aria-label={`${item.name}还款日`}
+                          />
+                          日
+                        </label>
+                        <button type="submit" className="primary">保存</button>
+                        <button type="button" onClick={() => setEditingRepaymentDayId(null)}>取消</button>
+                      </form>
+                    ) : null}
+                  </div>
                 </li>
               ))}
             </ul>

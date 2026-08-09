@@ -866,6 +866,16 @@ export function InvestmentChatPanel({
     (event: ReactWheelEvent<HTMLElement>) => {
       if (!isCompact) return;
       const target = event.target as HTMLElement | null;
+      if (floating) {
+        const messageArea = target?.closest('.investments-ai-messages-area') as HTMLElement | null;
+        if (messageArea && event.deltaY !== 0) {
+          messageArea.scrollTop += event.deltaY;
+        }
+        // 浮动问答内的滚动只属于聊天窗口，避免到达边界时继续带动投资页。
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
       if (target?.closest('textarea, input, select, .chat-model-dropdown')) {
         return;
       }
@@ -879,7 +889,7 @@ export function InvestmentChatPanel({
       supportColumn.scrollTop += event.deltaY;
       event.preventDefault();
     },
-    [isCompact]
+    [floating, isCompact]
   );
 
   return (

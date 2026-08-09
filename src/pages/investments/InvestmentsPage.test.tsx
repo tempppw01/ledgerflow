@@ -638,6 +638,75 @@ describe('InvestmentsPage', () => {
     expect(await screen.findByText(/液化天然气制甲烷/)).toBeInTheDocument();
   });
 
+  it('今日持仓会按自选基金当日涨跌幅排序并标记前三名', async () => {
+    useAppPreferences.setState({
+      investmentPositions: [],
+      investmentWatchlist: [
+        {
+          id: 'watch-middle',
+          name: '中位涨幅基金',
+          tags: ['指数'],
+          holdingShares: 10,
+          netValue: '10.00',
+          addedReturn: '+0.80%',
+          createdAt: '2026-07-01T00:00:00.000Z',
+          updatedAt: '2026-07-01T00:00:00.000Z'
+        },
+        {
+          id: 'watch-high',
+          name: '第一涨幅基金',
+          tags: ['指数'],
+          holdingShares: 10,
+          netValue: '10.00',
+          addedReturn: '+2.40%',
+          createdAt: '2026-07-01T00:00:00.000Z',
+          updatedAt: '2026-07-01T00:00:00.000Z'
+        },
+        {
+          id: 'watch-negative',
+          name: '下跌基金',
+          tags: ['指数'],
+          holdingShares: 10,
+          netValue: '10.00',
+          addedReturn: '-0.35%',
+          createdAt: '2026-07-01T00:00:00.000Z',
+          updatedAt: '2026-07-01T00:00:00.000Z'
+        },
+        {
+          id: 'watch-pending',
+          name: '行情待更新基金',
+          tags: ['指数'],
+          holdingShares: 10,
+          netValue: '10.00',
+          createdAt: '2026-07-01T00:00:00.000Z',
+          updatedAt: '2026-07-01T00:00:00.000Z'
+        }
+      ]
+    });
+
+    render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
+
+    const todayHoldings = screen.getByLabelText('今日持仓');
+    await waitFor(() => {
+      expect(within(todayHoldings).getByText('TOP 1')).toBeInTheDocument();
+    });
+
+    const displayedNames = Array.from(
+      todayHoldings.querySelectorAll(
+        '.investments-position-glance-row.is-watch-holding .investments-position-glance-title-line strong'
+      )
+    ).map((item) => item.textContent);
+    expect(displayedNames).toEqual(['第一涨幅基金', '中位涨幅基金', '下跌基金', '行情待更新基金']);
+    expect(within(todayHoldings).getByText('TOP 1')).toBeInTheDocument();
+    expect(within(todayHoldings).getByText('TOP 2')).toBeInTheDocument();
+    expect(within(todayHoldings).getByText('TOP 3')).toBeInTheDocument();
+    expect(within(todayHoldings).getByText(/自选持仓按今日涨跌幅从高到低排列/)).toBeInTheDocument();
+  });
+
   it('负收益历史业绩走线图显示负收益', async () => {
     useAppPreferences.getState().setInvestmentWatchlist([
       {

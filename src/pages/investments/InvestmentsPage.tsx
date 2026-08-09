@@ -534,6 +534,20 @@ function getWatchHoldingSnapshot(item: InvestmentWatchItem): WatchHoldingSnapsho
   };
 }
 
+function rankWatchHoldingsByTodayChange(holdings: WatchHoldingSnapshot[]) {
+  return [...holdings]
+    .sort((a, b) => {
+      if (a.marketChange === null && b.marketChange === null) return 0;
+      if (a.marketChange === null) return 1;
+      if (b.marketChange === null) return -1;
+      return b.marketChange - a.marketChange || b.currentValue - a.currentValue;
+    })
+    .map((holding, index) => ({
+      ...holding,
+      todayRank: holding.marketChange === null ? null : index + 1
+    }));
+}
+
 function clampSignal(value: number, min = -100, max = 100) {
   return Math.max(min, Math.min(max, value));
 }
@@ -750,6 +764,7 @@ function HoldingsTodayPanel({
   const watchHoldings = watchlist
     .map(getWatchHoldingSnapshot)
     .filter((item): item is WatchHoldingSnapshot => Boolean(item));
+  const rankedWatchHoldings = rankWatchHoldingsByTodayChange(watchHoldings);
   const estimatedPositionProfit =
     marketChange === null ? null : (totalCurrentValue * marketChange) / 100;
   const estimatedWatchProfit = watchHoldings.reduce(
@@ -804,7 +819,7 @@ function HoldingsTodayPanel({
       </div>
 
       <p className="investments-today-note">
-        今日估算优先采用自选基金的当日涨跌；没有基金行情时再按主要指数平均涨跌估算。
+        自选持仓按今日涨跌幅从高到低排列，TOP 3 仅标记有行情的基金；没有基金行情时再按主要指数平均涨跌估算。
       </p>
 
       <div className="investments-position-glance-list">
@@ -837,13 +852,20 @@ function HoldingsTodayPanel({
             </article>
           );
         })}
-        {watchHoldings.slice(0, Math.max(0, 6 - positions.length)).map((holding) => (
+        {rankedWatchHoldings.slice(0, Math.max(0, 6 - positions.length)).map((holding) => (
           <article key={holding.id} className="investments-position-glance-row is-watch-holding">
             <span className="investments-position-glance-emoji" aria-hidden="true">
               {getMovementEmoji(holding.marketChange)}
             </span>
             <div className="investments-position-glance-name">
-              <strong title={holding.name}>{holding.name}</strong>
+              <div className="investments-position-glance-title-line">
+                <strong title={holding.name}>{holding.name}</strong>
+                {holding.todayRank !== null && holding.todayRank <= 3 ? (
+                  <b className={`investments-holding-rank is-rank-${holding.todayRank}`}>
+                    TOP {holding.todayRank}
+                  </b>
+                ) : null}
+              </div>
               <span>{holding.category} · 自选持仓</span>
             </div>
             <div>

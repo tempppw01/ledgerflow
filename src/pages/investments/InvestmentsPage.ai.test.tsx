@@ -299,6 +299,49 @@ describe('Investment assistant chat', () => {
     expect(container.querySelector('.chat-investment-panel')).toHaveClass('is-floating-hidden');
   });
 
+  it('浮动快捷问答滚动时不会带动背后的投资页面', () => {
+    useAppPreferences.setState({
+      investmentAiMessages: [
+        {
+          id: 'assistant-scroll-test',
+          role: 'assistant',
+          text: '这是一段足够长的回答，用于验证快捷问答窗口内部滚动不会传递给背后的页面。',
+          createdAt: '2026-07-16T09:30:00.000Z'
+        }
+      ]
+    });
+
+    const { container } = render(
+      <MemoryRouter>
+        <div className="investments-support-column">
+          <InvestmentChatPanel showHero={false} floating />
+        </div>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '打开快捷问答' }));
+    const messageArea = container.querySelector<HTMLElement>('.investments-ai-messages-area');
+    const supportColumn = container.querySelector<HTMLElement>('.investments-support-column');
+    if (!messageArea || !supportColumn) {
+      throw new Error('未找到快捷问答或投资页面滚动容器');
+    }
+    Object.defineProperties(messageArea, {
+      scrollHeight: { configurable: true, value: 1200 },
+      clientHeight: { configurable: true, value: 400 },
+      scrollTop: { configurable: true, writable: true, value: 0 }
+    });
+    Object.defineProperty(supportColumn, 'scrollTop', {
+      configurable: true,
+      writable: true,
+      value: 0
+    });
+
+    fireEvent.wheel(messageArea, { deltaY: 120 });
+
+    expect(messageArea.scrollTop).toBe(120);
+    expect(supportColumn.scrollTop).toBe(0);
+  });
+
   it('clears the composer immediately after sending a typed question', async () => {
     sendAiChatStreamMock.mockReturnValue(new Promise(() => undefined));
 

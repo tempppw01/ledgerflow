@@ -384,6 +384,49 @@
   font-weight: 750;
 }
 
+.investments-position-glance-title-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.investments-position-glance-title-line strong {
+  min-width: 0;
+}
+
+.investments-holding-rank {
+  flex: 0 0 auto;
+  padding: 2px 5px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary-bg) 72%, transparent);
+  color: var(--color-primary);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+.investments-holding-rank.is-rank-1 {
+  border-color: color-mix(in srgb, #f59e0b 38%, transparent);
+  background: color-mix(in srgb, #fef3c7 78%, transparent);
+  color: #b45309;
+}
+
+.investments-holding-rank.is-rank-2 {
+  border-color: color-mix(in srgb, #64748b 35%, transparent);
+  background: color-mix(in srgb, #f1f5f9 76%, transparent);
+  color: #475569;
+}
+
+.investments-holding-rank.is-rank-3 {
+  border-color: color-mix(in srgb, #c2410c 33%, transparent);
+  background: color-mix(in srgb, #ffedd5 76%, transparent);
+  color: #c2410c;
+}
+
 .investments-position-glance-emoji {
   font-size: 16px !important;
 }
@@ -4639,6 +4682,7 @@
     0 28px 70px color-mix(in srgb, var(--color-text-primary) 22%, transparent),
     0 0 0 1px color-mix(in srgb, white 48%, transparent) inset;
   isolation: isolate;
+  overscroll-behavior: contain;
   animation: investment-chat-floating-in 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -4778,6 +4822,8 @@
   min-height: 0;
   max-height: none;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
   background: transparent;
 }
 
