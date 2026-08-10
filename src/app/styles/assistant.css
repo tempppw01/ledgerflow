@@ -51,8 +51,25 @@
   gap: var(--space-3);
 }
 
+.chat-topbar-no-title {
+  position: relative;
+  justify-content: center;
+}
+
 .chat-topbar-no-title .chat-mode-switch {
-  margin-left: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 20;
+  margin: 0;
+  transform: translate(-50%, -50%);
+}
+
+.chat-topbar-no-title .chat-topbar-right {
+  position: absolute;
+  top: 50%;
+  right: var(--space-4);
+  transform: translateY(-50%);
 }
 
 .chat-topbar-left {
@@ -108,6 +125,98 @@
   );
   color: var(--color-primary);
   border: 1px solid var(--color-primary-border);
+}
+
+.chat-mode-switch {
+  position: relative;
+  display: block;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* 保持触发按钮与下拉菜单之间的悬停路径连续，避免鼠标经过间距时提前收起。 */
+.chat-mode-switch::after {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 10px;
+  content: '';
+}
+
+.chat-mode-switch-trigger {
+  display: inline-flex;
+  min-width: 112px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 7px 11px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 24%, var(--color-border));
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-bg-elevated) 88%, var(--color-primary-bg));
+  box-shadow:
+    0 5px 15px color-mix(in srgb, var(--color-text) 8%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 60%, transparent);
+  color: var(--color-primary);
+  font-size: var(--font-xs);
+  font-weight: 700;
+}
+
+.chat-mode-switch-trigger:hover,
+.chat-mode-switch-trigger:focus-visible,
+.chat-mode-switch.is-open .chat-mode-switch-trigger {
+  border-color: color-mix(in srgb, var(--color-primary) 48%, var(--color-border));
+  background: var(--color-primary-bg);
+}
+
+.chat-mode-switch-trigger-arrow {
+  display: inline-block;
+  color: var(--color-text-tertiary);
+  font-size: 13px;
+  line-height: 1;
+  transition: transform 180ms ease;
+}
+
+.chat-mode-switch.is-open .chat-mode-switch-trigger-arrow {
+  transform: rotate(180deg);
+}
+
+.chat-mode-switch-options {
+  position: absolute;
+  z-index: 1;
+  top: calc(100% + 8px);
+  left: 50%;
+  display: flex;
+  gap: 3px;
+  min-width: max-content;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--color-border) 84%, transparent);
+  border-radius: calc(var(--radius-md) + 2px);
+  background: color-mix(in srgb, var(--color-bg-elevated) 95%, var(--color-bg));
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--color-text) 16%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -6px) scale(0.98);
+  transform-origin: top center;
+  transition:
+    opacity 160ms ease,
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.chat-mode-switch.is-open .chat-mode-switch-options {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.chat-mode-switch-options button {
+  min-width: max-content;
+  padding: 6px 10px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .chat-topbar-title {
@@ -3613,13 +3722,29 @@
   }
 
   .chat-topbar-no-title .chat-mode-switch {
-    grid-column: 1;
+    position: relative;
+    top: auto;
+    left: auto;
+    grid-column: 1 / -1;
     width: auto;
+    justify-self: center;
+    transform: none;
   }
 
   .chat-mode-switch button {
     flex: 1 1 0;
     text-align: center;
+  }
+
+  .chat-mode-switch .chat-mode-switch-trigger {
+    flex: 0 0 auto;
+    min-width: 108px;
+    padding-block: 6px;
+  }
+
+  .chat-mode-switch-options {
+    width: max-content;
+    max-width: calc(100vw - 20px);
   }
 
   .chat-model-selector {

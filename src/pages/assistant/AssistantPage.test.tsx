@@ -107,7 +107,7 @@ const aiSettingsMocks = vi.hoisted(() => {
 });
 
 vi.mock('../../shared/store/useAiSettings', () => ({
-  useAiSettings: (selector?: (state: any) => unknown) =>
+  useAiSettings: (selector?: (state: Record<string, unknown>) => unknown) =>
     selector ? selector(aiSettingsMocks.state) : aiSettingsMocks.state
 }));
 
@@ -152,7 +152,7 @@ const appPreferencesMocks = vi.hoisted(() => {
     ]
   };
   const useAppPreferences = Object.assign(
-    (selector: (state: any) => unknown) => selector(state),
+    (selector: (state: Record<string, unknown>) => unknown) => selector(state),
     { getState: () => state }
   );
   return { addDebtMock, updateDebtMock, removeDebtMock, addRepaymentRecordMock, state, useAppPreferences };
@@ -193,7 +193,7 @@ const financeStoreMocks = vi.hoisted(() => {
 });
 
 vi.mock('../../shared/store/useFinanceStore', () => ({
-  useFinanceStore: (selector: (state: any) => unknown) => selector(financeStoreMocks.state)
+  useFinanceStore: (selector: (state: Record<string, unknown>) => unknown) => selector(financeStoreMocks.state)
 }));
 
 vi.mock('../../features/assistant/api/openaiCompatibleClient', () => ({
@@ -265,6 +265,18 @@ function createWorkbenchMock() {
   };
 }
 
+async function selectAssistantMode(mode: 'AI 记账' | 'AI 信贷管家') {
+  const trigger = document.querySelector<HTMLButtonElement>('.chat-mode-switch-trigger');
+
+  await act(async () => {
+    fireEvent.click(trigger as HTMLButtonElement);
+  });
+
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: mode }));
+  });
+}
+
 describe('AssistantPage', () => {
   it('AI 记账首屏应展示导入插画', async () => {
     useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
@@ -275,9 +287,7 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'AI 记账' }));
-    });
+    await selectAssistantMode('AI 记账');
 
     expect(screen.getByText(/本轮准备记账/)).toBeInTheDocument();
     const bookkeepingIllustration = container.querySelector<HTMLImageElement>('.chat-bookkeeping-illustration');
@@ -293,9 +303,7 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'AI 信贷管家' }));
-    });
+    await selectAssistantMode('AI 信贷管家');
 
     expect(screen.getAllByRole('button', { name: 'AI 信贷管家' }).length).toBeGreaterThan(0);
     expect(await screen.findByText(/你好，我是你的 AI 信贷管家/)).toBeInTheDocument();
@@ -307,7 +315,7 @@ describe('AssistantPage', () => {
     expect(screen.queryByText('📌 这个模式适合什么')).not.toBeInTheDocument();
   });
 
-  it('投资理财模式使用独立无卡片嵌套的消息框架', async () => {
+  it('模式切换默认收起为当前模式按钮，点击后展开三个常规助手模式', async () => {
     useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
 
     const { container } = render(
@@ -316,28 +324,29 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
+    const trigger = container.querySelector<HTMLButtonElement>('.chat-mode-switch-trigger');
+    const options = container.querySelector('.chat-mode-switch-options');
+    expect(trigger).toHaveTextContent('AI 助手');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(options?.querySelectorAll('button')).toHaveLength(3);
+    expect(screen.queryByText('投资理财')).not.toBeInTheDocument();
+
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: '投资理财' }));
+      fireEvent.click(trigger as HTMLButtonElement);
     });
 
-    const messagesArea = container.querySelector('.chat-messages-area.is-investment-mode');
-    const investmentPanel = messagesArea?.querySelector(':scope > .chat-investment-panel');
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    const creditModeButton = options?.querySelectorAll<HTMLButtonElement>('button')[2];
+    await act(async () => {
+      fireEvent.click(creditModeButton as HTMLButtonElement);
+    });
 
-    expect(investmentPanel).not.toBeNull();
-    expect(investmentPanel).not.toHaveClass('chat-kawaii-panel');
-    expect(messagesArea?.querySelector(':scope > .chat-messages-inner')).toBeNull();
-    expect(screen.queryByText(/输入一句话或贴截图/)).not.toBeInTheDocument();
+    expect(trigger).toHaveTextContent('AI 信贷管家');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('投资理财模式在提问后展示右侧会话面板', async () => {
-    appPreferencesMocks.state.investmentAiMessages = [
-      {
-        id: 'investment-user-1',
-        role: 'user',
-        text: '沪深300现在适合定投吗？',
-        createdAt: '2026-07-17T09:30:00.000Z'
-      }
-    ];
+  it('旧版投资理财模式会回退至 AI 助手，不再展示右侧投资会话', () => {
+    window.sessionStorage.setItem('ledgerflow.assistant.activeMode', 'investment');
     useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
 
     const { container } = render(
@@ -346,15 +355,9 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: '投资理财' }));
-    });
-
-    const messagesArea = container.querySelector('.chat-messages-area.is-investment-mode');
-    expect(messagesArea).toHaveClass('has-investment-conversation');
-    expect(screen.getByLabelText('当前投资分析')).toHaveTextContent('沪深300现在适合定投吗？');
-    expect(messagesArea?.querySelector(':scope > .chat-investment-stage')).toBeInTheDocument();
-    expect(messagesArea?.querySelector(':scope > .chat-investment-panel.is-compact')).toBeInTheDocument();
+    expect(container.querySelector('.chat-mode-switch-trigger')).toHaveTextContent('AI 助手');
+    expect(container.querySelector('.chat-messages-area.is-investment-mode')).toBeNull();
+    expect(container.querySelector('.chat-investment-stage')).toBeNull();
   });
 
   it('AI 信贷管家在有内容时才显示优先处理模块', async () => {
@@ -369,9 +372,7 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'AI 信贷管家' }));
-    });
+    await selectAssistantMode('AI 信贷管家');
 
     expect(await screen.findByText('🧭 优先处理')).toBeInTheDocument();
     expect(screen.getByText('先把本月应还摸清')).toBeInTheDocument();
@@ -476,9 +477,7 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'AI 信贷管家' }));
-    });
+    await selectAssistantMode('AI 信贷管家');
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: '进入保存前确认' }));
@@ -550,9 +549,7 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'AI 信贷管家' }));
-    });
+    await selectAssistantMode('AI 信贷管家');
 
     expect(await screen.findByText('6/6 关键字段已补齐')).toBeInTheDocument();
     expect(screen.getByText('100%')).toBeInTheDocument();
@@ -607,9 +604,7 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'AI 信贷管家' }));
-    });
+    await selectAssistantMode('AI 信贷管家');
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: '进入保存前确认' }));
@@ -683,9 +678,7 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'AI 信贷管家' }));
-    });
+    await selectAssistantMode('AI 信贷管家');
 
     expect(await screen.findByText('还款检索结果')).toBeInTheDocument();
     expect(screen.getByText('计划中的应还')).toBeInTheDocument();
@@ -742,9 +735,7 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'AI 信贷管家' }));
-    });
+    await selectAssistantMode('AI 信贷管家');
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: '进入保存前确认' }));
@@ -816,9 +807,7 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'AI 信贷管家' }));
-    });
+    await selectAssistantMode('AI 信贷管家');
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: '去补充后保存' }));

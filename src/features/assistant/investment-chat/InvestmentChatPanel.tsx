@@ -1,6 +1,7 @@
 import {
   ClipboardEvent,
   FormEvent,
+  PointerEvent as ReactPointerEvent,
   WheelEvent as ReactWheelEvent,
   useCallback,
   useEffect,
@@ -48,6 +49,25 @@ import { InvestmentAiMessageDetails } from './InvestmentAiMessageDetails';
 
 type Message = ReturnType<typeof createInvestmentAiMessage>;
 type InvestmentChatProgress = 'market' | 'web' | 'thinking' | 'answering' | '';
+type FloatingResizeEdge = 'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-right' | 'bottom-left';
+
+type FloatingPanelBounds = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
+type FloatingResizeState = FloatingPanelBounds & {
+  edge: FloatingResizeEdge;
+  startX: number;
+  startY: number;
+  previousUserSelect: string;
+};
+
+const FLOATING_CHAT_MIN_WIDTH = 320;
+const FLOATING_CHAT_MIN_HEIGHT = 360;
+const FLOATING_CHAT_VIEWPORT_GUTTER = 16;
 
 const MAX_INVESTMENT_AI_IMAGES = 4;
 const MAX_INVESTMENT_AI_IMAGE_SIZE_MB = 6;
@@ -796,12 +816,121 @@ export function InvestmentChatPanel({
   const [clearContextConfirmOpen, setClearContextConfirmOpen] = useState(false);
   const [floatingOpen, setFloatingOpen] = useState(false);
   const [floatingPinned, setFloatingPinned] = useState(false);
+  const [floatingBounds, setFloatingBounds] = useState<FloatingPanelBounds | null>(null);
+  const floatingResizeRef = useRef<FloatingResizeState | null>(null);
   const historyTurns = useMemo(() => messages.filter((item) => item.role === 'user'), [messages]);
   const latestMessageId = messages[messages.length - 1]?.id || '';
 
   const minimizeFloatingPanel = useCallback(() => {
     setFloatingOpen(false);
     setFloatingPinned(false);
+  }, []);
+
+  const startFloatingResize = useCallback(
+    (edge: FloatingResizeEdge, event: ReactPointerEvent<HTMLSpanElement>) => {
+      if (!floating || window.innerWidth <= 640) return;
+
+      const panel = floatingPanelRef.current;
+      if (!panel) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const rect = panel.getBoundingClientRect();
+      const resizeState: FloatingResizeState = {
+        edge,
+        startX: event.clientX,
+        startY: event.clientY,
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+        previousUserSelect: document.body.style.userSelect
+      };
+      floatingResizeRef.current = resizeState;
+      document.body.style.userSelect = 'none';
+
+      const handlePointerMove = (moveEvent: PointerEvent) => {
+        const current = floatingResizeRef.current;
+        if (!current) return;
+
+        const deltaX = moveEvent.clientX - current.startX;
+        const deltaY = moveEvent.clientY - current.startY;
+        const movesLeft = current.edge.includes('left');
+        const movesRight = current.edge.includes('right');
+        const movesTop = current.edge.includes('top');
+        const movesBottom = current.edge.includes('bottom');
+        const maxWidth = Math.max(
+          FLOATING_CHAT_MIN_WIDTH,
+          window.innerWidth - FLOATING_CHAT_VIEWPORT_GUTTER * 2
+        );
+        const maxHeight = Math.max(
+          FLOATING_CHAT_MIN_HEIGHT,
+          window.innerHeight - FLOATING_CHAT_VIEWPORT_GUTTER * 2
+        );
+        let nextLeft = current.left;
+        let nextTop = current.top;
+        let nextWidth = current.width;
+        let nextHeight = current.height;
+
+        if (movesLeft) {
+          nextLeft = Math.min(
+            Math.max(FLOATING_CHAT_VIEWPORT_GUTTER, current.left + deltaX),
+            current.left + current.width - FLOATING_CHAT_MIN_WIDTH
+          );
+          nextWidth = current.width - (nextLeft - current.left);
+        } else if (movesRight) {
+          nextWidth = Math.min(
+            Math.max(FLOATING_CHAT_MIN_WIDTH, current.width + deltaX),
+            Math.min(maxWidth, window.innerWidth - current.left - FLOATING_CHAT_VIEWPORT_GUTTER)
+          );
+        }
+
+        if (movesTop) {
+          nextTop = Math.min(
+            Math.max(FLOATING_CHAT_VIEWPORT_GUTTER, current.top + deltaY),
+            current.top + current.height - FLOATING_CHAT_MIN_HEIGHT
+          );
+          nextHeight = current.height - (nextTop - current.top);
+        } else if (movesBottom) {
+          nextHeight = Math.min(
+            Math.max(FLOATING_CHAT_MIN_HEIGHT, current.height + deltaY),
+            Math.min(maxHeight, window.innerHeight - current.top - FLOATING_CHAT_VIEWPORT_GUTTER)
+          );
+        }
+
+        setFloatingBounds({
+          left: nextLeft,
+          top: nextTop,
+          width: nextWidth,
+          height: nextHeight
+        });
+      };
+
+      const finishResize = () => {
+        document.removeEventListener('pointermove', handlePointerMove);
+        document.removeEventListener('pointerup', finishResize);
+        document.removeEventListener('pointercancel', finishResize);
+        document.body.style.userSelect = resizeState.previousUserSelect;
+        floatingResizeRef.current = null;
+      };
+
+      document.addEventListener('pointermove', handlePointerMove);
+      document.addEventListener('pointerup', finishResize);
+      document.addEventListener('pointercancel', finishResize);
+    },
+    [floating]
+  );
+
+  useEffect(() => {
+    const handleViewportResize = () => {
+      if (window.innerWidth <= 640) {
+        setFloatingBounds(null);
+      }
+    };
+
+    window.addEventListener('resize', handleViewportResize);
+    return () => window.removeEventListener('resize', handleViewportResize);
   }, []);
 
   useEffect(() => {
@@ -915,8 +1044,42 @@ export function InvestmentChatPanel({
           floating ? `is-floating is-floating-${floatingPosition}` : ''
         } ${floating && !floatingOpen ? 'is-floating-hidden' : ''}`}
         data-floating-position={floating ? floatingPosition : undefined}
+        style={
+          floating && floatingBounds
+            ? {
+                left: `${floatingBounds.left}px`,
+                top: `${floatingBounds.top}px`,
+                right: 'auto',
+                bottom: 'auto',
+                width: `${floatingBounds.width}px`,
+                height: `${floatingBounds.height}px`
+              }
+            : undefined
+        }
         onWheelCapture={handleCompactWheelCapture}
       >
+        {floating ? (
+          <div className="investment-chat-floating-resize-handles" aria-hidden="true">
+            {(
+              [
+                'top',
+                'right',
+                'bottom',
+                'left',
+                'top-left',
+                'top-right',
+                'bottom-right',
+                'bottom-left'
+              ] as FloatingResizeEdge[]
+            ).map((edge) => (
+              <span
+                key={edge}
+                className={`investment-chat-floating-resize-handle is-${edge}`}
+                onPointerDown={(event) => startFloatingResize(edge, event)}
+              />
+            ))}
+          </div>
+        ) : null}
         {floating ? (
           <header className="investment-chat-floating-head">
             <div className="investment-chat-floating-title">

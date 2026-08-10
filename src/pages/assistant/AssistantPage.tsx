@@ -15,7 +15,6 @@ import {
   extractCreditStructuredItems,
   extractStreamingCreditPreview
 } from '../../features/assistant/creditAssistant/parser';
-import { InvestmentChatPanel } from '../../features/assistant/investment-chat/InvestmentChatPanel';
 import type { CreditExtractedItem, CreditFieldMeta } from '../../features/assistant/creditAssistant/types';
 import { useAssistantWorkbench } from '../../features/assistant/workbench/useAssistantWorkbench';
 import { BillPreviewCard } from '../../features/assistant/ui/BillPreviewCard';
@@ -47,13 +46,13 @@ import {
 import {
   ASSISTANT_ACTIVE_MODE_STORAGE_KEY,
   ASSISTANT_MODE_CHANGED_EVENT,
+  getAssistantModeLabel,
   readAssistantModeFromSessionStorage,
   type AssistantMode
 } from '../../features/assistant/shared/assistantMode';
 import {
   BOT_ICON_URL,
   IMAGE_ICON_URL,
-  INVESTMENT_HERO_ILLUSTRATION_URL,
   THUMBS_DOWN_ICON_URL,
   THUMBS_UP_ICON_URL,
   USER_ICON_URL
@@ -76,7 +75,6 @@ function inputPlaceholder(
   const assistantHint = t('assistant.placeholders.assistantHint');
   const bookkeepingHint = t('assistant.placeholders.bookkeepingHint');
   const creditHint = '可以直接问我花呗、分期、贷款、账单和还款安排。';
-  const investmentHint = '可以直接问我基金、持仓、定投和仓位配置。';
 
   switch (status) {
     case 'idle':
@@ -84,16 +82,12 @@ function inputPlaceholder(
         ? t('assistant.placeholders.idleBookkeeping', { hint: bookkeepingHint })
         : mode === 'credit'
           ? creditHint
-          : mode === 'investment'
-            ? investmentHint
           : assistantHint;
     case 'ready':
       return mode === 'bookkeeping'
         ? t('assistant.placeholders.readyBookkeeping')
         : mode === 'credit'
           ? '把贷款、分期或账单截图贴给我，我先帮你梳理应还信息。'
-          : mode === 'investment'
-            ? investmentHint
           : t('assistant.placeholders.readyAssistant', { hint: assistantHint });
     case 'recognizing':
       return t('assistant.placeholders.recognizing');
@@ -110,9 +104,7 @@ function inputPlaceholder(
         ? bookkeepingHint
         : mode === 'credit'
           ? creditHint
-          : mode === 'investment'
-            ? investmentHint
-            : assistantHint;
+          : assistantHint;
   }
 }
 
@@ -198,8 +190,7 @@ interface DuplicateReviewPair {
 const CHAT_HISTORY_CACHE_KEYS: Record<AssistantMode, string> = {
   bookkeeping: 'ledgerflow.assistant.chatHistory.bookkeeping',
   assistant: 'ledgerflow.assistant.chatHistory.assistant',
-  credit: 'ledgerflow.assistant.chatHistory.credit',
-  investment: 'ledgerflow.assistant.chatHistory.investment'
+  credit: 'ledgerflow.assistant.chatHistory.credit'
 };
 
 const ASSISTANT_INTRO_ILLUSTRATION_URL =
@@ -642,7 +633,6 @@ export function AssistantPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<AssistantMode>(() => readAssistantModeFromSessionStorage());
   const [isWideLayout, setIsWideLayout] = useState(() => readWideLayoutPreference());
-  const investmentAiMessages = useAppPreferences((s) => s.investmentAiMessages);
   const baseUrl = useAiSettings((s) => s.baseUrl);
   const apiKey = useAiSettings((s) => s.apiKey);
   const model = useAiSettings((s) => s.model);
@@ -683,30 +673,27 @@ export function AssistantPage() {
     updateTransaction,
     debts,
     repaymentRecords,
-    sceneMode: mode === 'investment' ? 'assistant' : mode,
+    sceneMode: mode,
     globalMemories
   });
 
   const [modelOpen, setModelOpen] = useState(false);
+  const [modeMenuOpen, setModeMenuOpen] = useState(false);
   const [composerFocused, setComposerFocused] = useState(false);
   const [streamingPreviewMessage, setStreamingPreviewMessage] = useState('');
   const [streamingPreviewReasoning, setStreamingPreviewReasoning] = useState('');
   const [streamingCommittedSegments, setStreamingCommittedSegments] = useState<string[]>([]);
   const [streamingDraftSegment, setStreamingDraftSegment] = useState('');
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>(() => readChatHistory(mode));
+  const chatHistoryRef = useRef(chatHistory);
+  chatHistoryRef.current = chatHistory;
   const [confirmingCreditId, setConfirmingCreditId] = useState<string | null>(null);
   const [modelPickerSource, setModelPickerSource] = useState<'command' | 'toolbar' | null>(null);
   const memoryExtractionSignatureRef = useRef<Record<AssistantMode, string>>({
     bookkeeping: '',
     assistant: '',
-    credit: '',
-    investment: ''
+    credit: ''
   });
-  const hasInvestmentConversation = mode === 'investment' && investmentAiMessages.length > 0;
-  const latestInvestmentQuestion = [...investmentAiMessages]
-    .reverse()
-    .find((item) => item.role === 'user')?.text.trim();
-  const latestInvestmentMessage = investmentAiMessages[investmentAiMessages.length - 1];
   const hasInitializedModeHistoryRef = useRef(false);
   const activeHistoryModeRef = useRef<AssistantMode>(mode);
   const skipHistoryPersistRef = useRef(false);
@@ -755,8 +742,7 @@ export function AssistantPage() {
   const lastAssistantRef = useRef<Record<AssistantMode, string>>({
     bookkeeping: '',
     assistant: '',
-    credit: '',
-    investment: ''
+    credit: ''
   });
   const pendingRequestModeRef = useRef<AssistantMode>('assistant');
   const messageEndRef = useRef<HTMLDivElement | null>(null);
@@ -1621,10 +1607,6 @@ export function AssistantPage() {
   }, [mode]);
 
   useEffect(() => {
-    if (mode === 'investment') {
-      return;
-    }
-
     if (!hasInitializedModeHistoryRef.current) {
       hasInitializedModeHistoryRef.current = true;
       activeHistoryModeRef.current = mode;
@@ -1634,10 +1616,10 @@ export function AssistantPage() {
     const previousMode = activeHistoryModeRef.current;
     if (previousMode !== mode) {
       try {
-        window.sessionStorage.setItem(
-          CHAT_HISTORY_CACHE_KEYS[previousMode],
-          JSON.stringify(chatHistory)
-        );
+          window.sessionStorage.setItem(
+            CHAT_HISTORY_CACHE_KEYS[previousMode],
+            JSON.stringify(chatHistoryRef.current)
+          );
       } catch {
         // ignore storage write errors
       }
@@ -1649,10 +1631,6 @@ export function AssistantPage() {
   }, [mode]);
 
   useEffect(() => {
-    if (mode === 'investment') {
-      return;
-    }
-
     if (skipHistoryPersistRef.current) {
       skipHistoryPersistRef.current = false;
       return;
@@ -1665,6 +1643,23 @@ export function AssistantPage() {
     }
   }, [chatHistory]);
 
+  const selectAssistantMode = (nextMode: AssistantMode) => {
+    setMode(nextMode);
+    setModeMenuOpen(false);
+  };
+
+  const openModeMenuOnHover = () => {
+    if (window.innerWidth > 768 && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      setModeMenuOpen(true);
+    }
+  };
+
+  const closeModeMenuOnHover = () => {
+    if (window.innerWidth > 768 && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      setModeMenuOpen(false);
+    }
+  };
+
   return (
     <div
       className="chat-fullscreen"
@@ -1672,35 +1667,49 @@ export function AssistantPage() {
       onDrop={(e) => void wb.handleDropImage(e)}
     >
       <header className="chat-topbar chat-topbar-no-title">
-        <div className="chat-mode-switch" aria-label="模式切换">
+        <div
+          className={`chat-mode-switch ${modeMenuOpen ? 'is-open' : ''}`}
+          aria-label="模式切换"
+          onMouseEnter={openModeMenuOnHover}
+          onMouseLeave={closeModeMenuOnHover}
+        >
           <button
             type="button"
-            className={mode === 'bookkeeping' ? 'active' : ''}
-            onClick={() => setMode('bookkeeping')}
+            className="chat-mode-switch-trigger"
+            aria-expanded={modeMenuOpen}
+            aria-controls="assistant-mode-options"
+            onClick={() => setModeMenuOpen((current) => !current)}
           >
-            {t('assistant.ui.bookkeepingMode')}
+            <span className="chat-mode-switch-trigger-label">{getAssistantModeLabel(mode, t)}</span>
+            <span className="chat-mode-switch-trigger-arrow" aria-hidden="true">⌄</span>
           </button>
-          <button
-            type="button"
-            className={mode === 'assistant' ? 'active' : ''}
-            onClick={() => setMode('assistant')}
+          <div
+            id="assistant-mode-options"
+            className="chat-mode-switch-options"
+            aria-hidden={!modeMenuOpen}
           >
-            {t('assistant.ui.assistantMode')}
-          </button>
-          <button
-            type="button"
-            className={mode === 'credit' ? 'active' : ''}
-            onClick={() => setMode('credit')}
-          >
-            {t('assistant.ui.creditMode')}
-          </button>
-          <button
-            type="button"
-            className={mode === 'investment' ? 'active' : ''}
-            onClick={() => setMode('investment')}
-          >
-            投资理财
-          </button>
+            <button
+              type="button"
+              className={mode === 'bookkeeping' ? 'active' : ''}
+              onClick={() => selectAssistantMode('bookkeeping')}
+            >
+              {t('assistant.ui.bookkeepingMode')}
+            </button>
+            <button
+              type="button"
+              className={mode === 'assistant' ? 'active' : ''}
+              onClick={() => selectAssistantMode('assistant')}
+            >
+              {t('assistant.ui.assistantMode')}
+            </button>
+            <button
+              type="button"
+              className={mode === 'credit' ? 'active' : ''}
+              onClick={() => selectAssistantMode('credit')}
+            >
+              {t('assistant.ui.creditMode')}
+            </button>
+          </div>
         </div>
 
         <div className="chat-topbar-right">
@@ -1727,30 +1736,7 @@ export function AssistantPage() {
         </div>
       </header>
 
-      <section
-        className={`chat-messages-area ${mode === 'investment' ? 'is-investment-mode' : ''} ${
-          hasInvestmentConversation ? 'has-investment-conversation' : ''
-        } ${isWideLayout ? 'is-wide' : ''}`}
-      >
-        {mode === 'investment' ? (
-          <>
-            {hasInvestmentConversation ? (
-              <aside className="chat-investment-stage" aria-label="当前投资分析">
-                <img src={INVESTMENT_HERO_ILLUSTRATION_URL} alt="" aria-hidden="true" />
-                <div>
-                  <span>本次投资分析</span>
-                  <h2>{latestInvestmentQuestion || '正在整理你的投资问题'}</h2>
-                  <p>
-                    {latestInvestmentMessage?.role === 'assistant'
-                      ? '分析结论已生成'
-                      : '正在整理行情、资讯与持仓信息'}
-                  </p>
-                </div>
-              </aside>
-            ) : null}
-            <InvestmentChatPanel showHero={false} />
-          </>
-        ) : (
+      <section className={`chat-messages-area ${isWideLayout ? 'is-wide' : ''}`}>
         <div className={`chat-messages-inner ${isWideLayout ? 'is-wide' : ''}`}>
           {!wb.hasApiKey ? (
             <section className="chat-key-required">
@@ -2611,11 +2597,9 @@ export function AssistantPage() {
 
           <div ref={messageEndRef} />
         </div>
-        )}
       </section>
 
-      {mode !== 'investment' ? (
-        <section
+      <section
           className={`chat-input-bar chat-input-bar-collapsible ${
             regularComposerExpanded ? 'is-expanded' : 'is-compact'
           }`}
@@ -2831,7 +2815,6 @@ export function AssistantPage() {
             </div>
           </form>
         </section>
-      ) : null}
 
       {semanticPanelOpen ? (
         <div className="drawer-overlay" role="presentation" onClick={() => setSemanticPanelOpen(false)}>
