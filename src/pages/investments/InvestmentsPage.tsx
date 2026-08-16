@@ -109,6 +109,7 @@ const MARKET_THEME_STORAGE_KEY = 'ledgerflow-investment-market-themes-v1';
 
 type WatchGridColumnCount = (typeof WATCH_GRID_COLUMN_OPTIONS)[number];
 type WatchDisplayMode = 'grid' | 'list';
+type InvestmentWorkspace = 'overview' | 'market' | 'boards' | 'watchlist' | 'news';
 
 function normalizeTrackedMarketThemes(value: unknown): EastmoneyMarketTheme[] {
   if (!Array.isArray(value)) return EASTMONEY_MARKET_THEMES;
@@ -2769,6 +2770,7 @@ export function InvestmentsPage() {
   const [selectedNewsCategoryId, setSelectedNewsCategoryId] = useState(
     EASTMONEY_MARKET_NEWS_CATEGORIES[0].id
   );
+  const [investmentWorkspace, setInvestmentWorkspace] = useState<InvestmentWorkspace>('overview');
   const [marketNews, setMarketNews] = useState<EastmoneyMarketNewsItem[]>([]);
   const [marketNewsStatus, setMarketNewsStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [marketNewsError, setMarketNewsError] = useState('');
@@ -3854,10 +3856,47 @@ export function InvestmentsPage() {
   }
 
   return (
-    <div className="page-stack investments-page investments-management-page">
-      <section className="investments-management-grid">
-        <aside className="investments-management-column investments-support-column">
-          <section className="investments-core-grid" aria-label="今日投资看板">
+    <div className="page-stack investments-page investments-management-page investments-console-page">
+      <header className="investments-console-header">
+        <div>
+          <p className="investments-console-eyebrow">INVESTMENT CONTROL</p>
+          <h1>投资理财</h1>
+          <p>把今日判断、行情监控和基金自选放进一个工作台，按需切换，不再上下堆叠。</p>
+        </div>
+        <div className="investments-console-stat" aria-label="当前投资概览">
+          <strong>{formatCurrencyAuto(positionSummary.totalCurrentValue)}</strong>
+          <span>{investmentWatchlist.length} 只自选 · 今日 {formatMarketPercent(averageMarketChange)}</span>
+        </div>
+      </header>
+
+      <nav className="investments-console-tabs" aria-label="投资理财板块">
+        {(
+          [
+            ['overview', '今日总览'],
+            ['market', '大盘行情'],
+            ['boards', '板块监控'],
+            ['watchlist', '基金自选'],
+            ['news', '市场快讯']
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            className={investmentWorkspace === key ? 'is-active' : undefined}
+            aria-current={investmentWorkspace === key ? 'page' : undefined}
+            onClick={() => setInvestmentWorkspace(key)}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      <main className="investments-console-workspace">
+        {investmentWorkspace === 'overview' ? (
+          <section
+            className="investments-core-grid investments-workspace-overview"
+            aria-label="今日投资看板"
+          >
             <HoldingsTodayPanel
               positions={activePositions}
               watchlist={investmentWatchlist}
@@ -3882,11 +3921,10 @@ export function InvestmentsPage() {
               algorithmSignals={marketAlgorithmSignals}
             />
           </section>
+        ) : null}
 
-          <section
-            className="investments-market-news-grid investments-market-dashboard-grid"
-            aria-label="大盘和市场监控"
-          >
+        {investmentWorkspace === 'market' ? (
+          <section className="investments-workspace-market" aria-label="大盘和市场监控">
             <MarketOverviewPanel
               overview={marketOverview}
               globalQuotes={globalMarketQuotes}
@@ -3897,6 +3935,11 @@ export function InvestmentsPage() {
               error={marketError}
               onSelect={setSelectedMarketSecId}
             />
+          </section>
+        ) : null}
+
+        {investmentWorkspace === 'boards' ? (
+          <section className="investments-workspace-boards" aria-label="行业和概念板块监控">
             <MarketBoardsPanel
               themeBoards={marketThemeBoards}
               industryBoards={marketIndustryBoards}
@@ -3914,6 +3957,11 @@ export function InvestmentsPage() {
               onRemoveTheme={handleRemoveMarketTheme}
               onRefresh={refreshMarketBoards}
             />
+          </section>
+        ) : null}
+
+        {investmentWorkspace === 'news' ? (
+          <section className="investments-workspace-news" aria-label="市场快讯">
             <MarketNewsPanel
               news={marketNews}
               selectedCategoryId={selectedNewsCategoryId}
@@ -3923,7 +3971,10 @@ export function InvestmentsPage() {
               onRefresh={refreshMarketNews}
             />
           </section>
+        ) : null}
 
+        {investmentWorkspace === 'watchlist' ? (
+          <section className="investments-workspace-watchlist" aria-label="基金自选">
           <aside
             className="panel investments-watchlist-panel"
             data-investment-support-title="基金自选"
@@ -4360,16 +4411,17 @@ export function InvestmentsPage() {
               </>
             )}
           </aside>
+          </section>
+        ) : null}
 
-          <InvestmentChatPanel
-            showHero={false}
-            floating
-            floatingPosition="bottom-right"
-            defaultWebEnabled
-            contextNote={marketContextSummary}
-          />
-        </aside>
-      </section>
+        <InvestmentChatPanel
+          showHero={false}
+          floating
+          floatingPosition="bottom-right"
+          defaultWebEnabled
+          contextNote={marketContextSummary}
+        />
+      </main>
 
       <Toast
         visible={toast.visible}

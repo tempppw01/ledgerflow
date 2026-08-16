@@ -329,6 +329,12 @@ describe('InvestmentsPage', () => {
     return stage as HTMLElement;
   }
 
+  async function openInvestmentWorkspace(
+    label: '今日总览' | '大盘行情' | '板块监控' | '基金自选' | '市场快讯'
+  ) {
+    await userEvent.click(screen.getByRole('button', { name: label }));
+  }
+
   it('应展示今日持仓、通俗行情和规则提示', async () => {
     const { container } = render(
       <MemoryRouter>
@@ -336,13 +342,27 @@ describe('InvestmentsPage', () => {
       </MemoryRouter>
     );
 
+    expect(screen.getByRole('heading', { name: '今日持仓' })).toBeInTheDocument();
+    expect(screen.getByText('今日市场估算')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '今天的市场，说人话' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '今天怎么做' })).toBeInTheDocument();
+
+    await openInvestmentWorkspace('大盘行情');
     expect(await screen.findByText('大盘概览')).toBeInTheDocument();
     expect(
       within(screen.getByLabelText('上证指数关键数据')).getByText('1.56万亿')
     ).toBeInTheDocument();
-    expect(await screen.findByText('快讯')).toBeInTheDocument();
+    await openInvestmentWorkspace('板块监控');
     expect(screen.getByRole('tab', { name: '热门题材' })).toBeInTheDocument();
     expect(screen.getByLabelText('选择热门题材')).toHaveValue('BK1106');
+    expect(screen.getByText('板块健康度')).toBeInTheDocument();
+
+    await openInvestmentWorkspace('市场快讯');
+    expect(await screen.findByText('快讯')).toBeInTheDocument();
+    expect(screen.getByText(/液化天然气制甲烷/)).toBeInTheDocument();
+    expect(screen.getByText('7x24')).toBeInTheDocument();
+
+    await openInvestmentWorkspace('大盘行情');
     expect(screen.getByTestId('market-session-status')).toBeInTheDocument();
     expect(
       screen.getByTestId('market-session-status').querySelector('.investments-global-clock-zone')
@@ -353,13 +373,6 @@ describe('InvestmentsPage', () => {
     expect(
       within(screen.getByLabelText('全球股市开闭市状态')).getByText('美股')
     ).toBeInTheDocument();
-    expect(screen.getByText('7x24')).toBeInTheDocument();
-    expect(screen.getByText(/液化天然气制甲烷/)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '今日持仓' })).toBeInTheDocument();
-    expect(screen.getByText('今日市场估算')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '今天的市场，说人话' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '今天怎么做' })).toBeInTheDocument();
-    expect(screen.getByText('板块健康度')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'AI 排序' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '打开投资风向' })).not.toBeInTheDocument();
     const marketPanel = screen.getByText('大盘概览').closest('section');
@@ -384,13 +397,14 @@ describe('InvestmentsPage', () => {
     expect(shanghaiIndexTab).toHaveClass('is-negative');
     expect(screen.getAllByText('¥1.09万').length).toBeGreaterThan(0);
 
+    await openInvestmentWorkspace('基金自选');
     expect(screen.queryByText('6 个月应急金')).not.toBeInTheDocument();
-    expect(screen.getByText('基金自选')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '基金自选' })).toBeInTheDocument();
     const quickChatLauncher = screen.getByRole('button', { name: '打开快捷问答' });
     expect(quickChatLauncher).toBeInTheDocument();
     fireEvent.click(quickChatLauncher);
     expect(screen.getByLabelText('基金分析输入框')).toBeInTheDocument();
-    expect(container.querySelector('.investments-management-grid')).toBeInTheDocument();
+    expect(container.querySelector('.investments-console-page')).toBeInTheDocument();
   });
 
   it('行情数字变化时会短暂高亮对应指数格', async () => {
@@ -440,6 +454,7 @@ describe('InvestmentsPage', () => {
       </MemoryRouter>
     );
 
+    await openInvestmentWorkspace('大盘行情');
     const initialShanghaiTab = await screen.findByRole('tab', {
       name: /A 股 上证指数 3996\.16 -1\.00%/
     });
@@ -478,11 +493,7 @@ describe('InvestmentsPage', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByText('大盘概览')).toBeInTheDocument();
-    expect(
-      within(screen.getByLabelText('上证指数关键数据')).getByText('1.56万亿')
-    ).toBeInTheDocument();
-    expect(await screen.findByText(/液化天然气制甲烷/)).toBeInTheDocument();
+    await openInvestmentWorkspace('基金自选');
     await userEvent.type(screen.getByLabelText('添加基金代码'), '161725');
     await userEvent.click(screen.getByRole('button', { name: /获取资料/ }));
 
@@ -556,6 +567,7 @@ describe('InvestmentsPage', () => {
       </MemoryRouter>
     );
 
+    await openInvestmentWorkspace('基金自选');
     await userEvent.click(screen.getByRole('button', { name: '刷新全部自选基金资料' }));
 
     await waitFor(() => {
@@ -592,6 +604,7 @@ describe('InvestmentsPage', () => {
       </MemoryRouter>
     );
 
+    await openInvestmentWorkspace('基金自选');
     await userEvent.click(screen.getByRole('button', { name: '待填写' }));
     const input = screen.getByLabelText('持有份额测试基金持有份额');
     await userEvent.type(input, '1234.56{Enter}');
@@ -639,7 +652,6 @@ describe('InvestmentsPage', () => {
     expect(within(todayHoldings).getByText('+1.50%')).toBeInTheDocument();
     expect(within(todayHoldings).getByText('成本待录入')).toBeInTheDocument();
     expect(within(todayHoldings).getByText('指数 · 自选持仓')).toBeInTheDocument();
-    expect(await screen.findByText(/液化天然气制甲烷/)).toBeInTheDocument();
   });
 
   it('今日持仓会按自选基金当日涨跌幅排序并标记前三名', async () => {
@@ -731,6 +743,7 @@ describe('InvestmentsPage', () => {
       </MemoryRouter>
     );
 
+    await openInvestmentWorkspace('基金自选');
     await userEvent.click(screen.getByText('负收益测试基金'));
 
     const chart = await screen.findByRole('img', { name: '历史业绩走线图' });
@@ -745,6 +758,7 @@ describe('InvestmentsPage', () => {
       </MemoryRouter>
     );
 
+    await openInvestmentWorkspace('大盘行情');
     expect(await screen.findByText('大盘概览')).toBeInTheDocument();
     const stage = getMarketChartStage();
 
@@ -769,6 +783,7 @@ describe('InvestmentsPage', () => {
       </MemoryRouter>
     );
 
+    await openInvestmentWorkspace('大盘行情');
     const indexTab = await screen.findByRole('tab', { name: /A 股 沪深300/ });
     expect(screen.getByRole('tab', { name: /A 股 上证50/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '查看上一组指数' })).not.toBeInTheDocument();
@@ -818,6 +833,7 @@ describe('InvestmentsPage', () => {
       </MemoryRouter>
     );
 
+    await openInvestmentWorkspace('板块监控');
     const themeSelect = await screen.findByLabelText('选择热门题材');
     await userEvent.selectOptions(themeSelect, 'BK1128');
 
@@ -832,6 +848,7 @@ describe('InvestmentsPage', () => {
       </MemoryRouter>
     );
 
+    await openInvestmentWorkspace('大盘行情');
     expect(await screen.findByRole('img', { name: /上证指数近 1 年历史走势/ })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('tab', { name: '近 3 月' }));
     await waitFor(() => {
@@ -879,7 +896,8 @@ describe('InvestmentsPage', () => {
       </MemoryRouter>
     );
 
-    await screen.findByText('大盘概览');
+    await openInvestmentWorkspace('板块监控');
+    await screen.findByText('板块健康度');
     const addTheme = screen.getByLabelText('添加可跟踪题材');
     await userEvent.selectOptions(addTheme, 'BK0001');
     await userEvent.click(screen.getByRole('button', { name: '添加' }));
