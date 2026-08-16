@@ -3,7 +3,7 @@ import { mkdir } from 'node:fs/promises';
 import { getDatabaseDataDirectory, getSqliteDatabasePath } from './databaseProvider.js';
 import { withMysqlConnection } from './databaseConnection.js';
 
-export const RELATIONAL_SCHEMA_VERSION = 3;
+export const RELATIONAL_SCHEMA_VERSION = 4;
 const DEFAULT_USER_ID = 'default';
 
 const SQLITE_MIGRATION_TABLE =
@@ -48,6 +48,10 @@ const SQLITE_V3_STATEMENTS = [
   `ALTER TABLE auth_sessions ADD COLUMN device_name TEXT`
 ];
 
+const SQLITE_V4_TABLES = [
+  `CREATE TABLE IF NOT EXISTS market_history_cache (cache_key TEXT PRIMARY KEY, provider TEXT NOT NULL, target_id TEXT NOT NULL, range_start TEXT NOT NULL, range_end TEXT NOT NULL, payload_json TEXT NOT NULL, fetched_at TEXT NOT NULL, expires_at TEXT NOT NULL, last_accessed_at TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`
+];
+
 function toMysqlTable(statement, migrationTable = false) {
   if (migrationTable) {
     return `CREATE TABLE IF NOT EXISTS ledger_schema_migrations (id INT NOT NULL, applied_at DATETIME(3) NOT NULL, PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`;
@@ -79,6 +83,7 @@ const MYSQL_MIGRATION_TABLE = toMysqlTable(SQLITE_MIGRATION_TABLE, true);
 const MYSQL_V1_TABLES = SQLITE_V1_TABLES.map((statement) => toMysqlTable(statement));
 const MYSQL_V2_TABLES = SQLITE_V2_TABLES.map((statement) => toMysqlTable(statement));
 const MYSQL_V3_STATEMENTS = SQLITE_V3_STATEMENTS.map((statement) => toMysqlTable(statement));
+const MYSQL_V4_TABLES = SQLITE_V4_TABLES.map((statement) => toMysqlTable(statement));
 
 const V1_INDEXES = [
   ['idx_accounts_user_sort', 'ledger_accounts', 'user_id, sort_order'],
@@ -120,12 +125,18 @@ const V2_INDEXES = [
   ['idx_auth_audit_event_created', 'auth_audit_log', 'event_type, created_at']
 ];
 
+const V4_INDEXES = [
+  ['idx_market_history_cache_expires', 'market_history_cache', 'expires_at'],
+  ['idx_market_history_cache_target', 'market_history_cache', 'target_id, range_start, range_end']
+];
+
 function migrationsFor(provider) {
   const mysql = provider === 'mysql';
   return [
     { version: 1, tables: mysql ? MYSQL_V1_TABLES : SQLITE_V1_TABLES, indexes: V1_INDEXES, seedDefaultUser: true },
     { version: 2, tables: mysql ? MYSQL_V2_TABLES : SQLITE_V2_TABLES, indexes: V2_INDEXES },
-    { version: 3, statements: mysql ? MYSQL_V3_STATEMENTS : SQLITE_V3_STATEMENTS }
+    { version: 3, statements: mysql ? MYSQL_V3_STATEMENTS : SQLITE_V3_STATEMENTS },
+    { version: 4, tables: mysql ? MYSQL_V4_TABLES : SQLITE_V4_TABLES, indexes: V4_INDEXES }
   ];
 }
 

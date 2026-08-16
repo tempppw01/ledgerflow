@@ -315,6 +315,15 @@
   line-height: 1.3;
 }
 
+.investments-today-summary .investments-key-label {
+  color: var(--color-text-primary);
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-primary) 56%, transparent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
 .investments-today-summary strong {
   overflow: hidden;
   color: var(--color-text-primary);
@@ -324,6 +333,14 @@
   line-height: 1.1;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.investments-today-summary .investments-key-number {
+  font-weight: 850;
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
 }
 
 .investments-today-summary .is-positive strong,
@@ -341,6 +358,14 @@
   color: var(--color-text-tertiary, var(--color-text-secondary));
   font-size: 11px;
   line-height: 1.45;
+}
+
+.investments-today-note strong {
+  color: var(--color-primary);
+  font-weight: 850;
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 2px;
 }
 
 .investments-position-glance-list {

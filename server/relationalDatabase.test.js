@@ -26,12 +26,12 @@ test('SQLite relational schema migrates and is idempotent', async () => {
         .map((row) => row.name);
       const user = database.prepare('SELECT id FROM ledger_users WHERE id = ?').get('default');
 
-      assert.equal(first.currentVersion, 3);
+      assert.equal(first.currentVersion, 4);
       assert.deepEqual(second, first);
       assert.deepEqual(status, {
         provider: 'sqlite',
-        currentVersion: 3,
-        expectedVersion: 3,
+        currentVersion: 4,
+        expectedVersion: 4,
         ready: true
       });
       assert.ok(tables.includes('ledger_transactions'));
@@ -46,6 +46,7 @@ test('SQLite relational schema migrates and is idempotent', async () => {
       assert.ok(tables.includes('auth_audit_log'));
       assert.ok(tables.includes('investment_positions'));
       assert.ok(tables.includes('market_quotes'));
+      assert.ok(tables.includes('market_history_cache'));
       assert.ok(tables.includes('ai_workflow_runs'));
       assert.equal(user?.id, 'default');
     } finally {
@@ -88,8 +89,8 @@ test('SQLite upgrades a real V1 database through the authentication and device m
         .prepare('SELECT id FROM ledger_schema_migrations ORDER BY id')
         .all()
         .map((row) => Number(row.id));
-      assert.equal(migrated.currentVersion, 3);
-      assert.deepEqual(versions, [1, 2, 3]);
+      assert.equal(migrated.currentVersion, 4);
+      assert.deepEqual(versions, [1, 2, 3, 4]);
       assert.equal(upgraded.prepare('SELECT COUNT(*) AS count FROM auth_users').get().count, 0);
     } finally {
       upgraded.close();

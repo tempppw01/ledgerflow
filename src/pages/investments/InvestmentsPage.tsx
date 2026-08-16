@@ -794,20 +794,22 @@ function HoldingsTodayPanel({
       <div className="investments-today-panel-head">
         <div>
           <h2>今日持仓</h2>
-          <p>先看自己今天大概赚了还是亏了。</p>
+          <p>先看自己的持仓，别让大盘替你做决定。</p>
         </div>
         <span className="badge">{holdingCount} 笔</span>
       </div>
 
       <div className="investments-today-summary">
         <div className={totalProfit >= 0 ? 'is-positive' : 'is-negative'}>
-          <span>总浮盈浮亏</span>
-          <strong>{hasKnownCost ? formatCurrencyAuto(totalProfit) : '--'}</strong>
+          <span className="investments-key-label">账面盈亏</span>
+          <strong className="investments-key-number">
+            {hasKnownCost ? formatCurrencyAuto(totalProfit) : '--'}
+          </strong>
           <em>{hasKnownCost ? `${(profitRate * 100).toFixed(1)}%` : '成本待录入'}</em>
         </div>
         <div className={getMarketTone(effectiveMarketChange)}>
-          <span>今日市场估算</span>
-          <strong>
+          <span className="investments-key-label">今日市场估算</span>
+          <strong className="investments-key-number">
             {estimatedTodayProfit === null ? '--' : formatCurrencyAuto(estimatedTodayProfit)}
           </strong>
           <em>
@@ -923,7 +925,7 @@ function PlainMarketBriefingPanel({
       <div className="investments-today-panel-head">
         <div>
           <h2>今天的市场，说人话</h2>
-          <p>收盘后这里会汇总成一条简报。</p>
+          <p>把涨跌、板块和新闻拎成几句，够用就好。</p>
         </div>
         <span aria-hidden="true">🗣️</span>
       </div>
@@ -971,12 +973,12 @@ function PlainMarketBriefingPanel({
       </div>
       <small className="investments-market-insight-meta">
         {insightStatus === 'ready' && insight
-          ? `AI 复合分析 · 每 15 分钟最多 1 次 · 综合分 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
+          ? `结合行情、新闻和板块 · 每 15 分钟更新 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
           : insightStatus === 'disabled'
-            ? `本地复合算法 · 配置 AI 后每 15 分钟最多 1 次 · 综合分 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
+            ? `先用本地信号 · 配置 AI 后每 15 分钟更新 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
             : insightStatus === 'error'
-              ? `本地复合算法 · AI 暂不可用 · 综合分 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
-              : `正在准备 AI 复合分析 · 综合分 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`}
+              ? `本地信号可用，AI 暂不可用 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
+              : `正在整理行情和新闻 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`}
       </small>
     </section>
   );
@@ -998,8 +1000,8 @@ function RuleSuggestionsPanel({
           <h2>今天怎么做</h2>
           <p>
             {insight
-              ? `AI 结合新闻、热点和板块算法生成 · 风险分 ${algorithmSignals.riskScore}，不是交易指令。`
-              : `复合算法给的参考 · 风险分 ${algorithmSignals.riskScore}，不是交易指令。`}
+              ? `结合新闻、热点和板块给你一个参考 · 风险分 ${algorithmSignals.riskScore}，不替你下决定。`
+              : `先按行情信号做个参考 · 风险分 ${algorithmSignals.riskScore}，不替你下决定。`}
           </p>
         </div>
         <span aria-hidden="true">🧠</span>
@@ -1590,7 +1592,7 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
         <div>
           <h4>{historyTarget.label.replace(/^.+?·\s*/, '')}历史走势</h4>
           <p>
-            {historyTarget.provider === 'yahoo' ? 'Yahoo Finance 日线数据' : '东方财富日线数据'} · 按需获取并缓存，不写入用户业务数据库
+            {historyTarget.provider === 'yahoo' ? 'Yahoo Finance 日线数据' : '东方财富日线数据'} · 按需获取；优先内存缓存，配置 MySQL/SQLite 后落库 7 天，长期未访问自动清理
           </p>
         </div>
         <div className="investments-market-history-controls">

@@ -14,6 +14,11 @@ import {
   replaceRelationalData
 } from './relationalDataRepository.js';
 import {
+  MARKET_HISTORY_CACHE_TTL_MS,
+  readMarketHistoryCache,
+  writeMarketHistoryCache
+} from './marketHistoryCache.js';
+import {
   authenticateSession,
   changePassword,
   getAuthStatus,
@@ -39,6 +44,23 @@ const eastmoneyStockQuoteCache = new Map();
 const globalMarketQuoteCache = new Map();
 const globalMarketHistoryCache = new Map();
 const eastmoneyMarketProxyCache = new Map();
+
+function readMemoryMarketHistory(cache, cacheKey) {
+  const entry = cache.get(cacheKey);
+  if (!entry) return null;
+  if (entry.expiresAt <= Date.now()) {
+    cache.delete(cacheKey);
+    return null;
+  }
+  return entry.value;
+}
+
+function writeMemoryMarketHistory(cache, cacheKey, value) {
+  cache.set(cacheKey, {
+    value,
+    expiresAt: Date.now() + MARKET_HISTORY_CACHE_TTL_MS
+  });
+}
 
 const GLOBAL_MARKET_INDEXES = [
   { id: 'us-dow', market: '美股', name: '道琼斯', symbol: '^DJI' },
@@ -672,6 +694,14 @@ async function getYahooGlobalMarketQuotes() {
 
 async function getYahooGlobalMarketHistory(index, dates) {
   const cacheKey = `global-history:${index.id}:${dates.start}:${dates.end}`;
+  const memoryCached = readMemoryMarketHistory(globalMarketHistoryCache, cacheKey);
+  if (memoryCached) return memoryCached;
+  const persistedCached = await readMarketHistoryCache(cacheKey);
+  if (persistedCached?.payload) {
+    writeMemoryMarketHistory(globalMarketHistoryCache, cacheKey, persistedCached.payload);
+    return persistedCached.payload;
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
   try {
@@ -696,10 +726,21 @@ async function getYahooGlobalMarketHistory(index, dates) {
     const points = parseYahooMarketHistory(await response.json());
     if (points.length === 0) throw new Error(`Yahoo Finance history ${index.symbol} is empty.`);
     const result = { points, updatedAt: new Date().toISOString(), source: 'Yahoo Finance' };
-    globalMarketHistoryCache.set(cacheKey, result);
+    writeMemoryMarketHistory(globalMarketHistoryCache, cacheKey, result);
+    await writeMarketHistoryCache({
+      cacheKey,
+      provider: 'yahoo',
+      targetId: index.id,
+      rangeStart: dates.start,
+      rangeEnd: dates.end,
+      payload: result
+    });
     return result;
   } catch (error) {
-    if (globalMarketHistoryCache.has(cacheKey)) return globalMarketHistoryCache.get(cacheKey);
+    const memoryFallback = readMemoryMarketHistory(globalMarketHistoryCache, cacheKey);
+    if (memoryFallback) return memoryFallback;
+    const persistedFallback = await readMarketHistoryCache(cacheKey, { allowExpired: true });
+    if (persistedFallback?.payload) return persistedFallback.payload;
     throw error;
   } finally {
     clearTimeout(timeout);
@@ -1222,10 +1263,31 @@ export async function handleRequest(req, res) {
         dates.start +
         '&end=' +
         dates.end;
-      const payload = await getEastmoneyMarketProxyPayload(
-        `history:${secId}:${dates.start}:${dates.end}`,
-        upstreamUrl
-      );
+      const cacheKey = `history:${secId}:${dates.start}:${dates.end}`;
+      let payload = readMemoryMarketHistory(eastmoneyMarketProxyCache, cacheKey);
+      if (!payload) {
+        const persistedCached = await readMarketHistoryCache(cacheKey);
+        payload = persistedCached?.payload || null;
+        if (payload) writeMemoryMarketHistory(eastmoneyMarketProxyCache, cacheKey, payload);
+      }
+      if (!payload) {
+        try {
+          payload = await getEastmoneyMarketProxyPayload(cacheKey, upstreamUrl);
+          writeMemoryMarketHistory(eastmoneyMarketProxyCache, cacheKey, payload);
+          await writeMarketHistoryCache({
+            cacheKey,
+            provider: 'eastmoney',
+            targetId: secId,
+            rangeStart: dates.start,
+            rangeEnd: dates.end,
+            payload
+          });
+        } catch (error) {
+          const persistedFallback = await readMarketHistoryCache(cacheKey, { allowExpired: true });
+          if (!persistedFallback?.payload) throw error;
+          payload = persistedFallback.payload;
+        }
+      }
       jsonResponse(res, 200, {
         ok: true,
         data: payload,
