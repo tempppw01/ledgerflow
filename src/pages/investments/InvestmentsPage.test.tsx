@@ -25,6 +25,7 @@ const eastmoneyClientMock = vi.hoisted(() => ({
   fetchEastmoneyIndexHistory: vi.fn(),
   fetchGlobalMarketHistory: vi.fn(),
   fetchEastmoneyMarketBoards: vi.fn(),
+  fetchEastmoneyMarketBoardConstituents: vi.fn(),
   fetchEastmoneyMarketOverview: vi.fn(),
   fetchEastmoneyMarketNews: vi.fn(),
   fetchEastmoneyMarketThemeBoards: vi.fn(),
@@ -79,6 +80,8 @@ vi.mock('../../features/investments/api/eastmoneyMarketClient', () => ({
     { id: 'kr-kospi', market: '韩股', name: '韩国综合', symbol: '^KS11', flag: '🇰🇷' }
   ],
   fetchEastmoneyMarketBoards: eastmoneyClientMock.fetchEastmoneyMarketBoards,
+  fetchEastmoneyMarketBoardConstituents:
+    eastmoneyClientMock.fetchEastmoneyMarketBoardConstituents,
   fetchEastmoneyIndexHistory: eastmoneyClientMock.fetchEastmoneyIndexHistory,
   fetchGlobalMarketHistory: eastmoneyClientMock.fetchGlobalMarketHistory,
   fetchEastmoneyMarketOverview: eastmoneyClientMock.fetchEastmoneyMarketOverview,
@@ -90,6 +93,7 @@ vi.mock('../../features/investments/api/eastmoneyMarketClient', () => ({
 describe('InvestmentsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    eastmoneyClientMock.fetchEastmoneyMarketBoardConstituents.mockResolvedValue([]);
     eastmoneyClientMock.fetchEastmoneyMarketOverview.mockResolvedValue({
       selectedSecId: '1.000001',
       updatedAt: '2026-07-10T15:10:00.000Z',
@@ -818,7 +822,7 @@ describe('InvestmentsPage', () => {
     await userEvent.selectOptions(themeSelect, 'BK1128');
 
     expect(themeSelect).toHaveValue('BK1128');
-    expect(screen.getByLabelText('CPO概念涨跌分布')).toBeInTheDocument();
+    expect(screen.getByLabelText('热门题材涨跌分布')).toBeInTheDocument();
   });
 
   it('可以切换大盘历史区间并运行定投模拟', async () => {

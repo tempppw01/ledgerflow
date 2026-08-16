@@ -238,3 +238,39 @@ test('A-share market history endpoint proxies daily kline ranges', async () => {
     await closeServer(server);
   }
 });
+
+test('Eastmoney board stocks endpoint proxies constituents for a board', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async (input) => {
+    const url = String(input);
+    assert.match(url, /push2\.eastmoney\.com\/api\/qt\/clist\/get/);
+    assert.match(url, /fs=b%3ABK9999|fs=b:BK9999/);
+    assert.match(url, /pz=3/);
+    return new Response(
+      JSON.stringify({
+        data: {
+          diff: [{ f12: '300001', f14: '示例公司', f2: 20, f3: 3.2, f4: 0.62 }]
+        }
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  };
+
+  const server = createLedgerFlowServer();
+  try {
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const address = server.address();
+    const response = await originalFetch(
+      `http://127.0.0.1:${address.port}/api/market/eastmoney/board-stocks?code=bk9999&pageSize=3`
+    );
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(body.data.data.diff, [
+      { f12: '300001', f14: '示例公司', f2: 20, f3: 3.2, f4: 0.62 }
+    ]);
+  } finally {
+    global.fetch = originalFetch;
+    await closeServer(server);
+  }
+});

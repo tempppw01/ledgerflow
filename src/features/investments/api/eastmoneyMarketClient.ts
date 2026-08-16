@@ -110,6 +110,14 @@ export interface EastmoneyMarketBoard {
   flatCount: number | null;
 }
 
+export interface EastmoneyMarketConstituent {
+  code: string;
+  name: string;
+  value: number | null;
+  change: number | null;
+  changePercent: number | null;
+}
+
 export interface EastmoneyMarketTheme {
   code: string;
   name: string;
@@ -173,6 +181,18 @@ type EastmoneyBoardPayload = {
       f104?: number | string;
       f105?: number | string;
       f106?: number | string;
+    }>;
+  };
+};
+
+type EastmoneyBoardConstituentPayload = {
+  data?: {
+    diff?: Array<{
+      f2?: number | string;
+      f3?: number | string;
+      f4?: number | string;
+      f12?: string;
+      f14?: string;
     }>;
   };
 };
@@ -551,6 +571,28 @@ export async function fetchEastmoneyMarketBoards(
     upCount: toNullableNumber(item.f104),
     downCount: toNullableNumber(item.f105),
     flatCount: toNullableNumber(item.f106)
+  }));
+}
+
+export async function fetchEastmoneyMarketBoardConstituents(
+  boardCode: string,
+  pageSize = 3
+): Promise<EastmoneyMarketConstituent[]> {
+  const code = String(boardCode || '').trim().toUpperCase();
+  if (!/^BK\d{4}$/.test(code)) return [];
+  const response = await fetch(
+    `/api/market/eastmoney/board-stocks?code=${encodeURIComponent(code)}&pageSize=${pageSize}`
+  );
+
+  if (!response.ok) throw new Error('板块成分股加载失败，请稍后重试。');
+
+  const body = (await response.json()) as { data?: EastmoneyBoardConstituentPayload };
+  return (body.data?.data?.diff || []).map((item) => ({
+    code: String(item.f12 || '').trim(),
+    name: String(item.f14 || '').trim() || '未命名公司',
+    value: toNullableNumber(item.f2),
+    change: toNullableNumber(item.f4),
+    changePercent: toNullableNumber(item.f3)
   }));
 }
 

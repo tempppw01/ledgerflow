@@ -2172,6 +2172,152 @@
   padding: 4px 0;
 }
 
+.investments-market-board-overview {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 4px 0 2px;
+}
+
+.investments-market-board-overview > div:last-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.investments-market-board-overview strong {
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.investments-market-board-overview span {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.investments-market-board-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.investments-market-board-card {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 76%, transparent);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 48%, transparent);
+}
+
+.investments-market-board-card.is-selected {
+  border-color: color-mix(in srgb, var(--color-primary) 62%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-primary-bg) 34%, var(--color-bg-subtle));
+}
+
+.investments-market-board-card-head,
+.investments-market-board-card-head > div,
+.investments-market-board-card-meta,
+.investments-market-board-card-stocks > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.investments-market-board-card-head,
+.investments-market-board-card-meta {
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.investments-market-board-card-head > div {
+  gap: 6px;
+}
+
+.investments-market-board-card-head > div > span {
+  color: var(--color-text-tertiary);
+  font-family: var(--font-number);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.investments-market-board-card-head strong {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.investments-market-board-card-head > b,
+.investments-market-board-card-stocks b {
+  flex: 0 0 auto;
+  font-family: var(--font-number);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.investments-market-board-card-head > b.is-positive,
+.investments-market-board-card-stocks b.is-positive {
+  color: var(--color-danger);
+}
+
+.investments-market-board-card-head > b.is-negative,
+.investments-market-board-card-stocks b.is-negative {
+  color: var(--color-success);
+}
+
+.investments-market-board-card-meta {
+  color: var(--color-text-secondary);
+  font-family: var(--font-number);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.investments-market-board-card-meta em {
+  font-family: inherit;
+  font-size: 9px;
+  font-style: normal;
+}
+
+.investments-market-board-card-stocks {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding-top: 5px;
+  border-top: 1px solid color-mix(in srgb, var(--color-border-light) 62%, transparent);
+}
+
+.investments-market-board-card-stocks > small {
+  color: var(--color-text-tertiary);
+  font-size: 9px;
+}
+
+.investments-market-board-card-stocks > div {
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.investments-market-board-card-stocks > div > span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.investments-market-board-card-loading {
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+}
+
 .investments-market-breadth-chart {
   display: grid;
   justify-items: center;

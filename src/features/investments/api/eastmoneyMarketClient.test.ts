@@ -4,6 +4,7 @@ import {
   EASTMONEY_MARKET_THEMES,
   EASTMONEY_MARKET_NEWS_CATEGORIES,
   fetchEastmoneyMarketBoards,
+  fetchEastmoneyMarketBoardConstituents,
   fetchEastmoneyIndexHistory,
   fetchEastmoneyMarketThemeBoards,
   fetchEastmoneyMarketQuotes,
@@ -246,6 +247,50 @@ describe('热门题材行情', () => {
     ]);
     expect(String(fetchMock.mock.calls[0][0])).toContain('codes=BK1106');
     expect(EASTMONEY_MARKET_THEMES.map((theme) => theme.name)).toContain('CPO概念');
+  });
+});
+
+describe('板块成分股行情', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('通过同源接口获取板块内领涨公司并解析涨跌幅', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            data: {
+              diff: [
+                { f12: '300001', f14: '特锐德', f2: 31.2, f3: 4.5, f4: 1.34 },
+                { f12: '600001', f14: '示例股份', f2: 12.3, f3: -1.2, f4: -0.15 }
+              ]
+            }
+          }
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+
+    await expect(fetchEastmoneyMarketBoardConstituents('bk0001', 3)).resolves.toEqual([
+      {
+        code: '300001',
+        name: '特锐德',
+        value: 31.2,
+        change: 1.34,
+        changePercent: 4.5
+      },
+      {
+        code: '600001',
+        name: '示例股份',
+        value: 12.3,
+        change: -0.15,
+        changePercent: -1.2
+      }
+    ]);
+    expect(String(fetchMock.mock.calls[0][0])).toContain(
+      '/api/market/eastmoney/board-stocks?code=BK0001&pageSize=3'
+    );
   });
 });
 

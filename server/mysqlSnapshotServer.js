@@ -506,6 +506,11 @@ function normalizeEastmoneyThemeCodes(value) {
   ).slice(0, 24);
 }
 
+function normalizeEastmoneyBoardCode(value) {
+  const code = String(value || '').trim().toUpperCase();
+  return /^BK\d{4}$/.test(code) ? code : '';
+}
+
 const EASTMONEY_HISTORY_RANGE_DAYS = {
   '1m': 31,
   '3m': 93,
@@ -1334,6 +1339,30 @@ export async function handleRequest(req, res) {
         '&fields=f12,f14,f2,f3,f4,f5,f6,f104,f105,f106';
       const payload = await getEastmoneyMarketProxyPayload(
         'boards:' + type + ':' + pageSize,
+        upstreamUrl
+      );
+      jsonResponse(res, 200, { ok: true, data: payload });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/market/eastmoney/board-stocks') {
+      const code = normalizeEastmoneyBoardCode(url.searchParams.get('code'));
+      const pageSize = Math.min(
+        8,
+        Math.max(1, Number(url.searchParams.get('pageSize') || 3) || 3)
+      );
+      if (!code) {
+        jsonResponse(res, 400, { ok: false, message: 'Missing Eastmoney board code.' });
+        return;
+      }
+      const upstreamUrl =
+        'https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=' +
+        pageSize +
+        '&po=1&np=1&fltt=2&invt=2&fid=f3&fs=b:' +
+        code +
+        '&fields=f12,f14,f2,f3,f4';
+      const payload = await getEastmoneyMarketProxyPayload(
+        'board-stocks:' + code + ':' + pageSize,
         upstreamUrl
       );
       jsonResponse(res, 200, { ok: true, data: payload });
