@@ -342,6 +342,8 @@ describe('InvestmentsPage', () => {
       </MemoryRouter>
     );
 
+    expect(screen.getByRole('heading', { name: '投资理财' })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: '投资理财板块' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '今日持仓' })).toBeInTheDocument();
     expect(screen.getByText('今日市场估算')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '今天的市场，说人话' })).toBeInTheDocument();

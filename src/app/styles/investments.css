@@ -20,6 +20,9 @@
   min-height: calc(100dvh - var(--topbar-height, 56px) - 24px);
   gap: 20px;
   overflow: visible;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 14px 24px 32px;
   max-width: 1180px;
 }
 
@@ -143,6 +146,7 @@
 .investments-workspace-news,
 .investments-workspace-watchlist {
   min-width: 0;
+  padding: 22px 0 2px;
 }
 
 .investments-workspace-market > .investments-market-panel {
@@ -158,6 +162,18 @@
 .investments-workspace-watchlist > .investments-watchlist-panel {
   width: 100%;
   box-sizing: border-box;
+}
+
+/* Keep the active workspace close to the data-and-backup console: content sections,
+   not another large card around the whole page. */
+.investments-page .investments-workspace-boards > .investments-market-boards-panel,
+.investments-page .investments-workspace-news > .investments-market-news-panel,
+.investments-page .investments-workspace-watchlist > .investments-watchlist-panel {
+  padding: 0 0 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .investments-page > .panel,
@@ -6652,6 +6668,10 @@
 }
 
 @media (max-width: 640px) {
+  .investments-page.investments-console-page {
+    padding-inline: 14px;
+  }
+
   .investments-console-header {
     align-items: flex-start;
     flex-direction: column;
