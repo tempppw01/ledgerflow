@@ -757,7 +757,7 @@ export function SmartBudgetPage() {
               <span className="smart-budget-header-badge is-draft">预算向导进行中</span>
             )}
           </div>
-          <p>回答 4 项，生成一版月预算；确认后再看执行和提醒。</p>
+          <p>先回答几个小问题，我会帮你整理出一版更适合当前生活的月度预算。</p>
         </div>
       </header>
 
@@ -795,15 +795,15 @@ export function SmartBudgetPage() {
             >
               <div className="smart-budget-overview-stats">
                 <article>
-                  <span>本月总预算</span>
+                  <span>本月可花总额</span>
                   <strong>{formatCurrency(managementOverview.totalBudget)}</strong>
                 </article>
                 <article>
-                  <span>已使用金额</span>
+                  <span>已经用掉</span>
                   <strong>{formatCurrency(managementOverview.totalSpent)}</strong>
                 </article>
                 <article>
-                  <span>剩余金额</span>
+                  <span>还剩下多少</span>
                   <strong
                     className={managementOverview.remainingAmount >= 0 ? 'positive' : 'negative'}
                   >
@@ -811,7 +811,7 @@ export function SmartBudgetPage() {
                   </strong>
                 </article>
                 <article>
-                  <span>执行率</span>
+                  <span>花销节奏</span>
                   <strong className={managementOverview.executionRate > 1 ? 'negative' : ''}>
                     {(managementOverview.executionRate * 100).toFixed(1)}%
                   </strong>
@@ -832,7 +832,7 @@ export function SmartBudgetPage() {
                   预算健康度 <strong>{managementOverview.healthScore}</strong> / 100
                 </p>
                 <p className="smart-budget-health-explain">
-                  {healthExplainText}（判定区间：&lt;80% 宽裕，80%~100% 健康，&gt;100% 超支）
+                  {healthExplainText}（小于 80% 比较宽裕，80%~100% 刚刚好，超过 100% 要注意超支）
                 </p>
               </div>
             </section>
@@ -882,10 +882,10 @@ export function SmartBudgetPage() {
                 <span className="smart-budget-ai-icon" aria-hidden="true">
                   🤖
                 </span>
-                <h4>AI 预算建议</h4>
+                <h4>AI 预算观察</h4>
               </div>
               {aiStatus === 'loading' ? (
-                <p className="smart-budget-empty">正在分析超支分类与预算偏差...</p>
+                <p className="smart-budget-empty">正在帮你看哪几类支出最需要留意...</p>
               ) : null}
               {aiStatus === 'error' ? <p className="smart-budget-error">{aiError}</p> : null}
               {topOverspentItem ? (
@@ -895,20 +895,20 @@ export function SmartBudgetPage() {
                     <strong> {(topOverspentItem.ratio * 100).toFixed(0)}%</strong>
                   </p>
                   <p>
-                    建议下月预算调整为{' '}
+                    下个月可以先把预算调成{' '}
                     <strong>
                       {formatCurrency(topOverspentItem.budgetAmount + topOverspentItem.diff * 0.5)}
                     </strong>
                   </p>
                   <p>
-                    或减少当前支出 <strong>{formatCurrency(topOverspentItem.diff)}</strong>
+                    或者这个月先少花 <strong>{formatCurrency(topOverspentItem.diff)}</strong>
                   </p>
                   <div className="smart-budget-ai-actions">
                     <button type="button" onClick={executeApplyToNextMonth}>
-                      应用到下月预算
+                      调优下月预算
                     </button>
                     <button type="button" onClick={executeSetMonthReminder}>
-                      设为本月提醒
+                      这个月提醒我
                     </button>
                   </div>
                 </div>
@@ -949,7 +949,7 @@ export function SmartBudgetPage() {
                 className="smart-budget-trend-card smart-budget-panel-card"
                 aria-label="预算执行趋势"
               >
-                <h4>跨月趋势对比（各分类执行率）</h4>
+                <h4>最近几个月，钱主要花在哪里</h4>
                 <div className="smart-budget-trend-grid">
                   {categoryTrendRows.map((row) => (
                     <article key={row.category} className="smart-budget-trend-item">
@@ -1249,23 +1249,23 @@ export function SmartBudgetPage() {
 
           {step === 5 && draftRecommendation ? (
             <div className="smart-budget-block">
-              <h3>确认预算</h3>
-              <p>确认后进入管理看板。</p>
+              <h3>看看这份预算合不合适</h3>
+              <p>没问题的话，确认后就能进入可跟踪的执行看板。</p>
               <div className="smart-budget-result-grid">
                 <article className="smart-budget-stat-card">
-                  <span>月收入</span>
+                  <span>每个月到手</span>
                   <strong>{formatCurrency(draftRecommendation.monthlyIncome)}</strong>
                 </article>
                 <article className="smart-budget-stat-card">
-                  <span>固定支出</span>
+                  <span>固定账单</span>
                   <strong>{formatCurrency(draftRecommendation.monthlyFixedExpense)}</strong>
                 </article>
                 <article className="smart-budget-stat-card">
-                  <span>储蓄/投资</span>
+                  <span>先存起来</span>
                   <strong>{formatCurrency(draftRecommendation.savingsAmount)}</strong>
                 </article>
                 <article className="smart-budget-stat-card">
-                  <span>灵活预算</span>
+                  <span>日常可灵活使用</span>
                   <strong>{formatCurrency(draftRecommendation.flexibleBudget)}</strong>
                 </article>
               </div>
@@ -1276,7 +1276,7 @@ export function SmartBudgetPage() {
                     <tr>
                       <th>分类</th>
                       <th>金额</th>
-                      <th>占月收入比例</th>
+                      <th>占收入比例</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1313,7 +1313,7 @@ export function SmartBudgetPage() {
 
               <div className="smart-budget-actions">
                 <button type="button" className="primary" onClick={handleConfirm}>
-                  确认使用该预算建议
+                  就用这份预算
                 </button>
                 <button
                   type="button"
@@ -1323,7 +1323,7 @@ export function SmartBudgetPage() {
                     setError(null);
                   }}
                 >
-                  重新填写问答
+                  重新答一遍
                 </button>
               </div>
             </div>
