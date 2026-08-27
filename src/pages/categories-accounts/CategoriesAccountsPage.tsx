@@ -116,6 +116,7 @@ export function CategoriesAccountsPage() {
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [showAllTags, setShowAllTags] = useState(false);
   const [showAllAccounts, setShowAllAccounts] = useState(false);
+  const [showAccountForm, setShowAccountForm] = useState(false);
   const [categoryError, setCategoryError] = useState('');
   const [accountError, setAccountError] = useState('');
   const [mergeTargetByTag, setMergeTargetByTag] = useState<Record<string, string>>({});
@@ -212,6 +213,7 @@ export function CategoriesAccountsPage() {
     setAccountType('');
     setAccountInitialBalance('0');
     setAccountError('');
+    setShowAccountForm(false);
   }
 
   const managedAccounts = useMemo(
@@ -686,48 +688,74 @@ export function CategoriesAccountsPage() {
           </div>
         </header>
 
-        <form onSubmit={submitAccount} className="account-create-form">
-          <div className="account-create-grid">
-            <div className="field">
-              <label>账户名称</label>
-              <input
-                placeholder="如：招商银行卡 / 零钱 / 花呗"
-                value={accountName}
-                onChange={(e) => {
-                  setAccountName(e.target.value);
-                  if (accountError) setAccountError('');
-                }}
-                maxLength={24}
-              />
+        {showAccountForm ? (
+          <form onSubmit={submitAccount} className="account-create-form">
+            <div className="account-create-grid">
+              <div className="field">
+                <label>账户名称</label>
+                <input
+                  placeholder="如：招商银行卡 / 零钱 / 花呗"
+                  value={accountName}
+                  onChange={(e) => {
+                    setAccountName(e.target.value);
+                    if (accountError) setAccountError('');
+                  }}
+                  maxLength={24}
+                />
+              </div>
+              <div className="field">
+                <label>账户类型</label>
+                <select
+                  aria-label="账户类型"
+                  value={accountType}
+                  onChange={(e) => setAccountType(e.target.value as AccountType | '')}
+                >
+                  <option value="">请选择类型</option>
+                  <option value="cash">💵 现金</option>
+                  <option value="debit">💳 借记卡</option>
+                  <option value="savings">🏦 储蓄卡</option>
+                  <option value="virtual">📱 虚拟账户</option>
+                </select>
+              </div>
+              <div className="field">
+                <label>初始余额</label>
+                <input
+                  type="number"
+                  placeholder="0"
+                  value={accountInitialBalance}
+                  onChange={(e) => setAccountInitialBalance(e.target.value)}
+                />
+              </div>
             </div>
-            <div className="field">
-              <label>账户类型</label>
-              <select
-                aria-label="账户类型"
-                value={accountType}
-                onChange={(e) => setAccountType(e.target.value as AccountType | '')}
-              >
-                <option value="">请选择类型</option>
-                <option value="cash">💵 现金</option>
-                <option value="debit">💳 借记卡</option>
-                <option value="savings">🏦 储蓄卡</option>
-                <option value="virtual">📱 虚拟账户</option>
-              </select>
+            <div className="account-create-actions">
+              <span className="muted">新账户将参与交易汇总和余额统计。</span>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAccountForm(false);
+                    setAccountError('');
+                  }}
+                >
+                  取消
+                </button>
+                <button className="primary" type="submit">
+                  保存账户
+                </button>
+              </div>
             </div>
-            <div className="field">
-              <label>初始余额</label>
-              <input
-                type="number"
-                placeholder="0"
-                value={accountInitialBalance}
-                onChange={(e) => setAccountInitialBalance(e.target.value)}
-              />
+          </form>
+        ) : (
+          <div className="account-create-toolbar">
+            <div>
+              <strong>资金账户</strong>
+              <p className="muted">集中管理银行卡、现金和虚拟账户，方便交易记录与余额追踪。</p>
             </div>
-            <button className="primary account-create-submit" type="submit">
-              添加账户
+            <button className="primary" type="button" onClick={() => setShowAccountForm(true)}>
+              ＋ 新增账户
             </button>
           </div>
-        </form>
+        )}
         {accountError ? <small className="error">{accountError}</small> : null}
 
         {loading ? (
@@ -827,41 +855,50 @@ export function CategoriesAccountsPage() {
                       </div>
                     </header>
 
-                    <div className="account-card-actions account-card-actions-secondary">
-                      <input
-                        className="account-balance-input"
-                        type="number"
-                        placeholder="单笔调整（+收入 / -支出）"
-                        value={adjustAmounts[item.id] || ''}
-                        onChange={(e) =>
-                          setAdjustAmounts((prev) => ({ ...prev, [item.id]: e.target.value }))
-                        }
-                      />
-                      <button
-                        type="button"
-                        className="account-sort-btn"
-                        title="把这个账户往前排"
-                        aria-label={`上移账户 ${item.name}`}
-                        onClick={() => moveAccount(item.id, -1)}
-                      >
-                        ↑ 上移
-                      </button>
-                      <button
-                        type="button"
-                        className="account-sort-btn"
-                        title="把这个账户往后排"
-                        aria-label={`下移账户 ${item.name}`}
-                        onClick={() => moveAccount(item.id, 1)}
-                      >
-                        ↓ 下移
-                      </button>
-                      <button type="button" onClick={() => applySingleAdjustment(item.id)}>
-                        添加单笔调整
-                      </button>
-                      <button className="danger" onClick={() => setPendingDeleteAccountId(item.id)}>
-                        删除
-                      </button>
-                    </div>
+                    <details className="account-card-tools">
+                      <summary>管理</summary>
+                      <div className="account-card-tools-body">
+                        <label>
+                          <span>单笔调整</span>
+                          <input
+                            className="account-balance-input"
+                            type="number"
+                            placeholder="+收入 / -支出"
+                            value={adjustAmounts[item.id] || ''}
+                            onChange={(e) =>
+                              setAdjustAmounts((prev) => ({
+                                ...prev,
+                                [item.id]: e.target.value
+                              }))
+                            }
+                          />
+                        </label>
+                        <button type="button" onClick={() => applySingleAdjustment(item.id)}>
+                          添加单笔调整
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveAccount(item.id, -1)}
+                          aria-label={`上移账户 ${item.name}`}
+                        >
+                          ↑ 上移
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveAccount(item.id, 1)}
+                          aria-label={`下移账户 ${item.name}`}
+                        >
+                          ↓ 下移
+                        </button>
+                        <button
+                          type="button"
+                          className="danger"
+                          onClick={() => setPendingDeleteAccountId(item.id)}
+                        >
+                          删除
+                        </button>
+                      </div>
+                    </details>
                   </article>
                 );
               })}
