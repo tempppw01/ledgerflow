@@ -3423,6 +3423,11 @@
   background: var(--color-danger-bg);
 }
 
+.assistant-wb-card.review {
+  border-color: var(--color-warning, #e6a23c);
+  background: color-mix(in srgb, var(--color-warning, #e6a23c) 12%, var(--color-bg) 88%);
+}
+
 .assistant-wb-card-head {
   display: flex;
   align-items: center;
@@ -3460,6 +3465,10 @@
 
 .assistant-wb-issue.error {
   color: var(--color-danger);
+}
+
+.assistant-wb-issue.review {
+  color: var(--color-warning, #b8860b);
 }
 
 .assistant-wb-save-stats {

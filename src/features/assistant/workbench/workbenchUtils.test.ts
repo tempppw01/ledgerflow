@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import type { Account } from '../../../entities/account/types';
 import { ensureAccountId, inferAccountNameFromText } from './workbenchMapping';
-import { buildAssistantSystemPrompt, extractJsonString, normalizeAiBill } from './workbenchUtils';
+import {
+  buildAssistantSystemPrompt,
+  buildTransactionPromptContext,
+  extractJsonString,
+  JSON_AGENT_PROMPT,
+  normalizeAiBill,
+  toDraftEntries
+} from './workbenchUtils';
+import type { Category } from '../../../entities/category/types';
+import type { TransactionItem } from '../../../entities/transaction/types';
 
 describe('workbenchUtils', () => {
   it('应能从带解释文本的响应中提取 transactions JSON', () => {
@@ -211,5 +220,85 @@ describe('workbenchUtils', () => {
     expect(prompt).toContain('1. expense coffee');
     expect(prompt).toContain('长期记忆片段');
     expect(prompt).toContain('1. user prefers monthly summaries');
+  });
+
+  it('记账提示词应要求 needsReview 并保留前端分期展开边界', () => {
+    expect(JSON_AGENT_PROMPT).toContain('needsReview');
+    expect(JSON_AGENT_PROMPT).toContain('只输出 1 条第 1 期 repayment');
+    expect(JSON_AGENT_PROMPT).toContain('不要生成 N 条 JSON');
+    expect(JSON_AGENT_PROMPT).toContain('来源推断由前端根据');
+  });
+
+  it('needsReview 识别不确定字段应进入校验并提示人工确认', () => {
+    const result = normalizeAiBill({
+      transactions: [
+        {
+          type: 'expense',
+          amount: '99.5',
+          date: '2025-02-03',
+          note: '午餐-食堂 99.5',
+          category: '餐饮',
+          account: '',
+          tags: ['餐饮'],
+          needsReview: ['amount', 'account']
+        }
+      ]
+    });
+
+    expect(result?.transactions[0].needsReview).toEqual(['amount']);
+
+    const draft = toDraftEntries(result!)[0];
+    expect(draft.issues).toContainEqual(
+      expect.objectContaining({
+        field: 'amount',
+        needsReview: true,
+        message: expect.stringContaining('人工确认')
+      })
+    );
+  });
+
+  it('交易快照应按最近时间窗口瘦身，同时保留汇总与可用账户', () => {
+    const categories: Category[] = [{ id: 'cat-food', name: '餐饮', kind: 'expense' }];
+    const accounts: Account[] = [{ id: 'acc-wx', name: '微信钱包', type: 'virtual' }];
+    const today = new Date().toISOString().slice(0, 10);
+    const oldDate = '2020-01-01';
+    const transactions: TransactionItem[] = [
+      {
+        id: 'tx-old',
+        type: 'expense',
+        categoryId: 'cat-food',
+        accountId: 'acc-wx',
+        amount: 50,
+        date: oldDate,
+        note: '老旧消费',
+        tags: ['餐饮']
+      },
+      {
+        id: 'tx-recent',
+        type: 'expense',
+        categoryId: 'cat-food',
+        accountId: 'acc-wx',
+        amount: 30,
+        date: today,
+        note: '最近消费',
+        tags: ['餐饮']
+      }
+    ];
+
+    const snapshot = JSON.parse(
+      buildTransactionPromptContext(transactions, categories, accounts, {
+        focusQuestion: '最近一个月消费分析'
+      })
+    );
+
+    expect(snapshot.focusRecentDays).toBe(31);
+    expect(snapshot.totalTransactions).toBe(2);
+    expect(snapshot.includedTransactions).toBe(1);
+    expect(snapshot.rows[0].note).toBe('最近消费');
+    expect(snapshot.availableAccounts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'acc-wx', name: '微信钱包' })
+      ])
+    );
   });
 });

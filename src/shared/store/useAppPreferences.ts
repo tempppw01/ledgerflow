@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AppAccentTheme, AppTheme } from '../types/app';
 import {
@@ -202,6 +202,8 @@ function normalizeInvestmentPosition(
     linkedAccountId: normalizeOptionalString(item.linkedAccountId),
     investedAmount: normalizePositiveNumber(item.investedAmount),
     currentValue: normalizePositiveNumber(item.currentValue),
+    fundCode: normalizeOptionalString(item.fundCode),
+    holdingShares: normalizeOptionalNumber(item.holdingShares),
     monthlyContribution: normalizePositiveNumber(item.monthlyContribution) || undefined,
     targetAllocation: normalizePercentage(item.targetAllocation),
     riskLevel: item.riskLevel || 'medium',

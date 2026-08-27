@@ -15,10 +15,6 @@ import type {
   InvestmentWatchItem
 } from '../../entities/investment/types';
 import { sendAiChatStream } from '../../features/assistant/api/openaiCompatibleClient';
-import {
-  fetchWebSearchContext,
-  buildWebSearchPrompt
-} from '../../features/assistant/api/webSearchClient';
 import { InvestmentChatPanel } from '../../features/assistant/investment-chat/InvestmentChatPanel';
 import {
   fetchEastmoneyFundSnapshot,
@@ -35,6 +31,7 @@ import {
   fetchEastmoneyIndexHistory,
   fetchEastmoneyMarketOverview,
   fetchEastmoneyMarketNews,
+  fetchEastmoneyStockSearch,
   fetchEastmoneyMarketThemeBoards,
   fetchGlobalMarketHistory,
   fetchGlobalMarketOverview,
@@ -45,6 +42,7 @@ import {
   type EastmoneyMarketOverview,
   type EastmoneyMarketNewsItem,
   type EastmoneyMarketQuote,
+  type EastmoneyStockSearchResult,
   type EastmoneyMarketTheme,
   type EastmoneyMarketTrendPoint,
   type GlobalMarketQuote
@@ -55,7 +53,6 @@ import {
   type InvestmentSimulationResult
 } from '../../features/investments/model/investmentSimulator';
 import {
-  BRAIN_ICON_URL,
   INFO_ICON_URL,
   ROTATE_CCW_ICON_URL
 } from '../../shared/config/brandAssets';
@@ -65,15 +62,9 @@ import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { Toast, type ToastVariant } from '../../shared/ui/Toast';
 import {
-  buildInvestmentAssistantAuxiliaryInfo,
-  buildInvestmentFundAnalysisPrompt,
   buildInvestmentMarketInsightPrompt,
-  createInvestmentAiMessage,
   extractInvestmentMarketInsight,
-  extractInvestmentAnalysis,
-  type InvestmentMarketInsight,
-  summarizeInvestmentAnalysis,
-  trimInvestmentAiMessages
+  type InvestmentMarketInsight
 } from './investmentAi';
 import { buildTimeContext } from '../../features/assistant/workbench/workbenchUtils';
 
@@ -89,6 +80,7 @@ const POSITION_CATEGORY_LABELS: Record<InvestmentCategory, string> = {
 
 type WatchCategoryFilterId =
   | 'all'
+  | 'stock'
   | 'index-fund'
   | 'active-fund'
   | 'fixed-income'
@@ -97,6 +89,7 @@ type WatchCategoryFilterId =
 
 const WATCH_CATEGORY_FILTERS: Array<{ id: WatchCategoryFilterId; label: string; mark: string }> = [
   { id: 'all', label: '全部', mark: '全' },
+  { id: 'stock', label: '个股', mark: '股' },
   { id: 'index-fund', label: '指数', mark: '指' },
   { id: 'active-fund', label: '主动', mark: '主' },
   { id: 'fixed-income', label: '债券', mark: '债' },
@@ -2712,6 +2705,10 @@ function getWatchItemCategoryId(item: InvestmentWatchItem): WatchCategoryFilterI
     return 'cash';
   }
 
+  if (/(个股|股票|stock)/i.test(searchText)) {
+    return 'stock';
+  }
+
   if (/(主动|混合|股票型|灵活配置|成长|价值|精选|消费|医药|新能源|红利)/i.test(searchText)) {
     return 'active-fund';
   }
@@ -2732,16 +2729,18 @@ export function InvestmentsPage() {
   const transactions = useFinanceStore((state) => state.transactions);
   const positions = useAppPreferences((state) => state.investmentPositions);
   const investmentWatchlist = useAppPreferences((state) => state.investmentWatchlist);
-  const investmentAiMessages = useAppPreferences((state) => state.investmentAiMessages);
   const monthlyIncome = useAppPreferences((state) => state.monthlyIncome);
   const removeInvestmentWatchItem = useAppPreferences((state) => state.removeInvestmentWatchItem);
   const upsertInvestmentWatchItem = useAppPreferences((state) => state.upsertInvestmentWatchItem);
-  const setInvestmentAiMessages = useAppPreferences((state) => state.setInvestmentAiMessages);
-  const { baseUrl, apiKey, model, webSearch } = useAiSettings();
+  const { baseUrl, apiKey, model } = useAiSettings();
 
   const [fundLookupCode, setFundLookupCode] = useState('');
   const [fundLookupStatus, setFundLookupStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [fundLookupError, setFundLookupError] = useState('');
+  const [stockLookupQuery, setStockLookupQuery] = useState('');
+  const [stockLookupResults, setStockLookupResults] = useState<EastmoneyStockSearchResult[]>([]);
+  const [stockLookupStatus, setStockLookupStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [stockLookupError, setStockLookupError] = useState('');
   const [selectedWatchCategoryId, setSelectedWatchCategoryId] =
     useState<WatchCategoryFilterId>('all');
   const [watchGridColumns, setWatchGridColumns] = useState<WatchGridColumnCount>(3);
@@ -2790,7 +2789,6 @@ export function InvestmentsPage() {
     'idle'
   );
   const [marketBoardsError, setMarketBoardsError] = useState('');
-  const [analyzingWatchItemId, setAnalyzingWatchItemId] = useState<string | null>(null);
   const [holdingStockQuotes, setHoldingStockQuotes] = useState<
     Map<string, EastmoneyHoldingStockQuote>
   >(() => new Map());
@@ -2947,6 +2945,7 @@ export function InvestmentsPage() {
   const watchCategoryCounts = useMemo<Record<WatchCategoryFilterId, number>>(() => {
     const counts: Record<WatchCategoryFilterId, number> = {
       all: investmentWatchlist.length,
+      stock: 0,
       'index-fund': 0,
       'active-fund': 0,
       'fixed-income': 0,
@@ -3557,149 +3556,6 @@ export function InvestmentsPage() {
     setToastState(`已把“${item.name}”加入关注。`);
   }
 
-  async function handleAnalyzeWatchItem(item: InvestmentWatchItem) {
-    if (analyzingWatchItemId === item.id) return;
-
-    if (!apiKey.trim()) {
-      setToastState('请先在设置中配置可用的 AI Key。', 'warning');
-      return;
-    }
-
-    setAnalyzingWatchItemId(item.id);
-
-    const userMessage = createInvestmentAiMessage({
-      id: `investment-user-${Date.now()}`,
-      role: 'user',
-      text: `请分析 ${item.name}${item.code ? `（${item.code}）` : ''} 是否该加仓减仓，说明行业、政策影响、重仓产品比例和当前建议。`,
-      createdAt: new Date().toISOString()
-    });
-    const nextMessages = trimInvestmentAiMessages([...investmentAiMessages, userMessage]);
-    setInvestmentAiMessages(nextMessages);
-
-    try {
-      const timeContext = await buildTimeContext();
-      const webContext = buildWebSearchPrompt(
-        await fetchWebSearchContext(
-          [item.name, item.code, item.platform, '行业 政策 最新 影响'].filter(Boolean).join(' '),
-          webSearch,
-          undefined,
-          { investmentNewsSources: ['10jqka', 'xueqiu'] }
-        )
-      );
-      const auxiliaryInfo = buildInvestmentAssistantAuxiliaryInfo({
-        webEnabled: true,
-        webQuery: [item.name, item.code, item.platform, '行业 政策 最新 影响']
-          .filter(Boolean)
-          .join(' '),
-        timeContext,
-        contextNote: marketContextSummary,
-        webSearchPrompt: webContext
-      });
-      let fullReasoning = '';
-      let fullContent = '';
-      const result = await sendAiChatStream(
-        {
-          baseUrl,
-          apiKey,
-          model,
-          systemPrompt: buildInvestmentFundAnalysisPrompt({
-            watchItem: item,
-            positions: activePositions,
-            marketContext: marketContextSummary,
-            timeContext,
-            webContext
-          }),
-          messages: [
-            {
-              role: 'user',
-              text: `请分析 ${item.name}${item.code ? `（${item.code}）` : ''}，重点回答是否加仓、减仓、继续持有，以及行业和政策影响。`
-            }
-          ]
-        },
-        {
-          onDelta: (delta) => {
-            fullContent += delta;
-          },
-          onReasoningDelta: (delta) => {
-            fullReasoning += delta;
-          },
-          onDone: (content) => {
-            fullContent = content || fullContent;
-          }
-        }
-      );
-
-      const rawContent = result.content || fullContent;
-      const rawReasoning = result.reasoning || fullReasoning;
-      const { displayText, analysis } = extractInvestmentAnalysis(rawContent);
-      const analysisText = summarizeInvestmentAnalysis(displayText, analysis);
-      const assistantMessage = createInvestmentAiMessage({
-        id: `investment-assistant-${Date.now()}`,
-        role: 'assistant',
-        text: analysisText || analysis?.summary || rawContent.trim() || '已完成分析。',
-        createdAt: new Date().toISOString(),
-        reasoning: rawReasoning,
-        webTrace: auxiliaryInfo.webTrace,
-        auxiliaryInfo: auxiliaryInfo.relatedData,
-        analysis
-      });
-      setInvestmentAiMessages(trimInvestmentAiMessages([...nextMessages, assistantMessage]));
-
-      const normalizedAnalysis = analysis;
-      if (normalizedAnalysis) {
-        const nextTags = Array.from(
-          new Set([...(normalizedAnalysis.watchTags || []), ...(item.tags || [])])
-        ).slice(0, 8);
-
-        upsertInvestmentWatchItem({
-          ...item,
-          tags: nextTags,
-          lastVerdict: normalizedAnalysis.verdict || item.lastVerdict || '已完成分析',
-          lastSummary: normalizedAnalysis.summary || analysisText || item.lastSummary,
-          lastRiskLevel: normalizedAnalysis.riskLevel || item.lastRiskLevel || 'unknown',
-          investmentAdvice:
-            normalizedAnalysis.verdict || normalizedAnalysis.summary || item.investmentAdvice,
-          adviceReasons: normalizedAnalysis.highlights?.length
-            ? normalizedAnalysis.highlights
-            : item.adviceReasons,
-          riskNotes: normalizedAnalysis.risks?.length ? normalizedAnalysis.risks : item.riskNotes,
-          nextActions: normalizedAnalysis.actions?.length
-            ? normalizedAnalysis.actions
-            : item.nextActions,
-          fundAnalysis: normalizedAnalysis.fundAnalysis?.length
-            ? normalizedAnalysis.fundAnalysis
-            : item.fundAnalysis,
-          fundHoldings: normalizedAnalysis.fundHoldings?.length
-            ? normalizedAnalysis.fundHoldings
-            : item.fundHoldings,
-          assetAllocation: normalizedAnalysis.assetAllocation?.length
-            ? normalizedAnalysis.assetAllocation
-            : item.assetAllocation,
-          industryAllocation: normalizedAnalysis.industryAllocation?.length
-            ? normalizedAnalysis.industryAllocation
-            : item.industryAllocation,
-          netValue: normalizedAnalysis.netValue || item.netValue,
-          addedReturn: normalizedAnalysis.addedReturn || item.addedReturn,
-          holdingReturn: normalizedAnalysis.holdingReturn || item.holdingReturn,
-          buyFeeRate: normalizedAnalysis.buyFeeRate || item.buyFeeRate,
-          fundCompany: normalizedAnalysis.fundCompany || item.fundCompany,
-          platform: normalizedAnalysis.platform || item.platform,
-          note: normalizedAnalysis.note || item.note,
-          lastAnalysisAt: new Date().toISOString()
-        });
-      }
-
-      setToastState(
-        normalizedAnalysis?.verdict || normalizedAnalysis?.summary || '已完成基金分析。'
-      );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : '基金分析失败，请稍后再试。';
-      setToastState(message, 'warning');
-    } finally {
-      setAnalyzingWatchItemId((current) => (current === item.id ? null : current));
-    }
-  }
-
   async function refreshWatchItemSnapshot(item: InvestmentWatchItem) {
     if (!item.code) throw new Error('这只基金没有代码，暂时无法刷新。');
 
@@ -3777,6 +3633,65 @@ export function InvestmentsPage() {
     } finally {
       setRefreshingAllWatchItems(false);
     }
+  }
+
+  async function handleStockLookupSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const query = stockLookupQuery.trim();
+    if (!query || stockLookupStatus === 'loading') return;
+
+    setStockLookupStatus('loading');
+    setStockLookupError('');
+
+    try {
+      const results = await fetchEastmoneyStockSearch(query);
+      setStockLookupResults(results);
+      setStockLookupStatus('idle');
+      if (results.length === 0) {
+        setStockLookupError('没有搜到匹配个股，换个名称或代码试试。');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '个股搜索失败，请稍后重试。';
+      setStockLookupError(message);
+      setStockLookupStatus('error');
+    }
+  }
+
+  function handleAddStockWatchItem(result: EastmoneyStockSearchResult) {
+    const existing = investmentWatchlist.find(
+      (item) =>
+        item.code === result.code ||
+        (item.tags.includes('个股') && item.name === result.name)
+    );
+
+    upsertInvestmentWatchItem({
+      id: existing?.id,
+      name: result.name,
+      code: result.code,
+      platform: existing?.platform || '东方财富',
+      tags: existing?.tags?.length
+        ? Array.from(new Set(['个股', ...existing.tags])).slice(0, 8)
+        : ['个股', '东方财富'],
+      note:
+        existing?.note ||
+        [result.securityTypeName, result.market ? `市场 ${result.market}` : '', result.secId]
+          .filter(Boolean)
+          .join(' · '),
+      lastVerdict: existing?.lastVerdict || '已加入个股自选',
+      lastSummary: existing?.lastSummary || '手动添加的个股自选，可在卡片中记录持有份额。',
+      investmentAdvice: existing?.investmentAdvice || '先观察行情与异动，再决定是否建仓。',
+      adviceReasons: existing?.adviceReasons || [],
+      riskNotes: existing?.riskNotes || [],
+      nextActions: existing?.nextActions || [],
+      holdingShares: existing?.holdingShares,
+      lastAnalysisAt: existing?.lastAnalysisAt || new Date().toISOString()
+    });
+
+    setSelectedWatchCategoryId('stock');
+    setStockLookupResults((current) => current.filter((stock) => stock.code !== result.code));
+    setStockLookupQuery('');
+    setToastState(`已关注“${result.name}”。`);
   }
 
   async function handleFundLookupSubmit(event: FormEvent<HTMLFormElement>) {
@@ -4033,10 +3948,63 @@ export function InvestmentsPage() {
               ) : null}
             </form>
 
+            <form
+              className="investments-fund-lookup investments-stock-lookup"
+              onSubmit={handleStockLookupSubmit}
+            >
+              <label htmlFor="investment-stock-query">添加个股自选</label>
+              <div className="investments-fund-lookup-row">
+                <input
+                  id="investment-stock-query"
+                  type="search"
+                  autoComplete="off"
+                  value={stockLookupQuery}
+                  placeholder="搜索股票名、代码或拼音"
+                  onChange={(event) => {
+                    setStockLookupQuery(event.target.value);
+                    if (stockLookupError) setStockLookupError('');
+                    if (stockLookupStatus === 'error') setStockLookupStatus('idle');
+                  }}
+                  disabled={stockLookupStatus === 'loading'}
+                />
+                <button
+                  type="submit"
+                  className="button-with-icon primary"
+                  disabled={stockLookupStatus === 'loading' || !stockLookupQuery.trim()}
+                >
+                  <img src={INFO_ICON_URL} alt="" aria-hidden="true" />
+                  {stockLookupStatus === 'loading' ? '搜索中' : '搜索个股'}
+                </button>
+              </div>
+              {stockLookupError ? (
+                <p className="investments-fund-lookup-error">{stockLookupError}</p>
+              ) : null}
+              {stockLookupResults.length > 0 ? (
+                <div className="investments-stock-lookup-results" aria-label="个股搜索结果">
+                  {stockLookupResults.map((result) => (
+                    <button
+                      key={result.secId}
+                      type="button"
+                      className="investments-stock-lookup-result"
+                      onClick={() => handleAddStockWatchItem(result)}
+                    >
+                      <span>
+                        <strong>{result.name}</strong>
+                        <small>{result.code}</small>
+                      </span>
+                      <em>
+                        {result.securityTypeName || '个股'} · {result.secId}
+                      </em>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </form>
+
             {investmentWatchlist.length === 0 ? (
               <div className="investments-watchlist-empty">
-                <strong>还没有自选基金</strong>
-                <p>分析后觉得值得跟踪，就加入这里。</p>
+                <strong>还没有自选基金或个股</strong>
+                <p>搜索后觉得值得跟踪，就把基金或股票加入这里。</p>
               </div>
             ) : (
               <>
@@ -4241,21 +4209,6 @@ export function InvestmentsPage() {
                             </span>
                           </div>
                           <div className="investments-watch-card-ai-actions">
-                            <button
-                              type="button"
-                              className={`investments-watch-analyze-btn ${
-                                analyzingWatchItemId === item.id ? 'is-loading' : ''
-                              }`}
-                              disabled={analyzingWatchItemId === item.id}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                void handleAnalyzeWatchItem(item);
-                              }}
-                              aria-label={`AI 分析 ${item.name}`}
-                              title={analyzingWatchItemId === item.id ? '正在分析' : 'AI 分析'}
-                            >
-                              <img src={BRAIN_ICON_URL} alt="" aria-hidden="true" />
-                            </button>
                             {!isFollowing ? (
                               <button
                                 type="button"

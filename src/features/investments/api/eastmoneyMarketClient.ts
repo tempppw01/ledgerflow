@@ -123,6 +123,16 @@ export interface EastmoneyMarketTheme {
   name: string;
 }
 
+export interface EastmoneyStockSearchResult {
+  code: string;
+  name: string;
+  secId: string;
+  market: string;
+  securityType: string;
+  securityTypeName: string;
+  pinyin: string;
+}
+
 type EastmoneyQuotePayload = {
   data?: {
     diff?: Array<{
@@ -194,6 +204,12 @@ type EastmoneyBoardConstituentPayload = {
       f12?: string;
       f14?: string;
     }>;
+  };
+};
+
+type EastmoneyStockSearchPayload = {
+  data?: {
+    results?: Array<Partial<EastmoneyStockSearchResult>>;
   };
 };
 
@@ -445,6 +461,38 @@ export async function fetchEastmoneyMarketOverview(
     trend,
     updatedAt: new Date().toISOString()
   };
+}
+
+export async function fetchEastmoneyStockSearch(
+  query: string,
+  pageSize = 8
+): Promise<EastmoneyStockSearchResult[]> {
+  const normalizedQuery = String(query || '').trim();
+  if (!normalizedQuery) return [];
+
+  const response = await fetch(
+    `/api/market/eastmoney/stock-search?query=${encodeURIComponent(
+      normalizedQuery
+    )}&pageSize=${Math.min(12, Math.max(1, pageSize))}`
+  );
+
+  if (!response.ok) {
+    throw new Error('个股搜索失败，请稍后重试。');
+  }
+
+  const body = (await response.json()) as { data?: EastmoneyStockSearchPayload };
+  const payload = body.data || {};
+  return (payload.data?.results || [])
+    .map((item) => ({
+      code: String(item.code || '').trim(),
+      name: String(item.name || '').trim(),
+      secId: String(item.secId || '').trim(),
+      market: String(item.market || '').trim(),
+      securityType: String(item.securityType || '').trim(),
+      securityTypeName: String(item.securityTypeName || '').trim(),
+      pinyin: String(item.pinyin || '').trim()
+    }))
+    .filter((item) => item.code && item.name && item.secId);
 }
 
 export async function fetchGlobalMarketOverview(): Promise<GlobalMarketOverview> {

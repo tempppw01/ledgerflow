@@ -19,7 +19,7 @@ export const JSON_AGENT_PROMPT = `你是 LedgerFlow 个人记账助手，专门�
 - 优先围绕交易维度：时间、收支、分类、账户、标签、还款。
 
 【记账 JSON schema（仅录入类请求时使用）】
-{"transactions":[{"type":"expense|income|budget|repayment","amount":number,"currency":"CNY|USD|HKD|JPY|EUR|GBP|KRW|SGD|AUD|CAD|CHF|TWD|unknown","originalAmountText":"string(可选，保留原始金额文本)","date":"YYYY-MM-DD","note":"string","category":"string","account":"string","tags":["string"],"sourceHint":"wechat|alipay|bank|cash|unknown","orderNo":"string(可选)","merchantOrderNo":"string(可选)","remainingPeriods":"number(可选，仅还款分期场景)","perPeriodAmount":"number(可选，仅还款分期场景)","interest":"number(可选，仅还款分期场景)"}]}
+{"transactions":[{"type":"expense|income|budget|repayment","amount":number,"currency":"CNY|USD|HKD|JPY|EUR|GBP|KRW|SGD|AUD|CAD|CHF|TWD|unknown","originalAmountText":"string(可选，保留原始金额文本)","date":"YYYY-MM-DD","note":"string","category":"string","account":"string","tags":["string"],"sourceHint":"wechat|alipay|bank|cash|unknown","orderNo":"string(可选)","merchantOrderNo":"string(可选)","remainingPeriods":"number(可选，仅还款分期场景)","perPeriodAmount":"number(可选，仅还款分期场景)","interest":"number(可选，仅还款分期场景)","needsReview":["amount|date|type|currency"]}]}
 
 【记账规则】
 - type 只能是 expense（支出）、income（收入）、budget（预算）、repayment（还款）
@@ -28,19 +28,21 @@ export const JSON_AGENT_PROMPT = `你是 LedgerFlow 个人记账助手，专门�
 - 必须尽量识别币种 currency：如 CNY、USD、HKD、JPY、EUR、GBP 等；若原文有币种符号或币种单词，必须输出
 - originalAmountText 尽量保留用户原始金额表达，如“$20.50”“HK$300”“1000日元”
 - date 格式为 YYYY-MM-DD，未提供则用今天日期
-- note 不要照抄用户原话，必须输出“有规律的快捷记账短语”：
-  - 结构优先：{场景/商户}{行为}{金额锚点}，示例“午餐-食堂 28”“通勤地铁 4”“工资入账 12000”
-  - 长度建议 6-16 个汉字，避免口语助词和完整复述（如“今天我在…然后…”）
-  - 多笔交易时每笔 note 风格保持一致，使用同一命名模式（如都用“品类+对象+金额”）
+- note 必须输出“有规律的快捷记账短语”，不要照抄用户原话：
+  - 优先模板：{场景/商户}-{对象或行为} {金额}，例如“午餐-食堂 28”“通勤地铁 4”“工资入账 12000”
+  - 只保留核心名词与动作，去掉“今天”“我”“然后”等口语助词，不使用完整复述句子
+  - 长度建议 4-16 个汉字；多笔交易时使用同一命名模式，避免忽长忽短
 - 必须识别交易来源 sourceHint：如微信/支付宝/银行卡/现金，未知用 unknown
-- account 必须优先使用账本快照中的 availableAccounts 已有账户名，且与来源一致（例如微信流水优先微信相关账户，支付宝同理）
-- 账户决策要先判断“是否需要新建账户”：仅在用户明确指定账户名，或你能高置信识别到具体账户名（如“平安银行”）时，才输出新账户名
-- 若不确定具体账户名，account 输出空字符串，不要虚构泛化名（如“银行卡”“银行账户”）
+- account 只能输出高置信具体账户名，优先从账本快照的 availableAccounts 中匹配；没有高置信匹配时输出空字符串
+- 不要输出“银行卡”“银行账户”“微信”“支付宝”这类来源泛化名；来源推断由前端根据 sourceHint 和 note 兜底
+- 只有在用户明确指定账户名，或原文中出现极高置信的具体账户名（如“平安银行”）时才输出具体账户名
 - category 必须给出并尽量使用常见生活分类；若为贷款/信用卡等还款账单，type 必须为 repayment，category 优先“还款”
 - 对账单截图中出现“还款金额/应还/已还/月供/房贷/车贷/贷款扣款”等语义，优先识别为 repayment
-- 若截图中包含“每月X号还款、剩余N期、每期M元”等分期信息：必须按期数展开为 N 条 repayment 交易（而不是只输出 1 条）
-- 分期展开规则：第 1 条使用当前应还日期，后续每条按月递增；amount 使用每期金额；note 可追加“第i/N期”
+- 若截图中包含“每月X号还款、剩余N期、每期M元”等分期信息：只输出 1 条第 1 期 repayment，并用 remainingPeriods、perPeriodAmount 表示剩余期数和每期金额，不要生成 N 条 JSON
+- 分期字段规则：date 使用第 1 期应还日期；amount 使用第 1 期金额；remainingPeriods 为剩余期数；perPeriodAmount 为每期金额
+- 前端会根据 remainingPeriods/perPeriodAmount 自动展开后续期数
 - tags 必须给出，至少 1 个
+- needsReview 仅在金额、日期、币种或交易类型识别不确定时输出字段名数组；确定的信息不要输出
 - 如未识别到订单号，orderNo / merchantOrderNo 可省略，不要伪造`;
 
 export const ANALYSIS_AGENT_PROMPT = `你是 LedgerFlow 数据分析助手，只负责账本问答与消费分析，不负责生成可落库的记账 JSON。
@@ -160,7 +162,12 @@ function toDateKey(raw?: string): string {
 export function buildTransactionPromptContext(
   transactions: TransactionItem[],
   categories: Category[],
-  accounts: Account[]
+  accounts: Account[],
+  options?: {
+    focusQuestion?: string;
+    recentDays?: number;
+    maxRows?: number;
+  }
 ): string {
   const categoryMap = new Map(categories.map((item) => [item.id, item.name]));
   const accountMap = new Map(accounts.map((item) => [item.id, item.name]));
@@ -176,9 +183,23 @@ export function buildTransactionPromptContext(
     }))
     .sort((a, b) => b.date.localeCompare(a.date));
 
-  const rows = normalizedAll.slice(0, MAX_PROMPT_TRANSACTIONS);
+  const focusQuestion = String(options?.focusQuestion || '').trim().toLowerCase();
+  const recentDays =
+    options?.recentDays && Number.isFinite(options.recentDays) && options.recentDays > 0
+      ? Math.floor(options.recentDays)
+      : inferTransactionFocusDays(focusQuestion);
+  const maxRows = Math.max(1, Math.floor(options?.maxRows || MAX_PROMPT_TRANSACTIONS));
+  const cutoffDate = recentDays
+    ? new Date(Date.now() - recentDays * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10)
+    : '';
+  const scopedRows = cutoffDate
+    ? normalizedAll.filter((item) => item.date >= cutoffDate)
+    : normalizedAll;
+  const rows = scopedRows.slice(0, maxRows);
 
-  const allDates = normalizedAll
+  const allDates = scopedRows
     .map((item) => item.date)
     .filter(Boolean)
     .sort();
@@ -200,6 +221,8 @@ export function buildTransactionPromptContext(
       generatedAt: new Date().toISOString(),
       totalTransactions: transactions.length,
       includedTransactions: rows.length,
+      focusQuestion: options?.focusQuestion?.trim() || '',
+      focusRecentDays: recentDays || null,
       availableAccounts: accounts.map((item) => ({
         id: item.id,
         name: item.name,
@@ -219,6 +242,17 @@ export function buildTransactionPromptContext(
     null,
     2
   );
+}
+
+function inferTransactionFocusDays(question: string): number | undefined {
+  const text = question.replace(/\s+/g, '').toLowerCase();
+  if (/(最近三年|近三年|三年|3年)/.test(text)) return 1096;
+  if (/(最近一年|近一年|一年|一年内|1年|全年)/.test(text)) return 366;
+  if (/(最近六个月|近六个月|半年|六个月|6个月)/.test(text)) return 183;
+  if (/(最近三个月|近三个月|三个月|一季度|季度|3个月)/.test(text)) return 92;
+  if (/(最近一个月|近一个月|一个月|本月|月度|1个月|这月)/.test(text)) return 31;
+  if (/(最近一周|近一周|一周|本周|7天|7日内)/.test(text)) return 7;
+  return undefined;
 }
 
 export function buildAssistantSystemPrompt(input: {
@@ -429,6 +463,13 @@ export function normalizeAiBill(raw: unknown): AiBillResult | null {
         ? normalizeCurrency((row as { currency?: unknown }).currency)
         : detectCurrency((row as { originalAmountText?: unknown }).originalAmountText ?? row.amount, `${row.note || ''} ${row.category || ''}`),
       originalAmountText: String((row as { originalAmountText?: unknown }).originalAmountText || row.amount || '').trim() || undefined,
+      needsReview: Array.isArray(rawRow.needsReview)
+        ? rawRow.needsReview
+            .map((item) => String(item).trim())
+            .filter((item): item is NonNullable<AiBillItem['needsReview']>[number] =>
+              ['amount', 'date', 'type', 'currency'].includes(item)
+            )
+        : undefined,
       subscriptionSuggestion: detectSubscriptionSuggestion({
         type: normalizedType,
         note: String(row.note || 'AI 识别账单'),
@@ -499,6 +540,26 @@ export function validateDraft(entry: DraftBillEntry): ValidationIssue[] {
       message: `检测到外币 ${entry.currency}，当前不会自动换算成人民币，请确认后再保存。`
     });
   }
+
+  const reviewLabels: Record<NonNullable<DraftBillEntry['needsReview']>[number], string> = {
+    amount: '金额',
+    date: '日期',
+    type: '交易类型',
+    currency: '币种'
+  };
+  const reviewFields = ['amount', 'date', 'type', 'currency'] as const;
+  const requestedReviews = (entry.needsReview || []).filter(
+    (field): field is (typeof reviewFields)[number] => reviewFields.includes(field as (typeof reviewFields)[number])
+  );
+  requestedReviews.forEach((field) => {
+    if (issues.some((item) => item.field === field)) return;
+    issues.push({
+      field,
+      message: `AI 对${reviewLabels[field]}的置信度不足，需人工确认后保存。`,
+      needsReview: true
+    });
+  });
+
   return issues;
 }
 
@@ -515,6 +576,7 @@ export function toDraftEntries(payload: AiBillResult): DraftBillEntry[] {
       account: item.account || '',
       tags: item.tags || [],
       sourceHint: item.sourceHint || 'unknown',
+      needsReview: item.needsReview,
       orderNo: item.orderNo,
       merchantOrderNo: item.merchantOrderNo,
       currency: item.currency || 'unknown',

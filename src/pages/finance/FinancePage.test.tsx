@@ -1,42 +1,41 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { FinancePage } from './FinancePage';
 
 const i18nMock = { language: 'zh' };
-const tMock = (key: string, options?: Record<string, string | number>) => {
+const tMock = (key: string) => {
   const map: Record<string, string> = {
-    'finance.ui.title': '金融资讯',
-    'finance.ui.subtitle': '支持 RSS 订阅与阅读，便于按自己的信息源持续跟踪财经动态。',
-    'finance.ui.rssManage': 'RSS 订阅管理',
-    'finance.ui.feedTitlePlaceholder': '订阅名称（可选）',
-    'finance.ui.add': '新增',
-    'finance.ui.disable': '停用',
-    'finance.ui.enable': '启用',
-    'finance.ui.delete': '删除',
-    'finance.ui.loading': '正在加载 RSS 资讯...',
-    'finance.ui.noCachedNews': '暂无可展示的 RSS 缓存资讯，请检查订阅源后重试。',
-    'finance.ui.noReadableContent': '订阅源暂无可读内容，已展示上次缓存资讯。',
-    'finance.ui.rssUnavailable': 'RSS 订阅源暂不可用，已展示上次缓存资讯。',
-    'finance.ui.rssStatusIdle': '待检测',
-    'finance.ui.rssStatusLoading': '检测中',
-    'finance.ui.rssStatusSuccess': '已连接',
-    'finance.ui.rssStatusEmpty': '暂无内容',
-    'finance.ui.rssStatusEmptyDetail': '这个源可访问，但暂时没有读到文章。',
-    'finance.ui.rssStatusError': '读取失败',
-    'finance.ui.rssStatusErrorDetail': '这次没有成功拉取这个源。',
-    'finance.ui.rssStatusDisabled': '已停用',
-    'finance.ui.readerTitle': 'RSS 阅读器',
-    'finance.ui.noSummary': '该订阅源未提供摘要，请点击下方链接阅读原文。',
+    'finance.ui.title': '同花顺资讯',
+    'finance.ui.subtitle': '市场资讯已经接入同花顺财经，按栏目快速浏览最新动态。',
+    'finance.ui.tipTitle': '聚焦市场，不再维护 RSS',
+    'finance.ui.tipBody': '这里只展示同花顺财经资讯阅读；工资计算、个税测算等工具请前往左侧「工资工具」。',
+    'finance.ui.sourceLabel': '内置资讯来源',
+    'finance.ui.sourceBadge': '单源资讯',
+    'finance.ui.sourceTitle': '同花顺财经',
+    'finance.ui.sourceHint': '所有内容来自同花顺财经要闻栏目。',
+    'finance.ui.openSource': '打开同花顺财经网站',
+    'finance.ui.sourceSite': '同花顺',
+    'finance.ui.categories': '资讯栏目',
+    'finance.ui.loading': '正在同步同花顺资讯...',
+    'finance.ui.noNews': '暂无同花顺资讯。',
+    'finance.ui.loadFailed': '同花顺资讯暂不可用。',
+    'finance.ui.readerTitle': '同花顺资讯阅读器',
+    'finance.ui.noSummary': '暂无摘要。',
     'finance.ui.openOriginal': '打开原文',
-    'finance.ui.dailyIdeaTitle': '今日金融小建议'
+    'finance.ui.dailyIdeaTitle': '今日金融小建议',
+    'finance.category.yaowen': '财经要闻',
+    'finance.category.macro': '宏观经济',
+    'finance.category.industry': '产经新闻',
+    'finance.category.global': '国际财经',
+    'finance.category.market': '金融市场',
+    'finance.category.commentary': '财经评论',
+    'finance.ideas.1': '每周固定 10 分钟复盘。',
+    'finance.ideas.2': '建一个利率观察清单。',
+    'finance.ideas.3': '给大额支出打标签。',
+    'finance.ideas.4': '避免追涨杀跌。',
+    'finance.ideas.5': '保留 3~6 个月应急资金。'
   };
-
-  if (key === 'finance.ui.rssStatusSuccessDetail') {
-    return `已读取 ${options?.count ?? 0} 条内容。`;
-  }
-
   return map[key] || key;
 };
 
@@ -48,61 +47,65 @@ vi.mock('react-i18next', () => ({
 }));
 
 const fetchMock = vi.fn();
+const storageMock = {
+  getItem: vi.fn(() => null),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+  key: vi.fn(() => null),
+  get length() {
+    return 0;
+  }
+};
 
 describe('FinancePage', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', fetchMock);
     fetchMock.mockReset();
-    window.localStorage.clear();
-    useAppPreferences.setState({ rssSubscriptions: [] });
+    vi.stubGlobal('localStorage', storageMock);
+    vi.spyOn(window, 'localStorage', 'get').mockReturnValue(storageMock as Storage);
+    (storageMock.getItem as ReturnType<typeof vi.fn>).mockReturnValue(null);
+    (storageMock.clear as ReturnType<typeof vi.fn>).mockReset();
   });
 
-  it('展示同花顺和雪球两个内置资讯入口', () => {
+  it('展示同花顺作为唯一内置资讯来源，并读取资讯列表', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: {
+          news: [
+            {
+              id: 'news-1',
+              title: '财政部部署推进财政科学管理工作',
+              source: '同花顺财经',
+              link: 'https://news.10jqka.com.cn/20260827/c679360478.shtml',
+              publishedAt: '08月27日 20:31',
+              summary: '财政部发布消息称，8月26日在安徽合肥举行财政科学管理研讨交流。'
+            }
+          ]
+        }
+      })
+    });
+
     render(
       <MemoryRouter>
         <FinancePage />
       </MemoryRouter>
     );
 
-    expect(screen.getByText('同花顺 + 雪球')).toBeInTheDocument();
+    expect(screen.getByText('同花顺财经')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /同花顺/ })).toHaveAttribute(
       'href',
       'https://www.10jqka.com.cn/'
     );
-    expect(screen.getByRole('link', { name: /雪球/ })).toHaveAttribute(
-      'href',
-      'https://xueqiu.com/'
-    );
-  });
 
-  it('新增 RSS 后应展示该订阅源的状态', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      text: async () =>
-        `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>Example Feed</title></channel></rss>`
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', { name: '财政部部署推进财政科学管理工作' }),
+      ).toBeInTheDocument();
     });
-
-    render(
-      <MemoryRouter>
-        <FinancePage />
-      </MemoryRouter>
-    );
-
-    fireEvent.click(screen.getByText('RSS 订阅管理（0）'));
-    fireEvent.change(screen.getByPlaceholderText('订阅名称（可选）'), {
-      target: { value: 'Example Feed' }
-    });
-    fireEvent.change(screen.getByPlaceholderText('https://example.com/feed.xml'), {
-      target: { value: 'https://example.com/rss.xml' }
-    });
-    fireEvent.click(screen.getByRole('button', { name: '新增' }));
-
-    const feedGroup = await screen.findByRole('group', { name: 'RSS 订阅 Example Feed' });
-    expect(await within(feedGroup).findByText('暂无内容')).toBeInTheDocument();
-    expect(within(feedGroup).getByText('这个源可访问，但暂时没有读到文章。')).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining(encodeURIComponent('https://example.com/rss.xml')),
-      expect.objectContaining({ signal: expect.any(AbortSignal) })
+      expect.stringContaining('/api/market/tonghuashun/news?category=yaowen&pageSize=16')
     );
   });
 });

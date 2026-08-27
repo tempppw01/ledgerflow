@@ -19,6 +19,7 @@ export interface AiBillItem {
   account?: string;
   tags?: string[];
   sourceHint?: 'wechat' | 'alipay' | 'bank' | 'cash' | 'unknown';
+  needsReview?: string[];
   orderNo?: string;
   merchantOrderNo?: string;
   currency?: string;
@@ -36,6 +37,7 @@ export interface AiBillResult {
 export interface ValidationIssue {
   field: 'amount' | 'date' | 'type' | 'currency';
   message: string;
+  needsReview?: boolean;
 }
 
 export interface DraftBillEntry {
@@ -49,6 +51,7 @@ export interface DraftBillEntry {
   account: string;
   tags: string[];
   sourceHint?: 'wechat' | 'alipay' | 'bank' | 'cash' | 'unknown';
+  needsReview?: string[];
   orderNo?: string;
   merchantOrderNo?: string;
   currency?: string;

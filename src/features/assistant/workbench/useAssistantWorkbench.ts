@@ -200,9 +200,13 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
   const hasApiKey = Boolean(input.apiKey.trim());
   const hasInput = Boolean(textInput.trim()) || imageDataUrls.length > 0 || pdfDataUrls.length > 0;
   const canRecognize = hasApiKey && Boolean(input.model.trim()) && hasInput;
+  const currentPromptFocus = textInput.trim();
   const transactionContext = useMemo(
-    () => buildTransactionPromptContext(input.transactions, input.categories, input.accounts),
-    [input.transactions, input.categories, input.accounts]
+    () =>
+      buildTransactionPromptContext(input.transactions, input.categories, input.accounts, {
+        focusQuestion: currentPromptFocus
+      }),
+    [input.transactions, input.categories, input.accounts, currentPromptFocus]
   );
   const repaymentContext = useMemo(
     () =>
@@ -650,7 +654,11 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
     setEntries((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
-        const next = { ...item, ...patch };
+        const next: DraftBillEntry = {
+          ...item,
+          ...patch,
+          needsReview: clearResolvedReviewFields(item.needsReview, patch)
+        };
         const duplicate = detectDuplicate(next);
         return {
           ...next,
@@ -661,6 +669,20 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
       })
     );
   };
+
+  function clearResolvedReviewFields(
+    currentReview: DraftBillEntry['needsReview'],
+    patch: Partial<DraftBillEntry>
+  ): DraftBillEntry['needsReview'] {
+    if (!currentReview?.length) return currentReview;
+    const resolved = new Set<string>();
+    if (patch.amount !== undefined) resolved.add('amount');
+    if (patch.date !== undefined) resolved.add('date');
+    if (patch.type !== undefined) resolved.add('type');
+    if (patch.currency !== undefined) resolved.add('currency');
+    if (resolved.size === 0) return currentReview;
+    return currentReview.filter((field) => !resolved.has(field));
+  }
 
   const removeEntry = (id: string) => setEntries((prev) => prev.filter((item) => item.id !== id));
 

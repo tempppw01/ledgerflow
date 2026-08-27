@@ -4436,6 +4436,49 @@
   color: var(--color-danger) !important;
 }
 
+.investments-stock-lookup {
+  margin-top: 4px;
+  border-top: 1px solid color-mix(in srgb, var(--color-border-light) 74%, transparent);
+  padding-top: 10px;
+}
+
+.investments-stock-lookup-results {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.investments-stock-lookup-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 38px;
+  padding: 7px 9px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 88%, var(--color-accent-bg));
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.investments-stock-lookup-result span {
+  display: grid;
+  gap: 2px;
+}
+
+.investments-stock-lookup-result strong {
+  font-size: 13px;
+}
+
+.investments-stock-lookup-result small,
+.investments-stock-lookup-result em {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-style: normal;
+}
+
 .investments-watch-card {
   display: grid;
   gap: 12px;

@@ -8,7 +8,9 @@ interface WorkbenchPreviewPanelProps {
 
 function issueText(entry: DraftBillEntry): string {
   if (entry.issues.length === 0) return '校验通过';
-  return entry.issues.map((item) => item.message).join('；');
+  return entry.issues
+    .map((item) => (item.needsReview ? `需人工确认：${item.message}` : item.message))
+    .join('；');
 }
 
 export function WorkbenchPreviewPanel({ entries, onUpdate, onRemove }: WorkbenchPreviewPanelProps) {
@@ -32,7 +34,14 @@ export function WorkbenchPreviewPanel({ entries, onUpdate, onRemove }: Workbench
         {entries.map((item, index) => (
           <article
             key={item.id}
-            className={item.issues.length ? 'assistant-wb-card error' : 'assistant-wb-card'}
+            className={
+              item.issues.some((issue) => issue.needsReview) &&
+              item.issues.every((issue) => issue.needsReview)
+                ? 'assistant-wb-card review'
+                : item.issues.length
+                  ? 'assistant-wb-card error'
+                  : 'assistant-wb-card'
+            }
           >
             <header className="assistant-wb-card-head">
               <label>
@@ -131,7 +140,16 @@ export function WorkbenchPreviewPanel({ entries, onUpdate, onRemove }: Workbench
                 订阅提示：这笔像“{item.subscriptionSuggestion.kind === 'mobile' ? '话费/通信' : item.subscriptionSuggestion.kind === 'membership' ? '会员' : '数字订阅'}”，建议后续加入订阅管理。{item.subscriptionSuggestion.reason}
               </small>
             ) : null}
-            <p className={item.issues.length ? 'assistant-wb-issue error' : 'assistant-wb-issue'}>
+            <p
+              className={
+                item.issues.some((issue) => issue.needsReview) &&
+                item.issues.every((issue) => issue.needsReview)
+                  ? 'assistant-wb-issue review'
+                  : item.issues.length
+                    ? 'assistant-wb-issue error'
+                    : 'assistant-wb-issue'
+              }
+            >
               {issueText(item)}
             </p>
           </article>

@@ -1,4 +1,4 @@
-export type InvestmentCategory =
+﻿export type InvestmentCategory =
   | 'cash'
   | 'fixed-income'
   | 'index-fund'
@@ -17,6 +17,8 @@ export interface InvestmentPosition {
   linkedAccountId?: string;
   investedAmount: number;
   currentValue: number;
+  fundCode?: string;
+  holdingShares?: number;
   monthlyContribution?: number;
   targetAllocation?: number;
   riskLevel: InvestmentRiskLevel;
@@ -37,6 +39,8 @@ export interface InvestmentPositionHistoryEntry {
   action: InvestmentPositionHistoryAction;
   investedAmount: number;
   currentValue: number;
+  fundCode?: string;
+  holdingShares?: number;
   profit: number;
   profitRate: number;
   investedAmountDelta?: number;

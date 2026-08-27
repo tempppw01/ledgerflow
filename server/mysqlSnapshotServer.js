@@ -41,6 +41,7 @@ const WEBDAV_ALLOWED_HOSTS = String(process.env.LEDGERFLOW_WEBDAV_ALLOWED_HOSTS 
 const WEBDAV_PROXY_METHODS = new Set(['GET', 'PUT', 'DELETE', 'MKCOL', 'MOVE', 'PROPFIND']);
 let sqliteDatabaseModulePromise;
 const eastmoneyStockQuoteCache = new Map();
+const eastmoneyStockSearchCache = new Map();
 const globalMarketQuoteCache = new Map();
 const globalMarketHistoryCache = new Map();
 const eastmoneyMarketProxyCache = new Map();
@@ -484,6 +485,71 @@ async function getEastmoneyStockQuotes(secIds) {
   }
 }
 
+function normalizeEastmoneyStockSearchQuery(value) {
+  const query = String(value || '').trim().slice(0, 32);
+  return query.replace(/\s+/g, ' ');
+}
+
+async function getEastmoneyStockSearchResults(query, pageSize) {
+  if (!query) return [];
+
+  const cacheKey = `${query}:${pageSize}`;
+  const cached = eastmoneyStockSearchCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  const upstreamUrl =
+    'https://searchapi.eastmoney.com/api/suggest/get?input=' +
+    encodeURIComponent(query) +
+    '&type=14&token=D43BF722C8E33BBA7C38C4B8B92F62CC&count=' +
+    encodeURIComponent(String(pageSize));
+
+  try {
+    const response = await fetch(upstreamUrl, {
+      headers: {
+        Accept: 'application/json,text/plain,*/*',
+        Referer: 'https://quote.eastmoney.com/',
+        'User-Agent': 'Mozilla/5.0 LedgerFlow market-data-proxy'
+      },
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      throw new Error(`Eastmoney stock search endpoint returned HTTP ${response.status}.`);
+    }
+
+    const payload = await response.json();
+    const results = (payload?.QuotationCodeTable?.Data || [])
+      .map((item) => {
+        const code = String(item?.Code || '').trim();
+        const market = String(item?.MktNum ?? item?.MarketType ?? '').trim();
+        return {
+          code,
+          name: String(item?.Name || '').trim() || code,
+          secId: String(item?.QuoteID || (market && code ? `${market}.${code}` : '')).trim(),
+          market,
+          securityType: String(item?.SecurityType || '').trim(),
+          securityTypeName: String(item?.SecurityTypeName || '').trim(),
+          pinyin: String(item?.PinYin || '').trim()
+        };
+      })
+      .filter((item) => item.code && item.name && item.secId);
+
+    const value = results.slice(0, pageSize);
+    eastmoneyStockSearchCache.set(cacheKey, {
+      value,
+      expiresAt: Date.now() + 2 * 60 * 1000
+    });
+    return value;
+  } catch (error) {
+    if (cached) return cached.value;
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function normalizeEastmoneyMarketSecIds(value, maxItems = 32) {
   return Array.from(
     new Set(
@@ -578,6 +644,115 @@ async function getEastmoneyMarketProxyPayload(cacheKey, upstreamUrl) {
     if (eastmoneyMarketProxyCache.has(cacheKey)) {
       return eastmoneyMarketProxyCache.get(cacheKey);
     }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+const TONGHUASHUN_NEWS_CACHE = new Map();
+const TONGHUASHUN_NEWS_PATHS = {
+  today: 'yaowen',
+  yaowen: 'yaowen',
+  macro: 'cjzx_list',
+  industry: 'cjkx_list',
+  global: 'guojicj_list',
+  market: 'jrsc_list',
+  commentary: 'fortune_list'
+};
+
+function normalizeTonghuashunNewsCategory(value) {
+  const category = String(value || '').trim().toLowerCase();
+  return TONGHUASHUN_NEWS_PATHS[category] || 'yaowen';
+}
+
+function decodeTonghuashunHtml(buffer) {
+  return new TextDecoder('gbk').decode(buffer);
+}
+
+function decodeHtmlEntities(value) {
+  return value
+    .replace(/&ensp;/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&middot;/g, '·')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function parseTonghuashunNewsHtml(html) {
+  const itemBlocks = Array.from(html.matchAll(/<li>([\s\S]*?)<\/li>/gi)).map((match) => match[1]);
+  const news = [];
+
+  for (const block of itemBlocks) {
+    if (!block.includes('arc-title')) continue;
+
+    const titleAnchor = block.match(
+      /<a[^>]*class="[^"]*news-link[^"]*"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i
+    );
+    if (!titleAnchor) continue;
+
+    const link = String(titleAnchor[1] || '').trim().replace(/^http:/i, 'https:');
+    const title = decodeHtmlEntities(String(titleAnchor[2] || '').replace(/<[^>]+>/g, ''));
+    const timeMatch = titleAnchor[0]
+      .split(/<\/a>/i)
+      .slice(1)
+      .join('</a>')
+      .match(/<span>([^<]*)<\/span>/i);
+    const publishedAt = decodeHtmlEntities(String(timeMatch?.[1] || ''));
+    const summaryAnchor = block.match(
+      /<a[^>]*class="[^"]*arc-cont[^"]*"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i
+    );
+    const summary = decodeHtmlEntities(String(summaryAnchor?.[2] || '').replace(/<[^>]+>/g, ''));
+    const id = `${decodeHtmlEntities(title)}-${link}`;
+
+    if (!title || !link) continue;
+    news.push({
+      id,
+      title,
+      source: '同花顺财经',
+      link,
+      publishedAt,
+      summary
+    });
+    if (news.length >= 24) break;
+  }
+
+  return news;
+}
+
+async function fetchTonghuashunNews(category) {
+  const cacheKey = `tonghuashun-news:${category}`;
+  const cached = TONGHUASHUN_NEWS_CACHE.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const upstreamUrl = `https://news.10jqka.com.cn/${category}/`;
+    const response = await fetch(upstreamUrl, {
+      headers: {
+        Accept: 'text/html,application/xhtml+xml',
+        Referer: 'https://news.10jqka.com.cn/',
+        'User-Agent': 'Mozilla/5.0 LedgerFlow tonghuashun-news-proxy'
+      },
+      signal: controller.signal
+    });
+    if (!response.ok) {
+      throw new Error(`Tonghuashun news endpoint returned HTTP ${response.status}.`);
+    }
+
+    const html = decodeTonghuashunHtml(await response.arrayBuffer());
+    const news = parseTonghuashunNewsHtml(html);
+    TONGHUASHUN_NEWS_CACHE.set(cacheKey, {
+      value: news,
+      expiresAt: Date.now() + 60 * 1000
+    });
+    return news;
+  } catch (error) {
+    if (cached) return cached.value;
     throw error;
   } finally {
     clearTimeout(timeout);
@@ -1217,6 +1392,25 @@ export async function handleRequest(req, res) {
       return;
     }
 
+    if (req.method === 'GET' && pathname === '/market/eastmoney/stock-search') {
+      const query = normalizeEastmoneyStockSearchQuery(url.searchParams.get('query'));
+      const pageSize = Math.min(
+        12,
+        Math.max(1, Number(url.searchParams.get('pageSize') || 8) || 8)
+      );
+      if (!query) {
+        jsonResponse(res, 400, { ok: false, message: 'Missing stock search query.' });
+        return;
+      }
+      jsonResponse(res, 200, {
+        ok: true,
+        data: {
+          results: await getEastmoneyStockSearchResults(query, pageSize)
+        }
+      });
+      return;
+    }
+
     if (req.method === 'GET' && pathname === '/market/eastmoney/quotes') {
       const secIds = normalizeEastmoneyMarketSecIds(url.searchParams.get('secids'));
       if (secIds.length === 0) {
@@ -1321,6 +1515,24 @@ export async function handleRequest(req, res) {
         upstreamUrl
       );
       jsonResponse(res, 200, { ok: true, data: payload });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/market/tonghuashun/news') {
+      const category = normalizeTonghuashunNewsCategory(url.searchParams.get('category'));
+      const pageSize = Math.min(
+        24,
+        Math.max(1, Number(url.searchParams.get('pageSize') || 12) || 12)
+      );
+      const news = (await fetchTonghuashunNews(category)).slice(0, pageSize);
+      jsonResponse(res, 200, {
+        ok: true,
+        data: {
+          news,
+          category,
+          updatedAt: new Date().toISOString()
+        }
+      });
       return;
     }
 
