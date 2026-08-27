@@ -1568,10 +1568,10 @@ button.danger:hover:not(:disabled) {
   display: flex;
   gap: var(--space-2);
   flex-wrap: wrap;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--color-primary-soft) 35%, var(--color-bg-elevated));
+  padding: 8px 2px;
+  border-top: 1px solid var(--color-border-light);
+  border-bottom: 1px solid var(--color-border-light);
+  background: transparent;
   color: var(--color-text-secondary);
   font-size: var(--font-sm);
 }
@@ -1580,9 +1580,7 @@ button.danger:hover:not(:disabled) {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--color-bg-elevated) 82%, transparent);
+  padding: 3px 0;
 }
 
 .transactions-page > * {
@@ -1651,11 +1649,11 @@ button.danger:hover:not(:disabled) {
 
 .transactions-side-chart-card {
   align-self: start;
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
-  padding: var(--space-3);
-  background: var(--color-bg-elevated);
-  box-shadow: var(--shadow-xs);
+  border-top: 1px solid var(--color-border-light);
+  border-radius: 0;
+  padding: var(--space-3) 2px;
+  background: transparent;
+  box-shadow: none;
   transition:
     transform var(--transition-base),
     box-shadow var(--transition-base),
@@ -1666,11 +1664,11 @@ button.danger:hover:not(:disabled) {
 .transactions-current-bill-panel {
   display: grid;
   gap: var(--space-2);
-  padding: 12px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border-light);
-  background: color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-primary-bg));
-  box-shadow: var(--shadow-xs);
+  padding: 10px 0;
+  border-radius: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
   transition:
     transform var(--transition-base),
     box-shadow var(--transition-base),
@@ -1685,10 +1683,10 @@ button.danger:hover:not(:disabled) {
 }
 
 .transactions-current-bill-grid > div {
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-sm);
-  background: var(--color-bg-subtle);
-  padding: 8px 10px;
+  border-left: 2px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+  border-radius: 0;
+  background: transparent;
+  padding: 2px 8px;
   display: grid;
   gap: 4px;
 }
@@ -1715,10 +1713,10 @@ button.danger:hover:not(:disabled) {
 .transactions-side-quick-filters {
   display: grid;
   gap: 10px;
-  padding: 10px;
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--color-bg-elevated) 88%, var(--color-primary-bg));
+  padding: 10px 0;
+  border-top: 1px solid var(--color-border-light);
+  border-radius: 0;
+  background: transparent;
 }
 
 .transactions-side-quick-filter-row {
@@ -1746,8 +1744,8 @@ button.danger:hover:not(:disabled) {
 
 .transactions-current-bill-max {
   text-align: left;
-  border: 1px solid var(--color-border-light);
-  background: color-mix(in srgb, var(--color-warning) 16%, var(--color-bg-elevated));
+  border: 0;
+  background: transparent;
   color: var(--color-text);
 }
 

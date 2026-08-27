@@ -143,17 +143,18 @@
   border-collapse: separate;
   border-spacing: 0;
   background: var(--color-bg-elevated);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  border-radius: 0;
+  overflow: visible;
+  box-shadow: none;
+  border-top: 1px solid var(--border-color);
 }
 
 .transactions-table thead {
   position: sticky;
   top: 0;
   z-index: 5;
-  background: var(--gradient-surface-muted);
-  border-bottom: 2px solid var(--color-primary-border);
+  background: var(--color-bg-elevated);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .transactions-table th {
