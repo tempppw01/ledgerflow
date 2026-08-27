@@ -34,6 +34,7 @@ import {
 const DEFAULT_PORT = 8787;
 const MAX_BODY_BYTES = Number(process.env.LEDGERFLOW_MAX_BODY_BYTES || 50 * 1024 * 1024);
 const API_TOKEN = String(process.env.LEDGERFLOW_API_TOKEN || '').trim();
+const GLOBAL_TREND_CACHE_TTL_MS = 30 * 1000;
 const WEBDAV_ALLOWED_HOSTS = String(process.env.LEDGERFLOW_WEBDAV_ALLOWED_HOSTS || '')
   .split(',')
   .map((item) => item.trim().toLowerCase())
@@ -44,6 +45,7 @@ const eastmoneyStockQuoteCache = new Map();
 const eastmoneyStockSearchCache = new Map();
 const globalMarketQuoteCache = new Map();
 const globalMarketHistoryCache = new Map();
+const globalMarketTrendCache = new Map();
 const eastmoneyMarketProxyCache = new Map();
 
 function readMemoryMarketHistory(cache, cacheKey) {
@@ -834,6 +836,48 @@ function parseYahooMarketHistory(payload) {
     .filter(Boolean);
 }
 
+function parseYahooMarketTrend(index, payload) {
+  const result = payload?.chart?.result?.[0];
+  const timestamps = Array.isArray(result?.timestamp) ? result.timestamp : [];
+  const quote = result?.indicators?.quote?.[0] || {};
+  const closes = Array.isArray(quote.close) ? quote.close : [];
+  const opens = Array.isArray(quote.open) ? quote.open : [];
+  const highs = Array.isArray(quote.high) ? quote.high : [];
+  const lows = Array.isArray(quote.low) ? quote.low : [];
+  const volumes = Array.isArray(quote.volume) ? quote.volume : [];
+
+  return timestamps
+    .map((timestamp, pointIndex) => {
+      const date = new Date(Number(timestamp) * 1000);
+      const value = Number(closes[pointIndex]);
+      if (!Number.isFinite(date.getTime()) || !Number.isFinite(value)) return null;
+      const previousValue = Number(closes[pointIndex - 1]);
+      const changePercent =
+        Number.isFinite(previousValue) && previousValue !== 0
+          ? ((value - previousValue) / previousValue) * 100
+          : null;
+      const label = `${String(date.getHours()).padStart(2, '0')}:${String(
+        date.getMinutes()
+      ).padStart(2, '0')}`;
+
+      return {
+        dateTime: date.toISOString(),
+        label,
+        value,
+        open: Number.isFinite(Number(opens[pointIndex])) ? Number(opens[pointIndex]) : value,
+        high: Number.isFinite(Number(highs[pointIndex])) ? Number(highs[pointIndex]) : value,
+        low: Number.isFinite(Number(lows[pointIndex])) ? Number(lows[pointIndex]) : value,
+        average: null,
+        changePercent,
+        volume: Number.isFinite(Number(volumes[pointIndex]))
+          ? Number(volumes[pointIndex])
+          : null,
+        amount: null
+      };
+    })
+    .filter(Boolean);
+}
+
 async function getYahooGlobalMarketQuotes() {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
@@ -921,6 +965,45 @@ async function getYahooGlobalMarketHistory(index, dates) {
     if (memoryFallback) return memoryFallback;
     const persistedFallback = await readMarketHistoryCache(cacheKey, { allowExpired: true });
     if (persistedFallback?.payload) return persistedFallback.payload;
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function getYahooGlobalMarketTrend(index) {
+  const cacheKey = `global-trend:${index.id}`;
+  const memoryCachedEntry = globalMarketTrendCache.get(cacheKey);
+  if (memoryCachedEntry?.expiresAt > Date.now()) return memoryCachedEntry.value;
+  if (memoryCachedEntry) globalMarketTrendCache.delete(cacheKey);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
+        index.symbol
+      )}?interval=5m&range=1d`,
+      {
+        headers: {
+          Accept: 'application/json',
+          'User-Agent': 'Mozilla/5.0 LedgerFlow market-data-proxy'
+        },
+        signal: controller.signal
+      }
+    );
+    if (!response.ok) throw new Error(`Yahoo Finance trend ${index.symbol} is unavailable.`);
+    const points = parseYahooMarketTrend(index, await response.json());
+    if (points.length === 0) throw new Error(`Yahoo Finance trend ${index.symbol} is empty.`);
+    const result = { points, updatedAt: new Date().toISOString(), source: 'Yahoo Finance' };
+    globalMarketTrendCache.set(cacheKey, {
+      value: result,
+      expiresAt: Date.now() + GLOBAL_TREND_CACHE_TTL_MS
+    });
+    return result;
+  } catch (error) {
+    const memoryFallbackEntry = globalMarketTrendCache.get(cacheKey);
+    if (memoryFallbackEntry?.value) return memoryFallbackEntry.value;
     throw error;
   } finally {
     clearTimeout(timeout);
@@ -1619,6 +1702,23 @@ export async function handleRequest(req, res) {
         ok: true,
         data,
         meta: { id: index.id, symbol: index.symbol, start: dates.start, end: dates.end, range: dates.range }
+      });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/market/global-trend') {
+      const index = GLOBAL_MARKET_INDEXES.find(
+        (item) => item.id === String(url.searchParams.get('id') || '').trim()
+      );
+      if (!index) {
+        jsonResponse(res, 400, { ok: false, message: 'Missing or invalid global market trend parameters.' });
+        return;
+      }
+      const data = await getYahooGlobalMarketTrend(index);
+      jsonResponse(res, 200, {
+        ok: true,
+        data,
+        meta: { id: index.id, symbol: index.symbol, interval: '5m', range: '1d' }
       });
       return;
     }

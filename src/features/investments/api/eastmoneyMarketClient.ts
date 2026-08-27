@@ -80,6 +80,19 @@ export interface GlobalMarketOverview {
 
 export type GlobalMarketHistoryPoint = EastmoneyMarketHistoryPoint;
 
+export interface GlobalMarketTrendPoint {
+  dateTime: string;
+  label: string;
+  value: number;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  average: number | null;
+  changePercent: number | null;
+  volume: number | null;
+  amount: number | null;
+}
+
 export interface EastmoneyMarketNewsCategory {
   id: string;
   label: string;
@@ -222,6 +235,14 @@ type GlobalMarketPayload = {
 type GlobalMarketHistoryPayload = {
   data?: {
     points?: Array<Partial<GlobalMarketHistoryPoint>>;
+  };
+};
+
+type GlobalMarketTrendPayload = {
+  data?: {
+    points?: Array<Partial<GlobalMarketTrendPoint>>;
+    updatedAt?: string;
+    source?: string;
   };
 };
 
@@ -557,6 +578,33 @@ export async function fetchGlobalMarketHistory(
       } satisfies GlobalMarketHistoryPoint;
     })
     .filter((item): item is GlobalMarketHistoryPoint => Boolean(item));
+}
+
+export async function fetchGlobalMarketTrend(indexId: string): Promise<GlobalMarketTrendPoint[]> {
+  const params = new URLSearchParams({ id: indexId });
+  const response = await fetch(`/api/market/global-trend?${params.toString()}`);
+  if (!response.ok) throw new Error('国际大盘实时走势加载失败，请稍后重试。');
+
+  const payload = (await response.json()) as GlobalMarketTrendPayload;
+  return (payload.data?.points || [])
+    .map((item) => {
+      const dateTime = String(item.dateTime || '').trim();
+      const value = toNullableNumber(item.value);
+      if (!dateTime || value === null) return null;
+      return {
+        dateTime,
+        label: String(item.label || '').trim(),
+        value,
+        open: toNullableNumber(item.open),
+        high: toNullableNumber(item.high),
+        low: toNullableNumber(item.low),
+        average: toNullableNumber(item.average),
+        changePercent: toNullableNumber(item.changePercent),
+        volume: toNullableNumber(item.volume),
+        amount: toNullableNumber(item.amount)
+      } satisfies GlobalMarketTrendPoint;
+    })
+    .filter((item): item is GlobalMarketTrendPoint => Boolean(item));
 }
 
 export async function fetchEastmoneyMarketNews(

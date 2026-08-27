@@ -35,6 +35,7 @@ import {
   fetchEastmoneyMarketThemeBoards,
   fetchGlobalMarketHistory,
   fetchGlobalMarketOverview,
+  fetchGlobalMarketTrend,
   type EastmoneyMarketBoard,
   type EastmoneyMarketConstituent,
   type EastmoneyMarketHistoryPoint,
@@ -45,6 +46,8 @@ import {
   type EastmoneyStockSearchResult,
   type EastmoneyMarketTheme,
   type EastmoneyMarketTrendPoint,
+  type GlobalMarketHistoryPoint,
+  type GlobalMarketTrendPoint,
   type GlobalMarketQuote
 } from '../../features/investments/api/eastmoneyMarketClient';
 import {
@@ -195,6 +198,23 @@ type MarketTrendChartPoint = EastmoneyMarketTrendPoint & {
   x: number;
   y: number;
   index: number;
+};
+
+type GlobalMarketTrendChartPoint = GlobalMarketTrendPoint & {
+  x: number;
+  y: number;
+  index: number;
+};
+
+type GlobalKlineChartPoint = {
+  label: string;
+  value: number;
+  x: number;
+  openY: number;
+  highY: number;
+  lowY: number;
+  closeY: number;
+  tone: 'is-positive' | 'is-negative' | 'is-flat';
 };
 
 function formatWatchPerformanceCaption(value: number) {
@@ -1406,6 +1426,168 @@ function buildMarketTrendGeometry(points: EastmoneyMarketTrendPoint[]) {
   };
 }
 
+const GLOBAL_CHART_WIDTH = 560;
+const GLOBAL_CHART_HEIGHT = 224;
+const GLOBAL_CHART_PADDING = {
+  left: 46,
+  right: 10,
+  top: 16,
+  bottom: 18
+};
+
+function buildGlobalTrendChartGeometry(points: GlobalMarketTrendPoint[]) {
+  const width = GLOBAL_CHART_WIDTH;
+  const height = GLOBAL_CHART_HEIGHT;
+  const paddingLeft = GLOBAL_CHART_PADDING.left;
+  const paddingRight = GLOBAL_CHART_PADDING.right;
+  const paddingTop = GLOBAL_CHART_PADDING.top;
+  const paddingBottom = GLOBAL_CHART_PADDING.bottom;
+  const usableWidth = width - paddingLeft - paddingRight;
+  const usableHeight = height - paddingTop - paddingBottom;
+  const values = points.map((item) => item.value).filter((value) => Number.isFinite(value));
+
+  if (values.length < 2) {
+    return {
+      width,
+      height,
+      linePath: '',
+      areaPath: '',
+      min: null as number | null,
+      max: null as number | null,
+      mid: null as number | null,
+      plotLeft: paddingLeft,
+      plotRight: width - paddingRight,
+      plotTop: paddingTop,
+      plotBottom: height - paddingBottom,
+      points: [] as GlobalMarketTrendChartPoint[],
+      labels: [] as string[]
+    };
+  }
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const spread = Math.max(max - min, 0.01);
+  const coords = points.map((point, index) => {
+    const x = paddingLeft + (index / Math.max(points.length - 1, 1)) * usableWidth;
+    const y = paddingTop + (1 - (point.value - min) / spread) * usableHeight;
+    return { ...point, x, y, index };
+  });
+  const linePath = coords
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
+    .join(' ');
+  const first = coords[0];
+  const last = coords[coords.length - 1];
+  const areaPath = `${linePath} L ${last.x.toFixed(2)} ${(height - paddingBottom).toFixed(
+    2
+  )} L ${first.x.toFixed(2)} ${(height - paddingBottom).toFixed(2)} Z`;
+  const middle = points[Math.floor(points.length / 2)];
+
+  return {
+    width,
+    height,
+    linePath,
+    areaPath,
+    min,
+    max,
+    mid: min + spread / 2,
+    plotLeft: paddingLeft,
+    plotRight: width - paddingRight,
+    plotTop: paddingTop,
+    plotBottom: height - paddingBottom,
+    points: coords,
+    labels: [points[0]?.label, middle?.label, points[points.length - 1]?.label].filter(Boolean)
+  };
+}
+
+function buildGlobalKlineChartGeometry(points: GlobalMarketHistoryPoint[]) {
+  const width = GLOBAL_CHART_WIDTH;
+  const height = GLOBAL_CHART_HEIGHT;
+  const paddingLeft = GLOBAL_CHART_PADDING.left;
+  const paddingRight = GLOBAL_CHART_PADDING.right;
+  const paddingTop = GLOBAL_CHART_PADDING.top;
+  const paddingBottom = GLOBAL_CHART_PADDING.bottom;
+  const usableWidth = width - paddingLeft - paddingRight;
+  const usableHeight = height - paddingTop - paddingBottom;
+  const chartPoints = points
+    .map((point, index) => ({
+      point,
+      index,
+      open: point.open ?? point.value,
+      high: point.high ?? point.value,
+      low: point.low ?? point.value,
+      close: point.value
+    }))
+    .filter(
+      (
+        item
+      ): item is {
+        point: GlobalMarketHistoryPoint;
+        index: number;
+        open: number;
+        high: number;
+        low: number;
+        close: number;
+      } =>
+        Number.isFinite(item.open) &&
+        Number.isFinite(item.high) &&
+        Number.isFinite(item.low) &&
+        Number.isFinite(item.close)
+    );
+
+  if (chartPoints.length === 0) {
+    return {
+      width,
+      height,
+      min: null as number | null,
+      max: null as number | null,
+      plotLeft: paddingLeft,
+      plotRight: width - paddingRight,
+      plotTop: paddingTop,
+      plotBottom: height - paddingBottom,
+      candles: [] as GlobalKlineChartPoint[],
+      labels: [] as string[]
+    };
+  }
+
+  const min = Math.min(...chartPoints.map((item) => item.low));
+  const max = Math.max(...chartPoints.map((item) => item.high));
+  const spread = Math.max(max - min, 0.01);
+  const candles = chartPoints.map((item) => {
+    const x = paddingLeft + (item.index / Math.max(chartPoints.length - 1, 1)) * usableWidth;
+    const y = (value: number) => paddingTop + (1 - (value - min) / spread) * usableHeight;
+    const openY = y(item.open);
+    const closeY = y(item.close);
+    const tone =
+      item.close > item.open ? 'is-positive' : item.close < item.open ? 'is-negative' : 'is-flat';
+    return {
+      label: item.point.date,
+      value: item.close,
+      x,
+      openY,
+      highY: y(item.high),
+      lowY: y(item.low),
+      closeY,
+      tone
+    };
+  });
+  const firstPoint = chartPoints[0].point;
+  const middlePoint = chartPoints[Math.floor(chartPoints.length / 2)].point;
+  const lastPoint = chartPoints[chartPoints.length - 1].point;
+
+  return {
+    width,
+    height,
+    min,
+    max,
+    plotLeft: paddingLeft,
+    plotRight: width - paddingRight,
+    plotTop: paddingTop,
+    plotBottom: height - paddingBottom,
+    candles,
+    labels: [firstPoint.date, middlePoint.date, lastPoint.date].filter(Boolean)
+  };
+}
+
 const MARKET_HISTORY_RANGES: Array<{
   id: EastmoneyMarketHistoryRange;
   label: string;
@@ -1871,6 +2053,26 @@ function MarketOverviewPanel({
   const hoveredTrendPoint = hoveredTrendIndex === null ? null : activeTrendPoint;
   const globalQuoteById = new Map(globalQuotes.map((quote) => [quote.id, quote]));
   const isAnyMarketOpen = isLiveMarketPollingTime();
+  const [selectedGlobalId, setSelectedGlobalId] = useState<string | null>(null);
+  const [globalChartMode, setGlobalChartMode] = useState<'line' | 'kline'>('line');
+  const [globalTrendPoints, setGlobalTrendPoints] = useState<GlobalMarketTrendPoint[]>([]);
+  const [globalKlinePoints, setGlobalKlinePoints] = useState<GlobalMarketHistoryPoint[]>([]);
+  const [globalChartStatus, setGlobalChartStatus] = useState<'idle' | 'loading' | 'error'>(
+    'idle'
+  );
+  const [globalChartError, setGlobalChartError] = useState('');
+  const [hoveredGlobalPointIndex, setHoveredGlobalPointIndex] = useState<number | null>(null);
+  const selectedGlobalIndex = GLOBAL_MARKET_INDEXES.find((item) => item.id === selectedGlobalId);
+  const selectedGlobalQuote =
+    selectedGlobalId === null ? undefined : globalQuoteById.get(selectedGlobalId);
+  const globalTrendChart = buildGlobalTrendChartGeometry(globalTrendPoints);
+  const globalKlineChart = buildGlobalKlineChartGeometry(globalKlinePoints);
+  const globalActiveTrendPoint =
+    globalTrendChart.points[
+      hoveredGlobalPointIndex ?? globalTrendChart.points.length - 1
+    ] || globalTrendChart.points[globalTrendChart.points.length - 1] || null;
+  const globalHoveredTrendPoint =
+    hoveredGlobalPointIndex === null ? null : globalActiveTrendPoint;
   const quoteUpdateSignature = [
     ...quotes.map((quote) => `cn:${quote.secId}:${quote.value ?? ''}:${quote.changePercent ?? ''}`),
     ...globalQuotes.map(
@@ -1881,6 +2083,47 @@ function MarketOverviewPanel({
   useEffect(() => {
     setHoveredTrendIndex(null);
   }, [selectedSecId]);
+
+  useEffect(() => {
+    if (!selectedGlobalId) {
+      setGlobalTrendPoints([]);
+      setGlobalKlinePoints([]);
+      setGlobalChartStatus('idle');
+      setGlobalChartError('');
+      setHoveredGlobalPointIndex(null);
+      return;
+    }
+
+    let cancelled = false;
+    setGlobalChartStatus('loading');
+    setGlobalChartError('');
+    setHoveredGlobalPointIndex(null);
+
+    const request =
+      globalChartMode === 'line'
+        ? fetchGlobalMarketTrend(selectedGlobalId).then((points) => {
+            if (!cancelled) setGlobalTrendPoints(points);
+          })
+        : fetchGlobalMarketHistory(selectedGlobalId, { range: '1m' }).then((points) => {
+            if (!cancelled) setGlobalKlinePoints(points);
+          });
+
+    request
+      .then(() => {
+        if (!cancelled) setGlobalChartStatus('idle');
+      })
+      .catch((reason: unknown) => {
+        if (cancelled) return;
+        setGlobalChartStatus('error');
+        setGlobalChartError(
+          reason instanceof Error ? reason.message : '国际大盘走势加载失败，请稍后重试。'
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [globalChartMode, selectedGlobalId]);
 
   useEffect(() => {
     const currentValues = new Map<string, string>();
@@ -1937,6 +2180,38 @@ function MarketOverviewPanel({
     setHoveredTrendIndex(closestIndex);
   }
 
+  function handleGlobalCardSelect(indexId: string) {
+    setSelectedGlobalId((current) => (current === indexId ? null : indexId));
+    setGlobalChartMode('line');
+    setGlobalTrendPoints([]);
+    setGlobalKlinePoints([]);
+    setGlobalChartStatus('idle');
+    setGlobalChartError('');
+    setHoveredGlobalPointIndex(null);
+  }
+
+  function handleGlobalTrendPointerMove(event: MouseEvent<HTMLDivElement>) {
+    if (!globalTrendChart.points.length) return;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (rect.width <= 0) return;
+
+    const x =
+      ((event.clientX - rect.left) / rect.width) * globalTrendChart.width;
+    let closestIndex = 0;
+    let closestDistance = Number.POSITIVE_INFINITY;
+
+    globalTrendChart.points.forEach((point, index) => {
+      const distance = Math.abs(point.x - x);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+
+    setHoveredGlobalPointIndex(closestIndex);
+  }
+
   const activeTrendText =
     activeTrendPoint && Number.isFinite(activeTrendPoint.value)
       ? `${activeTrendPoint.label || '当前'} · ${formatMarketIndexValue(activeTrendPoint.value)}`
@@ -1983,7 +2258,17 @@ function MarketOverviewPanel({
                 key={index.id}
                 className={`investments-global-quote-card ${tone} ${
                   flashingQuoteIds.has(`global:${index.id}`) ? 'is-updating' : ''
-                }`}
+                } ${selectedGlobalId === index.id ? 'is-selected' : ''}`}
+                role="button"
+                tabIndex={0}
+                aria-pressed={selectedGlobalId === index.id}
+                onClick={() => handleGlobalCardSelect(index.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    handleGlobalCardSelect(index.id);
+                  }
+                }}
               >
                 <div className="investments-global-quote-name">
                   <span>
@@ -1999,6 +2284,250 @@ function MarketOverviewPanel({
           })}
         </div>
       </div>
+
+      {selectedGlobalId && selectedGlobalIndex ? (
+        <section className="investments-global-trend-panel" aria-label="国际大盘走势图">
+          <div className="investments-global-trend-head">
+            <div>
+              <strong>
+                {selectedGlobalIndex.flag} {selectedGlobalIndex.market} · {selectedGlobalIndex.name}
+              </strong>
+              <span>
+                {selectedGlobalQuote
+                  ? `${formatMarketIndexValue(
+                      selectedGlobalQuote.value
+                    )} · 昨收 ${formatMarketIndexValue(selectedGlobalQuote.previousClose)}`
+                  : 'Yahoo Finance 实时走势'}
+              </span>
+            </div>
+            <div className="investments-global-trend-toggle" aria-label="走势图模式">
+              <button
+                type="button"
+                className={globalChartMode === 'line' ? 'is-active' : ''}
+                onClick={() => setGlobalChartMode('line')}
+              >
+                分时
+              </button>
+              <button
+                type="button"
+                className={globalChartMode === 'kline' ? 'is-active' : ''}
+                onClick={() => setGlobalChartMode('kline')}
+              >
+                K 线
+              </button>
+            </div>
+          </div>
+
+          <div className="investments-global-trend-stage">
+            {globalChartMode === 'line' ? (
+              globalTrendChart.linePath ? (
+                <div
+                  className="investments-market-chart-wrap"
+                  onMouseLeave={() => setHoveredGlobalPointIndex(null)}
+                >
+                  <div
+                    className="investments-market-chart-stage"
+                    onMouseMove={handleGlobalTrendPointerMove}
+                  >
+                    <svg
+                      className={`investments-market-chart ${getMarketTone(
+                        selectedGlobalQuote?.changePercent
+                      )}`}
+                      viewBox={`0 0 ${globalTrendChart.width} ${globalTrendChart.height}`}
+                      role="img"
+                      aria-label={`${selectedGlobalIndex.name}实时走势`}
+                    >
+                      <defs>
+                        <linearGradient
+                          id="investments-global-market-area"
+                          x1="0"
+                          x2="0"
+                          y1="0"
+                          y2="1"
+                        >
+                          <stop offset="0%" stopColor="currentColor" stopOpacity="0.22" />
+                          <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" />
+                        </linearGradient>
+                      </defs>
+                      <path
+                        className="investments-market-chart-area"
+                        d={globalTrendChart.areaPath}
+                      />
+                      {[0, 0.5, 1].map((ratio) => (
+                        <line
+                          key={ratio}
+                          className="investments-market-chart-grid"
+                          x1={globalTrendChart.plotLeft}
+                          x2={globalTrendChart.plotRight}
+                          y1={
+                            globalTrendChart.plotTop +
+                            (globalTrendChart.plotBottom - globalTrendChart.plotTop) * ratio
+                          }
+                          y2={
+                            globalTrendChart.plotTop +
+                            (globalTrendChart.plotBottom - globalTrendChart.plotTop) * ratio
+                          }
+                        />
+                      ))}
+                      {[0, 0.5, 1].map((ratio) => (
+                        <line
+                          key={`baseline-${ratio}`}
+                          className="investments-market-chart-baseline"
+                          x1={globalTrendChart.plotLeft}
+                          x2={globalTrendChart.plotRight}
+                          y1={globalTrendChart.plotTop + (globalTrendChart.plotBottom - globalTrendChart.plotTop) * ratio}
+                          y2={globalTrendChart.plotTop + (globalTrendChart.plotBottom - globalTrendChart.plotTop) * ratio}
+                        />
+                      ))}
+                      {[
+                        { label: globalTrendChart.max, y: globalTrendChart.plotTop },
+                        { label: globalTrendChart.mid, y: (globalTrendChart.plotTop + globalTrendChart.plotBottom) / 2 },
+                        { label: globalTrendChart.min, y: globalTrendChart.plotBottom }
+                      ].map((axis) => (
+                        <text
+                          key={`${axis.label}-${axis.y}`}
+                          className="investments-market-chart-axis-label"
+                          x="2"
+                          y={axis.y}
+                          dominantBaseline="middle"
+                        >
+                          {axis.label === null ? '' : formatMarketIndexValue(axis.label)}
+                        </text>
+                      ))}
+                      {globalHoveredTrendPoint ? (
+                        <>
+                          <line
+                            className="investments-market-chart-cursor"
+                            x1={globalHoveredTrendPoint.x}
+                            x2={globalHoveredTrendPoint.x}
+                            y1={globalTrendChart.plotTop}
+                            y2={globalTrendChart.plotBottom}
+                          />
+                          <circle
+                            className="investments-market-chart-point"
+                            cx={globalHoveredTrendPoint.x}
+                            cy={globalHoveredTrendPoint.y}
+                            r="4.5"
+                          />
+                        </>
+                      ) : null}
+                      <path
+                        className="investments-market-chart-line"
+                        d={globalTrendChart.linePath}
+                      />
+                    </svg>
+                    {globalHoveredTrendPoint ? (
+                      <div
+                        className="investments-market-chart-tooltip"
+                        style={{
+                          left: `${(globalHoveredTrendPoint.x / globalTrendChart.width) * 100}%`,
+                          top: `${Math.max(
+                            8,
+                            ((globalHoveredTrendPoint.y - 14) / globalTrendChart.height) * 100
+                          )}%`
+                        }}
+                        aria-hidden="true"
+                      >
+                        <strong>{globalHoveredTrendPoint.label}</strong>
+                        <span>{formatMarketIndexValue(globalHoveredTrendPoint.value)}</span>
+                      </div>
+                    ) : null}
+                  </div>
+                  {globalTrendChart.labels.length ? (
+                    <div className="investments-market-time-axis" aria-hidden="true">
+                      {globalTrendChart.labels.map((label, index) => (
+                        <span key={`${label}-${index}`}>{label}</span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="investments-market-chart-empty">
+                  <strong>
+                    {globalChartStatus === 'error'
+                      ? '走势暂时没有连上'
+                      : globalChartStatus === 'loading'
+                        ? '正在加载实时走势'
+                        : '等待实时走势'}
+                  </strong>
+                  <span>{globalChartError || 'Yahoo Finance 分时数据加载后会显示在这里。'}</span>
+                </div>
+              )
+            ) : globalKlineChart.candles.length ? (
+              <div className="investments-global-kline-wrap">
+                <svg
+                  className={`investments-global-kline-svg ${getMarketTone(
+                    selectedGlobalQuote?.changePercent
+                  )}`}
+                  viewBox={`0 0 ${globalKlineChart.width} ${globalKlineChart.height}`}
+                  role="img"
+                  aria-label={`${selectedGlobalIndex.name}K线图`}
+                >
+                  {[0, 0.5, 1].map((ratio) => (
+                    <line
+                      key={ratio}
+                      className="investments-market-chart-grid"
+                      x1={globalKlineChart.plotLeft}
+                      x2={globalKlineChart.plotRight}
+                      y1={globalKlineChart.plotTop + (globalKlineChart.plotBottom - globalKlineChart.plotTop) * ratio}
+                      y2={globalKlineChart.plotTop + (globalKlineChart.plotBottom - globalKlineChart.plotTop) * ratio}
+                    />
+                  ))}
+                  {[
+                    { label: globalKlineChart.max, y: globalKlineChart.plotTop },
+                    { label: (globalKlineChart.min ?? 0) + (globalKlineChart.max && globalKlineChart.min !== null ? (globalKlineChart.max - globalKlineChart.min) / 2 : 0), y: (globalKlineChart.plotTop + globalKlineChart.plotBottom) / 2 },
+                    { label: globalKlineChart.min, y: globalKlineChart.plotBottom }
+                  ].map((axis) => (
+                    <text
+                      key={`${axis.label}-${axis.y}`}
+                      className="investments-market-chart-axis-label"
+                      x="2"
+                      y={axis.y}
+                      dominantBaseline="middle"
+                    >
+                      {axis.label === null ? '' : formatMarketIndexValue(axis.label)}
+                    </text>
+                  ))}
+                  {globalKlineChart.candles.map((candle) => {
+                    const bodyTop = Math.min(candle.openY, candle.closeY);
+                    const bodyHeight = Math.max(2, Math.abs(candle.closeY - candle.openY));
+                    return (
+                      <g className={`investments-global-kline-candle ${candle.tone}`} key={candle.label}>
+                        <line x1={candle.x} x2={candle.x} y1={candle.highY} y2={candle.lowY} />
+                        <rect
+                          x={candle.x - 3}
+                          y={bodyTop}
+                          width="6"
+                          height={bodyHeight}
+                          rx="1"
+                        />
+                      </g>
+                    );
+                  })}
+                </svg>
+                {globalKlineChart.labels.length ? (
+                  <div className="investments-market-time-axis" aria-hidden="true">
+                    {globalKlineChart.labels.map((label, index) => (
+                      <span key={`${label}-${index}`}>{label}</span>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="investments-market-chart-empty">
+                <strong>
+                  {globalChartStatus === 'error'
+                    ? 'K 线暂时没有连上'
+                    : globalChartStatus === 'loading'
+                      ? '正在加载 K 线'
+                      : '等待 K 线数据'}
+                </strong>
+                <span>{globalChartError || 'Yahoo Finance 历史 K 线加载后会显示在这里。'}</span>
+              </div>
+            )}
+          </div>
+        </section>
+      ) : null}
 
       <div className="investments-market-index-rail">
         <div className="investments-market-tabs" role="tablist" aria-label="大盘指数">

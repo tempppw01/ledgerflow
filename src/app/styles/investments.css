@@ -922,6 +922,21 @@
     background-color 180ms ease,
     border-color 180ms ease,
     box-shadow 180ms ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.investments-global-quote-card:hover,
+.investments-global-quote-card:focus-visible,
+.investments-global-quote-card.is-selected {
+  border-left-color: color-mix(in srgb, var(--color-primary) 44%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-bg-elevated) 74%, var(--color-bg-subtle));
+  box-shadow: 0 7px 22px color-mix(in srgb, var(--color-primary) 10%, transparent);
+  transform: translateY(-1px);
+}
+
+.investments-global-quote-card.is-selected {
+  outline: 1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
 }
 
 .investments-global-quote-card.is-positive,
@@ -1070,6 +1085,128 @@
 .investments-global-quote-card > span.is-negative {
   color: var(--color-success);
   font-weight: 800;
+}
+
+.investments-global-trend-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 4px;
+  padding: 13px 0 4px;
+  border-top: 1px solid color-mix(in srgb, var(--color-border-light) 62%, transparent);
+}
+
+.investments-global-trend-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.investments-global-trend-head > div:first-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.investments-global-trend-head strong {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.investments-global-trend-head span {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.investments-global-trend-toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 78%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 66%, transparent);
+}
+
+.investments-global-trend-toggle button {
+  min-width: 42px;
+  padding: 4px 9px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.investments-global-trend-toggle button.is-active {
+  background: var(--color-bg-elevated);
+  color: var(--color-primary);
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+.investments-global-trend-stage {
+  min-width: 0;
+}
+
+.investments-global-kline-wrap {
+  display: grid;
+  gap: 8px;
+}
+
+.investments-global-kline-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 224px;
+  overflow: visible;
+  color: var(--color-primary);
+}
+
+.investments-global-kline-svg.is-positive {
+  color: var(--color-danger);
+}
+
+.investments-global-kline-svg.is-negative {
+  color: var(--color-success);
+}
+
+.investments-global-kline-candle line {
+  stroke: currentColor;
+  stroke-width: 1;
+  opacity: 0.7;
+}
+
+.investments-global-kline-candle rect {
+  fill: currentColor;
+  stroke: none;
+}
+
+.investments-global-kline-candle.is-positive {
+  color: var(--color-danger);
+}
+
+.investments-global-kline-candle.is-negative {
+  color: var(--color-success);
+}
+
+.investments-global-kline-candle.is-flat {
+  color: var(--color-text-secondary);
+}
+
+.investments-global-kline-wrap .investments-market-time-axis {
+  margin-top: 2px;
 }
 
 .investments-market-session {
