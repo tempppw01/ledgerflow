@@ -71,6 +71,87 @@ const DEFAULT_FORM = {
   status: 'active' as SubscriptionStatus
 };
 
+type SubscriptionTemplate = {
+  id: string;
+  name: string;
+  provider: string;
+  kind: SubscriptionKind;
+  amount: number;
+  currency: string;
+  billingCycle: SubscriptionBillingCycle;
+  autoRenew: boolean;
+  logoKind: 'apple' | 'music' | 'cloud' | 'netflix' | 'mobile' | 'member';
+};
+
+const SUBSCRIPTION_TEMPLATES: SubscriptionTemplate[] = [
+  {
+    id: 'apple-one',
+    name: 'Apple One',
+    provider: 'Apple',
+    kind: 'digital',
+    amount: 128,
+    currency: 'CNY',
+    billingCycle: 'monthly',
+    autoRenew: true,
+    logoKind: 'apple'
+  },
+  {
+    id: 'apple-music',
+    name: 'Apple Music',
+    provider: 'Apple',
+    kind: 'digital',
+    amount: 11,
+    currency: 'CNY',
+    billingCycle: 'monthly',
+    autoRenew: true,
+    logoKind: 'music'
+  },
+  {
+    id: 'icloud-plus',
+    name: 'iCloud+ 200GB',
+    provider: 'Apple',
+    kind: 'digital',
+    amount: 21,
+    currency: 'CNY',
+    billingCycle: 'monthly',
+    autoRenew: true,
+    logoKind: 'cloud'
+  },
+  {
+    id: 'netflix-standard',
+    name: 'Netflix 标准版',
+    provider: 'Netflix',
+    kind: 'digital',
+    amount: 78,
+    currency: 'CNY',
+    billingCycle: 'monthly',
+    autoRenew: true,
+    logoKind: 'netflix'
+  },
+  {
+    id: 'mobile-combo',
+    name: '手机话费套餐',
+    provider: '运营商',
+    kind: 'mobile',
+    amount: 59,
+    currency: 'CNY',
+    billingCycle: 'monthly',
+    autoRenew: true,
+    logoKind: 'mobile'
+  },
+  {
+    id: 'streaming-member',
+    name: '视频平台会员',
+    provider: '视频平台',
+    kind: 'membership',
+    amount: 25,
+    currency: 'CNY',
+    billingCycle: 'monthly',
+    autoRenew: true,
+    logoKind: 'member'
+  }
+];
+
 const SUBSCRIPTIONS_DEMO_SEEDED_KEY = 'ledgerflow-subscriptions-demo-seeded';
 
 function formatDateInputValue(date: Date) {
@@ -160,6 +241,56 @@ function normalizeShortcutDateInput(value: string) {
   }
 
   return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function SubscriptionTemplateLogo({ kind }: { kind: SubscriptionTemplate['logoKind'] }) {
+  if (kind === 'apple') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M17.05 20.28c-.98.95-2.05.86-3.08.36-1.09-.5-2.08-.52-3.21 0-1.41.65-2.16.47-3-.36C3.78 16.61 4.25 9.58 8.42 9.31c1.03.06 1.72.6 2.55.65.84.05 1.86-.38 2.88-.5 1.21-.03 1.87.26 2.56.68-.49.65-.9 1.28-1.05 2.12.58-.14 1.11-.37 1.69-.68Z" />
+        <path d="M14.96 5.6c.53-.66.79-1.56.67-2.6-.6.03-1.28.4-1.68.9-.41.51-.64 1.21-.54 1.95.66.05 1.3-.07 1.55.75Z" />
+      </svg>
+    );
+  }
+
+  if (kind === 'music') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M10 3.5c.2-1.7 1.5-3.06 3.25-3 1.2.04 2.05 1.02 2 2.2-.05 1.48-1.24 2.72-3.35 2.6V13H8.04v6.7c0 1.84-1.32 3.04-3.09 2.96-1.72-.08-2.95-1.32-2.95-3.03 0-1.72 1.25-2.96 2.97-2.88V7.45C5.08 4.83 7.05 3.63 10 5.72V3.5Zm3.7 9.73v5.78c0 1.68 1.05 2.88 2.68 2.8 1.64-.08 2.72-1.18 2.72-2.82 0-1.63-1.19-2.77-2.82-2.7-.31.02-.63.07-.92.15v-6.36c-.01-2.03 1.2-3.32 3.35-3.27.14.02.28.04.41.07-.34 1.37-1.24 2.4-2.5 3.2-.82.52-1.56 1.05-2.42 1.57Z" />
+      </svg>
+    );
+  }
+
+  if (kind === 'cloud') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M18.8 15.02c1.02-.87 1.68-2.17 1.68-3.71 0-2.66-2.01-4.73-4.53-4.79C15.24 4.13 13.17 2.8 10.86 2.8c-2.88 0-5.18 1.89-5.88 4.52C2.73 7.7 1 9.73 1 12.09c0 2.7 2.13 4.83 4.83 4.83h11.25c1.13 0 2.04-.41 2.72-1.9Z" />
+      </svg>
+    );
+  }
+
+  if (kind === 'netflix') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 4.7h4.05l4.45 9.04h.05L16 4.7h4.2v14.6h-3.45V9.84h-.05l-4.6 9.46H9.9L5.3 9.84h-.05v9.46H3V4.7Z" />
+      </svg>
+    );
+  }
+
+  if (kind === 'mobile') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7.06 2h9.88A1.97 1.97 0 0 1 19 3.98v16.04a1.97 1.97 0 0 1-2.06 1.98H7.06A1.97 1.97 0 0 1 5 20.02V3.98A1.97 1.97 0 0 1 7.06 2Zm3.08 17.2h3.72v-1.14h-3.72v1.14Z" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5.6 3h12.8A1.65 1.65 0 0 1 20 4.62v9.36c0 1.83-1.28 3.04-3.18 3.04H8.03l-3.36 3.06c-.54.5-1.07.37-1.07-.43V6.04A1.86 1.86 0 0 1 5.6 3Z" />
+      <path d="m8.87 10.04 2.14-1.35a.48.48 0 0 1 .5 0l2.13 1.35-1.9 2.52V15.3h-1.46v-2.74l-1.9-2.52h.49Z" />
+    </svg>
+  );
 }
 
 export function SubscriptionsPage() {
@@ -256,6 +387,25 @@ export function SubscriptionsPage() {
   const resetForm = () => {
     setForm(DEFAULT_FORM);
     setEditingId(null);
+    setError('');
+  };
+
+  const applySubscriptionTemplate = (template: SubscriptionTemplate) => {
+    const today = new Date();
+    const renewalDate = formatDateInputValue(shiftDate(today, 30));
+    setEditingId(null);
+    setForm({
+      ...DEFAULT_FORM,
+      name: template.name,
+      kind: template.kind,
+      amount: String(template.amount),
+      currency: template.currency,
+      billingCycle: template.billingCycle,
+      provider: template.provider,
+      autoRenew: template.autoRenew,
+      renewalDate,
+      expireDate: renewalDate
+    });
     setError('');
   };
 
@@ -438,6 +588,35 @@ export function SubscriptionsPage() {
                   ? '按自定义周期折算'
                   : CYCLE_LABELS[form.billingCycle]}
               </em>
+            </div>
+          </div>
+
+          <div className="subscriptions-template-panel" aria-label="订阅预设模板">
+            <div className="subscriptions-template-copy">
+              <h4>从常用模板开始</h4>
+              <p>点一下能把常见服务自动填好，金额和日期还可继续调整。</p>
+            </div>
+            <div className="subscriptions-template-list">
+              {SUBSCRIPTION_TEMPLATES.map((template) => (
+                <button
+                  key={template.id}
+                  type="button"
+                  className="subscriptions-template-item"
+                  onClick={() => applySubscriptionTemplate(template)}
+                >
+                  <span className={`subscriptions-template-logo is-${template.logoKind}`}>
+                    <SubscriptionTemplateLogo kind={template.logoKind} />
+                  </span>
+                  <span className="subscriptions-template-main">
+                    <strong>{template.name}</strong>
+                    <small>{template.provider}</small>
+                  </span>
+                  <span className="subscriptions-template-price">
+                    {formatMoneyByCurrency(template.amount, template.currency)}
+                    <small>/月</small>
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
 
