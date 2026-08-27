@@ -1704,9 +1704,17 @@ export function createLedgerFlowServer() {
   return http.createServer(handleRequest);
 }
 
+export function resolveApiPort(env = process.env) {
+  for (const value of [env.LEDGERFLOW_API_PORT, env.PORT, DEFAULT_PORT]) {
+    const port = Number(value);
+    if (Number.isInteger(port) && port > 0 && port <= 65535) return port;
+  }
+  return DEFAULT_PORT;
+}
+
 const entryUrl = process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
 if (import.meta.url === entryUrl) {
-  const port = Number(process.env.PORT || process.env.LEDGERFLOW_API_PORT || DEFAULT_PORT);
+  const port = resolveApiPort();
   createLedgerFlowServer().listen(port, () => {
     console.log(`LedgerFlow API listening on http://127.0.0.1:${port}`);
   });

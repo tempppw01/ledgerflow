@@ -4,7 +4,12 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { createLedgerFlowServer } from './mysqlSnapshotServer.js';
+import { createLedgerFlowServer, resolveApiPort } from './mysqlSnapshotServer.js';
+
+test('internal API port overrides a platform-provided public port', () => {
+  assert.equal(resolveApiPort({ PORT: '8080', LEDGERFLOW_API_PORT: '8787' }), 8787);
+  assert.equal(resolveApiPort({ PORT: '8080' }), 8080);
+});
 
 async function closeServer(server) {
   await new Promise((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
