@@ -208,9 +208,7 @@ type EastmoneyBoardConstituentPayload = {
 };
 
 type EastmoneyStockSearchPayload = {
-  data?: {
-    results?: Array<Partial<EastmoneyStockSearchResult>>;
-  };
+  results?: Array<Partial<EastmoneyStockSearchResult>>;
 };
 
 type GlobalMarketPayload = {
@@ -481,8 +479,8 @@ export async function fetchEastmoneyStockSearch(
   }
 
   const body = (await response.json()) as { data?: EastmoneyStockSearchPayload };
-  const payload = body.data || {};
-  return (payload.data?.results || [])
+  const results = body.data?.results || [];
+  return results
     .map((item) => ({
       code: String(item.code || '').trim(),
       name: String(item.name || '').trim(),

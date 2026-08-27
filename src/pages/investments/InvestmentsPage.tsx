@@ -4146,9 +4146,9 @@ export function InvestmentsPage() {
                             </div>
                           </div>
                           <div className="investments-watch-card-brief">
-                            <span>AI 建议</span>
+                            <span>自选记录</span>
                             <strong>
-                              {item.investmentAdvice || item.lastVerdict || '等待下一次分析'}
+                              {item.investmentAdvice || item.lastVerdict || '等待补充观察记录'}
                             </strong>
                             {primaryTag ? <em>{primaryTag}</em> : null}
                           </div>
