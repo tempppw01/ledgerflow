@@ -12,11 +12,6 @@ const MEMORY_TYPE_LABELS: Record<GlobalMemoryType, string> = {
   display_preference: '页面偏好'
 };
 
-const MEMORY_STATUS_LABELS: Record<GlobalMemoryStatus, string> = {
-  active: '启用中',
-  archived: '已归档'
-};
-
 const MEMORY_SOURCE_LABELS: Record<string, string> = {
   assistant_chat: '来自对话',
   bookkeeping_action: '来自记账',
@@ -91,43 +86,44 @@ export function GlobalMemoryPage() {
 
   return (
     <div className="global-memory-page vi-page">
-      <section className="panel global-memory-toolbar">
+      <section className="global-memory-toolbar">
         <div className="global-memory-header">
           <div>
-            <h2>记忆清单</h2>
-            <p>这里记录你反复提到的偏好、习惯和提醒点。助手之后会参考这些内容，减少重复询问，让建议更贴近你的使用方式。</p>
+            <p className="global-memory-eyebrow">陪你用得更顺手</p>
+            <h2>你的偏好</h2>
+            <p>我会记住这些小习惯，之后少问你几次。</p>
           </div>
           <div className="global-memory-summary">
-            <button type="button" className={`badge ${type === 'all' ? 'badge-primary' : ''}`} onClick={() => setType('all')}>
-              共 {memories.length} 条
+            <button type="button" className={`global-memory-filter-pill ${type === 'all' ? 'is-active' : ''}`} onClick={() => setType('all')}>
+              全部 <span>{memories.length}</span>
             </button>
             <button
               type="button"
-              className={`badge ${type === 'user_preference' ? 'badge-primary' : ''}`}
+              className={`global-memory-filter-pill ${type === 'user_preference' ? 'is-active' : ''}`}
               onClick={() => setType('user_preference')}
             >
-              使用偏好 {summary.user_preference}
+              使用偏好 <span>{summary.user_preference}</span>
             </button>
             <button
               type="button"
-              className={`badge ${type === 'financial_habit' ? 'badge-primary' : ''}`}
+              className={`global-memory-filter-pill ${type === 'financial_habit' ? 'is-active' : ''}`}
               onClick={() => setType('financial_habit')}
             >
-              记账习惯 {summary.financial_habit}
+              记账习惯 <span>{summary.financial_habit}</span>
             </button>
             <button
               type="button"
-              className={`badge ${type === 'risk_preference' ? 'badge-primary' : ''}`}
+              className={`global-memory-filter-pill ${type === 'risk_preference' ? 'is-active' : ''}`}
               onClick={() => setType('risk_preference')}
             >
-              风险偏好 {summary.risk_preference}
+              风险偏好 <span>{summary.risk_preference}</span>
             </button>
             <button
               type="button"
-              className={`badge ${type === 'display_preference' ? 'badge-primary' : ''}`}
+              className={`global-memory-filter-pill ${type === 'display_preference' ? 'is-active' : ''}`}
               onClick={() => setType('display_preference')}
             >
-              页面偏好 {summary.display_preference}
+              页面偏好 <span>{summary.display_preference}</span>
             </button>
           </div>
         </div>
@@ -152,7 +148,7 @@ export function GlobalMemoryPage() {
             </select>
           </label>
         </div>
-        <div className="global-memory-bulkbar">
+        {selectedIds.length > 0 ? <div className="global-memory-bulkbar">
           <span>已选择 {selectedIds.length} 条</span>
           <button type="button" onClick={selectAllFiltered}>选择当前结果</button>
           <button type="button" onClick={clearSelection}>取消选择</button>
@@ -180,7 +176,7 @@ export function GlobalMemoryPage() {
           >
             清空记忆
           </button>
-        </div>
+        </div> : null}
       </section>
 
       {filtered.length === 0 ? (
@@ -198,7 +194,7 @@ export function GlobalMemoryPage() {
               ? new Date(item.updatedAt).toLocaleString()
               : '未知时间';
             return (
-              <article key={item.id} className="panel global-memory-card">
+          <article key={item.id} className={`global-memory-card ${selectedIds.includes(item.id) ? 'is-selected' : ''}`}>
                 <label className="global-memory-check">
                   <input
                     type="checkbox"
@@ -212,10 +208,9 @@ export function GlobalMemoryPage() {
                     <div className="global-memory-card-title-wrap">
                       <h3>{item.title || '未命名记忆'}</h3>
                       <div className="global-memory-meta-row">
-                        <span className="badge badge-primary">{MEMORY_TYPE_LABELS[item.type] || '使用偏好'}</span>
-                        <span className="badge">{MEMORY_STATUS_LABELS[item.status] || '启用中'}</span>
-                        {item.pinned ? <span className="badge badge-warning">置顶</span> : null}
-                        {item.disabled ? <span className="badge badge-danger">已停用</span> : null}
+                        <span className="global-memory-type">{MEMORY_TYPE_LABELS[item.type] || '使用偏好'}</span>
+                        {item.disabled ? <span className="global-memory-state is-muted">已暂停</span> : null}
+                        {item.pinned ? <span className="global-memory-state">已置顶</span> : null}
                       </div>
                     </div>
                   </div>

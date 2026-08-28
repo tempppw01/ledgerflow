@@ -1,0 +1,161 @@
+/* Global memory: a calm personal list, not an admin console. */
+.global-memory-page {
+  gap: 20px;
+  max-width: 1080px;
+}
+
+.global-memory-toolbar {
+  display: grid;
+  gap: 20px;
+  padding: 4px 0 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.global-memory-header {
+  align-items: end;
+  gap: 20px;
+}
+
+.global-memory-eyebrow {
+  margin: 0 0 6px;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: .04em;
+}
+
+.global-memory-header h2 {
+  margin: 0 0 6px;
+  font-size: clamp(24px, 3vw, 32px);
+  letter-spacing: -.03em;
+}
+
+.global-memory-header p:not(.global-memory-eyebrow) {
+  max-width: 560px;
+  color: var(--color-text-secondary);
+}
+
+.global-memory-summary {
+  justify-content: flex-start;
+  gap: 4px;
+  padding-bottom: 2px;
+}
+
+.global-memory-filter-pill {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  color: var(--color-text-secondary);
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.global-memory-filter-pill span {
+  margin-left: 3px;
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.global-memory-filter-pill:hover,
+.global-memory-filter-pill.is-active {
+  color: var(--color-primary-strong, var(--color-primary));
+  background: var(--color-primary-bg);
+}
+
+.global-memory-filter-pill.is-active span { color: inherit; }
+
+.global-memory-filters {
+  margin-top: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.global-memory-filters label { min-width: 150px; }
+.global-memory-filters label span {
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+}
+.global-memory-filters select { min-height: 34px; }
+
+.global-memory-bulkbar {
+  margin-top: 0;
+  padding: 10px 12px;
+  border-left: 2px solid var(--color-primary);
+  background: var(--color-primary-bg);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.global-memory-list { gap: 0; border-top: 1px solid var(--color-border-light); }
+
+.global-memory-page > .empty-state {
+  min-height: 220px;
+  border: 1px dashed var(--color-border-light);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 48%, transparent);
+  box-shadow: none;
+}
+
+.global-memory-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 18px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--color-border-light);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transition: background .18s ease, padding-left .18s ease;
+}
+
+.global-memory-card:hover,
+.global-memory-card.is-selected {
+  padding-left: 10px;
+  background: color-mix(in srgb, var(--color-primary-bg) 42%, transparent);
+}
+
+.global-memory-card-main { gap: 7px; }
+.global-memory-card-title-wrap { gap: 8px; }
+.global-memory-card-title-wrap h3 { font-size: 15px; }
+.global-memory-meta-row { gap: 8px; }
+.global-memory-type { color: var(--color-primary-strong, var(--color-primary)); font-size: 11px; font-weight: 650; }
+.global-memory-state { color: var(--color-text-tertiary); font-size: 11px; }
+.global-memory-state.is-muted { color: var(--color-warning); }
+.global-memory-content { font-size: 14px; line-height: 1.6; }
+.global-memory-foot { gap: 4px 12px; color: var(--color-text-tertiary); font-size: 11px; }
+.global-memory-foot span + span::before { content: '·'; margin-right: 12px; color: var(--color-border-strong); }
+
+.global-memory-actions {
+  align-self: center;
+  min-width: 0;
+  opacity: 0;
+  transition: opacity .18s ease;
+}
+.global-memory-card:hover .global-memory-actions,
+.global-memory-card:focus-within .global-memory-actions { opacity: 1; }
+.global-memory-actions button {
+  min-height: 28px;
+  padding: 0 7px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-tertiary);
+}
+.global-memory-actions button:hover { color: var(--color-primary); background: var(--color-primary-bg); }
+.global-memory-actions .danger:hover { color: var(--color-danger); background: var(--color-danger-bg); }
+
+@media (max-width: 768px) {
+  .global-memory-header { align-items: start; }
+  .global-memory-summary { width: 100%; }
+  .global-memory-card { grid-template-columns: 24px minmax(0, 1fr); padding: 16px 0; }
+  .global-memory-actions { grid-column: 2; opacity: 1; justify-content: flex-start; flex-wrap: wrap; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .global-memory-card, .global-memory-actions { transition: none; }
+}
