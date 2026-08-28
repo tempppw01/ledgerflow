@@ -69,13 +69,26 @@ type RepaymentPrefillDebt = {
 
 type RepaymentStrategyType = 'avalanche' | 'snowball' | 'ladder';
 
-function createEmptyManualRepayment(): ManualRepaymentItem {
+type DebtPlanMode = 'structured' | 'manual';
+
+function createEmptyManualRepayment(previous?: ManualRepaymentItem): ManualRepaymentItem {
+  const today = new Date();
+  const baseDate =
+    previous?.dueDate && !Number.isNaN(new Date(previous.dueDate).getTime())
+      ? new Date(previous.dueDate)
+      : today;
+  const nextDueDate = shiftMonthWithDay(baseDate, 1, getDebtRepaymentDayFallback(baseDate));
+
   return {
     id: `manual-repayment-temp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    dueDate: '',
-    amount: 0,
+    dueDate: toISODate(nextDueDate),
+    amount: previous ? Math.max(0, Number(previous.amount) || 0) : 0,
     label: ''
   };
+}
+
+function getDebtRepaymentDayFallback(value: Date): number {
+  return value.getDate();
 }
 
 function toISODate(value: Date): string {
@@ -770,6 +783,7 @@ export function RepaymentManagementPage() {
   const [error, setError] = useState('');
   const [debtName, setDebtName] = useState('');
   const [debtType, setDebtType] = useState<DebtType>('credit-card');
+  const [debtPlanMode, setDebtPlanMode] = useState<DebtPlanMode>('structured');
   const [debtBalance, setDebtBalance] = useState('');
   const [debtBalanceManuallyEdited, setDebtBalanceManuallyEdited] = useState(false);
   const [debtAnnualRate, setDebtAnnualRate] = useState('');
@@ -838,6 +852,11 @@ export function RepaymentManagementPage() {
     setEditingDebtId(item.id);
     setDebtName(item.name || '');
     setDebtType(item.type || 'credit-card');
+    setDebtPlanMode(
+      Array.isArray(item.manualRepayments) && item.manualRepayments.length > 0
+        ? 'manual'
+        : 'structured'
+    );
     setDebtBalance(String(item.balance ?? ''));
     setDebtBalanceManuallyEdited(true);
     setDebtAnnualRate(item.annualRate !== undefined ? String(item.annualRate) : '');
@@ -881,6 +900,7 @@ export function RepaymentManagementPage() {
     setEditingDebtId(locationState?.editingDebtId || '');
     setDebtName(prefillDebt.name || '');
     setDebtType(prefillDebt.type || 'credit-card');
+    setDebtPlanMode('structured');
     setDebtBalance(prefillDebt.balance || '');
     setDebtBalanceManuallyEdited(Boolean(prefillDebt.balance));
     setDebtAnnualRate(prefillDebt.annualRate || '');
@@ -1389,6 +1409,60 @@ export function RepaymentManagementPage() {
     if (source === 'paid') setDebtPaidPeriods(nextValue);
   }
 
+  function addManualRepaymentRow(): void {
+    const previous = debtManualRepayments.at(-1);
+    setDebtManualRepayments((current) => [
+      ...current,
+      createEmptyManualRepayment(previous)
+    ]);
+    setDebtFormError('');
+  }
+
+  function updateManualRepaymentRow(
+    index: number,
+    patch: Partial<ManualRepaymentItem>
+  ): void {
+    setDebtManualRepayments((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, ...patch } : item
+      )
+    );
+    setDebtFormError('');
+  }
+
+  function removeManualRepaymentRow(index: number): void {
+    setDebtManualRepayments((current) =>
+      current.filter((_, itemIndex) => itemIndex !== index)
+    );
+    setDebtFormError('');
+  }
+
+  function resetDebtForm(afterEdit = false): void {
+    setDebtName('');
+    setDebtType('credit-card');
+    setDebtPlanMode('structured');
+    setDebtBalance('');
+    setDebtBalanceManuallyEdited(false);
+    setDebtAnnualRate('');
+    setDebtMonths('');
+    setDebtTotalPeriods('');
+    setDebtPaidPeriods('');
+    setDebtLoanPrincipal('');
+    setDebtTotalRepayment('');
+    setDebtManualRepayments([]);
+    setDebtBillDay('');
+    setDebtRepaymentDay('');
+    setDebtPaymentAccount('');
+    setDebtRepaymentMethod('minimum-payment');
+    setDebtRepaymentRecordMode('manual');
+    setDebtStatus('active');
+    setDebtFormError('');
+    setPrefillHint('');
+    setShowDebtPressurePreview(false);
+    setDebtPressurePreview([]);
+    if (afterEdit) setEditingDebtId('');
+  }
+
   const trimmedDebtName = debtName.trim();
   const balance = Number(debtBalance);
   const annualRate = Number(debtAnnualRate);
@@ -1476,6 +1550,11 @@ export function RepaymentManagementPage() {
     (Number.isFinite(paidPeriods) && Number.isInteger(paidPeriods) && paidPeriods >= 0);
   const hasManualRepaymentSchedule =
     debtManualRepayments.some((item) => Number.isFinite(Number(item.amount)) && Number(item.amount) > 0);
+  const manualRepaymentTotal = debtManualRepayments.reduce(
+    (sum, item) => sum + Math.max(0, Number(item.amount) || 0),
+    0
+  );
+  const manualRepaymentCount = debtManualRepayments.length;
 
   const canSubmitDebt =
     trimmedDebtName.length > 0 &&
@@ -1485,13 +1564,26 @@ export function RepaymentManagementPage() {
     repaymentDayValid &&
     totalPeriodsValid &&
     paidPeriodsValid &&
-    (!isLoanType || hasExplicitAnnualRate || canInferAnnualRateByFormula || hasManualRepaymentSchedule) &&
     (!isLoanType ||
-      hasManualRepaymentSchedule ||
+      debtPlanMode === 'manual' ||
+      hasExplicitAnnualRate ||
+      canInferAnnualRateByFormula) &&
+    (!isLoanType ||
+      debtPlanMode === 'manual' ||
       (debtMonths.trim().length > 0 &&
         Number.isFinite(months) &&
         Number.isInteger(months) &&
-        months > 0));
+        months > 0)) &&
+    (debtPlanMode !== 'manual' || hasManualRepaymentSchedule);
+  const missingDebtFields =
+    canSubmitDebt
+      ? []
+      : [
+          trimmedDebtName.length === 0 ? '负债名称' : '',
+          !Number.isFinite(effectiveBalance) || effectiveBalance <= 0 ? '剩余本金' : '',
+          isLoanType && debtPlanMode === 'structured' && !debtMonths.trim() ? '剩余期数' : '',
+          isLoanType && debtPlanMode === 'manual' && !hasManualRepaymentSchedule ? '手动还款计划' : ''
+        ].filter(Boolean);
 
   async function resolveMonthlyIncomeByAi(forceRefresh = false): Promise<number | null> {
     if (incomeSamples.length === 0) {
@@ -1598,22 +1690,24 @@ export function RepaymentManagementPage() {
       setDebtFormError('“已还期数”不能大于“总期数”。');
       return;
     }
-    if (isLoanType && !hasManualRepaymentSchedule && !debtMonths.trim()) {
-      setDebtFormError('当前类型为贷款，请填写“剩余期数(月)”或至少一条手动还款计划。');
-      return;
-    }
-    if (isLoanType && !hasManualRepaymentSchedule && (!Number.isInteger(months) || months <= 0)) {
-      setDebtFormError('“剩余期数(月)”需为大于 0 的整数。');
-      return;
-    }
-    if (
-      isLoanType &&
-      !hasManualRepaymentSchedule &&
-      !hasExplicitAnnualRate &&
-      !canInferAnnualRateByFormula
-    ) {
-      setDebtFormError('贷款请填写年化利率、总还款/期数用于反推，或填写手动还款计划。');
-      return;
+    if (debtPlanMode === 'manual') {
+      if (!hasManualRepaymentSchedule) {
+        setDebtFormError('请至少填写一条手动还款计划，用来计算还款压力。');
+        return;
+      }
+    } else if (isLoanType) {
+      if (!debtMonths.trim()) {
+        setDebtFormError('当前计划方式为“按期数管理”，请填写“剩余期数(月)”。');
+        return;
+      }
+      if (!Number.isInteger(months) || months <= 0) {
+        setDebtFormError('“剩余期数(月)”需为大于 0 的整数。');
+        return;
+      }
+      if (!hasExplicitAnnualRate && !canInferAnnualRateByFormula) {
+        setDebtFormError('贷款请填写年化利率，或补充借款金额、总还款、总期数用于反推。');
+        return;
+      }
     }
 
     if (loanPrincipalRaw && (!Number.isFinite(loanPrincipal) || loanPrincipal <= 0)) {
@@ -1644,10 +1738,10 @@ export function RepaymentManagementPage() {
         return aDate - bDate;
       });
     const nextRemainingMonths = isLoanType
-      ? debtMonths.trim().length > 0 && Number.isFinite(months) && months > 0
-        ? months
-        : manualRepaymentRows.length > 0
-          ? manualRepaymentRows.length
+      ? debtPlanMode === 'manual'
+        ? manualRepaymentRows.length
+        : debtMonths.trim().length > 0 && Number.isFinite(months) && months > 0
+          ? months
           : undefined
       : undefined;
 
@@ -1692,25 +1786,7 @@ export function RepaymentManagementPage() {
       } as DebtItem)
     );
 
-    setDebtName('');
-    setDebtBalance('');
-    setDebtBalanceManuallyEdited(false);
-    setDebtAnnualRate('');
-    setDebtMonths('');
-    setDebtTotalPeriods('');
-    setDebtPaidPeriods('');
-    setDebtLoanPrincipal('');
-    setDebtTotalRepayment('');
-    setDebtManualRepayments([]);
-    setDebtBillDay('');
-    setDebtRepaymentDay('');
-    setDebtPaymentAccount('');
-    setDebtRepaymentMethod('minimum-payment');
-    setDebtRepaymentRecordMode('manual');
-    setDebtStatus('active');
-    setDebtFormError('');
-    setEditingDebtId('');
-    setPrefillHint('');
+    resetDebtForm(true);
     setSelectedDebtId(editingDebtId || '');
     setDebtToastVisible(true);
     setAddDebtSuccess(true);
@@ -2960,12 +3036,41 @@ export function RepaymentManagementPage() {
                     </label>
                   </div>
 
-                  <details className="debt-form-advanced">
-                    <summary className="debt-form-advanced-summary">
-                      更多设置
-                      <small>还款日、账户、记录方式等</small>
-                    </summary>
-                    <div className="debt-form-fields">
+                  <section className="debt-plan-mode">
+                    <div className="debt-plan-mode-copy">
+                      <strong>还款计划方式</strong>
+                      <span>不知道总还款时，选择手动逐期计划最方便。</span>
+                    </div>
+                    <div className="debt-plan-mode-switch" role="tablist" aria-label="还款计划方式">
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={debtPlanMode === 'structured'}
+                        className={`debt-plan-mode-option ${debtPlanMode === 'structured' ? 'is-active' : ''}`}
+                        onClick={() => {
+                          setDebtPlanMode('structured');
+                          setDebtFormError('');
+                        }}
+                      >
+                        按总期数
+                      </button>
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={debtPlanMode === 'manual'}
+                        className={`debt-plan-mode-option ${debtPlanMode === 'manual' ? 'is-active' : ''}`}
+                        onClick={() => {
+                          setDebtPlanMode('manual');
+                          if (debtManualRepayments.length === 0) addManualRepaymentRow();
+                          setDebtFormError('');
+                        }}
+                      >
+                        手动逐期
+                      </button>
+                    </div>
+                  </section>
+
+                  <div className="debt-form-fields debt-form-fields--conditional">
                       <label className="debt-form-field">
                         <span className="debt-form-field-label">还款日</span>
                         <span className="debt-form-money">
@@ -3071,7 +3176,7 @@ export function RepaymentManagementPage() {
                           <option value="paused">暂缓处理</option>
                         </select>
                       </label>
-                      {isLoanType ? (
+                      {isLoanType && debtPlanMode === 'structured' ? (
                         <>
                           <label className="debt-form-field">
                             <span className="debt-form-field-label">年化利率</span>
@@ -3190,119 +3295,120 @@ export function RepaymentManagementPage() {
                         </>
                       ) : null}
 
-                      <div className="debt-form-manual-schedule">
-                        <div className="debt-form-manual-schedule-header">
-                          <div>
-                            <span className="debt-form-field-label">手动还款计划</span>
-                            <small>总还款未知时，按“下一期 + 之后期数”填写日期和金额</small>
+                      {isLoanType && debtPlanMode === 'manual' ? (
+                        <div className="debt-form-manual-schedule debt-form-manual-schedule--focus">
+                          <div className="debt-form-manual-schedule-header">
+                            <div>
+                              <span className="debt-form-field-label">手动还款计划</span>
+                              <small>从下一期开始填写日期和金额，系统会生成压力曲线</small>
+                            </div>
+                            <button
+                              type="button"
+                              className="debt-form-add-period"
+                              onClick={addManualRepaymentRow}
+                            >
+                              + 添加期数
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            className="debt-form-add-period"
-                            onClick={() => {
-                              setDebtManualRepayments((current) => [
-                                ...current,
-                                createEmptyManualRepayment()
-                              ]);
-                              setDebtFormError('');
-                            }}
-                          >
-                            + 添加期数
-                          </button>
-                        </div>
 
-                        {debtManualRepayments.length > 0 ? (
-                          <div className="debt-form-manual-rows">
-                            {debtManualRepayments.map((row, index) => (
-                              <div className="debt-form-manual-row" key={row.id || index}>
-                                <label className="debt-form-field">
-                                  <span className="debt-form-field-label">备注</span>
-                                  <input
-                                    className="debt-form-input"
-                                    value={row.label || ''}
-                                    onChange={(event) => {
-                                      setDebtManualRepayments((current) =>
-                                        current.map((item, itemIndex) =>
-                                          itemIndex === index
-                                            ? { ...item, label: event.target.value }
-                                            : item
-                                        )
-                                      );
-                                      setDebtFormError('');
-                                    }}
-                                    placeholder="下一期 / 第 2 期"
-                                    aria-label="还款计划备注"
-                                  />
-                                </label>
-                                <label className="debt-form-field">
-                                  <span className="debt-form-field-label">日期</span>
-                                  <input
-                                    className="debt-form-input"
-                                    type="date"
-                                    value={row.dueDate || ''}
-                                    onChange={(event) => {
-                                      setDebtManualRepayments((current) =>
-                                        current.map((item, itemIndex) =>
-                                          itemIndex === index
-                                            ? { ...item, dueDate: event.target.value }
-                                            : item
-                                        )
-                                      );
-                                      setDebtFormError('');
-                                    }}
-                                    aria-label="还款日期"
-                                  />
-                                </label>
-                                <label className="debt-form-field">
-                                  <span className="debt-form-field-label">金额</span>
-                                  <span className="debt-form-money">
-                                    <span className="debt-form-money-unit">¥</span>
-                                    <input
-                                      className="debt-form-input debt-form-input-money"
-                                      type="number"
-                                      min={0}
-                                      step="0.01"
-                                      inputMode="decimal"
-                                      value={row.amount || ''}
-                                      onChange={(event) => {
-                                        setDebtManualRepayments((current) =>
-                                          current.map((item, itemIndex) =>
-                                            itemIndex === index
-                                              ? { amount: Number(event.target.value), label: item.label, dueDate: item.dueDate, id: item.id }
-                                              : item
-                                          )
-                                        );
-                                        setDebtFormError('');
-                                      }}
-                                      placeholder="0.00"
-                                      aria-label="还款金额"
-                                    />
-                                  </span>
-                                </label>
-                                <button
-                                  type="button"
-                                  className="debt-form-remove-period"
-                                  onClick={() => {
-                                    setDebtManualRepayments((current) =>
-                                      current.filter((_, itemIndex) => itemIndex !== index)
-                                    );
-                                    setDebtFormError('');
-                                  }}
-                                  aria-label="删除该期"
-                                >
-                                  ✕
-                                </button>
+                          {debtManualRepayments.length > 0 ? (
+                            <>
+                              <div className="debt-form-manual-summary">
+                                <span>共 {manualRepaymentCount} 期</span>
+                                <strong>{formatCurrency(manualRepaymentTotal)}</strong>
+                                <small>
+                                  剩余 {formatCurrency(Math.max(0, effectiveBalance - manualRepaymentTotal))}
+                                </small>
                               </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="debt-form-schedule-empty">
-                            还没有手动计划。若不清楚总还款，建议从“下一期”开始逐期填写。
-                          </p>
-                        )}
-                      </div>
+                              <div className="debt-form-manual-rows">
+                                {debtManualRepayments.map((row, index) => (
+                                  <div className="debt-form-manual-row" key={row.id || index}>
+                                    <div className="debt-form-manual-index">{index + 1}</div>
+                                    <label className="debt-form-field">
+                                      <span className="debt-form-field-label">期数标签</span>
+                                      <input
+                                        className="debt-form-input"
+                                        value={row.label || ''}
+                                        onChange={(event) => {
+                                          updateManualRepaymentRow(index, {
+                                            label: event.target.value
+                                          });
+                                        }}
+                                        placeholder={`第 ${index + 1} 期`}
+                                        aria-label="期数标签"
+                                      />
+                                    </label>
+                                    <label className="debt-form-field">
+                                      <span className="debt-form-field-label">日期</span>
+                                      <input
+                                        className="debt-form-input"
+                                        type="date"
+                                        value={row.dueDate || ''}
+                                        onChange={(event) => {
+                                          updateManualRepaymentRow(index, {
+                                            dueDate: event.target.value
+                                          });
+                                        }}
+                                        aria-label="还款日期"
+                                      />
+                                    </label>
+                                    <label className="debt-form-field">
+                                      <span className="debt-form-field-label">金额</span>
+                                      <span className="debt-form-money">
+                                        <span className="debt-form-money-unit">¥</span>
+                                        <input
+                                          className="debt-form-input debt-form-input-money"
+                                          type="number"
+                                          min={0}
+                                          step="0.01"
+                                          inputMode="decimal"
+                                          value={row.amount || ''}
+                                          onChange={(event) => {
+                                            updateManualRepaymentRow(index, {
+                                              amount: Number(event.target.value)
+                                            });
+                                          }}
+                                          placeholder="0.00"
+                                          aria-label="还款金额"
+                                        />
+                                      </span>
+                                    </label>
+                                    <button
+                                      type="button"
+                                      className="debt-form-copy-period"
+                                      onClick={() => {
+                                        const previous = debtManualRepayments[index - 1];
+                                        if (previous) {
+                                          updateManualRepaymentRow(index, {
+                                            amount: previous.amount
+                                          });
+                                        }
+                                      }}
+                                      aria-label="沿用上一期金额"
+                                      title="沿用上一期金额"
+                                    >
+                                      同额
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="debt-form-remove-period"
+                                      onClick={() => removeManualRepaymentRow(index)}
+                                      aria-label="删除该期"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          ) : (
+                            <p className="debt-form-schedule-empty">
+                              还没有手动计划。若不清楚总还款，建议从“下一期”开始逐期填写。
+                            </p>
+                          )}
+                        </div>
+                      ) : null}
                     </div>
-                  </details>
 
                   <datalist id="repayment-account-options">
                     {financeAccounts
@@ -3312,6 +3418,11 @@ export function RepaymentManagementPage() {
                       ))}
                   </datalist>
 
+                  {!canSubmitDebt && missingDebtFields.length > 0 ? (
+                    <p className="debt-form-helper">
+                      还差：{missingDebtFields.join('、')}
+                    </p>
+                  ) : null}
                   {debtFormError ? <p className="debt-form-error">{debtFormError}</p> : null}
                   <div className="debt-form-actions">
                     <button type="submit" className="primary" disabled={!canSubmitDebt}>
@@ -3327,28 +3438,7 @@ export function RepaymentManagementPage() {
                       <button
                         type="button"
                         className="debt-form-cancel-btn"
-                        onClick={() => {
-                          setEditingDebtId('');
-                          setDebtName('');
-                          setDebtBalance('');
-                          setDebtBalanceManuallyEdited(false);
-                          setDebtAnnualRate('');
-                          setDebtMonths('');
-                          setDebtTotalPeriods('');
-                          setDebtPaidPeriods('');
-                          setDebtLoanPrincipal('');
-                          setDebtTotalRepayment('');
-                          setDebtManualRepayments([]);
-                          setDebtBillDay('');
-                          setDebtRepaymentDay('');
-                          setDebtPaymentAccount('');
-                          setDebtRepaymentMethod('minimum-payment');
-                          setDebtRepaymentRecordMode('manual');
-                          setDebtFormError('');
-                          setPrefillHint('');
-                          setShowDebtPressurePreview(false);
-                          setDebtPressurePreview([]);
-                        }}
+                        onClick={() => resetDebtForm(true)}
                       >
                         取消编辑
                       </button>
@@ -3364,6 +3454,15 @@ export function RepaymentManagementPage() {
                         </div>
                         <span className="debt-pressure-preview-tag">已生成</span>
                       </div>
+                      <div className="debt-pressure-preview-summary">
+                        <span>计划期数 {debtPressurePreview.length} 期</span>
+                        <span>
+                          总计划还款 {formatCurrency(debtPressurePreview.reduce((sum, item) => sum + item.amount, 0))}
+                        </span>
+                        <span>
+                          首期压力 {formatCurrency(debtPressurePreview[0]?.amount || 0)}
+                        </span>
+                      </div>
                       <DebtPressureChart points={debtPressurePreview} />
                       <div className="debt-pressure-table">
                         {debtPressurePreview.slice(0, 6).map((item, index) => (
@@ -3374,6 +3473,30 @@ export function RepaymentManagementPage() {
                             <small>剩余 {formatCurrency(item.remaining)}</small>
                           </div>
                         ))}
+                      </div>
+                      <div className="debt-pressure-actions">
+                        <button
+                          type="button"
+                          className="primary"
+                          onClick={() => {
+                            resetDebtForm(false);
+                            setAddDebtSuccess(false);
+                          }}
+                        >
+                          继续添加负债
+                        </button>
+                        <button
+                          type="button"
+                          className="debt-form-cancel-btn"
+                          onClick={() => {
+                            setAddDebtSuccess(false);
+                            setShowDebtPressurePreview(false);
+                            setDebtPressurePreview([]);
+                            setShowAddDebtModal(false);
+                          }}
+                        >
+                          完成并关闭
+                        </button>
                       </div>
                     </section>
                   ) : null}

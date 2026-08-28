@@ -16866,6 +16866,59 @@ body.categories-accounts-resizing {
   border-bottom: 1px solid var(--color-divider);
 }
 
+.debt-plan-mode {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0 14px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.debt-plan-mode-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.debt-plan-mode-copy strong {
+  font-size: 14px;
+}
+
+.debt-plan-mode-copy span {
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.debt-plan-mode-switch {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-bg-soft, #f8f7f4) 74%, transparent);
+}
+
+.debt-plan-mode-option {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  padding: 7px 12px;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.debt-plan-mode-option.is-active {
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--color-primary) 24%, transparent);
+}
+
 .debt-form-field {
   display: flex;
   flex-direction: column;
@@ -17074,9 +17127,45 @@ select.debt-form-input {
 
 .debt-form-manual-row {
   display: grid;
-  grid-template-columns: minmax(100px, 0.9fr) minmax(130px, 0.85fr) minmax(100px, 0.65fr) 28px;
+  grid-template-columns: 28px minmax(96px, 0.88fr) minmax(128px, 0.82fr) minmax(88px, 0.62fr) 48px 28px;
   gap: 12px;
   align-items: end;
+}
+
+.debt-form-manual-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  width: 28px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.debt-form-manual-summary {
+  display: grid;
+  grid-template-columns: auto minmax(90px, 1fr);
+  gap: 6px 12px;
+  align-items: baseline;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.debt-form-manual-summary strong {
+  color: var(--color-primary);
+  font-size: 13px;
+}
+
+.debt-form-manual-summary small {
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  grid-column: 1 / -1;
 }
 
 .debt-form-remove-period {
@@ -17089,9 +17178,35 @@ select.debt-form-input {
   font-size: 13px;
 }
 
+.debt-form-copy-period {
+  width: 48px;
+  height: 32px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 26%, transparent);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.debt-form-copy-period:hover {
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
 .debt-form-remove-period:hover {
   background: color-mix(in srgb, var(--color-danger) 10%, transparent);
   color: var(--color-danger);
+}
+
+.debt-form-manual-schedule--focus {
+  border-color: color-mix(in srgb, var(--color-primary) 42%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 6%, transparent);
+}
+
+.debt-form-helper {
+  margin: 10px 0 0;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
 }
 
 .debt-form-schedule-empty {
@@ -17119,6 +17234,36 @@ select.debt-form-input {
 .debt-pressure-preview-header strong {
   font-size: 15px;
   letter-spacing: -0.01em;
+}
+
+.debt-pressure-preview-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 12px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.debt-pressure-preview-summary span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-bg-soft, #f8f7f4) 68%, transparent);
+  padding: 5px 9px;
+}
+
+.debt-pressure-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.debt-pressure-actions .primary,
+.debt-pressure-actions .debt-form-cancel-btn {
+  min-width: 112px;
 }
 
 .debt-pressure-preview-tag {
@@ -17245,8 +17390,29 @@ select.debt-form-input {
     grid-template-columns: 1fr 1fr;
   }
 
+  .debt-plan-mode {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .debt-plan-mode-switch {
+    justify-content: stretch;
+  }
+
+  .debt-plan-mode-option {
+    flex: 1 1 0;
+  }
+
   .debt-form-manual-row {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 28px 1fr;
+  }
+
+  .debt-form-manual-index {
+    grid-row: span 2;
+  }
+
+  .debt-form-copy-period {
+    justify-self: end;
   }
 
   .debt-form-remove-period {
