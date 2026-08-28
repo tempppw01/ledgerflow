@@ -16628,6 +16628,7 @@ body.categories-accounts-resizing {
   display: grid;
   gap: 4px;
   min-width: 0;
+  container-type: inline-size;
   color: var(--color-primary);
 }
 
@@ -16636,15 +16637,6 @@ body.categories-accounts-resizing {
   min-width: 0;
   min-height: 174px;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--color-primary) 10%, var(--color-border-light));
-  border-radius: 12px;
-  background:
-    radial-gradient(
-      circle at 85% 0%,
-      color-mix(in srgb, var(--color-primary-bg) 70%, transparent),
-      transparent 46%
-    ),
-    color-mix(in srgb, var(--color-bg-elevated) 48%, transparent);
 }
 
 .repayment-projection-stage svg {
@@ -16693,7 +16685,7 @@ body.categories-accounts-resizing {
 .repayment-projection-value {
   fill: var(--color-text-secondary);
   font-family: var(--font-number);
-  font-size: 9px;
+  font-size: clamp(8px, 2.25cqi, 11px);
   font-weight: 700;
   text-anchor: middle;
 }
@@ -18337,17 +18329,17 @@ select.debt-form-input {
 }
 
 .repayment-projection-value {
-  font-size: 24px;
+  font-size: clamp(8px, 2.25cqi, 11px);
   font-weight: 800;
   paint-order: stroke;
   stroke: var(--color-bg-elevated);
-  stroke-width: 3px;
+  stroke-width: 2px;
   stroke-linejoin: round;
 }
 
 .repayment-projection-value.is-active {
   fill: var(--color-primary);
-  font-size: 28px;
+  font-size: clamp(9px, 2.6cqi, 13px);
 }
 
 .repayment-debt-more-details {
