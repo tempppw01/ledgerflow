@@ -1009,26 +1009,27 @@ function RuleSuggestionsPanel({
   insight: InvestmentMarketInsight | null;
   algorithmSignals: MarketAlgorithmSignals;
 }) {
+  const summary = insight
+    ? `结合市场、热点与资讯整理，风险温度 ${algorithmSignals.riskScore} / 100。`
+    : `先以当前行情作参考，风险温度 ${algorithmSignals.riskScore} / 100。`;
+
   return (
-    <section className="panel investments-rule-suggestions-panel" aria-label="规则提示">
+    <section className="panel investments-rule-suggestions-panel" aria-label="今日投资提示">
       <div className="investments-today-panel-head">
         <div>
-          <h2>今天怎么做</h2>
-          <p>
-            {insight
-              ? `结合新闻、热点和板块给你一个参考 · 风险分 ${algorithmSignals.riskScore}，不替你下决定。`
-              : `先按行情信号做个参考 · 风险分 ${algorithmSignals.riskScore}，不替你下决定。`}
-          </p>
+          <span className="investments-briefing-eyebrow">今日简报</span>
+          <h2>给计划一点耐心</h2>
+          <p>{summary} 它只提供线索，决定仍在你手里。</p>
         </div>
-        <span aria-hidden="true">🧠</span>
+        <span className="investments-briefing-mark" aria-hidden="true">✦</span>
       </div>
       <div className="investments-rule-suggestion-list">
-        {suggestions.map((suggestion) => (
+        {suggestions.map((suggestion, index) => (
           <article key={suggestion.title} className={`is-${suggestion.tone}`}>
-            <span aria-hidden="true">{suggestion.emoji}</span>
+            <span aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
             <div>
               <strong>{suggestion.title}</strong>
-              <p>{suggestion.reason}</p>
+              <p>{suggestion.reason.replace(/^依据：/, '')}</p>
             </div>
           </article>
         ))}
