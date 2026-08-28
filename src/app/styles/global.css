@@ -13465,6 +13465,84 @@ body.categories-accounts-resizing {
   }
 }
 
+/* Final canvas pass: the page itself is not a surface. This removes the last
+   large rounded shell visible around the budget workspace in dark mode too. */
+.panel.smart-budget-page {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.smart-budget-page > .smart-budget-header {
+  padding: 0 0 var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.smart-budget-page > .smart-budget-mode-switch {
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  gap: 0;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.smart-budget-page > .smart-budget-mode-switch button {
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  box-shadow: none;
+}
+
+.smart-budget-page > .smart-budget-mode-switch button.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  background: transparent;
+  box-shadow: none;
+}
+
+.smart-budget-management.design-workspace {
+  margin-top: var(--space-2);
+  padding: 0;
+  background: transparent;
+}
+
+.smart-budget-overview-card.design-section {
+  padding-top: var(--space-4);
+}
+
+.smart-budget-overview-progress-wrap {
+  min-width: 150px;
+}
+
+.smart-budget-overview-progress {
+  width: 88px;
+  height: 88px;
+}
+
+.smart-budget-overview-progress::before {
+  width: 64px;
+  height: 64px;
+}
+
+.smart-budget-overview-progress span {
+  font-size: var(--font-md);
+}
+
+.smart-budget-header-badge {
+  min-height: 24px;
+  padding-inline: 9px;
+  border-radius: var(--radius-sm);
+}
+
 @media (max-width: 900px) {
   .smart-budget-overview-card {
     grid-template-columns: minmax(0, 1fr);
