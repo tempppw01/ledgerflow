@@ -14,6 +14,64 @@
   width: 100%;
 }
 
+/* Compatibility bridge: legacy page shells now consume VI semantics. New
+   pages should use .vi-* directly; this keeps unmigrated screens consistent. */
+.panel,
+.card {
+  background: var(--surface-section);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-surface);
+  box-shadow: var(--shadow-surface);
+}
+
+.panel:hover,
+.card:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 18%, var(--border-subtle));
+  box-shadow: var(--shadow-surface-hover);
+}
+
+.panel > .card,
+.card > .card,
+.panel > .panel,
+.card > .panel {
+  box-shadow: none;
+  background: var(--surface-item);
+  border-radius: var(--radius-control);
+}
+
+@media (max-width: 720px) {
+  .vi-page-head {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .vi-page-actions,
+  .vi-toolbar,
+  .vi-action-row {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .vi-toolbar {
+    padding: var(--space-3) 0;
+    border-inline: 0;
+    border-radius: 0;
+  }
+
+  .vi-grid--two,
+  .vi-grid--three,
+  .vi-split {
+    grid-template-columns: 1fr;
+  }
+
+  .vi-section,
+  .vi-card,
+  .vi-hero {
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+  }
+}
+
 .vi-page--dense {
   --vi-page-gap: var(--space-3);
   --vi-section-gap: var(--space-2);

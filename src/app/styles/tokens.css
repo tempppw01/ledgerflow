@@ -281,6 +281,21 @@
   --vi-grid-min: 240px;
   --vi-grid-min-wide: 320px;
 
+  /* ---- VI 统一表面语义（页面迁移的唯一入口） ---- */
+  --surface-page: var(--color-bg);
+  --surface-section: var(--color-bg-elevated);
+  --surface-item: color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-bg-subtle));
+  --surface-item-active: color-mix(in srgb, var(--color-primary-bg) 62%, var(--color-bg-elevated));
+  --border-subtle: var(--color-border-light);
+  --border-strong: var(--color-border);
+  --radius-surface: var(--radius-md);
+  --radius-control: var(--radius-sm);
+  --shadow-surface: var(--shadow-xs);
+  --shadow-surface-hover: var(--shadow-sm);
+  --section-gap: var(--space-4);
+  --section-padding: var(--space-4);
+  --item-padding: var(--space-3);
+
   /* ---- 兼容层：旧版 CSS 变量名 -> 新版设计 Token ---- */
   --card-bg: var(--color-bg-elevated);
   --bg-primary: var(--color-bg);
