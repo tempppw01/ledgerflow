@@ -5,7 +5,23 @@
    Use these classes before adding page-specific CSS:
    vi-page -> vi-page-head -> vi-section / vi-card / vi-toolbar / vi-empty.
    Keep business-specific selectors in page/domain styles.
-   ============================================================ */
+ ============================================================ */
+
+/* Quiet visual mode: gradients and decorative glows are intentionally
+   flattened here so every page shares the same calm surface language. */
+:root,
+[data-accent-theme] {
+  --gradient-app-bg: var(--color-bg);
+  --gradient-surface: var(--color-bg-elevated);
+  --gradient-surface-muted: var(--color-bg-subtle);
+  --gradient-hero: var(--color-bg-elevated);
+  --gradient-accent-soft: var(--color-primary-bg);
+  --gradient-card-income: var(--color-bg-elevated);
+  --gradient-card-expense: var(--color-bg-elevated);
+  --gradient-card-primary: var(--color-bg-elevated);
+  --gradient-card-warning: var(--color-bg-elevated);
+  --gradient-card-info: var(--color-bg-elevated);
+}
 
 .vi-page {
   display: grid;
