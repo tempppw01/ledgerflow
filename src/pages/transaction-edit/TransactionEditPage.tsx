@@ -479,7 +479,7 @@ export function TransactionEditPage() {
   }
 
   return (
-    <section className="panel transaction-edit-panel">
+    <section className="panel transaction-edit-panel vi-page">
       <div className="row" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
         <button type="button" onClick={handleBack} aria-label="返回交易列表">
           ← 返回

@@ -487,7 +487,7 @@ export function SubscriptionsPage() {
   };
 
   return (
-    <div className="subscriptions-page">
+    <div className="subscriptions-page vi-page">
       <section className="panel subscriptions-hero">
         <div className="subscriptions-header">
           <div className="subscriptions-hero-copy">

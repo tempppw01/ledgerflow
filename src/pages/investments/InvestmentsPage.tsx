@@ -4302,7 +4302,7 @@ export function InvestmentsPage() {
   }
 
   return (
-    <div className="page-stack investments-page investments-management-page investments-console-page">
+    <div className="page-stack investments-page investments-management-page investments-console-page vi-page">
       <header className="investments-console-header">
         <div>
           <p className="investments-console-eyebrow">INVESTMENT CONTROL</p>

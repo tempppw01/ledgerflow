@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 export function HelpPage() {
   return (
-    <section className="panel help-page">
+    <section className="panel help-page vi-page">
       <header className="help-header">
         <h2>帮助与快捷方式</h2>
         <p>把常用入口、上手步骤和一点点贴心提醒都收在这里。首页负责好看，这里负责好用。</p>

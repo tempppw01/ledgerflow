@@ -156,7 +156,7 @@ export function RecycleBinPage() {
   };
 
   return (
-    <section className="panel recycle-bin-page">
+    <section className="panel recycle-bin-page vi-page">
       <div className="recycle-bin-header">
         <div>
           <h2>回收站</h2>

@@ -2129,7 +2129,7 @@ export function RepaymentManagementPage() {
   }
 
   return (
-    <div className="page-stack finance-page">
+    <div className="page-stack finance-page vi-page">
       <section className="panel repayment-workspace">
         <h2 style={{ marginTop: 0 }}>💳 负债管理</h2>
         <p className="muted surface-note">

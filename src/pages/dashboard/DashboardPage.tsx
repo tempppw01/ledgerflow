@@ -1278,7 +1278,7 @@ export function DashboardPage() {
   };
 
   return (
-    <div>
+    <div className="vi-page dashboard-page">
       <DashboardWelcomeBanner
         versionLabel={APP_VERSION}
         isExpanded={isWelcomeExpanded}

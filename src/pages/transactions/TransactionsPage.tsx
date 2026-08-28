@@ -2470,7 +2470,7 @@ export function TransactionsPage() {
   );
 
   return (
-    <div className="transactions-page">
+    <div className="transactions-page vi-page">
       <div className="transactions-filter-sticky-wrap">
         <TransactionFilters
           filters={filters}

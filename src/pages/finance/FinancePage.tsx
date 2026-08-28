@@ -97,7 +97,7 @@ export function FinancePage() {
   );
 
   return (
-    <div className="page-stack finance-page">
+    <div className="page-stack finance-page vi-page">
       <section className="card">
         <h2 style={{ marginTop: 0 }}>📰 {t('finance.ui.title')}</h2>
         <p className="muted">{t('finance.ui.subtitle')}</p>

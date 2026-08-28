@@ -971,7 +971,7 @@ export function DatabaseSettingsPage() {
       : '暂无记录';
 
   return (
-    <div className="database-settings-page">
+    <div className="database-settings-page vi-page">
       <header className="database-console-header">
         <div>
           <p className="database-console-eyebrow">DATA CONTROL</p>

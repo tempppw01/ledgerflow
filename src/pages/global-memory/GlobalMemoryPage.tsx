@@ -90,7 +90,7 @@ export function GlobalMemoryPage() {
   };
 
   return (
-    <div className="global-memory-page">
+    <div className="global-memory-page vi-page">
       <section className="panel global-memory-toolbar">
         <div className="global-memory-header">
           <div>

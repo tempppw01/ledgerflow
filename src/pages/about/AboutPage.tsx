@@ -82,7 +82,7 @@ export function AboutPage() {
   };
 
   return (
-    <section className="about-page">
+    <section className="about-page vi-page">
       <header className="about-console-header">
         <div>
           <p className="about-console-eyebrow">{t('about.kicker')}</p>

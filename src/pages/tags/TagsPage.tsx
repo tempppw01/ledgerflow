@@ -57,7 +57,7 @@ export function TagsPage() {
   }, [transactions]);
 
   return (
-    <section className="panel">
+    <section className="panel tags-page vi-page">
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <h2 style={{ margin: 0 }}>🏷️ 交易标签</h2>
         <small style={{ color: 'var(--color-text-secondary)' }}>共 {groups.length} 个标签</small>

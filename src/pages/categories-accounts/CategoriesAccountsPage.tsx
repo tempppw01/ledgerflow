@@ -520,7 +520,7 @@ export function CategoriesAccountsPage() {
 
   return (
     <div
-      className="grid categories-accounts-page"
+      className="grid categories-accounts-page vi-page"
       ref={layoutRef}
       style={{ '--categories-left-width': `${leftPanelWidth}px` } as CSSProperties}
     >

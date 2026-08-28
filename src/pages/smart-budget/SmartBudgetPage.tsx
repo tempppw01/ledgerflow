@@ -746,7 +746,7 @@ export function SmartBudgetPage() {
   };
 
   return (
-    <section className="panel smart-budget-page finance-page">
+    <section className="panel smart-budget-page finance-page vi-page">
       <header className="smart-budget-header">
         <div>
           <div className="smart-budget-title-row">

@@ -160,7 +160,7 @@ export function BalanceChangesPage() {
   }, [pages]);
 
   return (
-    <section className="panel balance-change-page">
+    <section className="panel balance-change-page vi-page">
       <div className="balance-change-header">
         <div>
           <h2>余额变动明细</h2>
