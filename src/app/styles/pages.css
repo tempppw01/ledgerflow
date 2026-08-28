@@ -1192,6 +1192,9 @@
 
 .financial-analysis-hero {
   padding: 14px;
+  /* VI hero is two-column by default for media; this page contains a
+     vertical analysis flow, so keep every block in one full-width track. */
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .financial-analysis-hero-head,
