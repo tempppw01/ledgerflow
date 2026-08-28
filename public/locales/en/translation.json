@@ -347,6 +347,8 @@
       "sourceSite": "Tonghuashun",
       "categories": "News categories",
       "loading": "Syncing Tonghuashun news...",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing...",
       "noNews": "No Tonghuashun news loaded yet. Refresh later.",
       "loadFailed": "Tonghuashun news is temporarily unavailable. Showing cached content when possible.",
       "readerTitle": "Tonghuashun News Reader",

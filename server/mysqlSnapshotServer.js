@@ -654,8 +654,8 @@ async function getEastmoneyMarketProxyPayload(cacheKey, upstreamUrl) {
 
 const TONGHUASHUN_NEWS_CACHE = new Map();
 const TONGHUASHUN_NEWS_PATHS = {
-  today: 'yaowen',
-  yaowen: 'yaowen',
+  today: 'today_list',
+  yaowen: 'today_list',
   macro: 'cjzx_list',
   industry: 'cjkx_list',
   global: 'guojicj_list',
@@ -665,7 +665,7 @@ const TONGHUASHUN_NEWS_PATHS = {
 
 function normalizeTonghuashunNewsCategory(value) {
   const category = String(value || '').trim().toLowerCase();
-  return TONGHUASHUN_NEWS_PATHS[category] || 'yaowen';
+  return TONGHUASHUN_NEWS_PATHS[category] || 'today_list';
 }
 
 function decodeTonghuashunHtml(buffer) {
@@ -691,23 +691,22 @@ function parseTonghuashunNewsHtml(html) {
   for (const block of itemBlocks) {
     if (!block.includes('arc-title')) continue;
 
-    const titleAnchor = block.match(
-      /<a[^>]*class="[^"]*news-link[^"]*"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i
-    );
+    const titleAnchor = block.match(/<a\b[^>]*class="[^"]*news-link[^"]*"[^>]*>[\s\S]*?<\/a>/i);
     if (!titleAnchor) continue;
 
-    const link = String(titleAnchor[1] || '').trim().replace(/^http:/i, 'https:');
-    const title = decodeHtmlEntities(String(titleAnchor[2] || '').replace(/<[^>]+>/g, ''));
-    const timeMatch = titleAnchor[0]
-      .split(/<\/a>/i)
-      .slice(1)
-      .join('</a>')
-      .match(/<span>([^<]*)<\/span>/i);
-    const publishedAt = decodeHtmlEntities(String(timeMatch?.[1] || ''));
-    const summaryAnchor = block.match(
-      /<a[^>]*class="[^"]*arc-cont[^"]*"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i
+    const titleAnchorMarkup = titleAnchor[0];
+    const titleHref = titleAnchorMarkup.match(/\bhref=["']([^"']+)["']/i);
+    if (!titleHref) continue;
+    const link = String(titleHref[1] || '').trim().replace(/^http:/i, 'https:');
+    const title = decodeHtmlEntities(
+      titleAnchorMarkup.replace(/^<[\s\S]*?>|<\/a>$/gi, '').replace(/<[^>]+>/g, '')
     );
-    const summary = decodeHtmlEntities(String(summaryAnchor?.[2] || '').replace(/<[^>]+>/g, ''));
+    const timeMatch = block.match(/<span[^>]*>([^<]*)<\/span>/i);
+    const publishedAt = decodeHtmlEntities(String(timeMatch?.[1] || ''));
+    const summaryAnchor = block.match(/<a\b[^>]*class="[^"]*arc-cont[^"]*"[^>]*>[\s\S]*?<\/a>/i);
+    const summary = decodeHtmlEntities(
+      String(summaryAnchor?.[0] || '').replace(/^<[\s\S]*?>|<\/a>$/gi, '').replace(/<[^>]+>/g, '')
+    );
     const id = `${decodeHtmlEntities(title)}-${link}`;
 
     if (!title || !link) continue;
@@ -738,7 +737,8 @@ async function fetchTonghuashunNews(category) {
       headers: {
         Accept: 'text/html,application/xhtml+xml',
         Referer: 'https://news.10jqka.com.cn/',
-        'User-Agent': 'Mozilla/5.0 LedgerFlow tonghuashun-news-proxy'
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0 Safari/537.36'
       },
       signal: controller.signal
     });
@@ -748,6 +748,9 @@ async function fetchTonghuashunNews(category) {
 
     const html = decodeTonghuashunHtml(await response.arrayBuffer());
     const news = parseTonghuashunNewsHtml(html);
+    if (news.length === 0) {
+      throw new Error('Tonghuashun news endpoint returned no news items.');
+    }
     TONGHUASHUN_NEWS_CACHE.set(cacheKey, {
       value: news,
       expiresAt: Date.now() + 60 * 1000

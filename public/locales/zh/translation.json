@@ -384,6 +384,8 @@
       "sourceSite": "同花顺",
       "categories": "资讯栏目",
       "loading": "正在同步同花顺资讯...",
+      "refresh": "刷新",
+      "refreshing": "刷新中...",
       "noNews": "暂时没有读到同花顺资讯，稍后再刷新看看。",
       "loadFailed": "同花顺资讯暂时无法更新，已尽量展示上次缓存内容。",
       "readerTitle": "同花顺资讯阅读器",

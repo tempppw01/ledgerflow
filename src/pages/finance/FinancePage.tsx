@@ -57,6 +57,7 @@ export function FinancePage() {
   const [error, setError] = useState('');
   const [activeNewsId, setActiveNewsId] = useState('');
   const [category, setCategory] = useState<TonghuashunNewsCategory>('yaowen');
+  const [refreshToken, setRefreshToken] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -85,21 +86,10 @@ export function FinancePage() {
       }
     }
 
+
     loadNews();
     return () => controller.abort();
-  }, [category, i18n.language, t]);
-
-  const dailyIdea = useMemo(() => {
-    const day = new Date().getDate();
-    const ideas = [
-      t('finance.ideas.1'),
-      t('finance.ideas.2'),
-      t('finance.ideas.3'),
-      t('finance.ideas.4'),
-      t('finance.ideas.5')
-    ];
-    return ideas[day % ideas.length];
-  }, [t]);
+  }, [category, i18n.language, refreshToken, t]);
 
   const activeNews = useMemo(
     () => news.find((item) => item.id === activeNewsId) || news[0] || null,
@@ -141,19 +131,29 @@ export function FinancePage() {
           </nav>
         </div>
 
-        <div className="finance-category-tabs" role="tablist" aria-label={t('finance.ui.categories')}>
-          {NEWS_CATEGORIES.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              role="tab"
-              aria-selected={category === item.value}
-              className={category === item.value ? 'is-active' : ''}
-              onClick={() => setCategory(item.value)}
-            >
-              {t(item.labelKey)}
-            </button>
-          ))}
+        <div className="finance-news-toolbar">
+          <div className="finance-category-tabs" role="tablist" aria-label={t('finance.ui.categories')}>
+            {NEWS_CATEGORIES.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                role="tab"
+                aria-selected={category === item.value}
+                className={category === item.value ? 'is-active' : ''}
+                onClick={() => setCategory(item.value)}
+              >
+                {t(item.labelKey)}
+              </button>
+            ))}
+          </div>
+          <button
+            className="finance-news-refresh-button"
+            type="button"
+            disabled={loading}
+            onClick={() => setRefreshToken((value) => value + 1)}
+          >
+            {loading ? t('finance.ui.refreshing') : t('finance.ui.refresh')}
+          </button>
         </div>
 
         {loading ? <p className="muted">{t('finance.ui.loading')}</p> : null}
@@ -197,10 +197,6 @@ export function FinancePage() {
         </section>
       ) : null}
 
-      <section className="card">
-        <h3 style={{ marginTop: 0 }}>💡 {t('finance.ui.dailyIdeaTitle')}</h3>
-        <p>{dailyIdea}</p>
-      </section>
     </div>
   );
 }

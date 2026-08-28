@@ -2022,11 +2022,19 @@
   background: #2468bf;
 }
 
+.finance-news-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin: 0 0 12px;
+}
+
 .finance-category-tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 0 0 12px;
+  margin: 0;
 }
 
 .finance-category-tabs button {
@@ -2051,6 +2059,29 @@
   border-color: color-mix(in srgb, var(--color-primary) 46%, var(--color-primary-border));
   background: color-mix(in srgb, var(--color-primary-bg) 90%, var(--color-surface));
   color: var(--color-primary);
+}
+
+.finance-news-refresh-button {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.finance-news-refresh-button:hover,
+.finance-news-refresh-button:focus-visible {
+  border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border-light));
+  background: color-mix(in srgb, var(--color-primary) 7%, var(--color-surface));
+}
+
+.finance-news-refresh-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 @media (max-width: 640px) {
