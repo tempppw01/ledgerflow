@@ -513,8 +513,8 @@ ${JSON.stringify(aiInput)}`
   }
 
   return (
-    <div className="page-stack financial-analysis-page">
-      <section className="panel financial-analysis-hero">
+    <div className="page-stack vi-page financial-analysis-page">
+      <section className="vi-hero financial-analysis-hero">
         <div className="financial-analysis-hero-head">
           <div>
             <h2>财务分析</h2>
@@ -672,7 +672,7 @@ ${JSON.stringify(aiInput)}`
         </article>
       </section>
 
-      <section className="panel financial-analysis-section">
+      <section className="vi-section financial-analysis-section">
         <div className="financial-analysis-section-head">
           <div>
             <h3 className="financial-analysis-title-with-icon">
@@ -842,7 +842,7 @@ ${JSON.stringify(aiInput)}`
         </div>
       </section>
 
-      <section className="panel financial-analysis-section">
+      <section className="vi-section financial-analysis-section">
         <div className="financial-analysis-section-head">
           <div>
             <h3>过去：复盘支出变化</h3>
@@ -926,7 +926,7 @@ ${JSON.stringify(aiInput)}`
         </div>
       </section>
 
-      <section className="panel financial-analysis-section">
+      <section className="vi-section financial-analysis-section">
         <div className="financial-analysis-section-head">
           <div>
             <h3>现在：诊断当前结构</h3>
