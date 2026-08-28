@@ -17022,6 +17022,219 @@ select.debt-form-input {
   font-weight: 600;
 }
 
+.debt-form-manual-schedule {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-bg-soft, #f8f7f4) 72%, transparent);
+}
+
+.debt-form-manual-schedule-header,
+.debt-pressure-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.debt-form-manual-schedule-header > div,
+.debt-pressure-preview-header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.debt-form-manual-schedule-header small,
+.debt-pressure-preview-header span {
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.debt-form-add-period {
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 42%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  padding: 6px 10px;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.debt-form-manual-rows {
+  display: grid;
+  gap: 10px;
+}
+
+.debt-form-manual-row {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.9fr) minmax(130px, 0.85fr) minmax(100px, 0.65fr) 28px;
+  gap: 12px;
+  align-items: end;
+}
+
+.debt-form-remove-period {
+  width: 28px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font-size: 13px;
+}
+
+.debt-form-remove-period:hover {
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  color: var(--color-danger);
+}
+
+.debt-form-schedule-empty {
+  margin: 0;
+  padding: 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-border-light) 34%, transparent);
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.debt-pressure-preview {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 16px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-primary) 7%, transparent),
+    transparent 42%
+  );
+}
+
+.debt-pressure-preview-header strong {
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+.debt-pressure-preview-tag {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-success, #16a34a) 14%, transparent);
+  padding: 4px 9px;
+  color: var(--color-success, #15803d);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.debt-pressure-chart {
+  margin-top: 14px;
+}
+
+.debt-pressure-chart svg {
+  width: 100%;
+  height: 210px;
+  overflow: visible;
+}
+
+.debt-pressure-axis {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.debt-pressure-amount-line,
+.debt-pressure-remaining-line {
+  fill: none;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.debt-pressure-amount-line {
+  stroke: var(--color-danger, #ef4444);
+}
+
+.debt-pressure-remaining-line {
+  stroke: var(--color-primary, #6366f1);
+  stroke-dasharray: 5 6;
+}
+
+.debt-pressure-amount-dot {
+  fill: var(--color-danger, #ef4444);
+}
+
+.debt-pressure-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 4px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.debt-pressure-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.debt-pressure-legend i {
+  width: 18px;
+  height: 0;
+  border-top: 2px solid;
+  display: inline-block;
+}
+
+.debt-pressure-legend i.amount {
+  border-color: var(--color-danger, #ef4444);
+}
+
+.debt-pressure-legend i.remaining {
+  border-color: var(--color-primary, #6366f1);
+  border-top-style: dashed;
+}
+
+.debt-pressure-table {
+  display: grid;
+  margin-top: 14px;
+  border-top: 1px solid var(--color-divider);
+}
+
+.debt-pressure-table-row {
+  display: grid;
+  grid-template-columns: 94px 74px minmax(90px, 1fr) minmax(110px, 0.8fr);
+  gap: 12px;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--color-divider);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.debt-pressure-table-row strong {
+  color: var(--color-danger);
+  font-size: 12px;
+}
+
+.debt-pressure-table-row small {
+  text-align: right;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+}
+
+.debt-pressure-empty {
+  margin-top: 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-border-light) 32%, transparent);
+  padding: 16px;
+  color: var(--color-text-tertiary);
+  font-size: 13px;
+}
+
 @media (max-width: 640px) {
   .debt-form-core {
     grid-template-columns: 1fr;
@@ -17030,6 +17243,22 @@ select.debt-form-input {
 
   .debt-form-fields {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .debt-form-manual-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .debt-form-remove-period {
+    justify-self: end;
+  }
+
+  .debt-pressure-table-row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .debt-pressure-table-row small {
+    text-align: left;
   }
 }
 

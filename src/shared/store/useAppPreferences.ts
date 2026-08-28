@@ -14,6 +14,7 @@ import {
   DebtItem,
   DebtLifecycleStatus,
   DebtType,
+  ManualRepaymentItem,
   RepaymentRecord
 } from '../../features/debt/model/debtMetrics';
 
@@ -178,9 +179,40 @@ function normalizeDebtStatus(status: unknown, balance?: number): DebtLifecycleSt
   return Number(balance || 0) <= 0 ? 'settled' : 'active';
 }
 
+function normalizeManualRepaymentItem(item: ManualRepaymentItem): ManualRepaymentItem {
+  const numeric = Number(item.amount);
+  const dueDate = normalizeOptionalString(item.dueDate);
+  const label = normalizeOptionalString(item.label);
+  return {
+    ...item,
+    dueDate,
+    amount: Number.isFinite(numeric) && numeric > 0 ? Number(numeric.toFixed(2)) : 0,
+    label
+  };
+}
+
+function normalizeManualRepayments(value: unknown): ManualRepaymentItem[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((item) =>
+      normalizeManualRepaymentItem({
+        ...item,
+        amount: Number(item?.amount || 0)
+      })
+    )
+    .filter((item) => Number.isFinite(item.amount) && item.amount > 0)
+    .sort((a, b) => {
+      const aDate = a.dueDate ? new Date(a.dueDate).getTime() : Number.POSITIVE_INFINITY;
+      const bDate = b.dueDate ? new Date(b.dueDate).getTime() : Number.POSITIVE_INFINITY;
+      return aDate - bDate;
+    });
+}
+
 function normalizeDebtItem(item: DebtItem): DebtItem {
   return {
     ...item,
+    manualRepayments: normalizeManualRepayments(item.manualRepayments),
     status: normalizeDebtStatus(item.status, item.balance)
   };
 }

@@ -21,6 +21,13 @@ export type RepaymentRecord = {
   createdAt: string;
 };
 
+export type ManualRepaymentItem = {
+  id?: string;
+  dueDate?: string;
+  amount: number;
+  label?: string;
+};
+
 export type DebtItem = {
   id: string;
   name: string;
@@ -40,6 +47,7 @@ export type DebtItem = {
   repaymentRecordMode?: DebtRepaymentRecordMode;
   paymentAccount?: string;
   graceDays?: number;
+  manualRepayments?: ManualRepaymentItem[];
 };
 
 export type DebtSummary = {
