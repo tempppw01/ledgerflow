@@ -1010,14 +1010,14 @@ function RuleSuggestionsPanel({
   algorithmSignals: MarketAlgorithmSignals;
 }) {
   const summary = insight
-    ? `结合市场、热点与资讯整理，风险温度 ${algorithmSignals.riskScore} / 100。`
-    : `先以当前行情作参考，风险温度 ${algorithmSignals.riskScore} / 100。`;
+    ? `结合市场、热点与资讯整理，风险温度 ${algorithmSignals.riskScore} 分（满分 100）。`
+    : `先以当前行情作参考，风险温度 ${algorithmSignals.riskScore} 分（满分 100）。`;
 
   return (
     <section className="panel investments-rule-suggestions-panel" aria-label="今日投资提示">
       <div className="investments-today-panel-head">
         <div>
-          <span className="investments-briefing-eyebrow">TODAY&apos;S NOTE</span>
+          <span className="investments-briefing-eyebrow">晨间笔记</span>
           <h2>慢一点，也是在前进</h2>
           <p>{summary}</p>
         </div>
