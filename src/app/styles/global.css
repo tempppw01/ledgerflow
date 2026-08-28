@@ -16949,7 +16949,7 @@ body.categories-accounts-resizing {
 }
 
 .debt-form-input::placeholder {
-  color: var(--color-text-quaternary);
+  color: color-mix(in srgb, var(--color-text-quaternary) 72%, transparent);
   font-weight: 400;
 }
 
@@ -17043,6 +17043,51 @@ select.debt-form-input {
   border-bottom: 1px solid var(--color-divider);
 }
 
+.debt-form-extra {
+  grid-column: 1 / -1;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.debt-form-extra > summary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 12px 0;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  list-style: none;
+}
+
+.debt-form-extra > summary::-webkit-details-marker {
+  display: none;
+}
+
+.debt-form-extra > summary::before {
+  content: '›';
+  color: var(--color-primary);
+  font-size: 16px;
+  transition: transform 160ms ease;
+}
+
+.debt-form-extra[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.debt-form-extra > summary small {
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.debt-form-extra-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px 24px;
+  padding: 0 0 16px;
+}
+
 .debt-form-error {
   margin: 10px 0 0;
   color: var(--color-danger);
@@ -17054,6 +17099,7 @@ select.debt-form-input {
   align-items: center;
   gap: 12px;
   margin-top: 16px;
+  justify-content: flex-end;
 }
 
 .debt-form-actions .primary {

@@ -851,7 +851,7 @@ export function RepaymentManagementPage() {
   const startEditingDebt = useCallback((item: DebtItem) => {
     setEditingDebtId(item.id);
     setDebtName(item.name || '');
-    setDebtType(item.type || 'credit-card');
+    setDebtType(item.type === 'consumer-loan' ? 'credit-card' : item.type || 'credit-card');
     setDebtPlanMode(
       Array.isArray(item.manualRepayments) && item.manualRepayments.length > 0
         ? 'manual'
@@ -2976,7 +2976,7 @@ export function RepaymentManagementPage() {
                 ) : null}
 
                 <p className="muted" style={{ margin: '12px 0 8px 0' }}>
-                  先填名称、类型；贷款可根据期数自动估算剩余本金。
+                  先填写名称和剩余本金；贷款可再补充期数，自动估算后续还款。
                 </p>
 
                 <form onSubmit={onAddDebt} className="debt-form-line">
@@ -3002,8 +3002,7 @@ export function RepaymentManagementPage() {
                         onChange={(event) => setDebtType(event.target.value as DebtType)}
                         aria-label="负债类型"
                       >
-                        <option value="credit-card">信用卡</option>
-                        <option value="consumer-loan">消费贷</option>
+                        <option value="credit-card">信用类负债</option>
                         <option value="loan">贷款</option>
                       </select>
                     </label>
@@ -3036,41 +3035,46 @@ export function RepaymentManagementPage() {
                     </label>
                   </div>
 
-                  <section className="debt-plan-mode">
-                    <div className="debt-plan-mode-copy">
-                      <strong>还款计划方式</strong>
-                      <span>不知道总还款时，选择手动逐期计划最方便。</span>
-                    </div>
-                    <div className="debt-plan-mode-switch" role="tablist" aria-label="还款计划方式">
-                      <button
-                        type="button"
-                        role="tab"
-                        aria-selected={debtPlanMode === 'structured'}
-                        className={`debt-plan-mode-option ${debtPlanMode === 'structured' ? 'is-active' : ''}`}
-                        onClick={() => {
-                          setDebtPlanMode('structured');
-                          setDebtFormError('');
-                        }}
-                      >
-                        按总期数
-                      </button>
-                      <button
-                        type="button"
-                        role="tab"
-                        aria-selected={debtPlanMode === 'manual'}
-                        className={`debt-plan-mode-option ${debtPlanMode === 'manual' ? 'is-active' : ''}`}
-                        onClick={() => {
-                          setDebtPlanMode('manual');
-                          if (debtManualRepayments.length === 0) addManualRepaymentRow();
-                          setDebtFormError('');
-                        }}
-                      >
-                        手动逐期
-                      </button>
-                    </div>
-                  </section>
+                  {isLoanType ? (
+                    <section className="debt-plan-mode">
+                      <div className="debt-plan-mode-copy">
+                        <strong>还款计划方式</strong>
+                        <span>不知道总还款时，选择手动逐期计划最方便。</span>
+                      </div>
+                      <div className="debt-plan-mode-switch" role="tablist" aria-label="还款计划方式">
+                        <button
+                          type="button"
+                          role="tab"
+                          aria-selected={debtPlanMode === 'structured'}
+                          className={`debt-plan-mode-option ${debtPlanMode === 'structured' ? 'is-active' : ''}`}
+                          onClick={() => {
+                            setDebtPlanMode('structured');
+                            setDebtFormError('');
+                          }}
+                        >
+                          按总期数
+                        </button>
+                        <button
+                          type="button"
+                          role="tab"
+                          aria-selected={debtPlanMode === 'manual'}
+                          className={`debt-plan-mode-option ${debtPlanMode === 'manual' ? 'is-active' : ''}`}
+                          onClick={() => {
+                            setDebtPlanMode('manual');
+                            if (debtManualRepayments.length === 0) addManualRepaymentRow();
+                            setDebtFormError('');
+                          }}
+                        >
+                          手动逐期
+                        </button>
+                      </div>
+                    </section>
+                  ) : null}
 
                   <div className="debt-form-fields debt-form-fields--conditional">
+                    <details className="debt-form-extra">
+                      <summary>补充设置 <small>还款日、账户和记录方式</small></summary>
+                      <div className="debt-form-extra-grid">
                       <label className="debt-form-field">
                         <span className="debt-form-field-label">还款日</span>
                         <span className="debt-form-money">
@@ -3176,6 +3180,8 @@ export function RepaymentManagementPage() {
                           <option value="paused">暂缓处理</option>
                         </select>
                       </label>
+                      </div>
+                    </details>
                       {isLoanType && debtPlanMode === 'structured' ? (
                         <>
                           <label className="debt-form-field">
