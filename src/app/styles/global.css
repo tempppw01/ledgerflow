@@ -167,31 +167,19 @@ body {
 .sidebar-collapse-btn {
   width: 34px;
   height: 34px;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--color-bg-elevated) 92%, white 8%),
-    color-mix(in srgb, var(--color-bg-subtle) 92%, var(--color-bg-elevated))
-  );
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
   color: var(--color-primary);
-  box-shadow:
-    0 6px 18px color-mix(in srgb, var(--color-text) 8%, transparent),
-    inset 0 1px 0 color-mix(in srgb, white 72%, transparent);
+  box-shadow: none;
 }
 
 .sidebar-collapse-btn:hover {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--color-primary) 38%, var(--color-border));
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--color-primary-bg) 56%, white 8%),
-    color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-primary-bg))
-  );
+  transform: none;
+  border-color: transparent;
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
   color: var(--color-primary-hover);
-  box-shadow:
-    0 10px 24px color-mix(in srgb, var(--color-primary) 16%, transparent),
-    inset 0 1px 0 color-mix(in srgb, white 76%, transparent);
+  box-shadow: none;
 }
 
 .sidebar-collapse-btn:active {
@@ -200,10 +188,8 @@ body {
 
 .sidebar-collapse-btn:focus-visible {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent),
-    0 8px 20px color-mix(in srgb, var(--color-primary) 16%, transparent);
+  border-color: transparent;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
 }
 
 .mobile-nav-toggle {
