@@ -1017,16 +1017,17 @@ function RuleSuggestionsPanel({
     <section className="panel investments-rule-suggestions-panel" aria-label="今日投资提示">
       <div className="investments-today-panel-head">
         <div>
-          <span className="investments-briefing-eyebrow">今日简报</span>
-          <h2>给计划一点耐心</h2>
-          <p>{summary} 它只提供线索，决定仍在你手里。</p>
+          <span className="investments-briefing-eyebrow">TODAY&apos;S NOTE</span>
+          <h2>慢一点，也是在前进</h2>
+          <p>{summary}</p>
         </div>
-        <span className="investments-briefing-mark" aria-hidden="true">✦</span>
       </div>
       <div className="investments-rule-suggestion-list">
         {suggestions.map((suggestion, index) => (
           <article key={suggestion.title} className={`is-${suggestion.tone}`}>
-            <span aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+            <span className="investments-rule-suggestion-index" aria-hidden="true">
+              {String(index + 1).padStart(2, '0')}
+            </span>
             <div>
               <strong>{suggestion.title}</strong>
               <p>{suggestion.reason.replace(/^依据：/, '')}</p>

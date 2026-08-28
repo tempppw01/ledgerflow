@@ -433,21 +433,25 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
+  padding-bottom: 3px;
 }
 
 .investments-today-panel-head h2 {
   margin: 0;
   color: var(--color-text-primary);
-  font-size: 15px;
-  font-weight: 800;
-  line-height: 1.35;
+  font-family: var(--font-serif, var(--font-sans));
+  font-size: clamp(17px, 1.35vw, 20px);
+  font-weight: 650;
+  letter-spacing: 0.015em;
+  line-height: 1.3;
 }
 
 .investments-today-panel-head p {
-  margin: 3px 0 0;
+  max-width: 32ch;
+  margin: 6px 0 0;
   color: var(--color-text-secondary);
   font-size: 12px;
-  line-height: 1.45;
+  line-height: 1.65;
 }
 
 .investments-today-panel-head > span:not(.badge) {
@@ -674,26 +678,26 @@
 .investments-rule-suggestion-list {
   display: grid;
   gap: 0;
-  margin-top: 16px;
-  border-top: 1px solid color-mix(in srgb, var(--color-border-light) 74%, transparent);
+  margin-top: 18px;
+  border-top: 1px solid color-mix(in srgb, var(--color-border-light) 58%, transparent);
 }
 
 .investments-rule-suggestion-list article {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 12px;
   align-items: start;
-  padding: 12px 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-border-light) 62%, transparent);
+  padding: 14px 0 15px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border-light) 54%, transparent);
 }
 
-.investments-rule-suggestion-list article > span {
-  padding-top: 1px;
-  color: var(--color-primary);
+.investments-rule-suggestion-index {
+  padding-top: 3px;
+  color: var(--color-text-tertiary);
   font-family: var(--font-number, var(--font-sans));
-  font-size: 10px;
-  font-weight: 750;
-  letter-spacing: 0.08em;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 0.1em;
   line-height: 1.5;
 }
 
@@ -705,15 +709,15 @@
 .investments-rule-suggestion-list strong {
   color: var(--color-text-primary);
   font-size: 13px;
-  font-weight: 720;
-  line-height: 1.4;
+  font-weight: 680;
+  line-height: 1.5;
 }
 
 .investments-rule-suggestion-list p {
-  margin: 0;
+  margin: 3px 0 0;
   color: var(--color-text-secondary);
   font-size: 12px;
-  line-height: 1.55;
+  line-height: 1.65;
 }
 
 .investments-rule-suggestion-list .is-warning strong {
@@ -726,24 +730,16 @@
 
 .investments-briefing-eyebrow {
   display: block;
-  margin-bottom: 5px;
-  color: var(--color-primary);
-  font-size: 10px;
-  font-weight: 780;
-  letter-spacing: 0.12em;
+  margin-bottom: 8px;
+  color: var(--color-text-tertiary);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   line-height: 1;
 }
 
 .investments-today-panel-head .investments-briefing-mark {
-  display: grid;
-  width: 30px;
-  height: 30px;
-  place-items: center;
-  border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
-  border-radius: 50%;
-  color: var(--color-primary);
-  font-size: 13px;
-  line-height: 1;
+  display: none;
 }
 
 .investments-board-health.is-green {
