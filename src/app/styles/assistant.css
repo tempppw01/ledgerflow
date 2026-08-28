@@ -219,6 +219,92 @@
   white-space: nowrap;
 }
 
+/* The mode selector is always available; keep it airy and editorial instead of
+   hiding the choices behind a heavy dropdown control. */
+.chat-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 0;
+}
+
+.chat-mode-switch::after {
+  display: none;
+}
+
+.chat-mode-switch-spark {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  color: var(--color-primary);
+  font-size: 14px;
+  animation: chat-mode-spark 2.8s ease-in-out infinite;
+}
+
+.chat-mode-switch-options {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+
+.chat-mode-switch-options button,
+.chat-mode-switch-options button.active {
+  position: relative;
+  min-width: 0;
+  padding: 5px 9px 7px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  font-weight: 650;
+  transition: color 160ms ease, transform 160ms ease;
+}
+
+.chat-mode-switch-options button::after {
+  position: absolute;
+  right: 9px;
+  bottom: 0;
+  left: 9px;
+  height: 2px;
+  border-radius: 99px;
+  background: var(--color-primary);
+  content: '';
+  opacity: 0;
+  transform: scaleX(0.35);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.chat-mode-switch-options button:hover {
+  color: var(--color-text-primary);
+  transform: translateY(-1px);
+}
+
+.chat-mode-switch-options button.active {
+  color: var(--color-text-primary);
+}
+
+.chat-mode-switch-options button.active::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+@keyframes chat-mode-spark {
+  0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.72; }
+  50% { transform: rotate(12deg) scale(1.12); opacity: 1; }
+}
+
 .chat-topbar-title {
   font-weight: 600;
   color: var(--color-text);

@@ -46,7 +46,6 @@ import {
 import {
   ASSISTANT_ACTIVE_MODE_STORAGE_KEY,
   ASSISTANT_MODE_CHANGED_EVENT,
-  getAssistantModeLabel,
   readAssistantModeFromSessionStorage,
   type AssistantMode
 } from '../../features/assistant/shared/assistantMode';
@@ -678,7 +677,6 @@ export function AssistantPage() {
   });
 
   const [modelOpen, setModelOpen] = useState(false);
-  const [modeMenuOpen, setModeMenuOpen] = useState(false);
   const [composerFocused, setComposerFocused] = useState(false);
   const [streamingPreviewMessage, setStreamingPreviewMessage] = useState('');
   const [streamingPreviewReasoning, setStreamingPreviewReasoning] = useState('');
@@ -1645,19 +1643,6 @@ export function AssistantPage() {
 
   const selectAssistantMode = (nextMode: AssistantMode) => {
     setMode(nextMode);
-    setModeMenuOpen(false);
-  };
-
-  const openModeMenuOnHover = () => {
-    if (window.innerWidth > 768 && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-      setModeMenuOpen(true);
-    }
-  };
-
-  const closeModeMenuOnHover = () => {
-    if (window.innerWidth > 768 && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-      setModeMenuOpen(false);
-    }
   };
 
   return (
@@ -1667,27 +1652,9 @@ export function AssistantPage() {
       onDrop={(e) => void wb.handleDropImage(e)}
     >
       <header className="chat-topbar chat-topbar-no-title">
-        <div
-          className={`chat-mode-switch ${modeMenuOpen ? 'is-open' : ''}`}
-          aria-label="模式切换"
-          onMouseEnter={openModeMenuOnHover}
-          onMouseLeave={closeModeMenuOnHover}
-        >
-          <button
-            type="button"
-            className="chat-mode-switch-trigger"
-            aria-expanded={modeMenuOpen}
-            aria-controls="assistant-mode-options"
-            onClick={() => setModeMenuOpen((current) => !current)}
-          >
-            <span className="chat-mode-switch-trigger-label">{getAssistantModeLabel(mode, t)}</span>
-            <span className="chat-mode-switch-trigger-arrow" aria-hidden="true">⌄</span>
-          </button>
-          <div
-            id="assistant-mode-options"
-            className="chat-mode-switch-options"
-            aria-hidden={!modeMenuOpen}
-          >
+        <div className="chat-mode-switch" aria-label="模式切换">
+          <span className="chat-mode-switch-spark" aria-hidden="true">✦</span>
+          <div className="chat-mode-switch-options">
             <button
               type="button"
               className={mode === 'bookkeeping' ? 'active' : ''}
