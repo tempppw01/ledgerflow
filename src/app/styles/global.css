@@ -308,11 +308,11 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-2);
-  box-shadow: var(--shadow-xs);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 5px 0 9px;
+  box-shadow: none;
 }
 
 .sidebar-overview-card {
@@ -401,6 +401,10 @@ body {
   justify-content: space-between;
   cursor: pointer;
   border-radius: var(--radius-md);
+}
+
+.sidebar-section-toggle:hover {
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
 }
 
 .sidebar-section-title {
@@ -496,26 +500,16 @@ body {
 }
 
 .sidebar-link:hover {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--color-bg-hover) 92%, white 8%),
-    color-mix(in srgb, var(--color-bg-elevated) 96%, var(--color-primary-bg))
-  );
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
   color: var(--color-text);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, white 68%, transparent);
+  box-shadow: none;
 }
 
 .sidebar-link.active {
   color: var(--color-primary);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--color-primary-bg) 86%, white 6%),
-    color-mix(in srgb, var(--color-bg-elevated) 92%, var(--color-primary-bg))
-  );
+  background: color-mix(in srgb, var(--color-primary) 9%, transparent);
   font-weight: 500;
-  box-shadow:
-    0 6px 16px color-mix(in srgb, var(--color-primary) 10%, transparent),
-    inset 0 1px 0 color-mix(in srgb, white 74%, transparent);
+  box-shadow: inset 2px 0 0 var(--color-primary);
 }
 
 .sidebar-link.disabled {
