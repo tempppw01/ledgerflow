@@ -270,12 +270,12 @@
 
 .topbar-account-menu-item-icon,
 .topbar-account-menu-symbol {
-  display: inline-flex;
+  display: inline-grid;
   width: 30px;
   height: 30px;
   flex: 0 0 30px;
-  align-items: center;
-  justify-content: center;
+  place-items: center;
+  align-self: center;
   border-radius: 7px;
   background: color-mix(in srgb, var(--color-primary) 9%, transparent);
   color: var(--color-primary);
@@ -284,12 +284,15 @@
 .topbar-account-menu-item-icon img {
   width: 16px;
   height: 16px;
+  display: block;
   object-fit: contain;
 }
 
 .topbar-account-menu-symbol {
-  font-size: 18px;
+  font-family: Arial, sans-serif;
+  font-size: 17px;
   line-height: 1;
+  text-align: center;
 }
 
 .topbar-account-menu-item-copy {
