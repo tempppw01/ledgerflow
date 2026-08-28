@@ -13219,6 +13219,252 @@ body.categories-accounts-resizing {
   margin-bottom: 0;
 }
 
+/* ============================================================
+   Shared flat workspace system
+   页面是画布，section 负责分组，只有可独立操作的对象才使用实体 surface。
+   新页面优先组合这些类，而不是继续创建 card 内嵌 card 的私有样式。
+   ============================================================ */
+.design-workspace {
+  display: grid;
+  gap: var(--section-gap);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--surface-page);
+  box-shadow: none;
+}
+
+.design-section {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--section-padding) 0;
+  border-top: 1px solid var(--border-subtle);
+  background: transparent;
+}
+
+.design-section:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.design-section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.design-section-heading h3,
+.design-section-heading h4,
+.design-section-heading p {
+  margin: 0;
+}
+
+.design-section-heading p {
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+}
+
+.design-stat-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 0;
+  border-block: 1px solid var(--border-subtle);
+}
+
+.design-stat {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: 1px solid var(--border-subtle);
+}
+
+.design-stat:first-child {
+  border-left: 0;
+}
+
+.design-stat span {
+  color: var(--color-text-secondary);
+  font-size: var(--font-xs);
+}
+
+.design-stat strong {
+  font-size: var(--font-lg);
+  letter-spacing: -0.02em;
+}
+
+.design-toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.design-item-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-3);
+}
+
+.design-item-surface {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-item);
+  box-shadow: var(--shadow-xs);
+}
+
+@media (max-width: 680px) {
+  .design-section {
+    padding-block: var(--space-4);
+  }
+
+  .design-stat-group {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .design-stat:nth-child(odd) {
+    border-left: 0;
+  }
+
+  .design-stat:nth-child(n + 3) {
+    border-top: 1px solid var(--border-subtle);
+  }
+}
+
+/* Smart budget migration: use the shared hierarchy and keep cards only for budget objects. */
+.smart-budget-management.design-workspace {
+  gap: 0;
+}
+
+.smart-budget-management .design-section {
+  padding-inline: 0;
+}
+
+.smart-budget-overview-card.design-section {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.smart-budget-overview-card .smart-budget-overview-stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  border-block: 1px solid var(--border-subtle);
+}
+
+.smart-budget-overview-card .smart-budget-overview-stats article {
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-left: 1px solid var(--border-subtle);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.smart-budget-overview-card .smart-budget-overview-stats article:first-child {
+  border-left: 0;
+}
+
+.smart-budget-overview-card .smart-budget-overview-stats article:hover,
+.smart-budget-progress-card:hover,
+.smart-budget-ai-card:hover,
+.smart-budget-trend-card:hover,
+.smart-budget-anomaly-card:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.smart-budget-management-topbar.design-toolbar {
+  padding-bottom: var(--space-4);
+}
+
+.smart-budget-ai-card.design-section,
+.smart-budget-trend-card.design-section,
+.smart-budget-anomaly-card.design-section {
+  padding-inline: 0;
+  border-inline: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.smart-budget-ai-card.design-section {
+  border-top-color: color-mix(in srgb, var(--color-primary) 32%, var(--color-border-light));
+}
+
+.smart-budget-ai-highlight {
+  padding: 0;
+  border: 0;
+  border-left: 3px solid var(--color-primary);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding-left: var(--space-3);
+}
+
+.smart-budget-progress-list.design-item-grid {
+  gap: var(--space-3);
+}
+
+.smart-budget-progress-card {
+  border-radius: var(--radius-lg);
+  background: var(--surface-item);
+  box-shadow: var(--shadow-xs);
+}
+
+.smart-budget-trend-item {
+  padding: var(--space-3) 0;
+  border: 0;
+  border-radius: 0;
+  border-top: 1px solid var(--border-subtle);
+  background: transparent;
+}
+
+.smart-budget-trend-item:first-child {
+  border-top: 0;
+}
+
+.smart-budget-step-intro.design-section,
+.smart-budget-block.design-section {
+  border-inline: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding-inline: 0;
+}
+
+.smart-budget-block.design-section {
+  gap: var(--space-4);
+}
+
+.smart-budget-block.design-section + .smart-budget-block.design-section {
+  margin-top: 0;
+}
+
+@media (max-width: 900px) {
+  .smart-budget-overview-card.design-section {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 680px) {
+  .smart-budget-overview-card .smart-budget-overview-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .smart-budget-overview-card .smart-budget-overview-stats article:nth-child(odd) {
+    border-left: 0;
+  }
+
+  .smart-budget-overview-card .smart-budget-overview-stats article:nth-child(n + 3) {
+    border-top: 1px solid var(--border-subtle);
+  }
+}
+
 @media (max-width: 900px) {
   .smart-budget-overview-card {
     grid-template-columns: minmax(0, 1fr);

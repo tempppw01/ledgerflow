@@ -209,6 +209,15 @@
   --radius-xl: 16px;
   --radius-full: 999px;
 
+  /* ---- 布局层级：页面不再默认用卡片包住卡片 ---- */
+  --surface-page: transparent;
+  --surface-section: color-mix(in srgb, var(--color-bg-elevated) 42%, transparent);
+  --surface-item: var(--color-bg-elevated);
+  --border-subtle: color-mix(in srgb, var(--color-border-light) 82%, transparent);
+  --section-gap: var(--space-6);
+  --section-padding: var(--space-5);
+  --item-padding: var(--space-4);
+
   /* ---- 阴影 ---- */
   --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
   --shadow-sm: 0 3px 10px rgba(15, 23, 42, 0.06);

@@ -788,21 +788,21 @@ export function SmartBudgetPage() {
 
       {mode === 'management' ? (
         confirmedPlan ? (
-          <section className="smart-budget-management" aria-label="智能预算管理看板">
+          <section className="smart-budget-management design-workspace" aria-label="智能预算管理看板">
             <section
-              className="smart-budget-overview-card smart-budget-panel-card"
+              className="smart-budget-overview-card design-section"
               aria-label="预算总览"
             >
               <div className="smart-budget-overview-stats">
-                <article>
+                <article className="design-stat">
                   <span>本月可花总额</span>
                   <strong>{formatCurrency(managementOverview.totalBudget)}</strong>
                 </article>
-                <article>
+                <article className="design-stat">
                   <span>已经用掉</span>
                   <strong>{formatCurrency(managementOverview.totalSpent)}</strong>
                 </article>
-                <article>
+                <article className="design-stat">
                   <span>还剩下多少</span>
                   <strong
                     className={managementOverview.remainingAmount >= 0 ? 'positive' : 'negative'}
@@ -810,7 +810,7 @@ export function SmartBudgetPage() {
                     {formatCurrency(managementOverview.remainingAmount)}
                   </strong>
                 </article>
-                <article>
+                <article className="design-stat">
                   <span>花销节奏</span>
                   <strong className={managementOverview.executionRate > 1 ? 'negative' : ''}>
                     {(managementOverview.executionRate * 100).toFixed(1)}%
@@ -837,7 +837,7 @@ export function SmartBudgetPage() {
               </div>
             </section>
 
-            <div className="smart-budget-management-topbar">
+            <div className="smart-budget-management-topbar design-toolbar">
               <div className="field">
                 <label htmlFor="budget-month">最近月份</label>
                 <select
@@ -877,7 +877,7 @@ export function SmartBudgetPage() {
               </div>
             </div>
 
-            <section className="smart-budget-ai-card smart-budget-panel-card" aria-live="polite">
+            <section className="smart-budget-ai-card design-section" aria-live="polite">
               <div className="smart-budget-ai-card-title">
                 <span className="smart-budget-ai-icon" aria-hidden="true">
                   🤖
@@ -946,7 +946,7 @@ export function SmartBudgetPage() {
 
             {categoryTrendRows.length ? (
               <section
-                className="smart-budget-trend-card smart-budget-panel-card"
+                className="smart-budget-trend-card design-section"
                 aria-label="预算执行趋势"
               >
                 <h4>最近几个月，钱主要花在哪里</h4>
@@ -977,7 +977,7 @@ export function SmartBudgetPage() {
 
             {anomalyAlerts.length ? (
               <section
-                className="smart-budget-anomaly-card smart-budget-panel-card"
+                className="smart-budget-anomaly-card design-section"
                 aria-label="异常提醒"
               >
                 <h4>异常提醒与调整建议</h4>
@@ -1003,7 +1003,7 @@ export function SmartBudgetPage() {
 
             {actionLogs.length ? (
               <section
-                className="smart-budget-anomaly-card smart-budget-panel-card"
+                className="smart-budget-anomaly-card design-section"
                 aria-label="建议动作执行记录"
               >
                 <h4>建议动作执行记录</h4>
@@ -1031,7 +1031,7 @@ export function SmartBudgetPage() {
                     </button>
                   ) : null}
                 </div>
-                <div className="smart-budget-progress-list">
+                <div className="smart-budget-progress-list design-item-grid">
                   {collapsedVisibleRows.map((item) => (
                     <article
                       key={item.category}
@@ -1112,7 +1112,7 @@ export function SmartBudgetPage() {
       {mode === 'setup' && setupOpen ? (
         <>
           <section
-            className="smart-budget-step-intro smart-budget-panel-card"
+            className="smart-budget-step-intro design-section"
             aria-label="当前预算步骤说明"
           >
             <div>
@@ -1144,7 +1144,7 @@ export function SmartBudgetPage() {
           </div>
 
           {step === 1 ? (
-            <div className="smart-budget-block">
+            <div className="smart-budget-block design-section">
               <h3>你目前的身份是？</h3>
               <div className="smart-budget-choice-grid">
                 {identityOptions.map((item) => (
@@ -1164,7 +1164,7 @@ export function SmartBudgetPage() {
           ) : null}
 
           {step === 2 ? (
-            <div className="smart-budget-block">
+            <div className="smart-budget-block design-section">
               <h3>每月大概到手多少？</h3>
               <div className="field">
                 <label htmlFor="income-k">当前换算：{incomePreview}</label>
@@ -1183,7 +1183,7 @@ export function SmartBudgetPage() {
           ) : null}
 
           {step === 3 ? (
-            <div className="smart-budget-block">
+            <div className="smart-budget-block design-section">
               <h3>每月固定支出多少？</h3>
               <div className="field">
                 <label htmlFor="fixed-expense-k">当前换算：{fixedExpensePreview}</label>
@@ -1205,7 +1205,7 @@ export function SmartBudgetPage() {
           ) : null}
 
           {step === 4 ? (
-            <div className="smart-budget-block">
+            <div className="smart-budget-block design-section">
               <h3>想先存下多少？</h3>
               <div className="smart-budget-preview-chips">
                 <span>可支配 {formatCurrency(savingsPreview.disposableIncome)}</span>
@@ -1248,7 +1248,7 @@ export function SmartBudgetPage() {
           ) : null}
 
           {step === 5 && draftRecommendation ? (
-            <div className="smart-budget-block">
+            <div className="smart-budget-block design-section">
               <h3>看看这份预算合不合适</h3>
               <p>没问题的话，确认后就能进入可跟踪的执行看板。</p>
               <div className="smart-budget-result-grid">
