@@ -71,6 +71,37 @@ function isSameMonth(date: Date, reference: Date): boolean {
   return date.getFullYear() === reference.getFullYear() && date.getMonth() === reference.getMonth();
 }
 
+function getScheduledPayment(
+  item: DebtItem,
+  year: number,
+  month: number,
+  fallback: number,
+  referenceDate?: Date
+): number {
+  const manual = Array.isArray(item.manualRepayments) ? item.manualRepayments : [];
+  if (manual.length === 0) {
+    // “本月”只展示尚未到期的账单；若本月还款日已过去，下一笔应落到下个月。
+    if (
+      referenceDate &&
+      typeof item.repaymentDay === 'number' &&
+      year === referenceDate.getFullYear() &&
+      month === referenceDate.getMonth() &&
+      item.repaymentDay < referenceDate.getDate()
+    ) {
+      return 0;
+    }
+    return fallback;
+  }
+  return manual.reduce((sum, row) => {
+    if (!row.dueDate) return sum;
+    const dueDate = new Date(row.dueDate);
+    if (Number.isNaN(dueDate.getTime()) || dueDate.getFullYear() !== year || dueDate.getMonth() !== month) {
+      return sum;
+    }
+    return sum + Math.max(0, Number(row.amount) || 0);
+  }, 0);
+}
+
 export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOverviewResult {
   const from = input.fromDate ?? new Date();
   const monthsAhead = Math.max(1, Math.min(12, input.monthsAhead ?? 6));
@@ -85,7 +116,13 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
 
   const breakdown = activeDebts
     .map((item) => {
-      const payment = calculateDebtMinimumPayment(item);
+      const payment = getScheduledPayment(
+        item,
+        from.getFullYear(),
+        from.getMonth(),
+        calculateDebtMinimumPayment(item),
+        from
+      );
       const dueInDays =
         typeof item.repaymentDay === 'number' && item.repaymentDay >= 1 && item.repaymentDay <= 31
           ? (item.repaymentDay - todayDay + 31) % 31
@@ -157,10 +194,11 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
     const year = monthDate.getFullYear();
     const month = monthDate.getMonth();
     const items: RepaymentOverviewResult['monthlyProjection'][0]['items'] = [];
-    for (const item of breakdown) {
-      const remaining = activeDebts.find((debt) => debt.id === item.id)?.remainingMonths;
+    for (const debt of activeDebts) {
+      const remaining = debt.remainingMonths;
       if (typeof remaining === 'number' && offset >= remaining) continue;
-      items.push({ id: item.id, name: item.name, amount: item.payment });
+      const amount = getScheduledPayment(debt, year, month, calculateDebtMinimumPayment(debt));
+      if (amount > 0) items.push({ id: debt.id, name: debt.name, amount });
     }
     const total = items.reduce((sum, item) => sum + item.amount, 0);
     monthlyProjection.push({

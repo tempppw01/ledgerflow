@@ -193,7 +193,7 @@ function ProjectionLineChart({ data }: { data: Array<{ monthLabel: string; total
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const width = 620;
   const height = 190;
-  const padding = { top: 22, right: 20, bottom: 24, left: 18 };
+  const padding = { top: 28, right: 20, bottom: 24, left: 18 };
   const totals = data.map((item) => Math.max(0, item.total));
   const rawMin = Math.min(...totals);
   const rawMax = Math.max(...totals, 1);
@@ -216,7 +216,8 @@ function ProjectionLineChart({ data }: { data: Array<{ monthLabel: string; total
     : '';
   const activePoint = hoveredIndex === null ? null : points[hoveredIndex];
   const peakIndex = totals.indexOf(rawMax);
-  const labelIndices = new Set([0, points.length - 1, peakIndex]);
+  // 窄列中同时标注首尾和峰值容易重叠；默认只突出峰值，其余月份在悬停时显示。
+  const labelIndices = new Set([peakIndex]);
 
   function handlePointerMove(event: MouseEvent<SVGSVGElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -279,7 +280,7 @@ function ProjectionLineChart({ data }: { data: Array<{ monthLabel: string; total
                 <text
                   className={`repayment-projection-value${hoveredIndex === index ? ' is-active' : ''}`}
                   x={point.x}
-                  y={Math.max(20, point.y - 15)}
+                  y={Math.max(24, point.y - 16)}
                 >
                   {formatCurrencyAuto(point.total)}
                 </text>

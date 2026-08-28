@@ -100,4 +100,34 @@ describe('getRepaymentOverview', () => {
     expect(result.monthlyProjection[0].items).toHaveLength(1);
     expect(result.monthlyProjection[2].items).toHaveLength(0);
   });
+
+  it('uses dated manual installments instead of treating a future installment as due this month', () => {
+    const result = getRepaymentOverview({
+      debts: [
+        debt({
+          customMinPayment: 260,
+          manualRepayments: [
+            { dueDate: '2026-09-10', amount: 260, label: '第 1 期' }
+          ]
+        })
+      ],
+      repaymentRecords: [],
+      fromDate: new Date(2026, 7, 28)
+    });
+
+    expect(result.thisMonthTotal).toBe(0);
+    expect(result.monthlyProjection[0].total).toBe(0);
+    expect(result.monthlyProjection[1]).toMatchObject({ monthLabel: '9月', total: 260 });
+  });
+
+  it('does not count a regular monthly payment after its due day as this month due', () => {
+    const result = getRepaymentOverview({
+      debts: [debt({ repaymentDay: 2, customMinPayment: 260 })],
+      repaymentRecords: [],
+      fromDate: new Date(2026, 7, 28)
+    });
+
+    expect(result.thisMonthTotal).toBe(0);
+    expect(result.monthlyProjection[0].total).toBe(260);
+  });
 });

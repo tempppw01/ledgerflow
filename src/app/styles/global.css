@@ -16635,14 +16635,14 @@ body.categories-accounts-resizing {
 .repayment-projection-stage {
   position: relative;
   min-width: 0;
-  min-height: 174px;
+  min-height: 182px;
   overflow: hidden;
 }
 
 .repayment-projection-stage svg {
   display: block;
   width: 100%;
-  height: 190px;
+  height: 198px;
   overflow: visible;
 }
 
@@ -16724,7 +16724,9 @@ body.categories-accounts-resizing {
   grid-template-columns: repeat(6, minmax(0, 1fr));
   padding: 0 8px;
   color: var(--color-text-tertiary);
-  font-size: 11px;
+  font-size: clamp(10px, 3.15cqi, 12px);
+  font-weight: 700;
+  line-height: 1.25;
   text-align: center;
 }
 
@@ -18375,17 +18377,22 @@ select.debt-form-input {
 }
 
 .repayment-projection-value {
-  font-size: clamp(8px, 2.25cqi, 11px);
+  font-size: clamp(10px, 3.35cqi, 13px);
   font-weight: 800;
   paint-order: stroke;
   stroke: var(--color-bg-elevated);
-  stroke-width: 2px;
+  stroke-width: 2.5px;
   stroke-linejoin: round;
 }
 
 .repayment-projection-value.is-active {
   fill: var(--color-primary);
-  font-size: clamp(9px, 2.6cqi, 13px);
+  font-size: clamp(11px, 3.8cqi, 14px);
+}
+
+/* AI 策略区已下线，避免旧页面状态恢复时重新占据主内容区域。 */
+.repayment-ai-section {
+  display: none;
 }
 
 .repayment-debt-more-details {
