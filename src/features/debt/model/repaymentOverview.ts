@@ -19,7 +19,6 @@ export interface MonthlyPaymentBreakdownItem {
   isPaid: boolean;
   isSimpleReminder?: boolean;
   dueDate?: string;
-  dueTime?: string;
 }
 
 export interface RepaymentOverviewResult {
@@ -170,7 +169,7 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
 
   const reminderBreakdown: MonthlyPaymentBreakdownItem[] = simpleReminders
     .map((item): MonthlyPaymentBreakdownItem | null => {
-      const dueDate = new Date(`${item.simpleDueDate}T${item.simpleDueTime || '00:00'}:00`);
+      const dueDate = new Date(`${item.simpleDueDate}T00:00:00`);
       if (Number.isNaN(dueDate.getTime())) return null;
       const dueInDays = daysBetween(from, dueDate);
       return {
@@ -183,8 +182,7 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
         paidAmount: 0,
         isPaid: false,
         isSimpleReminder: true,
-        dueDate: item.simpleDueDate,
-        dueTime: item.simpleDueTime
+        dueDate: item.simpleDueDate
       };
     })
     .filter((item): item is MonthlyPaymentBreakdownItem => item !== null);

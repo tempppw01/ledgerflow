@@ -53,7 +53,6 @@ export type DebtItem = {
   manualRepayments?: ManualRepaymentItem[];
   entryMode?: DebtEntryMode;
   simpleDueDate?: string;
-  simpleDueTime?: string;
 };
 
 export type DebtSummary = {

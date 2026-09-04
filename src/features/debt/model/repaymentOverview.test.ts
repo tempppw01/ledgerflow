@@ -139,8 +139,7 @@ describe('getRepaymentOverview', () => {
           name: '9 月信用卡账单',
           balance: 0,
           entryMode: 'simple',
-          simpleDueDate: '2026-08-10',
-          simpleDueTime: '09:30'
+          simpleDueDate: '2026-08-10'
         })
       ],
       repaymentRecords: [],
@@ -156,7 +155,6 @@ describe('getRepaymentOverview', () => {
         isSimpleReminder: true,
         payment: 0,
         dueDate: '2026-08-10',
-        dueTime: '09:30',
         dueInDays: 5
       })
     ]);

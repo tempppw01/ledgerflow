@@ -39,7 +39,7 @@
 
 .debt-simple-form-fields {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(150px, .8fr) minmax(110px, .55fr);
+  grid-template-columns: minmax(0, 1.4fr) minmax(180px, .8fr);
   gap: 20px;
   align-items: end;
 }
@@ -50,7 +50,7 @@
 
 @media (max-width: 640px) {
   .debt-simple-form-fields {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 16px;
   }
 

@@ -326,7 +326,7 @@ function isSimpleRepaymentReminder(item?: DebtItem): boolean {
 
 function getSimpleReminderDueDate(item: DebtItem): Date | null {
   if (!item.simpleDueDate) return null;
-  const value = new Date(`${item.simpleDueDate}T${item.simpleDueTime || '00:00'}:00`);
+  const value = new Date(`${item.simpleDueDate}T00:00:00`);
   return Number.isNaN(value.getTime()) ? null : value;
 }
 
@@ -801,7 +801,6 @@ export function RepaymentManagementPage() {
   const [debtName, setDebtName] = useState('');
   const [debtEntryMode, setDebtEntryMode] = useState<DebtEntryMode>('standard');
   const [simpleDueDate, setSimpleDueDate] = useState('');
-  const [simpleDueTime, setSimpleDueTime] = useState('');
   const [debtType, setDebtType] = useState<DebtType>('credit-card');
   const [debtPlanMode, setDebtPlanMode] = useState<DebtPlanMode>('structured');
   const [debtBalance, setDebtBalance] = useState('');
@@ -873,7 +872,6 @@ export function RepaymentManagementPage() {
     setDebtName(item.name || '');
     setDebtEntryMode(item.entryMode === 'simple' ? 'simple' : 'standard');
     setSimpleDueDate(item.simpleDueDate || '');
-    setSimpleDueTime(item.simpleDueTime || '');
     setDebtType(item.type === 'consumer-loan' ? 'credit-card' : item.type || 'credit-card');
     setDebtPlanMode(
       Array.isArray(item.manualRepayments) && item.manualRepayments.length > 0
@@ -924,7 +922,6 @@ export function RepaymentManagementPage() {
     setDebtName(prefillDebt.name || '');
     setDebtEntryMode('standard');
     setSimpleDueDate('');
-    setSimpleDueTime('');
     setDebtType(prefillDebt.type || 'credit-card');
     setDebtPlanMode('structured');
     setDebtBalance(prefillDebt.balance || '');
@@ -1125,7 +1122,6 @@ export function RepaymentManagementPage() {
           type: item.type,
           isSimpleReminder,
           simpleDueDate: item.simpleDueDate,
-          simpleDueTime: item.simpleDueTime,
           annualRate,
           apr: derived.apr,
           monthlyRate: derived.monthlyRate,
@@ -1485,7 +1481,6 @@ export function RepaymentManagementPage() {
     setDebtName('');
     setDebtEntryMode('standard');
     setSimpleDueDate('');
-    setSimpleDueTime('');
     setDebtType('credit-card');
     setDebtPlanMode('structured');
     setDebtBalance('');
@@ -1513,8 +1508,7 @@ export function RepaymentManagementPage() {
   const trimmedDebtName = debtName.trim();
   const canSubmitSimpleDebt =
     trimmedDebtName.length > 0 &&
-    /^\d{4}-\d{2}-\d{2}$/.test(simpleDueDate) &&
-    /^\d{2}:\d{2}$/.test(simpleDueTime);
+    /^\d{4}-\d{2}-\d{2}$/.test(simpleDueDate);
   const balance = Number(debtBalance);
   const annualRate = Number(debtAnnualRate);
   const months = Number(debtMonths);
@@ -1723,7 +1717,7 @@ export function RepaymentManagementPage() {
 
     if (debtEntryMode === 'simple') {
       if (!canSubmitSimpleDebt) {
-        setDebtFormError('请填写还款项目、还款日期和还款时间。');
+        setDebtFormError('请填写还款项目和还款日期。');
         return;
       }
       const simplePayload = {
@@ -1732,8 +1726,7 @@ export function RepaymentManagementPage() {
         status: 'active' as DebtLifecycleStatus,
         balance: 0,
         entryMode: 'simple' as const,
-        simpleDueDate,
-        simpleDueTime
+        simpleDueDate
       };
       if (editingDebtId) {
         updateDebt(editingDebtId, simplePayload);
@@ -2364,7 +2357,6 @@ export function RepaymentManagementPage() {
                     setEditingDebtId('');
                     setDebtEntryMode('simple');
                     setSimpleDueDate('');
-                    setSimpleDueTime('');
                     setDebtName('');
                     setDebtBalance('');
                     setDebtBalanceManuallyEdited(false);
@@ -2442,7 +2434,7 @@ export function RepaymentManagementPage() {
                       <strong>{item.name}</strong>
                       <span className="muted">
                         {item.isSimpleReminder
-                          ? `还款提醒 · ${item.simpleDueDate || '日期待补'}${item.simpleDueTime ? ` ${item.simpleDueTime}` : ''}`
+                          ? `还款提醒 · ${item.simpleDueDate || '日期待补'}`
                           : <>
                               {item.type === 'credit-card'
                                 ? '信用卡'
@@ -2584,10 +2576,6 @@ export function RepaymentManagementPage() {
                     <div className="repayment-debt-metric">
                       <span className="repayment-debt-metric-label">还款日期</span>
                       <span className="repayment-debt-metric-value">{selectedDebt.simpleDueDate || '待补充'}</span>
-                    </div>
-                    <div className="repayment-debt-metric">
-                      <span className="repayment-debt-metric-label">还款时间</span>
-                      <span className="repayment-debt-metric-value">{selectedDebt.simpleDueTime || '待补充'}</span>
                     </div>
                     <div className="repayment-debt-metric">
                       <span className="repayment-debt-metric-label">金额</span>
@@ -2991,14 +2979,14 @@ export function RepaymentManagementPage() {
                         {item.isSimpleReminder
                           ? <>
                               {item.name}：{item.simpleDueDate || '日期待补充'}
-                              {item.simpleDueTime ? ` ${item.simpleDueTime}` : ''}，
+                              ，
                               {Number.isFinite(item.dueInDays)
                                 ? item.dueInDays < 0
                                   ? `已逾期 ${Math.abs(item.dueInDays)} 天`
                                   : item.dueInDays === 0
                                     ? '今天待处理'
                                     : `${item.dueInDays} 天后待处理`
-                                : '待补还款时间'}（金额待补充）
+                                : '待补还款日期'}（金额待补充）
                             </>
                           : <>
                               {item.name}：账单日 {item.billDay || '--'} 日，还款日{' '}
@@ -3694,19 +3682,6 @@ export function RepaymentManagementPage() {
                             setDebtFormError('');
                           }}
                           aria-label="简单还款日期"
-                        />
-                      </label>
-                      <label className="debt-form-field">
-                        <span className="debt-form-field-label">还款时间</span>
-                        <input
-                          className="debt-form-input"
-                          type="time"
-                          value={simpleDueTime}
-                          onChange={(event) => {
-                            setSimpleDueTime(event.target.value);
-                            setDebtFormError('');
-                          }}
-                          aria-label="简单还款时间"
                         />
                       </label>
                     </div>

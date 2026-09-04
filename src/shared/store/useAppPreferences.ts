@@ -218,10 +218,6 @@ function normalizeDebtItem(item: DebtItem): DebtItem {
       entryMode === 'simple' && /^\d{4}-\d{2}-\d{2}$/.test(String(item.simpleDueDate || ''))
         ? String(item.simpleDueDate)
         : undefined,
-    simpleDueTime:
-      entryMode === 'simple' && /^\d{2}:\d{2}$/.test(String(item.simpleDueTime || ''))
-        ? String(item.simpleDueTime)
-        : undefined,
     manualRepayments: normalizeManualRepayments(item.manualRepayments),
     status: entryMode === 'simple' ? item.status || 'active' : normalizeDebtStatus(item.status, item.balance)
   };

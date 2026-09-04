@@ -419,7 +419,7 @@ export function RepaymentDashboard({
                       <span className="repayment-timeline-status">
                         <span className={`repayment-timeline-due is-${item.tone}`}>
                           {item.isSimpleReminder
-                            ? `${item.dueDate || ''}${item.dueTime ? ` ${item.dueTime}` : ''}`
+                            ? item.dueDate || ''
                             : item.dueInDays === null
                             ? '未设还款日'
                             : item.dueInDays === 0
