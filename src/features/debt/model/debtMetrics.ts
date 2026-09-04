@@ -53,6 +53,8 @@ export type DebtItem = {
   manualRepayments?: ManualRepaymentItem[];
   entryMode?: DebtEntryMode;
   simpleDueDate?: string;
+  /** Optional amount due for a lightweight repayment reminder. */
+  simpleAmount?: number;
 };
 
 export type DebtSummary = {

@@ -39,13 +39,23 @@
 
 .debt-simple-form-fields {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(180px, .8fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(170px, .8fr) minmax(150px, .7fr);
   gap: 20px;
   align-items: end;
 }
 
 .debt-simple-form-project {
   min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .debt-simple-form-fields {
+    grid-template-columns: minmax(0, 1fr) minmax(170px, .8fr);
+  }
+
+  .debt-simple-form-project {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 640px) {
