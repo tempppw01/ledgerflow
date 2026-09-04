@@ -15,6 +15,7 @@ import {
   EYE_OFF_ICON_URL,
   SETTINGS_ICON_URL
 } from '../../../shared/config/brandAssets';
+import { DatePicker } from '../../../shared/ui/DatePicker';
 
 interface TransactionFiltersProps {
   filters: TransactionFilterState;
@@ -184,15 +185,13 @@ export function TransactionFilters({
         <div className="transaction-filters-custom-date-row">
           <div className="field" style={{ marginBottom: 0 }}>
             <label htmlFor="tx-filter-date-from">筛选开始日期</label>
-            <input
+            <DatePicker
               id="tx-filter-date-from"
-              aria-label="筛选开始日期"
-              type="date"
+              ariaLabel="筛选开始日期"
               min={minAvailableDate}
               max={maxAvailableDate}
-              onFocus={(event) => event.currentTarget.showPicker?.()}
               value={filters.dateFrom}
-              onChange={(event) => onDateFromChange(event.target.value)}
+              onChange={onDateFromChange}
             />
             <button
               type="button"
@@ -216,15 +215,13 @@ export function TransactionFilters({
           </div>
           <div className="field" style={{ marginBottom: 0 }}>
             <label htmlFor="tx-filter-date-to">筛选结束日期</label>
-            <input
+            <DatePicker
               id="tx-filter-date-to"
-              aria-label="筛选结束日期"
-              type="date"
+              ariaLabel="筛选结束日期"
               min={minAvailableDate}
               max={maxAvailableDate}
-              onFocus={(event) => event.currentTarget.showPicker?.()}
               value={filters.dateTo}
-              onChange={(event) => onDateToChange(event.target.value)}
+              onChange={onDateToChange}
             />
             <button
               type="button"

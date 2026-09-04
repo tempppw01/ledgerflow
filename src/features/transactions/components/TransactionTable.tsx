@@ -6,6 +6,7 @@ import { formatCurrencyAuto, formatDate } from '../../../shared/lib/format';
 import { summarizeTransactions } from '../../../shared/lib/transactionMetrics';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { TableSkeleton } from '../../../shared/ui/TableSkeleton';
+import { DatePicker } from '../../../shared/ui/DatePicker';
 import {
   ALIPAY_LOGO_URL,
   LANDMARK_ICON_URL,
@@ -838,12 +839,11 @@ export function TransactionTable({
                     return (
                       <th key={`filter-${column.key}`} className={`transaction-col-${column.key}`}>
                         {column.key === 'date' ? (
-                          <input
-                            type="date"
+                          <DatePicker
                             min={minAvailableDate}
                             max={maxAvailableDate}
                             value={quickFilters.date}
-                            onChange={(event) => onQuickFilterChange('date', event.target.value)}
+                            onChange={(value) => onQuickFilterChange('date', value)}
                             placeholder="筛选日期"
                           />
                         ) : column.key === 'category' ? (

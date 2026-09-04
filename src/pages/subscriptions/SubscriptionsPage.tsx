@@ -10,6 +10,7 @@ import { formatDate, formatMoneyByCurrency } from '../../shared/lib/format';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { EmptyState } from '../../shared/ui/EmptyState';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
+import { DatePicker } from '../../shared/ui/DatePicker';
 
 const KIND_LABELS: Record<SubscriptionKind, string> = {
   digital: '数字订阅',
@@ -734,18 +735,18 @@ export function SubscriptionsPage() {
                 </label>
                 <label className="subscriptions-field">
                   <span>续费日</span>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={form.renewalDate}
-                    onChange={(e) => handleDateFieldChange('renewalDate', e.target.value)}
+                    onChange={(value) => handleDateFieldChange('renewalDate', value)}
+                    ariaLabel="续费日"
                   />
                 </label>
                 <label className="subscriptions-field">
                   <span>到期日</span>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={form.expireDate}
-                    onChange={(e) => handleDateFieldChange('expireDate', e.target.value)}
+                    onChange={(value) => handleDateFieldChange('expireDate', value)}
+                    ariaLabel="到期日"
                   />
                 </label>
                 <label className="subscriptions-field">

@@ -19,6 +19,7 @@ import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { IMAGE_ICON_URL } from '../../shared/config/brandAssets';
 import { formatCurrency } from '../../shared/lib/format';
 import { Toast } from '../../shared/ui/Toast';
+import { DatePicker } from '../../shared/ui/DatePicker';
 import { RepaymentDashboard } from '../../features/debt/components/RepaymentDashboard';
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -2672,12 +2673,11 @@ export function RepaymentManagementPage() {
                       placeholder="实际还款金额"
                       ariaLabel="实际还款金额"
                     />
-                    <input
+                    <DatePicker
                       className="finance-debt-form-control"
-                      type="date"
                       value={repaymentPaidAt}
-                      onChange={(event) => {
-                        setRepaymentPaidAt(event.target.value);
+                      onChange={(value) => {
+                        setRepaymentPaidAt(value);
                         setRepaymentRecordError('');
                       }}
                       aria-label="实际还款日期"
@@ -3490,13 +3490,12 @@ export function RepaymentManagementPage() {
                                     </label>
                                     <label className="debt-form-field">
                                       <span className="debt-form-field-label">日期</span>
-                                      <input
+                                      <DatePicker
                                         className="debt-form-input"
-                                        type="date"
                                         value={row.dueDate || ''}
-                                        onChange={(event) => {
+                                        onChange={(value) => {
                                           updateManualRepaymentRow(index, {
-                                            dueDate: event.target.value
+                                            dueDate: value
                                           });
                                         }}
                                         aria-label="还款日期"
@@ -3673,12 +3672,11 @@ export function RepaymentManagementPage() {
                       </label>
                       <label className="debt-form-field">
                         <span className="debt-form-field-label">还款日期</span>
-                        <input
+                        <DatePicker
                           className="debt-form-input"
-                          type="date"
                           value={simpleDueDate}
-                          onChange={(event) => {
-                            setSimpleDueDate(event.target.value);
+                          onChange={(value) => {
+                            setSimpleDueDate(value);
                             setDebtFormError('');
                           }}
                           aria-label="简单还款日期"

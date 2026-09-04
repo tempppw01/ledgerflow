@@ -1,4 +1,5 @@
 import type { DraftBillEntry } from './workbenchTypes';
+import { DatePicker } from '../../../shared/ui/DatePicker';
 
 interface WorkbenchPreviewPanelProps {
   entries: DraftBillEntry[];
@@ -91,10 +92,9 @@ export function WorkbenchPreviewPanel({ entries, onUpdate, onRemove }: Workbench
               </label>
               <label>
                 日期
-                <input
-                  type="date"
+                <DatePicker
                   value={item.date.slice(0, 10)}
-                  onChange={(e) => onUpdate(item.id, { date: e.target.value })}
+                  onChange={(value) => onUpdate(item.id, { date: value })}
                 />
               </label>
               <label>

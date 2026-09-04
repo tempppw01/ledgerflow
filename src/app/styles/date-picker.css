@@ -1,0 +1,23 @@
+.lf-date-picker { position: relative; width: 100%; min-width: 0; }
+.lf-date-trigger { width: 100%; min-height: var(--vi-control-height, 40px); display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: 0 var(--space-3); border: var(--vi-surface-border); border-radius: var(--vi-compact-radius); background: var(--vi-surface-bg); color: var(--color-text); font: inherit; text-align: left; cursor: pointer; transition: border-color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast); }
+.lf-date-trigger:hover:not(:disabled), .lf-date-trigger.is-open { border-color: color-mix(in srgb, var(--color-primary) 48%, var(--color-border-light)); background: var(--color-bg-elevated); }
+.lf-date-trigger:focus-visible, .lf-date-nav:focus-visible, .lf-date-day:focus-visible, .lf-date-actions button:focus-visible { outline: none; box-shadow: var(--vi-focus-ring); }
+.lf-date-trigger.is-empty { color: var(--color-text-secondary); }
+.lf-date-trigger:disabled { cursor: not-allowed; opacity: .62; }
+.lf-date-icon { color: var(--color-text-secondary); font-size: 15px; line-height: 1; }
+.lf-date-popover { position: absolute; z-index: 30; top: calc(100% + 8px); left: 0; width: min(300px, calc(100vw - 32px)); padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md, 12px); background: var(--color-bg-elevated); box-shadow: var(--shadow-dropdown, 0 16px 36px rgba(15,23,42,.16)); }
+.lf-date-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3); color: var(--color-text); }
+.lf-date-header strong { font-size: var(--font-md, 15px); font-weight: 700; }
+.lf-date-nav { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: var(--radius-sm, 8px); background: transparent; color: var(--color-text-secondary); font-size: 22px; cursor: pointer; }
+.lf-date-nav:hover { background: var(--color-bg-hover); color: var(--color-text); }
+.lf-date-weekdays, .lf-date-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.lf-date-weekdays { margin-bottom: 4px; color: var(--color-text-secondary); font-size: 11px; text-align: center; }
+.lf-date-day { aspect-ratio: 1; border: 0; border-radius: 8px; background: transparent; color: var(--color-text); font: inherit; font-size: 13px; cursor: pointer; }
+.lf-date-day:hover:not(:disabled) { background: var(--color-primary-bg); color: var(--color-primary); }
+.lf-date-day.is-outside { color: color-mix(in srgb, var(--color-text-secondary) 46%, transparent); }
+.lf-date-day.is-today { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 45%, transparent); color: var(--color-primary); font-weight: 700; }
+.lf-date-day.is-selected { background: var(--color-primary); color: var(--color-on-primary, #fff); font-weight: 700; }
+.lf-date-day:disabled { cursor: not-allowed; opacity: .32; }
+.lf-date-actions { display: flex; justify-content: space-between; margin-top: var(--space-3); padding-top: var(--space-2); border-top: 1px solid var(--color-border-light); }
+.lf-date-actions button { border: 0; background: transparent; color: var(--color-primary); font: inherit; font-size: 12px; cursor: pointer; }
+@media (max-width: 480px) { .lf-date-popover { position: fixed; top: auto; right: 16px; bottom: 16px; left: 16px; width: auto; } }

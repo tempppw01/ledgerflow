@@ -23,6 +23,7 @@ import {
 import { formatCurrency, formatCurrencyAuto, formatDate } from '../../shared/lib/format';
 import { resolveImportDefaultAccountId } from '../../shared/lib/importAccount';
 import { Toast, ToastVariant } from '../../shared/ui/Toast';
+import { DatePicker } from '../../shared/ui/DatePicker';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import {
   TransactionDetailDrawer,
@@ -3029,11 +3030,11 @@ export function TransactionsPage() {
                   </div>
                   <div className="quick-add-meta-field">
                     <label htmlFor="quick-add-date">日期</label>
-                    <input
+                    <DatePicker
                       id="quick-add-date"
-                      type="date"
                       value={quickAddDate}
-                      onChange={(event) => setQuickAddDate(event.target.value)}
+                      onChange={setQuickAddDate}
+                      ariaLabel="日期"
                     />
                   </div>
                   <div className="quick-add-meta-field is-note">

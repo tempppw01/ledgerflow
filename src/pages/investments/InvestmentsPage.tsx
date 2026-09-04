@@ -16,6 +16,7 @@ import type {
 } from '../../entities/investment/types';
 import { sendAiChatStream } from '../../features/assistant/api/openaiCompatibleClient';
 import { InvestmentChatPanel } from '../../features/assistant/investment-chat/InvestmentChatPanel';
+import { DatePicker } from '../../shared/ui/DatePicker';
 import {
   fetchEastmoneyFundSnapshot,
   fetchEastmoneyHoldingStockQuotes,
@@ -1951,19 +1952,17 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
             </label>
             <label>
               <span>开始日期</span>
-              <input
-                type="date"
+              <DatePicker
                 value={simulationStartDate}
-                onChange={(event) => setSimulationStartDate(event.target.value)}
+                onChange={setSimulationStartDate}
                 aria-label="定投开始日期"
               />
             </label>
             <label>
               <span>结束日期</span>
-              <input
-                type="date"
+              <DatePicker
                 value={simulationEndDate}
-                onChange={(event) => setSimulationEndDate(event.target.value)}
+                onChange={setSimulationEndDate}
                 aria-label="定投结束日期"
               />
             </label>
