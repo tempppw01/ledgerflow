@@ -488,10 +488,10 @@ export function SubscriptionsPage() {
 
   return (
     <div className="subscriptions-page vi-page">
-      <section className="panel subscriptions-hero">
+      <section className="subscriptions-hero vi-hero">
         <div className="subscriptions-header">
-          <div className="subscriptions-hero-copy">
-            <span className="subscriptions-kicker">周期支出总览</span>
+          <div className="subscriptions-hero-copy vi-hero-copy">
+            <span className="vi-page-kicker">周期支出总览</span>
             <h2>订阅管理</h2>
             <p className="muted">
               统一管理数字订阅、话费、会员卡等周期性项目，支持多币种、续费日和到期状态追踪。
@@ -572,9 +572,9 @@ export function SubscriptionsPage() {
       </section>
 
       <div className="subscriptions-main-grid">
-        <section className="panel subscriptions-form-panel">
-          <div className="subscriptions-panel-head">
-            <div>
+        <section className="subscriptions-form-panel vi-section">
+          <div className="subscriptions-panel-head vi-section-head">
+            <div className="vi-section-title">
               <h3>{editingId ? '编辑订阅' : '新增订阅'}</h3>
               <p className="muted">
                 先录入基础信息，再补充账户、续费和备注，后续生成支出会更顺手。
@@ -796,9 +796,9 @@ export function SubscriptionsPage() {
           </form>
         </section>
 
-        <section className="panel subscriptions-list-panel">
-          <div className="subscriptions-panel-head">
-            <div>
+        <section className="subscriptions-list-panel vi-section">
+          <div className="subscriptions-panel-head vi-section-head">
+            <div className="vi-section-title">
               <h3>订阅清单</h3>
               <p className="muted">按到期时间排序，优先把需要处理的项目放到前面。</p>
             </div>
