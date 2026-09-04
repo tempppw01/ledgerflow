@@ -17,6 +17,9 @@ export interface MonthlyPaymentBreakdownItem {
   tone: 'danger' | 'warning' | 'safe';
   paidAmount: number;
   isPaid: boolean;
+  isSimpleReminder?: boolean;
+  dueDate?: string;
+  dueTime?: string;
 }
 
 export interface RepaymentOverviewResult {
@@ -58,7 +61,9 @@ function normalizeDate(value: Date): string {
 }
 
 function daysBetween(from: Date, to: Date): number {
-  const ms = to.getTime() - from.getTime();
+  const startOfFrom = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const startOfTo = new Date(to.getFullYear(), to.getMonth(), to.getDate());
+  const ms = startOfTo.getTime() - startOfFrom.getTime();
   return Math.round(ms / (1000 * 60 * 60 * 24));
 }
 
@@ -106,7 +111,11 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
   const from = input.fromDate ?? new Date();
   const monthsAhead = Math.max(1, Math.min(12, input.monthsAhead ?? 6));
 
+  const simpleReminders = input.debts.filter(
+    (item) => item.entryMode === 'simple' && item.status !== 'closed' && item.status !== 'settled' && item.simpleDueDate
+  );
   const activeDebts = input.debts.filter((item) => {
+    if (item.entryMode === 'simple') return false;
     const balance = Math.max(0, Number(item.balance) || 0);
     const status = item.status ?? (balance <= 0 ? 'settled' : 'active');
     return status === 'active' && balance > 0;
@@ -114,8 +123,8 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
 
   const todayDay = from.getDate();
 
-  const breakdown = activeDebts
-    .map((item) => {
+  const financialBreakdown: MonthlyPaymentBreakdownItem[] = activeDebts
+    .map((item): MonthlyPaymentBreakdownItem => {
       const payment = getScheduledPayment(
         item,
         from.getFullYear(),
@@ -159,6 +168,35 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
       return da - db;
     });
 
+  const reminderBreakdown: MonthlyPaymentBreakdownItem[] = simpleReminders
+    .map((item): MonthlyPaymentBreakdownItem | null => {
+      const dueDate = new Date(`${item.simpleDueDate}T${item.simpleDueTime || '00:00'}:00`);
+      if (Number.isNaN(dueDate.getTime())) return null;
+      const dueInDays = daysBetween(from, dueDate);
+      return {
+        id: item.id,
+        name: item.name,
+        type: item.type,
+        payment: 0,
+        dueInDays,
+        tone: dueInDays <= 0 ? 'danger' : dueInDays <= 3 ? 'danger' : dueInDays <= 7 ? 'warning' : 'safe',
+        paidAmount: 0,
+        isPaid: false,
+        isSimpleReminder: true,
+        dueDate: item.simpleDueDate,
+        dueTime: item.simpleDueTime
+      };
+    })
+    .filter((item): item is MonthlyPaymentBreakdownItem => item !== null);
+
+  const breakdown = [...financialBreakdown, ...reminderBreakdown]
+    .filter((item) => item.payment > 0 || item.isSimpleReminder)
+    .sort((a, b) => {
+      const da = a.dueInDays ?? Number.POSITIVE_INFINITY;
+      const db = b.dueInDays ?? Number.POSITIVE_INFINITY;
+      return da - db;
+    });
+
   const thisMonthTotal = breakdown.reduce((sum, item) => sum + item.payment, 0);
 
   const thisMonthPaid = input.repaymentRecords
@@ -175,6 +213,14 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
   let nextDueDays: number | null = null;
   for (const item of breakdown) {
     if (item.dueInDays === null) continue;
+    if (item.isSimpleReminder) {
+      if (item.dueInDays >= 0) {
+        nextDueDate = item.dueDate || null;
+        nextDueDays = item.dueInDays;
+        break;
+      }
+      continue;
+    }
     const dueDate = new Date(
       from.getFullYear(),
       from.getMonth(),

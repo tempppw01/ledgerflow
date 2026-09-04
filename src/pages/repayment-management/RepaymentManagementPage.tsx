@@ -70,6 +70,7 @@ type RepaymentPrefillDebt = {
 type RepaymentStrategyType = 'avalanche' | 'snowball' | 'ladder';
 
 type DebtPlanMode = 'structured' | 'manual';
+type DebtEntryMode = 'standard' | 'simple';
 
 function createEmptyManualRepayment(previous?: ManualRepaymentItem): ManualRepaymentItem {
   const today = new Date();
@@ -317,6 +318,22 @@ function normalizeDebtLifecycleStatus(
 
 function isDebtInactive(status: DebtLifecycleStatus): boolean {
   return status === 'settled' || status === 'closed' || status === 'paused';
+}
+
+function isSimpleRepaymentReminder(item?: DebtItem): boolean {
+  return item?.entryMode === 'simple';
+}
+
+function getSimpleReminderDueDate(item: DebtItem): Date | null {
+  if (!item.simpleDueDate) return null;
+  const value = new Date(`${item.simpleDueDate}T${item.simpleDueTime || '00:00'}:00`);
+  return Number.isNaN(value.getTime()) ? null : value;
+}
+
+function getCalendarDayDifference(from: Date, to: Date): number {
+  const startOfFrom = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const startOfTo = new Date(to.getFullYear(), to.getMonth(), to.getDate());
+  return Math.round((startOfTo.getTime() - startOfFrom.getTime()) / (1000 * 60 * 60 * 24));
 }
 
 function buildRepaymentSnapshotKey(input: {
@@ -782,6 +799,9 @@ export function RepaymentManagementPage() {
   const financeAccounts = useFinanceStore((state) => state.accounts || []);
   const [error, setError] = useState('');
   const [debtName, setDebtName] = useState('');
+  const [debtEntryMode, setDebtEntryMode] = useState<DebtEntryMode>('standard');
+  const [simpleDueDate, setSimpleDueDate] = useState('');
+  const [simpleDueTime, setSimpleDueTime] = useState('');
   const [debtType, setDebtType] = useState<DebtType>('credit-card');
   const [debtPlanMode, setDebtPlanMode] = useState<DebtPlanMode>('structured');
   const [debtBalance, setDebtBalance] = useState('');
@@ -851,6 +871,9 @@ export function RepaymentManagementPage() {
   const startEditingDebt = useCallback((item: DebtItem) => {
     setEditingDebtId(item.id);
     setDebtName(item.name || '');
+    setDebtEntryMode(item.entryMode === 'simple' ? 'simple' : 'standard');
+    setSimpleDueDate(item.simpleDueDate || '');
+    setSimpleDueTime(item.simpleDueTime || '');
     setDebtType(item.type === 'consumer-loan' ? 'credit-card' : item.type || 'credit-card');
     setDebtPlanMode(
       Array.isArray(item.manualRepayments) && item.manualRepayments.length > 0
@@ -899,6 +922,9 @@ export function RepaymentManagementPage() {
 
     setEditingDebtId(locationState?.editingDebtId || '');
     setDebtName(prefillDebt.name || '');
+    setDebtEntryMode('standard');
+    setSimpleDueDate('');
+    setSimpleDueTime('');
     setDebtType(prefillDebt.type || 'credit-card');
     setDebtPlanMode('structured');
     setDebtBalance(prefillDebt.balance || '');
@@ -931,7 +957,7 @@ export function RepaymentManagementPage() {
   );
 
   const activeDebts = useMemo(
-    () => debtsWithStatus.filter((item) => !isDebtInactive(item.status)),
+    () => debtsWithStatus.filter((item) => !isDebtInactive(item.status) && item.entryMode !== 'simple'),
     [debtsWithStatus]
   );
 
@@ -1042,17 +1068,26 @@ export function RepaymentManagementPage() {
   const archivedTotalDebt = archivedDebts.reduce((sum, item) => sum + Math.max(0, item.balance), 0);
 
   const repaymentLedgerPreview = useMemo(() => {
-    const today = new Date().getDate();
+    const now = new Date();
+    const today = now.getDate();
     return debtsWithStatus
       .map((item) => {
+        const isSimpleReminder = isSimpleRepaymentReminder(item);
+        const simpleDueAt = isSimpleReminder ? getSimpleReminderDueDate(item) : null;
         const derived = calculateDebtDerivedMetrics(item);
         const minimumPayment = derived.minimumPayment;
         const annualRate = derived.apr;
         const lifecycleStatus = normalizeDebtLifecycleStatus(item.status, item.balance);
         const dueInDays =
-          lifecycleStatus === 'active' && typeof item.repaymentDay === 'number'
-            ? (item.repaymentDay - today + 31) % 31
-            : Number.POSITIVE_INFINITY;
+          lifecycleStatus !== 'active'
+            ? Number.POSITIVE_INFINITY
+            : isSimpleReminder
+              ? simpleDueAt
+                ? getCalendarDayDifference(now, simpleDueAt)
+                : Number.POSITIVE_INFINITY
+              : typeof item.repaymentDay === 'number'
+                ? (item.repaymentDay - today + 31) % 31
+                : Number.POSITIVE_INFINITY;
         const statusTone: RepaymentDebtStatusTone =
           lifecycleStatus === 'settled'
             ? 'safe'
@@ -1060,7 +1095,7 @@ export function RepaymentManagementPage() {
               ? 'muted'
               : lifecycleStatus === 'paused'
                 ? 'warning'
-                : !Number.isFinite(dueInDays) || typeof item.repaymentDay !== 'number'
+                : !Number.isFinite(dueInDays) || (!isSimpleReminder && typeof item.repaymentDay !== 'number')
                   ? 'muted'
                   : dueInDays === 0
                     ? 'danger'
@@ -1074,10 +1109,12 @@ export function RepaymentManagementPage() {
               ? '已关闭'
               : lifecycleStatus === 'paused'
                 ? '暂缓处理'
-                : !Number.isFinite(dueInDays) || typeof item.repaymentDay !== 'number'
+                : !Number.isFinite(dueInDays) || (!isSimpleReminder && typeof item.repaymentDay !== 'number')
                   ? '待补日期'
+                  : isSimpleReminder && dueInDays < 0
+                    ? `已逾期 ${Math.abs(dueInDays)} 天`
                   : dueInDays === 0
-                    ? '今日应还'
+                    ? isSimpleReminder ? '今日待处理' : '今日应还'
                     : dueInDays <= 7
                       ? `${dueInDays} 天后到期`
                       : `本期待还 · ${dueInDays} 天后`;
@@ -1086,6 +1123,9 @@ export function RepaymentManagementPage() {
           id: item.id,
           name: item.name,
           type: item.type,
+          isSimpleReminder,
+          simpleDueDate: item.simpleDueDate,
+          simpleDueTime: item.simpleDueTime,
           annualRate,
           apr: derived.apr,
           monthlyRate: derived.monthlyRate,
@@ -1112,12 +1152,14 @@ export function RepaymentManagementPage() {
           paidPeriods: item.paidPeriods,
           totalPeriods: item.totalPeriods,
           principal: item.balance,
-          missingFields: [
-            !item.repaymentDay ? '还款日' : '',
-            !item.paymentAccount ? '扣款账户' : '',
-            !item.repaymentRecordMode ? '记录方式' : '',
-            item.type === 'loan' && !item.annualRate && !item.totalRepayment ? '计算依据' : ''
-          ].filter(Boolean)
+          missingFields: isSimpleReminder
+            ? []
+            : [
+                !item.repaymentDay ? '还款日' : '',
+                !item.paymentAccount ? '扣款账户' : '',
+                !item.repaymentRecordMode ? '记录方式' : '',
+                item.type === 'loan' && !item.annualRate && !item.totalRepayment ? '计算依据' : ''
+              ].filter(Boolean)
         };
       })
       .sort((a, b) => a.dueInDays - b.dueInDays);
@@ -1154,6 +1196,7 @@ export function RepaymentManagementPage() {
 
   const repaymentAuditItems = useMemo(() => {
     return repaymentLedgerPreview.flatMap((item) => {
+      if (item.isSimpleReminder) return [];
       const issues: { id: string; tone: 'warning' | 'danger' | 'info'; text: string }[] = [];
       if (!item.paymentAccount) {
         issues.push({
@@ -1188,7 +1231,7 @@ export function RepaymentManagementPage() {
   }, [repaymentLedgerPreview]);
 
   const repaymentContextSnapshots = useMemo<RepaymentContextSnapshot[]>(() => {
-    return debtsWithStatus.map((debt) => {
+    return debtsWithStatus.filter((debt) => !isSimpleRepaymentReminder(debt)).map((debt) => {
       const linkedRecords = repaymentRecords
         .filter((record) => record.debtId === debt.id)
         .sort((a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime());
@@ -1225,6 +1268,7 @@ export function RepaymentManagementPage() {
     }
 
     repaymentLedgerPreview.forEach((item) => {
+      if (item.isSimpleReminder) return;
       const ctx = repaymentContextSnapshots.find((entry) => entry.debtId === item.id);
       if (item.apr >= 24) {
         tags.push({
@@ -1439,6 +1483,9 @@ export function RepaymentManagementPage() {
 
   function resetDebtForm(afterEdit = false): void {
     setDebtName('');
+    setDebtEntryMode('standard');
+    setSimpleDueDate('');
+    setSimpleDueTime('');
     setDebtType('credit-card');
     setDebtPlanMode('structured');
     setDebtBalance('');
@@ -1464,6 +1511,10 @@ export function RepaymentManagementPage() {
   }
 
   const trimmedDebtName = debtName.trim();
+  const canSubmitSimpleDebt =
+    trimmedDebtName.length > 0 &&
+    /^\d{4}-\d{2}-\d{2}$/.test(simpleDueDate) &&
+    /^\d{2}:\d{2}$/.test(simpleDueTime);
   const balance = Number(debtBalance);
   const annualRate = Number(debtAnnualRate);
   const months = Number(debtMonths);
@@ -1669,6 +1720,35 @@ export function RepaymentManagementPage() {
 
   function onAddDebt(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (debtEntryMode === 'simple') {
+      if (!canSubmitSimpleDebt) {
+        setDebtFormError('请填写还款项目、还款日期和还款时间。');
+        return;
+      }
+      const simplePayload = {
+        name: trimmedDebtName,
+        type: 'credit-card' as DebtType,
+        status: 'active' as DebtLifecycleStatus,
+        balance: 0,
+        entryMode: 'simple' as const,
+        simpleDueDate,
+        simpleDueTime
+      };
+      if (editingDebtId) {
+        updateDebt(editingDebtId, simplePayload);
+      } else {
+        addDebt(simplePayload);
+      }
+      resetDebtForm(true);
+      setSelectedDebtId(editingDebtId || '');
+      setDebtToastVisible(true);
+      setAddDebtSuccess(true);
+      window.setTimeout(() => setAddDebtSuccess(false), 800);
+      setError('');
+      setShowAddDebtModal(false);
+      return;
+    }
 
     if (!trimmedDebtName || (!debtBalance.trim() && calculatedRemainingPrincipal === null)) {
       setDebtFormError('请先填写“负债名称”和“剩余本金(¥)”。');
@@ -2282,6 +2362,9 @@ export function RepaymentManagementPage() {
                   className="primary repayment-debt-list-btn"
                   onClick={() => {
                     setEditingDebtId('');
+                    setDebtEntryMode('simple');
+                    setSimpleDueDate('');
+                    setSimpleDueTime('');
                     setDebtName('');
                     setDebtBalance('');
                     setDebtBalanceManuallyEdited(false);
@@ -2358,13 +2441,17 @@ export function RepaymentManagementPage() {
                     <div className="repayment-debt-list-item-main">
                       <strong>{item.name}</strong>
                       <span className="muted">
-                        {item.type === 'credit-card'
-                          ? '信用卡'
-                          : item.type === 'consumer-loan'
-                            ? '消费贷'
-                            : '贷款'}
-                        {' · ¥'}
-                        {item.principal.toFixed(0)}
+                        {item.isSimpleReminder
+                          ? `还款提醒 · ${item.simpleDueDate || '日期待补'}${item.simpleDueTime ? ` ${item.simpleDueTime}` : ''}`
+                          : <>
+                              {item.type === 'credit-card'
+                                ? '信用卡'
+                                : item.type === 'consumer-loan'
+                                  ? '消费贷'
+                                  : '贷款'}
+                              {' · ¥'}
+                              {item.principal.toFixed(0)}
+                            </>}
                       </span>
                     </div>
                     <span className={`repayment-debt-due-badge tone-${item.statusTone}`}>
@@ -2400,20 +2487,24 @@ export function RepaymentManagementPage() {
                     setDebtContextMenu(null);
                   }}
                 >
-                  设置还款日
+                  {isSimpleRepaymentReminder(debtsWithStatus.find((debt) => debt.id === debtContextMenu.id) as DebtItem)
+                    ? '编辑提醒时间'
+                    : '设置还款日'}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedDebtId(debtContextMenu.id);
-                    setRepaymentDebtId(debtContextMenu.id);
-                    setRepaymentAmount('');
-                    setDebtContextMenu(null);
-                    window.setTimeout(() => document.querySelector<HTMLInputElement>('[aria-label="实际还款金额"]')?.focus(), 0);
-                  }}
-                >
-                  登记还款
-                </button>
+                {!isSimpleRepaymentReminder(debtsWithStatus.find((debt) => debt.id === debtContextMenu.id) as DebtItem) ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedDebtId(debtContextMenu.id);
+                      setRepaymentDebtId(debtContextMenu.id);
+                      setRepaymentAmount('');
+                      setDebtContextMenu(null);
+                      window.setTimeout(() => document.querySelector<HTMLInputElement>('[aria-label="实际还款金额"]')?.focus(), 0);
+                    }}
+                  >
+                    登记还款
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => {
@@ -2445,7 +2536,9 @@ export function RepaymentManagementPage() {
                   <div>
                     <h3 style={{ margin: 0 }}>{selectedDebt.name}</h3>
                     <p className="muted" style={{ margin: '4px 0 0 0' }}>
-                      {selectedDebt.type === 'credit-card'
+                      {selectedDebt.isSimpleReminder
+                        ? '还款提醒'
+                        : selectedDebt.type === 'credit-card'
                         ? '信用卡'
                         : selectedDebt.type === 'consumer-loan'
                           ? '消费贷'
@@ -2486,32 +2579,49 @@ export function RepaymentManagementPage() {
                   </div>
                 </div>
 
-                <div className="repayment-debt-detail-metrics repayment-debt-detail-metrics-core">
-                  <div className="repayment-debt-metric">
-                    <span className="repayment-debt-metric-label">剩余本金</span>
-                    <span className="repayment-debt-metric-value">¥{selectedDebt.principal.toFixed(2)}</span>
+                {selectedDebt.isSimpleReminder ? (
+                  <div className="repayment-debt-detail-metrics repayment-debt-detail-metrics-core">
+                    <div className="repayment-debt-metric">
+                      <span className="repayment-debt-metric-label">还款日期</span>
+                      <span className="repayment-debt-metric-value">{selectedDebt.simpleDueDate || '待补充'}</span>
+                    </div>
+                    <div className="repayment-debt-metric">
+                      <span className="repayment-debt-metric-label">还款时间</span>
+                      <span className="repayment-debt-metric-value">{selectedDebt.simpleDueTime || '待补充'}</span>
+                    </div>
+                    <div className="repayment-debt-metric">
+                      <span className="repayment-debt-metric-label">金额</span>
+                      <span className="repayment-debt-metric-value">待补充</span>
+                    </div>
                   </div>
-                  <div className="repayment-debt-metric">
-                    <span className="repayment-debt-metric-label">最低/期供</span>
-                    <span className="repayment-debt-metric-value">¥{selectedDebt.minimumPayment.toFixed(2)}</span>
-                  </div>
-                  <div className="repayment-debt-metric">
-                    <span className="repayment-debt-metric-label">年化利率</span>
-                    <span className="repayment-debt-metric-value">{selectedDebt.apr > 0 ? `${selectedDebt.apr.toFixed(2)}%` : '待补充'}</span>
-                  </div>
-                  <div className="repayment-debt-metric">
-                    <span className="repayment-debt-metric-label">预计月供</span>
-                    <span className="repayment-debt-metric-value">¥{selectedDebt.estimatedMonthlyPayment.toFixed(2)}</span>
-                  </div>
-                  <div className="repayment-debt-metric">
-                    <span className="repayment-debt-metric-label">还款日</span>
-                    <span className="repayment-debt-metric-value">{selectedDebt.repaymentDay || '--'} 日</span>
-                  </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="repayment-debt-detail-metrics repayment-debt-detail-metrics-core">
+                      <div className="repayment-debt-metric">
+                        <span className="repayment-debt-metric-label">剩余本金</span>
+                        <span className="repayment-debt-metric-value">¥{selectedDebt.principal.toFixed(2)}</span>
+                      </div>
+                      <div className="repayment-debt-metric">
+                        <span className="repayment-debt-metric-label">最低/期供</span>
+                        <span className="repayment-debt-metric-value">¥{selectedDebt.minimumPayment.toFixed(2)}</span>
+                      </div>
+                      <div className="repayment-debt-metric">
+                        <span className="repayment-debt-metric-label">年化利率</span>
+                        <span className="repayment-debt-metric-value">{selectedDebt.apr > 0 ? `${selectedDebt.apr.toFixed(2)}%` : '待补充'}</span>
+                      </div>
+                      <div className="repayment-debt-metric">
+                        <span className="repayment-debt-metric-label">预计月供</span>
+                        <span className="repayment-debt-metric-value">¥{selectedDebt.estimatedMonthlyPayment.toFixed(2)}</span>
+                      </div>
+                      <div className="repayment-debt-metric">
+                        <span className="repayment-debt-metric-label">还款日</span>
+                        <span className="repayment-debt-metric-value">{selectedDebt.repaymentDay || '--'} 日</span>
+                      </div>
+                    </div>
 
-                <details className="repayment-debt-more-details">
-                  <summary>更多详情 <small>利息、账户、期数等</small></summary>
-                  <div className="repayment-debt-detail-metrics repayment-debt-detail-metrics-secondary">
+                    <details className="repayment-debt-more-details">
+                      <summary>更多详情 <small>利息、账户、期数等</small></summary>
+                      <div className="repayment-debt-detail-metrics repayment-debt-detail-metrics-secondary">
                     <div className="repayment-debt-metric">
                       <span className="repayment-debt-metric-label">月利率</span>
                       <span className="repayment-debt-metric-value">{selectedDebt.monthlyRate > 0 ? `${selectedDebt.monthlyRate.toFixed(3)}%` : '—'}</span>
@@ -2548,8 +2658,10 @@ export function RepaymentManagementPage() {
                       <span className="repayment-debt-metric-label">期数</span>
                       <span className="repayment-debt-metric-value">{selectedDebt.totalPeriods ? `${selectedDebt.paidPeriods || 0}/${selectedDebt.totalPeriods}` : selectedDebt.remainingMonths ? `剩余 ${selectedDebt.remainingMonths} 期` : '--'}</span>
                     </div>
-                  </div>
-                </details>
+                      </div>
+                    </details>
+                  </>
+                )}
 
                 {selectedDebt.missingFields.length > 0 ? (
                   <p className="muted" style={{ margin: '8px 0 0 0' }}>
@@ -2557,7 +2669,7 @@ export function RepaymentManagementPage() {
                   </p>
                 ) : null}
 
-                <div className="repayment-debt-detail-repay">
+                {!selectedDebt.isSimpleReminder ? <div className="repayment-debt-detail-repay">
                   <h4 style={{ margin: '0 0 8px 0' }}>💸 登记还款</h4>
                   <form onSubmit={onAddRepaymentRecord} className="repayment-inline-form">
                     <RepaymentUnitInput
@@ -2622,9 +2734,9 @@ export function RepaymentManagementPage() {
                   {repaymentRecordError ? (
                     <p className="muted finance-debt-form-error">{repaymentRecordError}</p>
                   ) : null}
-                </div>
+                </div> : null}
 
-                <div className="repayment-debt-detail-records">
+                {!selectedDebt.isSimpleReminder ? <div className="repayment-debt-detail-records">
                   <h4 style={{ margin: '0 0 8px 0' }}>
                     📜 还款记录 ({selectedDebtRecords.length})
                   </h4>
@@ -2653,7 +2765,7 @@ export function RepaymentManagementPage() {
                       ))}
                     </div>
                   )}
-                </div>
+                </div> : null}
               </>
             ) : (
               <div className="repayment-debt-detail-empty">
@@ -2876,14 +2988,28 @@ export function RepaymentManagementPage() {
                   <ul style={{ margin: 0, paddingInlineStart: 18 }}>
                     {repaymentLedgerPreview.slice(0, 5).map((item) => (
                       <li key={item.id}>
-                        {item.name}：账单日 {item.billDay || '--'} 日，还款日{' '}
-                        {item.repaymentDay || '--'} 日，
-                        {Number.isFinite(item.dueInDays)
-                          ? item.dueInDays === 0
-                            ? '今天到期'
-                            : `${item.dueInDays} 天后到期`
-                          : '待补还款日'}
-                        （最低 ¥{item.minimumPayment.toFixed(0)}）
+                        {item.isSimpleReminder
+                          ? <>
+                              {item.name}：{item.simpleDueDate || '日期待补充'}
+                              {item.simpleDueTime ? ` ${item.simpleDueTime}` : ''}，
+                              {Number.isFinite(item.dueInDays)
+                                ? item.dueInDays < 0
+                                  ? `已逾期 ${Math.abs(item.dueInDays)} 天`
+                                  : item.dueInDays === 0
+                                    ? '今天待处理'
+                                    : `${item.dueInDays} 天后待处理`
+                                : '待补还款时间'}（金额待补充）
+                            </>
+                          : <>
+                              {item.name}：账单日 {item.billDay || '--'} 日，还款日{' '}
+                              {item.repaymentDay || '--'} 日，
+                              {Number.isFinite(item.dueInDays)
+                                ? item.dueInDays === 0
+                                  ? '今天到期'
+                                  : `${item.dueInDays} 天后到期`
+                                : '待补还款日'}
+                              （最低 ¥{item.minimumPayment.toFixed(0)}）
+                            </>}
                       </li>
                     ))}
                   </ul>
@@ -2938,6 +3064,36 @@ export function RepaymentManagementPage() {
                 </button>
               </div>
               <div className="dialog-body">
+                {!editingDebtId ? (
+                  <div className="debt-entry-mode-switch" role="tablist" aria-label="录入方式">
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={debtEntryMode === 'simple'}
+                      className={debtEntryMode === 'simple' ? 'is-active' : ''}
+                      onClick={() => {
+                        setDebtEntryMode('simple');
+                        setDebtFormError('');
+                      }}
+                    >
+                      简单录入
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={debtEntryMode === 'standard'}
+                      className={debtEntryMode === 'standard' ? 'is-active' : ''}
+                      onClick={() => {
+                        setDebtEntryMode('standard');
+                        setDebtFormError('');
+                      }}
+                    >
+                      完整录入
+                    </button>
+                  </div>
+                ) : null}
+
+                {debtEntryMode === 'standard' ? <>
                 <div className="finance-debt-dual-entry">
                   <button
                     type="button"
@@ -3507,6 +3663,61 @@ export function RepaymentManagementPage() {
                     </section>
                   ) : null}
                 </form>
+                </> : (
+                  <form onSubmit={onAddDebt} className="debt-form-line debt-simple-form">
+                    <p className="debt-simple-form-intro">
+                      先记下要处理的还款，金额和明细之后再补。
+                    </p>
+                    <div className="debt-simple-form-fields">
+                      <label className="debt-form-field debt-simple-form-project">
+                        <span className="debt-form-field-label">还款项目</span>
+                        <input
+                          className="debt-form-input"
+                          value={debtName}
+                          onChange={(event) => {
+                            setDebtName(event.target.value);
+                            setDebtFormError('');
+                          }}
+                          placeholder="例如：9 月信用卡账单"
+                          autoFocus
+                          aria-label="还款项目"
+                        />
+                      </label>
+                      <label className="debt-form-field">
+                        <span className="debt-form-field-label">还款日期</span>
+                        <input
+                          className="debt-form-input"
+                          type="date"
+                          value={simpleDueDate}
+                          onChange={(event) => {
+                            setSimpleDueDate(event.target.value);
+                            setDebtFormError('');
+                          }}
+                          aria-label="简单还款日期"
+                        />
+                      </label>
+                      <label className="debt-form-field">
+                        <span className="debt-form-field-label">还款时间</span>
+                        <input
+                          className="debt-form-input"
+                          type="time"
+                          value={simpleDueTime}
+                          onChange={(event) => {
+                            setSimpleDueTime(event.target.value);
+                            setDebtFormError('');
+                          }}
+                          aria-label="简单还款时间"
+                        />
+                      </label>
+                    </div>
+                    {debtFormError ? <p className="debt-form-error">{debtFormError}</p> : null}
+                    <div className="debt-form-actions">
+                      <button type="submit" className="primary" disabled={!canSubmitSimpleDebt}>
+                        {addDebtSuccess ? '✔ 已添加' : '添加还款提醒'}
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
             </div>
           </div>

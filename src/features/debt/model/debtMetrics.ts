@@ -10,6 +10,9 @@ export type DebtRepaymentMethod =
 
 export type DebtRepaymentRecordMode = 'manual' | 'transaction-match' | 'auto-debit';
 
+/** A simple entry is a dated repayment reminder, not a balance-bearing debt. */
+export type DebtEntryMode = 'standard' | 'simple';
+
 export type RepaymentRecord = {
   id: string;
   debtId: string;
@@ -48,6 +51,9 @@ export type DebtItem = {
   paymentAccount?: string;
   graceDays?: number;
   manualRepayments?: ManualRepaymentItem[];
+  entryMode?: DebtEntryMode;
+  simpleDueDate?: string;
+  simpleDueTime?: string;
 };
 
 export type DebtSummary = {
@@ -266,8 +272,9 @@ export function calculateDebtDerivedMetrics(debt: DebtItem): DebtDerivedMetrics 
 }
 
 export function calculateDebtSummary(debts: DebtItem[], monthlyIncome: number): DebtSummary {
-  const totalDebt = debts.reduce((sum, item) => sum + toPositiveNumber(item.balance), 0);
-  const totalMinimumPayment = debts.reduce(
+  const financialDebts = debts.filter((item) => item.entryMode !== 'simple');
+  const totalDebt = financialDebts.reduce((sum, item) => sum + toPositiveNumber(item.balance), 0);
+  const totalMinimumPayment = financialDebts.reduce(
     (sum, item) => sum + calculateDebtMinimumPayment(item),
     0
   );

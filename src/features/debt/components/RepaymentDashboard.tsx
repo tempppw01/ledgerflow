@@ -395,6 +395,7 @@ export function RepaymentDashboard({
                       type="button"
                       className={`repayment-timeline-item is-${item.tone}${item.isPaid ? ' is-paid' : ''}`}
                       onClick={() => {
+                        if (item.isSimpleReminder) return;
                         if (item.dueInDays === null && onSetRepaymentDay) {
                           setEditingRepaymentDayId(item.id);
                           setRepaymentDayDraft('');
@@ -402,28 +403,30 @@ export function RepaymentDashboard({
                         }
                         onMarkCurrentPayment?.(item.id, Math.max(0, item.payment - item.paidAmount));
                       }}
-                      disabled={item.isPaid ? item.dueInDays !== null : !onMarkCurrentPayment && !onSetRepaymentDay}
+                      disabled={item.isSimpleReminder || (item.isPaid ? item.dueInDays !== null : !onMarkCurrentPayment && !onSetRepaymentDay)}
                       aria-label={item.dueInDays === null ? `设置${item.name}还款日` : item.isPaid ? `${item.name}本期已还` : `标记${item.name}本期已还`}
                     >
                       <span className="repayment-timeline-dot" />
                       <span className="repayment-timeline-info">
                         <span className="repayment-timeline-name">{item.name}</span>
                         <span className="repayment-timeline-type">
-                          {DEBT_TYPE_LABELS[item.type] ?? item.type}
+                          {item.isSimpleReminder ? '还款提醒' : DEBT_TYPE_LABELS[item.type] ?? item.type}
                         </span>
                         <span className="repayment-timeline-amount">
-                          {formatCurrency(item.payment)}
+                          {item.isSimpleReminder ? '金额待补充' : formatCurrency(item.payment)}
                         </span>
                       </span>
                       <span className="repayment-timeline-status">
                         <span className={`repayment-timeline-due is-${item.tone}`}>
-                          {item.dueInDays === null
+                          {item.isSimpleReminder
+                            ? `${item.dueDate || ''}${item.dueTime ? ` ${item.dueTime}` : ''}`
+                            : item.dueInDays === null
                             ? '未设还款日'
                             : item.dueInDays === 0
                               ? '今日应还'
                               : `${item.dueInDays} 天后`}
                         </span>
-                        <strong>{item.dueInDays === null ? '设置还款日' : item.isPaid ? '✓ 已还' : '点按记账'}</strong>
+                        <strong>{item.isSimpleReminder ? '待处理' : item.dueInDays === null ? '设置还款日' : item.isPaid ? '✓ 已还' : '点按记账'}</strong>
                       </span>
                     </button>
                     {editingRepaymentDayId === item.id ? (

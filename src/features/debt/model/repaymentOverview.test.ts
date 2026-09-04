@@ -130,4 +130,35 @@ describe('getRepaymentOverview', () => {
     expect(result.thisMonthTotal).toBe(0);
     expect(result.monthlyProjection[0].total).toBe(260);
   });
+
+  it('keeps a simple repayment reminder in the timeline without adding a zero-value debt to payment totals', () => {
+    const result = getRepaymentOverview({
+      debts: [
+        debt({
+          id: 'reminder-1',
+          name: '9 月信用卡账单',
+          balance: 0,
+          entryMode: 'simple',
+          simpleDueDate: '2026-08-10',
+          simpleDueTime: '09:30'
+        })
+      ],
+      repaymentRecords: [],
+      fromDate: new Date(2026, 7, 5, 8, 0)
+    });
+
+    expect(result.thisMonthTotal).toBe(0);
+    expect(result.thisMonthRemaining).toBe(0);
+    expect(result.monthlyProjection.every((month) => month.total === 0)).toBe(true);
+    expect(result.breakdown).toEqual([
+      expect.objectContaining({
+        id: 'reminder-1',
+        isSimpleReminder: true,
+        payment: 0,
+        dueDate: '2026-08-10',
+        dueTime: '09:30',
+        dueInDays: 5
+      })
+    ]);
+  });
 });

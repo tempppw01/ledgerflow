@@ -1,0 +1,60 @@
+/* Repayment-specific additions. Keeps the quick entry deliberately quiet and task-focused. */
+.debt-entry-mode-switch {
+  display: inline-flex;
+  gap: 3px;
+  margin: 0 0 18px;
+  padding: 3px;
+  border: 1px solid var(--color-divider);
+  border-radius: 999px;
+  background: var(--color-bg-subtle);
+}
+
+.debt-entry-mode-switch button {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 650;
+  padding: 7px 13px;
+}
+
+.debt-entry-mode-switch button.is-active {
+  background: var(--color-bg-elevated);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-text) 12%, transparent);
+  color: var(--color-text-primary);
+}
+
+.debt-simple-form {
+  gap: 18px;
+  padding: 4px 0 2px;
+}
+
+.debt-simple-form-intro {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.debt-simple-form-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(150px, .8fr) minmax(110px, .55fr);
+  gap: 20px;
+  align-items: end;
+}
+
+.debt-simple-form-project {
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .debt-simple-form-fields {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .debt-simple-form-project {
+    grid-column: 1 / -1;
+  }
+}
