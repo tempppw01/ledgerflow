@@ -1,4 +1,5 @@
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 type DatePickerProps = {
   id?: string;
@@ -49,6 +50,7 @@ export function DatePicker({
 }: DatePickerProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const today = useMemo(() => new Date(), []);
   const selected = parseDate(value);
   const [open, setOpen] = useState(false);
@@ -77,7 +79,8 @@ export function DatePicker({
     window.addEventListener('resize', updatePosition);
     window.addEventListener('scroll', updatePosition, true);
     const handlePointerDown = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      const target = event.target as Node;
+      if (!rootRef.current?.contains(target) && !popoverRef.current?.contains(target)) setOpen(false);
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOpen(false);
@@ -126,8 +129,8 @@ export function DatePicker({
         <span>{selected ? `${selected.getFullYear()}-${String(selected.getMonth() + 1).padStart(2, '0')}-${String(selected.getDate()).padStart(2, '0')}` : placeholder}</span>
         <span className="lf-date-icon" aria-hidden="true">▣</span>
       </button>
-      {open ? (
-        <div className="lf-date-popover" style={popoverPosition} role="dialog" aria-label="日期选择器">
+      {open ? createPortal(
+        <div ref={popoverRef} className="lf-date-popover" style={popoverPosition} role="dialog" aria-label="日期选择器">
           <div className="lf-date-header">
             <button type="button" className="lf-date-nav" aria-label="上个月" onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))}>‹</button>
             <strong>{monthTitle(viewDate)}</strong>
@@ -159,7 +162,8 @@ export function DatePicker({
             <button type="button" onClick={() => { if (!isDisabled(today)) { onChange(formatDate(today)); setViewDate(today); setOpen(false); } }}>今天</button>
             {value ? <button type="button" onClick={() => { onChange(''); setOpen(false); }}>清除</button> : null}
           </div>
-        </div>
+        </div>,
+        document.body
       ) : null}
     </div>
   );
