@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 
 type DatePickerProps = {
   id?: string;
@@ -48,9 +48,11 @@ export function DatePicker({
   className = ''
 }: DatePickerProps) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const today = useMemo(() => new Date(), []);
   const selected = parseDate(value);
   const [open, setOpen] = useState(false);
+  const [popoverPosition, setPopoverPosition] = useState<CSSProperties>();
   const [viewDate, setViewDate] = useState(() => selected || today);
   const minDate = parseDate(min || '');
   const maxDate = parseDate(max || '');
@@ -61,6 +63,19 @@ export function DatePicker({
 
   useEffect(() => {
     if (!open) return;
+    const updatePosition = () => {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const width = Math.min(300, window.innerWidth - 32);
+      const left = Math.min(Math.max(16, rect.left), window.innerWidth - width - 16);
+      const estimatedHeight = 360;
+      const top = rect.bottom + 8 + estimatedHeight <= window.innerHeight ? rect.bottom + 8 : Math.max(16, rect.top - estimatedHeight - 8);
+      setPopoverPosition({ top, left, width });
+    };
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
     const handlePointerDown = (event: PointerEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
     };
@@ -72,6 +87,8 @@ export function DatePicker({
     return () => {
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
     };
   }, [open]);
 
@@ -99,6 +116,7 @@ export function DatePicker({
       <button
         type="button"
         id={id}
+        ref={triggerRef}
         className={`lf-date-trigger${open ? ' is-open' : ''}${!value ? ' is-empty' : ''}`}
         aria-label={ariaLabel}
         aria-expanded={open}
@@ -109,7 +127,7 @@ export function DatePicker({
         <span className="lf-date-icon" aria-hidden="true">▣</span>
       </button>
       {open ? (
-        <div className="lf-date-popover" role="dialog" aria-label="日期选择器">
+        <div className="lf-date-popover" style={popoverPosition} role="dialog" aria-label="日期选择器">
           <div className="lf-date-header">
             <button type="button" className="lf-date-nav" aria-label="上个月" onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))}>‹</button>
             <strong>{monthTitle(viewDate)}</strong>

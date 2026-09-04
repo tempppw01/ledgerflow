@@ -5,7 +5,7 @@
 .lf-date-trigger.is-empty { color: var(--color-text-secondary); }
 .lf-date-trigger:disabled { cursor: not-allowed; opacity: .62; }
 .lf-date-icon { color: var(--color-text-secondary); font-size: 15px; line-height: 1; }
-.lf-date-popover { position: absolute; z-index: 30; top: calc(100% + 8px); left: 0; width: min(300px, calc(100vw - 32px)); padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md, 12px); background: var(--color-bg-elevated); box-shadow: var(--shadow-dropdown, 0 16px 36px rgba(15,23,42,.16)); }
+.lf-date-popover { position: fixed; z-index: 1000; width: min(300px, calc(100vw - 32px)); padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md, 12px); background: var(--color-bg-elevated); box-shadow: var(--shadow-dropdown, 0 16px 36px rgba(15,23,42,.16)); }
 .lf-date-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3); color: var(--color-text); }
 .lf-date-header strong { font-size: var(--font-md, 15px); font-weight: 700; }
 .lf-date-nav { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: var(--radius-sm, 8px); background: transparent; color: var(--color-text-secondary); font-size: 22px; cursor: pointer; }
@@ -20,4 +20,4 @@
 .lf-date-day:disabled { cursor: not-allowed; opacity: .32; }
 .lf-date-actions { display: flex; justify-content: space-between; margin-top: var(--space-3); padding-top: var(--space-2); border-top: 1px solid var(--color-border-light); }
 .lf-date-actions button { border: 0; background: transparent; color: var(--color-primary); font: inherit; font-size: 12px; cursor: pointer; }
-@media (max-width: 480px) { .lf-date-popover { position: fixed; top: auto; right: 16px; bottom: 16px; left: 16px; width: auto; } }
+@media (max-width: 480px) { .lf-date-popover { width: auto; } }
