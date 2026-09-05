@@ -16947,7 +16947,7 @@ body.categories-accounts-resizing {
   position: relative;
   min-width: 0;
   min-height: 182px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .repayment-projection-stage svg {
@@ -17022,6 +17022,26 @@ body.categories-accounts-resizing {
   font-size: 10px;
   transform: translate(-50%, -110%);
   pointer-events: none;
+}
+
+.repayment-projection-tooltip.is-start {
+  transform: translate(0, -110%);
+}
+
+.repayment-projection-tooltip.is-end {
+  transform: translate(-100%, -110%);
+}
+
+.repayment-projection-tooltip.is-below {
+  transform: translate(-50%, 12px);
+}
+
+.repayment-projection-tooltip.is-start.is-below {
+  transform: translate(0, 12px);
+}
+
+.repayment-projection-tooltip.is-end.is-below {
+  transform: translate(-100%, 12px);
 }
 
 .repayment-projection-tooltip strong {

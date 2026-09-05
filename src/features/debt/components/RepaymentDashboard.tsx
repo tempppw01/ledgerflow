@@ -216,6 +216,14 @@ function ProjectionLineChart({ data }: { data: Array<{ monthLabel: string; total
     : '';
   const activePoint = hoveredIndex === null ? null : points[hoveredIndex];
   const peakIndex = totals.indexOf(rawMax);
+  const tooltipHorizontal = activePoint
+    ? activePoint.x <= padding.left + 48
+      ? 'start'
+      : activePoint.x >= width - padding.right - 48
+        ? 'end'
+        : 'center'
+    : 'center';
+  const tooltipVertical = activePoint && activePoint.y < padding.top + 42 ? 'below' : 'above';
   // 窄列中同时标注首尾和峰值容易重叠；默认只突出峰值，其余月份在悬停时显示。
   const labelIndices = new Set([peakIndex]);
 
@@ -279,8 +287,21 @@ function ProjectionLineChart({ data }: { data: Array<{ monthLabel: string; total
               {labelIndices.has(index) || hoveredIndex === index ? (
                 <text
                   className={`repayment-projection-value${hoveredIndex === index ? ' is-active' : ''}`}
-                  x={point.x}
+                  x={
+                    point.x <= padding.left + 48
+                      ? point.x + 6
+                      : point.x >= width - padding.right - 48
+                        ? point.x - 6
+                        : point.x
+                  }
                   y={Math.max(24, point.y - 16)}
+                  textAnchor={
+                    point.x <= padding.left + 48
+                      ? 'start'
+                      : point.x >= width - padding.right - 48
+                        ? 'end'
+                        : 'middle'
+                  }
                 >
                   {formatCurrencyAuto(point.total)}
                 </text>
@@ -299,10 +320,10 @@ function ProjectionLineChart({ data }: { data: Array<{ monthLabel: string; total
         </svg>
         {activePoint ? (
           <div
-            className="repayment-projection-tooltip"
+            className={`repayment-projection-tooltip is-${tooltipHorizontal} is-${tooltipVertical}`}
             style={{
               left: `${(activePoint.x / width) * 100}%`,
-              top: `${Math.max(8, (activePoint.y / height) * 100)}%`
+              top: `${(activePoint.y / height) * 100}%`
             }}
           >
             <span>{activePoint.monthLabel}</span>
