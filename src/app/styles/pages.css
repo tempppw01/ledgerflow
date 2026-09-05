@@ -1375,6 +1375,64 @@
   font-size: 12px;
 }
 
+/* The shared date picker is intentionally spacious for forms.  Inside a
+   ledger header it becomes a single compact control, matching the selects
+   beside it rather than consuming an entire table row. */
+.transaction-ledger-surface .transaction-table-date-picker {
+  min-width: 0;
+}
+
+.transaction-ledger-surface .transaction-table-date-picker .lf-date-trigger {
+  min-height: 32px;
+  padding: 0 8px;
+  border-color: var(--color-divider);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.transaction-ledger-surface .transaction-table-date-picker .lf-date-icon {
+  flex: 0 0 auto;
+  font-size: 12px;
+}
+
+/* A ledger may be wider than its viewport.  Keep that affordance quiet and
+   native-feeling instead of exposing a bright default browser scrollbar. */
+.transaction-ledger-surface .transaction-table-wrap {
+  scrollbar-color: color-mix(in srgb, var(--color-text-tertiary) 52%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+.transaction-ledger-surface .transaction-table-wrap::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.transaction-ledger-surface .transaction-table-wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.transaction-ledger-surface .transaction-table-wrap::-webkit-scrollbar-thumb {
+  min-width: 34px;
+  min-height: 34px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-text-tertiary) 55%, transparent);
+  background-clip: content-box;
+}
+
+.transaction-ledger-surface .transaction-table-wrap:hover::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-primary) 52%, var(--color-text-tertiary));
+  background-clip: content-box;
+}
+
+.transaction-ledger-surface .transaction-table-wrap::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 .transaction-ledger-surface .transaction-table-wrap tbody td {
   height: 60px;
   padding-inline: 12px;

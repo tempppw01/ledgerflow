@@ -840,6 +840,7 @@ export function TransactionTable({
                       <th key={`filter-${column.key}`} className={`transaction-col-${column.key}`}>
                         {column.key === 'date' ? (
                           <DatePicker
+                            className="transaction-table-date-picker"
                             min={minAvailableDate}
                             max={maxAvailableDate}
                             value={quickFilters.date}
