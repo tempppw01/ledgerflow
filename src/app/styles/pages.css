@@ -1197,6 +1197,283 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* Transaction workspace — one continuous ledger canvas, not a row of cards.
+   The filter controls are a compact command bar; data remains the visual hero. */
+.transactions-page {
+  gap: var(--space-5);
+  padding-bottom: var(--space-6);
+}
+
+.transactions-filter-sticky-wrap {
+  position: relative;
+  top: auto;
+  z-index: 4;
+  gap: 0;
+  background: transparent;
+}
+
+.transactions-page .transaction-filters-panel {
+  padding: 0 0 var(--space-4);
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.transaction-filters-header {
+  align-items: baseline;
+  padding-bottom: var(--space-4);
+}
+
+.transaction-filters-panel h2 {
+  margin: 0;
+  font-size: clamp(22px, 2vw, 28px);
+  font-weight: 690;
+  letter-spacing: -0.035em;
+}
+
+.transaction-filters-caption {
+  max-width: 480px;
+  margin: 0 0 0 auto;
+  color: var(--color-text-tertiary);
+  text-align: right;
+  line-height: 1.6;
+}
+
+.transaction-filters-primary-row {
+  grid-template-columns: minmax(240px, 2.2fr) minmax(132px, 0.85fr) minmax(144px, 0.95fr) auto;
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.transaction-filters-panel .field {
+  gap: 6px;
+}
+
+.transaction-filters-panel .field label,
+.transaction-filters-mobile-only-label {
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+}
+
+.transaction-filters-panel input,
+.transaction-filters-panel select {
+  min-height: 40px;
+  border-color: var(--color-divider);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-bg-subtle) 55%, transparent);
+  box-shadow: none;
+}
+
+.transaction-filters-panel input:focus,
+.transaction-filters-panel select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 16%, transparent);
+}
+
+.transaction-filters-primary-cta button.primary {
+  min-height: 40px;
+  padding-inline: 18px;
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+}
+
+.transaction-filters-secondary-row {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-divider);
+  gap: 4px;
+}
+
+.transaction-filter-trigger {
+  min-height: 32px;
+  padding: 5px 9px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+  font-weight: 560;
+}
+
+.transaction-filter-trigger-compact {
+  padding-inline: 9px;
+}
+
+.transaction-filter-trigger:hover,
+.transaction-filter-trigger.active {
+  border: 0;
+  background: var(--color-bg-hover);
+  color: var(--color-primary);
+}
+
+.transaction-filter-trigger-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.transaction-filter-popover.open .transaction-filter-trigger {
+  border: 0;
+  box-shadow: none;
+}
+
+.transaction-filter-popover-panel {
+  margin-top: 2px;
+  border-color: var(--color-divider);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-dropdown);
+}
+
+.transactions-split-layout {
+  gap: var(--space-4);
+  min-height: 0;
+}
+
+.transactions-page .transaction-ledger-surface {
+  overflow: hidden;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-bg-elevated) 92%, var(--color-bg-subtle));
+  box-shadow: none;
+}
+
+.transaction-ledger-surface .transaction-table-wrap {
+  border: 0;
+  border-radius: 0;
+}
+
+.transaction-ledger-surface .transaction-table-wrap table {
+  width: 100%;
+  min-width: 780px;
+}
+
+.transaction-ledger-surface .transaction-table-wrap thead th {
+  height: 42px;
+  padding-inline: 12px;
+  border-bottom: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-bg-subtle) 78%, transparent);
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.045em;
+}
+
+.transaction-ledger-surface .transaction-filter-row th {
+  height: 54px;
+  background: transparent;
+}
+
+.transaction-ledger-surface .transaction-filter-row input,
+.transaction-ledger-surface .transaction-filter-row select {
+  min-height: 32px;
+  border-color: var(--color-divider);
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12px;
+}
+
+.transaction-ledger-surface .transaction-table-wrap tbody td {
+  height: 60px;
+  padding-inline: 12px;
+  border-bottom-color: color-mix(in srgb, var(--color-divider) 78%, transparent);
+}
+
+.transaction-ledger-surface .transaction-row-clickable:hover td {
+  background: color-mix(in srgb, var(--color-primary-bg) 42%, transparent);
+}
+
+.transaction-ledger-surface .transaction-type-badge {
+  width: 25px;
+  height: 25px;
+  border-width: 1px;
+}
+
+.transaction-ledger-surface .transaction-amount-cell {
+  font-size: clamp(15px, 1.2vw, 17px);
+  letter-spacing: -0.025em;
+}
+
+.transaction-ledger-surface .transaction-summary-row td {
+  height: 42px;
+  padding-inline: 12px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 62%, transparent);
+  border-top-color: var(--color-divider);
+}
+
+.transaction-ledger-surface .transaction-pagination {
+  margin: 0 !important;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-divider);
+}
+
+.transaction-ledger-surface .transaction-page-indicator {
+  min-height: 28px;
+  border-radius: 6px;
+  background: transparent;
+}
+
+.transaction-ledger-surface .transaction-page-nav button {
+  min-height: 30px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.transactions-split-side {
+  padding-left: var(--space-5);
+  border-left-color: var(--color-divider);
+}
+
+.transactions-split-side > h3 {
+  margin: 0 !important;
+  font-size: var(--font-md);
+  font-weight: 650;
+}
+
+@media (max-width: 1180px) {
+  .transaction-filters-primary-row {
+    grid-template-columns: minmax(220px, 1.8fr) repeat(2, minmax(120px, 1fr)) auto;
+  }
+
+  .transactions-split-side {
+    padding: var(--space-4) 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--color-divider);
+  }
+}
+
+@media (max-width: 760px) {
+  .transactions-page {
+    gap: var(--space-4);
+  }
+
+  .transaction-filters-header {
+    display: grid;
+    gap: 6px;
+  }
+
+  .transaction-filters-caption {
+    margin: 0;
+    text-align: left;
+  }
+
+  .transaction-filters-primary-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .transaction-filter-field-keyword,
+  .transaction-filters-primary-cta {
+    grid-column: 1 / -1;
+  }
+
+  .transaction-ledger-surface .transaction-pagination {
+    padding-inline: var(--space-3);
+  }
+}
+
 .financial-analysis-hero-head,
 .financial-analysis-section-head,
 .financial-analysis-ai-bar {

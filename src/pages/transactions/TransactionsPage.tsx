@@ -883,16 +883,6 @@ export function TransactionsPage() {
     };
   }, [sortedRows]);
 
-  const currentPeriodLabel = useMemo(() => {
-    if (filters.datePreset === 'custom' && (filters.dateFrom || filters.dateTo)) {
-      return `${filters.dateFrom || '起始'} ~ ${filters.dateTo || '至今'}`;
-    }
-    if (filters.datePreset === 'thisMonth') return '本月';
-    if (filters.datePreset === 'last3Months') return '最近三月';
-    if (filters.datePreset === 'last30') return '最近 30 天';
-    return '全部时间';
-  }, [filters.dateFrom, filters.datePreset, filters.dateTo]);
-
   const selected = useMemo(
     () => transactions.find((item) => item.id === selectedId) ?? null,
     [transactions, selectedId]
@@ -2501,27 +2491,6 @@ export function TransactionsPage() {
           sidePanelVisible={sidePanelVisible}
           onToggleSidePanel={() => setSidePanelVisible((prev) => !prev)}
         />
-        {sidePanelVisible ? (
-          <p className="transactions-flow-focus-hint surface-caption">
-            当前默认聚焦流水列表；图表与洞察改为按需展开，避免首屏注意力被分散。
-          </p>
-        ) : null}
-        {sidePanelVisible ? (
-          <div
-            className="transactions-current-bill-strip"
-            aria-label={t('transactions.ui.billFilterState')}
-          >
-            <span>
-              {t('transactions.ui.billPeriod')}: {currentPeriodLabel}
-            </span>
-            <span>
-              {t('transactions.ui.filteredCount')}: {sortedRows.length} {t('transactions.ui.items')}
-            </span>
-            <span>
-              {t('transactions.ui.totalCount')}: {transactions.length} {t('transactions.ui.items')}
-            </span>
-          </div>
-        ) : null}
       </div>
 
       {bulkAiProgress.visible ? (

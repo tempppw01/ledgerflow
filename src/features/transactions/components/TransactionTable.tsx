@@ -627,7 +627,7 @@ export function TransactionTable({
   }, [contextMenu]);
 
   return (
-    <section className="panel">
+    <section className="panel transaction-ledger-surface">
       {loading ? (
         <TableSkeleton rows={6} columns={8} />
       ) : errorMessage ? (
