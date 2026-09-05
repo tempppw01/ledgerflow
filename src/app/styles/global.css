@@ -7842,7 +7842,10 @@ input[type='date']:focus {
 }
 
 .exchange-card-header {
-  margin-bottom: var(--space-4);
+  min-height: 48px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-divider);
 }
 
 .exchange-layout {
@@ -7854,6 +7857,25 @@ input[type='date']:focus {
 
 .exchange-data-card {
   min-width: 0;
+}
+
+/* 汇率工具：同页双栏以分割线建立层级，避免成为并排的两张大卡。 */
+.exchange-layout > .panel {
+  min-width: 0;
+  margin: 0;
+  padding: 20px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.exchange-priority-converter {
+  padding-right: 20px !important;
+}
+
+.exchange-data-card {
+  padding-left: 20px !important;
 }
 
 .exchange-data-header {
@@ -7898,6 +7920,9 @@ body.exchange-resizing {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+  font-weight: 600;
 }
 
 .exchange-base-picker select {
@@ -7960,7 +7985,7 @@ body.exchange-resizing {
 .exchange-table th {
   font-weight: 600;
   color: var(--color-text-secondary);
-  background: var(--color-bg-subtle);
+  background: transparent;
   position: sticky;
   top: 0;
 }
@@ -8100,19 +8125,20 @@ body.exchange-resizing {
 }
 
 .exchange-calculator {
-  margin-top: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-subtle);
-  padding: var(--space-3);
+  margin-top: 18px;
+  border: 0;
+  border-top: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: transparent;
+  padding: 18px 0 0;
   display: grid;
   gap: var(--space-3);
 }
 
 .exchange-calculator-screen {
-  background: var(--color-bg-elevated);
+  background: transparent;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
   min-height: 44px;
   padding: var(--space-2) var(--space-3);
   font-size: var(--font-xl);
@@ -8173,11 +8199,12 @@ body.exchange-resizing {
 }
 
 .exchange-converter-result {
-  margin-top: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-bg-subtle);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  margin-top: 18px;
+  padding: 14px 0 0;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--color-divider);
+  border-radius: 0;
   font-size: var(--font-md);
   font-weight: 600;
   min-height: 38px;
@@ -10544,6 +10571,11 @@ body.categories-accounts-resizing {
   .exchange-layout {
     grid-template-columns: 1fr;
     row-gap: var(--space-3);
+  }
+
+  .exchange-priority-converter,
+  .exchange-data-card {
+    padding-inline: 0 !important;
   }
 
   .exchange-resize-divider {
