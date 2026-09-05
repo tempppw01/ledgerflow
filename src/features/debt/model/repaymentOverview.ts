@@ -172,11 +172,12 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
       const dueDate = new Date(`${item.simpleDueDate}T00:00:00`);
       if (Number.isNaN(dueDate.getTime())) return null;
       const dueInDays = daysBetween(from, dueDate);
+      const payment = Math.max(0, Number(item.simpleAmount) || 0);
       return {
         id: item.id,
         name: item.name,
         type: item.type,
-        payment: 0,
+        payment,
         dueInDays,
         tone: dueInDays <= 0 ? 'danger' : dueInDays <= 3 ? 'danger' : dueInDays <= 7 ? 'warning' : 'safe',
         paidAmount: 0,
@@ -243,6 +244,18 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
       if (typeof remaining === 'number' && offset >= remaining) continue;
       const amount = getScheduledPayment(debt, year, month, calculateDebtMinimumPayment(debt));
       if (amount > 0) items.push({ id: debt.id, name: debt.name, amount });
+    }
+    for (const reminder of simpleReminders) {
+      const dueDate = new Date(`${reminder.simpleDueDate}T00:00:00`);
+      const amount = Math.max(0, Number(reminder.simpleAmount) || 0);
+      if (
+        !Number.isNaN(dueDate.getTime()) &&
+        dueDate.getFullYear() === year &&
+        dueDate.getMonth() === month &&
+        amount > 0
+      ) {
+        items.push({ id: reminder.id, name: reminder.name, amount });
+      }
     }
     const total = items.reduce((sum, item) => sum + item.amount, 0);
     monthlyProjection.push({

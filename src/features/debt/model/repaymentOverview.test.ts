@@ -131,7 +131,7 @@ describe('getRepaymentOverview', () => {
     expect(result.monthlyProjection[0].total).toBe(260);
   });
 
-  it('keeps a simple repayment reminder in the timeline without adding a zero-value debt to payment totals', () => {
+  it('keeps a simple repayment reminder without an amount out of payment totals', () => {
     const result = getRepaymentOverview({
       debts: [
         debt({
@@ -158,5 +158,34 @@ describe('getRepaymentOverview', () => {
         dueInDays: 5
       })
     ]);
+  });
+
+  it('includes a dated simple reminder amount in the matching month only', () => {
+    const result = getRepaymentOverview({
+      debts: [
+        debt({
+          id: 'reminder-amount-1',
+          name: '微粒贷',
+          balance: 0,
+          entryMode: 'simple',
+          simpleDueDate: '2026-09-10',
+          simpleAmount: 350
+        })
+      ],
+      repaymentRecords: [],
+      fromDate: new Date(2026, 8, 5, 8, 0),
+      monthsAhead: 3
+    });
+
+    expect(result.thisMonthTotal).toBe(350);
+    expect(result.thisMonthRemaining).toBe(350);
+    expect(result.breakdown).toEqual([
+      expect.objectContaining({
+        id: 'reminder-amount-1',
+        isSimpleReminder: true,
+        payment: 350
+      })
+    ]);
+    expect(result.monthlyProjection.map((month) => month.total)).toEqual([350, 0, 0]);
   });
 });

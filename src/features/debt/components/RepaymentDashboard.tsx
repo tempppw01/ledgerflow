@@ -413,7 +413,9 @@ export function RepaymentDashboard({
                           {item.isSimpleReminder ? '还款提醒' : DEBT_TYPE_LABELS[item.type] ?? item.type}
                         </span>
                         <span className="repayment-timeline-amount">
-                          {item.isSimpleReminder ? '金额待补充' : formatCurrency(item.payment)}
+                          {item.isSimpleReminder && item.payment <= 0
+                            ? '金额待补充'
+                            : formatCurrency(item.payment)}
                         </span>
                       </span>
                       <span className="repayment-timeline-status">
