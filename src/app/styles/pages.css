@@ -1944,6 +1944,217 @@
   > article:last-child {
   display: none;
 }
+
+/* ============================================================
+   VI coverage — content workspaces
+   A page section is a reading rhythm, not another card.  These rules
+   deliberately keep controls and charts surfaced while removing the legacy
+   "card inside card" treatment from analytical and operational pages.
+   ============================================================ */
+.financial-analysis-page {
+  gap: 0;
+}
+
+.financial-analysis-page > .financial-analysis-hero,
+.financial-analysis-page > .financial-analysis-section {
+  padding: 22px 0;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--color-divider);
+  background: transparent;
+  box-shadow: none;
+}
+
+.financial-analysis-page > .financial-analysis-hero {
+  padding-top: 2px;
+}
+
+.financial-analysis-market-board,
+.financial-analysis-ai-card,
+.financial-analysis-subcard {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.financial-analysis-market-board {
+  padding: 0;
+}
+
+.financial-analysis-market-ticker,
+.financial-analysis-stat-grid,
+.financial-analysis-metrics-grid {
+  gap: 0;
+  border-block: 1px solid var(--color-divider);
+}
+
+.financial-analysis-market-card,
+.financial-analysis-metric-card,
+.financial-analysis-stat-grid > div {
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.financial-analysis-market-card + .financial-analysis-market-card,
+.financial-analysis-metric-card + .financial-analysis-metric-card,
+.financial-analysis-stat-grid > div + div {
+  border-left: 1px solid var(--color-divider);
+}
+
+.financial-analysis-category-list,
+.financial-analysis-ai-grid {
+  gap: 0;
+  border-top: 1px solid var(--color-divider);
+}
+
+.financial-analysis-category-item,
+.financial-analysis-highlight,
+.financial-analysis-ai-empty {
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--color-divider);
+  background: transparent;
+  box-shadow: none;
+}
+
+.financial-analysis-category-item,
+.financial-analysis-highlight {
+  padding: 14px 0;
+}
+
+.financial-analysis-highlight.warning {
+  border-left: 3px solid var(--color-warning);
+  padding-left: 14px;
+}
+
+.financial-analysis-market-bar-track {
+  border-inline: 0;
+  border-radius: 0;
+  background: var(--color-bg-subtle);
+}
+
+/* Dashboard secondary modules use the same single-layer information rhythm. */
+.dashboard-main-grid > .panel,
+.dashboard-dynamic-grid > .dashboard-unified-card {
+  padding: 22px 0;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--color-divider);
+  background: transparent;
+  box-shadow: none;
+}
+
+.dashboard-history-profile-grid {
+  gap: 0 !important;
+  border-block: 1px solid var(--color-divider);
+}
+
+.dashboard-history-profile-grid > .panel {
+  padding: 16px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dashboard-history-profile-grid > .panel + .panel {
+  padding-left: 20px;
+  border-left: 1px solid var(--color-divider);
+}
+
+.dashboard-trend-summary,
+.dashboard-ai-output,
+.dashboard-forecast-chart {
+  border-inline: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.dashboard-breakdown-item,
+.dashboard-top-item,
+.dashboard-trend-item,
+.dashboard-profile-tags--compact span {
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--color-divider);
+  background: transparent;
+}
+
+/* News remains easy to scan on the same page instead of appearing as two
+   nested cards. */
+.finance-page > .card {
+  padding: 22px 0;
+  border: 0 !important;
+  border-radius: 0;
+  border-bottom: 1px solid var(--color-divider) !important;
+  background: transparent;
+  box-shadow: none !important;
+}
+
+.finance-page > .card:first-child {
+  padding-top: 2px;
+}
+
+.finance-page-tip {
+  margin: 18px 0 0;
+  padding: 14px 0;
+  border: 0;
+  border-block: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.finance-page-tip-illustration {
+  opacity: 0.62;
+  filter: grayscale(0.25);
+}
+
+.finance-news-compact-list {
+  gap: 0;
+  border-top: 1px solid var(--color-divider);
+}
+
+.finance-news-compact-item {
+  border-inline: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--color-divider);
+  background: transparent;
+}
+
+.finance-news-compact-item.is-active {
+  border-left: 3px solid var(--color-primary);
+  background: transparent;
+}
+
+@media (max-width: 680px) {
+  .financial-analysis-page > .financial-analysis-hero,
+  .financial-analysis-page > .financial-analysis-section,
+  .dashboard-main-grid > .panel,
+  .dashboard-dynamic-grid > .dashboard-unified-card,
+  .finance-page > .card {
+    padding: 18px 0;
+  }
+
+  .financial-analysis-market-card + .financial-analysis-market-card,
+  .financial-analysis-metric-card + .financial-analysis-metric-card,
+  .financial-analysis-stat-grid > div + div,
+  .dashboard-history-profile-grid > .panel + .panel {
+    padding-left: 0;
+    border-top: 1px solid var(--color-divider);
+    border-left: 0;
+  }
+
+  .financial-analysis-market-card,
+  .financial-analysis-metric-card,
+  .financial-analysis-stat-grid > div {
+    padding-inline: 0;
+  }
+}
 .finance-source-strip {
   display: flex;
   gap: 16px;

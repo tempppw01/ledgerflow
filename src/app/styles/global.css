@@ -13537,6 +13537,57 @@ body.categories-accounts-resizing {
   box-shadow: none;
 }
 
+/* VI coverage — transaction workspace. The main ledger and its detail rail
+   are peers in a working canvas, rather than rounded panels stacked together. */
+.transactions-page > .panel,
+.transactions-page .transactions-split-side.panel,
+.transaction-edit-panel.panel {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.transactions-split-side {
+  padding: 0 0 0 var(--space-4);
+  border-left: 1px solid var(--color-divider);
+}
+
+.transactions-side-chart-card,
+.transactions-current-bill-panel {
+  border-top-color: var(--color-divider);
+}
+
+.transactions-split-divider {
+  width: 1px;
+  border-radius: 0;
+  background: var(--color-divider);
+}
+
+.transactions-split-divider::before {
+  top: 50%;
+  bottom: auto;
+  width: 3px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--color-text-quaternary);
+  box-shadow: none;
+  transform: translate(-50%, -50%);
+}
+
+.transaction-edit-panel > section,
+.transaction-edit-panel > div:not(.dialog) {
+  border-radius: 0;
+}
+
+@media (max-width: 1100px) {
+  .transactions-split-side {
+    padding: var(--space-4) 0 0;
+    border-top: 1px solid var(--color-divider);
+    border-left: 0;
+  }
+}
+
 .smart-budget-page > .smart-budget-header {
   padding: 0 0 var(--space-4);
   border-bottom: 1px solid var(--border-subtle);

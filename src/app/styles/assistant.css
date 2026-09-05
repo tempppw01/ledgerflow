@@ -1340,6 +1340,41 @@
   margin-bottom: 0;
 }
 
+/* VI coverage — keep the conversational interface warm, but let its outer
+   sections live directly on the page canvas. Message bubbles and form fields
+   intentionally retain their own surfaces for scanability and interaction. */
+.chat-kawaii-panel {
+  padding: 20px 0;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--color-divider);
+  background: transparent;
+  box-shadow: none;
+}
+
+.chat-kawaii-panel:first-child {
+  padding-top: 2px;
+}
+
+.chat-kawaii-actions button {
+  border-radius: var(--radius-full);
+  box-shadow: none;
+}
+
+.chat-kawaii-actions button:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.chat-kawaii-mascot {
+  border-top-style: solid;
+  border-top-color: var(--color-divider);
+}
+
+.chat-assistant-panel {
+  min-height: min(620px, calc(100dvh - var(--topbar-height) - 132px));
+}
+
 .chat-investment-panel.is-compact .chat-assistant-hero p {
   margin-top: 0;
 }

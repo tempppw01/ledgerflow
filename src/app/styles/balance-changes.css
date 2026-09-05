@@ -594,3 +594,155 @@
     animation: none !important;
   }
 }
+
+/* VI coverage — balance history is a compact activity log, not a deck of
+   decorative domino cards. Expand/collapse remains, but the visual hierarchy
+   now comes from type, amount and dividers. */
+.balance-change-page.panel {
+  gap: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.balance-change-header {
+  padding: 2px 0 20px;
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.balance-change-tip {
+  padding: 14px 0 14px 38px;
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: transparent;
+}
+
+.balance-change-tip::before {
+  left: 0;
+  top: 13px;
+  background: transparent;
+}
+
+.balance-change-domino-board {
+  gap: 0;
+}
+
+.balance-change-domino-group {
+  overflow: visible;
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.balance-change-domino-group.is-expanded {
+  border-color: var(--color-divider);
+  box-shadow: none;
+}
+
+.balance-change-group-toggle {
+  min-height: 66px;
+  padding: 12px 0;
+  border-bottom-color: var(--color-divider);
+  background: transparent;
+}
+
+.balance-change-group-toggle:hover {
+  background: var(--color-bg-subtle);
+  filter: none;
+}
+
+.balance-change-group-icon,
+.balance-change-card-icon {
+  border-radius: 50%;
+  box-shadow: none;
+}
+
+.balance-change-card-list,
+.balance-change-domino-group.is-collapsed .balance-change-card-list {
+  min-height: 0;
+  padding: 0;
+}
+
+.balance-change-domino-group.is-expanded .balance-change-card-list {
+  gap: 0;
+}
+
+.balance-change-card,
+.balance-change-domino-group.is-expanded .balance-change-card {
+  min-height: 0;
+  padding: 14px 0 14px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  animation: none;
+}
+
+.balance-change-domino-group.is-collapsed .balance-change-card {
+  position: relative;
+  inset: auto;
+  display: none;
+  transform: none;
+  opacity: 1;
+  pointer-events: none;
+}
+
+.balance-change-domino-group.is-collapsed .balance-change-card:first-child {
+  display: grid;
+  min-height: 0;
+  pointer-events: auto;
+}
+
+.balance-change-domino-group.is-collapsed .balance-change-card:not(:first-child) {
+  min-height: 0;
+  opacity: 1;
+  filter: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.balance-change-card:hover,
+.balance-change-domino-group.is-collapsed .balance-change-card:hover {
+  background: var(--color-bg-subtle);
+  box-shadow: none;
+  transform: none;
+}
+
+.balance-change-card::before {
+  inset: 14px auto 14px 0;
+  width: 3px;
+  border-radius: 0;
+}
+
+.balance-change-reason,
+.balance-change-flow,
+.balance-change-pagination {
+  border-inline: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.balance-change-pagination {
+  padding: 14px 0;
+  border-bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .balance-change-header {
+    padding: 2px 0 16px;
+  }
+
+  .balance-change-card {
+    padding-left: 10px;
+  }
+}

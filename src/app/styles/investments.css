@@ -4011,6 +4011,78 @@
   font-weight: 750;
 }
 
+/* VI coverage — market data is dense by nature. Use one workspace surface and
+   quiet dividers between quotes, boards and news instead of visual nesting. */
+.investments-page .investments-hero,
+.investments-page .investments-market-panel,
+.investments-page .investments-market-boards-panel,
+.investments-page .investments-market-news-panel,
+.investments-page .investments-watchlist-panel {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.investments-page .investments-hero {
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+  background: transparent;
+}
+
+.investments-summary-strip {
+  gap: 0;
+  border-block: 1px solid var(--color-divider);
+}
+
+.investments-summary-pill {
+  padding: 13px 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.investments-summary-pill + .investments-summary-pill {
+  border-left: 1px solid var(--color-divider);
+}
+
+.investments-market-board-tabs {
+  padding: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--color-divider);
+  background: transparent;
+}
+
+.investments-market-board-tabs button,
+.investments-market-board-tabs button:hover,
+.investments-market-board-tabs button:focus-visible,
+.investments-market-board-tabs button.is-active {
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.investments-market-board-tabs button.is-active {
+  color: var(--color-text-primary);
+  box-shadow: inset 0 -2px 0 var(--color-primary);
+}
+
+@media (max-width: 680px) {
+  .investments-summary-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .investments-summary-pill + .investments-summary-pill {
+    border-left: 0;
+  }
+
+  .investments-summary-pill:nth-child(even) {
+    border-left: 1px solid var(--color-divider);
+  }
+
+  .investments-summary-pill:nth-child(n + 3) {
+    border-top: 1px solid var(--color-divider);
+  }
+}
+
 .investments-ai-history-nav button {
   min-height: 26px;
   padding: 0 8px;

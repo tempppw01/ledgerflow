@@ -7,8 +7,6 @@ import {
 } from '../../features/finance/api/tonghuashunNewsClient';
 
 const FINANCE_NEWS_CACHE_KEY = 'ledgerflow.finance.tonghuashun-news-cache.v1';
-const FINANCE_ILLUSTRATION_URL =
-  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/scrum-board.svg';
 const TONGHUASHUN_HOME_URL = 'https://www.10jqka.com.cn/';
 
 const NEWS_CATEGORIES: Array<{ value: TonghuashunNewsCategory; labelKey: string }> = [
@@ -101,19 +99,6 @@ export function FinancePage() {
       <section className="card">
         <h2 style={{ marginTop: 0 }}>📰 {t('finance.ui.title')}</h2>
         <p className="muted">{t('finance.ui.subtitle')}</p>
-        <div className="finance-page-tip finance-page-tip-with-illustration" role="note">
-          <div className="finance-page-tip-copy">
-            <strong>{t('finance.ui.tipTitle')}</strong>
-            <p>{t('finance.ui.tipBody')}</p>
-          </div>
-          <img
-            className="finance-page-tip-illustration"
-            src={FINANCE_ILLUSTRATION_URL}
-            alt=""
-            aria-hidden="true"
-          />
-        </div>
-
         <div className="finance-source-strip" aria-label={t('finance.ui.sourceLabel')}>
           <div className="finance-source-strip-copy">
             <span>{t('finance.ui.sourceBadge')}</span>
