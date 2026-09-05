@@ -270,7 +270,9 @@
 
 .topbar-account-menu-item-icon,
 .topbar-account-menu-symbol {
-  display: inline-grid;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 30px;
   height: 30px;
   flex: 0 0 30px;
@@ -279,20 +281,31 @@
   border-radius: 7px;
   background: color-mix(in srgb, var(--color-primary) 9%, transparent);
   color: var(--color-primary);
+  line-height: 0;
 }
 
 .topbar-account-menu-item-icon img {
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
   display: block;
   object-fit: contain;
 }
 
 .topbar-account-menu-symbol {
-  font-family: Arial, sans-serif;
-  font-size: 17px;
-  line-height: 1;
-  text-align: center;
+  line-height: 0;
+}
+
+.topbar-account-menu-symbol svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
 }
 
 .topbar-account-menu-item-copy {

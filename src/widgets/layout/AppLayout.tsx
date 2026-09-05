@@ -826,7 +826,11 @@ export function AppLayout() {
                     }}
                   >
                     <span className="topbar-account-menu-symbol" aria-hidden="true">
-                      ↪
+                      <svg viewBox="0 0 24 24" focusable="false">
+                        <path d="M10 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2v-2" />
+                        <path d="M3 12h11" />
+                        <path d="m7 8-4 4 4 4" />
+                      </svg>
                     </span>
                     <span className="topbar-account-menu-item-copy">
                       <strong>退出登录</strong>
