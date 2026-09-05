@@ -10,10 +10,8 @@ import { formatCurrency, formatDateTime } from '../../../shared/lib/format';
 import { buildA4PrintBaseStyles, buildA4PrintSheetStyles } from '../../../shared/lib/printStyles';
 import {
   ALIPAY_LOGO_URL,
-  IMAGE_ICON_URL,
   LANDMARK_ICON_URL,
   PEN_TOOL_ICON_URL,
-  PRINTER_ICON_URL,
   WECHAT_LOGO_URL
 } from '../../../shared/config/brandAssets';
 import {
@@ -42,8 +40,6 @@ function sourceLabel(source: TransactionSource): string {
 }
 
 export type TransactionDetailSectionKey = 'base' | 'source' | 'note' | 'tags' | 'json';
-type DetailMode = 'professional' | 'timeline';
-const DETAIL_MODE_STORAGE_KEY = 'ledgerflow.transactions.detailMode';
 const ALIPAY_ACCOUNT_PATTERN = /(支付宝|alipay)/i;
 const WECHAT_ACCOUNT_PATTERN = /(微信|wechat|weixin)/i;
 const BANK_ACCOUNT_PATTERN =
@@ -360,24 +356,15 @@ export function TransactionDetailDrawer({
   onAttachmentUploadStatus,
   aiRecategorizing = false,
   privacyMode = false,
-  visibleSections,
-  onToggleSection,
+  visibleSections: _visibleSections,
+  onToggleSection: _onToggleSection,
   onQuickAdd
 }: TransactionDetailDrawerProps) {
-  const [mode, setMode] = useState<DetailMode>(() => {
-    const saved = window.localStorage.getItem(DETAIL_MODE_STORAGE_KEY);
-    return saved === 'timeline' ? 'timeline' : 'professional';
-  });
   const [attachmentUploading, setAttachmentUploading] = useState(false);
   const [drawerHeight, setDrawerHeight] = useState<number | null>(null);
   const drawerRef = useRef<HTMLDivElement | null>(null);
   const resizeStateRef = useRef<{ startY: number; startHeight: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const setDetailMode = (next: DetailMode) => {
-    setMode(next);
-    window.localStorage.setItem(DETAIL_MODE_STORAGE_KEY, next);
-  };
 
   const handleAttachmentSelect = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -555,78 +542,22 @@ export function TransactionDetailDrawer({
   if (!open || !transaction) return null;
 
   const abnormalAlert = buildAbnormalAlert(transaction);
-  const timelineEvents = [
-    {
-      key: 'created',
-      icon: '🧾',
-      title: transaction.source === 'manual' ? '手工创建' : '导入创建',
-      detail: `${formatDateTime(transaction.date)} 创建交易`,
-      meta: `来源：${sourceLabel(source)}`
-    },
-    {
-      key: 'ai-recognize',
-      icon: '🤖',
-      title: 'AI识别',
-      detail:
-        source === 'ai'
-          ? '该笔交易来自上传账单/截图后的 AI 识别结果'
-          : '本笔交易未经过 AI 识别流程',
-      meta: source === 'ai' ? '状态：已识别入账' : '状态：跳过'
-    },
-    {
-      key: 'manual-adjust',
-      icon: '✍️',
-      title: '人工修改',
-      detail:
-        transaction.status === 'pending'
-          ? '当前仍为待处理，建议人工核对字段后确认'
-          : '已完成人工确认或无需二次修改',
-      meta: `交易状态：${transaction.status ? statusLabel(transaction.status) : '未标记'}`
-    },
-    {
-      key: 'refund-link',
-      icon: '🔁',
-      title: '退款关联',
-      detail:
-        transaction.adjustmentKind === 'refund' || transaction.adjustmentKind === 'reversal'
-          ? relatedOrigin
-            ? `已关联原单：${relatedOrigin.note || relatedOrigin.id}`
-            : '识别为退款/冲正，但原单缺失'
-          : relatedRefunds.length > 0
-            ? `该笔交易已关联 ${relatedRefunds.length} 条退款/冲正`
-            : '暂无退款关联',
-      meta:
-        transaction.adjustmentKind === 'refund' || transaction.adjustmentKind === 'reversal'
-          ? '关联类型：退款/冲正单'
-          : '关联类型：普通交易'
-    },
-    {
-      key: 'reconcile',
-      icon: '✅',
-      title: '对账确认',
-      detail:
-        transaction.status === 'completed' || transaction.status === 'closed'
-          ? '该笔交易已进入完成态，可作为对账基准'
-          : '该笔交易尚未完成，建议纳入今日待处理清单',
-      meta:
-        transaction.status === 'completed' || transaction.status === 'closed'
-          ? '对账：已确认'
-          : '对账：未确认'
-    },
-    {
-      key: 'export-sync',
-      icon: '📤',
-      title: '导出 / 同步',
-      detail: '可通过列表页导出 CSV 或发起同步，将该交易纳入外部账单流。',
-      meta: '提示：当前页面未展示具体同步日志'
-    }
-  ];
+  const isRefundOrReversal =
+    transaction.adjustmentKind === 'refund' || transaction.adjustmentKind === 'reversal';
+  const hasMoreInformation = Boolean(
+    transaction.orderNo ||
+      transaction.merchantOrderNo ||
+      transaction.tags.length ||
+      transaction.attachments?.length ||
+      isRefundOrReversal ||
+      relatedRefunds.length
+  );
 
   return (
     <div className="drawer-overlay" role="presentation" onClick={onClose}>
       <aside
         ref={drawerRef}
-        className="drawer-panel"
+        className="drawer-panel transaction-detail-drawer"
         role="dialog"
         aria-modal="true"
         aria-label="交易详情"
@@ -644,36 +575,6 @@ export function TransactionDetailDrawer({
         <header className="drawer-header">
           <div>
             <h3>交易详情</h3>
-            <small className="drawer-subtitle">支持模块化显示</small>
-          </div>
-          <div className="drawer-mode-wrap">
-            <div className="drawer-mode-switch" role="tablist" aria-label="交易详情显示模式">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={mode === 'professional' ? 'true' : 'false'}
-                className={mode === 'professional' ? 'active' : ''}
-                title="适合编辑、对账：字段齐全、可快速修改"
-                onClick={() => setDetailMode('professional')}
-              >
-                专业模式
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={mode === 'timeline' ? 'true' : 'false'}
-                className={mode === 'timeline' ? 'active' : ''}
-                title="适合审计溯源：识别→清洗→入账→后续调整事件流"
-                onClick={() => setDetailMode('timeline')}
-              >
-                时间轴模式
-              </button>
-            </div>
-            <p className="drawer-mode-hint">
-              {mode === 'professional'
-                ? '专业模式：适合编辑、对账（字段齐全、可快速修改）'
-                : '时间轴模式：适合审计溯源（识别→清洗→入账→后续调整）'}
-            </p>
           </div>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="关闭详情">
             ✕
@@ -681,305 +582,51 @@ export function TransactionDetailDrawer({
         </header>
 
         <div className="drawer-body">
-          {mode === 'timeline' ? (
-            <section className="drawer-timeline-layout" aria-label="交易时间轴">
-              <div className="drawer-timeline">
-                {timelineEvents.map((item) => (
-                  <article key={item.key} className="drawer-timeline-item">
-                    <span className="drawer-timeline-icon">{item.icon}</span>
-                    <div>
-                      <p>{item.title}</p>
-                      <strong>{item.detail}</strong>
-                    </div>
-                  </article>
-                ))}
-              </div>
-              <aside className="drawer-timeline-side" aria-label="时间轴事件详情">
-                <h4>事件详情</h4>
-                <ul>
-                  {timelineEvents.map((item) => (
-                    <li key={`meta-${item.key}`}>
-                      <strong>{item.title}</strong>
-                      <p>{item.meta}</p>
-                    </li>
-                  ))}
-                </ul>
-                <div className="drawer-timeline-raw">
-                  <h5>原始记录摘录</h5>
-                  <p>
-                    备注：{transaction.note || '（无）'}
-                    <br />
-                    订单号：{transaction.orderNo || '—'}
-                    <br />
-                    商家订单号：{transaction.merchantOrderNo || '—'}
-                  </p>
-                </div>
-              </aside>
-            </section>
-          ) : null}
+          <section className="transaction-detail-summary" aria-label="账单摘要">
+            <div>
+              <p className="transaction-detail-kicker">
+                {renderTypeLabel(transaction.type)}
+                <span>{categoryName}</span>
+              </p>
+              <strong className={transaction.type === 'income' ? 'text-income' : 'text-expense'}>
+                {privacyMode
+                  ? maskAmount()
+                  : `${transaction.type === 'income' ? '+' : '-'}${formatCurrency(transaction.amount)}`}
+              </strong>
+            </div>
+            <p>{formatDateTime(transaction.date)} · {renderAccountLabel(accountName)}</p>
+          </section>
 
-          {mode === 'professional' ? (
-            <details className="drawer-modules" open>
-              <summary>详情标题模块</summary>
-              <div className="drawer-modules-grid">
-                {[
-                  { key: 'base' as const, label: '基础信息' },
-                  { key: 'source' as const, label: '来源' },
-                  { key: 'note' as const, label: '备注' },
-                  { key: 'tags' as const, label: '标签' },
-                  { key: 'json' as const, label: '原始 JSON' }
-                ].map((item) => (
-                  <label key={item.key}>
-                    <input
-                      type="checkbox"
-                      checked={visibleSections[item.key]}
-                      onChange={() => onToggleSection(item.key)}
-                    />
-                    <span>{item.label}</span>
-                  </label>
-                ))}
+          {transaction.note ? <p className="transaction-detail-note">{transaction.note}</p> : null}
+
+          <section className="transaction-detail-facts" aria-label="基础信息">
+            <div><span>分类</span><strong>{categoryName}</strong></div>
+            <div><span>账户</span><strong>{renderAccountLabel(accountName)}</strong></div>
+            <div><span>来源</span><strong>{sourceLabel(source)}</strong></div>
+            {transaction.status ? <div><span>状态</span><strong>{statusLabel(transaction.status)}</strong></div> : null}
+          </section>
+
+          {abnormalAlert ? <p className="transaction-detail-alert">⚠ {abnormalAlert.detail}</p> : null}
+
+          {hasMoreInformation ? (
+            <details className="transaction-detail-more">
+              <summary>更多信息</summary>
+              <div className="transaction-detail-more-content">
+                {transaction.orderNo ? <p><span>订单号</span><strong>{transaction.orderNo}</strong></p> : null}
+                {transaction.merchantOrderNo ? <p><span>商家订单号</span><strong>{privacyMode ? maskMerchant(transaction.merchantOrderNo) : transaction.merchantOrderNo}</strong></p> : null}
+                {transaction.tags.length ? <div className="drawer-tags">{transaction.tags.map((tag) => <span key={tag} className="badge badge-primary">{tag}</span>)}</div> : null}
+                {isRefundOrReversal || relatedRefunds.length ? <p><span>退款 / 冲正</span><strong>{isRefundOrReversal ? (relatedOrigin ? `关联原单：${relatedOrigin.note || relatedOrigin.id}` : '退款或冲正单') : `已关联 ${relatedRefunds.length} 条记录`}</strong></p> : null}
+                {transaction.attachments?.length ? <div className="transaction-detail-attachments">{transaction.attachments.map((item) => <p key={item.id}><span>附件</span><strong>{item.name}</strong></p>)}</div> : null}
+                <p><span>最后修改</span><strong>{formatDateTime(transaction.updatedAt || transaction.date)}</strong></p>
               </div>
             </details>
           ) : null}
-
-          {mode === 'professional' && visibleSections.base ? (
-            <>
-              <div className="drawer-kv">
-                <span>日期时间</span>
-                <strong>{formatDateTime(transaction.date)}</strong>
-              </div>
-              <div className="drawer-kv">
-                <span>最后修改</span>
-                <strong>{formatDateTime(transaction.updatedAt || transaction.date)}</strong>
-              </div>
-              <div className="drawer-kv">
-                <span>类型</span>
-                <strong>{renderTypeLabel(transaction.type)}</strong>
-              </div>
-              <div className="drawer-kv">
-                <span>分类</span>
-                <strong>{categoryName}</strong>
-              </div>
-              <div className="drawer-kv">
-                <span>账户</span>
-                <strong>{renderAccountLabel(accountName)}</strong>
-              </div>
-              <div className="drawer-kv">
-                <span>金额</span>
-                <strong className={transaction.type === 'income' ? 'text-income' : 'text-expense'}>
-                  {privacyMode
-                    ? maskAmount()
-                    : `${transaction.type === 'income' ? '+' : '-'}${formatCurrency(transaction.amount)}`}
-                </strong>
-              </div>
-              {transaction.status ? (
-                <div className="drawer-kv">
-                  <span>交易状态</span>
-                  <strong>
-                    <span
-                      className={`badge ${transaction.status === 'completed' ? 'badge-primary' : ''}`}
-                    >
-                      {statusLabel(transaction.status)}
-                    </span>
-                  </strong>
-                </div>
-              ) : null}
-              {transaction.orderNo ? (
-                <div className="drawer-kv">
-                  <span>订单号</span>
-                  <strong>{transaction.orderNo}</strong>
-                </div>
-              ) : null}
-              {transaction.merchantOrderNo ? (
-                <div className="drawer-kv">
-                  <span>商家订单号</span>
-                  <strong>
-                    {privacyMode
-                      ? maskMerchant(transaction.merchantOrderNo)
-                      : transaction.merchantOrderNo}
-                  </strong>
-                </div>
-              ) : null}
-              {(transaction.adjustmentKind === 'refund' ||
-                transaction.adjustmentKind === 'reversal' ||
-                relatedRefunds.length > 0) && (
-                <section
-                  className="drawer-section drawer-adjustment-section"
-                  aria-label="退款冲正关系"
-                >
-                  <h4>退款 / 冲正关系</h4>
-                  <div className="drawer-kv">
-                    <span>当前语义</span>
-                    <strong>
-                      {transaction.adjustmentKind === 'refund'
-                        ? '退款单'
-                        : transaction.adjustmentKind === 'reversal'
-                          ? '冲正单'
-                          : '原始交易'}
-                    </strong>
-                  </div>
-                  {relatedOrigin ? (
-                    <div className="drawer-kv">
-                      <span>关联原单</span>
-                      <strong>
-                        {relatedOrigin.note || '（无备注）'} · {formatDateTime(relatedOrigin.date)}
-                      </strong>
-                    </div>
-                  ) : null}
-                  {relatedRefunds.length > 0 ? (
-                    <div className="drawer-kv">
-                      <span>关联退款/冲正</span>
-                      <strong>{relatedRefunds.length} 条</strong>
-                    </div>
-                  ) : null}
-                  {(transaction.adjustmentKind === 'refund' ||
-                    transaction.adjustmentKind === 'reversal') &&
-                  relatedOrigin ? (
-                    <div className="drawer-kv">
-                      <span>影响金额</span>
-                      <strong className="text-income">
-                        {privacyMode ? maskAmount() : `+${formatCurrency(transaction.amount)}`}
-                      </strong>
-                    </div>
-                  ) : null}
-                  {relatedRefunds.length > 0 ? (
-                    <div className="drawer-kv">
-                      <span>累计冲回</span>
-                      <strong className="text-income">
-                        {privacyMode
-                          ? maskAmount()
-                          : `+${formatCurrency(
-                              relatedRefunds.reduce(
-                                (sum, item) => sum + (Number(item.amount) || 0),
-                                0
-                              )
-                            )}`}
-                      </strong>
-                    </div>
-                  ) : null}
-                </section>
-              )}
-            </>
-          ) : null}
-
-          {mode === 'professional' && abnormalAlert ? (
-            <section className="drawer-section drawer-alert-section">
-              <h4>⚠️ {abnormalAlert.title}</h4>
-              <p>{abnormalAlert.detail}</p>
-              <p className="muted" style={{ marginTop: 6 }}>
-                AI 建议：如近期存在同金额/同备注流水，请优先核对是否重复入账。
-              </p>
-            </section>
-          ) : null}
-
-          {mode === 'professional' && visibleSections.source ? (
-            <div className="drawer-kv">
-              <span>来源</span>
-              <strong>
-                {source === 'ai' ? <span className="badge badge-primary">AI 记账</span> : null}
-                {source === 'wechat' ? <span className="badge">微信导入</span> : null}
-                {source === 'alipay' ? <span className="badge">支付宝</span> : null}
-                {source === 'manual' ? <span className="badge">手工录入</span> : null}
-              </strong>
-            </div>
-          ) : null}
-
-          {mode === 'professional' && visibleSections.note ? (
-            <section className="drawer-section">
-              <h4>备注</h4>
-              <p>{transaction.note || '（无）'}</p>
-            </section>
-          ) : null}
-
-          {mode === 'professional' ? (
-            <section className="drawer-section">
-              <h4>附件</h4>
-              <p className="muted" style={{ marginBottom: 8 }}>
-                附件统一上传到 WebDAV；未配置时不可上传。
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                style={{ display: 'none' }}
-                onChange={handleAttachmentSelect}
-                aria-label="上传附件"
-              />
-              <button
-                type="button"
-                className="button-with-icon"
-                onClick={triggerAttachmentSelect}
-                disabled={attachmentUploading}
-              >
-                <img src={IMAGE_ICON_URL} alt="" aria-hidden="true" />
-                {attachmentUploading ? '上传中…' : '插入附件 / 上传附件'}
-              </button>
-              {transaction.attachments && transaction.attachments.length > 0 ? (
-                <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
-                  {transaction.attachments.map((item) => (
-                    <div key={item.id} className="drawer-kv">
-                      <span>{item.name}</span>
-                      <strong>
-                        {formatDateTime(item.uploadedAt)} · {item.remotePath}
-                      </strong>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="muted" style={{ marginTop: 8 }}>
-                  暂无附件。
-                </p>
-              )}
-            </section>
-          ) : null}
-
-          {mode === 'professional' && visibleSections.tags ? (
-            <section className="drawer-section">
-              <h4>标签</h4>
-              <div className="drawer-tags">
-                {transaction.tags.length > 0
-                  ? transaction.tags.map((tag) => (
-                      <span key={tag} className="badge badge-primary">
-                        {tag}
-                      </span>
-                    ))
-                  : '（无）'}
-              </div>
-              {transaction.tags.length > 6 ? (
-                <details className="drawer-tags-fold">
-                  <summary>展开全部标签</summary>
-                  <div className="drawer-tags" style={{ marginTop: 6 }}>
-                    {transaction.tags.map((tag) => (
-                      <span key={`${tag}-all`} className="badge badge-primary">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </details>
-              ) : null}
-            </section>
-          ) : null}
-
-          {mode === 'professional' && visibleSections.json ? (
-            <section className="drawer-section">
-              <h4>原始 JSON</h4>
-              <pre>{JSON.stringify(transaction, null, 2)}</pre>
-            </section>
-          ) : null}
+          <input ref={fileInputRef} type="file" style={{ display: 'none' }} onChange={handleAttachmentSelect} aria-label="上传附件" />
         </div>
 
         <footer className="drawer-footer">
-          <button type="button" onClick={onCopyNote}>
-            复制备注
-          </button>
-          <button type="button" onClick={onCopyJson}>
-            复制 JSON
-          </button>
           <button type="button" onClick={onShareBill}>
-            📤 分享账单
-          </button>
-          <button type="button" onClick={handlePrint} className="button-with-icon">
-            <img src={PRINTER_ICON_URL} alt="" aria-hidden="true" />
-            打印 A4
+            分享
           </button>
           {onRefund &&
           transaction &&
@@ -995,25 +642,25 @@ export function TransactionDetailDrawer({
             </button>
           ) : null}
           <Link to={`/transactions/${transaction.id}`} style={{ textDecoration: 'none' }}>
-            <button type="button" className="button-with-icon">
+            <button type="button" className="button-with-icon primary">
               <img src={PEN_TOOL_ICON_URL} alt="" aria-hidden="true" />
               编辑
             </button>
           </Link>
-          <button type="button" onClick={onAiRecategorize} disabled={aiRecategorizing}>
-            {aiRecategorizing ? '🤖 AI 重分类中…' : '🤖 AI 重分类'}
-          </button>
           <button type="button" className="danger" onClick={onDelete}>
-            🗑️ 删除
+            删除
           </button>
-          <button
-            type="button"
-            className="drawer-add-link"
-            aria-label="新增账目"
-            onClick={onQuickAdd}
-          >
-            ＋
-          </button>
+          <details className="transaction-detail-actions-more">
+            <summary>更多</summary>
+            <div>
+              <button type="button" onClick={onCopyNote}>复制备注</button>
+              <button type="button" onClick={onCopyJson}>复制 JSON</button>
+              <button type="button" onClick={handlePrint}>打印 A4</button>
+              <button type="button" onClick={triggerAttachmentSelect} disabled={attachmentUploading}>{attachmentUploading ? '上传中…' : '上传附件'}</button>
+              <button type="button" onClick={onAiRecategorize} disabled={aiRecategorizing}>{aiRecategorizing ? 'AI 重分类中…' : 'AI 重分类'}</button>
+              <button type="button" onClick={onQuickAdd}>新增账目</button>
+            </div>
+          </details>
         </footer>
       </aside>
     </div>
