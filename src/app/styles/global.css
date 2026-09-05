@@ -19008,7 +19008,12 @@ select.debt-form-input {
   min-width: 164px;
 }
 
-@media (max-width: 820px) {
+/* The app shell has a persistent navigation rail on desktop.  At this point
+   a ~1,180px viewport leaves roughly 800px (or less) for the content column,
+   which is no longer enough for a four-part data band plus the health ring.
+   Switch based on that practical layout boundary rather than waiting for the
+   whole browser viewport to become phone-sized. */
+@media (max-width: 1180px) {
   .smart-budget-overview-card.design-section {
     display: grid;
     grid-template-columns: 1fr;
