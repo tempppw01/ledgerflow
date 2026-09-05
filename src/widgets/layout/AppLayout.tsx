@@ -675,7 +675,8 @@ export function AppLayout() {
               {collapsed ? null : (
                 <button
                   type="button"
-                  className="sidebar-section-toggle motion-pill-btn"
+                  className={`sidebar-section-toggle${expandedSections[section.title] ? ' is-expanded' : ''}`}
+                  aria-expanded={expandedSections[section.title]}
                   onClick={() =>
                     setExpandedSections((prev) => ({
                       ...prev,
@@ -684,7 +685,11 @@ export function AppLayout() {
                   }
                 >
                   <span className="sidebar-section-title">{section.title}</span>
-                  <span>{expandedSections[section.title] ? '▾' : '▸'}</span>
+                  <span className="sidebar-section-chevron" aria-hidden="true">
+                    <svg viewBox="0 0 16 16" focusable="false">
+                      <path d="m4 6 4 4 4-4" />
+                    </svg>
+                  </span>
                 </button>
               )}
               {(collapsed || expandedSections[section.title]) &&

@@ -307,12 +307,16 @@ body {
 .sidebar-section {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   background: transparent;
   border: 0;
   border-radius: 0;
-  padding: 5px 0 9px;
+  padding: 8px 0 11px;
   box-shadow: none;
+}
+
+.sidebar-section + .sidebar-section {
+  border-top: 1px solid color-mix(in srgb, var(--color-divider) 68%, transparent);
 }
 
 .sidebar-overview-card {
@@ -393,27 +397,73 @@ body {
 }
 
 .sidebar-section-toggle {
-  border: none;
+  min-height: 30px;
+  border: 1px solid transparent;
   background: transparent;
-  padding: var(--space-1) var(--space-2);
+  padding: 5px 8px 5px 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  border-radius: var(--radius-md);
+  border-radius: 7px;
+  color: var(--color-text-tertiary);
+  font: inherit;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
 }
 
 .sidebar-section-toggle:hover {
-  background: color-mix(in srgb, var(--color-text) 5%, transparent);
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+  color: var(--color-text-secondary);
+}
+
+.sidebar-section-toggle:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.sidebar-section-toggle.is-expanded {
+  color: var(--color-text-secondary);
 }
 
 .sidebar-section-title {
   margin: 0;
-  font-size: var(--font-xs);
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   color: var(--color-text-tertiary);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sidebar-section-toggle:hover .sidebar-section-title,
+.sidebar-section-toggle.is-expanded .sidebar-section-title {
+  color: currentColor;
+}
+
+.sidebar-section-chevron {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+  transition: transform var(--transition-fast);
+}
+
+.sidebar-section-chevron svg {
+  display: block;
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.sidebar-section-toggle:not(.is-expanded) .sidebar-section-chevron {
+  transform: rotate(-90deg);
 }
 
 .sidebar-link {
