@@ -3,6 +3,7 @@ import {
   calculateDebtDerivedMetrics,
   calculateDebtHealthScore,
   calculateDebtMinimumPayment,
+  calculateDebtScheduledPayment,
   calculateDebtSummary,
   DebtItem
 } from './debtMetrics';
@@ -26,7 +27,7 @@ describe('debtMetrics', () => {
     expect(calculateDebtMinimumPayment(consumerLoan)).toBe(50);
   });
 
-  it('uses amortized formula for loans', () => {
+  it('uses amortized formula as the fixed monthly installment for loans', () => {
     const loan: DebtItem = {
       id: 'd3',
       name: '消费贷',
@@ -39,6 +40,7 @@ describe('debtMetrics', () => {
     const result = calculateDebtMinimumPayment(loan);
     expect(result).toBeGreaterThan(2200);
     expect(result).toBeLessThan(2300);
+    expect(calculateDebtScheduledPayment(loan)).toBe(result);
   });
 
   it('infers loan annual rate from principal/total repayment/periods when annualRate missing', () => {

@@ -1,4 +1,4 @@
-import { calculateDebtMinimumPayment, type DebtItem, type RepaymentRecord } from './debtMetrics';
+import { calculateDebtScheduledPayment, type DebtItem, type RepaymentRecord } from './debtMetrics';
 
 export interface RepaymentOverviewInput {
   debts: DebtItem[];
@@ -129,7 +129,7 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
         item,
         from.getFullYear(),
         from.getMonth(),
-        calculateDebtMinimumPayment(item),
+        calculateDebtScheduledPayment(item),
         from
       );
       const dueInDays =
@@ -245,7 +245,7 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
     for (const debt of activeDebts) {
       const remaining = debt.remainingMonths;
       if (typeof remaining === 'number' && offset >= remaining) continue;
-      const amount = getScheduledPayment(debt, year, month, calculateDebtMinimumPayment(debt));
+      const amount = getScheduledPayment(debt, year, month, calculateDebtScheduledPayment(debt));
       if (amount > 0) items.push({ id: debt.id, name: debt.name, amount });
     }
     for (const reminder of simpleReminders) {

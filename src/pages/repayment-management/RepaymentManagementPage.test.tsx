@@ -485,6 +485,39 @@ describe('RepaymentManagementPage', () => {
     expect(screen.getByText(/已自动估算：¥1376\.33/)).toBeInTheDocument();
   });
 
+  it('贷款详情使用本期应还和剩余期数，不展示最低还款或重复月供', () => {
+    appPreferencesMock.state.debts = [
+      {
+        id: 'fixed-installment-loan',
+        name: '固定扣款贷款',
+        type: 'loan',
+        status: 'active',
+        balance: 2400,
+        annualRate: 7.2,
+        remainingMonths: 8,
+        repaymentDay: 10,
+        repaymentMethod: 'minimum-payment'
+      }
+    ];
+
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(
+      Array.from(document.querySelectorAll('.repayment-debt-metric-label')).some(
+        (node) => node.textContent === '本期应还'
+      )
+    ).toBe(true);
+    expect(screen.getByText('剩余期数')).toBeInTheDocument();
+    expect(screen.queryByText('最低/期供')).not.toBeInTheDocument();
+    expect(screen.queryByText('预计月供')).not.toBeInTheDocument();
+  });
+
   it('不再显示账单日和扣款账户字段', () => {
     render(
       <MemoryRouter initialEntries={['/repayment-management']}>

@@ -166,7 +166,7 @@ function BreakdownDonut({
       </svg>
       <div className="repayment-donut-center">
         <span className="repayment-donut-total">{formatCurrencyAuto(total)}</span>
-        <span className="repayment-donut-label">月供合计</span>
+        <span className="repayment-donut-label">每月应还</span>
       </div>
       <ul className="repayment-donut-legend">
         {segments.map((seg, index) => (
@@ -533,7 +533,7 @@ export function RepaymentDashboard({
         </div>
 
         <div className="repayment-dashboard-chart">
-          <h3 className="repayment-dashboard-section-title">月供占比</h3>
+          <h3 className="repayment-dashboard-section-title">每月应还占比</h3>
           <BreakdownDonut segments={donutSegments} />
         </div>
 

@@ -395,6 +395,21 @@ const REPAYMENT_RECORD_MODE_LABELS: Record<DebtRepaymentRecordMode, string> = {
   'auto-debit': '自动扣款'
 };
 
+function isFixedInstallmentLoan(debt: Pick<DebtItem, 'type'>): boolean {
+  return debt.type === 'loan';
+}
+
+function getDebtDueAmountLabel(debt: Pick<DebtItem, 'type'>): string {
+  return isFixedInstallmentLoan(debt) ? '本期应还' : '最低还款';
+}
+
+function getDebtPaymentMethodLabel(debt: Pick<DebtItem, 'type' | 'repaymentMethod'>): string {
+  if (isFixedInstallmentLoan(debt) && debt.repaymentMethod === 'minimum-payment') {
+    return '按月固定扣款';
+  }
+  return REPAYMENT_METHOD_LABELS[debt.repaymentMethod || 'minimum-payment'];
+}
+
 function estimateRemainingPrincipal(input: {
   loanPrincipal: number;
   totalPeriods: number;
@@ -1091,7 +1106,9 @@ export function RepaymentManagementPage() {
     setDebtPressurePreview([]);
     setDebtRepaymentDay(item.repaymentDay !== undefined ? String(item.repaymentDay) : '');
     setDebtRepaymentMethod(
-      item.repaymentMethod || (item.type === 'loan' ? 'equal-installment' : 'minimum-payment')
+      item.type === 'loan'
+        ? 'equal-installment'
+        : item.repaymentMethod || 'minimum-payment'
     );
     setDebtRepaymentRecordMode(item.repaymentRecordMode || 'manual');
     setDebtStatus(normalizeDebtLifecycleStatus(item.status, item.balance));
@@ -1187,7 +1204,7 @@ export function RepaymentManagementPage() {
       const fields: string[] = [];
       if (derived.rateSource === 'missing') fields.push('年化利率');
       if (!item.repaymentDay) fields.push('还款日');
-      if (calculateDebtMinimumPayment(item) <= 0) fields.push('最低/期供');
+      if (calculateDebtMinimumPayment(item) <= 0) fields.push(getDebtDueAmountLabel(item));
       return fields.length ? [`${item.name}：${fields.join('、')}`] : [];
     });
     return {
@@ -1349,8 +1366,11 @@ export function RepaymentManagementPage() {
           remainingTotalCost: derived.remainingTotalCost,
           repaymentDay: item.repaymentDay,
           repaymentMethod:
-            item.repaymentMethod ||
-            (item.type === 'loan' ? 'equal-installment' : 'minimum-payment'),
+            item.type === 'loan'
+              ? item.repaymentMethod === 'custom'
+                ? 'custom'
+                : 'equal-installment'
+              : item.repaymentMethod || 'minimum-payment',
           repaymentRecordMode: item.repaymentRecordMode || 'manual',
           lifecycleStatus,
           lifecycleStatusLabel: DEBT_STATUS_LABELS[lifecycleStatus],
@@ -1691,7 +1711,7 @@ export function RepaymentManagementPage() {
     setDebtTotalRepayment('');
     setDebtManualRepayments([]);
     setDebtRepaymentDay('');
-    setDebtRepaymentMethod('custom');
+    setDebtRepaymentMethod(preset.type === 'loan' ? 'equal-installment' : 'custom');
     setDebtRepaymentRecordMode('manual');
     setDebtStatus('active');
     setDebtFormError('');
@@ -1717,7 +1737,7 @@ export function RepaymentManagementPage() {
     setDebtTotalRepayment(item.totalRepayment !== undefined ? String(item.totalRepayment) : '');
     setDebtManualRepayments([]);
     setDebtRepaymentDay(item.repaymentDay !== undefined ? String(item.repaymentDay) : '');
-    setDebtRepaymentMethod('custom');
+    setDebtRepaymentMethod((preset?.type || item.type) === 'loan' ? 'equal-installment' : 'custom');
     setDebtRepaymentRecordMode('manual');
     setDebtStatus('active');
     setDebtFormError('');
@@ -1980,7 +2000,7 @@ export function RepaymentManagementPage() {
       loanPrincipal: loanPrincipalRaw.length > 0 ? loanPrincipal : undefined,
       totalRepayment: totalRepaymentRaw.length > 0 ? totalRepayment : undefined,
       repaymentDay: debtRepaymentDay.trim().length > 0 ? repaymentDay : undefined,
-      repaymentMethod: debtRepaymentMethod,
+      repaymentMethod: isLoanType ? 'equal-installment' : debtRepaymentMethod,
       repaymentRecordMode: debtRepaymentRecordMode,
       manualRepayments: manualRepaymentRows
     };
@@ -2035,9 +2055,10 @@ export function RepaymentManagementPage() {
       return;
     }
 
-    const minimumPayment = calculateDebtMinimumPayment(targetDebt);
+    const scheduledPayment = calculateDebtMinimumPayment(targetDebt);
+    const paymentLabel = getDebtDueAmountLabel(targetDebt);
     const nextBalance = Math.max(0, Number((targetDebt.balance - amount).toFixed(2)));
-    const shouldAdvancePeriod = amount >= Math.max(1, minimumPayment * 0.98);
+    const shouldAdvancePeriod = amount >= Math.max(1, scheduledPayment * 0.98);
     const nextPaidPeriods = targetDebt.totalPeriods
       ? Math.min(
           targetDebt.totalPeriods,
@@ -2051,14 +2072,14 @@ export function RepaymentManagementPage() {
     const resultTag =
       amount > targetDebt.balance
         ? 'overpayment'
-        : amount + 0.01 < Math.max(1, minimumPayment * 0.98)
+        : amount + 0.01 < Math.max(1, scheduledPayment * 0.98)
           ? 'partial'
           : 'normal';
     const resultMessage =
       resultTag === 'overpayment'
         ? `${targetDebt.name} 已登记超额还款，剩余本金已归零。`
         : resultTag === 'partial'
-          ? `${targetDebt.name} 已登记部分还款，未达到最低/期供金额。`
+          ? `${targetDebt.name} 已登记部分还款，未达到${paymentLabel}金额。`
           : `${targetDebt.name} 已登记正常还款，台账已同步更新。`;
 
     addRepaymentRecord({
@@ -2121,8 +2142,8 @@ export function RepaymentManagementPage() {
         );
       })
       .reduce((sum, record) => sum + Math.max(0, Number(record.amount) || 0), 0);
-    const minimumPayment = calculateDebtMinimumPayment(targetDebt);
-    const shouldAdvancePeriod = alreadyPaidThisMonth + amount >= Math.max(1, minimumPayment * 0.98);
+    const scheduledPayment = calculateDebtMinimumPayment(targetDebt);
+    const shouldAdvancePeriod = alreadyPaidThisMonth + amount >= Math.max(1, scheduledPayment * 0.98);
     const nextBalance = Math.max(0, Number((targetDebt.balance - amount).toFixed(2)));
     const nextPaidPeriods = targetDebt.totalPeriods
       ? Math.min(
@@ -2393,7 +2414,7 @@ export function RepaymentManagementPage() {
               </p>
             </article>
             <article className="repayment-overview-stat">
-              <p className="finance-overview-label">📉 每月最低还款</p>
+              <p className="finance-overview-label">📉 每月应还</p>
               <p className="finance-overview-value">
                 <span className="finance-overview-number">
                   {debtSummary.totalMinimumPayment.toFixed(2)}
@@ -2456,7 +2477,7 @@ export function RepaymentManagementPage() {
                     </div>
                     <div>
                       <dt>评估维度</dt>
-                      <dd>负债总额相对年收入，以及最低月供相对月收入的压力。</dd>
+                  <dd>负债总额相对年收入，以及每月应还相对月收入的压力。</dd>
                     </div>
                   </dl>
                   <small>这是现金流参考指标，不是征信评分或授信结论。</small>
@@ -2585,7 +2606,7 @@ export function RepaymentManagementPage() {
                   <option value="due">还款日</option>
                   <option value="balance">剩余本金</option>
                   <option value="apr">APR</option>
-                  <option value="payment">月供</option>
+                  <option value="payment">本期应还</option>
                   <option value="name">名称</option>
                 </select>
               </label>
@@ -2803,7 +2824,9 @@ export function RepaymentManagementPage() {
                         <span className="repayment-debt-metric-value">¥{selectedDebt.principal.toFixed(2)}</span>
                       </div>
                       <div className="repayment-debt-metric">
-                        <span className="repayment-debt-metric-label">最低/期供</span>
+                        <span className="repayment-debt-metric-label">
+                          {isFixedInstallmentLoan(selectedDebt) ? '本期应还' : '最低还款'}
+                        </span>
                         <span className="repayment-debt-metric-value">¥{selectedDebt.minimumPayment.toFixed(2)}</span>
                       </div>
                       <div className="repayment-debt-metric">
@@ -2822,10 +2845,23 @@ export function RepaymentManagementPage() {
                           </span>
                         ) : null}
                       </div>
-                      <div className="repayment-debt-metric">
-                        <span className="repayment-debt-metric-label">预计月供</span>
-                        <span className="repayment-debt-metric-value">¥{selectedDebt.estimatedMonthlyPayment.toFixed(2)}</span>
-                      </div>
+                      {!isFixedInstallmentLoan(selectedDebt) ? (
+                        <div className="repayment-debt-metric">
+                          <span className="repayment-debt-metric-label">预计月供</span>
+                          <span className="repayment-debt-metric-value">¥{selectedDebt.estimatedMonthlyPayment.toFixed(2)}</span>
+                        </div>
+                      ) : (
+                        <div className="repayment-debt-metric">
+                          <span className="repayment-debt-metric-label">剩余期数</span>
+                          <span className="repayment-debt-metric-value">
+                            {selectedDebt.remainingMonths && selectedDebt.remainingMonths > 0
+                              ? `${selectedDebt.remainingMonths} 期`
+                              : selectedDebt.totalPeriods
+                                ? `${Math.max(0, selectedDebt.totalPeriods - (selectedDebt.paidPeriods || 0))} 期`
+                                : '待补充'}
+                          </span>
+                        </div>
+                      )}
                       <div className="repayment-debt-metric">
                         <span className="repayment-debt-metric-label">还款日</span>
                         <span className="repayment-debt-metric-value">{selectedDebt.repaymentDay || '--'} 日</span>
@@ -2889,7 +2925,7 @@ export function RepaymentManagementPage() {
                     </div>
                     <div className="repayment-debt-metric">
                       <span className="repayment-debt-metric-label">还款方式</span>
-                      <span className="repayment-debt-metric-value">{REPAYMENT_METHOD_LABELS[selectedDebt.repaymentMethod]}</span>
+                      <span className="repayment-debt-metric-value">{getDebtPaymentMethodLabel(selectedDebt)}</span>
                     </div>
                     <div className="repayment-debt-metric">
                       <span className="repayment-debt-metric-label">记录方式</span>
@@ -3584,20 +3620,26 @@ export function RepaymentManagementPage() {
                       </label>
                       <label className="debt-form-field">
                         <span className="debt-form-field-label">还款方式</span>
-                        <select
-                          className="debt-form-input"
-                          value={debtRepaymentMethod}
-                          onChange={(event) => {
-                            setDebtRepaymentMethod(event.target.value as DebtRepaymentMethod);
-                            setDebtFormError('');
-                          }}
-                          aria-label="还款方式"
-                        >
-                          <option value="minimum-payment">最低还款</option>
-                          <option value="equal-installment">等额本息</option>
-                          <option value="equal-principal">等额本金</option>
-                          <option value="custom">自定义</option>
-                        </select>
+                        {isLoanType ? (
+                          <span className="debt-form-fixed-payment-note">
+                            按月固定扣款（期数和具体金额见下方）
+                          </span>
+                        ) : (
+                          <select
+                            className="debt-form-input"
+                            value={debtRepaymentMethod}
+                            onChange={(event) => {
+                              setDebtRepaymentMethod(event.target.value as DebtRepaymentMethod);
+                              setDebtFormError('');
+                            }}
+                            aria-label="还款方式"
+                          >
+                            <option value="minimum-payment">最低还款</option>
+                            <option value="equal-installment">等额本息</option>
+                            <option value="equal-principal">等额本金</option>
+                            <option value="custom">自定义</option>
+                          </select>
+                        )}
                       </label>
                       <label className="debt-form-field">
                         <span className="debt-form-field-label">记录方式</span>

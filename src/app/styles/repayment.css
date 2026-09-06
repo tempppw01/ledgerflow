@@ -698,6 +698,15 @@
   white-space: nowrap;
 }
 
+.debt-form-fixed-payment-note {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .repayment-console .repayment-ai-section {
   display: none;
 }

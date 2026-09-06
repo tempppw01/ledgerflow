@@ -219,6 +219,15 @@ export function calculateDebtMinimumPayment(debt: DebtItem): number {
   return Math.max(principal * rule.rate, rule.minFloor);
 }
 
+/**
+ * For loans, the returned value is the contractual installment due this month,
+ * not a credit-card-style minimum payment. The established function name is
+ * retained for backwards-compatible persisted data and callers.
+ */
+export function calculateDebtScheduledPayment(debt: DebtItem): number {
+  return calculateDebtMinimumPayment(debt);
+}
+
 export function calculateDebtDerivedMetrics(debt: DebtItem): DebtDerivedMetrics {
   const normalizedType = normalizeDebtType(debt.type);
   const principal = toPositiveNumber(debt.balance);
