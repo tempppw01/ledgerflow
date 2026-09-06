@@ -227,11 +227,11 @@ function ProjectionLineChart({ data }: { data: Array<{ monthLabel: string; total
   const height = 228;
   const padding = { top: 36, right: 24, bottom: 32, left: 24 };
   const totals = data.map((item) => Math.max(0, item.total));
-  const rawMin = Math.min(...totals);
   const rawMax = Math.max(...totals, 1);
-  const isFlat = rawMax - rawMin < Math.max(1, rawMax * 0.01);
-  const min = isFlat ? Math.max(0, rawMax * 0.9) : rawMin;
-  const max = isFlat ? rawMax * 1.1 : rawMax * 1.08;
+  // 还款金额是绝对值而不是价格走势：从当期最小值截断，会把仍需还款的月份
+  // 误画在基线。固定以 ¥0 为基线，让每一期金额都按真实比例“浮”在零线上。
+  const min = 0;
+  const max = rawMax * 1.08;
   const spread = Math.max(1, max - min);
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
