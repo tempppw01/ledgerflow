@@ -303,6 +303,29 @@
   font-size: clamp(11px, 2.35cqi, 15px);
 }
 
+/* Tooltip 需要始终按金额的完整宽度排版。父级的通用换行规则在窄容器下会把
+   “¥258.88”拆成单个字符，导致读数既难看又难读。 */
+.repayment-console .repayment-projection-tooltip {
+  display: flex;
+  min-inline-size: 88px;
+  width: max-content;
+  max-inline-size: none;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+  writing-mode: horizontal-tb;
+}
+
+.repayment-console .repayment-projection-tooltip span,
+.repayment-console .repayment-projection-tooltip strong {
+  display: inline-block;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+
 .repayment-console .repayment-dashboard-timeline {
   padding: 0 0 0 24px;
 }
