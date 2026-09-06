@@ -13,8 +13,16 @@ esac
 if [ "$public_port" -lt 1 ] || [ "$public_port" -gt 65535 ]; then
   public_port=80
 fi
-sed "s/listen 80;/listen ${public_port};/" \
-  /etc/nginx/http.d/default.conf > /tmp/ledgerflow-nginx.conf
+# Bind the image's documented port and Railway's injected port. This keeps
+# manual target-port settings at 80 compatible with Railway's PORT routing.
+awk -v railway_port="$public_port" '
+  $0 == "  listen 80;" {
+    print "  listen 80;"
+    if (railway_port != "80") print "  listen " railway_port ";"
+    next
+  }
+  { print }
+' /etc/nginx/http.d/default.conf > /tmp/ledgerflow-nginx.conf
 cp /tmp/ledgerflow-nginx.conf /etc/nginx/http.d/default.conf
 
 node /app/server/mysqlSnapshotServer.js &

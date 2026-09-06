@@ -176,7 +176,7 @@ http://localhost:18080
 
 1. 在 Railway 服务中新增 Volume，挂载路径填写 `/app/data`。
 2. 只设置 `LEDGERFLOW_API_TOKEN`；使用 SQLite 时不需要填写 MySQL 变量。
-3. 不需要单独设置 API 端口，Railway 自动注入的 `PORT` 会由 Nginx 接管。
+3. 不需要单独设置 API 端口，Railway 自动注入的 `PORT` 会由 Nginx 接管；即使服务仍配置为目标端口 `80` 也兼容。
 4. 首次打开页面选择 SQLite，之后创建账号即可。
 
 容器内部 API 固定使用 `8787`，公网请求统一由 Nginx 转发到 Railway 提供的服务端口。Railway 的
