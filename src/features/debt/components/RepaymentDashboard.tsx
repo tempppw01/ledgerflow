@@ -153,11 +153,11 @@ function BreakdownDonut({
               r={radius}
               fill="none"
               stroke={arc.color}
-              strokeWidth={hoverIndex === arc.index ? stroke + 4 : stroke}
+              strokeWidth={stroke}
               strokeDasharray={`${mounted ? arc.dash : 0} ${circumference}`}
               strokeDashoffset={arc.offset}
-              className="repayment-donut-arc"
-              style={{ transition: 'stroke-dasharray 700ms ease, stroke-width 150ms ease' }}
+              className={`repayment-donut-arc${hoverIndex === arc.index ? ' is-active' : ''}`}
+              style={{ transition: 'opacity 150ms ease, filter 150ms ease, stroke-dasharray 700ms ease' }}
               onMouseEnter={() => setHoverIndex(arc.index)}
               onMouseLeave={() => setHoverIndex(null)}
             />

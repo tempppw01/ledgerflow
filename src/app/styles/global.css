@@ -16988,6 +16988,17 @@ body.categories-accounts-resizing {
   background: var(--color-bg-elevated);
 }
 
+.repayment-donut-arc {
+  opacity: 0.88;
+}
+
+/* Keep the ring geometry fixed on hover. A segment must never grow beyond
+   the SVG viewport; emphasis comes from contrast and a restrained glow. */
+.repayment-donut-arc.is-active {
+  opacity: 1;
+  filter: saturate(1.12) drop-shadow(0 0 3px color-mix(in srgb, currentColor 28%, transparent));
+}
+
 .repayment-donut-dot {
   width: 10px;
   height: 10px;
