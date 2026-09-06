@@ -1906,6 +1906,8 @@ export function RepaymentManagementPage() {
     setSelectedDebtId(editingDebtId || '');
     setDebtToastVisible(true);
     setAddDebtSuccess(true);
+    setShowDebtPressurePreview(false);
+    setShowAddDebtModal(false);
     window.setTimeout(() => setAddDebtSuccess(false), 800);
     setError('');
   }

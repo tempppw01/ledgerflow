@@ -379,6 +379,7 @@ describe('RepaymentManagementPage', () => {
     expect(appPreferencesMock.state.addDebt).toHaveBeenCalledWith(
       expect.objectContaining({ name: '无账户负债', paymentAccount: undefined })
     );
+    expect(screen.queryByRole('dialog', { name: '新增负债' })).not.toBeInTheDocument();
   });
 
   it('编辑零余额负债时本金输入保持为空，输入 1 不会变成 01', () => {
