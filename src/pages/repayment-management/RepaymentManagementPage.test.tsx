@@ -4,6 +4,11 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { DebtItem, RepaymentRecord } from '../../features/debt/model/debtMetrics';
 import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
 import { RepaymentManagementPage } from './RepaymentManagementPage';
+import {
+  ANYIHUA_ICON_URL,
+  BAITIAO_ICON_URL,
+  JIEBEI_ICON_URL
+} from '../../shared/config/brandAssets';
 
 vi.mock('../../features/assistant/api/openaiCompatibleClient', () => ({
   sendAiChat: vi.fn()
@@ -242,7 +247,9 @@ describe('RepaymentManagementPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
     expect(screen.getByRole('button', { name: '使用借呗模板' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '使用花呗模板' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '使用京东白条模板' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '使用京东金条模板' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '使用安逸花模板' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '使用信用卡分期模板' })).toBeInTheDocument();
 
     const file = new File(['bill'], 'bill.png', { type: 'image/png' });
@@ -270,6 +277,26 @@ describe('RepaymentManagementPage', () => {
       })
     ]);
     expect(screen.getByText(/已推荐：花呗、京东金条/)).toBeInTheDocument();
+  });
+
+  it('应为借呗、京东白条和安逸花模板带入品牌图标', () => {
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
+    fireEvent.click(screen.getByRole('button', { name: '使用借呗模板' }));
+    expect(document.querySelector(`img[src="${JIEBEI_ICON_URL}"]`)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '使用京东白条模板' }));
+    expect(document.querySelector(`img[src="${BAITIAO_ICON_URL}"]`)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '使用安逸花模板' }));
+    expect(document.querySelector(`img[src="${ANYIHUA_ICON_URL}"]`)).toBeInTheDocument();
   });
 
   it('单笔截图识别时应自动推荐模板并带入新增表单', async () => {

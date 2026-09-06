@@ -117,6 +117,15 @@ export const IMAGE_ICON_URL =
 export const WEBANK_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/public/webank.png';
 
+export const JIEBEI_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/public/jiebei.png';
+
+export const BAITIAO_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/public/baitiao.png';
+
+export const ANYIHUA_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/public/msxf.png';
+
 export const CARD_SD_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/card-sd.svg';
 

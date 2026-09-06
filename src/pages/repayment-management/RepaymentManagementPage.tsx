@@ -16,7 +16,13 @@ import {
 } from '../../features/debt/model/debtMetrics';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
-import { IMAGE_ICON_URL, WEBANK_ICON_URL } from '../../shared/config/brandAssets';
+import {
+  ANYIHUA_ICON_URL,
+  BAITIAO_ICON_URL,
+  IMAGE_ICON_URL,
+  JIEBEI_ICON_URL,
+  WEBANK_ICON_URL
+} from '../../shared/config/brandAssets';
 import { formatCurrency } from '../../shared/lib/format';
 import { Toast } from '../../shared/ui/Toast';
 import { DatePicker } from '../../shared/ui/DatePicker';
@@ -105,6 +111,7 @@ const DEBT_PRESETS: DebtPreset[] = [
     name: '借呗',
     description: '贷款模板 · 按账单补充参数',
     type: 'loan',
+    iconUrl: JIEBEI_ICON_URL,
     mark: '借',
     matchTerms: ['借呗', '蚂蚁借呗']
   },
@@ -118,11 +125,29 @@ const DEBT_PRESETS: DebtPreset[] = [
   },
   {
     id: 'jd-baitiao',
+    name: '京东白条',
+    description: '消费信贷 · 按账单补充参数',
+    type: 'consumer-loan',
+    iconUrl: BAITIAO_ICON_URL,
+    mark: '白',
+    matchTerms: ['京东白条', '白条']
+  },
+  {
+    id: 'jd-jintiao',
     name: '京东金条',
     description: '贷款模板 · 按账单补充参数',
     type: 'loan',
-    mark: '东',
+    mark: '金',
     matchTerms: ['京东金条', '金条']
+  },
+  {
+    id: 'anyihua',
+    name: '安逸花',
+    description: '贷款模板 · 按账单补充参数',
+    type: 'loan',
+    iconUrl: ANYIHUA_ICON_URL,
+    mark: '安',
+    matchTerms: ['安逸花', '马上消费金融', '马上金融', 'msxf']
   },
   {
     id: 'credit-card-installment',
@@ -2163,7 +2188,7 @@ export function RepaymentManagementPage() {
         messages: [
           {
             role: 'user',
-            text: '请识别截图中的负债信息，并按以下 JSON 输出：{"debts": [{"name": string, "type": "credit-card"|"consumer-loan"|"loan", "balance": number, "annualRate": number, "remainingMonths": number, "totalPeriods": number, "paidPeriods": number, "loanPrincipal": number, "totalRepayment": number, "repaymentDay": number}] }。\n要求：\n1) 未提及的字段必须省略，不要猜测；\n2) 金额使用数字；\n3) 识别到花呗、借呗、微粒贷、京东金条、信用卡分期等名称时保留原名称；\n4) 如果无法确定 type，默认 credit-card。',
+            text: '请识别截图中的负债信息，并按以下 JSON 输出：{"debts": [{"name": string, "type": "credit-card"|"consumer-loan"|"loan", "balance": number, "annualRate": number, "remainingMonths": number, "totalPeriods": number, "paidPeriods": number, "loanPrincipal": number, "totalRepayment": number, "repaymentDay": number}] }。\n要求：\n1) 未提及的字段必须省略，不要猜测；\n2) 金额使用数字；\n3) 识别到花呗、借呗、微粒贷、京东白条、京东金条、安逸花、信用卡分期等名称时保留原名称；\n4) 如果无法确定 type，默认 credit-card。',
             imageDataUrl
           }
         ]
