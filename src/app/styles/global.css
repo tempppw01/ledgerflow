@@ -14166,7 +14166,7 @@ body.categories-accounts-resizing {
   box-shadow: 0 6px 16px color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 
-.finance-unit-input > span {
+.finance-unit-input > span:not(.finance-input-floating-label) {
   position: absolute;
   right: 6px;
   top: 50%;
@@ -14186,7 +14186,7 @@ body.categories-accounts-resizing {
   pointer-events: none;
 }
 
-.finance-unit-input.is-filled > span {
+.finance-unit-input.is-filled > span:not(.finance-input-floating-label) {
   color: #fff;
   background: linear-gradient(
     135deg,
@@ -14197,7 +14197,7 @@ body.categories-accounts-resizing {
   box-shadow: 0 6px 12px color-mix(in srgb, var(--color-primary) 22%, transparent);
 }
 
-.finance-unit-input.is-disabled > span {
+.finance-unit-input.is-disabled > span:not(.finance-input-floating-label) {
   opacity: 0.55;
 }
 
@@ -14867,7 +14867,7 @@ body.categories-accounts-resizing {
   box-shadow: 0 6px 16px color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 
-.finance-unit-input > span {
+.finance-unit-input > span:not(.finance-input-floating-label) {
   position: absolute;
   right: 6px;
   top: 50%;
@@ -14887,7 +14887,7 @@ body.categories-accounts-resizing {
   pointer-events: none;
 }
 
-.finance-unit-input.is-filled > span {
+.finance-unit-input.is-filled > span:not(.finance-input-floating-label) {
   color: #fff;
   background: linear-gradient(
     135deg,
@@ -14898,7 +14898,7 @@ body.categories-accounts-resizing {
   box-shadow: 0 6px 12px color-mix(in srgb, var(--color-primary) 22%, transparent);
 }
 
-.finance-unit-input.is-disabled > span {
+.finance-unit-input.is-disabled > span:not(.finance-input-floating-label) {
   opacity: 0.55;
 }
 
