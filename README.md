@@ -170,6 +170,18 @@ http://localhost:18080
 持久卷：本地 Compose 已映射到 `./data`；Railway 源码部署需要在服务设置中单独创建 Volume，挂载
 路径填写 `/app/data`。否则重新部署后 provider 锁、SQLite 账本和账号都会丢失。
 
+### Railway 最简部署
+
+直接从 GitHub 部署本仓库即可，不需要单独部署前端或 API 服务：
+
+1. 在 Railway 服务中新增 Volume，挂载路径填写 `/app/data`。
+2. 只设置 `LEDGERFLOW_API_TOKEN`；使用 SQLite 时不需要填写 MySQL 变量。
+3. 不需要单独设置 API 端口，Railway 自动注入的 `PORT` 会由 Nginx 接管。
+4. 首次打开页面选择 SQLite，之后创建账号即可。
+
+容器内部 API 固定使用 `8787`，公网请求统一由 Nginx 转发到 Railway 提供的服务端口。Railway 的
+`PORT` 不会覆盖内部 API 端口，也不需要手动设置 `LEDGERFLOW_API_PORT`。
+
 ## 必填与可选环境变量
 
 ### 必填

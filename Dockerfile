@@ -13,6 +13,7 @@ RUN npm prune --omit=dev --ignore-scripts
 
 FROM node:24-alpine
 RUN apk add --no-cache nginx
+ENV LEDGERFLOW_API_PORT=8787
 COPY nginx.conf /etc/nginx/http.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY --from=build /app/node_modules /app/node_modules
