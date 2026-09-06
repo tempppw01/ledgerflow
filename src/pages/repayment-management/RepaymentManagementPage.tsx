@@ -8,6 +8,7 @@ import {
   calculateDebtSummary,
   DebtItem,
   DebtLifecycleStatus,
+  DebtRateSource,
   DebtRepaymentMethod,
   DebtRepaymentRecordMode,
   DebtType,
@@ -1102,6 +1103,33 @@ export function RepaymentManagementPage() {
       ...item,
       recommendationTone: index === 0 ? 'danger' : index <= 2 ? 'warning' : 'safe'
     }));
+  }, [activeDebts]);
+
+  const annualRateRankings = useMemo(() => {
+    const ranked = activeDebts
+      .map((item) => {
+        const derived = calculateDebtDerivedMetrics(item);
+        return { id: item.id, annualRate: derived.apr, rateSource: derived.rateSource };
+      })
+      .filter((item) => item.annualRate > 0)
+      .sort((a, b) => b.annualRate - a.annualRate);
+    const rankings = new Map<string, { rank: number; total: number; rateSource: DebtRateSource }>();
+    let currentRank = 0;
+    let previousRate: number | null = null;
+
+    ranked.forEach((item, index) => {
+      if (previousRate === null || item.annualRate !== previousRate) {
+        currentRank = index + 1;
+        previousRate = item.annualRate;
+      }
+      rankings.set(item.id, {
+        rank: currentRank,
+        total: ranked.length,
+        rateSource: item.rateSource
+      });
+    });
+
+    return rankings;
   }, [activeDebts]);
 
   const simulatorResult = useMemo(() => {
@@ -2691,8 +2719,20 @@ export function RepaymentManagementPage() {
                         <span className="repayment-debt-metric-value">¥{selectedDebt.minimumPayment.toFixed(2)}</span>
                       </div>
                       <div className="repayment-debt-metric">
-                        <span className="repayment-debt-metric-label">年化利率</span>
-                        <span className="repayment-debt-metric-value">{selectedDebt.apr > 0 ? `${selectedDebt.apr.toFixed(2)}%` : '待补充'}</span>
+                        <span className="repayment-debt-metric-label">年化利率（APR）</span>
+                        <span className="repayment-debt-metric-value">
+                          {selectedDebt.apr > 0 ? `${selectedDebt.apr.toFixed(2)}%` : '待补充'}
+                        </span>
+                        {selectedDebt.apr > 0 ? (
+                          <span className="repayment-debt-rate-rank">
+                            {annualRateRankings.get(selectedDebtId)
+                              ? `年化排名 第 ${annualRateRankings.get(selectedDebtId)?.rank} / ${annualRateRankings.get(selectedDebtId)?.total}`
+                              : '当前状态不参与排名'}
+                            {annualRateRankings.get(selectedDebtId)?.rateSource === 'inferred'
+                              ? ' · 按合同金额推算'
+                              : ''}
+                          </span>
+                        ) : null}
                       </div>
                       <div className="repayment-debt-metric">
                         <span className="repayment-debt-metric-label">预计月供</span>

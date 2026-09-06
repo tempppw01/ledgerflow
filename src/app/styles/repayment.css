@@ -429,6 +429,16 @@
   grid-template-columns: 8px 30px minmax(0, 1fr) auto;
 }
 
+.repayment-debt-rate-rank {
+  overflow: hidden;
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .repayment-console .repayment-debt-detail-repay,
 .repayment-console .repayment-debt-detail-records {
   margin-top: 18px;

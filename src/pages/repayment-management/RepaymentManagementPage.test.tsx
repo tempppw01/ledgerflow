@@ -326,6 +326,52 @@ describe('RepaymentManagementPage', () => {
     );
   });
 
+  it('应显示当前负债在进行中项目里的年化利率排名', () => {
+    appPreferencesMock.state.debts = [
+      {
+        id: 'debt-high-rate',
+        name: '高利率贷款',
+        type: 'loan',
+        status: 'active',
+        balance: 3000,
+        annualRate: 10.56,
+        remainingMonths: 12,
+        repaymentDay: 10
+      },
+      {
+        id: 'debt-low-rate',
+        name: '低利率贷款',
+        type: 'loan',
+        status: 'active',
+        balance: 5000,
+        annualRate: 4.2,
+        remainingMonths: 12,
+        repaymentDay: 20
+      },
+      {
+        id: 'debt-settled-rate',
+        name: '已结清贷款',
+        type: 'loan',
+        status: 'settled',
+        balance: 0,
+        annualRate: 20,
+        remainingMonths: 12
+      }
+    ];
+
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('年化利率（APR）')).toBeInTheDocument();
+    expect(screen.getByText('10.56%')).toBeInTheDocument();
+    expect(screen.getByText('年化排名 第 1 / 2')).toBeInTheDocument();
+  });
+
   it('应支持从未来还款卡片快捷设置还款日', () => {
     appPreferencesMock.state.debts = [
       {
