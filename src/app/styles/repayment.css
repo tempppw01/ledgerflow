@@ -69,13 +69,351 @@
   }
 }
 
-/* On small screens the workspace should read as page content, not another
-   card nested inside the page shell. Keep the internal sections untouched. */
+/* Repayment console: follow the data-and-backup workspace system. The page
+   uses rhythm, dividers, and one focused work area instead of nested cards. */
+.repayment-console {
+  display: grid;
+  gap: 0;
+  max-width: 1180px;
+  padding: 4px 0 28px;
+}
+
+.repayment-console-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 4px 0 18px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.repayment-console-header > div:first-child {
+  display: grid;
+  gap: 6px;
+}
+
+.repayment-console-eyebrow {
+  margin: 0;
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.repayment-console-header h1 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.repayment-console-header p:last-child {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.repayment-console-status {
+  display: grid;
+  min-width: 110px;
+  gap: 3px;
+  padding-left: 16px;
+  border-left: 2px solid var(--color-primary);
+  text-align: right;
+}
+
+.repayment-console-status strong {
+  color: var(--color-text-primary);
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.repayment-console-status span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.repayment-console .repayment-dashboard {
+  margin: 0;
+  padding: 22px 0 18px;
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.repayment-console .repayment-dashboard-title {
+  margin: 0 0 14px;
+  color: var(--color-text-primary);
+  font-size: 17px;
+}
+
+.repayment-console .repayment-dashboard-hero,
+.repayment-console .repayment-dashboard-chart,
+.repayment-console .repayment-dashboard-timeline {
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.repayment-console .repayment-dashboard-hero {
+  padding: 8px 24px 8px 0;
+  border: 0;
+  border-right: 1px solid var(--color-divider);
+}
+
+.repayment-console .repayment-dashboard-chart {
+  padding: 16px 0 0;
+  border-top: 1px solid var(--color-divider);
+}
+
+.repayment-console .repayment-dashboard-timeline {
+  padding: 0 0 0 24px;
+}
+
+.repayment-console .repayment-overview-band {
+  margin-top: 0;
+  border-top: 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.repayment-console .repayment-overview-stat {
+  padding: 15px 16px 15px 0;
+}
+
+.repayment-console .repayment-overview-stat + .repayment-overview-stat {
+  padding-left: 16px;
+}
+
+.repayment-console .repayment-income-toolbar {
+  grid-template-columns: minmax(210px, 0.72fr) auto minmax(320px, 1fr);
+  margin: 0;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--color-divider);
+  background: transparent;
+}
+
+.repayment-console .repayment-income-toolbar-copy {
+  gap: 4px;
+}
+
+.repayment-console .repayment-income-toolbar-copy strong {
+  font-size: 15px;
+}
+
+.repayment-console .repayment-income-toolbar-copy span {
+  font-size: 12px;
+}
+
+.repayment-console .repayment-income-field {
+  min-height: 42px;
+  border-radius: 7px;
+}
+
+.repayment-console .repayment-income-save-button,
+.repayment-console .repayment-income-ai-button {
+  min-height: 42px !important;
+}
+
+.repayment-console .finance-income-inline-hint {
+  margin: 8px 0 0;
+}
+
+.repayment-console .repayment-list-detail-layout {
+  margin-top: 0;
+  min-height: 560px;
+  border-top: 0;
+}
+
+.repayment-console .repayment-debt-list-panel,
+.repayment-console .repayment-debt-detail-panel {
+  background: transparent;
+}
+
+.repayment-console .repayment-debt-list-panel {
+  padding-right: 20px;
+}
+
+.repayment-console .repayment-debt-detail-panel {
+  padding-left: 28px;
+}
+
+.repayment-console .repayment-debt-list-header,
+.repayment-console .repayment-debt-detail-header {
+  min-height: 68px;
+  padding-top: 18px;
+  padding-bottom: 14px;
+}
+
+.repayment-console .repayment-debt-list-header {
+  padding-right: 0;
+}
+
+.repayment-console .repayment-debt-list-tools {
+  padding-right: 0;
+}
+
+.repayment-console .repayment-debt-list-item {
+  padding-right: 0;
+}
+
+.repayment-console .repayment-debt-detail-repay,
+.repayment-console .repayment-debt-detail-records {
+  margin-top: 18px;
+  padding-top: 18px;
+}
+
+.repayment-record-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.repayment-record-heading h4 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
+.repayment-record-heading p {
+  margin: 4px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.repayment-plan-fill-button,
+.repayment-today-button {
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 34%, var(--color-border));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-primary-bg) 52%, var(--color-bg-elevated));
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.repayment-plan-fill-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.repayment-record-form {
+  display: grid;
+  gap: 8px;
+}
+
+.repayment-record-primary-fields,
+.repayment-record-secondary-fields {
+  display: grid;
+  align-items: center;
+  gap: 8px;
+}
+
+.repayment-record-primary-fields {
+  grid-template-columns: minmax(150px, 0.9fr) minmax(150px, 1fr) auto;
+}
+
+.repayment-record-secondary-fields {
+  grid-template-columns: minmax(150px, 1fr) minmax(140px, 0.8fr) minmax(140px, 1fr) auto;
+}
+
+.repayment-record-form .finance-debt-form-control,
+.repayment-record-form .finance-unit-input {
+  min-width: 0;
+  min-height: 40px;
+}
+
+.repayment-record-submit {
+  min-height: 40px;
+  padding-inline: 16px;
+  white-space: nowrap;
+}
+
+.repayment-console .repayment-ai-section {
+  display: none;
+}
+
+@media (max-width: 1120px) {
+  .repayment-console .repayment-income-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .repayment-console .repayment-income-editor {
+    grid-column: 1 / -1;
+  }
+
+  .repayment-record-secondary-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .repayment-record-submit {
+    justify-self: start;
+  }
+}
+
 @media (max-width: 760px) {
-  .repayment-workspace.panel {
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
+  .repayment-console {
+    padding: 4px 0 20px;
+  }
+
+  .repayment-console-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .repayment-console-status {
+    padding-left: 12px;
+    text-align: left;
+  }
+
+  .repayment-console .repayment-dashboard {
+    padding-top: 18px;
+  }
+
+  .repayment-console .repayment-dashboard-hero,
+  .repayment-console .repayment-dashboard-timeline {
+    padding-right: 0;
+    padding-left: 0;
+    border-right: 0;
+  }
+
+  .repayment-console .repayment-dashboard-timeline {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--color-divider);
+  }
+
+  .repayment-console .repayment-overview-stat,
+  .repayment-console .repayment-overview-stat + .repayment-overview-stat {
+    padding: 13px 12px;
+  }
+
+  .repayment-console .repayment-debt-list-panel {
+    padding-right: 0;
+  }
+
+  .repayment-console .repayment-debt-detail-panel {
+    padding-left: 0;
+  }
+
+  .repayment-record-heading {
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .repayment-record-primary-fields,
+  .repayment-record-secondary-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .repayment-today-button,
+  .repayment-record-submit {
+    justify-self: start;
   }
 }

@@ -1417,9 +1417,12 @@ export function RepaymentManagementPage() {
     const remaining = Number(remainingRaw);
     const paid = Number(paidRaw);
 
+    if (source === 'total') setDebtTotalPeriods(nextValue);
+    if (source === 'remaining') setDebtMonths(nextValue);
+    if (source === 'paid') setDebtPaidPeriods(nextValue);
+
     if (source === 'total' && Number.isInteger(total) && total > 0) {
       if (paidRaw.trim().length > 0 && Number.isInteger(paid) && paid >= 0 && paid <= total) {
-        setDebtPaidPeriods(paidRaw);
         setDebtMonths(String(Math.max(0, total - paid)));
         return;
       }
@@ -1429,7 +1432,6 @@ export function RepaymentManagementPage() {
         remaining >= 0 &&
         remaining <= total
       ) {
-        setDebtMonths(remainingRaw);
         setDebtPaidPeriods(String(Math.max(0, total - remaining)));
         return;
       }
@@ -1437,7 +1439,6 @@ export function RepaymentManagementPage() {
 
     if (source === 'paid' && totalRaw.trim().length > 0 && Number.isInteger(paid) && paid >= 0) {
       if (Number.isInteger(total) && paid <= total) {
-        setDebtPaidPeriods(paidRaw);
         setDebtMonths(String(Math.max(0, total - paid)));
         return;
       }
@@ -1450,15 +1451,9 @@ export function RepaymentManagementPage() {
       remaining >= 0
     ) {
       if (Number.isInteger(total) && remaining <= total) {
-        setDebtMonths(remainingRaw);
         setDebtPaidPeriods(String(Math.max(0, total - remaining)));
-        return;
       }
     }
-
-    if (source === 'total') setDebtTotalPeriods(nextValue);
-    if (source === 'remaining') setDebtMonths(nextValue);
-    if (source === 'paid') setDebtPaidPeriods(nextValue);
   }
 
   function addManualRepaymentRow(): void {
@@ -2222,12 +2217,19 @@ export function RepaymentManagementPage() {
   }
 
   return (
-    <div className="page-stack finance-page vi-page">
-      <section className="panel repayment-workspace">
-        <h2 style={{ marginTop: 0 }}>💳 负债管理</h2>
-        <p className="muted surface-note">
-          支持信用卡、消费贷、贷款，自动计算每月最低还款额与总负债压力。
-        </p>
+    <div className="page-stack finance-page vi-page repayment-management-page">
+      <section className="repayment-console">
+        <header className="repayment-console-header">
+          <div>
+            <p className="repayment-console-eyebrow">资产负债 / 还款管理</p>
+            <h1>还款管理</h1>
+            <p>把每一笔应还和已还放在同一条清晰的时间线上，按自己的节奏维护负债。</p>
+          </div>
+          <div className="repayment-console-status" aria-label="还款管理概况">
+            <strong>{debts.length}</strong>
+            <span>笔负债</span>
+          </div>
+        </header>
 
         <RepaymentDashboard
           debts={debtsWithStatus}
@@ -2354,6 +2356,13 @@ export function RepaymentManagementPage() {
           style={{ display: 'none' }}
           onChange={onExtractDebtFromScreenshot}
         />
+        <datalist id="repayment-actual-account-options">
+          {financeAccounts
+            .filter((account) => account.name.trim())
+            .map((account) => (
+              <option key={account.id} value={account.name} />
+            ))}
+        </datalist>
 
         <div className="repayment-list-detail-layout">
           <div className="repayment-debt-list-panel">
@@ -2375,7 +2384,7 @@ export function RepaymentManagementPage() {
                   className="primary repayment-debt-list-btn"
                   onClick={() => {
                     setEditingDebtId('');
-                    setDebtEntryMode('simple');
+                    setDebtEntryMode('standard');
                     setSimpleDueDate('');
                     setDebtName('');
                     setDebtBalance('');
@@ -2682,65 +2691,97 @@ export function RepaymentManagementPage() {
                 ) : null}
 
                 {!selectedDebt.isSimpleReminder ? <div className="repayment-debt-detail-repay">
-                  <h4 style={{ margin: '0 0 8px 0' }}>💸 登记还款</h4>
-                  <form onSubmit={onAddRepaymentRecord} className="repayment-inline-form">
-                    <RepaymentUnitInput
-                      value={repaymentAmount}
-                      onChange={(value) => {
-                        setRepaymentAmount(value);
+                  <div className="repayment-record-heading">
+                    <div>
+                      <h4>登记本期还款</h4>
+                      <p>先填金额和日期，账户与备注可以稍后补充。</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="repayment-plan-fill-button"
+                      onClick={() => {
+                        setRepaymentAmount(String(selectedDebt.minimumPayment || ''));
+                        setRepaymentPaymentAccount(selectedDebt.paymentAccount || '');
                         setRepaymentRecordError('');
                       }}
-                      unit="¥"
-                      min={0}
-                      step="0.01"
-                      placeholder="实际还款金额"
-                      ariaLabel="实际还款金额"
-                    />
-                    <DatePicker
-                      className="finance-debt-form-control"
-                      value={repaymentPaidAt}
-                      onChange={(value) => {
-                        setRepaymentPaidAt(value);
-                        setRepaymentRecordError('');
-                      }}
-                      aria-label="实际还款日期"
-                    />
-                    <input
-                      className="finance-debt-form-control"
-                      value={repaymentPaymentAccount}
-                      onChange={(event) => {
-                        setRepaymentPaymentAccount(event.target.value);
-                        setRepaymentRecordError('');
-                      }}
-                      placeholder="实际扣款账户"
-                      aria-label="实际扣款账户"
-                    />
-                    <select
-                      className="finance-debt-form-control"
-                      value={repaymentRecordModeInput}
-                      onChange={(event) => {
-                        setRepaymentRecordModeInput(event.target.value as DebtRepaymentRecordMode);
-                        setRepaymentRecordError('');
-                      }}
-                      aria-label="还款记录方式"
+                      disabled={!selectedDebtOriginal || selectedDebt.minimumPayment <= 0}
                     >
-                      <option value="manual">手动登记</option>
-                      <option value="transaction-match">交易匹配</option>
-                      <option value="auto-debit">自动扣款</option>
-                    </select>
-                    <input
-                      className="finance-debt-form-control"
-                      value={repaymentNote}
-                      onChange={(event) => {
-                        setRepaymentNote(event.target.value);
-                        setRepaymentRecordError('');
-                      }}
-                      placeholder="备注（可选）"
-                      aria-label="备注"
-                    />
-                    <button type="submit" className="primary" disabled={!selectedDebtOriginal}>
-                      + 记录还款
+                      带入计划金额
                     </button>
+                  </div>
+                  <form onSubmit={onAddRepaymentRecord} className="repayment-record-form">
+                    <div className="repayment-record-primary-fields">
+                      <RepaymentUnitInput
+                        value={repaymentAmount}
+                        onChange={(value) => {
+                          setRepaymentAmount(value);
+                          setRepaymentRecordError('');
+                        }}
+                        unit="¥"
+                        min={0}
+                        step="0.01"
+                        placeholder="实际还款金额"
+                        ariaLabel="实际还款金额"
+                      />
+                      <DatePicker
+                        className="finance-debt-form-control"
+                        value={repaymentPaidAt}
+                        onChange={(value) => {
+                          setRepaymentPaidAt(value);
+                          setRepaymentRecordError('');
+                        }}
+                        aria-label="实际还款日期"
+                      />
+                      <button
+                        type="button"
+                        className="repayment-today-button"
+                        onClick={() => {
+                          setRepaymentPaidAt(new Date().toISOString().slice(0, 10));
+                          setRepaymentRecordError('');
+                        }}
+                      >
+                        今天
+                      </button>
+                    </div>
+                    <div className="repayment-record-secondary-fields">
+                      <input
+                        className="finance-debt-form-control"
+                        list="repayment-actual-account-options"
+                        value={repaymentPaymentAccount}
+                        onChange={(event) => {
+                          setRepaymentPaymentAccount(event.target.value);
+                          setRepaymentRecordError('');
+                        }}
+                        placeholder="扣款账户（可留空）"
+                        aria-label="实际扣款账户"
+                      />
+                      <select
+                        className="finance-debt-form-control"
+                        value={repaymentRecordModeInput}
+                        onChange={(event) => {
+                          setRepaymentRecordModeInput(event.target.value as DebtRepaymentRecordMode);
+                          setRepaymentRecordError('');
+                        }}
+                        aria-label="还款记录方式"
+                      >
+                        <option value="manual">手动登记</option>
+                        <option value="transaction-match">交易匹配</option>
+                        <option value="auto-debit">自动扣款</option>
+                      </select>
+                      <input
+                        className="finance-debt-form-control"
+                        value={repaymentNote}
+                        onChange={(event) => {
+                          setRepaymentNote(event.target.value);
+                          setRepaymentRecordError('');
+                        }}
+                        placeholder="备注（可选）"
+                        aria-label="备注"
+                      />
+                      <button type="submit" className="primary repayment-record-submit" disabled={!selectedDebtOriginal}>
+                        记录还款
+                      </button>
+                    </div>
                   </form>
                   {repaymentRecordError ? (
                     <p className="muted finance-debt-form-error">{repaymentRecordError}</p>
@@ -3248,7 +3289,7 @@ export function RepaymentManagementPage() {
 
                   <div className="debt-form-fields debt-form-fields--conditional">
                     <details className="debt-form-extra">
-                      <summary>补充设置 <small>还款日、账户和记录方式</small></summary>
+                      <summary>更多设置 <small>还款日、账户和记录方式</small></summary>
                       <div className="debt-form-extra-grid">
                       <label className="debt-form-field">
                         <span className="debt-form-field-label">还款日</span>
