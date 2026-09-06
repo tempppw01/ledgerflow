@@ -268,6 +268,13 @@ function formatShortDate(dateValue: string): string {
   return `${date.getMonth() + 1}/${date.getDate()}`;
 }
 
+function formatChartDate(dateValue: string): string {
+  if (!dateValue || dateValue === '日期待填') return dateValue;
+  const date = new Date(`${dateValue}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return dateValue;
+  return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
 function DebtPressureChart({
   points,
   ariaLabel = '还款压力曲线',
@@ -306,6 +313,14 @@ function DebtPressureChart({
   const remainingPoints = points
     .map((item, index) => `${xFor(index)},${yForRemaining(item.remaining)}`)
     .join(' ');
+  const maxXAxisLabels = compact ? 6 : 8;
+  const xAxisLabelIndexes = points.length <= maxXAxisLabels
+    ? points.map((_, index) => index)
+    : points.reduce<number[]>((indexes, _, index) => {
+        const step = Math.ceil((points.length - 1) / (maxXAxisLabels - 1));
+        if (index === 0 || index === points.length - 1 || index % step === 0) indexes.push(index);
+        return indexes;
+      }, []);
 
   return (
     <div className="debt-pressure-chart">
@@ -332,6 +347,17 @@ function DebtPressureChart({
             r={3}
             className="debt-pressure-amount-dot"
           />
+        ))}
+        {xAxisLabelIndexes.map((index) => (
+          <text
+            key={`${points[index]?.dueDate}-${index}`}
+            x={xFor(index)}
+            y={height - 2}
+            className="debt-pressure-x-axis-label"
+            textAnchor={index === 0 ? 'start' : index === points.length - 1 ? 'end' : 'middle'}
+          >
+            {formatChartDate(points[index]?.dueDate || '')}
+          </text>
         ))}
       </svg>
       <div className="debt-pressure-legend">

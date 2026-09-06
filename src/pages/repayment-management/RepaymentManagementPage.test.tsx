@@ -634,4 +634,35 @@ describe('RepaymentManagementPage', () => {
     expect(screen.getByRole('img', { name: '走势测试贷款还款走势' })).toBeInTheDocument();
     expect(screen.getByText(/未来 12 期/)).toBeInTheDocument();
   });
+
+  it('在还款走势底部显示计划对应的年月', () => {
+    appPreferencesMock.state.debts = [
+      {
+        id: 'debt-with-dated-trend',
+        name: '日期走势测试贷款',
+        type: 'loan',
+        status: 'active',
+        balance: 1800,
+        annualRate: 7.2,
+        repaymentDay: 10,
+        manualRepayments: [
+          { id: 'schedule-1', dueDate: '2026-10-10', amount: 600, label: '' },
+          { id: 'schedule-2', dueDate: '2026-11-10', amount: 600, label: '' },
+          { id: 'schedule-3', dueDate: '2026-12-10', amount: 600, label: '' }
+        ]
+      }
+    ];
+
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('2026/10')).toBeInTheDocument();
+    expect(screen.getByText('2026/11')).toBeInTheDocument();
+    expect(screen.getByText('2026/12')).toBeInTheDocument();
+  });
 });

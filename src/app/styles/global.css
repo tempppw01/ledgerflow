@@ -17989,6 +17989,12 @@ select.debt-form-input {
   stroke-width: 1;
 }
 
+.debt-pressure-x-axis-label {
+  fill: var(--color-text-tertiary);
+  font-size: 10px;
+  font-weight: 650;
+}
+
 .debt-pressure-amount-line,
 .debt-pressure-remaining-line {
   fill: none;
@@ -19116,7 +19122,11 @@ select.debt-form-input {
 }
 
 .repayment-debt-trend .debt-pressure-chart svg {
-  height: 144px;
+  height: 154px;
+}
+
+.repayment-debt-trend .debt-pressure-x-axis-label {
+  font-size: 10px;
 }
 
 .repayment-debt-trend .debt-pressure-legend {
