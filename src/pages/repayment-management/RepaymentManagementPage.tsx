@@ -16,7 +16,7 @@ import {
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
-import { IMAGE_ICON_URL } from '../../shared/config/brandAssets';
+import { IMAGE_ICON_URL, WEBANK_ICON_URL } from '../../shared/config/brandAssets';
 import { formatCurrency } from '../../shared/lib/format';
 import { Toast } from '../../shared/ui/Toast';
 import { DatePicker } from '../../shared/ui/DatePicker';
@@ -24,9 +24,6 @@ import { RepaymentDashboard } from '../../features/debt/components/RepaymentDash
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const REPAYMENT_CACHE_KEY = 'ledgerflow-repayment-advice-cache-v1';
-const WEBANK_ICON_URL =
-  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/public/webank.png';
-
 interface RepaymentAdviceCacheItem {
   key: string;
   advice: string;
@@ -480,6 +477,10 @@ function findDebtPreset(name: string): DebtPreset | undefined {
   );
 }
 
+function resolveDebtIconUrl(item: Pick<DebtItem, 'name' | 'iconUrl'>): string | undefined {
+  return item.iconUrl || findDebtPreset(item.name)?.iconUrl;
+}
+
 function getDebtPresetMatchLabel(name: string): string {
   return findDebtPreset(name)?.name || '';
 }
@@ -488,6 +489,7 @@ function buildRecognizedDebtPayload(item: ParsedDebtItem): Omit<DebtItem, 'id'> 
   const preset = findDebtPreset(item.name);
   return {
     name: item.name,
+    iconUrl: resolveDebtIconUrl(item),
     type: preset?.type || item.type,
     status: 'active',
     balance: item.balance,
@@ -1029,6 +1031,7 @@ export function RepaymentManagementPage() {
     () =>
       debts.map((item) => ({
         ...item,
+        iconUrl: resolveDebtIconUrl(item),
         status: normalizeDebtLifecycleStatus(item.status, item.balance)
       })),
     [debts]
@@ -1185,6 +1188,7 @@ export function RepaymentManagementPage() {
         return {
           id: item.id,
           name: item.name,
+          iconUrl: item.iconUrl,
           type: item.type,
           isSimpleReminder,
           simpleDueDate: item.simpleDueDate,
@@ -1863,6 +1867,7 @@ export function RepaymentManagementPage() {
 
     const debtPayload = {
       name: trimmedDebtName,
+      iconUrl: resolveDebtIconUrl({ name: trimmedDebtName }),
       type: debtType,
       status: debtStatus,
       balance: effectiveBalance,
@@ -2488,7 +2493,7 @@ export function RepaymentManagementPage() {
                   <button
                     key={item.id}
                     type="button"
-                    className={`repayment-debt-list-item${selectedDebtId === item.id ? ' is-selected' : ''}`}
+                    className={`repayment-debt-list-item${selectedDebtId === item.id ? ' is-selected' : ''}${item.iconUrl ? ' has-brand-icon' : ''}`}
                     onClick={() => setSelectedDebtId(item.id)}
                     onContextMenu={(event) => {
                       event.preventDefault();
@@ -2496,6 +2501,16 @@ export function RepaymentManagementPage() {
                     }}
                   >
                     <span className={`repayment-debt-status-dot tone-${item.statusTone}`} />
+                    {item.iconUrl ? (
+                      <img
+                        className="repayment-debt-brand-icon"
+                        src={item.iconUrl}
+                        alt=""
+                        aria-hidden="true"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : null}
                     <div className="repayment-debt-list-item-main">
                       <strong>{item.name}</strong>
                       <span className="muted">
@@ -2592,7 +2607,19 @@ export function RepaymentManagementPage() {
               <>
                 <div className="repayment-debt-detail-header">
                   <div>
-                    <h3 style={{ margin: 0 }}>{selectedDebt.name}</h3>
+                    <div className="repayment-debt-detail-title">
+                      {selectedDebtOriginal.iconUrl ? (
+                        <img
+                          className="repayment-debt-detail-brand-icon"
+                          src={selectedDebtOriginal.iconUrl}
+                          alt=""
+                          aria-hidden="true"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : null}
+                      <h3 style={{ margin: 0 }}>{selectedDebt.name}</h3>
+                    </div>
                     <p className="muted" style={{ margin: '4px 0 0 0' }}>
                       {selectedDebt.isSimpleReminder
                         ? '还款提醒'

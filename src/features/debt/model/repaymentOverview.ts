@@ -10,6 +10,7 @@ export interface RepaymentOverviewInput {
 export interface MonthlyPaymentBreakdownItem {
   id: string;
   name: string;
+  iconUrl?: string;
   type: DebtItem['type'];
   payment: number;
   repaymentDay?: number;
@@ -151,6 +152,7 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
       return {
         id: item.id,
         name: item.name,
+        iconUrl: item.iconUrl,
         type: item.type,
         payment,
         repaymentDay: item.repaymentDay,
@@ -176,6 +178,7 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
       return {
         id: item.id,
         name: item.name,
+        iconUrl: item.iconUrl,
         type: item.type,
         payment,
         dueInDays,

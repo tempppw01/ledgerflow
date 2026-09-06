@@ -114,6 +114,9 @@ export const LANDMARK_ICON_URL =
 export const IMAGE_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/image.svg';
 
+export const WEBANK_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/public/webank.png';
+
 export const CARD_SD_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/card-sd.svg';
 

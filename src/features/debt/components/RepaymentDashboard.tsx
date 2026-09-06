@@ -461,6 +461,16 @@ export function RepaymentDashboard({
                       aria-label={item.dueInDays === null ? `设置${item.name}还款日` : item.isPaid ? `${item.name}本期已还` : `标记${item.name}本期已还`}
                     >
                       <span className="repayment-timeline-dot" />
+                      {item.iconUrl ? (
+                        <img
+                          className="repayment-timeline-brand-icon"
+                          src={item.iconUrl}
+                          alt=""
+                          aria-hidden="true"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : null}
                       <span className="repayment-timeline-info">
                         <span className="repayment-timeline-name">{item.name}</span>
                         <span className="repayment-timeline-type">

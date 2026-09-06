@@ -152,6 +152,30 @@ describe('RepaymentManagementPage', () => {
     ).toBeInTheDocument();
   });
 
+  it('保存微粒贷模板后应把品牌图标写入负债数据', () => {
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
+    fireEvent.click(screen.getByRole('button', { name: '使用微粒贷模板' }));
+    fireEvent.change(screen.getByLabelText('剩余本金'), { target: { value: '1800' } });
+    fireEvent.change(screen.getByLabelText('年化利率'), { target: { value: '7.2' } });
+    fireEvent.change(screen.getByLabelText('剩余期数'), { target: { value: '12' } });
+    fireEvent.click(screen.getByRole('button', { name: '+ 添加负债' }));
+
+    expect(appPreferencesMock.state.addDebt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: '微粒贷',
+        iconUrl: 'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/public/webank.png'
+      })
+    );
+  });
+
   it('应展示常见贷款模板并将截图识别结果匹配到对应模板', async () => {
     vi.mocked(sendAiChat).mockResolvedValueOnce({
       content: JSON.stringify({

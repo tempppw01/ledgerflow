@@ -388,6 +388,47 @@
   padding-right: 0;
 }
 
+.repayment-debt-brand-icon,
+.repayment-debt-detail-brand-icon,
+.repayment-timeline-brand-icon {
+  display: block;
+  flex: 0 0 auto;
+  object-fit: contain;
+  background: var(--color-bg-elevated);
+}
+
+.repayment-debt-brand-icon {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+}
+
+.repayment-debt-detail-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.repayment-debt-detail-brand-icon {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 9px;
+}
+
+.repayment-timeline-brand-icon {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 7px;
+}
+
+.repayment-console .repayment-debt-list-item.has-brand-icon {
+  grid-template-columns: 8px 30px minmax(0, 1fr) auto;
+}
+
 .repayment-console .repayment-debt-detail-repay,
 .repayment-console .repayment-debt-detail-records {
   margin-top: 18px;

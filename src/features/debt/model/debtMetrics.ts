@@ -34,6 +34,7 @@ export type ManualRepaymentItem = {
 export type DebtItem = {
   id: string;
   name: string;
+  iconUrl?: string;
   type: DebtType;
   status?: DebtLifecycleStatus;
   balance: number;
