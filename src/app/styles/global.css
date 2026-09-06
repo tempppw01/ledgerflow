@@ -18786,6 +18786,12 @@ select.debt-form-input {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .repayment-debt-trend-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
   .repayment-debt-detail-actions {
     justify-content: flex-start;
   }
@@ -18884,6 +18890,65 @@ select.debt-form-input {
 .repayment-debt-more-details[open] > summary::before { transform: rotate(90deg); }
 .repayment-debt-more-details summary small { color: var(--color-text-tertiary); font-weight: 500; }
 .repayment-debt-detail-metrics-secondary { margin-top: 3px; }
+
+.repayment-debt-trend {
+  margin-top: 16px;
+  padding: 13px 0 11px;
+  border-top: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.repayment-debt-trend-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.repayment-debt-trend-header > div {
+  display: grid;
+  gap: 3px;
+}
+
+.repayment-debt-trend-header strong {
+  color: var(--color-text-primary);
+  font-size: 13px;
+}
+
+.repayment-debt-trend-header span {
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.repayment-debt-trend-next {
+  flex: 0 0 auto;
+  color: var(--color-danger, #ef4444) !important;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.repayment-debt-trend .debt-pressure-chart {
+  margin-top: 8px;
+}
+
+.repayment-debt-trend .debt-pressure-chart svg {
+  height: 144px;
+}
+
+.repayment-debt-trend .debt-pressure-legend {
+  gap: 11px;
+  margin-top: 0;
+  font-size: 11px;
+}
+
+.repayment-debt-trend .debt-pressure-empty {
+  margin-top: 8px;
+  padding: 11px 0 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 12px;
+}
 
 .repayment-debt-list-tools {
   display: flex;

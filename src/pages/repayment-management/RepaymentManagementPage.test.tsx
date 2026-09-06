@@ -579,4 +579,32 @@ describe('RepaymentManagementPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
     expect(screen.getByText('更多设置', { exact: true }).closest('details')).toHaveAttribute('open');
   });
+
+  it('选中单笔负债时会展示内建的未来还款走势', () => {
+    appPreferencesMock.state.debts = [
+      {
+        id: 'debt-with-trend',
+        name: '走势测试贷款',
+        type: 'loan',
+        status: 'active',
+        balance: 1800,
+        annualRate: 7.2,
+        remainingMonths: 12,
+        repaymentDay: 10,
+        repaymentMethod: 'equal-installment'
+      }
+    ];
+
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('未来还款走势')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '走势测试贷款还款走势' })).toBeInTheDocument();
+    expect(screen.getByText(/未来 12 期/)).toBeInTheDocument();
+  });
 });

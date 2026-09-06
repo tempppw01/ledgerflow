@@ -244,14 +244,18 @@ function formatShortDate(dateValue: string): string {
 }
 
 function DebtPressureChart({
-  points
+  points,
+  ariaLabel = '还款压力曲线',
+  compact = false
 }: {
   points: Array<{ period: string; dueDate: string; amount: number; remaining: number }>;
+  ariaLabel?: string;
+  compact?: boolean;
 }) {
   const width = 680;
-  const height = 200;
-  const paddingX = 44;
-  const paddingY = 24;
+  const height = compact ? 150 : 200;
+  const paddingX = compact ? 24 : 44;
+  const paddingY = compact ? 18 : 24;
   const maxAmount = Math.max(1, ...points.map((item) => item.amount));
   const maxRemaining = Math.max(1, ...points.map((item) => item.remaining));
 
@@ -282,7 +286,7 @@ function DebtPressureChart({
     <div className="debt-pressure-chart">
       <svg
         role="img"
-        aria-label="还款压力曲线"
+        aria-label={ariaLabel}
         viewBox={`0 0 ${width} ${height}`}
         preserveAspectRatio="none"
       >
@@ -1482,6 +1486,11 @@ export function RepaymentManagementPage() {
     () => debtsWithStatus.find((item) => item.id === selectedDebtId) || null,
     [debtsWithStatus, selectedDebtId]
   );
+
+  const selectedDebtPressurePoints = useMemo(() => {
+    if (!selectedDebtOriginal || isSimpleRepaymentReminder(selectedDebtOriginal)) return [];
+    return buildDebtPressureSchedule(selectedDebtOriginal).slice(0, 12);
+  }, [selectedDebtOriginal]);
 
   const selectedDebtRecords = useMemo(() => {
     if (!selectedDebtId) return [];
@@ -2771,6 +2780,29 @@ export function RepaymentManagementPage() {
                         <span className="repayment-debt-metric-value">{selectedDebt.repaymentDay || '--'} 日</span>
                       </div>
                     </div>
+
+                    <section className="repayment-debt-trend" aria-label={`${selectedDebt.name}还款走势`}>
+                      <div className="repayment-debt-trend-header">
+                        <div>
+                          <strong>未来还款走势</strong>
+                          <span>
+                            {selectedDebtPressurePoints.length > 0
+                              ? `未来 ${selectedDebtPressurePoints.length} 期 · 红色还款，蓝色剩余本金`
+                              : '补齐期数或逐期计划后显示走势'}
+                          </span>
+                        </div>
+                        {selectedDebtPressurePoints.length > 0 ? (
+                          <span className="repayment-debt-trend-next">
+                            首期 ¥{selectedDebtPressurePoints[0]?.amount.toFixed(2)}
+                          </span>
+                        ) : null}
+                      </div>
+                      <DebtPressureChart
+                        points={selectedDebtPressurePoints}
+                        ariaLabel={`${selectedDebt.name}还款走势`}
+                        compact
+                      />
+                    </section>
 
                     <details
                       className="repayment-debt-more-details"
