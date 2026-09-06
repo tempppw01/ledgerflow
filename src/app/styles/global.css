@@ -18284,7 +18284,7 @@ select.debt-form-input {
 
 .finance-overview-income-actions.repayment-income-toolbar {
   display: grid;
-  grid-template-columns: minmax(210px, 0.72fr) auto minmax(320px, 1fr);
+  grid-template-columns: minmax(210px, 0.72fr) minmax(320px, 1fr);
   gap: 12px;
   margin: 0;
   padding: 12px 14px;
@@ -18311,14 +18311,6 @@ select.debt-form-input {
 .repayment-income-toolbar-copy span {
   color: var(--color-text-secondary);
   font-size: 11px;
-}
-
-.repayment-income-ai-button {
-  min-height: 40px !important;
-  border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-border)) !important;
-  background: color-mix(in srgb, var(--color-primary-bg) 62%, var(--color-bg-elevated));
-  color: var(--color-primary);
-  font-weight: 800;
 }
 
 .repayment-income-editor {
@@ -18687,7 +18679,7 @@ select.debt-form-input {
   }
 
   .finance-overview-income-actions.repayment-income-toolbar {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .repayment-income-editor {
@@ -18725,7 +18717,7 @@ select.debt-form-input {
   }
 
   .finance-overview-income-actions.repayment-income-toolbar {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .repayment-income-editor {

@@ -322,7 +322,7 @@
 }
 
 .repayment-console .repayment-income-toolbar {
-  grid-template-columns: minmax(210px, 0.72fr) auto minmax(320px, 1fr);
+  grid-template-columns: minmax(210px, 0.72fr) minmax(320px, 1fr);
   margin: 0;
   padding: 18px 0;
   border-bottom: 1px solid var(--color-divider);
@@ -346,13 +346,8 @@
   border-radius: 7px;
 }
 
-.repayment-console .repayment-income-save-button,
-.repayment-console .repayment-income-ai-button {
+.repayment-console .repayment-income-save-button {
   min-height: 42px !important;
-}
-
-.repayment-console .finance-income-inline-hint {
-  margin: 8px 0 0;
 }
 
 .repayment-console .repayment-list-detail-layout {

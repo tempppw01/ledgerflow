@@ -111,6 +111,23 @@ describe('RepaymentManagementPage', () => {
     expect(screen.getByText('暂缓处理')).toBeInTheDocument();
   });
 
+  it('月收入设置只保留手动填写，不再展示 AI 智能估算', () => {
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByRole('button', { name: /AI 智能估算/ })).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('手动月收入'), { target: { value: '8000' } });
+    fireEvent.click(screen.getByRole('button', { name: '保存收入' }));
+
+    expect(appPreferencesMock.state.setMonthlyIncome).toHaveBeenCalledWith(8000);
+  });
+
   it('应支持使用微粒贷预设快速开始录入', () => {
     render(
       <MemoryRouter initialEntries={['/repayment-management']}>
