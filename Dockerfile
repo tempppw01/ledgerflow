@@ -13,7 +13,10 @@ RUN npm prune --omit=dev --ignore-scripts
 
 FROM node:24-alpine
 RUN apk add --no-cache nginx
+WORKDIR /app
 ENV LEDGERFLOW_API_PORT=8787
+ENV LEDGERFLOW_DATA_DIR=/app/data
+ENV SQLITE_PATH=/app/data/ledgerflow.sqlite
 COPY nginx.conf /etc/nginx/http.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY --from=build /app/node_modules /app/node_modules
