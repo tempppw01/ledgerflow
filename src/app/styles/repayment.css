@@ -143,6 +143,11 @@
   box-shadow: none;
 }
 
+.repayment-console .repayment-dashboard-grid {
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.35fr);
+  gap: 20px;
+}
+
 .repayment-console .repayment-dashboard-title {
   margin: 0 0 14px;
   color: var(--color-text-primary);
@@ -166,6 +171,22 @@
 .repayment-console .repayment-dashboard-chart {
   padding: 16px 0 0;
   border-top: 1px solid var(--color-divider);
+}
+
+.repayment-console .repayment-dashboard-chart:nth-child(4) {
+  min-width: 0;
+}
+
+.repayment-console .repayment-dashboard-chart:nth-child(4) .repayment-projection-stage {
+  min-height: 242px;
+}
+
+.repayment-console .repayment-dashboard-chart:nth-child(4) .repayment-projection-stage svg {
+  height: 258px;
+}
+
+.repayment-console .repayment-dashboard-chart:nth-child(4) .repayment-projection-value {
+  font-size: clamp(11px, 2.35cqi, 15px);
 }
 
 .repayment-console .repayment-dashboard-timeline {

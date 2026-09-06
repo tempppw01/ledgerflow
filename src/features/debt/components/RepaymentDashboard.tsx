@@ -189,11 +189,43 @@ function BreakdownDonut({
   );
 }
 
+function buildSmoothPath(
+  points: Array<{ x: number; y: number }>,
+  bounds?: { minY: number; maxY: number }
+): string {
+  if (points.length === 0) return '';
+  if (points.length === 1) return `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+
+  const tension = 1;
+  return points
+    .slice(0, -1)
+    .reduce((path, point, index) => {
+      const next = points[index + 1];
+      const previous = points[index - 1] ?? point;
+      const afterNext = points[index + 2] ?? next;
+      const controlOne = {
+        x: point.x + ((next.x - previous.x) / 6) * tension,
+        y: point.y + ((next.y - previous.y) / 6) * tension
+      };
+      const controlTwo = {
+        x: next.x - ((afterNext.x - point.x) / 6) * tension,
+        y: next.y - ((afterNext.y - point.y) / 6) * tension
+      };
+
+      if (bounds) {
+        controlOne.y = Math.max(bounds.minY, Math.min(bounds.maxY, controlOne.y));
+        controlTwo.y = Math.max(bounds.minY, Math.min(bounds.maxY, controlTwo.y));
+      }
+
+      return `${path} C ${controlOne.x.toFixed(2)} ${controlOne.y.toFixed(2)}, ${controlTwo.x.toFixed(2)} ${controlTwo.y.toFixed(2)}, ${next.x.toFixed(2)} ${next.y.toFixed(2)}`;
+    }, `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`);
+}
+
 function ProjectionLineChart({ data }: { data: Array<{ monthLabel: string; total: number }> }) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const width = 620;
-  const height = 190;
-  const padding = { top: 28, right: 20, bottom: 24, left: 18 };
+  const height = 228;
+  const padding = { top: 36, right: 24, bottom: 32, left: 24 };
   const totals = data.map((item) => Math.max(0, item.total));
   const rawMin = Math.min(...totals);
   const rawMax = Math.max(...totals, 1);
@@ -208,9 +240,10 @@ function ProjectionLineChart({ data }: { data: Array<{ monthLabel: string; total
     x: padding.left + (index / Math.max(1, data.length - 1)) * plotWidth,
     y: padding.top + (1 - (Math.max(0, item.total) - min) / spread) * plotHeight
   }));
-  const linePath = points
-    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
-    .join(' ');
+  const linePath = buildSmoothPath(points, {
+    minY: padding.top,
+    maxY: height - padding.bottom
+  });
   const areaPath = points.length
     ? `${linePath} L ${points[points.length - 1].x.toFixed(2)} ${(height - padding.bottom).toFixed(2)} L ${points[0].x.toFixed(2)} ${(height - padding.bottom).toFixed(2)} Z`
     : '';
