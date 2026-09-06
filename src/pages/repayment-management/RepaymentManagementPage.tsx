@@ -2918,14 +2918,16 @@ export function RepaymentManagementPage() {
                     </div>
                     <button
                       type="button"
-                      className="repayment-plan-fill-button"
+                      className="repayment-plan-fill-button repayment-record-icon-button"
+                      aria-label="带入计划金额"
                       onClick={() => {
                         setRepaymentAmount(String(selectedDebt.minimumPayment || ''));
                         setRepaymentRecordError('');
                       }}
                       disabled={!selectedDebtOriginal || selectedDebt.minimumPayment <= 0}
                     >
-                      带入计划金额
+                      <span aria-hidden="true">↓</span>
+                      <span className="repayment-record-button-label">带入计划金额</span>
                     </button>
                   </div>
                   <form onSubmit={onAddRepaymentRecord} className="repayment-record-form">
@@ -2953,13 +2955,15 @@ export function RepaymentManagementPage() {
                       />
                       <button
                         type="button"
-                        className="repayment-today-button"
+                        className="repayment-today-button repayment-record-icon-button"
+                        aria-label="设为今天"
                         onClick={() => {
                           setRepaymentPaidAt(new Date().toISOString().slice(0, 10));
                           setRepaymentRecordError('');
                         }}
                       >
-                        今天
+                        <span aria-hidden="true">●</span>
+                        <span className="repayment-record-button-label">今天</span>
                       </button>
                     </div>
                     <div className="repayment-record-secondary-fields">

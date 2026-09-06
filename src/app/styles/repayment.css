@@ -579,6 +579,60 @@
   white-space: nowrap;
 }
 
+.repayment-record-icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  min-width: 32px;
+  padding: 0;
+}
+
+.repayment-record-icon-button > span:first-child {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.repayment-record-icon-button .repayment-record-button-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.repayment-plan-fill-button.repayment-record-icon-button::after,
+.repayment-today-button.repayment-record-icon-button::after {
+  position: absolute;
+  z-index: 4;
+  top: calc(100% + 7px);
+  left: 50%;
+  padding: 5px 7px;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  background: var(--color-bg-elevated);
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--color-text-primary) 13%, transparent);
+  color: var(--color-text-primary);
+  content: attr(aria-label);
+  font-size: 11px;
+  font-weight: 650;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -3px);
+  transition: opacity 140ms ease, transform 140ms ease;
+  white-space: nowrap;
+}
+
+.repayment-plan-fill-button.repayment-record-icon-button:hover::after,
+.repayment-plan-fill-button.repayment-record-icon-button:focus-visible::after,
+.repayment-today-button.repayment-record-icon-button:hover::after,
+.repayment-today-button.repayment-record-icon-button:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 .repayment-plan-fill-button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
@@ -597,7 +651,7 @@
 }
 
 .repayment-record-primary-fields {
-  grid-template-columns: minmax(150px, 0.9fr) minmax(150px, 1fr) auto;
+  grid-template-columns: minmax(150px, 0.9fr) minmax(150px, 1fr) 32px;
 }
 
 .repayment-record-secondary-fields {
