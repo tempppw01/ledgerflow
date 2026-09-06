@@ -230,6 +230,33 @@ describe('RepaymentManagementPage', () => {
     );
   });
 
+  it('编辑零余额负债时本金输入保持为空，输入 1 不会变成 01', () => {
+    appPreferencesMock.state.debts = [
+      {
+        id: 'debt-zero',
+        name: '待补本金负债',
+        type: 'credit-card',
+        status: 'active',
+        balance: 0
+      }
+    ];
+
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '✏️ 编辑' }));
+    const balanceInput = screen.getByLabelText('剩余本金');
+    expect(balanceInput).toHaveValue(null);
+
+    fireEvent.change(balanceInput, { target: { value: '01' } });
+    expect(balanceInput).toHaveValue(1);
+  });
+
   it('新增负债表单不再展示宽限期', () => {
     render(
       <MemoryRouter initialEntries={['/repayment-management']}>

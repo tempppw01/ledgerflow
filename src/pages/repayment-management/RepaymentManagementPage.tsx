@@ -781,6 +781,23 @@ function RepaymentUnitInput(props: {
   );
 }
 
+function normalizeDebtAmountInput(value: string): string {
+  const normalized = value.replace(/[^\d.]/g, '');
+  if (!normalized) return '';
+
+  const [integerPart, ...decimalParts] = normalized.split('.');
+  const integer = integerPart.replace(/^0+(?=\d)/, '');
+  if (decimalParts.length === 0) return integer || '0';
+
+  return `${integer || '0'}.${decimalParts.join('')}`;
+}
+
+function getDebtAmountInputValue(value: unknown): string {
+  const raw = String(value ?? '').trim();
+  if (!raw || !Number.isFinite(Number(raw)) || Number(raw) <= 0) return '';
+  return normalizeDebtAmountInput(raw);
+}
+
 export function RepaymentManagementPage() {
   const location = useLocation();
   const {
@@ -887,8 +904,8 @@ export function RepaymentManagementPage() {
     );
     setDebtBalance(
       item.entryMode === 'simple'
-        ? (item.simpleAmount !== undefined ? String(item.simpleAmount) : '')
-        : String(item.balance ?? '')
+        ? getDebtAmountInputValue(item.simpleAmount)
+        : getDebtAmountInputValue(item.balance)
     );
     setDebtBalanceManuallyEdited(true);
     setDebtAnnualRate(item.annualRate !== undefined ? String(item.annualRate) : '');
@@ -935,8 +952,8 @@ export function RepaymentManagementPage() {
     setSimpleDueDate('');
     setDebtType(prefillDebt.type || 'credit-card');
     setDebtPlanMode('structured');
-    setDebtBalance(prefillDebt.balance || '');
-    setDebtBalanceManuallyEdited(Boolean(prefillDebt.balance));
+    setDebtBalance(getDebtAmountInputValue(prefillDebt.balance));
+    setDebtBalanceManuallyEdited(Number(prefillDebt.balance || 0) > 0);
     setDebtAnnualRate(prefillDebt.annualRate || '');
     setDebtMonths(prefillDebt.remainingMonths || '');
     setDebtTotalPeriods(prefillDebt.totalPeriods || '');
@@ -3140,7 +3157,7 @@ export function RepaymentManagementPage() {
                       onClick={() => {
                         setDebtEntryMode('standard');
                         if (editingDebtId && simpleAmount.trim().length > 0) {
-                          setDebtBalance(simpleAmount);
+                          setDebtBalance(getDebtAmountInputValue(simpleAmount));
                         }
                         if (editingDebtId && /^\d{4}-\d{2}-\d{2}$/.test(simpleDueDate)) {
                           setDebtRepaymentDay(String(Number(simpleDueDate.slice(-2))));
@@ -3234,11 +3251,12 @@ export function RepaymentManagementPage() {
                           inputMode="decimal"
                           value={debtBalance}
                           onChange={(event) => {
-                            setDebtBalanceManuallyEdited(event.target.value.trim().length > 0);
-                            setDebtBalance(event.target.value);
+                            const nextValue = normalizeDebtAmountInput(event.target.value);
+                            setDebtBalanceManuallyEdited(nextValue.trim().length > 0);
+                            setDebtBalance(nextValue);
                             setDebtFormError('');
                           }}
-                          placeholder="0.00"
+                          placeholder="输入剩余本金"
                           aria-label="剩余本金"
                         />
                       </span>
