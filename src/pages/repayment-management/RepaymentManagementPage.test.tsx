@@ -293,7 +293,6 @@ describe('RepaymentManagementPage', () => {
         totalPeriods: 12,
         paidPeriods: 2,
         remainingMonths: 10,
-        paymentAccount: '工资卡',
         repaymentRecordMode: 'auto-debit'
       }
     ];
@@ -312,7 +311,6 @@ describe('RepaymentManagementPage', () => {
       expect.objectContaining({
         debtId: 'debt-1',
         amount: 500,
-        paymentAccount: '工资卡',
         recordMode: 'auto-debit'
       })
     );
@@ -427,7 +425,7 @@ describe('RepaymentManagementPage', () => {
     expect(screen.getByText(/已自动估算：¥1376\.33/)).toBeInTheDocument();
   });
 
-  it('扣款账户来自已有账户候补且可以留空提交', () => {
+  it('不再显示账单日和扣款账户字段', () => {
     render(
       <MemoryRouter initialEntries={['/repayment-management']}>
         <Routes>
@@ -437,19 +435,9 @@ describe('RepaymentManagementPage', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
-    const accountInput = screen.getByLabelText('扣款账户');
-    const datalist = document.getElementById('repayment-account-options');
-    expect(accountInput).toHaveValue('');
-    expect(datalist?.querySelector('option')?.getAttribute('value')).toBe('工资卡');
-
-    fireEvent.change(screen.getByLabelText('负债名称'), { target: { value: '无账户负债' } });
-    fireEvent.change(screen.getByLabelText('剩余本金'), { target: { value: '1000' } });
-    fireEvent.click(screen.getByRole('button', { name: '+ 添加负债' }));
-
-    expect(appPreferencesMock.state.addDebt).toHaveBeenCalledWith(
-      expect.objectContaining({ name: '无账户负债', paymentAccount: undefined })
-    );
-    expect(screen.queryByRole('dialog', { name: '新增负债' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('账单日')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('扣款账户')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('实际扣款账户')).not.toBeInTheDocument();
   });
 
   it('编辑零余额负债时本金输入保持为空，输入 1 不会变成 01', () => {

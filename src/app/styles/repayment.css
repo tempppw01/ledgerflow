@@ -500,7 +500,7 @@
 }
 
 .repayment-record-secondary-fields {
-  grid-template-columns: minmax(150px, 1fr) minmax(140px, 0.8fr) minmax(140px, 1fr) auto;
+  grid-template-columns: minmax(140px, 0.8fr) minmax(180px, 1fr) auto;
 }
 
 .repayment-record-form .finance-debt-form-control,
