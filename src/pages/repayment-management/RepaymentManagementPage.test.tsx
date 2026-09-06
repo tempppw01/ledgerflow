@@ -485,6 +485,8 @@ describe('RepaymentManagementPage', () => {
     expect(screen.getByText(/已自动估算：¥1376\.33/)).toBeInTheDocument();
   });
 
+
+
   it('贷款详情使用本期应还和剩余期数，不展示最低还款或重复月供', () => {
     appPreferencesMock.state.debts = [
       {
@@ -638,6 +640,37 @@ describe('RepaymentManagementPage', () => {
     expect(screen.getByText('查看完整分析', { exact: true }).closest('details')).toHaveAttribute('open');
     fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
     expect(screen.getByText('更多设置', { exact: true }).closest('details')).toHaveAttribute('open');
+  });
+
+  it('手动逐期计划从下一次还款日和已还期数后的期号开始', () => {
+    const today = new Date();
+    const expectedDate = new Date(today.getFullYear(), today.getMonth(), 23);
+    if (expectedDate < new Date(today.getFullYear(), today.getMonth(), today.getDate())) {
+      expectedDate.setMonth(expectedDate.getMonth() + 1);
+    }
+    const expectedDateText = `${expectedDate.getFullYear()}-${String(
+      expectedDate.getMonth() + 1
+    ).padStart(2, '0')}-${String(expectedDate.getDate()).padStart(2, '0')}`;
+
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
+    fireEvent.change(screen.getByLabelText('负债类型'), { target: { value: 'loan' } });
+    fireEvent.click(screen.getByText('更多设置', { exact: true }));
+    fireEvent.change(screen.getByLabelText('还款日'), { target: { value: '23' } });
+    fireEvent.change(screen.getByLabelText('总期数'), { target: { value: '12' } });
+    fireEvent.change(screen.getByLabelText('已还期数'), { target: { value: '8' } });
+    fireEvent.click(screen.getByRole('tab', { name: '手动逐期' }));
+
+    expect(screen.getByLabelText('还款日期')).toHaveTextContent(expectedDateText);
+    expect(screen.getByLabelText('期数标签')).toHaveAttribute('placeholder', '第 9 期');
+    expect(screen.getByText(/从下一笔待还（第 9 期）开始填写/)).toBeInTheDocument();
   });
 
   it('选中单笔负债时会展示内建的未来还款走势', () => {

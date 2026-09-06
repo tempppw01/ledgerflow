@@ -167,13 +167,31 @@ const DEBT_PRESETS: DebtPreset[] = [
   }
 ];
 
-function createEmptyManualRepayment(previous?: ManualRepaymentItem): ManualRepaymentItem {
+function getNextRepaymentDate(repaymentDay?: number, referenceDate = new Date()): Date {
+  const safeDay =
+    typeof repaymentDay === 'number' && Number.isInteger(repaymentDay) && repaymentDay >= 1 && repaymentDay <= 31
+      ? repaymentDay
+      : referenceDate.getDate();
+  const thisMonthDate = new Date(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth(),
+    clampDayInMonthValue(referenceDate.getFullYear(), referenceDate.getMonth(), safeDay)
+  );
+  return thisMonthDate >= new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate())
+    ? thisMonthDate
+    : shiftMonthWithDay(thisMonthDate, 1, safeDay);
+}
+
+function createEmptyManualRepayment(
+  previous?: ManualRepaymentItem,
+  repaymentDay?: number
+): ManualRepaymentItem {
   const today = new Date();
-  const baseDate =
-    previous?.dueDate && !Number.isNaN(new Date(previous.dueDate).getTime())
-      ? new Date(previous.dueDate)
-      : today;
-  const nextDueDate = shiftMonthWithDay(baseDate, 1, getDebtRepaymentDayFallback(baseDate));
+  const previousDueDate = previous?.dueDate ? new Date(`${previous.dueDate}T00:00:00`) : null;
+  const hasValidPreviousDate = previousDueDate && !Number.isNaN(previousDueDate.getTime());
+  const nextDueDate = hasValidPreviousDate
+    ? shiftMonthWithDay(previousDueDate, 1, repaymentDay ?? previousDueDate.getDate())
+    : getNextRepaymentDate(repaymentDay, today);
 
   return {
     id: `manual-repayment-temp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -181,10 +199,6 @@ function createEmptyManualRepayment(previous?: ManualRepaymentItem): ManualRepay
     amount: previous ? Math.max(0, Number(previous.amount) || 0) : 0,
     label: ''
   };
-}
-
-function getDebtRepaymentDayFallback(value: Date): number {
-  return value.getDate();
 }
 
 function toISODate(value: Date): string {
@@ -208,6 +222,28 @@ function shiftMonthWithDay(base: Date, offset: number, day?: number): Date {
     targetMonth,
     clampDayInMonthValue(targetYear, targetMonth, targetDay)
   );
+}
+
+function getManualScheduleStartPeriod(
+  debt: Pick<DebtItem, 'paidPeriods' | 'totalPeriods' | 'remainingMonths'>
+): number {
+  const paidPeriods = Number(debt.paidPeriods);
+  if (Number.isFinite(paidPeriods) && paidPeriods >= 0) {
+    return Math.floor(paidPeriods) + 1;
+  }
+
+  const totalPeriods = Number(debt.totalPeriods);
+  const remainingMonths = Number(debt.remainingMonths);
+  if (
+    Number.isFinite(totalPeriods) &&
+    totalPeriods > 0 &&
+    Number.isFinite(remainingMonths) &&
+    remainingMonths >= 0
+  ) {
+    return Math.max(1, Math.floor(totalPeriods) - Math.floor(remainingMonths) + 1);
+  }
+
+  return 1;
 }
 
 function buildDebtPressureSchedule(
@@ -249,11 +285,12 @@ function buildDebtPressureSchedule(
     }));
   }
 
+  const manualScheduleStartPeriod = getManualScheduleStartPeriod(debt);
   let remaining = balance;
   return rows.slice(0, 36).map((item, index) => {
     remaining = Math.max(0, remaining - item.amount);
     return {
-      period: `第 ${index + 1} 期`,
+      period: item.label?.trim() || `第 ${manualScheduleStartPeriod + index} 期`,
       dueDate: item.dueDate || '日期待填',
       amount: Number(item.amount.toFixed(2)),
       remaining: Number(remaining.toFixed(2))
@@ -1644,7 +1681,7 @@ export function RepaymentManagementPage() {
     const previous = debtManualRepayments.at(-1);
     setDebtManualRepayments((current) => [
       ...current,
-      createEmptyManualRepayment(previous)
+      createEmptyManualRepayment(previous, repaymentDayValid ? repaymentDay : undefined)
     ]);
     setDebtFormError('');
   }
@@ -1845,6 +1882,11 @@ export function RepaymentManagementPage() {
     0
   );
   const manualRepaymentCount = debtManualRepayments.length;
+  const manualScheduleStartPeriod = getManualScheduleStartPeriod({
+    paidPeriods: paidPeriodsRaw.length > 0 ? paidPeriods : undefined,
+    totalPeriods: totalPeriodsRaw.length > 0 ? totalPeriods : undefined,
+    remainingMonths: debtMonths.trim().length > 0 ? months : undefined
+  });
 
   const canSubmitDebt =
     trimmedDebtName.length > 0 &&
@@ -3802,7 +3844,9 @@ export function RepaymentManagementPage() {
                           <div className="debt-form-manual-schedule-header">
                             <div>
                               <span className="debt-form-field-label">手动还款计划</span>
-                              <small>从下一期开始填写日期和金额，系统会生成压力曲线</small>
+                              <small>
+                                从下一笔待还（第 {manualScheduleStartPeriod} 期）开始填写；日期默认按还款日生成。
+                              </small>
                             </div>
                             <button
                               type="button"
@@ -3825,7 +3869,9 @@ export function RepaymentManagementPage() {
                               <div className="debt-form-manual-rows">
                                 {debtManualRepayments.map((row, index) => (
                                   <div className="debt-form-manual-row" key={row.id || index}>
-                                    <div className="debt-form-manual-index">{index + 1}</div>
+                                    <div className="debt-form-manual-index">
+                                      {manualScheduleStartPeriod + index}
+                                    </div>
                                     <label className="debt-form-field">
                                       <span className="debt-form-field-label">期数标签</span>
                                       <input
@@ -3836,7 +3882,7 @@ export function RepaymentManagementPage() {
                                             label: event.target.value
                                           });
                                         }}
-                                        placeholder={`第 ${index + 1} 期`}
+                                        placeholder={`第 ${manualScheduleStartPeriod + index} 期`}
                                         aria-label="期数标签"
                                       />
                                     </label>
@@ -3850,7 +3896,7 @@ export function RepaymentManagementPage() {
                                             dueDate: value
                                           });
                                         }}
-                                        aria-label="还款日期"
+                                        ariaLabel="还款日期"
                                       />
                                     </label>
                                     <label className="debt-form-field">
