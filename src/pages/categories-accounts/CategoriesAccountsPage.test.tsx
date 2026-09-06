@@ -66,6 +66,8 @@ describe('CategoriesAccountsPage', () => {
       </MemoryRouter>
     );
 
+    await user.click(screen.getByRole('button', { name: /资金账户 3/ }));
+
     await screen.findByRole(
       'button',
       { name: 'account-balance-display-acc-alipay' },
@@ -89,5 +91,23 @@ describe('CategoriesAccountsPage', () => {
     ).toHaveValue(630.73);
     expect(screen.getByText('保存')).toBeInTheDocument();
     expect(screen.getByText('取消')).toBeInTheDocument();
+  });
+
+  it('uses top tabs to switch between the category and account workspaces', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <CategoriesAccountsPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('heading', { name: '分类与标签管理' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '账户管理' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /资金账户 3/ }));
+
+    expect(screen.getByRole('heading', { name: '账户管理' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '分类与标签管理' })).not.toBeInTheDocument();
   });
 });

@@ -2,11 +2,8 @@ import {
   FormEvent,
   useEffect,
   useMemo,
-  useRef,
   useState,
-  type CSSProperties,
-  type KeyboardEvent as ReactKeyboardEvent,
-  type MouseEvent as ReactMouseEvent
+  type KeyboardEvent as ReactKeyboardEvent
 } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
@@ -83,10 +80,6 @@ function inferCategoryAppearance(name: string, kind: 'income' | 'expense') {
   };
 }
 
-const MIN_CATEGORY_PANEL_WIDTH = 360;
-const MIN_ACCOUNTS_PANEL_WIDTH = 420;
-const DEFAULT_CATEGORY_PANEL_WIDTH = 520;
-
 export function CategoriesAccountsPage() {
   const navigate = useNavigate();
   const categories = useFinanceStore((s) => s.categories);
@@ -121,8 +114,7 @@ export function CategoriesAccountsPage() {
   const [accountError, setAccountError] = useState('');
   const [mergeTargetByTag, setMergeTargetByTag] = useState<Record<string, string>>({});
   const [editingBalanceAccountId, setEditingBalanceAccountId] = useState<string | null>(null);
-  const layoutRef = useRef<HTMLDivElement | null>(null);
-  const [leftPanelWidth, setLeftPanelWidth] = useState(DEFAULT_CATEGORY_PANEL_WIDTH);
+  const [workspace, setWorkspace] = useState<'categories' | 'accounts'>('categories');
 
   const ACCOUNT_COLLAPSE_THRESHOLD = 8;
 
@@ -130,54 +122,6 @@ export function CategoriesAccountsPage() {
     const timer = window.setTimeout(() => setLoading(false), 120);
     return () => window.clearTimeout(timer);
   }, []);
-
-  useEffect(() => {
-    const clampByContainer = () => {
-      const node = layoutRef.current;
-      if (!node) {
-        return;
-      }
-      const total = node.getBoundingClientRect().width;
-      const maxLeft = Math.max(MIN_CATEGORY_PANEL_WIDTH, total - MIN_ACCOUNTS_PANEL_WIDTH);
-      setLeftPanelWidth((prev) => Math.min(Math.max(prev, MIN_CATEGORY_PANEL_WIDTH), maxLeft));
-    };
-
-    clampByContainer();
-    window.addEventListener('resize', clampByContainer);
-
-    return () => {
-      window.removeEventListener('resize', clampByContainer);
-    };
-  }, []);
-
-  const handleDividerMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    const container = layoutRef.current;
-    if (!container) {
-      return;
-    }
-
-    const rect = container.getBoundingClientRect();
-    const maxLeft = Math.max(MIN_CATEGORY_PANEL_WIDTH, rect.width - MIN_ACCOUNTS_PANEL_WIDTH);
-
-    const onMouseMove = (moveEvent: MouseEvent) => {
-      const nextWidth = Math.min(
-        Math.max(moveEvent.clientX - rect.left, MIN_CATEGORY_PANEL_WIDTH),
-        maxLeft
-      );
-      setLeftPanelWidth(nextWidth);
-    };
-
-    const onMouseUp = () => {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
-      document.body.classList.remove('categories-accounts-resizing');
-    };
-
-    document.body.classList.add('categories-accounts-resizing');
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
-  };
 
   function submitCategory(e: FormEvent) {
     e.preventDefault();
@@ -519,14 +463,46 @@ export function CategoriesAccountsPage() {
   );
 
   return (
-    <div
-      className="grid categories-accounts-page vi-page"
-      ref={layoutRef}
-      style={{ '--categories-left-width': `${leftPanelWidth}px` } as CSSProperties}
-    >
-      <section className="panel categories-panel">
+    <div className="categories-accounts-page vi-page">
+      <header className="categories-console-header">
+        <div>
+          <p className="categories-console-eyebrow">BOOKKEEPING SETUP</p>
+          <h1>账户与分类</h1>
+          <p>在一个清爽的工作区里，管理记账的分类、标签和资金账户。</p>
+        </div>
+        <div className="categories-console-stat" aria-label="账户与分类概览">
+          <strong>{categories.length + managedAccounts.length}</strong>
+          <span>项基础设置</span>
+        </div>
+      </header>
+
+      <nav className="categories-console-tabs" aria-label="账户与分类工作区">
+        <button
+          type="button"
+          className={workspace === 'categories' ? 'is-active' : undefined}
+          aria-current={workspace === 'categories' ? 'page' : undefined}
+          onClick={() => setWorkspace('categories')}
+        >
+          分类与标签 <span>{categories.length + tagGroups.length}</span>
+        </button>
+        <button
+          type="button"
+          className={workspace === 'accounts' ? 'is-active' : undefined}
+          aria-current={workspace === 'accounts' ? 'page' : undefined}
+          onClick={() => setWorkspace('accounts')}
+        >
+          资金账户 <span>{managedAccounts.length}</span>
+        </button>
+      </nav>
+
+      {workspace === 'categories' ? (
+      <section className="categories-console-workspace">
         <header className="categories-accounts-head">
-          <h2>分类与标签管理</h2>
+          <div>
+            <span className="categories-console-kicker">CATEGORIES & TAGS</span>
+            <h2>分类与标签管理</h2>
+            <p>分类用于账本归档，标签用于补充检索与筛选。</p>
+          </div>
           <div className="categories-accounts-metrics" aria-label="分类统计">
             <span className="metric-chip">
               分类 <strong>{categories.length}</strong>
@@ -666,18 +642,14 @@ export function CategoriesAccountsPage() {
           </section>
         )}
       </section>
-
-      <div
-        className="categories-accounts-resize-divider"
-        role="separator"
-        aria-label="调整分类与账户面板宽度"
-        aria-orientation="vertical"
-        onMouseDown={handleDividerMouseDown}
-      />
-
-      <section className="panel accounts-panel">
+      ) : (
+      <section className="accounts-console-workspace">
         <header className="categories-accounts-head">
-          <h2>账户管理</h2>
+          <div>
+            <span className="categories-console-kicker">CASH & ACCOUNTS</span>
+            <h2>账户管理</h2>
+            <p>余额会随交易自动汇总；需要时双击金额进行校准。</p>
+          </div>
           <div className="categories-accounts-metrics" aria-label="账户统计">
             <span className="metric-chip metric-chip-highlight">
               当前总余额 <strong>{formatCurrencyFixed2(totalBalance)}</strong>
@@ -917,6 +889,7 @@ export function CategoriesAccountsPage() {
           </>
         )}
       </section>
+      )}
 
       <ConfirmDialog
         open={Boolean(pendingDeleteCategoryId)}
