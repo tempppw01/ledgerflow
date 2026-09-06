@@ -26,6 +26,8 @@ const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const REPAYMENT_CACHE_KEY = 'ledgerflow-repayment-advice-cache-v1';
 const MONTHLY_INCOME_CACHE_KEY = 'ledgerflow-repayment-income-cache-v1';
 const INCOME_SAMPLE_LIMIT = 120;
+const WEBANK_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/public/webank.png';
 
 interface RepaymentAdviceCacheItem {
   key: string;
@@ -72,6 +74,40 @@ type RepaymentStrategyType = 'avalanche' | 'snowball' | 'ladder';
 
 type DebtPlanMode = 'structured' | 'manual';
 type DebtEntryMode = 'standard' | 'simple';
+
+type DebtPreset = {
+  id: string;
+  name: string;
+  description: string;
+  type: DebtType;
+  iconUrl?: string;
+  mark: string;
+};
+
+const DEBT_PRESETS: DebtPreset[] = [
+  {
+    id: 'weilidai',
+    name: '微粒贷',
+    description: '贷款模板 · 按账单补充参数',
+    type: 'loan',
+    iconUrl: WEBANK_ICON_URL,
+    mark: '微'
+  },
+  {
+    id: 'consumer-loan',
+    name: '消费贷',
+    description: '通用贷款模板',
+    type: 'loan',
+    mark: '贷'
+  },
+  {
+    id: 'installment',
+    name: '分期贷款',
+    description: '通用分期模板',
+    type: 'loan',
+    mark: '分'
+  }
+];
 
 function createEmptyManualRepayment(previous?: ManualRepaymentItem): ManualRepaymentItem {
   const today = new Date();
@@ -1528,6 +1564,33 @@ export function RepaymentManagementPage() {
     setShowDebtPressurePreview(false);
     setDebtPressurePreview([]);
     if (afterEdit) setEditingDebtId('');
+  }
+
+  function applyDebtPreset(preset: DebtPreset): void {
+    setEditingDebtId('');
+    setDebtEntryMode('standard');
+    setDebtName(preset.name);
+    setDebtType(preset.type);
+    setDebtPlanMode('structured');
+    setDebtBalance('');
+    setDebtBalanceManuallyEdited(false);
+    setDebtAnnualRate('');
+    setDebtMonths('');
+    setDebtTotalPeriods('');
+    setDebtPaidPeriods('');
+    setDebtLoanPrincipal('');
+    setDebtTotalRepayment('');
+    setDebtManualRepayments([]);
+    setDebtBillDay('');
+    setDebtRepaymentDay('');
+    setDebtPaymentAccount('');
+    setDebtRepaymentMethod('custom');
+    setDebtRepaymentRecordMode('manual');
+    setDebtStatus('active');
+    setDebtFormError('');
+    setPrefillHint(
+      `${preset.name}模板已带入。请按实际账单补充剩余本金、利率、剩余期数和还款日；模板不代表官方产品条款。`
+    );
   }
 
   const trimmedDebtName = debtName.trim();
@@ -3168,6 +3231,46 @@ export function RepaymentManagementPage() {
                       完整录入
                     </button>
                   </div>
+                ) : null}
+
+                {!editingDebtId && debtEntryMode === 'standard' ? (
+                  <section className="repayment-debt-presets" aria-label="常用贷款模板">
+                    <div className="repayment-debt-presets-heading">
+                      <strong>常用贷款</strong>
+                      <span>先选模板，再按你的合同补充金额和期限</span>
+                    </div>
+                    <div className="repayment-debt-preset-list">
+                      {DEBT_PRESETS.map((preset) => (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          className="repayment-debt-preset"
+                          onClick={() => applyDebtPreset(preset)}
+                          aria-label={`使用${preset.name}模板`}
+                        >
+                          <span className="repayment-debt-preset-icon" aria-hidden="true">
+                            {preset.iconUrl ? (
+                              <img
+                                src={preset.iconUrl}
+                                alt=""
+                                loading="lazy"
+                                referrerPolicy="no-referrer"
+                              />
+                            ) : (
+                              preset.mark
+                            )}
+                          </span>
+                          <span className="repayment-debt-preset-copy">
+                            <strong>{preset.name}</strong>
+                            <small>{preset.description}</small>
+                          </span>
+                          <span className="repayment-debt-preset-arrow" aria-hidden="true">
+                            →
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
                 ) : null}
 
                 {debtEntryMode === 'standard' ? <>

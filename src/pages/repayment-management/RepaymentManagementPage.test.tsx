@@ -105,6 +105,30 @@ describe('RepaymentManagementPage', () => {
     expect(screen.getByText('暂缓处理')).toBeInTheDocument();
   });
 
+  it('应支持使用微粒贷预设快速开始录入', () => {
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
+    fireEvent.click(screen.getByRole('button', { name: '使用微粒贷模板' }));
+
+    expect(screen.getByDisplayValue('微粒贷')).toBeInTheDocument();
+    expect(screen.getByLabelText('负债类型')).toHaveValue('loan');
+    expect(screen.getByLabelText('年化利率')).toHaveValue(null);
+    expect(screen.getByLabelText('剩余期数')).toHaveValue(null);
+    expect(screen.getByText(/微粒贷模板已带入/)).toBeInTheDocument();
+    expect(
+      document.querySelector(
+        'img[src="https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/public/webank.png"]'
+      )
+    ).toBeInTheDocument();
+  });
+
   it('应支持从未来还款快捷标记当期已还并同步余额', () => {
     appPreferencesMock.state.debts = [
       {
