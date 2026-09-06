@@ -932,6 +932,7 @@ export function RepaymentManagementPage() {
   const [debtSort, setDebtSort] = useState<'due' | 'balance' | 'apr' | 'payment' | 'name'>('due');
   const [debtContextMenu, setDebtContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [showAddDebtModal, setShowAddDebtModal] = useState(false);
+  const [showDebtHealthInfo, setShowDebtHealthInfo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const startEditingDebt = useCallback((item: DebtItem) => {
@@ -1049,6 +1050,18 @@ export function RepaymentManagementPage() {
     () => calculateDebtHealthScore(debtSummary, monthlyIncome),
     [debtSummary, monthlyIncome]
   );
+  const debtHealthExplanation = useMemo(() => {
+    if (monthlyIncome <= 0) {
+      return '尚未设置月收入，暂时无法判断现金流压力，因此显示 0/100。';
+    }
+    if (debtHealthScore >= 80) {
+      return '当前月供占收入的比例较低，现金流压力相对可控。';
+    }
+    if (debtHealthScore >= 60) {
+      return '当前有一定还款压力，建议为每月应还预留稳定资金。';
+    }
+    return '当前还款压力偏高，建议先降低高利率负债或增加可用月收入。';
+  }, [debtHealthScore, monthlyIncome]);
   const debtToIncomeRatio = useMemo(() => {
     if (monthlyIncome <= 0) return 0;
     return debtSummary.totalDebt / (monthlyIncome * 12);
@@ -2283,18 +2296,53 @@ export function RepaymentManagementPage() {
             <article className="repayment-overview-stat repayment-overview-health">
               <p className="finance-overview-label">
                 🩺 负债健康度
-                <span
+                <button
+                  type="button"
                   className="finance-metric-help"
-                  title="健康度≈(1-最低月还款/可用月收入)×100。数值越高，现金流压力越低。"
                   aria-label="负债健康度说明"
+                  aria-expanded={showDebtHealthInfo}
+                  aria-controls="debt-health-explanation"
+                  title="查看负债健康度说明"
+                  onClick={() => setShowDebtHealthInfo((visible) => !visible)}
                 >
                   ⓘ
-                </span>
+                </button>
               </p>
               <p className="finance-overview-value">
                 <span className="finance-overview-number">{debtHealthScore}</span>
                 <span className="finance-overview-unit">/100</span>
               </p>
+              {showDebtHealthInfo ? (
+                <aside
+                  id="debt-health-explanation"
+                  className="repayment-health-explanation"
+                  role="dialog"
+                  aria-label="负债健康度说明"
+                >
+                  <div className="repayment-health-explanation-head">
+                    <strong>负债健康度</strong>
+                    <button
+                      type="button"
+                      aria-label="关闭负债健康度说明"
+                      onClick={() => setShowDebtHealthInfo(false)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <p>{debtHealthExplanation}</p>
+                  <dl>
+                    <div>
+                      <dt>计算对象</dt>
+                      <dd>仅统计进行中的负债，不含已结清、关闭、暂缓和简单提醒。</dd>
+                    </div>
+                    <div>
+                      <dt>评估维度</dt>
+                      <dd>负债总额相对年收入，以及最低月供相对月收入的压力。</dd>
+                    </div>
+                  </dl>
+                  <small>这是现金流参考指标，不是征信评分或授信结论。</small>
+                </aside>
+              ) : null}
             </article>
             <article className="repayment-overview-stat">
               <p className="finance-overview-label">🗂️ 历史负债</p>

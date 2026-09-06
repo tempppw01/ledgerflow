@@ -128,6 +128,38 @@ describe('RepaymentManagementPage', () => {
     expect(appPreferencesMock.state.setMonthlyIncome).toHaveBeenCalledWith(8000);
   });
 
+  it('点击负债健康度说明应展示当前评分依据', () => {
+    appPreferencesMock.state.debts = [
+      {
+        id: 'debt-health-info',
+        name: '健康度测试贷款',
+        type: 'loan',
+        status: 'active',
+        balance: 1800,
+        annualRate: 7.2,
+        remainingMonths: 12,
+        repaymentDay: 10
+      }
+    ];
+
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '负债健康度说明' }));
+
+    expect(screen.getByRole('dialog', { name: '负债健康度说明' })).toBeInTheDocument();
+    expect(screen.getByText(/尚未设置月收入/)).toBeInTheDocument();
+    expect(screen.getByText(/不是征信评分/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '关闭负债健康度说明' }));
+    expect(screen.queryByRole('dialog', { name: '负债健康度说明' })).not.toBeInTheDocument();
+  });
+
   it('应支持使用微粒贷预设快速开始录入', () => {
     render(
       <MemoryRouter initialEntries={['/repayment-management']}>

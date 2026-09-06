@@ -439,6 +439,107 @@
   white-space: nowrap;
 }
 
+.repayment-overview-health {
+  position: relative;
+}
+
+.repayment-overview-health .finance-metric-help {
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.repayment-overview-health .finance-metric-help:hover,
+.repayment-overview-health .finance-metric-help:focus-visible {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  outline: none;
+}
+
+.repayment-health-explanation {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% - 4px);
+  left: 0;
+  width: min(340px, calc(100vw - 32px));
+  margin: 0;
+  padding: 13px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-elevated);
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--color-text-primary) 16%, transparent);
+  color: var(--color-text-primary);
+}
+
+.repayment-health-explanation-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.repayment-health-explanation-head strong {
+  font-size: 13px;
+}
+
+.repayment-health-explanation-head button {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.repayment-health-explanation-head button:hover,
+.repayment-health-explanation-head button:focus-visible {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.repayment-health-explanation p {
+  margin: 9px 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.repayment-health-explanation dl {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+}
+
+.repayment-health-explanation dl > div {
+  display: grid;
+  gap: 2px;
+}
+
+.repayment-health-explanation dt {
+  color: var(--color-text-primary);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.repayment-health-explanation dd,
+.repayment-health-explanation small {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.repayment-health-explanation small {
+  display: block;
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-divider);
+}
+
 .repayment-console .repayment-debt-detail-repay,
 .repayment-console .repayment-debt-detail-records {
   margin-top: 18px;
