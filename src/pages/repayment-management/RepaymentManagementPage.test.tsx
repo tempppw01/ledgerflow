@@ -1,8 +1,13 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { DebtItem, RepaymentRecord } from '../../features/debt/model/debtMetrics';
+import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
 import { RepaymentManagementPage } from './RepaymentManagementPage';
+
+vi.mock('../../features/assistant/api/openaiCompatibleClient', () => ({
+  sendAiChat: vi.fn()
+}));
 
 vi.mock('../../shared/store/useAiSettings', () => ({
   useAiSettings: () => ({
@@ -51,6 +56,7 @@ describe('RepaymentManagementPage', () => {
     appPreferencesMock.state.removeDebt = vi.fn();
     appPreferencesMock.state.removeRepaymentRecord = vi.fn();
     appPreferencesMock.state.updateDebt = vi.fn();
+    vi.mocked(sendAiChat).mockReset();
   });
 
   it('应支持从 AI 信贷管家带入预填负债信息', () => {
@@ -127,6 +133,110 @@ describe('RepaymentManagementPage', () => {
         'img[src="https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/public/webank.png"]'
       )
     ).toBeInTheDocument();
+  });
+
+  it('应展示常见贷款模板并将截图识别结果匹配到对应模板', async () => {
+    vi.mocked(sendAiChat).mockResolvedValueOnce({
+      content: JSON.stringify({
+        debts: [
+          {
+            name: '花呗分期',
+            type: 'credit-card',
+            balance: 3200,
+            remainingMonths: 8,
+            annualRate: 6.5,
+            repaymentDay: 10
+          },
+          {
+            name: '京东金条',
+            type: 'credit-card',
+            balance: 1800
+          }
+        ]
+      }),
+      reasoning: ''
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
+    expect(screen.getByRole('button', { name: '使用借呗模板' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '使用花呗模板' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '使用京东金条模板' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '使用信用卡分期模板' })).toBeInTheDocument();
+
+    const file = new File(['bill'], 'bill.png', { type: 'image/png' });
+    fireEvent.change(screen.getByLabelText('上传负债截图'), {
+      target: { files: [file] }
+    });
+
+    await waitFor(() => expect(appPreferencesMock.state.replaceDebts).toHaveBeenCalledTimes(1));
+    expect(appPreferencesMock.state.replaceDebts).toHaveBeenCalledWith([
+      expect.objectContaining({
+        name: '花呗分期',
+        type: 'consumer-loan',
+        balance: 3200,
+        annualRate: 6.5,
+        remainingMonths: 8,
+        repaymentDay: 10,
+        repaymentMethod: 'custom'
+      }),
+      expect.objectContaining({
+        name: '京东金条',
+        type: 'loan',
+        balance: 1800,
+        annualRate: undefined,
+        remainingMonths: undefined
+      })
+    ]);
+    expect(screen.getByText(/已推荐：花呗、京东金条/)).toBeInTheDocument();
+  });
+
+  it('单笔截图识别时应自动推荐模板并带入新增表单', async () => {
+    vi.mocked(sendAiChat).mockResolvedValueOnce({
+      content: JSON.stringify({
+        debts: [
+          {
+            name: '微粒贷',
+            type: 'credit-card',
+            balance: 5800,
+            annualRate: 7.2,
+            remainingMonths: 10,
+            repaymentDay: 15
+          }
+        ]
+      }),
+      reasoning: ''
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
+    const file = new File(['bill'], 'weilidai.png', { type: 'image/png' });
+    fireEvent.change(screen.getByLabelText('上传负债截图'), {
+      target: { files: [file] }
+    });
+
+    await waitFor(() => expect(screen.getByDisplayValue('微粒贷')).toBeInTheDocument());
+    expect(screen.getByLabelText('负债类型')).toHaveValue('loan');
+    expect(screen.getByLabelText('剩余本金')).toHaveValue(5800);
+    expect(screen.getByLabelText('年化利率')).toHaveValue(7.2);
+    expect(screen.getByLabelText('剩余期数')).toHaveValue(10);
+    expect(screen.getByLabelText('还款日')).toHaveValue(15);
+    expect(screen.getByText(/自动推荐微粒贷模板/)).toBeInTheDocument();
+    expect(appPreferencesMock.state.replaceDebts).not.toHaveBeenCalled();
   });
 
   it('应支持从未来还款快捷标记当期已还并同步余额', () => {

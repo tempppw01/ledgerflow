@@ -53,6 +53,11 @@ type ParsedDebtItem = {
   balance: number;
   annualRate?: number;
   remainingMonths?: number;
+  totalPeriods?: number;
+  paidPeriods?: number;
+  loanPrincipal?: number;
+  totalRepayment?: number;
+  repaymentDay?: number;
 };
 
 type RepaymentPrefillDebt = {
@@ -82,6 +87,7 @@ type DebtPreset = {
   type: DebtType;
   iconUrl?: string;
   mark: string;
+  matchTerms: string[];
 };
 
 const DEBT_PRESETS: DebtPreset[] = [
@@ -91,21 +97,48 @@ const DEBT_PRESETS: DebtPreset[] = [
     description: '贷款模板 · 按账单补充参数',
     type: 'loan',
     iconUrl: WEBANK_ICON_URL,
-    mark: '微'
+    mark: '微',
+    matchTerms: ['微粒贷', '微众银行', 'we2000']
+  },
+  {
+    id: 'jiebei',
+    name: '借呗',
+    description: '贷款模板 · 按账单补充参数',
+    type: 'loan',
+    mark: '借',
+    matchTerms: ['借呗', '蚂蚁借呗']
+  },
+  {
+    id: 'huabei',
+    name: '花呗',
+    description: '消费信贷 · 按账单补充参数',
+    type: 'consumer-loan',
+    mark: '花',
+    matchTerms: ['花呗', '蚂蚁花呗']
+  },
+  {
+    id: 'jd-baitiao',
+    name: '京东金条',
+    description: '贷款模板 · 按账单补充参数',
+    type: 'loan',
+    mark: '东',
+    matchTerms: ['京东金条', '金条']
+  },
+  {
+    id: 'credit-card-installment',
+    name: '信用卡分期',
+    description: '分期模板 · 按账单补充参数',
+    type: 'loan',
+    mark: '分',
+    matchTerms: ['信用卡分期', '账单分期', '消费分期']
   },
   {
     id: 'consumer-loan',
-    name: '消费贷',
-    description: '通用贷款模板',
+    name: '通用消费贷',
+    description: '贷款模板 · 自行填写合同数据',
     type: 'loan',
-    mark: '贷'
-  },
-  {
-    id: 'installment',
-    name: '分期贷款',
-    description: '通用分期模板',
-    type: 'loan',
-    mark: '分'
+    mark: '贷',
+    matchTerms: ['消费贷', '贷款', '借款']
   }
 ];
 
@@ -482,6 +515,42 @@ function normalizeDebtType(value: unknown): DebtType {
   return 'credit-card';
 }
 
+function normalizeOptionalParsedNumber(value: unknown, minimum = 0): number | undefined {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric >= minimum ? numeric : undefined;
+}
+
+function findDebtPreset(name: string): DebtPreset | undefined {
+  const normalizedName = name.trim().toLowerCase();
+  if (!normalizedName) return undefined;
+  return DEBT_PRESETS.find((preset) =>
+    preset.matchTerms.some((term) => normalizedName.includes(term.toLowerCase()))
+  );
+}
+
+function getDebtPresetMatchLabel(name: string): string {
+  return findDebtPreset(name)?.name || '';
+}
+
+function buildRecognizedDebtPayload(item: ParsedDebtItem): Omit<DebtItem, 'id'> {
+  const preset = findDebtPreset(item.name);
+  return {
+    name: item.name,
+    type: preset?.type || item.type,
+    status: 'active',
+    balance: item.balance,
+    annualRate: item.annualRate,
+    remainingMonths: item.remainingMonths,
+    totalPeriods: item.totalPeriods,
+    paidPeriods: item.paidPeriods,
+    loanPrincipal: item.loanPrincipal,
+    totalRepayment: item.totalRepayment,
+    repaymentDay: item.repaymentDay,
+    repaymentMethod: 'custom',
+    repaymentRecordMode: 'manual'
+  };
+}
+
 function parseDebtExtraction(content: string): { monthlyIncome?: number; debts: ParsedDebtItem[] } {
   const parsed = JSON.parse(extractJsonObject(content)) as {
     monthlyIncome?: unknown;
@@ -497,22 +566,38 @@ function parseDebtExtraction(content: string): { monthlyIncome?: number; debts: 
           const balance = Number(row.balance || 0);
           if (!name || !Number.isFinite(balance) || balance <= 0) return null;
 
-          const type = normalizeDebtType(row.type);
-          const annualRateValue = Number(row.annualRate || 0);
+          const preset = findDebtPreset(name);
+          const type = preset?.type || normalizeDebtType(row.type);
           const annualRate =
-            type === 'loan' && Number.isFinite(annualRateValue) && annualRateValue >= 0
-              ? annualRateValue
+            type !== 'credit-card'
+              ? normalizeOptionalParsedNumber(row.annualRate, 0)
               : undefined;
           const monthValue = Math.floor(Number(row.remainingMonths || 0));
           const remainingMonths =
-            type === 'loan' && Number.isFinite(monthValue) && monthValue > 0 ? monthValue : 12;
+            type !== 'credit-card' && Number.isFinite(monthValue) && monthValue > 0
+              ? monthValue
+              : undefined;
+          const totalPeriods = normalizeOptionalParsedNumber(row.totalPeriods, 1);
+          const paidPeriods = normalizeOptionalParsedNumber(row.paidPeriods, 0);
+          const loanPrincipal = normalizeOptionalParsedNumber(row.loanPrincipal, 0);
+          const totalRepayment = normalizeOptionalParsedNumber(row.totalRepayment, 0);
+          const repaymentDayValue = Math.floor(Number(row.repaymentDay || 0));
+          const repaymentDay =
+            Number.isInteger(repaymentDayValue) && repaymentDayValue >= 1 && repaymentDayValue <= 31
+              ? repaymentDayValue
+              : undefined;
 
           return {
             name,
             type,
             balance,
             annualRate,
-            remainingMonths: type === 'loan' ? remainingMonths : undefined
+            remainingMonths: type !== 'credit-card' ? remainingMonths : undefined,
+            totalPeriods,
+            paidPeriods,
+            loanPrincipal,
+            totalRepayment,
+            repaymentDay
           };
         })
         .filter((item): item is ParsedDebtItem => item !== null)
@@ -1593,6 +1678,36 @@ export function RepaymentManagementPage() {
     );
   }
 
+  function applyRecognizedDebtToForm(item: ParsedDebtItem): void {
+    const preset = findDebtPreset(item.name);
+    setEditingDebtId('');
+    setDebtEntryMode('standard');
+    setDebtName(item.name);
+    setDebtType(preset?.type || item.type);
+    setDebtPlanMode('structured');
+    setDebtBalance(getDebtAmountInputValue(item.balance));
+    setDebtBalanceManuallyEdited(true);
+    setDebtAnnualRate(item.annualRate !== undefined ? String(item.annualRate) : '');
+    setDebtMonths(item.remainingMonths !== undefined ? String(item.remainingMonths) : '');
+    setDebtTotalPeriods(item.totalPeriods !== undefined ? String(item.totalPeriods) : '');
+    setDebtPaidPeriods(item.paidPeriods !== undefined ? String(item.paidPeriods) : '');
+    setDebtLoanPrincipal(item.loanPrincipal !== undefined ? String(item.loanPrincipal) : '');
+    setDebtTotalRepayment(item.totalRepayment !== undefined ? String(item.totalRepayment) : '');
+    setDebtManualRepayments([]);
+    setDebtBillDay('');
+    setDebtRepaymentDay(item.repaymentDay !== undefined ? String(item.repaymentDay) : '');
+    setDebtPaymentAccount('');
+    setDebtRepaymentMethod('custom');
+    setDebtRepaymentRecordMode('manual');
+    setDebtStatus('active');
+    setDebtFormError('');
+    setPrefillHint(
+      preset
+        ? `已识别“${item.name}”，自动推荐${preset.name}模板；识别到的字段已带入，请按实际账单核对。`
+        : `已识别“${item.name}”，识别到的字段已带入，请按实际账单核对。`
+    );
+  }
+
   const trimmedDebtName = debtName.trim();
   const simpleAmountValue = Number(simpleAmount);
   const simpleAmountValid =
@@ -2169,7 +2284,7 @@ export function RepaymentManagementPage() {
         messages: [
           {
             role: 'user',
-            text: '请识别截图中的负债信息，并按以下 JSON 输出：{"monthlyIncome": number, "debts": [{"name": string, "type": "credit-card"|"consumer-loan"|"loan", "balance": number, "annualRate": number, "remainingMonths": number}] }。\n要求：\n1) 未提及的字段可省略；\n2) 金额使用数字；\n3) 如果无法确定 type，默认 credit-card。',
+            text: '请识别截图中的负债信息，并按以下 JSON 输出：{"monthlyIncome": number, "debts": [{"name": string, "type": "credit-card"|"consumer-loan"|"loan", "balance": number, "annualRate": number, "remainingMonths": number, "totalPeriods": number, "paidPeriods": number, "loanPrincipal": number, "totalRepayment": number, "repaymentDay": number}] }。\n要求：\n1) 未提及的字段必须省略，不要猜测；\n2) 金额使用数字；\n3) 识别到花呗、借呗、微粒贷、京东金条、信用卡分期等名称时保留原名称；\n4) 如果无法确定 type，默认 credit-card。',
             imageDataUrl
           }
         ]
@@ -2181,7 +2296,12 @@ export function RepaymentManagementPage() {
         return;
       }
 
-      replaceDebts(payload.debts);
+      const recognizedPayload = payload.debts.map(buildRecognizedDebtPayload);
+      if (showAddDebtModal && payload.debts.length === 1) {
+        applyRecognizedDebtToForm(payload.debts[0]);
+      } else {
+        replaceDebts(recognizedPayload);
+      }
       setExtractSuccess(true);
       window.setTimeout(() => setExtractSuccess(false), 1400);
       if (typeof payload.monthlyIncome === 'number') {
@@ -2192,7 +2312,25 @@ export function RepaymentManagementPage() {
 
       setRepaymentAdvice('');
       setRepaymentReasoning('');
-      setRepaymentCacheHint('已根据截图更新负债信息，请点击“生成 AI 还款建议”。');
+      const matchedPresets = Array.from(
+        new Set(payload.debts.map((item) => getDebtPresetMatchLabel(item.name)).filter(Boolean))
+      );
+      setRepaymentCacheHint(
+        showAddDebtModal && payload.debts.length === 1
+          ? matchedPresets.length > 0
+            ? `已推荐模板：${matchedPresets.join('、')}，识别到的字段已带入新增表单，请核对后保存。`
+            : '识别到的字段已带入新增表单，请核对后保存。'
+          : matchedPresets.length > 0
+            ? `已根据截图更新负债信息，并推荐模板：${matchedPresets.join('、')}。已带入识别到的金额、利率、期数和还款日，请核对后再生成建议。`
+            : '已根据截图更新负债信息。未匹配到常用模板，已保留识别到的字段，请核对后再生成建议。'
+      );
+      if (!(showAddDebtModal && payload.debts.length === 1)) {
+        setPrefillHint(
+          matchedPresets.length > 0
+            ? `截图识别完成，已推荐：${matchedPresets.join('、')}；识别到的字段已带入，请按账单核对。`
+            : '截图识别完成，已带入识别到的字段；请按账单核对。'
+        );
+      }
     } catch (err) {
       setError((err as Error).message || '截图识别失败，请稍后再试。');
     } finally {
