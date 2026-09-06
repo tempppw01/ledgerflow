@@ -46,6 +46,7 @@ vi.mock('../../shared/store/useAppPreferences', () => ({
 
 describe('RepaymentManagementPage', () => {
   beforeEach(() => {
+    window.localStorage.removeItem('ledgerflow-repayment-collapse-state-v1');
     appPreferencesMock.state.debts = [];
     appPreferencesMock.state.repaymentRecords = [];
     appPreferencesMock.state.monthlyIncome = 0;
@@ -510,5 +511,72 @@ describe('RepaymentManagementPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
     expect(screen.queryByText('宽限期')).not.toBeInTheDocument();
+  });
+
+  it('会按负债记住更多详情的展开状态', async () => {
+    appPreferencesMock.state.debts = [
+      {
+        id: 'debt-collapse-details',
+        name: '展开状态测试贷款',
+        type: 'loan',
+        status: 'active',
+        balance: 1800,
+        annualRate: 7.2,
+        remainingMonths: 12,
+        repaymentDay: 10
+      }
+    ];
+
+    const page = () => (
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    const firstRender = render(page());
+    const details = screen.getByText('更多详情', { exact: true }).closest('details');
+
+    expect(details).not.toHaveAttribute('open');
+    fireEvent.click(screen.getByText('更多详情', { exact: true }));
+    expect(details).toHaveAttribute('open');
+    await waitFor(() => {
+      expect(window.localStorage.getItem('ledgerflow-repayment-collapse-state-v1')).toContain(
+        'debt-collapse-details'
+      );
+    });
+    firstRender.unmount();
+
+    render(page());
+    expect(screen.getByText('更多详情', { exact: true }).closest('details')).toHaveAttribute('open');
+  });
+
+  it('会在重新打开页面后保留策略分析和表单更多设置的展开状态', async () => {
+    const page = () => (
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    const firstRender = render(page());
+
+    fireEvent.click(screen.getByText('查看完整分析', { exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
+    fireEvent.click(screen.getByText('更多设置', { exact: true }));
+
+    expect(screen.getByText('查看完整分析', { exact: true }).closest('details')).toHaveAttribute('open');
+    expect(screen.getByText('更多设置', { exact: true }).closest('details')).toHaveAttribute('open');
+    await waitFor(() => {
+      expect(window.localStorage.getItem('ledgerflow-repayment-collapse-state-v1')).toContain(
+        'debtFormMoreSettingsOpen'
+      );
+    });
+    firstRender.unmount();
+
+    render(page());
+    expect(screen.getByText('查看完整分析', { exact: true }).closest('details')).toHaveAttribute('open');
+    fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
+    expect(screen.getByText('更多设置', { exact: true }).closest('details')).toHaveAttribute('open');
   });
 });

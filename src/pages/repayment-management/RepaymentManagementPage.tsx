@@ -24,6 +24,7 @@ import { RepaymentDashboard } from '../../features/debt/components/RepaymentDash
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const REPAYMENT_CACHE_KEY = 'ledgerflow-repayment-advice-cache-v1';
+const REPAYMENT_COLLAPSE_STATE_KEY = 'ledgerflow-repayment-collapse-state-v1';
 interface RepaymentAdviceCacheItem {
   key: string;
   advice: string;
@@ -32,6 +33,20 @@ interface RepaymentAdviceCacheItem {
 }
 
 type RepaymentAdviceCache = Record<string, RepaymentAdviceCacheItem>;
+
+type RepaymentCollapseState = {
+  aiDetailsOpen: boolean;
+  debtMoreDetailsOpenById: Record<string, boolean>;
+  debtFormMoreSettingsOpen: boolean;
+  reasoningOpen: boolean;
+};
+
+const DEFAULT_REPAYMENT_COLLAPSE_STATE: RepaymentCollapseState = {
+  aiDetailsOpen: false,
+  debtMoreDetailsOpenById: {},
+  debtFormMoreSettingsOpen: false,
+  reasoningOpen: false
+};
 
 type ParsedDebtItem = {
   name: string;
@@ -436,6 +451,43 @@ function writeCache(next: RepaymentAdviceCache) {
     window.localStorage.setItem(REPAYMENT_CACHE_KEY, JSON.stringify(next));
   } catch {
     // ignore
+  }
+}
+
+function readRepaymentCollapseState(): RepaymentCollapseState {
+  try {
+    const raw = window.localStorage.getItem(REPAYMENT_COLLAPSE_STATE_KEY);
+    if (!raw) return DEFAULT_REPAYMENT_COLLAPSE_STATE;
+    const parsed = JSON.parse(raw) as Partial<RepaymentCollapseState> | null;
+    if (!parsed || typeof parsed !== 'object') return DEFAULT_REPAYMENT_COLLAPSE_STATE;
+
+    const debtMoreDetailsOpenById =
+      parsed.debtMoreDetailsOpenById && typeof parsed.debtMoreDetailsOpenById === 'object'
+        ? Object.entries(parsed.debtMoreDetailsOpenById).reduce<Record<string, boolean>>(
+            (result, [id, isOpen]) => {
+              if (typeof isOpen === 'boolean') result[id] = isOpen;
+              return result;
+            },
+            {}
+          )
+        : {};
+
+    return {
+      aiDetailsOpen: parsed.aiDetailsOpen === true,
+      debtMoreDetailsOpenById,
+      debtFormMoreSettingsOpen: parsed.debtFormMoreSettingsOpen === true,
+      reasoningOpen: parsed.reasoningOpen === true
+    };
+  } catch {
+    return DEFAULT_REPAYMENT_COLLAPSE_STATE;
+  }
+}
+
+function writeRepaymentCollapseState(next: RepaymentCollapseState) {
+  try {
+    window.localStorage.setItem(REPAYMENT_COLLAPSE_STATE_KEY, JSON.stringify(next));
+  } catch {
+    // The page remains fully usable when storage is unavailable or full.
   }
 }
 
@@ -933,7 +985,14 @@ export function RepaymentManagementPage() {
   const [debtContextMenu, setDebtContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [showAddDebtModal, setShowAddDebtModal] = useState(false);
   const [showDebtHealthInfo, setShowDebtHealthInfo] = useState(false);
+  const [repaymentCollapseState, setRepaymentCollapseState] = useState<RepaymentCollapseState>(
+    readRepaymentCollapseState
+  );
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    writeRepaymentCollapseState(repaymentCollapseState);
+  }, [repaymentCollapseState]);
 
   const startEditingDebt = useCallback((item: DebtItem) => {
     setEditingDebtId(item.id);
@@ -2713,7 +2772,20 @@ export function RepaymentManagementPage() {
                       </div>
                     </div>
 
-                    <details className="repayment-debt-more-details">
+                    <details
+                      className="repayment-debt-more-details"
+                      open={repaymentCollapseState.debtMoreDetailsOpenById[selectedDebtId] === true}
+                      onToggle={(event) => {
+                        const isOpen = event.currentTarget.open;
+                        setRepaymentCollapseState((current) => ({
+                          ...current,
+                          debtMoreDetailsOpenById: {
+                            ...current.debtMoreDetailsOpenById,
+                            [selectedDebtId]: isOpen
+                          }
+                        }));
+                      }}
+                    >
                       <summary>更多详情 <small>利息、账户、期数等</small></summary>
                       <div className="repayment-debt-detail-metrics repayment-debt-detail-metrics-secondary">
                     <div className="repayment-debt-metric">
@@ -2946,7 +3018,17 @@ export function RepaymentManagementPage() {
             <p className="muted repayment-ai-hint">{repaymentCacheHint}</p>
           ) : null}
 
-          <details className="repayment-ai-details">
+          <details
+            className="repayment-ai-details"
+            open={repaymentCollapseState.aiDetailsOpen}
+            onToggle={(event) => {
+              const isOpen = event.currentTarget.open;
+              setRepaymentCollapseState((current) => ({
+                ...current,
+                aiDetailsOpen: isOpen
+              }));
+            }}
+          >
             <summary>
               <span>查看完整分析</span>
               <small>优先级 · 三种策略 · 风险 · 到期</small>
@@ -3125,7 +3207,17 @@ export function RepaymentManagementPage() {
                 </p>
               )}
               {repaymentReasoning ? (
-                <details style={{ marginTop: 10 }}>
+                <details
+                  style={{ marginTop: 10 }}
+                  open={repaymentCollapseState.reasoningOpen}
+                  onToggle={(event) => {
+                    const isOpen = event.currentTarget.open;
+                    setRepaymentCollapseState((current) => ({
+                      ...current,
+                      reasoningOpen: isOpen
+                    }));
+                  }}
+                >
                   <summary style={{ cursor: 'pointer' }}>查看模型思考摘要</summary>
                   <div className="finance-ai-result">
                     {renderAiStructuredText(repaymentReasoning)}
@@ -3371,7 +3463,17 @@ export function RepaymentManagementPage() {
                   ) : null}
 
                   <div className="debt-form-fields debt-form-fields--conditional">
-                    <details className="debt-form-extra">
+                    <details
+                      className="debt-form-extra"
+                      open={repaymentCollapseState.debtFormMoreSettingsOpen}
+                      onToggle={(event) => {
+                        const isOpen = event.currentTarget.open;
+                        setRepaymentCollapseState((current) => ({
+                          ...current,
+                          debtFormMoreSettingsOpen: isOpen
+                        }));
+                      }}
+                    >
                       <summary>更多设置 <small>还款日和记录方式</small></summary>
                       <div className="debt-form-extra-grid">
                       <label className="debt-form-field">
