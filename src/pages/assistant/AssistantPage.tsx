@@ -1036,13 +1036,6 @@ export function AssistantPage() {
     };
   }, [accounts, previousMonthKey, thisMonthKey, todayKey, transactions]);
 
-  const hasCreditContextContent =
-    chatHistory.length > 0 ||
-    wb.imageDataUrls.length > 0 ||
-    wb.pdfDataUrls.length > 0 ||
-    wb.rawContent.trim().length > 0 ||
-    wb.textInput.trim().length > 0;
-
   const shouldShowIntroIllustration = !chatHistory.some((item) => item.role === 'user');
   const regularComposerExpanded =
     composerFocused ||
@@ -1707,8 +1700,11 @@ export function AssistantPage() {
         <div className={`chat-messages-inner ${isWideLayout ? 'is-wide' : ''}`}>
           {!wb.hasApiKey ? (
             <section className="chat-key-required">
-              <h3>{t('assistant.ui.needApiKeyTitle')}</h3>
-              <p>{t('assistant.ui.needApiKeyDesc')}</p>
+              <div className="chat-key-required-icon" aria-hidden="true">⌁</div>
+              <div className="chat-key-required-copy">
+                <h3>{t('assistant.ui.needApiKeyTitle')}</h3>
+                <p>{t('assistant.ui.needApiKeyDesc')}</p>
+              </div>
               <Link className="chat-key-required-link" to="/settings">
                 {t('assistant.ui.goSettings')}
               </Link>
@@ -1716,19 +1712,29 @@ export function AssistantPage() {
           ) : null}
 
           {mode === 'bookkeeping' ? (
-            <section className="chat-kawaii-panel chat-bookkeeping-panel">
-              <div className="chat-bookkeeping-copy">
-                <div className="chat-kawaii-topline">今天 {todayLabel}</div>
-                <div className="chat-kawaii-amount">¥0.00</div>
-                <div className="chat-kawaii-sub">本轮准备记账 · 一句话也能生成账单，主打一个不拖延 ✨</div>
-                <div className="chat-kawaii-mascot" aria-hidden>
-                  <span>૮₍ ˶•⤙•˶ ₎ა</span>
-                  <small>来嘛来嘛，点我就能秒记账～我很快，你别怕。</small>
+            <section className="chat-mode-welcome chat-bookkeeping-welcome" aria-label="AI 记账">
+              <div className="chat-mode-welcome-copy">
+                <div className="chat-mode-welcome-eyebrow">AI 记账 <span>·</span> 今天 {todayLabel}</div>
+                <h2>把今天的每一笔，<em>轻松记下来</em></h2>
+                <p>说一句“午饭 28 元”，或直接放一张账单截图；其余的分类、金额和日期交给我。</p>
+                <div className="chat-mode-welcome-features">
+                  <div>
+                    <b>01</b>
+                    <span>一句话记账<small>自然语言也能识别</small></span>
+                  </div>
+                  <div>
+                    <b>02</b>
+                    <span>账单截图<small>自动提取待确认信息</small></span>
+                  </div>
+                  <div>
+                    <b>03</b>
+                    <span>保存前核对<small>每笔账都由你确认</small></span>
+                  </div>
                 </div>
               </div>
               {shouldShowIntroIllustration ? (
                 <img
-                  className="chat-assistant-intro-illustration chat-bookkeeping-illustration"
+                  className="chat-mode-welcome-illustration chat-bookkeeping-illustration"
                   src={ASSISTANT_INTRO_ILLUSTRATION_URL}
                   alt=""
                   aria-hidden="true"
@@ -1736,80 +1742,58 @@ export function AssistantPage() {
               ) : null}
             </section>
           ) : mode === 'credit' ? (
-            <section className="chat-kawaii-panel chat-assistant-panel chat-credit-panel">
-              <div className="chat-assistant-layout">
-                <div className="chat-assistant-layout-main">
-                  <div className="chat-assistant-hero">
-                    <h2>💳 你好，我是你的 AI 信贷管家</h2>
-                    <p>贷款、花呗、分期、信用账单都可以丢给我。我先帮你把“到底欠什么、先还什么、哪里还没补齐”讲明白。</p>
+            <section className="chat-mode-welcome chat-credit-welcome" aria-label="AI 信贷管家">
+              <div className="chat-mode-welcome-copy">
+                <div className="chat-mode-welcome-eyebrow">AI 信贷管家 <span>·</span> 从看清开始</div>
+                <h2>每一笔该还什么，<em>心里都有数</em></h2>
+                <p>贷款、花呗、分期和信用账单都可以交给我。我会先理清本期应还、还款日和还缺哪些资料。</p>
+                <div className="chat-mode-welcome-features">
+                  <div>
+                    <b>01</b>
+                    <span>识别账单<small>提取金额、日期和期数</small></span>
                   </div>
-                  {shouldShowIntroIllustration ? (
-                    <img
-                      className="chat-assistant-intro-illustration chat-credit-illustration"
-                      src={ASSISTANT_INTRO_ILLUSTRATION_URL}
-                      alt=""
-                      aria-hidden="true"
-                    />
-                  ) : null}
-                  {hasCreditContextContent ? (
-                    <div className="chat-insight-section" aria-label="优先处理">
-                      <div className="chat-insight-section-head">
-                        <h3>🧭 优先处理</h3>
-                        <span>应还 / 待核对 / 风险点</span>
-                      </div>
-                      <div className="chat-push-insights">
-                        <article className="chat-push-insight-item warning">
-                          <h4>先把本月应还摸清</h4>
-                          <p>你可以直接贴花呗、信用卡分期、消费贷截图，我先帮你提炼应还金额、还款日和剩余期数。</p>
-                        </article>
-                        <article className="chat-push-insight-item">
-                          <h4>把模糊负债说清楚</h4>
-                          <p>如果你只记得“大概有几笔分期”，也没关系，我会先帮你整理成待补充清单。</p>
-                        </article>
-                      </div>
-                    </div>
-                  ) : null}
+                  <div>
+                    <b>02</b>
+                    <span>核对本期应还<small>把待确认的信息标出来</small></span>
+                  </div>
+                  <div>
+                    <b>03</b>
+                    <span>整理还款计划<small>保存前始终由你确认</small></span>
+                  </div>
                 </div>
               </div>
+              {shouldShowIntroIllustration ? (
+                <img
+                  className="chat-mode-welcome-illustration chat-credit-illustration"
+                  src={ASSISTANT_INTRO_ILLUSTRATION_URL}
+                  alt=""
+                  aria-hidden="true"
+                />
+              ) : null}
             </section>
           ) : (
-            <section className="chat-kawaii-panel chat-assistant-panel chat-assistant-panel-qa">
-              <div className="chat-assistant-layout">
-                <div className="chat-assistant-layout-main">
-                  <div className="chat-assistant-hero">
-                    <div className="chat-assistant-title-row">
-                      <h2>AI 助手</h2>
-                      <span className="chat-assistant-hero-illustration" aria-hidden="true" />
+            <section className="chat-mode-welcome chat-general-welcome" aria-label="AI 助手">
+              <div className="chat-mode-welcome-copy">
+                <div className="chat-mode-welcome-eyebrow">AI 助手 <span>·</span> 把数据讲明白</div>
+                <h2>账本里的事情，<em>一起理一理</em></h2>
+                <p>问账本、看趋势、做取舍。我会先给你结论，再把值得关注的地方讲清楚。</p>
+                <div className="chat-mode-welcome-features">
+                  {assistantOverview.monthlyBriefs.slice(0, 3).map((item, index) => (
+                    <div key={item.label}>
+                      <b>0{index + 1}</b>
+                      <span>{item.label}<small>{item.value}</small></span>
                     </div>
-                    <p>问账本、看趋势、做取舍，我来提炼重点和下一步。</p>
-                  </div>
-                  {shouldShowIntroIllustration ? (
-                    <img
-                      className="chat-assistant-intro-illustration"
-                      src={ASSISTANT_INTRO_ILLUSTRATION_URL}
-                      alt=""
-                      aria-hidden="true"
-                    />
-                  ) : null}
-                </div>
-
-                <div className="chat-assistant-layout-side">
-                  <div className="chat-insight-section" aria-label="本月总结">
-                    <div className="chat-insight-section-head">
-                      <h3>📈 本月</h3>
-                      <span>一眼看懂</span>
-                    </div>
-                    <div className="chat-auto-insight-block chat-auto-insight-block-brief">
-                      {assistantOverview.monthlyBriefs.map((item) => (
-                        <p key={item.label}>
-                          <span>{item.label}</span>
-                          <strong>{item.value}</strong>
-                        </p>
-                      ))}
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
+              {shouldShowIntroIllustration ? (
+                <img
+                  className="chat-mode-welcome-illustration"
+                  src={ASSISTANT_INTRO_ILLUSTRATION_URL}
+                  alt=""
+                  aria-hidden="true"
+                />
+              ) : null}
             </section>
           )}
 
