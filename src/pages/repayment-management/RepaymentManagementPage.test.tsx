@@ -7,7 +7,8 @@ import { RepaymentManagementPage } from './RepaymentManagementPage';
 import {
   ANYIHUA_ICON_URL,
   BAITIAO_ICON_URL,
-  JIEBEI_ICON_URL
+  JIEBEI_ICON_URL,
+  QIFUJIETIAO_ICON_URL
 } from '../../shared/config/brandAssets';
 
 vi.mock('../../features/assistant/api/openaiCompatibleClient', () => ({
@@ -210,6 +211,24 @@ describe('RepaymentManagementPage', () => {
         'img[src="https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/public/fangxinjie.png"]'
       )
     ).toBeInTheDocument();
+  });
+
+  it('应支持使用奇富借条预设快速开始录入并带入品牌图标', () => {
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
+    fireEvent.click(screen.getByRole('button', { name: '使用奇富借条模板' }));
+
+    expect(screen.getByDisplayValue('奇富借条')).toBeInTheDocument();
+    expect(screen.getByLabelText('负债类型')).toHaveValue('loan');
+    expect(screen.getByText(/奇富借条模板已带入/)).toBeInTheDocument();
+    expect(document.querySelector(`img[src="${QIFUJIETIAO_ICON_URL}"]`)).toBeInTheDocument();
   });
 
   it('保存微粒贷模板后应把品牌图标写入负债数据', () => {

@@ -22,6 +22,7 @@ import {
   FANGXINJIE_ICON_URL,
   IMAGE_ICON_URL,
   JIEBEI_ICON_URL,
+  QIFUJIETIAO_ICON_URL,
   WEBANK_ICON_URL
 } from '../../shared/config/brandAssets';
 import { formatCurrency } from '../../shared/lib/format';
@@ -159,6 +160,15 @@ const DEBT_PRESETS: DebtPreset[] = [
     iconUrl: FANGXINJIE_ICON_URL,
     mark: '抖',
     matchTerms: ['抖音放心借', '放心借']
+  },
+  {
+    id: 'qifu-jietiao',
+    name: '奇富借条',
+    description: '贷款模板 · 按账单补充参数',
+    type: 'loan',
+    iconUrl: QIFUJIETIAO_ICON_URL,
+    mark: '奇',
+    matchTerms: ['奇富借条', '奇富', '360借条', '360借款']
   },
   {
     id: 'credit-card-installment',
@@ -2353,7 +2363,7 @@ export function RepaymentManagementPage() {
         messages: [
           {
             role: 'user',
-            text: '请识别截图中的负债信息，并按以下 JSON 输出：{"debts": [{"name": string, "type": "credit-card"|"consumer-loan"|"loan", "balance": number, "annualRate": number, "remainingMonths": number, "totalPeriods": number, "paidPeriods": number, "loanPrincipal": number, "totalRepayment": number, "repaymentDay": number}] }。\n要求：\n1) 未提及的字段必须省略，不要猜测；\n2) 金额使用数字；\n3) 识别到花呗、借呗、微粒贷、京东白条、京东金条、安逸花、抖音放心借、信用卡分期等名称时保留原名称；\n4) 如果无法确定 type，默认 credit-card。',
+            text: '请识别截图中的负债信息，并按以下 JSON 输出：{"debts": [{"name": string, "type": "credit-card"|"consumer-loan"|"loan", "balance": number, "annualRate": number, "remainingMonths": number, "totalPeriods": number, "paidPeriods": number, "loanPrincipal": number, "totalRepayment": number, "repaymentDay": number}] }。\n要求：\n1) 未提及的字段必须省略，不要猜测；\n2) 金额使用数字；\n3) 识别到花呗、借呗、微粒贷、京东白条、京东金条、安逸花、抖音放心借、奇富借条、信用卡分期等名称时保留原名称；\n4) 如果无法确定 type，默认 credit-card。',
             imageDataUrl
           }
         ]
