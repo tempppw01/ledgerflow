@@ -732,6 +732,28 @@ describe('RepaymentManagementPage', () => {
     expect(screen.getByText(/从下一笔待还（第 9 期）开始填写/)).toBeInTheDocument();
   });
 
+  it('手动添加期数时不沿用上一期金额', () => {
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
+    fireEvent.change(screen.getByLabelText('负债类型'), { target: { value: 'loan' } });
+    fireEvent.click(screen.getByRole('tab', { name: '手动逐期' }));
+
+    fireEvent.change(screen.getByLabelText('还款金额'), { target: { value: '6000' } });
+    fireEvent.click(screen.getByRole('button', { name: '+ 添加期数' }));
+
+    const amounts = screen.getAllByLabelText('还款金额');
+    expect(amounts).toHaveLength(2);
+    expect(amounts[0]).toHaveValue(6000);
+    expect(amounts[1]).toHaveValue(null);
+  });
+
   it('选中单笔负债时会展示内建的未来还款走势', () => {
     appPreferencesMock.state.debts = [
       {

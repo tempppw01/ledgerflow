@@ -207,7 +207,9 @@ function createEmptyManualRepayment(
   return {
     id: `manual-repayment-temp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     dueDate: toISODate(nextDueDate),
-    amount: previous ? Math.max(0, Number(previous.amount) || 0) : 0,
+    // The due date can safely follow the previous period, but the amount is a
+    // user decision. Keep a new row blank; “同额” remains the explicit opt-in.
+    amount: 0,
     label: ''
   };
 }
