@@ -190,6 +190,28 @@ describe('RepaymentManagementPage', () => {
     ).toBeInTheDocument();
   });
 
+  it('应支持使用抖音放心借预设快速开始录入', () => {
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
+    fireEvent.click(screen.getByRole('button', { name: '使用抖音放心借模板' }));
+
+    expect(screen.getByDisplayValue('抖音放心借')).toBeInTheDocument();
+    expect(screen.getByLabelText('负债类型')).toHaveValue('loan');
+    expect(screen.getByText(/抖音放心借模板已带入/)).toBeInTheDocument();
+    expect(
+      document.querySelector(
+        'img[src="https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/public/fangxinjie.png"]'
+      )
+    ).toBeInTheDocument();
+  });
+
   it('保存微粒贷模板后应把品牌图标写入负债数据', () => {
     render(
       <MemoryRouter initialEntries={['/repayment-management']}>

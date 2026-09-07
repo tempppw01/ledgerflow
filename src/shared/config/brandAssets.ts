@@ -126,6 +126,9 @@ export const BAITIAO_ICON_URL =
 export const ANYIHUA_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/public/msxf.png';
 
+export const FANGXINJIE_ICON_URL =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/public/fangxinjie.png';
+
 export const CARD_SD_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/card-sd.svg';
 
