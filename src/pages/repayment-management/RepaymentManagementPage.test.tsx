@@ -732,6 +732,12 @@ describe('RepaymentManagementPage', () => {
     expect(screen.getByRole('slider', { name: '查看还款期次' })).toHaveValue('1');
     fireEvent.click(screen.getByRole('button', { name: '还款后本金' }));
     expect(screen.getByRole('button', { name: '还款后本金' })).toHaveAttribute('aria-pressed', 'true');
+    const chart = screen.getByRole('slider', { name: '查看还款期次' }).closest('.debt-pressure-chart')!;
+    fireEvent.pointerEnter(chart.querySelectorAll('.debt-pressure-hit-area')[2]);
+    expect(screen.getByRole('tooltip')).toHaveTextContent('还款后本金');
+    expect(screen.getByRole('slider', { name: '查看还款期次' })).toHaveValue('2');
+    fireEvent.pointerLeave(chart.querySelector('.debt-pressure-plot')!);
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
     expect(screen.getByText('2026/12')).toBeInTheDocument();
   });
 });

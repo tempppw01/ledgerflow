@@ -835,3 +835,22 @@
 .debt-pressure-period { display: flex; align-items: center; gap: 12px; font-size: 12px; margin-top: 10px; }
 .debt-pressure-period input[type='range'] { min-width: 0; flex: 1; width: 0; height: 28px; padding: 0; accent-color: var(--color-primary); }
 .debt-pressure-footnote { margin-top: 6px; font-size: 12px; color: var(--color-text-secondary); overflow-wrap: anywhere; }
+.debt-pressure-plot { position: relative; }
+.debt-pressure-hit-area { cursor: crosshair; }
+.debt-pressure-tooltip {
+  position: absolute;
+  top: 0;
+  z-index: 2;
+  pointer-events: none;
+  display: grid;
+  gap: 4px;
+  max-width: min(240px, 100%);
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.debt-pressure-tooltip strong { font-size: 14px; font-variant-numeric: tabular-nums; }

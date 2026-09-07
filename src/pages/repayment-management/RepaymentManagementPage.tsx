@@ -323,6 +323,7 @@ function DebtPressureChart({
 }) {
   const [metric, setMetric] = useState<'amount' | 'remaining'>('amount');
   const [selected, setSelected] = useState(0);
+  const [showTooltip, setShowTooltip] = useState(false);
   const activeIndex = Math.min(selected, Math.max(0, points.length - 1));
   const active = points[activeIndex];
   const width = 680;
@@ -362,7 +363,11 @@ function DebtPressureChart({
         <span>{active.period} · {active.dueDate}</span>
         <strong>{formatCurrency(active[metric])}</strong>
       </div>
-      <div className="debt-pressure-plot">
+      <div className="debt-pressure-plot" onPointerLeave={() => setShowTooltip(false)}>
+      {showTooltip ? <div role="tooltip" className="debt-pressure-tooltip" style={{ [activeIndex < points.length / 2 ? 'right' : 'left']: 0 }}>
+        <span>{active.period} · {active.dueDate}</span>
+        <strong>{metric === 'amount' ? '本期还款' : '还款后本金'} {formatCurrency(active[metric])}</strong>
+      </div> : null}
       <div className="debt-pressure-scale"><span>{formatCurrency(metric === 'amount' ? maxAmount : maxRemaining)}</span><span>0</span></div>
       <svg
         role="img"
@@ -390,6 +395,15 @@ function DebtPressureChart({
           />}
           </g>
         ))}
+        {points.map((item, index) => {
+          const left = index === 0 ? 0 : (xFor(index - 1) + xFor(index)) / 2;
+          const right = index === points.length - 1 ? width : (xFor(index) + xFor(index + 1)) / 2;
+          const reveal = () => { setSelected(index); setShowTooltip(true); };
+          return <rect key={`hit-${index}`} x={left} y={0} width={right - left} height={height}
+            fill="transparent" className="debt-pressure-hit-area"
+            onPointerEnter={reveal} onPointerMove={reveal} onPointerDown={reveal}
+            aria-label={`${item.period}，${item.dueDate}，${formatCurrency(item[metric])}`} />;
+        })}
       </svg>
       </div>
       <div className="debt-pressure-dates"><span>{formatChartDate(points[0].dueDate)}</span><span>{points.length > 1 ? formatChartDate(points[points.length - 1].dueDate) : ''}</span></div>
