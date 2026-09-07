@@ -1,0 +1,66 @@
+/* Shared mobile navigation: continuous surfaces, compact shortcuts, readable rows. */
+@media (max-width: 768px) {
+  .mobile-nav-drawer {
+    --mobile-nav-gutter: 20px;
+    width: min(380px, 92vw);
+    height: 100dvh;
+    padding: max(16px, env(safe-area-inset-top)) var(--mobile-nav-gutter) max(24px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+    box-shadow: none;
+  }
+  .mobile-nav-drawer > * { flex-shrink: 0; min-width: 0; }
+  .mobile-nav-profile { padding: 0 0 20px; margin: 0; }
+  .mobile-nav-profile-copy { min-width: 0; }
+  .mobile-nav-name { font-size: 18px; overflow-wrap: anywhere; }
+  .mobile-nav-subtitle { font-size: 12px; line-height: 1.5; }
+  .mobile-nav-header .icon-btn { width: 44px; height: 44px; flex-shrink: 0; display: grid; place-items: center; border: 0; background: none; box-shadow: none; }
+  .mobile-nav-drawer .mobile-nav-summary-card,
+  .mobile-nav-drawer .mobile-nav-grid-card,
+  .mobile-nav-drawer .mobile-nav-insight-card {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0;
+    padding: 18px 0;
+    border-top: 1px solid var(--color-divider);
+  }
+  .mobile-nav-summary-card h3 { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 10px; }
+  .mobile-nav-summary-card p:first-of-type { font-size: 22px; font-weight: 650; color: var(--color-text); margin-bottom: 6px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .mobile-nav-summary-card p:last-child { font-size: 12px; line-height: 1.6; }
+  .mobile-nav-grid-card h3 { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); margin: 0 0 10px; }
+  .mobile-nav-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 8px; }
+  .mobile-nav-drawer .mobile-nav-grid-item {
+    min-height: 72px;
+    padding: 10px 2px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    box-shadow: none;
+    gap: 8px;
+    transform: none;
+  }
+  .mobile-nav-grid-item strong { font-size: 12px; line-height: 1.5; font-weight: 500; overflow-wrap: anywhere; }
+  .mobile-nav-grid-icon { width: 23px; height: 23px; flex-shrink: 0; }
+  .mobile-nav-drawer .mobile-nav-grid-item:hover,
+  .mobile-nav-drawer .mobile-nav-grid-item.active { background: var(--color-bg-subtle); box-shadow: none; color: var(--color-primary); }
+  .mobile-nav-drawer .mobile-nav-grid-item:focus-visible,
+  .mobile-nav-drawer .mobile-nav-insight-link:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+  .mobile-nav-grid-card ~ .mobile-nav-grid-card .mobile-nav-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .mobile-nav-grid-card ~ .mobile-nav-grid-card .mobile-nav-grid-item { min-height: 48px; flex-direction: row; justify-content: flex-start; text-align: left; padding: 10px 4px; gap: 14px; }
+  .mobile-nav-grid-card ~ .mobile-nav-grid-card .mobile-nav-grid-item strong { font-size: 14px; }
+  .mobile-nav-grid-card ~ .mobile-nav-grid-card .mobile-nav-grid-item::after { content: '›'; margin-left: auto; color: var(--color-text-tertiary); font-size: 18px; }
+  .mobile-nav-drawer .mobile-nav-insight-card { order: 1; gap: 4px; }
+  .mobile-nav-insight-icon,
+  .mobile-nav-insight-copy small,
+  .mobile-nav-insight-copy p { display: none; }
+  .mobile-nav-insight-copy strong { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); }
+  .mobile-nav-drawer .mobile-nav-insight-link { min-height: 44px; border: 0; border-radius: 0; background: transparent; box-shadow: none; padding: 0; font-size: 13px; }
+  .mobile-nav-drawer .motion-pill-btn::before,
+  .mobile-nav-drawer .motion-pill-btn::after { box-shadow: none; background: none; }
+}

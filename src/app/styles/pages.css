@@ -1699,6 +1699,29 @@
   background: var(--color-bg-subtle);
 }
 
+/* Documentation page: a reading surface, not a stack of cards. */
+.help-page {
+  width: min(920px, 100%);
+  margin: 0 auto;
+  padding: clamp(24px, 5vw, 56px) clamp(18px, 4vw, 48px) 72px;
+}
+.help-header { max-width: 680px; padding-bottom: 26px; }
+.help-eyebrow { margin: 0 0 10px; color: var(--color-primary); font-size: var(--font-sm); font-weight: 600; }
+.help-header h1, .help-faq h2 { margin: 0; color: var(--color-text); font-weight: 680; letter-spacing: 0; }
+.help-header h1 { font-size: clamp(27px, 4vw, 40px); line-height: 1.2; }
+.help-header > p:last-child { margin: 14px 0 0; color: var(--color-text-secondary); font-size: var(--font-md); line-height: 1.75; }
+.help-jump-nav { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 14px 0; border-top: 1px solid var(--color-divider); border-bottom: 1px solid var(--color-divider); }
+.help-jump-nav a, .help-guide-content > a { color: var(--color-text-secondary); font-size: var(--font-sm); text-decoration: none; }
+.help-jump-nav a:hover, .help-guide-content > a:hover { color: var(--color-primary); }
+.help-start-strip { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 0; border-bottom: 1px solid var(--color-divider); }
+.help-start-strip div { display: grid; gap: 4px; }.help-start-strip strong { font-size: var(--font-md); }.help-start-strip span { color: var(--color-text-secondary); font-size: var(--font-sm); }
+.help-start-strip a { flex-shrink: 0; min-height: 36px; display: inline-flex; align-items: center; padding: 0 13px; color: var(--color-on-primary); background: var(--color-primary); border-radius: 5px; text-decoration: none; font-size: var(--font-sm); font-weight: 600; }
+.help-guide-list { display: grid; }.help-guide-section { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 20px; padding: 30px 0; border-bottom: 1px solid var(--color-divider); scroll-margin-top: 24px; }
+.help-guide-number { color: var(--color-primary); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }.help-guide-content h2 { margin: 0; font-size: 21px; font-weight: 650; }.help-guide-content > p { margin: 8px 0 14px; color: var(--color-text-secondary); line-height: 1.7; }
+.help-guide-content ol { margin: 0 0 16px; padding-left: 20px; color: var(--color-text); font-size: var(--font-sm); line-height: 1.8; }.help-guide-content > a { color: var(--color-primary); font-weight: 600; }.help-guide-content > a span { margin-left: 3px; font-size: 18px; vertical-align: -1px; }
+.help-faq { padding-top: 36px; }.help-faq header { margin-bottom: 12px; }.help-faq h2 { font-size: 24px; }.help-faq details { border-bottom: 1px solid var(--color-divider); }.help-faq summary { cursor: pointer; padding: 17px 0; color: var(--color-text); font-size: var(--font-md); font-weight: 560; }.help-faq p { max-width: 760px; margin: 0 0 17px; color: var(--color-text-secondary); font-size: var(--font-sm); line-height: 1.75; }
+@media (max-width: 640px) { .help-page { padding-top: 24px; }.help-jump-nav { gap: 10px 14px; }.help-start-strip { align-items: flex-start; flex-direction: column; }.help-guide-section { grid-template-columns: 1fr; gap: 8px; padding: 24px 0; }.help-guide-number { font-size: 12px; }.help-guide-content h2 { font-size: 19px; } }
+
 @media (max-width: 640px) {
   .transaction-detail-drawer {
     width: 100vw;
