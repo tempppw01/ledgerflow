@@ -1,14 +1,29 @@
 # LedgerFlow
 
-> 面向个人长期财务管理的 AI-native 财务工作台。快速记一笔、看懂现金流、管理负债与预算，并让 AI 参与账单识别、信贷整理、投资分析和财务复盘。
+<p align="center">
+  <strong>把每一笔流水，变成看得懂的生活账本。</strong><br />
+  面向个人长期财务管理的 AI-native 工作台：记账、预算、还款、投资与复盘，在同一处完成。
+</p>
 
-LedgerFlow 当前版本：`0.6.5`
+<p align="center">
+  <a href="https://github.com/tempppw01/ledgerflow/releases"><img src="https://img.shields.io/github/v/release/tempppw01/ledgerflow?display_name=tag&style=flat-square&color=f59e0b" alt="Release" /></a>
+  <img src="https://img.shields.io/badge/version-0.6.5-0f766e?style=flat-square" alt="Version 0.6.5" />
+  <img src="https://img.shields.io/badge/Node.js-20%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js 20+" />
+  <img src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker ready" />
+  <a href="https://ledgerflow.shuaihong.fun"><img src="https://img.shields.io/badge/Live%20demo-open-f59e0b?style=flat-square" alt="Live demo" /></a>
+</p>
 
-在线体验：<https://ledgerflow.shuaihong.fun>
+<p align="center"><a href="#快速部署">快速部署</a> · <a href="#主要能力">主要能力</a> · <a href="#备份与同步">数据与备份</a> · <a href="https://github.com/tempppw01/ledgerflow/releases">版本发布</a></p>
+
+> [!NOTE]
+> 当前版本：`0.6.5`。项目仍在快速迭代，重要数据请保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
 
 > 说明：项目仍处于快速迭代阶段，功能、界面和数据结构会持续调整。重要数据请务必保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
 
-## 功能页面截图
+<details>
+<summary><strong>展开查看产品截图</strong></summary>
+
+<br />
 
 <table>
   <tr>
@@ -37,12 +52,17 @@ LedgerFlow 当前版本：`0.6.5`
   </tr>
 </table>
 
+</details>
+
 ### 0.6.5 功能亮点
 
 - 还款走势改为紧凑可读图表：可在“每期还款”和“还款后本金”间切换，并支持悬停或点按查看每一期的日期与金额。
 - 新增负债的日期选择器会始终显示在弹窗上方，并依据可用空间自动调整位置，避免日期被遮挡。
 - 移动端功能抽屉改为连续导航布局，减少层叠卡片和重边框，让常用入口与完整菜单更易浏览。
 - 帮助页重构为任务导向的使用指南，补充记账、账户、预算还款、备份恢复和常见问题说明。
+
+<details>
+<summary><strong>历史版本亮点</strong></summary>
 
 ### 0.6.4 功能亮点
 
@@ -56,6 +76,8 @@ LedgerFlow 当前版本：`0.6.5`
 - 投资 AI 可通过 Tavily 同时核验同花顺与雪球，单一来源失败时自动使用另一来源，并展示引用与过程状态。
 - JSON、WebDAV、阿里云 OSS、S3 兼容存储和数据库快照均支持按范围备份；恢复内容会写回当前 SQL 数据库。
 
+</details>
+
 ## 产品定位
 
 LedgerFlow 的目标不是做一个传统流水表，而是做一个更适合年轻用户日常使用的个人财务工作台：
@@ -68,14 +90,18 @@ LedgerFlow 的目标不是做一个传统流水表，而是做一个更适合年
 
 ## 主要能力
 
-### 记账与数据概览
+<details open>
+<summary><strong>记账与数据概览</strong></summary>
 
 - 收入、支出、转账、还款、调整等流水管理。
 - 微信 / 支付宝账单导入，支持重复处理与导入来源标记。
 - 分类、账户、标签、余额变动和回收站管理。
 - Dashboard 展示本月结余、净资产、趋势、分类结构、异常提醒和可排序模块。
 
-### AI 助手
+</details>
+
+<details>
+<summary><strong>AI 助手</strong></summary>
 
 - AI 记账：从自然语言、截图、账单文本中提炼结构化交易。
 - AI 问答：基于当前账本上下文做财务分析、趋势解释和行动建议。
@@ -84,27 +110,32 @@ LedgerFlow 的目标不是做一个传统流水表，而是做一个更适合年
 - 支持 Tavily 联网检索；投资模式优先交叉核验同花顺与雪球资讯、公告和政策。
 - 支持全局记忆：长期偏好可沉淀、查看、启用/停用和管理。
 
-### 账号与数据
+</details>
+
+<details>
+<summary><strong>账号与数据</strong></summary>
 
 - 首次启动选择 SQLite 或 MySQL，选择结果写入持久化目录并锁定，避免运行中误切数据库。
 - 注册、登录、资料修改、密码更新和会话撤销均由服务端处理。
 - 账号设置展示当前及其他登录设备，可单独退出设备或一键退出其他会话。
 - 业务数据按账号隔离；首次升级会导入旧浏览器数据，之后以 SQL 为准。
 
-### 预算、负债与分析
+</details>
+
+<details>
+<summary><strong>预算、负债、分析与投资</strong></summary>
 
 - Smart Budget：预算方案、分类预算追踪、超预算提醒。
 - Repayment Management：负债清单、还款计划、实际还款记录、信贷识别预填。
 - Financial Analysis：围绕过去 / 现在 / 未来生成财务分析与下一步行动。
 - 订阅管理、汇率工具、工资工具等辅助页面。
-
-### 投资理财
-
 - 多指数行情、分时坐标提示、市场快讯、热门题材和行业板块。
 - 投资持仓、自选基金、持仓流水和基金资料一键刷新。
 - AI 基金分析与基金持仓分析，可沉淀加仓、减仓或继续观察建议。
 - 自选基金可沉淀历史业绩、资产分布、行业分布、重仓股票、费率、基金公司等信息。
 - 投资 AI 聊天支持图片、联网核验开关、可折叠检索过程、资讯引用、停止请求、复制 / 重试 / 删除等消息操作。
+
+</details>
 
 ### 备份与同步
 
