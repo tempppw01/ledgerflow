@@ -787,6 +787,8 @@ describe('RepaymentManagementPage', () => {
     );
 
     expect(screen.getByText('2026/10')).toBeInTheDocument();
+    expect(screen.getByText('其中利息')).toBeInTheDocument();
+    expect(screen.getByText(/未来利息约/)).toBeInTheDocument();
     fireEvent.change(screen.getByRole('slider', { name: '查看还款期次' }), { target: { value: '1' } });
     expect(screen.getByRole('slider', { name: '查看还款期次' })).toHaveValue('1');
     fireEvent.click(screen.getByRole('button', { name: '还款后本金' }));

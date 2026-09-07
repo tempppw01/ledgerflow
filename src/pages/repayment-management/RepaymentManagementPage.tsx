@@ -259,7 +259,7 @@ function getManualScheduleStartPeriod(
 
 function buildDebtPressureSchedule(
   debt: DebtItem
-): Array<{ period: string; dueDate: string; amount: number; remaining: number }> {
+): Array<{ period: string; dueDate: string; amount: number; principal: number; interest: number; remaining: number }> {
   const balance = Math.max(0, Number(debt.balance) || 0);
   const manualRows = Array.isArray(debt.manualRepayments)
     ? debt.manualRepayments
@@ -297,13 +297,19 @@ function buildDebtPressureSchedule(
   }
 
   const manualScheduleStartPeriod = getManualScheduleStartPeriod(debt);
+  const monthlyRate = Math.max(0, Number(debt.annualRate) || 0) / 12 / 100;
   let remaining = balance;
   return rows.slice(0, 36).map((item, index) => {
-    remaining = Math.max(0, remaining - item.amount);
+    const openingBalance = remaining;
+    const interest = Math.min(item.amount, Math.max(0, openingBalance * monthlyRate));
+    const principal = Math.min(openingBalance, Math.max(0, item.amount - interest));
+    remaining = Math.max(0, openingBalance - principal);
     return {
       period: item.label?.trim() || `第 ${manualScheduleStartPeriod + index} 期`,
       dueDate: item.dueDate || '日期待填',
       amount: Number(item.amount.toFixed(2)),
+      principal: Number(principal.toFixed(2)),
+      interest: Number(interest.toFixed(2)),
       remaining: Number(remaining.toFixed(2))
     };
   });
@@ -328,7 +334,7 @@ function DebtPressureChart({
   ariaLabel = '还款压力曲线',
   compact = false
 }: {
-  points: Array<{ period: string; dueDate: string; amount: number; remaining: number }>;
+  points: Array<{ period: string; dueDate: string; amount: number; principal: number; interest: number; remaining: number }>;
   ariaLabel?: string;
   compact?: boolean;
 }) {
@@ -343,6 +349,9 @@ function DebtPressureChart({
   const paddingY = compact ? 18 : 24;
   const maxAmount = Math.max(1, ...points.map((item) => item.amount));
   const maxRemaining = Math.max(1, ...points.map((item) => item.remaining));
+  const totalPayment = points.reduce((sum, item) => sum + item.amount, 0);
+  const totalInterest = points.reduce((sum, item) => sum + item.interest, 0);
+  const interestRatio = totalPayment > 0 ? (totalInterest / totalPayment) * 100 : 0;
 
   if (points.length === 0) {
     return (
@@ -363,6 +372,7 @@ function DebtPressureChart({
   const remainingPoints = points
     .map((item, index) => `${xFor(index)},${yForRemaining(item.remaining)}`)
     .join(' ');
+  const remainingAreaPath = `${remainingPoints} L ${xFor(points.length - 1)},${height - paddingY} L ${xFor(0)},${height - paddingY} Z`;
 
   return (
     <div className="debt-pressure-chart debt-pressure-chart--readable">
@@ -371,8 +381,17 @@ function DebtPressureChart({
         <button type="button" aria-pressed={metric === 'remaining'} onClick={() => setMetric('remaining')}>还款后本金</button>
       </div>
       <div className="debt-pressure-readout" aria-live="polite">
-        <span>{active.period} · {active.dueDate}</span>
-        <strong>{formatCurrency(active[metric])}</strong>
+        <div>
+          <span>{active.period} · {active.dueDate}</span>
+          <strong>{formatCurrency(active[metric])}</strong>
+        </div>
+        {metric === 'amount' ? (
+          <div className="debt-pressure-interest-readout" aria-label={`其中利息 ${formatCurrency(active.interest)}`}>
+            <span>其中利息</span>
+            <strong>{formatCurrency(active.interest)}</strong>
+            <em>{active.amount > 0 ? `${((active.interest / active.amount) * 100).toFixed(1)}%` : '0.0%'}</em>
+          </div>
+        ) : null}
       </div>
       <div className="debt-pressure-plot" onPointerLeave={() => setShowTooltip(false)}>
       {showTooltip ? <div role="tooltip" className="debt-pressure-tooltip" style={{ [activeIndex < points.length / 2 ? 'right' : 'left']: 0 }}>
@@ -386,6 +405,15 @@ function DebtPressureChart({
         viewBox={`0 0 ${width} ${height}`}
         preserveAspectRatio="none"
       >
+        <defs>
+          <linearGradient id="debt-pressure-remaining-fill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.26" />
+            <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.01" />
+          </linearGradient>
+          <filter id="debt-pressure-soft-glow" x="-20%" y="-40%" width="140%" height="180%">
+            <feGaussianBlur stdDeviation="4" />
+          </filter>
+        </defs>
         <line x1={paddingX} y1={paddingY} x2={width - paddingX} y2={paddingY} className="debt-pressure-axis" />
         <line x1={paddingX} y1={height / 2} x2={width - paddingX} y2={height / 2} className="debt-pressure-axis" />
         <line
@@ -395,10 +423,17 @@ function DebtPressureChart({
           y2={height - paddingY}
           className="debt-pressure-axis"
         />
-        {metric === 'remaining' ? <polyline points={remainingPoints} className="debt-pressure-remaining-line" /> : null}
+        {metric === 'remaining' ? <>
+          <path d={remainingAreaPath} className="debt-pressure-remaining-area" />
+          <polyline points={remainingPoints} className="debt-pressure-remaining-glow" filter="url(#debt-pressure-soft-glow)" />
+          <polyline points={remainingPoints} className="debt-pressure-remaining-line" />
+        </> : null}
         {points.map((item, index) => (
           <g key={`${item.period}-${item.dueDate}-${index}`} opacity={index === activeIndex ? 1 : 0.55}>
-          {metric === 'amount' ? <rect x={xFor(index) - Math.min(18, 200 / points.length)} y={yForAmount(item.amount)} width={Math.min(36, 400 / points.length)} height={height - paddingY - yForAmount(item.amount)} rx="2" className="debt-pressure-amount-dot" /> : <circle
+          {metric === 'amount' ? <>
+            <rect x={xFor(index) - Math.min(18, 200 / points.length)} y={yForAmount(item.amount)} width={Math.min(36, 400 / points.length)} height={height - paddingY - yForAmount(item.amount)} rx="5" className="debt-pressure-amount-base" />
+            <rect x={xFor(index) - Math.min(18, 200 / points.length)} y={yForAmount(item.amount)} width={Math.min(36, 400 / points.length)} height={(item.interest / Math.max(1, item.amount)) * (height - paddingY - yForAmount(item.amount))} rx="5" className="debt-pressure-interest-bar" />
+          </> : <circle
             cx={xFor(index)}
             cy={yForRemaining(item.remaining)}
             r={3}
@@ -418,9 +453,18 @@ function DebtPressureChart({
       </svg>
       </div>
       <div className="debt-pressure-dates"><span>{formatChartDate(points[0].dueDate)}</span><span>{points.length > 1 ? formatChartDate(points[points.length - 1].dueDate) : ''}</span></div>
+      {metric === 'amount' ? (
+        <div className="debt-pressure-interest-summary" aria-label={`未来利息估算 ${formatCurrency(totalInterest)}，占计划还款 ${interestRatio.toFixed(1)}%`}>
+          <div>
+            <span className="debt-pressure-interest-legend"><i />本金</span>
+            <span className="debt-pressure-interest-legend is-interest"><i />利息</span>
+          </div>
+          <strong>未来利息约 {formatCurrency(totalInterest)} <em>· {interestRatio.toFixed(1)}%</em></strong>
+        </div>
+      ) : null}
       <label className="debt-pressure-period"><span>查看期次</span><input type="range" min="0" max={points.length - 1} value={activeIndex} disabled={points.length === 1} onChange={(event) => setSelected(Number(event.target.value))} aria-label="查看还款期次" aria-valuetext={`${active.period}，${active.dueDate}，${formatCurrency(active[metric])}`} /><span>{activeIndex + 1}/{points.length}</span></label>
       <div className="debt-pressure-footnote">
-        {metric === 'remaining' ? '按计划扣减的本金估算，实际以账单为准' : `共 ${points.length} 期 · 合计 ${formatCurrency(points.reduce((sum, item) => sum + item.amount, 0))}`}
+        {metric === 'remaining' ? '曲线为按计划扣减本金的估算，实际以账单为准' : `共 ${points.length} 期 · 合计 ${formatCurrency(totalPayment)}`}
       </div>
     </div>
   );
@@ -1087,7 +1131,7 @@ export function RepaymentManagementPage() {
   const [addDebtSuccess, setAddDebtSuccess] = useState(false);
   const [showDebtPressurePreview, setShowDebtPressurePreview] = useState(false);
   const [debtPressurePreview, setDebtPressurePreview] = useState<
-    Array<{ period: string; dueDate: string; amount: number; remaining: number }>
+    Array<{ period: string; dueDate: string; amount: number; principal: number; interest: number; remaining: number }>
   >([]);
   const [repaymentDebtId, setRepaymentDebtId] = useState('');
   const [repaymentAmount, setRepaymentAmount] = useState('');
