@@ -16950,18 +16950,7 @@ body.categories-accounts-resizing {
   color: var(--color-text-primary);
   font: inherit;
   text-align: left;
-  cursor: pointer;
-}
-
-.repayment-timeline-item:hover:not(:disabled) {
-  transform: translateX(2px);
-  border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border));
-  background: color-mix(in srgb, var(--color-primary-bg) 42%, var(--color-bg-subtle));
-}
-
-.repayment-timeline-item:disabled {
   cursor: default;
-  opacity: 1;
 }
 
 .repayment-timeline-item.is-paid {
@@ -17047,6 +17036,48 @@ body.categories-accounts-resizing {
   font-size: 10px;
   font-weight: 800;
   line-height: 1;
+}
+
+.repayment-timeline-action-group {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.repayment-timeline-action-group small {
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.repayment-timeline-action {
+  min-height: 27px;
+  padding: 4px 7px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 36%, var(--color-border));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-primary-bg) 56%, var(--color-bg-elevated));
+  color: var(--color-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.repayment-timeline-action:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+
+.repayment-timeline-action:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 54%, transparent);
+  outline-offset: 2px;
+}
+
+.repayment-timeline-action:disabled {
+  cursor: default;
+  opacity: 0.48;
 }
 
 .repayment-timeline-item.is-paid .repayment-timeline-status strong {

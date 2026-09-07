@@ -406,7 +406,13 @@ describe('RepaymentManagementPage', () => {
       </MemoryRouter>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '标记测试消费贷本期已还' }));
+    fireEvent.click(screen.getByRole('button', { name: '登记测试消费贷本期还款' }));
+
+    expect(screen.getByRole('dialog', { name: '确认登记本期还款' })).toBeInTheDocument();
+    expect(screen.getByText(/登记今日已还/)).toHaveTextContent('¥500.00');
+    expect(appPreferencesMock.state.addRepaymentRecord).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: '确认已还' }));
 
     expect(appPreferencesMock.state.addRepaymentRecord).toHaveBeenCalledWith(
       expect.objectContaining({

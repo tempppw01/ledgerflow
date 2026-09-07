@@ -1140,6 +1140,10 @@ export function RepaymentManagementPage() {
   const [repaymentRecordToastVariant, setRepaymentRecordToastVariant] = useState<
     'success' | 'warning'
   >('success');
+  const [quickRepaymentPending, setQuickRepaymentPending] = useState<{
+    debtId: string;
+    amount: number;
+  } | null>(null);
   const [addDebtSuccess, setAddDebtSuccess] = useState(false);
   const [showDebtPressurePreview, setShowDebtPressurePreview] = useState(false);
   const [debtPressurePreview, setDebtPressurePreview] = useState<
@@ -2257,6 +2261,22 @@ export function RepaymentManagementPage() {
       return;
     }
 
+    setQuickRepaymentPending({ debtId, amount });
+  }
+
+  function confirmQuickRepayment(): void {
+    if (!quickRepaymentPending) return;
+
+    const { debtId, amount } = quickRepaymentPending;
+    const targetDebt = debts.find((item) => item.id === debtId);
+    if (!targetDebt) {
+      setQuickRepaymentPending(null);
+      setRepaymentRecordToastMessage('未找到对应负债，请刷新后重试。');
+      setRepaymentRecordToastVariant('warning');
+      setRepaymentRecordToastVisible(true);
+      return;
+    }
+
     const now = new Date();
     const paidAt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
       now.getDate()
@@ -2303,6 +2323,7 @@ export function RepaymentManagementPage() {
     );
     setRepaymentRecordToastVariant('success');
     setRepaymentRecordToastVisible(true);
+    setQuickRepaymentPending(null);
   }
 
   function onSetRepaymentDay(debtId: string, day: number) {
@@ -4209,6 +4230,22 @@ export function RepaymentManagementPage() {
           variant={repaymentRecordToastVariant}
           duration={1600}
           onClose={() => setRepaymentRecordToastVisible(false)}
+        />
+        <ConfirmDialog
+          open={quickRepaymentPending !== null}
+          title="确认登记本期还款"
+          description={
+            quickRepaymentPending ? (
+              <>
+                将为“{debts.find((item) => item.id === quickRepaymentPending.debtId)?.name || '该负债'}”
+                登记今日已还 <strong>{formatCurrency(quickRepaymentPending.amount)}</strong>，并同步扣减剩余本金和期数。
+              </>
+            ) : null
+          }
+          confirmText="确认已还"
+          cancelText="暂不登记"
+          onConfirm={confirmQuickRepayment}
+          onCancel={() => setQuickRepaymentPending(null)}
         />
         <ConfirmDialog
           open={debtPendingDeletion !== null}

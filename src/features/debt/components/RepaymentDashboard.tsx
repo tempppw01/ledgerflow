@@ -445,20 +445,8 @@ export function RepaymentDashboard({
               {overview.breakdown.slice(0, 6).map((item) => (
                 <li key={item.id}>
                   <div className="repayment-timeline-item-wrap">
-                    <button
-                      type="button"
+                    <div
                       className={`repayment-timeline-item is-${item.tone}${item.isPaid ? ' is-paid' : ''}`}
-                      onClick={() => {
-                        if (item.isSimpleReminder) return;
-                        if (item.dueInDays === null && onSetRepaymentDay) {
-                          setEditingRepaymentDayId(item.id);
-                          setRepaymentDayDraft('');
-                          return;
-                        }
-                        onMarkCurrentPayment?.(item.id, Math.max(0, item.payment - item.paidAmount));
-                      }}
-                      disabled={item.isSimpleReminder || (item.isPaid ? item.dueInDays !== null : !onMarkCurrentPayment && !onSetRepaymentDay)}
-                      aria-label={item.dueInDays === null ? `设置${item.name}还款日` : item.isPaid ? `${item.name}本期已还` : `标记${item.name}本期已还`}
                     >
                       <span className="repayment-timeline-dot" />
                       {item.iconUrl ? (
@@ -492,9 +480,44 @@ export function RepaymentDashboard({
                               ? '今日应还'
                               : `${item.dueInDays} 天后`}
                         </span>
-                        <strong>{item.isSimpleReminder ? '待处理' : item.dueInDays === null ? '设置还款日' : item.isPaid ? '✓ 已还' : '点按记账'}</strong>
+                        {item.isSimpleReminder ? (
+                          <strong>待处理</strong>
+                        ) : item.dueInDays === null ? (
+                          <button
+                            type="button"
+                            className="repayment-timeline-action"
+                            onClick={() => {
+                              setEditingRepaymentDayId(item.id);
+                              setRepaymentDayDraft('');
+                            }}
+                            disabled={!onSetRepaymentDay}
+                            aria-label={`设置${item.name}还款日`}
+                          >
+                            设置还款日
+                          </button>
+                        ) : item.isPaid ? (
+                          <strong>✓ 已还</strong>
+                        ) : (
+                          <span className="repayment-timeline-action-group">
+                            <button
+                              type="button"
+                              className="repayment-timeline-action"
+                              onClick={() =>
+                                onMarkCurrentPayment?.(
+                                  item.id,
+                                  Math.max(0, item.payment - item.paidAmount)
+                                )
+                              }
+                              disabled={!onMarkCurrentPayment}
+                              aria-label={`登记${item.name}本期还款`}
+                            >
+                              登记已还
+                            </button>
+                            <small>需确认</small>
+                          </span>
+                        )}
                       </span>
-                    </button>
+                    </div>
                     {editingRepaymentDayId === item.id ? (
                       <form
                         className="repayment-timeline-day-editor"
