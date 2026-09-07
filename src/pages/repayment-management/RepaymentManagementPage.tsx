@@ -321,6 +321,10 @@ function DebtPressureChart({
   ariaLabel?: string;
   compact?: boolean;
 }) {
+  const [metric, setMetric] = useState<'amount' | 'remaining'>('amount');
+  const [selected, setSelected] = useState(0);
+  const activeIndex = Math.min(selected, Math.max(0, points.length - 1));
+  const active = points[activeIndex];
   const width = 680;
   const height = compact ? 150 : 200;
   const paddingX = compact ? 24 : 44;
@@ -343,30 +347,31 @@ function DebtPressureChart({
   const yForAmount = (value: number) =>
     height - paddingY - ((value / maxAmount) * (height - paddingY * 2));
   const yForRemaining = (value: number) =>
-    paddingY + ((value / maxRemaining) * (height - paddingY * 2));
-  const amountPoints = points
-    .map((item, index) => `${xFor(index)},${yForAmount(item.amount)}`)
-    .join(' ');
+    height - paddingY - ((value / maxRemaining) * (height - paddingY * 2));
   const remainingPoints = points
     .map((item, index) => `${xFor(index)},${yForRemaining(item.remaining)}`)
     .join(' ');
-  const maxXAxisLabels = compact ? 6 : 8;
-  const xAxisLabelIndexes = points.length <= maxXAxisLabels
-    ? points.map((_, index) => index)
-    : points.reduce<number[]>((indexes, _, index) => {
-        const step = Math.ceil((points.length - 1) / (maxXAxisLabels - 1));
-        if (index === 0 || index === points.length - 1 || index % step === 0) indexes.push(index);
-        return indexes;
-      }, []);
 
   return (
-    <div className="debt-pressure-chart">
+    <div className="debt-pressure-chart debt-pressure-chart--readable">
+      <div className="debt-pressure-controls" role="group" aria-label="走势指标">
+        <button type="button" aria-pressed={metric === 'amount'} onClick={() => setMetric('amount')}>每期还款</button>
+        <button type="button" aria-pressed={metric === 'remaining'} onClick={() => setMetric('remaining')}>还款后本金</button>
+      </div>
+      <div className="debt-pressure-readout" aria-live="polite">
+        <span>{active.period} · {active.dueDate}</span>
+        <strong>{formatCurrency(active[metric])}</strong>
+      </div>
+      <div className="debt-pressure-plot">
+      <div className="debt-pressure-scale"><span>{formatCurrency(metric === 'amount' ? maxAmount : maxRemaining)}</span><span>0</span></div>
       <svg
         role="img"
         aria-label={ariaLabel}
         viewBox={`0 0 ${width} ${height}`}
         preserveAspectRatio="none"
       >
+        <line x1={paddingX} y1={paddingY} x2={width - paddingX} y2={paddingY} className="debt-pressure-axis" />
+        <line x1={paddingX} y1={height / 2} x2={width - paddingX} y2={height / 2} className="debt-pressure-axis" />
         <line
           x1={paddingX}
           y1={height - paddingY}
@@ -374,38 +379,23 @@ function DebtPressureChart({
           y2={height - paddingY}
           className="debt-pressure-axis"
         />
-        <polyline points={amountPoints} className="debt-pressure-amount-line" />
-        <polyline points={remainingPoints} className="debt-pressure-remaining-line" />
+        {metric === 'remaining' ? <polyline points={remainingPoints} className="debt-pressure-remaining-line" /> : null}
         {points.map((item, index) => (
-          <circle
-            key={`${item.period}-${item.dueDate}-${index}`}
+          <g key={`${item.period}-${item.dueDate}-${index}`} opacity={index === activeIndex ? 1 : 0.55}>
+          {metric === 'amount' ? <rect x={xFor(index) - Math.min(18, 200 / points.length)} y={yForAmount(item.amount)} width={Math.min(36, 400 / points.length)} height={height - paddingY - yForAmount(item.amount)} rx="2" className="debt-pressure-amount-dot" /> : <circle
             cx={xFor(index)}
-            cy={yForAmount(item.amount)}
+            cy={yForRemaining(item.remaining)}
             r={3}
-            className="debt-pressure-amount-dot"
-          />
-        ))}
-        {xAxisLabelIndexes.map((index) => (
-          <text
-            key={`${points[index]?.dueDate}-${index}`}
-            x={xFor(index)}
-            y={height - 2}
-            className="debt-pressure-x-axis-label"
-            textAnchor={index === 0 ? 'start' : index === points.length - 1 ? 'end' : 'middle'}
-          >
-            {formatChartDate(points[index]?.dueDate || '')}
-          </text>
+            className="debt-pressure-principal-dot"
+          />}
+          </g>
         ))}
       </svg>
-      <div className="debt-pressure-legend">
-        <span>
-          <i className="amount" />
-          每期还款
-        </span>
-        <span>
-          <i className="remaining" />
-          剩余本金
-        </span>
+      </div>
+      <div className="debt-pressure-dates"><span>{formatChartDate(points[0].dueDate)}</span><span>{points.length > 1 ? formatChartDate(points[points.length - 1].dueDate) : ''}</span></div>
+      <label className="debt-pressure-period"><span>查看期次</span><input type="range" min="0" max={points.length - 1} value={activeIndex} disabled={points.length === 1} onChange={(event) => setSelected(Number(event.target.value))} aria-label="查看还款期次" aria-valuetext={`${active.period}，${active.dueDate}，${formatCurrency(active[metric])}`} /><span>{activeIndex + 1}/{points.length}</span></label>
+      <div className="debt-pressure-footnote">
+        {metric === 'remaining' ? '按计划扣减的本金估算，实际以账单为准' : `共 ${points.length} 期 · 合计 ${formatCurrency(points.reduce((sum, item) => sum + item.amount, 0))}`}
       </div>
     </div>
   );
@@ -2916,7 +2906,7 @@ export function RepaymentManagementPage() {
                           <strong>未来还款走势</strong>
                           <span>
                             {selectedDebtPressurePoints.length > 0
-                              ? `未来 ${selectedDebtPressurePoints.length} 期 · 红色还款，蓝色剩余本金`
+                              ? `未来 ${selectedDebtPressurePoints.length} 期`
                               : '补齐期数或逐期计划后显示走势'}
                           </span>
                         </div>
@@ -3988,7 +3978,7 @@ export function RepaymentManagementPage() {
                       <div className="debt-pressure-preview-header">
                         <div>
                           <strong>还款压力曲线</strong>
-                          <span>红线表示每期还款金额，蓝线表示本金剩余压力</span>
+                          <span>查看每期还款与还款后本金</span>
                         </div>
                         <span className="debt-pressure-preview-tag">已生成</span>
                       </div>

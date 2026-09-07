@@ -813,3 +813,25 @@
     justify-self: start;
   }
 }
+.debt-pressure-chart--readable {
+  min-width: 0;
+  --principal-color: #409ad6;
+}
+.debt-pressure-controls { display: flex; gap: 16px; border-bottom: 1px solid var(--color-divider); }
+.debt-pressure-controls button {
+  background: none; border: 0; border-radius: 0; padding: 8px 0;
+  color: var(--color-text-secondary); font-size: 13px; box-shadow: none;
+}
+.debt-pressure-controls button[aria-pressed='true'] { color: var(--color-text); box-shadow: inset 0 -2px var(--color-primary); }
+.debt-pressure-readout { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; padding: 12px 0; }
+.debt-pressure-readout span { font-size: 13px; color: var(--color-text-secondary); }
+.debt-pressure-readout strong { font-size: 20px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.debt-pressure-plot { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px; }
+.debt-pressure-scale { display: flex; flex-direction: column; justify-content: space-between; padding: 17px 0; color: var(--color-text-secondary); font-size: 12px; }
+.debt-pressure-chart--readable .debt-pressure-plot svg { width: 100%; height: 140px; min-height: 0; display: block; }
+.debt-pressure-chart--readable .debt-pressure-remaining-line { stroke: var(--principal-color); stroke-dasharray: none; vector-effect: non-scaling-stroke; }
+.debt-pressure-principal-dot { fill: var(--principal-color); }
+.debt-pressure-dates { display: flex; justify-content: space-between; color: var(--color-text-secondary); font-size: 12px; }
+.debt-pressure-period { display: flex; align-items: center; gap: 12px; font-size: 12px; margin-top: 10px; }
+.debt-pressure-period input[type='range'] { min-width: 0; flex: 1; width: 0; height: 28px; padding: 0; accent-color: var(--color-primary); }
+.debt-pressure-footnote { margin-top: 6px; font-size: 12px; color: var(--color-text-secondary); overflow-wrap: anywhere; }
