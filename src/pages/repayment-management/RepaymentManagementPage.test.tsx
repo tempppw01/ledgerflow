@@ -406,6 +406,43 @@ describe('RepaymentManagementPage', () => {
     );
   });
 
+  it('负债列表展示本期应还，删除前需要再次确认', () => {
+    appPreferencesMock.state.debts = [
+      {
+        id: 'debt-delete-confirm',
+        name: '待确认删除贷款',
+        type: 'loan',
+        status: 'active',
+        balance: 1200,
+        annualRate: 0,
+        remainingMonths: 4,
+        repaymentDay: 15
+      }
+    ];
+
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('本期应还 ¥300.00')).toBeInTheDocument();
+    const debtListItem = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('.repayment-debt-list-item')
+    ).find((item) => item.textContent?.includes('待确认删除贷款'));
+    expect(debtListItem).toBeTruthy();
+    fireEvent.click(debtListItem!);
+    fireEvent.click(screen.getByRole('button', { name: '🗑 删除' }));
+
+    expect(screen.getByRole('dialog', { name: '删除负债记录' })).toBeInTheDocument();
+    expect(appPreferencesMock.state.removeDebt).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: '确认删除' }));
+    expect(appPreferencesMock.state.removeDebt).toHaveBeenCalledWith('debt-delete-confirm');
+  });
+
   it('应显示当前负债在进行中项目里的年化利率排名', () => {
     appPreferencesMock.state.debts = [
       {

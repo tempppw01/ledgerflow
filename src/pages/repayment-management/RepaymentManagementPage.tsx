@@ -25,6 +25,7 @@ import {
   WEBANK_ICON_URL
 } from '../../shared/config/brandAssets';
 import { formatCurrency } from '../../shared/lib/format';
+import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { Toast } from '../../shared/ui/Toast';
 import { DatePicker } from '../../shared/ui/DatePicker';
 import { RepaymentDashboard } from '../../features/debt/components/RepaymentDashboard';
@@ -1104,6 +1105,7 @@ export function RepaymentManagementPage() {
   const [debtFilter, setDebtFilter] = useState<'all' | 'active' | 'missing' | 'inactive'>('all');
   const [debtSort, setDebtSort] = useState<'due' | 'balance' | 'apr' | 'payment' | 'name'>('due');
   const [debtContextMenu, setDebtContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [debtPendingDeletion, setDebtPendingDeletion] = useState<DebtItem | null>(null);
   const [showAddDebtModal, setShowAddDebtModal] = useState(false);
   const [showDebtHealthInfo, setShowDebtHealthInfo] = useState(false);
   const [repaymentCollapseState, setRepaymentCollapseState] = useState<RepaymentCollapseState>(
@@ -1459,6 +1461,20 @@ export function RepaymentManagementPage() {
       return a.dueInDays - b.dueInDays;
     });
   }, [debtFilter, debtSort, repaymentLedgerPreview]);
+
+  function requestDebtDeletion(debtId: string): void {
+    const debt = debtsWithStatus.find((item) => item.id === debtId);
+    if (debt) setDebtPendingDeletion(debt);
+    setDebtContextMenu(null);
+  }
+
+  function confirmDebtDeletion(): void {
+    if (!debtPendingDeletion) return;
+    const deletedDebtId = debtPendingDeletion.id;
+    removeDebt(deletedDebtId);
+    if (selectedDebtId === deletedDebtId) setSelectedDebtId('');
+    setDebtPendingDeletion(null);
+  }
 
   useEffect(() => {
     const closeMenu = () => setDebtContextMenu(null);
@@ -2719,6 +2735,13 @@ export function RepaymentManagementPage() {
                               {item.principal.toFixed(0)}
                             </>}
                       </span>
+                      <span className="repayment-debt-list-payment">
+                        {item.isSimpleReminder
+                          ? item.simpleAmount !== undefined
+                            ? `本次待还 ${formatCurrency(item.simpleAmount)}`
+                            : '金额待补'
+                          : `本期应还 ${formatCurrency(item.minimumPayment)}`}
+                      </span>
                     </div>
                     <span className={`repayment-debt-due-badge tone-${item.statusTone}`}>
                       {item.statusLabel}
@@ -2784,10 +2807,7 @@ export function RepaymentManagementPage() {
                 <button
                   type="button"
                   className="is-danger"
-                  onClick={() => {
-                    removeDebt(debtContextMenu.id);
-                    setDebtContextMenu(null);
-                  }}
+                  onClick={() => requestDebtDeletion(debtContextMenu.id)}
                 >
                   删除
                 </button>
@@ -2851,7 +2871,7 @@ export function RepaymentManagementPage() {
                                 : '暂缓'}
                         </button>
                       ))}
-                    <button type="button" onClick={() => removeDebt(selectedDebtId)}>
+                    <button type="button" onClick={() => requestDebtDeletion(selectedDebtId)}>
                       🗑 删除
                     </button>
                   </div>
@@ -4133,6 +4153,22 @@ export function RepaymentManagementPage() {
           variant={repaymentRecordToastVariant}
           duration={1600}
           onClose={() => setRepaymentRecordToastVisible(false)}
+        />
+        <ConfirmDialog
+          open={debtPendingDeletion !== null}
+          title="删除负债记录"
+          description={
+            debtPendingDeletion ? (
+              <>
+                确定删除“{debtPendingDeletion.name}”吗？删除后无法恢复。
+              </>
+            ) : null
+          }
+          confirmText="确认删除"
+          cancelText="取消"
+          danger
+          onConfirm={confirmDebtDeletion}
+          onCancel={() => setDebtPendingDeletion(null)}
         />
       </section>
     </div>

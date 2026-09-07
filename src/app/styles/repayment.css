@@ -452,6 +452,16 @@
   grid-template-columns: 8px 30px minmax(0, 1fr) auto;
 }
 
+.repayment-debt-list-payment {
+  color: var(--color-primary);
+  font-family: var(--font-number);
+  font-size: 12px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
 .repayment-debt-rate-rank {
   overflow: hidden;
   color: var(--color-primary);
