@@ -71,8 +71,12 @@ export function DatePicker({
       const rect = trigger.getBoundingClientRect();
       const width = Math.min(300, window.innerWidth - 32);
       const left = Math.min(Math.max(16, rect.left), window.innerWidth - width - 16);
-      const estimatedHeight = 360;
-      const top = rect.bottom + 8 + estimatedHeight <= window.innerHeight ? rect.bottom + 8 : Math.max(16, rect.top - estimatedHeight - 8);
+      const estimatedHeight = 322;
+      const spaceBelow = window.innerHeight - rect.bottom - 12;
+      const spaceAbove = rect.top - 12;
+      const top = spaceBelow >= estimatedHeight || spaceBelow >= spaceAbove
+        ? Math.max(12, Math.min(rect.bottom + 8, window.innerHeight - estimatedHeight - 12))
+        : Math.max(12, rect.top - estimatedHeight - 8);
       setPopoverPosition({ top, left, width });
     };
     updatePosition();
