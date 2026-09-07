@@ -43,6 +43,23 @@ describe('debtMetrics', () => {
     expect(calculateDebtScheduledPayment(loan)).toBe(result);
   });
 
+  it('uses the earliest manually planned installment instead of re-amortizing a loan balance', () => {
+    const loan: DebtItem = {
+      id: 'd3-manual-plan',
+      name: '京东白条',
+      type: 'loan',
+      balance: 19000,
+      remainingMonths: 2,
+      manualRepayments: [
+        { dueDate: '2026-10-29', amount: 2900 },
+        { dueDate: '2026-09-29', amount: 6000 }
+      ]
+    };
+
+    expect(calculateDebtMinimumPayment(loan)).toBe(6000);
+    expect(calculateDebtScheduledPayment(loan)).toBe(6000);
+  });
+
   it('infers loan annual rate from principal/total repayment/periods when annualRate missing', () => {
     const loan: DebtItem = {
       id: 'd4',

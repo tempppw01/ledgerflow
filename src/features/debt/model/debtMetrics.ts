@@ -198,6 +198,31 @@ function calcLoanAmortizedPayment(debt: DebtItem): number {
   return Number.isFinite(payment) ? payment : 0;
 }
 
+/**
+ * A manually entered repayment schedule is an explicit installment agreement
+ * supplied by the user. Prefer its first upcoming item to a mathematical
+ * amortization estimate, which otherwise incorrectly spreads the full balance
+ * across the remaining months.
+ */
+function getNextManualRepaymentAmount(debt: DebtItem): number {
+  const schedule = Array.isArray(debt.manualRepayments)
+    ? debt.manualRepayments
+        .map((item, index) => {
+          const amount = toPositiveNumber(item.amount);
+          const parsedDueDate = item.dueDate ? Date.parse(`${item.dueDate}T00:00:00`) : Number.NaN;
+          return {
+            amount,
+            index,
+            dueAt: Number.isFinite(parsedDueDate) ? parsedDueDate : Number.MAX_SAFE_INTEGER
+          };
+        })
+        .filter((item) => item.amount > 0)
+        .sort((left, right) => left.dueAt - right.dueAt || left.index - right.index)
+    : [];
+
+  return schedule[0]?.amount ?? 0;
+}
+
 export function calculateDebtMinimumPayment(debt: DebtItem): number {
   const principal = toPositiveNumber(debt.balance);
   if (principal === 0) {
@@ -212,6 +237,10 @@ export function calculateDebtMinimumPayment(debt: DebtItem): number {
   const normalizedType = normalizeDebtType(debt.type);
 
   if (normalizedType === 'loan') {
+    const manualPayment = getNextManualRepaymentAmount(debt);
+    if (manualPayment > 0) {
+      return manualPayment;
+    }
     return calcLoanAmortizedPayment(debt);
   }
 
