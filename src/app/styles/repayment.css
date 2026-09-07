@@ -757,6 +757,19 @@
     padding: 4px 0 20px;
   }
 
+  /* 全局概览在窄屏时已切为单列；还款控制台的桌面双列定义具有更高选择器
+     权重，曾把该断点覆盖，造成总额、进度环与未来还款并排挤压。这里由页面
+     自己接管窄屏结构，确保侧边栏展开时的可用宽度也不会重叠。 */
+  .repayment-console .repayment-dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'hero'
+      'timeline'
+      'donut'
+      'bars';
+    gap: 18px;
+  }
+
   .repayment-console-header {
     align-items: flex-start;
     flex-direction: column;
@@ -777,6 +790,26 @@
     padding-right: 0;
     padding-left: 0;
     border-right: 0;
+  }
+
+  .repayment-console .repayment-dashboard-hero {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .repayment-console .repayment-ring {
+    align-self: center;
+  }
+
+  .repayment-console .repayment-dashboard-total-value {
+    font-size: clamp(26px, 9vw, 34px);
+    overflow-wrap: anywhere;
+  }
+
+  .repayment-console .repayment-dashboard-total-meta {
+    flex-wrap: wrap;
+    row-gap: 2px;
   }
 
   .repayment-console .repayment-dashboard-timeline {
