@@ -99,9 +99,11 @@ function ProgressRing({
 }
 
 function BreakdownDonut({
-  segments
+  segments,
+  totalLabel = '每月应还'
 }: {
   segments: Array<{ id: string; name: string; payment: number; color: string }>;
+  totalLabel?: string;
 }) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const total = segments.reduce((sum, s) => sum + s.payment, 0);
@@ -166,7 +168,7 @@ function BreakdownDonut({
       </svg>
       <div className="repayment-donut-center">
         <span className="repayment-donut-total">{formatCurrencyAuto(total)}</span>
-        <span className="repayment-donut-label">每月应还</span>
+        <span className="repayment-donut-label">{totalLabel}</span>
       </div>
       <ul className="repayment-donut-legend">
         {segments.map((seg, index) => (
@@ -221,7 +223,13 @@ function buildSmoothPath(
     }, `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`);
 }
 
-function ProjectionLineChart({ data }: { data: Array<{ monthLabel: string; total: number }> }) {
+function ProjectionLineChart({
+  data,
+  onHoverMonthChange
+}: {
+  data: Array<{ monthLabel: string; total: number }>;
+  onHoverMonthChange?: (index: number | null) => void;
+}) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const width = 620;
   const height = 228;
@@ -269,11 +277,20 @@ function ProjectionLineChart({ data }: { data: Array<{ monthLabel: string; total
         Math.abs(point.x - chartX) < Math.abs(points[best].x - chartX) ? index : best,
       0
     );
-    setHoveredIndex(closestIndex);
+    if (closestIndex !== hoveredIndex) {
+      setHoveredIndex(closestIndex);
+      onHoverMonthChange?.(closestIndex);
+    }
   }
 
   return (
-    <div className="repayment-projection" onMouseLeave={() => setHoveredIndex(null)}>
+    <div
+      className="repayment-projection"
+      onMouseLeave={() => {
+        setHoveredIndex(null);
+        onHoverMonthChange?.(null);
+      }}
+    >
       <div className="repayment-projection-stage">
         <svg
           viewBox={`0 0 ${width} ${height}`}
@@ -381,17 +398,41 @@ export function RepaymentDashboard({
 }: RepaymentDashboardProps) {
   const [editingRepaymentDayId, setEditingRepaymentDayId] = useState<string | null>(null);
   const [repaymentDayDraft, setRepaymentDayDraft] = useState('');
+  const [hoveredProjectionIndex, setHoveredProjectionIndex] = useState<number | null>(null);
   const overview = useMemo(
     () => getRepaymentOverview({ debts, repaymentRecords }),
     [debts, repaymentRecords]
   );
 
-  const donutSegments = overview.breakdown.map((item, index) => ({
-    id: item.id,
-    name: item.name,
-    payment: item.payment,
-    color: getRepaymentBreakdownColor(index)
-  }));
+  // 环图和预测图共用同一组品牌色。这样切换月份时，用户不需要重新记忆
+  // 每一段代表哪笔负债。
+  const repaymentColorById = useMemo(() => {
+    const colors = new Map<string, string>();
+    const ids = [
+      ...overview.breakdown.map((item) => item.id),
+      ...overview.monthlyProjection.flatMap((month) => month.items.map((item) => item.id))
+    ];
+    ids.forEach((id) => {
+      if (!colors.has(id)) colors.set(id, getRepaymentBreakdownColor(colors.size));
+    });
+    return colors;
+  }, [overview.breakdown, overview.monthlyProjection]);
+
+  const selectedProjection =
+    hoveredProjectionIndex === null ? null : overview.monthlyProjection[hoveredProjectionIndex] ?? null;
+  const donutSegments = selectedProjection
+    ? selectedProjection.items.map((item, index) => ({
+        id: item.id,
+        name: item.name,
+        payment: item.amount,
+        color: repaymentColorById.get(item.id) ?? getRepaymentBreakdownColor(index)
+      }))
+    : overview.breakdown.map((item, index) => ({
+        id: item.id,
+        name: item.name,
+        payment: item.payment,
+        color: repaymentColorById.get(item.id) ?? getRepaymentBreakdownColor(index)
+      }));
 
   const ringKey = `${overview.thisMonthTotal}|${overview.thisMonthPaid}|${overview.progress}`;
 
@@ -556,13 +597,21 @@ export function RepaymentDashboard({
         </div>
 
         <div className="repayment-dashboard-chart">
-          <h3 className="repayment-dashboard-section-title">每月应还占比</h3>
-          <BreakdownDonut segments={donutSegments} />
+          <h3 className="repayment-dashboard-section-title">
+            {selectedProjection ? `${selectedProjection.monthLabel}应还占比` : '本月应还占比'}
+          </h3>
+          <BreakdownDonut
+            segments={donutSegments}
+            totalLabel={selectedProjection ? `${selectedProjection.monthLabel}应还` : '本月应还'}
+          />
         </div>
 
         <div className="repayment-dashboard-chart">
           <h3 className="repayment-dashboard-section-title">未来 6 个月预计还款</h3>
-          <ProjectionLineChart data={overview.monthlyProjection} />
+          <ProjectionLineChart
+            data={overview.monthlyProjection}
+            onHoverMonthChange={setHoveredProjectionIndex}
+          />
         </div>
       </div>
     </section>
