@@ -17,6 +17,12 @@ export interface NetWorthTrendRow {
   isCurrent?: boolean;
 }
 
+export interface NetWorthBreakdown {
+  accountBalance: number;
+  investmentValue: number;
+  debtBalance: number;
+}
+
 function monthKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
@@ -76,7 +82,7 @@ export function buildNetWorthTrend(input: {
   repaymentRecords?: RepaymentRecord[];
   months?: number;
   now?: Date;
-}): { rows: NetWorthTrendRow[]; currentValue: number; hasEstimate: boolean } {
+}): { rows: NetWorthTrendRow[]; currentValue: number; hasEstimate: boolean; breakdown: NetWorthBreakdown } {
   const now = input.now || new Date();
   const monthCount = Math.max(3, Math.min(12, input.months || 6));
   const currentKey = monthKey(now);
@@ -137,6 +143,11 @@ export function buildNetWorthTrend(input: {
   return {
     rows,
     currentValue,
-    hasEstimate: rows.some((row) => row.isEstimated)
+    hasEstimate: rows.some((row) => row.isEstimated),
+    breakdown: {
+      accountBalance: currentAccountNet,
+      investmentValue: currentInvestments,
+      debtBalance: currentDebts
+    }
   };
 }

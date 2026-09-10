@@ -90,6 +90,71 @@
   font-variant-numeric: tabular-nums;
 }
 
+.dashboard-net-worth-summary {
+  margin-left: auto;
+  min-width: 190px;
+  max-width: 260px;
+  padding-left: 16px;
+  border-left: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+}
+
+.dashboard-net-worth-summary-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+}
+
+.dashboard-net-worth-summary-head strong {
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-net-worth-summary-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.dashboard-net-worth-summary-items span {
+  white-space: nowrap;
+}
+
+.dashboard-net-worth-summary-items i {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: var(--color-text-tertiary);
+}
+
+.dashboard-net-worth-summary-items i.is-account { background: var(--color-primary); }
+.dashboard-net-worth-summary-items i.is-investment { background: var(--color-success); }
+.dashboard-net-worth-summary-items i.is-debt { background: var(--color-danger); }
+
+@media (max-width: 720px) {
+  .dashboard-net-worth-summary {
+    grid-column: 1 / -1;
+    width: 100%;
+    max-width: none;
+    margin: 8px 0 0;
+    padding: 8px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--color-border-subtle);
+  }
+
+  .dashboard-net-worth-summary-items {
+    justify-content: space-between;
+  }
+}
+
 .dashboard-stat-label {
   font-size: 14px;
   color: var(--text-secondary);

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { TrendChart } from '../../features/dashboard/components/TrendChart';
 import { CategoryBreakdownChart } from '../../features/dashboard/components/CategoryBreakdownChart';
 import { NetAssetCurveCard } from '../../features/dashboard/components/NetAssetCurveCard';
+import { DashboardNetWorthSummary } from '../../features/dashboard/components/DashboardNetWorthSummary';
 import { buildNetWorthTrend } from '../../features/dashboard/model/netWorth';
 import { DashboardModuleCustomizer } from '../../features/dashboard/components/DashboardModuleCustomizer';
 import { DashboardAnomalyInsights } from '../../features/dashboard/components/DashboardAnomalyInsights';
@@ -1277,6 +1278,12 @@ export function DashboardPage() {
               <h3>净资产</h3>
               <strong className="stat-value">{formatCurrency(netAssets)}</strong>
             </div>
+            <DashboardNetWorthSummary
+              value={netAssets}
+              accountBalance={netWorthTrend.breakdown.accountBalance}
+              investmentValue={netWorthTrend.breakdown.investmentValue}
+              debtBalance={netWorthTrend.breakdown.debtBalance}
+            />
           </button>
           <button
             type="button"
