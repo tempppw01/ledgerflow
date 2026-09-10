@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { TrendChart } from '../../features/dashboard/components/TrendChart';
 import { CategoryBreakdownChart } from '../../features/dashboard/components/CategoryBreakdownChart';
 import { NetAssetCurveCard } from '../../features/dashboard/components/NetAssetCurveCard';
+import { buildNetWorthTrend } from '../../features/dashboard/model/netWorth';
 import { DashboardModuleCustomizer } from '../../features/dashboard/components/DashboardModuleCustomizer';
 import { DashboardAnomalyInsights } from '../../features/dashboard/components/DashboardAnomalyInsights';
 import { DashboardHistoryCompareCard } from '../../features/dashboard/components/DashboardHistoryCompareCard';
@@ -28,6 +29,7 @@ import { APP_VERSION } from '../../shared/config/app';
 import { formatCurrency } from '../../shared/lib/format';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
+import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { EmptyState } from '../../shared/ui/EmptyState';
 
 const FORECAST_CACHE_KEY = 'dashboard_forecast_cache_v1';
@@ -116,6 +118,10 @@ export function DashboardPage() {
   const accounts = useFinanceStore((s) => s.accounts);
   const categories = useFinanceStore((s) => s.categories);
   const subscriptions = useFinanceStore((s) => s.subscriptions);
+  const investmentPositions = useAppPreferences((s) => s.investmentPositions);
+  const investmentPositionHistory = useAppPreferences((s) => s.investmentPositionHistory);
+  const debts = useAppPreferences((s) => s.debts);
+  const repaymentRecords = useAppPreferences((s) => s.repaymentRecords);
 
   const baseUrl = useAiSettings((s) => s.baseUrl);
   const apiKey = useAiSettings((s) => s.apiKey);
@@ -171,33 +177,6 @@ export function DashboardPage() {
     .reduce((sum, t) => sum + t.amount, 0);
   const monthlyBalance = income - expense;
 
-  const liabilityNameKeywords = [
-    '信用卡',
-    '花呗',
-    '白条',
-    '借呗',
-    '欠款',
-    '负债',
-    'credit',
-    'visa',
-    'master'
-  ];
-  const isLiabilityAccount = (account: (typeof accounts)[number]) => {
-    if (account.type === 'credit' || account.type === 'liability') {
-      return true;
-    }
-    const name = String(account.name || '').toLowerCase();
-    return liabilityNameKeywords.some((keyword) => name.includes(keyword.toLowerCase()));
-  };
-
-  const liabilities = accounts.filter(isLiabilityAccount).reduce((sum, account) => {
-    const balance = Number(account.balance ?? account.initialBalance ?? 0);
-    if (!Number.isFinite(balance)) {
-      return sum;
-    }
-    return sum + (balance < 0 ? Math.abs(balance) : balance);
-  }, 0);
-
   const subscriptionAlerts = useMemo(
     () =>
       subscriptions
@@ -206,14 +185,20 @@ export function DashboardPage() {
     [subscriptions]
   );
 
-  const assetBalance = accounts
-    .filter((account) => !isLiabilityAccount(account))
-    .reduce((sum, account) => {
-      const balance = Number(account.balance ?? account.initialBalance ?? 0);
-      return Number.isFinite(balance) ? sum + balance : sum;
-    }, 0);
-
-  const netAssets = assetBalance - liabilities;
+  const netWorthTrend = useMemo(
+    () =>
+      buildNetWorthTrend({
+        accounts,
+        transactions,
+        investmentPositions,
+        investmentHistory: investmentPositionHistory,
+        debts,
+        repaymentRecords,
+        months: 6
+      }),
+    [accounts, debts, investmentPositionHistory, investmentPositions, repaymentRecords, transactions]
+  );
+  const netAssets = netWorthTrend.currentValue;
 
   const recentMonths = useMemo(
     () =>
@@ -936,28 +921,7 @@ export function DashboardPage() {
     return trendSeries.reduce((sum, item) => sum + item.value, 0) / trendSeries.length;
   }, [trendSeries]);
 
-  const netAssetCurve = useMemo(() => {
-    const balances = recentMonths.map((item) => item.balance);
-    const current = netAssets;
-    const points = new Array(balances.length);
-    let running = current;
-    for (let i = balances.length - 1; i >= 0; i -= 1) {
-      points[i] = running;
-      running -= balances[i];
-    }
-    return recentMonths.map((item, index) => {
-      const [year, month] = item.key.split('-').map(Number);
-      return {
-        key: item.key,
-        label: year === currentYear ? item.shortLabel : `${String(year).slice(-2)}年${month}月`,
-        value: points[index],
-        dateFrom: `${year}-${String(month).padStart(2, '0')}-01`,
-        dateTo: new Date(year, month, 0).toISOString().slice(0, 10),
-        hasTransactions: item.transactionCount > 0,
-        isCurrent: year === currentYear && month === currentMonth + 1
-      };
-    });
-  }, [currentMonth, currentYear, netAssets, recentMonths]);
+  const netAssetCurve = netWorthTrend.rows;
 
   const anomalyInsight = useMemo(() => {
     const expenseRows = transactions.filter((item) => isActualExpenseType(item.type));
@@ -1252,7 +1216,7 @@ export function DashboardPage() {
         const prev = index > 0 ? netAssetCurve[index - 1].value : item.value;
         return { ...item, delta: item.value - prev };
       })
-      .filter((item) => item.hasTransactions);
+      .filter((item) => item.hasTransactions || item.isCurrent);
   }, [netAssetCurve]);
 
   const netAssetWorstDrop = useMemo(() => {

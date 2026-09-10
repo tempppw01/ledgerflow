@@ -8,6 +8,7 @@ export interface NetAssetCurveRow {
   dateFrom: string;
   dateTo: string;
   isCurrent?: boolean;
+  isEstimated?: boolean;
 }
 
 export interface NetAssetCurveCardProps {
@@ -35,7 +36,10 @@ export function NetAssetCurveCard({
   return (
     <article className="panel dashboard-unified-card" style={{ margin: 0 }}>
       <div className="dashboard-section-header dashboard-section-header-tight">
-        <h4>资产进度条</h4>
+        <div>
+          <h4>净资产趋势</h4>
+          <p className="muted">账户余额 + 投资市值 − 负债余额</p>
+        </div>
       </div>
       <div className="dashboard-net-curve">
         {rows.map((item) => (
@@ -54,7 +58,7 @@ export function NetAssetCurveCard({
             <i style={{ width: `${(item.value / maxValue) * 100}%` }} />
             <strong>{formatCurrency(item.value)}</strong>
             <small className={item.delta >= 0 ? 'up' : 'down'}>
-              {formatDeltaLabel(item.delta)}
+              {formatDeltaLabel(item.delta)}{item.isEstimated ? ' · 估算' : ''}
             </small>
           </button>
         ))}
