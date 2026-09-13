@@ -43,9 +43,12 @@ export function SalaryToolCard() {
   );
 
   return (
-    <section className="card finance-salary-card">
-      <h2 style={{ marginTop: 0 }}>💼 工资计算工具</h2>
-      <p className="muted">用于税前口径的快速估算：输入月薪、计薪天数、每日工时后，实时查看日薪、时薪、周薪和加班费参考值。</p>
+    <section className="finance-salary-card">
+      <div className="finance-salary-input-pane">
+        <div className="finance-section-heading">
+          <span className="finance-eyebrow">输入参数</span>
+          <h2>先从你的工作日常开始</h2>
+        </div>
 
       <div className="finance-salary-grid">
         <label className="finance-salary-field">
@@ -90,25 +93,26 @@ export function SalaryToolCard() {
           </div>
         </label>
       </div>
+      </div>
 
       {salaryInputError ? <p className="finance-debt-form-error muted">{salaryInputError}</p> : null}
 
       <div className="finance-salary-result-grid">
-        <article className="finance-salary-metric card">
+        <article className="finance-salary-metric is-primary">
           <p className="finance-overview-label">日薪参考</p>
           <p className="finance-overview-value">
             <span className="finance-overview-number">{salaryMetrics ? formatMoney(salaryMetrics.dailySalary) : '—'}</span>
           </p>
           <p className="finance-salary-metric-note muted">按月薪 ÷ 计薪天数估算</p>
         </article>
-        <article className="finance-salary-metric card">
+        <article className="finance-salary-metric is-primary-alt">
           <p className="finance-overview-label">时薪参考</p>
           <p className="finance-overview-value">
             <span className="finance-overview-number">{salaryMetrics ? formatMoney(salaryMetrics.hourlySalary) : '—'}</span>
           </p>
           <p className="finance-salary-metric-note muted">按日薪 ÷ 每日工时估算</p>
         </article>
-        <article className="finance-salary-metric card">
+        <article className="finance-salary-metric">
           <p className="finance-overview-label">周薪参考（按 5 天）</p>
           <p className="finance-overview-value">
             <span className="finance-overview-number">{salaryMetrics ? formatMoney(salaryMetrics.weeklySalary) : '—'}</span>
@@ -147,21 +151,21 @@ export function SalaryToolCard() {
         ) : null}
 
         <div className="finance-salary-result-grid">
-          <article className="finance-salary-metric card">
+          <article className="finance-salary-metric">
             <p className="finance-overview-label">工作日加班费（1.5x）</p>
             <p className="finance-overview-value">
               <span className="finance-overview-number">{overtimeResult ? formatMoney(overtimeResult.workdayOvertimePay) : '—'}</span>
             </p>
             <p className="finance-salary-metric-note muted">适用于工作日延时加班估算</p>
           </article>
-          <article className="finance-salary-metric card">
+          <article className="finance-salary-metric">
             <p className="finance-overview-label">休息日加班费（2x）</p>
             <p className="finance-overview-value">
               <span className="finance-overview-number">{overtimeResult ? formatMoney(overtimeResult.restDayOvertimePay) : '—'}</span>
             </p>
             <p className="finance-salary-metric-note muted">适用于休息日加班估算</p>
           </article>
-          <article className="finance-salary-metric card">
+          <article className="finance-salary-metric">
             <p className="finance-overview-label">法定节假日加班费（3x）</p>
             <p className="finance-overview-value">
               <span className="finance-overview-number">{overtimeResult ? formatMoney(overtimeResult.holidayOvertimePay) : '—'}</span>

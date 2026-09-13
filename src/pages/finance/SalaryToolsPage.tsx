@@ -2,11 +2,15 @@ import { SalaryToolCard } from './SalaryToolCard';
 
 export function SalaryToolsPage() {
   return (
-    <div className="page-stack finance-page vi-page">
-      <section className="card finance-page-tip" role="note">
-        <strong>这里是工资工具页</strong>
-        <p>集中放工资计算、个税测算等工具能力；如果你想看财经 RSS、市场动态与资讯订阅，请前往「市场资讯」。</p>
-      </section>
+    <div className="page-stack finance-page vi-page finance-salary-workbench">
+      <header className="finance-salary-hero">
+        <div>
+          <span className="finance-eyebrow">PAYDAY LAB · 01</span>
+          <h1>把每一小时的价值算清楚</h1>
+          <p>输入你的月薪，快速得到日薪、时薪与加班参考。数字会随输入即时更新，适合作为谈薪和排班时的轻量参考。</p>
+        </div>
+        <div className="finance-salary-hero-mark" aria-hidden="true">¥<span>→</span></div>
+      </header>
       <SalaryToolCard />
     </div>
   );

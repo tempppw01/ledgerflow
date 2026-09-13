@@ -2855,6 +2855,8 @@ function MarketBoardsPanel({
   const [newThemeCode, setNewThemeCode] = useState('');
   const [editingThemeCode, setEditingThemeCode] = useState('');
   const [editingThemeName, setEditingThemeName] = useState('');
+  const [expandedBoardCode, setExpandedBoardCode] = useState('');
+  const [hotIndustry, setHotIndustry] = useState('all');
   const availableConceptBoards = conceptBoards.filter(
     (board) => !trackedThemes.some((theme) => theme.code === board.code)
   );
@@ -2865,7 +2867,18 @@ function MarketBoardsPanel({
         (b.changePercent ?? Number.NEGATIVE_INFINITY) -
         (a.changePercent ?? Number.NEGATIVE_INFINITY)
     );
-  const visibleBoards = boardUniverse.slice(0, 6);
+  const hotFilters = [
+    { id: 'all', label: '全部热门' },
+    { id: 'bank', label: '银行', keywords: ['银行'] },
+    { id: 'technology', label: '科技', keywords: ['科技', '软件', '计算机'] },
+    { id: 'semiconductor', label: '半导体', keywords: ['半导体', '芯片'] },
+    { id: 'storage', label: '存储', keywords: ['存储', '存储器'] }
+  ];
+  const activeHotFilter = hotFilters.find((item) => item.id === hotIndustry);
+  const filteredBoards = view === 'industry' && activeHotFilter?.keywords
+    ? boardUniverse.filter((board) => activeHotFilter.keywords!.some((keyword) => board.name.includes(keyword)))
+    : boardUniverse;
+  const visibleBoards = filteredBoards.slice(0, 8);
   const breadth = getMarketBreadth(boardUniverse);
 
   return (
@@ -3061,6 +3074,13 @@ function MarketBoardsPanel({
         </div>
       ) : (
         <>
+          <div className="investments-hot-industry-filters" role="toolbar" aria-label="热门行业筛选">
+            {hotFilters.map((filter) => (
+              <button key={filter.id} type="button" className={hotIndustry === filter.id ? 'is-active' : ''} onClick={() => setHotIndustry(filter.id)}>
+                {filter.label}
+              </button>
+            ))}
+          </div>
           <div className="investments-market-board-overview">
             <MarketBreadthDonut breadth={breadth} label="行业榜" />
             <div>
@@ -3073,8 +3093,8 @@ function MarketBoardsPanel({
               const boardConstituents = constituents[board.code] || [];
               const health = getBoardHealth(board.changePercent);
               return (
-                <article className="investments-market-board-card" key={board.code || `${board.name}-${index}`}>
-                  <div className="investments-market-board-card-head">
+                <article className={`investments-market-board-card ${expandedBoardCode === board.code ? 'is-expanded' : ''}`} key={board.code || `${board.name}-${index}`}>
+                  <button className="investments-market-board-card-head" type="button" aria-expanded={expandedBoardCode === board.code} onClick={() => setExpandedBoardCode((current) => current === board.code ? '' : board.code)}>
                     <div>
                       <span>{String(index + 1).padStart(2, '0')}</span>
                       <strong title={board.name}>{board.name}</strong>
@@ -3082,14 +3102,15 @@ function MarketBoardsPanel({
                     <b className={getMarketTone(board.changePercent)}>
                       {formatMarketPercent(board.changePercent)}
                     </b>
-                  </div>
+                    <span className="investments-board-expand-mark" aria-hidden="true">{expandedBoardCode === board.code ? '−' : '+'}</span>
+                  </button>
                   <div className="investments-market-board-card-meta">
                     <span>{formatMarketIndexValue(board.value)}</span>
                     <em className={`investments-board-health ${health.className}`}>
                       {health.emoji} {health.label}
                     </em>
                   </div>
-                  <div className="investments-market-board-card-stocks">
+                  {expandedBoardCode === board.code ? <div className="investments-market-board-card-stocks" aria-live="polite">
                     <small>领涨公司</small>
                     {boardConstituents.length > 0 ? (
                       boardConstituents.slice(0, 3).map((stock) => (
@@ -3105,7 +3126,7 @@ function MarketBoardsPanel({
                         {status === 'loading' ? '正在同步公司行情…' : '公司行情暂缺'}
                       </span>
                     )}
-                  </div>
+                  </div> : null}
                 </article>
               );
             })}

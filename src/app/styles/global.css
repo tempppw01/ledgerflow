@@ -19333,3 +19333,34 @@ select.debt-form-input {
     border-top: 1px solid var(--border-subtle);
   }
 }
+
+/* 2026 visual refresh: salary workbench and editorial news */
+.finance-salary-workbench { gap: 10px; }
+.finance-salary-hero { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; padding:18px 0 24px; border-bottom:1px solid var(--color-divider); }
+.finance-salary-hero h1 { margin:6px 0 8px; max-width:640px; font-size:clamp(28px,4vw,44px); letter-spacing:-.04em; line-height:1.08; }
+.finance-salary-hero p { max-width:620px; margin:0; color:var(--color-text-secondary); line-height:1.7; }
+.finance-eyebrow { color:var(--color-primary); font-size:11px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+.finance-salary-hero-mark { color:var(--color-primary); font-size:52px; font-weight:800; line-height:1; }
+.finance-salary-card { display:grid; gap:24px; padding:24px 0; }
+.finance-salary-input-pane { display:grid; grid-template-columns:minmax(220px,.8fr) 1.4fr; gap:28px; align-items:end; }
+.finance-section-heading h2 { margin:7px 0 0; font-size:20px; }
+.finance-salary-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.finance-salary-result-grid { display:grid; grid-template-columns:1.15fr 1.15fr 1fr; gap:0; border-block:1px solid var(--color-divider); }
+.finance-salary-metric { padding:20px 22px 18px; border-right:1px solid var(--color-divider); }
+.finance-salary-metric:last-child { border-right:0; }
+.finance-salary-metric.is-primary .finance-overview-number,.finance-salary-metric.is-primary-alt .finance-overview-number { font-size:clamp(25px,3vw,36px); }
+.finance-salary-metric.is-primary .finance-overview-label::before { content:'主结论'; display:block; margin-bottom:5px; color:var(--color-primary); font-size:10px; letter-spacing:.1em; }
+.finance-news-editorial-layout { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(300px,.9fr); gap:28px; margin-top:16px; }
+.finance-news-lead { display:flex; flex-direction:column; justify-content:center; min-height:230px; padding:12px 28px 18px 0; border-right:1px solid var(--color-divider); }
+.finance-news-kicker { color:var(--color-primary); font-size:11px; font-weight:800; letter-spacing:.08em; }
+.finance-news-lead h3 { margin:12px 0 10px; max-width:650px; font-size:clamp(24px,3vw,38px); line-height:1.18; letter-spacing:-.035em; }
+.finance-news-lead p { max-width:600px; margin:0; color:var(--color-text-secondary); line-height:1.7; }
+.finance-news-lead-meta { display:flex; gap:16px; align-items:center; margin-top:20px; color:var(--color-text-tertiary); font-size:12px; }
+.finance-news-lead-meta a { color:var(--color-primary); font-weight:700; }
+.finance-news-editorial-layout .finance-news-compact-list { max-height:390px; overflow:auto; }
+.finance-news-editorial-layout .finance-news-compact-item { display:grid; grid-template-columns:32px minmax(0,1fr); gap:10px; width:100%; padding:14px 8px; text-align:left; }
+.finance-news-index { color:var(--color-text-tertiary); font-size:11px; font-variant-numeric:tabular-nums; }
+.finance-news-item-copy { display:grid; gap:5px; min-width:0; }
+.finance-news-item-copy strong { overflow:hidden; font-size:13px; line-height:1.45; text-overflow:ellipsis; white-space:nowrap; }
+.finance-news-item-copy small { color:var(--color-text-tertiary); font-size:11px; }
+@media (max-width:760px) { .finance-salary-hero { align-items:flex-start; } .finance-salary-hero-mark { display:none; } .finance-salary-input-pane,.finance-news-editorial-layout { grid-template-columns:1fr; gap:16px; } .finance-salary-grid,.finance-salary-result-grid { grid-template-columns:1fr; } .finance-salary-metric { border-right:0; border-bottom:1px solid var(--color-divider); padding-inline:0; } .finance-salary-metric:last-child { border-bottom:0; } .finance-news-lead { min-height:0; border-right:0; border-bottom:1px solid var(--color-divider); padding:4px 0 20px; } .finance-news-lead h3 { font-size:25px; } }

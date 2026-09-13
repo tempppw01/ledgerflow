@@ -7333,3 +7333,11 @@
     align-items: flex-start;
   }
 }
+
+.investments-hot-industry-filters { display:flex; flex-wrap:wrap; gap:6px; margin:14px 0 4px; }
+.investments-hot-industry-filters button { border:0; border-bottom:1px solid transparent; background:transparent; color:var(--color-text-secondary); padding:7px 10px; font-size:12px; font-weight:700; cursor:pointer; }
+.investments-hot-industry-filters button.is-active { color:var(--color-primary); border-bottom-color:var(--color-primary); }
+.investments-market-board-card-head { width:100%; text-align:left; cursor:pointer; }
+.investments-market-board-card-head .investments-board-expand-mark { margin-left:auto; color:var(--color-text-tertiary); font-size:18px; font-weight:400; }
+.investments-market-board-card-stocks { animation: boardReveal 180ms ease both; }
+@keyframes boardReveal { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }

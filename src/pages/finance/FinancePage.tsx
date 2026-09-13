@@ -147,40 +147,37 @@ export function FinancePage() {
         {news.length === 0 ? (
           <p className="muted">{t('finance.ui.noNews')}</p>
         ) : (
-          <div className="finance-news-compact-list">
-            {news.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`finance-news-compact-item ${activeNews?.id === item.id ? 'is-active' : ''}`}
-                onClick={() => setActiveNewsId(item.id)}
-              >
-                <strong>{item.title}</strong>
-                <p className="muted">
-                  {item.source} · {formatPublishedAt(item.publishedAt, i18n.language)}
-                </p>
-              </button>
-            ))}
+          <div className="finance-news-editorial-layout">
+            {activeNews ? (
+              <article className="finance-news-lead">
+                <span className="finance-news-kicker">今日焦点 · {activeNews.source}</span>
+                <h3>{activeNews.title}</h3>
+                <p>{activeNews.summary || t('finance.ui.noSummary')}</p>
+                <div className="finance-news-lead-meta">
+                  <small>{formatPublishedAt(activeNews.publishedAt, i18n.language)}</small>
+                  <a href={activeNews.link} target="_blank" rel="noreferrer">{t('finance.ui.openOriginal')} ↗</a>
+                </div>
+              </article>
+            ) : null}
+            <div className="finance-news-compact-list">
+              {news.map((item, index) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`finance-news-compact-item ${activeNews?.id === item.id ? 'is-active' : ''}`}
+                  onClick={() => setActiveNewsId(item.id)}
+                >
+                  <span className="finance-news-index">{String(index + 1).padStart(2, '0')}</span>
+                  <span className="finance-news-item-copy">
+                    <strong>{item.title}</strong>
+                    <small>{item.source} · {formatPublishedAt(item.publishedAt, i18n.language)}</small>
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </section>
-
-      {activeNews ? (
-        <section
-          className="card"
-          style={{ border: '2px solid var(--color-primary-border)', boxShadow: 'var(--shadow-sm)' }}
-        >
-          <h3 style={{ marginTop: 0 }}>🧾 {t('finance.ui.readerTitle')}</h3>
-          <h4>{activeNews.title}</h4>
-          <p className="muted" style={{ marginTop: 0 }}>
-            {activeNews.source} · {formatPublishedAt(activeNews.publishedAt, i18n.language)}
-          </p>
-          <p>{activeNews.summary || t('finance.ui.noSummary')}</p>
-          <a href={activeNews.link} target="_blank" rel="noreferrer">
-            {t('finance.ui.openOriginal')}
-          </a>
-        </section>
-      ) : null}
 
     </div>
   );
