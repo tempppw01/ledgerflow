@@ -139,6 +139,35 @@
 .dashboard-net-worth-summary-items i.is-investment { background: var(--color-success); }
 .dashboard-net-worth-summary-items i.is-debt { background: var(--color-danger); }
 
+/* Future cashflow and actionable financial follow-ups */
+.dashboard-cashflow-agenda { display: grid; gap: var(--space-3); margin-top: var(--space-3); padding: var(--space-4); }
+.dashboard-cashflow-agenda .dashboard-section-header { margin: 0; }
+.dashboard-cashflow-agenda .dashboard-section-header > strong { color: var(--color-primary); font-size: var(--font-sm); }
+.dashboard-cashflow-agenda-body { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(220px, .6fr); gap: var(--space-4); }
+.dashboard-cashflow-timeline { display: grid; align-content: start; border-top: 1px solid var(--color-divider); }
+.dashboard-cashflow-event { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; gap: var(--space-3); align-items: center; width: 100%; padding: 11px 0; border: 0; border-bottom: 1px solid var(--color-divider); background: transparent; color: var(--color-text); text-align: left; cursor: pointer; }
+.dashboard-cashflow-event:hover strong { color: var(--color-primary); }
+.dashboard-cashflow-event-date { color: var(--color-text-secondary); font-size: var(--font-xs); font-variant-numeric: tabular-nums; }
+.dashboard-cashflow-event-main { display: grid; gap: 2px; min-width: 0; }
+.dashboard-cashflow-event-main strong { overflow: hidden; font-size: var(--font-sm); text-overflow: ellipsis; white-space: nowrap; }
+.dashboard-cashflow-event-main small { color: var(--color-text-tertiary); font-size: var(--font-xs); }
+.dashboard-cashflow-event b { font-family: var(--font-number); font-size: var(--font-sm); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dashboard-cashflow-event b.is-expense { color: var(--color-expense); }
+.dashboard-cashflow-event b.is-income { color: var(--color-income); }
+.dashboard-cashflow-empty { margin: 0; padding: var(--space-4) 0; color: var(--color-text-secondary); font-size: var(--font-sm); }
+.dashboard-finance-todos { display: grid; align-content: start; gap: 6px; padding-left: var(--space-4); border-left: 1px solid var(--color-divider); }
+.dashboard-cashflow-todo-title { margin-bottom: 4px; color: var(--color-text-secondary); font-size: var(--font-xs); font-weight: 700; }
+.dashboard-finance-todos button { display: flex; align-items: center; gap: 8px; padding: 7px 0; border: 0; background: transparent; color: var(--color-text); text-align: left; cursor: pointer; }
+.dashboard-finance-todos button:hover span { color: var(--color-primary); }
+.dashboard-finance-todos button b { display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 50%; background: var(--color-primary-bg); color: var(--color-primary); font-family: var(--font-number); font-size: var(--font-xs); }
+.dashboard-finance-todos button span,.dashboard-finance-todos p { margin: 0; color: var(--color-text-secondary); font-size: var(--font-sm); line-height: var(--leading-relaxed); }
+
+@media (max-width: 680px) {
+  .dashboard-cashflow-agenda { padding-inline: 0; border-inline: 0; border-radius: 0; background: transparent; box-shadow: none; }
+  .dashboard-cashflow-agenda-body { grid-template-columns: 1fr; }
+  .dashboard-finance-todos { padding: var(--space-3) 0 0; border-top: 1px solid var(--color-divider); border-left: 0; }
+}
+
 @media (max-width: 720px) {
   .dashboard-net-worth-summary {
     grid-column: 1 / -1;

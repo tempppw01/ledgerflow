@@ -10,6 +10,7 @@ import { DashboardHistoryCompareCard } from '../../features/dashboard/components
 import { DashboardTopTransactionsCard } from '../../features/dashboard/components/DashboardTopTransactionsCard';
 import { DashboardMonthlyTrendSummaryCard } from '../../features/dashboard/components/DashboardMonthlyTrendSummaryCard';
 import { DashboardWelcomeBanner } from '../../features/dashboard/components/DashboardWelcomeBanner';
+import { DashboardCashflowAgenda } from '../../features/dashboard/components/DashboardCashflowAgenda';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
@@ -1301,6 +1302,14 @@ export function DashboardPage() {
             </div>
           </button>
         </div>
+        <DashboardCashflowAgenda
+          debts={debts}
+          subscriptions={subscriptions}
+          transactions={transactions}
+          onNavigateToRepayments={() => navigate('/repayment-management')}
+          onNavigateToSubscriptions={() => navigate('/subscriptions')}
+          onNavigateToTransactions={() => navigate('/transactions')}
+        />
         <DashboardModuleCustomizer
           title={tFallback('dashboard.ui.moduleCustomize', '首页模块')}
           hint={tFallback('dashboard.ui.moduleCustomizeHint', '拖动排序，关掉暂时用不上的卡片。')}
