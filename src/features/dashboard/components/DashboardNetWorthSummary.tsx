@@ -20,11 +20,10 @@ export function DashboardNetWorthSummary({
         <strong>{formatCurrency(value)}</strong>
       </div>
       <div className="dashboard-net-worth-summary-items">
-        <span><i className="is-account" />账户 {formatCurrency(accountBalance)}</span>
-        <span><i className="is-investment" />投资 {formatCurrency(investmentValue)}</span>
-        <span><i className="is-debt" />负债 −{formatCurrency(debtBalance)}</span>
+        <span><i className="is-account" /><em>账户</em><b>{formatCurrency(accountBalance)}</b></span>
+        <span><i className="is-investment" /><em>投资</em><b>{formatCurrency(investmentValue)}</b></span>
+        <span><i className="is-debt" /><em>负债</em><b>−{formatCurrency(debtBalance)}</b></span>
       </div>
     </div>
   );
 }
-
