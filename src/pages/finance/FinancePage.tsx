@@ -34,18 +34,22 @@ function readCachedNews(): TonghuashunNewsItem[] {
 function formatPublishedAt(value: string, language: string): string {
   const normalized = String(value || '').trim();
   if (!normalized) return '';
+  if (/^(今天|刚刚)/.test(normalized)) return normalized;
+  if (/^昨天/.test(normalized)) return normalized;
   const currentYear = new Date().getFullYear().toString();
   const withYear = /^\d{4}\s*[年-]\s*\d{1,2}\s*月\s*\d{1,2}/.test(normalized)
     ? normalized
     : `${currentYear}-${normalized.replace('月', '-').replace('日', '')}`;
+  const parsedDate = new Date(withYear);
+  if (Number.isNaN(parsedDate.getTime())) return normalized;
   const parsed = new Intl.DateTimeFormat(language === 'zh' ? 'zh-CN' : 'en-US', {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
     hour12: false
-  }).format(new Date(withYear));
-  return Number.isNaN(new Date(withYear).getTime()) ? normalized : parsed;
+  }).format(parsedDate);
+  return parsed;
 }
 
 export function FinancePage() {
@@ -96,9 +100,12 @@ export function FinancePage() {
 
   return (
     <div className="page-stack finance-page vi-page">
-      <section className="card">
-        <h2 style={{ marginTop: 0 }}>📰 {t('finance.ui.title')}</h2>
-        <p className="muted">{t('finance.ui.subtitle')}</p>
+      <section className="vi-section finance-news-section">
+        <div className="vi-section-title">
+          <span className="vi-page-kicker">市场脉搏</span>
+          <h2>{t('finance.ui.title')}</h2>
+          <p>{t('finance.ui.subtitle')}</p>
+        </div>
         <div className="finance-source-strip" aria-label={t('finance.ui.sourceLabel')}>
           <div className="finance-source-strip-copy">
             <span>{t('finance.ui.sourceBadge')}</span>

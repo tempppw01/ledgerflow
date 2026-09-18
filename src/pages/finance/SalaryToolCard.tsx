@@ -43,10 +43,10 @@ export function SalaryToolCard() {
   );
 
   return (
-    <section className="finance-salary-card">
-      <div className="finance-salary-input-pane">
-        <div className="finance-section-heading">
-          <span className="finance-eyebrow">输入参数</span>
+    <section className="vi-section finance-salary-card">
+      <div className="finance-salary-input-pane vi-split">
+        <div className="finance-section-heading vi-section-title">
+          <span className="vi-page-kicker">输入参数</span>
           <h2>先从你的工作日常开始</h2>
         </div>
 
@@ -55,7 +55,7 @@ export function SalaryToolCard() {
           <span>月薪</span>
           <div className={`finance-unit-input ${monthlySalary ? 'is-filled' : ''}`}>
             <input
-              className="finance-debt-form-control"
+              className="vi-input"
               inputMode="decimal"
               value={monthlySalary}
               onChange={(event) => setMonthlySalary(sanitizePositiveNumberInput(event.target.value))}
@@ -69,7 +69,7 @@ export function SalaryToolCard() {
           <span>计薪天数</span>
           <div className={`finance-unit-input ${workingDays ? 'is-filled' : ''}`}>
             <input
-              className="finance-debt-form-control"
+              className="vi-input"
               inputMode="decimal"
               value={workingDays}
               onChange={(event) => setWorkingDays(sanitizePositiveNumberInput(event.target.value))}
@@ -83,7 +83,7 @@ export function SalaryToolCard() {
           <span>每日工时</span>
           <div className={`finance-unit-input ${dailyHours ? 'is-filled' : ''}`}>
             <input
-              className="finance-debt-form-control"
+              className="vi-input"
               inputMode="decimal"
               value={dailyHours}
               onChange={(event) => setDailyHours(sanitizePositiveNumberInput(event.target.value))}
@@ -131,7 +131,7 @@ export function SalaryToolCard() {
             <span>加班时长</span>
             <div className={`finance-unit-input ${overtimeHours ? 'is-filled' : ''}`}>
               <input
-                className="finance-debt-form-control"
+              className="vi-input"
                 inputMode="decimal"
                 value={overtimeHours}
                 onChange={(event) => setOvertimeHours(sanitizePositiveNumberInput(event.target.value))}

@@ -2734,10 +2734,16 @@ function MarketOverviewPanel({
         </aside>
       </div>
 
-      <MarketHistoryAndSimulator
-        secId={selectedSecId}
-        indexName={activeIndex?.name || '大盘指数'}
-      />
+      <details className="investments-market-history-disclosure">
+        <summary>
+          查看历史走势与定投模拟
+          <span>按需展开，不打断当前行情判断</span>
+        </summary>
+        <MarketHistoryAndSimulator
+          secId={selectedSecId}
+          indexName={activeIndex?.name || '大盘指数'}
+        />
+      </details>
 
       {error && status === 'error' ? <p className="investments-market-error">{error}</p> : null}
     </section>
@@ -2745,6 +2751,14 @@ function MarketOverviewPanel({
 }
 
 type MarketBoardView = 'theme' | 'industry';
+
+const HOT_INDUSTRY_FILTERS: Array<{ id: string; label: string; keywords?: string[] }> = [
+  { id: 'all', label: '全部热门', keywords: undefined },
+  { id: 'bank', label: '银行', keywords: ['银行'] },
+  { id: 'technology', label: '科技', keywords: ['科技', '软件', '计算机'] },
+  { id: 'semiconductor', label: '半导体', keywords: ['半导体', '芯片'] },
+  { id: 'storage', label: '存储', keywords: ['存储', '存储器'] }
+];
 
 type MarketBreadth = {
   up: number;
@@ -2825,6 +2839,7 @@ function MarketBoardsPanel({
   trackedThemes,
   conceptBoards,
   constituents,
+  constituentStatus,
   view,
   selectedThemeCode,
   status,
@@ -2834,13 +2849,15 @@ function MarketBoardsPanel({
   onAddTheme,
   onRenameTheme,
   onRemoveTheme,
-  onRefresh
+  onRefresh,
+  onLoadConstituents
 }: {
   themeBoards: EastmoneyMarketBoard[];
   industryBoards: EastmoneyMarketBoard[];
   trackedThemes: EastmoneyMarketTheme[];
   conceptBoards: EastmoneyMarketBoard[];
   constituents: Record<string, EastmoneyMarketConstituent[]>;
+  constituentStatus: Record<string, 'idle' | 'loading' | 'error'>;
   view: MarketBoardView;
   selectedThemeCode: string;
   status: 'idle' | 'loading' | 'error';
@@ -2851,6 +2868,7 @@ function MarketBoardsPanel({
   onRenameTheme: (code: string, name: string) => void;
   onRemoveTheme: (code: string) => void;
   onRefresh: () => void;
+  onLoadConstituents: (code: string, force?: boolean) => void;
 }) {
   const [newThemeCode, setNewThemeCode] = useState('');
   const [editingThemeCode, setEditingThemeCode] = useState('');
@@ -2867,16 +2885,10 @@ function MarketBoardsPanel({
         (b.changePercent ?? Number.NEGATIVE_INFINITY) -
         (a.changePercent ?? Number.NEGATIVE_INFINITY)
     );
-  const hotFilters = [
-    { id: 'all', label: '全部热门' },
-    { id: 'bank', label: '银行', keywords: ['银行'] },
-    { id: 'technology', label: '科技', keywords: ['科技', '软件', '计算机'] },
-    { id: 'semiconductor', label: '半导体', keywords: ['半导体', '芯片'] },
-    { id: 'storage', label: '存储', keywords: ['存储', '存储器'] }
-  ];
-  const activeHotFilter = hotFilters.find((item) => item.id === hotIndustry);
-  const filteredBoards = view === 'industry' && activeHotFilter?.keywords
-    ? boardUniverse.filter((board) => activeHotFilter.keywords!.some((keyword) => board.name.includes(keyword)))
+  const activeHotFilter = HOT_INDUSTRY_FILTERS.find((item) => item.id === hotIndustry);
+  const activeKeywords = activeHotFilter?.keywords;
+  const filteredBoards = view === 'industry' && activeKeywords
+    ? boardUniverse.filter((board) => activeKeywords.some((keyword) => board.name.includes(keyword)))
     : boardUniverse;
   const visibleBoards = filteredBoards.slice(0, 8);
   const breadth = getMarketBreadth(boardUniverse);
@@ -2909,7 +2921,10 @@ function MarketBoardsPanel({
             role="tab"
             aria-selected={view === itemView}
             className={view === itemView ? 'is-active' : ''}
-            onClick={() => onSelectView(itemView)}
+            onClick={() => {
+              setExpandedBoardCode('');
+              onSelectView(itemView);
+            }}
           >
             {label}
           </button>
@@ -3027,7 +3042,16 @@ function MarketBoardsPanel({
                   }`}
                   key={board.code || `${board.name}-${index}`}
                 >
-                  <div className="investments-market-board-card-head">
+                  <button
+                    className="investments-market-board-card-head"
+                    type="button"
+                    aria-expanded={expandedBoardCode === board.code}
+                    onClick={() => {
+                      const nextExpanded = expandedBoardCode === board.code ? '' : board.code;
+                      setExpandedBoardCode(nextExpanded);
+                      if (nextExpanded) onLoadConstituents(nextExpanded);
+                    }}
+                  >
                     <div>
                       <span>{String(index + 1).padStart(2, '0')}</span>
                       <strong title={board.name}>{board.name}</strong>
@@ -3035,16 +3059,23 @@ function MarketBoardsPanel({
                     <b className={getMarketTone(board.changePercent)}>
                       {formatMarketPercent(board.changePercent)}
                     </b>
-                  </div>
+                    <span className="investments-board-expand-mark" aria-hidden="true">
+                      {expandedBoardCode === board.code ? '−' : '+'}
+                    </span>
+                  </button>
                   <div className="investments-market-board-card-meta">
                     <span>{formatMarketIndexValue(board.value)}</span>
                     <em className={`investments-board-health ${health.className}`}>
                       {health.emoji} {health.label}
                     </em>
                   </div>
-                  <div className="investments-market-board-card-stocks">
+                  {expandedBoardCode === board.code ? <div className="investments-market-board-card-stocks" aria-live="polite">
                     <small>领涨公司</small>
-                    {boardConstituents.length > 0 ? (
+                    {constituentStatus[board.code] === 'loading' ? (
+                      <span className="investments-market-board-card-loading">正在同步公司行情…</span>
+                    ) : constituentStatus[board.code] === 'error' ? (
+                      <span className="investments-market-board-card-loading">公司行情暂时不可用，稍后重试。</span>
+                    ) : boardConstituents.length > 0 ? (
                       boardConstituents.slice(0, 3).map((stock) => (
                         <div key={stock.code || stock.name}>
                           <span title={stock.name}>{stock.name}</span>
@@ -3053,12 +3084,8 @@ function MarketBoardsPanel({
                           </b>
                         </div>
                       ))
-                    ) : (
-                      <span className="investments-market-board-card-loading">
-                        {status === 'loading' ? '正在同步公司行情…' : '公司行情暂缺'}
-                      </span>
-                    )}
-                  </div>
+                    ) : <span className="investments-market-board-card-loading">该板块暂未返回成分股。</span>}
+                  </div> : null}
                 </article>
               );
             })}
@@ -3075,8 +3102,11 @@ function MarketBoardsPanel({
       ) : (
         <>
           <div className="investments-hot-industry-filters" role="toolbar" aria-label="热门行业筛选">
-            {hotFilters.map((filter) => (
-              <button key={filter.id} type="button" className={hotIndustry === filter.id ? 'is-active' : ''} onClick={() => setHotIndustry(filter.id)}>
+            {HOT_INDUSTRY_FILTERS.map((filter) => (
+              <button key={filter.id} type="button" className={hotIndustry === filter.id ? 'is-active' : ''} onClick={() => {
+                setExpandedBoardCode('');
+                setHotIndustry(filter.id);
+              }}>
                 {filter.label}
               </button>
             ))}
@@ -3094,7 +3124,11 @@ function MarketBoardsPanel({
               const health = getBoardHealth(board.changePercent);
               return (
                 <article className={`investments-market-board-card ${expandedBoardCode === board.code ? 'is-expanded' : ''}`} key={board.code || `${board.name}-${index}`}>
-                  <button className="investments-market-board-card-head" type="button" aria-expanded={expandedBoardCode === board.code} onClick={() => setExpandedBoardCode((current) => current === board.code ? '' : board.code)}>
+                  <button className="investments-market-board-card-head" type="button" aria-expanded={expandedBoardCode === board.code} onClick={() => {
+                    const nextExpanded = expandedBoardCode === board.code ? '' : board.code;
+                    setExpandedBoardCode(nextExpanded);
+                    if (nextExpanded) onLoadConstituents(nextExpanded);
+                  }}>
                     <div>
                       <span>{String(index + 1).padStart(2, '0')}</span>
                       <strong title={board.name}>{board.name}</strong>
@@ -3112,7 +3146,11 @@ function MarketBoardsPanel({
                   </div>
                   {expandedBoardCode === board.code ? <div className="investments-market-board-card-stocks" aria-live="polite">
                     <small>领涨公司</small>
-                    {boardConstituents.length > 0 ? (
+                    {constituentStatus[board.code] === 'loading' ? (
+                      <span className="investments-market-board-card-loading">正在同步公司行情…</span>
+                    ) : constituentStatus[board.code] === 'error' ? (
+                      <span className="investments-market-board-card-loading">公司行情暂时不可用，稍后重试。</span>
+                    ) : boardConstituents.length > 0 ? (
                       boardConstituents.slice(0, 3).map((stock) => (
                         <div key={stock.code || stock.name}>
                           <span title={stock.name}>{stock.name}</span>
@@ -3121,11 +3159,7 @@ function MarketBoardsPanel({
                           </b>
                         </div>
                       ))
-                    ) : (
-                      <span className="investments-market-board-card-loading">
-                        {status === 'loading' ? '正在同步公司行情…' : '公司行情暂缺'}
-                      </span>
-                    )}
+                    ) : <span className="investments-market-board-card-loading">该板块暂未返回成分股。</span>}
                   </div> : null}
                 </article>
               );
@@ -3335,6 +3369,9 @@ export function InvestmentsPage() {
   const [marketConceptBoards, setMarketConceptBoards] = useState<EastmoneyMarketBoard[]>([]);
   const [marketBoardConstituents, setMarketBoardConstituents] = useState<
     Record<string, EastmoneyMarketConstituent[]>
+  >({});
+  const [marketBoardConstituentStatus, setMarketBoardConstituentStatus] = useState<
+    Record<string, 'idle' | 'loading' | 'error'>
   >({});
   const [marketBoardsStatus, setMarketBoardsStatus] = useState<'idle' | 'loading' | 'error'>(
     'idle'
@@ -3904,39 +3941,6 @@ export function InvestmentsPage() {
   }, [trackedMarketThemes, trackedMarketThemesKey]);
 
   useEffect(() => {
-    const boards = [...(marketBoardView === 'theme' ? marketThemeBoards : marketIndustryBoards)]
-      .filter((board) => board.code)
-      .sort(
-        (a, b) =>
-          (b.changePercent ?? Number.NEGATIVE_INFINITY) -
-          (a.changePercent ?? Number.NEGATIVE_INFINITY)
-      )
-      .slice(0, 6);
-    if (boards.length === 0) return;
-
-    let cancelled = false;
-    Promise.allSettled(
-      boards.map(async (board) => ({
-        code: board.code,
-        stocks: await fetchEastmoneyMarketBoardConstituents(board.code, 3)
-      }))
-    ).then((results) => {
-      if (cancelled) return;
-      setMarketBoardConstituents((current) => {
-        const next = { ...current };
-        results.forEach((result) => {
-          if (result.status === 'fulfilled') next[result.value.code] = result.value.stocks;
-        });
-        return next;
-      });
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [marketBoardView, marketIndustryBoards, marketThemeBoards]);
-
-  useEffect(() => {
     if (holdingStockSecIds.length === 0) {
       setHoldingStockQuotes(new Map());
       return;
@@ -4186,6 +4190,20 @@ export function InvestmentsPage() {
     }
   }
 
+  async function loadMarketBoardConstituents(code: string, force = false) {
+    if (!code || marketBoardConstituentStatus[code] === 'loading') return;
+    if (!force && marketBoardConstituents[code]) return;
+
+    setMarketBoardConstituentStatus((current) => ({ ...current, [code]: 'loading' }));
+    try {
+      const stocks = await fetchEastmoneyMarketBoardConstituents(code, 8);
+      setMarketBoardConstituents((current) => ({ ...current, [code]: stocks }));
+      setMarketBoardConstituentStatus((current) => ({ ...current, [code]: 'idle' }));
+    } catch {
+      setMarketBoardConstituentStatus((current) => ({ ...current, [code]: 'error' }));
+    }
+  }
+
   async function handleStockLookupSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -4412,6 +4430,7 @@ export function InvestmentsPage() {
               trackedThemes={trackedMarketThemes}
               conceptBoards={marketConceptBoards}
               constituents={marketBoardConstituents}
+              constituentStatus={marketBoardConstituentStatus}
               view={marketBoardView}
               selectedThemeCode={selectedMarketThemeCode}
               status={marketBoardsStatus}
@@ -4422,6 +4441,7 @@ export function InvestmentsPage() {
               onRenameTheme={handleRenameMarketTheme}
               onRemoveTheme={handleRemoveMarketTheme}
               onRefresh={refreshMarketBoards}
+              onLoadConstituents={loadMarketBoardConstituents}
             />
           </section>
         ) : null}

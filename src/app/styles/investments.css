@@ -7341,3 +7341,12 @@
 .investments-market-board-card-head .investments-board-expand-mark { margin-left:auto; color:var(--color-text-tertiary); font-size:18px; font-weight:400; }
 .investments-market-board-card-stocks { animation: boardReveal 180ms ease both; }
 @keyframes boardReveal { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+
+.investments-market-history-disclosure { margin-top: var(--space-3); border-top: 1px solid var(--color-divider); }
+.investments-market-history-disclosure > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) 0; color: var(--color-text); cursor: pointer; font-size: var(--font-sm); font-weight: 700; list-style: none; }
+.investments-market-history-disclosure > summary::-webkit-details-marker { display: none; }
+.investments-market-history-disclosure > summary::before { content: '+'; color: var(--color-primary); font-size: 18px; font-weight: 400; }
+.investments-market-history-disclosure[open] > summary::before { content: '−'; }
+.investments-market-history-disclosure > summary span { margin-left: auto; color: var(--color-text-secondary); font-size: var(--font-xs); font-weight: 400; }
+.investments-market-history-disclosure[open] > .investments-market-history-section { animation: boardReveal 180ms ease both; }
+@media (max-width: 640px) { .investments-market-history-disclosure > summary { align-items: flex-start; } .investments-market-history-disclosure > summary span { max-width: 15ch; text-align: right; } }
