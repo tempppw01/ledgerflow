@@ -1394,10 +1394,8 @@ export function DashboardPage() {
               <DashboardAnomalyInsights
                 key={moduleId}
                 anomalyInsight={anomalyInsightDisplay}
-                subscriptionAlerts={subscriptionAlerts}
                 onNavigateToSmartBudget={() => navigate('/smart-budget')}
                 onNavigateToTransactions={() => navigate('/transactions')}
-                onNavigateToSubscriptions={() => navigate('/subscriptions')}
               />
             );
           }

@@ -1,31 +1,17 @@
-import { formatMoneyByCurrency } from '../../../shared/lib/format';
-
 export interface DashboardAnomalyInsightsProps {
   anomalyInsight: {
     anomalies: string[];
     highlights: string[];
     supportFacts: string[];
   };
-  subscriptionAlerts: Array<{
-    id: string;
-    name: string;
-    amount: number;
-    currency: string;
-    renewalDate?: string;
-    expireDate?: string;
-    status: string;
-  }>;
   onNavigateToSmartBudget: () => void;
   onNavigateToTransactions: () => void;
-  onNavigateToSubscriptions: () => void;
 }
 
 export function DashboardAnomalyInsights({
   anomalyInsight,
-  subscriptionAlerts,
   onNavigateToSmartBudget,
-  onNavigateToTransactions,
-  onNavigateToSubscriptions
+  onNavigateToTransactions
 }: DashboardAnomalyInsightsProps) {
   return (
     <section className="panel" style={{ marginTop: 12 }}>
@@ -71,37 +57,6 @@ export function DashboardAnomalyInsights({
           调一下预算
         </button>
       </div>
-
-      {subscriptionAlerts.length > 0 ? (
-        <div className="dashboard-subscription-alerts">
-          <div className="dashboard-section-header">
-            <h4>订阅快到期</h4>
-            <span>{subscriptionAlerts.length} 个待处理</span>
-          </div>
-          <div className="dashboard-anomaly-summary-grid" role="list" aria-label="订阅到期提醒">
-            {subscriptionAlerts.map((item) => (
-              <article key={item.id} role="listitem" className="dashboard-anomaly-summary-card">
-                <p className="dashboard-anomaly-card-title">🧾 别忘了这笔</p>
-                <p className="dashboard-anomaly-card-text">
-                  {item.name} ·{' '}
-                  {item.expireDate || item.renewalDate
-                    ? `到期/续费：${item.expireDate || item.renewalDate}`
-                    : '未设置日期'}
-                </p>
-                <p className="dashboard-anomaly-card-text">
-                  {item.status === 'expired' ? '已过期' : '快到了'} ·{' '}
-                  {formatMoneyByCurrency(item.amount, item.currency)}
-                </p>
-                <div className="dashboard-anomaly-card-actions">
-                  <button type="button" onClick={onNavigateToSubscriptions}>
-                    去处理一下
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      ) : null}
     </section>
   );
 }

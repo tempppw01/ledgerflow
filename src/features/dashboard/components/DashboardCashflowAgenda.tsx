@@ -68,8 +68,15 @@ export function DashboardCashflowAgenda({
   subscriptions.forEach((subscription) => {
     const due = subscription.renewalDate || subscription.expireDate;
     const date = toDate(due);
-    if (date && date >= start && date <= end && subscription.status !== 'paused') {
-      items.push({ id: `subscription:${subscription.id}`, date: due || '', label: subscription.name, amount: subscription.amount, kind: 'expense', detail: '订阅续费' });
+    if (date && date <= end && subscription.status !== 'paused') {
+      items.push({
+        id: `subscription:${subscription.id}`,
+        date: due || '',
+        label: subscription.name,
+        amount: subscription.amount,
+        kind: 'expense',
+        detail: date < start || subscription.status === 'expired' ? '续费已逾期' : '订阅续费'
+      });
     }
   });
 
@@ -81,8 +88,8 @@ export function DashboardCashflowAgenda({
     <section className="panel dashboard-cashflow-agenda" aria-label="未来三十天现金流与财务待办">
       <div className="dashboard-section-header">
         <div>
-          <h4>接下来 30 天</h4>
-          <span>把确定会发生的钱，提前放到一条线上</span>
+          <h4>未来与待办</h4>
+          <span>先处理逾期项，再看接下来 30 天会发生什么</span>
         </div>
         <strong>{agenda.length ? `${agenda.length} 项安排` : '暂无安排'}</strong>
       </div>
