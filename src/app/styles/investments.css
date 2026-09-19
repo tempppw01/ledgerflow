@@ -4026,6 +4026,91 @@
   font-weight: 750;
 }
 
+.investments-market-closure-notice {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  margin: 14px 0 4px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--color-warning) 54%, var(--color-border-light));
+  border-left: 4px solid var(--color-warning);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-warning-bg) 72%, var(--color-bg-elevated));
+}
+
+.investments-market-closure-banner {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  margin: -2px 0 2px;
+  padding: 16px 18px;
+  border: 1px solid color-mix(in srgb, var(--color-warning) 56%, var(--color-border-light));
+  border-left: 4px solid var(--color-warning);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-warning-bg) 76%, var(--color-bg-elevated));
+}
+
+.investments-market-closure-banner .investments-market-closure-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.investments-market-closure-banner > div {
+  display: grid;
+  gap: 3px;
+}
+
+.investments-market-closure-banner strong {
+  color: var(--color-text-primary);
+  font-size: 16px;
+}
+
+.investments-market-closure-banner p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.investments-market-closure-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-warning);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.investments-market-closure-notice > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.investments-market-closure-eyebrow {
+  color: var(--color-warning);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+.investments-market-closure-notice strong {
+  color: var(--color-text-primary);
+  font-size: 15px;
+}
+
+.investments-market-closure-notice p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
 /* VI coverage — market data is dense by nature. Use one workspace surface and
    quiet dividers between quotes, boards and news instead of visual nesting. */
 .investments-page .investments-hero,
@@ -7119,6 +7204,15 @@
   .investments-market-live-status {
     width: auto;
     min-width: 0;
+  }
+
+  .investments-market-closure-notice {
+    grid-template-columns: 30px minmax(0, 1fr);
+    padding: 12px;
+  }
+
+  .investments-market-closure-notice strong {
+    font-size: 14px;
   }
 
   .investments-global-quote-grid {

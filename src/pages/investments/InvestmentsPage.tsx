@@ -1214,6 +1214,47 @@ function isLiveMarketPollingTime(now = new Date()) {
   );
 }
 
+const MARKET_HOLIDAY_NOTICES: Array<{ start: string; end: string; label: string }> = [
+  { start: '2026-01-01', end: '2026-01-01', label: '元旦' },
+  { start: '2026-05-01', end: '2026-05-05', label: '劳动节' },
+  { start: '2026-10-01', end: '2026-10-07', label: '国庆节' },
+  { start: '2026-12-25', end: '2026-12-25', label: '圣诞节（部分海外市场）' }
+];
+
+function getMarketClosureNotice(
+  now: Date,
+  marketStates: Array<ReturnType<typeof getGlobalMarketState>>
+) {
+  const viewerZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Shanghai';
+  const clock = getZonedClock(now, viewerZone);
+  const dateKey = `${clock.year}-${String(clock.month).padStart(2, '0')}-${String(clock.day).padStart(2, '0')}`;
+  const holiday = MARKET_HOLIDAY_NOTICES.find(
+    (item) => dateKey >= item.start && dateKey <= item.end
+  );
+  const isWeekend = clock.weekday === 0 || clock.weekday === 6;
+
+  if (marketStates.some((market) => market.isOpen)) return null;
+  if (holiday) {
+    return {
+      eyebrow: '休市公告',
+      title: `${holiday.label} · 今日主要市场休市`,
+      detail: `${dateKey} 为${holiday.label}休市日，行情将保留最近收盘数据，自动轮询会在下一交易时段恢复。`
+    };
+  }
+  if (isWeekend) {
+    return {
+      eyebrow: '休市提醒',
+      title: '周末休市 · 暂无实时行情',
+      detail: `${dateKey} 为周末，A 股、日韩及美股均不进行常规交易。页面展示最近收盘数据，下一交易日开盘后自动恢复更新。`
+    };
+  }
+  return {
+    eyebrow: '交易时段提醒',
+    title: '当前没有市场处于交易中',
+    detail: '各市场会按当地交易日历分别开闭市；休市期间不刷新实时价格，走势图仍可查看最近行情。'
+  };
+}
+
 function buildViewerTimelineSegments(
   market: GlobalMarketDefinition,
   now: Date,
@@ -1247,6 +1288,7 @@ function GlobalMarketClock() {
   const isWeekend = viewerClock.weekday === 0 || viewerClock.weekday === 6;
   const marketStates = GLOBAL_MARKETS.map((market) => getGlobalMarketState(market, now));
   const openMarkets = marketStates.filter((market) => market.isOpen);
+  const closureNotice = getMarketClosureNotice(now, marketStates);
   const currentPosition = Math.min(100, Math.max(0, (viewerClock.minutes / 1440) * 100));
   const viewerZoneLabel = new Intl.DateTimeFormat('zh-CN', {
     timeZone: viewerTimeZone,
@@ -1285,6 +1327,17 @@ function GlobalMarketClock() {
           </button>
         </div>
       </div>
+
+      {closureNotice ? (
+        <aside className="investments-market-closure-notice" aria-label={closureNotice.eyebrow}>
+          <span className="investments-market-closure-icon" aria-hidden="true">!</span>
+          <div>
+            <span className="investments-market-closure-eyebrow">{closureNotice.eyebrow}</span>
+            <strong>{closureNotice.title}</strong>
+            <p>{closureNotice.detail}</p>
+          </div>
+        </aside>
+      ) : null}
 
       <div className="investments-global-market-statuses" aria-label="全球股市开闭市状态">
         {marketStates.map((market) => (
@@ -1427,6 +1480,30 @@ function buildMarketTrendGeometry(points: EastmoneyMarketTrendPoint[]) {
     points: coords,
     labels: [points[0]?.label, middle?.label, points[points.length - 1]?.label].filter(Boolean)
   };
+}
+
+function MarketClosureBanner() {
+  const [now, setNow] = useState(() => new Date());
+  const marketStates = GLOBAL_MARKETS.map((market) => getGlobalMarketState(market, now));
+  const notice = getMarketClosureNotice(now, marketStates);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  if (!notice) return null;
+
+  return (
+    <aside className="investments-market-closure-banner" aria-label={notice.eyebrow}>
+      <span className="investments-market-closure-icon" aria-hidden="true">!</span>
+      <div>
+        <span className="investments-market-closure-eyebrow">{notice.eyebrow}</span>
+        <strong>{notice.title}</strong>
+        <p>{notice.detail}</p>
+      </div>
+    </aside>
+  );
 }
 
 const GLOBAL_CHART_WIDTH = 560;
@@ -4374,6 +4451,8 @@ export function InvestmentsPage() {
           </button>
         ))}
       </nav>
+
+      <MarketClosureBanner />
 
       <main className="investments-console-workspace">
         {investmentWorkspace === 'overview' ? (
