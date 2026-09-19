@@ -72,6 +72,13 @@
   text-align: right;
 }
 
+.investments-console-stat-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .investments-console-stat strong {
   color: var(--color-text-primary);
   font-family: var(--font-number);
@@ -83,6 +90,17 @@
 .investments-console-stat span {
   color: var(--color-text-secondary);
   font-size: 12px;
+}
+
+.investments-console-stat time,
+.investments-console-stat small {
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.investments-console-stat small {
+  display: block;
 }
 
 .investments-console-tabs {
@@ -7060,6 +7078,10 @@
   .investments-console-stat {
     padding-left: 12px;
     text-align: left;
+  }
+
+  .investments-console-stat-row {
+    justify-content: flex-start;
   }
 
   .investments-console-tabs button {

@@ -492,13 +492,6 @@ function getBoardHealth(change?: number | null) {
   return { emoji: '🟡', label: '观望一下', className: 'is-yellow' };
 }
 
-type RuleSuggestion = {
-  tone: 'positive' | 'warning' | 'neutral';
-  emoji: string;
-  title: string;
-  reason: string;
-};
-
 type MarketAlgorithmSignals = {
   score: number;
   riskScore: number;
@@ -666,101 +659,6 @@ function buildMarketAlgorithmSignals({
     formula:
       '综合分 = 指数动量×45% + 板块广度×35% + 板块均值×20%；再叠加新闻信号、波动率和集中度计算风险分。'
   };
-}
-
-function buildRuleSuggestions({
-  positions,
-  marketChange,
-  monthlyInvestableCash,
-  algorithmSignals
-}: {
-  positions: InvestmentPosition[];
-  marketChange: number | null;
-  monthlyInvestableCash: number;
-  algorithmSignals?: MarketAlgorithmSignals;
-}): RuleSuggestion[] {
-  const weakestPosition = positions
-    .map((item) => ({
-      item,
-      profitRate:
-        item.investedAmount > 0
-          ? (item.currentValue - item.investedAmount) / item.investedAmount
-          : 0
-    }))
-    .sort((a, b) => a.profitRate - b.profitRate)[0];
-
-  if (marketChange !== null && marketChange <= -1) {
-    return [
-      {
-        tone: 'warning',
-        emoji: '⚠️',
-        title: '今天先别急着补仓',
-        reason: `依据：主要指数平均 ${formatMarketPercent(marketChange)}，市场正在回撤。`
-      },
-      {
-        tone: 'neutral',
-        emoji: '🧭',
-        title: '把可投资金先留在手里',
-        reason:
-          monthlyInvestableCash > 0
-            ? `依据：${algorithmSignals?.breadth || '市场'}；本月可投 ${formatCurrencyAuto(monthlyInvestableCash)}，分批比一次性投入更从容。`
-            : '依据：本月没有额外可投资金，先观察已有仓位。'
-      }
-    ];
-  }
-
-  if (marketChange !== null && marketChange >= 1) {
-    return [
-      {
-        tone: 'warning',
-        emoji: '🛑',
-        title: '今天涨得快，先别追',
-        reason: `依据：主要指数平均 ${formatMarketPercent(marketChange)}，上涨时更要控制节奏。`
-      },
-      {
-        tone: 'neutral',
-        emoji: '🔎',
-        title: '重点看已有基金有没有跟上',
-        reason: `依据：${algorithmSignals?.strongestTheme || '先比较自己的浮盈和板块强弱'}，再决定是否调整。`
-      }
-    ];
-  }
-
-  if (weakestPosition && weakestPosition.profitRate <= -0.08) {
-    return [
-      {
-        tone: 'warning',
-        emoji: '⏳',
-        title: `${weakestPosition.item.name} 先等等`,
-        reason: `依据：当前浮盈浮亏 ${(weakestPosition.profitRate * 100).toFixed(1)}%，先确认行情是否企稳。`
-      },
-      {
-        tone: 'neutral',
-        emoji: '🧭',
-        title: '今天以观察为主',
-        reason: '依据：大盘方向不明确，先把计划写清楚比临盘操作更重要。'
-      }
-    ];
-  }
-
-  return [
-    {
-      tone: 'positive',
-      emoji: '✅',
-      title: '今天可以按原计划定投',
-      reason: `依据：${algorithmSignals?.regime || '大盘波动不大'}；未触发追涨或急跌的暂停规则。`
-    },
-    {
-      tone: 'neutral',
-      emoji: '🧩',
-      title: algorithmSignals?.strongestTheme
-        ? `重点观察 ${algorithmSignals.strongestTheme.split(' ')[0]}`
-        : '不要临时加码',
-      reason: algorithmSignals
-        ? `依据：${algorithmSignals.strongestTheme}；${algorithmSignals.newsSignal}，先确认热点持续性。`
-        : '依据：定投按节奏走，单日行情不决定长期计划。'
-    }
-  ];
 }
 
 function HoldingsTodayPanel({
@@ -997,45 +895,6 @@ function PlainMarketBriefingPanel({
               ? `本地信号可用，AI 暂不可用 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
               : `正在整理行情和新闻 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`}
       </small>
-    </section>
-  );
-}
-
-function RuleSuggestionsPanel({
-  suggestions,
-  insight,
-  algorithmSignals
-}: {
-  suggestions: RuleSuggestion[];
-  insight: InvestmentMarketInsight | null;
-  algorithmSignals: MarketAlgorithmSignals;
-}) {
-  const summary = insight
-    ? `结合市场、热点与资讯整理，风险温度 ${algorithmSignals.riskScore} 分（满分 100）。`
-    : `先以当前行情作参考，风险温度 ${algorithmSignals.riskScore} 分（满分 100）。`;
-
-  return (
-    <section className="panel investments-rule-suggestions-panel" aria-label="今日投资提示">
-      <div className="investments-today-panel-head">
-        <div>
-          <span className="investments-briefing-eyebrow">晨间笔记</span>
-          <h2>慢一点，也是在前进</h2>
-          <p>{summary}</p>
-        </div>
-      </div>
-      <div className="investments-rule-suggestion-list">
-        {suggestions.map((suggestion, index) => (
-          <article key={suggestion.title} className={`is-${suggestion.tone}`}>
-            <span className="investments-rule-suggestion-index" aria-hidden="true">
-              {String(index + 1).padStart(2, '0')}
-            </span>
-            <div>
-              <strong>{suggestion.title}</strong>
-              <p>{suggestion.reason.replace(/^依据：/, '')}</p>
-            </div>
-          </article>
-        ))}
-      </div>
     </section>
   );
 }
@@ -3596,17 +3455,6 @@ export function InvestmentsPage() {
     [activePositions, investmentWatchlist]
   );
 
-  const ruleSuggestions = useMemo(
-    () =>
-      buildRuleSuggestions({
-        positions: activePositions,
-        marketChange: averageMarketChange,
-        monthlyInvestableCash,
-        algorithmSignals: marketAlgorithmSignals
-      }),
-    [activePositions, averageMarketChange, marketAlgorithmSignals, monthlyInvestableCash]
-  );
-
   const watchCategoryCounts = useMemo<Record<WatchCategoryFilterId, number>>(() => {
     const counts: Record<WatchCategoryFilterId, number> = {
       all: investmentWatchlist.length,
@@ -4425,8 +4273,12 @@ export function InvestmentsPage() {
           <p>把今日判断、行情监控和基金自选放进一个工作台，按需切换，不再上下堆叠。</p>
         </div>
         <div className="investments-console-stat" aria-label="当前投资概览">
-          <strong>{formatCurrencyAuto(positionSummary.totalCurrentValue)}</strong>
+          <div className="investments-console-stat-row">
+            <strong>{formatCurrencyAuto(positionSummary.totalCurrentValue)}</strong>
+            <time dateTime={new Date().toISOString()}>{new Date().toLocaleDateString('zh-CN')}</time>
+          </div>
           <span>{investmentWatchlist.length} 只自选 · 今日 {formatMarketPercent(averageMarketChange)}</span>
+          <small>数据更新 · {new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</small>
         </div>
       </header>
 
@@ -4475,13 +4327,6 @@ export function InvestmentsPage() {
               insight={marketInsight}
               algorithmSignals={marketAlgorithmSignals}
               insightStatus={marketInsightStatus}
-            />
-            <RuleSuggestionsPanel
-              suggestions={
-                marketInsight?.suggestions.length ? marketInsight.suggestions : ruleSuggestions
-              }
-              insight={marketInsight}
-              algorithmSignals={marketAlgorithmSignals}
             />
           </section>
         ) : null}
