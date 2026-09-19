@@ -204,7 +204,9 @@ type BudgetActionLog = {
 
 export function SmartBudgetPage() {
   const confirmedPlan = useSmartBudgetStore((s) => s.confirmedPlan);
+  const planHistory = useSmartBudgetStore((s) => s.history);
   const confirmPlan = useSmartBudgetStore((s) => s.confirmPlan);
+  const restorePlan = useSmartBudgetStore((s) => s.restorePlan);
   const clearPlan = useSmartBudgetStore((s) => s.clearPlan);
 
   const transactions = useFinanceStore((s) => s.transactions);
@@ -241,6 +243,7 @@ export function SmartBudgetPage() {
   const [actionLogs, setActionLogs] = useState<BudgetActionLog[]>([]);
   const [actionFeedback, setActionFeedback] = useState('');
   const [budgetListExpanded, setBudgetListExpanded] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const monthOptions = useMemo(() => getRecentMonthOptions(transactions), [transactions]);
 
@@ -757,7 +760,7 @@ export function SmartBudgetPage() {
               <span className="smart-budget-header-badge is-draft">预算向导进行中</span>
             )}
           </div>
-          <p>先回答几个小问题，我会帮你整理出一版更适合当前生活的月度预算。</p>
+          <p>{confirmedPlan ? '看清本月节奏，必要时只调整一处，预算会跟着你的生活变化。' : '用 4 个数字做出一份能执行的月度预算，之后每次确认都会留下可回溯版本。'}</p>
         </div>
       </header>
 
@@ -783,7 +786,47 @@ export function SmartBudgetPage() {
           >
             智能预算管理
           </button>
+          <button
+            type="button"
+            className="smart-budget-history-trigger"
+            onClick={() => setHistoryOpen((open) => !open)}
+          >
+            预算记录 {planHistory.length}
+          </button>
         </div>
+      ) : null}
+
+      {confirmedPlan && historyOpen ? (
+        <section className="smart-budget-history design-section" aria-label="预算版本记录">
+          <div className="smart-budget-history-head">
+            <div>
+              <h3>预算记录</h3>
+              <p>每次确认都会保留一份版本，随时恢复，不用重新填写。</p>
+            </div>
+            <button type="button" onClick={() => setHistoryOpen(false)}>收起</button>
+          </div>
+          <div className="smart-budget-history-list">
+            {planHistory.length ? planHistory.map((plan) => {
+              const isCurrent = plan.confirmedAt === confirmedPlan.confirmedAt;
+              return (
+                <button
+                  type="button"
+                  key={plan.confirmedAt}
+                  className={`smart-budget-history-item ${isCurrent ? 'is-current' : ''}`}
+                  onClick={() => {
+                    restorePlan(plan);
+                    setMode('management');
+                    setSetupOpen(false);
+                  }}
+                >
+                  <span>{new Date(plan.confirmedAt).toLocaleString('zh-CN', { hour12: false })}</span>
+                  <strong>{formatCurrency(plan.recommendation.monthlyIncome)} 月收入 · 储蓄 {Math.round(plan.answers.savingsRatio * 100)}%</strong>
+                  <em>{isCurrent ? '当前版本' : '恢复此版本'}</em>
+                </button>
+              );
+            }) : <p className="smart-budget-empty">确认预算后，这里会自动留下可回溯版本。</p>}
+          </div>
+        </section>
       ) : null}
 
       {mode === 'management' ? (

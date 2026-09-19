@@ -11,9 +11,13 @@ export type ConfirmedSmartBudgetPlan = {
   confirmedAt: string;
 };
 
+export type SmartBudgetPlanHistoryItem = ConfirmedSmartBudgetPlan;
+
 interface SmartBudgetState {
   confirmedPlan: ConfirmedSmartBudgetPlan | null;
+  history: SmartBudgetPlanHistoryItem[];
   confirmPlan: (payload: { answers: BudgetAnswers; recommendation: BudgetRecommendation }) => void;
+  restorePlan: (plan: SmartBudgetPlanHistoryItem) => void;
   clearPlan: () => void;
 }
 
@@ -25,17 +29,35 @@ export const useSmartBudgetStore = create<SmartBudgetState>()(
   persist(
     (set) => ({
       confirmedPlan: null,
+      history: [],
       confirmPlan: ({ answers, recommendation }) => {
-        set({
-          confirmedPlan: {
+        set((state) => {
+          const nextPlan = {
             answers,
             recommendation,
             confirmedAt: new Date().toISOString()
-          }
+          };
+          const nextHistory = [nextPlan, ...state.history].filter(
+            (item, index, list) =>
+              index === list.findIndex((candidate) => candidate.confirmedAt === item.confirmedAt)
+          );
+          return {
+            confirmedPlan: nextPlan,
+            history: nextHistory.slice(0, 12)
+          };
         });
       },
+      restorePlan: (plan) => set({ confirmedPlan: plan }),
       clearPlan: () => set({ confirmedPlan: null })
     }),
-    { name: 'ledgerflow-smart-budget' }
+    {
+      name: 'ledgerflow-smart-budget',
+      partialize: (state) => ({ confirmedPlan: state.confirmedPlan, history: state.history }),
+      merge: (persisted, current) => ({
+        ...current,
+        ...(persisted as Partial<SmartBudgetState>),
+        history: (persisted as Partial<SmartBudgetState>)?.history || []
+      })
+    }
   )
 );

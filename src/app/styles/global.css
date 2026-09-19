@@ -13464,6 +13464,216 @@ body.categories-accounts-resizing {
   margin-bottom: 0;
 }
 
+/* Smart budget: calm setup flow and version history */
+.smart-budget-page {
+  gap: 0;
+  padding: clamp(18px, 3vw, 34px) clamp(16px, 3vw, 42px) 42px;
+  background: var(--surface-page);
+}
+
+.smart-budget-header {
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.smart-budget-header h2 {
+  font-size: clamp(24px, 3vw, 34px);
+  letter-spacing: -0.04em;
+}
+
+.smart-budget-header-badge {
+  min-height: 24px;
+  padding: 0 9px;
+  border: 0;
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+.smart-budget-header-badge.is-draft {
+  background: color-mix(in srgb, var(--color-warning-bg) 72%, transparent);
+  color: var(--color-warning);
+}
+
+.smart-budget-mode-switch {
+  margin: 18px 0 0;
+  padding: 0;
+  gap: 18px;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.smart-budget-mode-switch button {
+  position: relative;
+  min-height: 42px;
+  padding: 0 2px 11px;
+  border-radius: 0;
+  color: var(--color-text-secondary);
+  background: transparent;
+}
+
+.smart-budget-mode-switch button.active {
+  color: var(--color-text-primary);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.smart-budget-mode-switch button.active::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: var(--color-primary);
+}
+
+.smart-budget-mode-switch .smart-budget-history-trigger {
+  margin-left: auto;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-xs);
+}
+
+.smart-budget-step-intro {
+  margin-top: 20px;
+  padding: 0 0 18px;
+  align-items: flex-end;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.smart-budget-step-intro h3 {
+  margin-top: 8px;
+  font-size: clamp(20px, 2.5vw, 28px);
+  letter-spacing: -0.03em;
+}
+
+.smart-budget-stepper {
+  gap: 0;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  border-radius: 0;
+  background: transparent;
+}
+
+.smart-budget-stepper span {
+  position: relative;
+  padding: 13px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.smart-budget-stepper span.active {
+  color: var(--color-primary);
+  background: transparent;
+  box-shadow: none;
+}
+
+.smart-budget-stepper span.active::after {
+  content: '';
+  position: absolute;
+  right: 18%;
+  bottom: -1px;
+  left: 18%;
+  height: 2px;
+  background: var(--color-primary);
+}
+
+.smart-budget-stepper span.done {
+  color: var(--color-success);
+  border: 0;
+  background: transparent;
+}
+
+.smart-budget-block.design-section {
+  min-height: 238px;
+  align-content: center;
+  padding: clamp(24px, 5vw, 60px) 0;
+}
+
+.smart-budget-choice-card {
+  min-height: 68px;
+  padding: 16px 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-item);
+  box-shadow: none;
+}
+
+.smart-budget-choice-card:hover {
+  transform: none;
+  border-color: var(--color-primary-border);
+  box-shadow: none;
+}
+
+.smart-budget-choice-card:has(input:checked) {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary-bg) 58%, var(--surface-item));
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.smart-budget-history {
+  gap: 14px;
+  margin-top: 18px;
+  padding: 18px 0;
+  border-block: 1px solid var(--border-subtle);
+}
+
+.smart-budget-history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.smart-budget-history-head h3,
+.smart-budget-history-head p {
+  margin: 0;
+}
+
+.smart-budget-history-head p {
+  margin-top: 4px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-xs);
+}
+
+.smart-budget-history-list {
+  display: grid;
+  gap: 0;
+}
+
+.smart-budget-history-item {
+  display: grid;
+  grid-template-columns: minmax(150px, .6fr) minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 12px 0;
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  text-align: left;
+}
+
+.smart-budget-history-item strong { color: var(--color-text-primary); font-size: var(--font-sm); }
+.smart-budget-history-item em { color: var(--color-primary); font-size: var(--font-xs); font-style: normal; }
+.smart-budget-history-item:not(.is-current):hover strong { color: var(--color-primary); }
+
+@media (max-width: 680px) {
+  .smart-budget-page { padding-inline: 16px; }
+  .smart-budget-mode-switch { gap: 12px; overflow-x: auto; }
+  .smart-budget-mode-switch .smart-budget-history-trigger { margin-left: 0; }
+  .smart-budget-history-item { grid-template-columns: 1fr auto; }
+  .smart-budget-history-item strong { grid-column: 1 / -1; grid-row: 2; }
+}
+
 /* ============================================================
    Shared flat workspace system
    页面是画布，section 负责分组，只有可独立操作的对象才使用实体 surface。
