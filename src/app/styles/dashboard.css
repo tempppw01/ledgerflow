@@ -269,7 +269,7 @@
 .dashboard-calendar-day:hover { border-color: var(--color-primary-border); background: color-mix(in srgb, var(--color-primary-bg) 58%, var(--color-bg-elevated)); transform: translateY(-1px); }
 .dashboard-calendar-day.has-event { border-color: color-mix(in srgb, var(--color-primary) 52%, var(--color-border)); }
 .dashboard-calendar-day b { color: var(--color-text); font-family: var(--font-number); font-size: 11px; font-weight: 700; }
-.dashboard-calendar-day small { color: var(--color-text-tertiary); font-family: var(--font-number); font-size: 9px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dashboard-calendar-day small { min-width: 0; color: var(--color-text-tertiary); font-family: var(--font-number); font-size: 10px; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; white-space: nowrap; }
 .dashboard-calendar-day.is-positive small { color: var(--color-income); }
 .dashboard-calendar-day.is-negative small { color: var(--color-expense); }
 .dashboard-calendar-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-top: 14px; padding-top: 11px; border-top: 1px solid var(--color-divider); color: var(--color-text-secondary); font-size: var(--font-xs); }

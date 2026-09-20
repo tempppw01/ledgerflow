@@ -1,5 +1,6 @@
-import { formatCurrencyAuto } from '../../../shared/lib/format';
+import { formatCurrency, formatCurrencyAuto } from '../../../shared/lib/format';
 import type { AssetLiabilitySimulationRow } from '../model/assetLiabilitySimulation';
+import { formatCalendarAmount } from '../model/assetLiabilitySimulationFormat';
 
 type Point = { x: number; y: number };
 
@@ -11,11 +12,6 @@ function smoothPath(points: Point[]) {
     const midpoint = (previous.x + point.x) / 2;
     return `${path} C ${midpoint} ${previous.y}, ${midpoint} ${point.y}, ${point.x} ${point.y}`;
   }, '');
-}
-
-function shortAmount(value: number) {
-  if (Math.abs(value) < 0.005) return '—';
-  return `${value > 0 ? '+' : '−'}${formatCurrencyAuto(Math.abs(value))}`;
 }
 
 export function AssetLiabilitySimulationPanel({
@@ -130,7 +126,7 @@ export function AssetLiabilitySimulationPanel({
         <div className="dashboard-asset-liability-calendar" aria-label="未来30天金额日历">
           <div className="dashboard-calendar-head">
             <strong>未来 30 天</strong>
-            <small>日期下方为当日预计净变动</small>
+            <small>日期下方为当日预计结余</small>
           </div>
           <div className="dashboard-calendar-weekdays" aria-hidden="true">
             {['一', '二', '三', '四', '五', '六', '日'].map((day) => (
@@ -147,10 +143,11 @@ export function AssetLiabilitySimulationPanel({
                   row.events.length ? 'has-event' : ''
                 } ${row.delta > 0 ? 'is-positive' : row.delta < 0 ? 'is-negative' : ''}`.trim()}
                 key={row.key}
-                title={row.events.length ? row.events.join('、') : '当天没有已登记安排'}
+                aria-label={`${row.label}，当日预计结余 ${formatCurrency(row.delta)}`}
+                title={`${formatCurrency(row.delta)}${row.events.length ? ` · ${row.events.join('、')}` : ' · 当天没有已登记安排'}`}
               >
                 <b>{row.date.slice(-2).replace(/^0/, '')}</b>
-                <small>{shortAmount(row.delta)}</small>
+                <small>{formatCalendarAmount(row.delta)}</small>
               </div>
             ))}
           </div>
