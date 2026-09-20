@@ -129,6 +129,108 @@ test('global market endpoint aggregates US, Japan and Korea indexes through Yaho
   }
 });
 
+test('global sector endpoint aggregates Yahoo industry ETFs', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async (input) => {
+    const url = String(input);
+    assert.match(url, /query1\.finance\.yahoo\.com\/v8\/finance\/chart\/XL/i);
+    const symbol = decodeURIComponent(new URL(url).pathname.split('/').pop() || '');
+    return new Response(
+      JSON.stringify({
+        chart: {
+          result: [
+            {
+              meta: {
+                shortName: symbol,
+                regularMarketPrice: 200,
+                regularMarketChange: 2.5,
+                regularMarketChangePercent: 1.25,
+                chartPreviousClose: 197.5,
+                regularMarketDayHigh: 201,
+                regularMarketDayLow: 198
+              },
+              timestamp: [Date.parse('2026-08-07T20:00:00Z') / 1000],
+              indicators: { quote: [{ close: [200], high: [201], low: [198] }] }
+            }
+          ]
+        }
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  };
+
+  const server = createLedgerFlowServer();
+  try {
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const address = server.address();
+    const response = await originalFetch(
+      `http://127.0.0.1:${address.port}/api/market/global-sectors`
+    );
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(body.meta.source, 'Yahoo Finance 行业 ETF');
+    assert.equal(body.data.total, 11);
+    assert.deepEqual(body.data.diff[0].f12, 'YF:XLK');
+    assert.deepEqual(body.data.diff[0].f14, '科技');
+    assert.equal(typeof body.data.diff[0].f2, 'number');
+    assert.equal(typeof body.data.diff[0].f3, 'number');
+  } finally {
+    global.fetch = originalFetch;
+    await closeServer(server);
+  }
+});
+
+test('industry board endpoint falls back to Yahoo sector ETFs when Eastmoney is unavailable', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async (input) => {
+    const url = String(input);
+    if (url.includes('eastmoney.com')) {
+      throw new Error('Eastmoney unavailable');
+    }
+    assert.match(url, /query1\.finance\.yahoo\.com\/v8\/finance\/chart\/XL/i);
+    const symbol = decodeURIComponent(new URL(url).pathname.split('/').pop() || '');
+    return new Response(
+      JSON.stringify({
+        chart: {
+          result: [
+            {
+              meta: {
+                shortName: symbol,
+                regularMarketPrice: 200,
+                regularMarketChange: 2.5,
+                regularMarketChangePercent: 1.25,
+                chartPreviousClose: 197.5
+              },
+              timestamp: [Date.parse('2026-08-07T20:00:00Z') / 1000],
+              indicators: { quote: [{ close: [200] }] }
+            }
+          ]
+        }
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  };
+
+  const server = createLedgerFlowServer();
+  try {
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const address = server.address();
+    const response = await originalFetch(
+      `http://127.0.0.1:${address.port}/api/market/eastmoney/boards?type=industry&pageSize=199`
+    );
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(body.meta.fallback, true);
+    assert.equal(body.meta.source, 'Yahoo Finance 行业 ETF');
+    assert.equal(body.data.total, 11);
+  } finally {
+    global.fetch = originalFetch;
+    await closeServer(server);
+  }
+});
+
 test('global market history endpoint proxies Yahoo daily candles for simulation', async () => {
   const originalFetch = global.fetch;
   global.fetch = async (input) => {

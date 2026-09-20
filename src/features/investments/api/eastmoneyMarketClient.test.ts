@@ -8,6 +8,7 @@ import {
   fetchEastmoneyIndexHistory,
   fetchEastmoneyMarketThemeBoards,
   fetchEastmoneyMarketQuotes,
+  fetchGlobalMarketSectorBoards,
   fetchGlobalMarketHistory
 } from './eastmoneyMarketClient';
 
@@ -247,6 +248,46 @@ describe('热门题材行情', () => {
     ]);
     expect(String(fetchMock.mock.calls[0][0])).toContain('codes=BK1106');
     expect(EASTMONEY_MARKET_THEMES.map((theme) => theme.name)).toContain('CPO概念');
+  });
+});
+
+describe('全球行业交叉参照', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('通过同源接口获取 Yahoo 行业 ETF 的涨跌幅', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            total: 1,
+            diff: [{ f12: 'YF:XLK', f14: '科技', f2: 200, f3: 1.25, f4: 2.5 }]
+          },
+          meta: {
+            source: 'Yahoo Finance 行业 ETF',
+            updatedAt: '2026-08-07T15:00:00.000Z',
+            freshness: 'live'
+          }
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+
+    await expect(fetchGlobalMarketSectorBoards()).resolves.toMatchObject({
+      boards: [
+        expect.objectContaining({
+          code: 'YF:XLK',
+          name: '科技',
+          changePercent: 1.25
+        })
+      ],
+      meta: expect.objectContaining({
+        source: 'Yahoo Finance 行业 ETF',
+        freshness: 'live'
+      })
+    });
+    expect(fetchMock).toHaveBeenCalledWith('/api/market/global-sectors');
   });
 });
 

@@ -123,6 +123,18 @@ export interface EastmoneyMarketBoard {
   flatCount: number | null;
 }
 
+export interface MarketDataMeta {
+  source: string;
+  updatedAt: string;
+  freshness: 'live' | 'stale';
+  fallback?: boolean;
+}
+
+export interface MarketBoardSnapshot {
+  boards: EastmoneyMarketBoard[];
+  meta: MarketDataMeta;
+}
+
 export interface EastmoneyMarketConstituent {
   code: string;
   name: string;
@@ -206,6 +218,18 @@ type EastmoneyBoardPayload = {
       f106?: number | string;
     }>;
   };
+  diff?: Array<{
+    f2?: number | string;
+    f3?: number | string;
+    f4?: number | string;
+    f5?: number | string;
+    f6?: number | string;
+    f12?: string;
+    f14?: string;
+    f104?: number | string;
+    f105?: number | string;
+    f106?: number | string;
+  }>;
 };
 
 type EastmoneyBoardConstituentPayload = {
@@ -218,6 +242,11 @@ type EastmoneyBoardConstituentPayload = {
       f14?: string;
     }>;
   };
+};
+
+type MarketBoardResponse = {
+  data?: EastmoneyBoardPayload;
+  meta?: Partial<MarketDataMeta>;
 };
 
 type EastmoneyStockSearchPayload = {
@@ -648,13 +677,13 @@ export async function fetchEastmoneyMarketBoards(
   type: EastmoneyMarketBoardType = 'industry',
   pageSize = 8
 ): Promise<EastmoneyMarketBoard[]> {
-  const response = await fetch(`/api/market/eastmoney/boards?type=${type}&pageSize=${pageSize}`);
+  const snapshot = await fetchEastmoneyMarketBoardsSnapshot(type, pageSize);
+  return snapshot.boards;
+}
 
-  if (!response.ok) throw new Error('板块行情加载失败，请稍后重试。');
-
-  const body = (await response.json()) as { data?: EastmoneyBoardPayload };
-  const payload = body.data || {};
-  return (payload.data?.diff || []).map((item) => ({
+function parseMarketBoards(payload: EastmoneyBoardPayload): EastmoneyMarketBoard[] {
+  const diff = payload.data?.diff || payload.diff || [];
+  return diff.map((item) => ({
     code: String(item.f12 || '').trim(),
     name: String(item.f14 || '').trim() || '未命名板块',
     value: toNullableNumber(item.f2),
@@ -666,6 +695,30 @@ export async function fetchEastmoneyMarketBoards(
     downCount: toNullableNumber(item.f105),
     flatCount: toNullableNumber(item.f106)
   }));
+}
+
+function normalizeMarketBoardMeta(meta?: Partial<MarketDataMeta>): MarketDataMeta {
+  return {
+    source: String(meta?.source || '东方财富公开行情'),
+    updatedAt: String(meta?.updatedAt || new Date().toISOString()),
+    freshness: meta?.freshness === 'stale' ? 'stale' : 'live',
+    fallback: meta?.fallback === true
+  };
+}
+
+export async function fetchEastmoneyMarketBoardsSnapshot(
+  type: EastmoneyMarketBoardType = 'industry',
+  pageSize = 8
+): Promise<MarketBoardSnapshot> {
+  const response = await fetch(`/api/market/eastmoney/boards?type=${type}&pageSize=${pageSize}`);
+
+  if (!response.ok) throw new Error('板块行情加载失败，请稍后重试。');
+
+  const body = (await response.json()) as MarketBoardResponse;
+  return {
+    boards: parseMarketBoards(body.data || {}),
+    meta: normalizeMarketBoardMeta(body.meta)
+  };
 }
 
 export async function fetchEastmoneyMarketBoardConstituents(
@@ -693,7 +746,19 @@ export async function fetchEastmoneyMarketBoardConstituents(
 export async function fetchEastmoneyMarketThemeBoards(
   themes: EastmoneyMarketTheme[] = EASTMONEY_MARKET_THEMES
 ): Promise<EastmoneyMarketBoard[]> {
-  if (themes.length === 0) return [];
+  const snapshot = await fetchEastmoneyMarketThemeBoardsSnapshot(themes);
+  return snapshot.boards;
+}
+
+export async function fetchEastmoneyMarketThemeBoardsSnapshot(
+  themes: EastmoneyMarketTheme[] = EASTMONEY_MARKET_THEMES
+): Promise<MarketBoardSnapshot> {
+  if (themes.length === 0) {
+    return {
+      boards: [],
+      meta: normalizeMarketBoardMeta({ source: '东方财富公开题材行情' })
+    };
+  }
   const response = await fetch(
     `/api/market/eastmoney/theme-quotes?codes=${encodeURIComponent(
       themes.map((item) => item.code).join(',')
@@ -702,7 +767,7 @@ export async function fetchEastmoneyMarketThemeBoards(
 
   if (!response.ok) throw new Error('热门题材加载失败，请稍后重试。');
 
-  const body = (await response.json()) as { data?: EastmoneyBoardPayload };
+  const body = (await response.json()) as MarketBoardResponse;
   const payload = body.data || {};
   const byCode = new Map(
     (payload.data?.diff || []).map((item) => [
@@ -722,8 +787,25 @@ export async function fetchEastmoneyMarketThemeBoards(
     ])
   );
 
-  return themes.flatMap((theme) => {
+  const boards = themes.flatMap((theme) => {
     const board = byCode.get(theme.code);
     return board ? [board] : [];
   });
+  return {
+    boards,
+    meta: normalizeMarketBoardMeta(body.meta)
+  };
+}
+
+export async function fetchGlobalMarketSectorBoards(): Promise<MarketBoardSnapshot> {
+  const response = await fetch('/api/market/global-sectors');
+  if (!response.ok) throw new Error('全球行业行情加载失败，请稍后重试。');
+  const body = (await response.json()) as MarketBoardResponse;
+  return {
+    boards: parseMarketBoards(body.data || {}),
+    meta: normalizeMarketBoardMeta({
+      source: 'Yahoo Finance 行业 ETF',
+      ...body.meta
+    })
+  };
 }

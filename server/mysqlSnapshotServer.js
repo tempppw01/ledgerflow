@@ -35,6 +35,7 @@ const DEFAULT_PORT = 8787;
 const MAX_BODY_BYTES = Number(process.env.LEDGERFLOW_MAX_BODY_BYTES || 50 * 1024 * 1024);
 const API_TOKEN = String(process.env.LEDGERFLOW_API_TOKEN || '').trim();
 const GLOBAL_TREND_CACHE_TTL_MS = 30 * 1000;
+const MARKET_SNAPSHOT_CACHE_TTL_MS = 3 * 60 * 1000;
 const WEBDAV_ALLOWED_HOSTS = String(process.env.LEDGERFLOW_WEBDAV_ALLOWED_HOSTS || '')
   .split(',')
   .map((item) => item.trim().toLowerCase())
@@ -44,9 +45,12 @@ let sqliteDatabaseModulePromise;
 const eastmoneyStockQuoteCache = new Map();
 const eastmoneyStockSearchCache = new Map();
 const globalMarketQuoteCache = new Map();
+const globalMarketSectorCache = new Map();
+let globalMarketSectorSnapshotCache = null;
 const globalMarketHistoryCache = new Map();
 const globalMarketTrendCache = new Map();
 const eastmoneyMarketProxyCache = new Map();
+const eastmoneyMarketSnapshotCache = new Map();
 
 function readMemoryMarketHistory(cache, cacheKey) {
   const entry = cache.get(cacheKey);
@@ -72,6 +76,23 @@ const GLOBAL_MARKET_INDEXES = [
   { id: 'us-nasdaq100', market: '美股', name: '纳斯达克 100', symbol: '^NDX' },
   { id: 'jp-nikkei', market: '日股', name: '日经 225', symbol: '^N225' },
   { id: 'kr-kospi', market: '韩股', name: '韩国综合', symbol: '^KS11' }
+];
+
+// Yahoo's liquid sector ETFs provide a compact, comparable international-sector
+// reference. A-share industry and concept classifications remain sourced from
+// Eastmoney because those China-specific taxonomies are not available on Yahoo.
+const GLOBAL_MARKET_SECTORS = [
+  { id: 'us-technology', market: '美股行业', name: '科技', symbol: 'XLK' },
+  { id: 'us-communication', market: '美股行业', name: '通信服务', symbol: 'XLC' },
+  { id: 'us-consumer-discretionary', market: '美股行业', name: '可选消费', symbol: 'XLY' },
+  { id: 'us-consumer-staples', market: '美股行业', name: '必选消费', symbol: 'XLP' },
+  { id: 'us-health-care', market: '美股行业', name: '医疗保健', symbol: 'XLV' },
+  { id: 'us-financials', market: '美股行业', name: '金融', symbol: 'XLF' },
+  { id: 'us-industrials', market: '美股行业', name: '工业', symbol: 'XLI' },
+  { id: 'us-materials', market: '美股行业', name: '原材料', symbol: 'XLB' },
+  { id: 'us-energy', market: '美股行业', name: '能源', symbol: 'XLE' },
+  { id: 'us-utilities', market: '美股行业', name: '公用事业', symbol: 'XLU' },
+  { id: 'us-real-estate', market: '美股行业', name: '房地产', symbol: 'XLRE' }
 ];
 
 async function getSqliteDatabaseModule() {
@@ -652,6 +673,65 @@ async function getEastmoneyMarketProxyPayload(cacheKey, upstreamUrl) {
   }
 }
 
+async function fetchEastmoneyMarketPayload(upstreamUrl) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch(upstreamUrl, {
+      headers: {
+        Accept: 'application/json,text/plain,*/*',
+        Referer: 'https://quote.eastmoney.com/',
+        'User-Agent': 'Mozilla/5.0 LedgerFlow market-data-proxy'
+      },
+      signal: controller.signal
+    });
+    if (!response.ok) {
+      throw new Error(`Eastmoney market endpoint returned HTTP ${response.status}.`);
+    }
+    return await response.json();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function getResilientEastmoneyMarketSnapshot({ cacheKey, upstreamUrl, targetId }) {
+  try {
+    const payload = await fetchEastmoneyMarketPayload(upstreamUrl);
+    const fetchedAt = new Date().toISOString();
+    const snapshot = { payload, fetchedAt };
+    eastmoneyMarketSnapshotCache.set(cacheKey, snapshot);
+    await writeMarketHistoryCache({
+      cacheKey: `market-snapshot:${cacheKey}`,
+      provider: 'eastmoney',
+      targetId,
+      rangeStart: fetchedAt.slice(0, 10),
+      rangeEnd: fetchedAt.slice(0, 10),
+      payload: snapshot,
+      ttlMs: MARKET_SNAPSHOT_CACHE_TTL_MS
+    });
+    return { ...snapshot, freshness: 'live' };
+  } catch (error) {
+    const memorySnapshot = eastmoneyMarketSnapshotCache.get(cacheKey);
+    if (memorySnapshot?.payload) {
+      return { ...memorySnapshot, freshness: 'stale' };
+    }
+
+    const persistedSnapshot = await readMarketHistoryCache(`market-snapshot:${cacheKey}`, {
+      allowExpired: true
+    });
+    if (persistedSnapshot?.payload?.payload) {
+      const snapshot = persistedSnapshot.payload;
+      eastmoneyMarketSnapshotCache.set(cacheKey, snapshot);
+      return {
+        payload: snapshot.payload,
+        fetchedAt: String(snapshot.fetchedAt || persistedSnapshot.fetchedAt),
+        freshness: 'stale'
+      };
+    }
+    throw error;
+  }
+}
+
 const TONGHUASHUN_NEWS_CACHE = new Map();
 const TONGHUASHUN_NEWS_PATHS = {
   today: 'today_list',
@@ -879,6 +959,137 @@ function parseYahooMarketTrend(index, payload) {
       };
     })
     .filter(Boolean);
+}
+
+async function getYahooSectorBoards() {
+  const cacheKey = 'global-market-sectors:yahoo';
+  const now = Date.now();
+  if (globalMarketSectorSnapshotCache?.expiresAt > now) {
+    return globalMarketSectorSnapshotCache.value;
+  }
+
+  if (!globalMarketSectorSnapshotCache) {
+    const persisted = await readMarketHistoryCache(cacheKey);
+    if (persisted?.payload?.data?.diff?.length === GLOBAL_MARKET_SECTORS.length) {
+      globalMarketSectorSnapshotCache = {
+        value: {
+          data: persisted.payload.data,
+          meta: {
+            ...persisted.payload.meta,
+            freshness: 'live'
+          }
+        },
+        expiresAt: now + MARKET_SNAPSHOT_CACHE_TTL_MS
+      };
+      return globalMarketSectorSnapshotCache.value;
+    }
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const results = await Promise.allSettled(
+      GLOBAL_MARKET_SECTORS.map(async (sector) => {
+        const response = await fetch(
+          `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
+            sector.symbol
+          )}?interval=1d&range=5d`,
+          {
+            headers: {
+              Accept: 'application/json',
+              'User-Agent': 'Mozilla/5.0 LedgerFlow market-data-proxy'
+            },
+            signal: controller.signal
+          }
+        );
+        if (!response.ok) {
+          throw new Error(`Yahoo Finance sector ${sector.symbol} is unavailable.`);
+        }
+        return { sector, quote: parseYahooMarketQuote(sector, await response.json()) };
+      })
+    );
+
+    const liveIds = new Set();
+    results.forEach((result) => {
+      if (result.status !== 'fulfilled') return;
+      globalMarketSectorCache.set(result.value.sector.id, result.value.quote);
+      liveIds.add(result.value.sector.id);
+    });
+
+    const merged = GLOBAL_MARKET_SECTORS.flatMap((sector) => {
+      const quote = globalMarketSectorCache.get(sector.id);
+      if (!quote) return [];
+      return [
+        {
+          f12: `YF:${sector.symbol}`,
+          f14: sector.name,
+          f2: quote.value,
+          f3: quote.changePercent,
+          f4: quote.change,
+          f5: null,
+          f6: null,
+          f104: null,
+          f105: null,
+          f106: null
+        }
+      ];
+    });
+
+    if (merged.length > 0) {
+      const updatedAt = GLOBAL_MARKET_SECTORS
+        .map((sector) => globalMarketSectorCache.get(sector.id)?.updatedAt)
+        .filter(Boolean)
+        .sort()
+        .at(-1) || new Date().toISOString();
+      const value = {
+        data: { total: merged.length, diff: merged },
+        meta: {
+          source: 'Yahoo Finance 行业 ETF',
+          updatedAt,
+          freshness: liveIds.size === GLOBAL_MARKET_SECTORS.length ? 'live' : 'stale'
+        }
+      };
+      globalMarketSectorSnapshotCache = {
+        value,
+        expiresAt: now + MARKET_SNAPSHOT_CACHE_TTL_MS
+      };
+      if (liveIds.size > 0) {
+        await writeMarketHistoryCache({
+          cacheKey,
+          provider: 'yahoo',
+          targetId: 'global-sectors',
+          rangeStart: updatedAt.slice(0, 10),
+          rangeEnd: updatedAt.slice(0, 10),
+          payload: value,
+          ttlMs: MARKET_SNAPSHOT_CACHE_TTL_MS
+        });
+      }
+      return value;
+    }
+  } catch {
+    // Fall through to the last persisted snapshot below.
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  const fallback = globalMarketSectorSnapshotCache?.value
+    || (await readMarketHistoryCache(cacheKey, { allowExpired: true }))?.payload;
+  if (fallback?.data?.diff?.length) {
+    const value = {
+      data: fallback.data,
+      meta: {
+        ...fallback.meta,
+        source: fallback.meta?.source || 'Yahoo Finance 行业 ETF',
+        freshness: 'stale'
+      }
+    };
+    globalMarketSectorSnapshotCache = {
+      value,
+      expiresAt: now + MARKET_SNAPSHOT_CACHE_TTL_MS
+    };
+    return value;
+  }
+  throw new Error('Yahoo Finance sector data is unavailable.');
 }
 
 async function getYahooGlobalMarketQuotes() {
@@ -1635,11 +1846,37 @@ export async function handleRequest(req, res) {
         '&po=1&np=1&fltt=2&invt=2&fid=f3&fs=m:90+t:' +
         sectorType +
         '&fields=f12,f14,f2,f3,f4,f5,f6,f104,f105,f106';
-      const payload = await getEastmoneyMarketProxyPayload(
-        'boards:' + type + ':' + pageSize,
-        upstreamUrl
-      );
-      jsonResponse(res, 200, { ok: true, data: payload });
+      try {
+        const snapshot = await getResilientEastmoneyMarketSnapshot({
+          cacheKey: 'boards:' + type + ':' + pageSize,
+          upstreamUrl,
+          targetId: `boards:${type}`
+        });
+        const diff = snapshot.payload?.data?.diff;
+        if (!Array.isArray(diff) || diff.length === 0) {
+          throw new Error('Eastmoney returned an empty board snapshot.');
+        }
+        jsonResponse(res, 200, {
+          ok: true,
+          data: snapshot.payload,
+          meta: {
+            source: '东方财富公开板块行情',
+            updatedAt: snapshot.fetchedAt,
+            freshness: snapshot.freshness
+          }
+        });
+      } catch (error) {
+        if (type !== 'industry') throw error;
+        const fallback = await getYahooSectorBoards();
+        jsonResponse(res, 200, {
+          ok: true,
+          data: fallback.data,
+          meta: {
+            ...fallback.meta,
+            fallback: true
+          }
+        });
+      }
       return;
     }
 
@@ -1659,11 +1896,20 @@ export async function handleRequest(req, res) {
         '&po=1&np=1&fltt=2&invt=2&fid=f3&fs=b:' +
         code +
         '&fields=f12,f14,f2,f3,f4';
-      const payload = await getEastmoneyMarketProxyPayload(
-        'board-stocks:' + code + ':' + pageSize,
-        upstreamUrl
-      );
-      jsonResponse(res, 200, { ok: true, data: payload });
+      const snapshot = await getResilientEastmoneyMarketSnapshot({
+        cacheKey: 'board-stocks:' + code + ':' + pageSize,
+        upstreamUrl,
+        targetId: `board-stocks:${code}`
+      });
+      jsonResponse(res, 200, {
+        ok: true,
+        data: snapshot.payload,
+        meta: {
+          source: '东方财富公开成分股行情',
+          updatedAt: snapshot.fetchedAt,
+          freshness: snapshot.freshness
+        }
+      });
       return;
     }
 
@@ -1678,16 +1924,31 @@ export async function handleRequest(req, res) {
         'https://push2.eastmoney.com/api/qt/ulist.np/get?secids=' +
         encodeURIComponent(secIds) +
         '&fields=f12,f13,f14,f2,f3,f4,f5,f6,f104,f105,f106&fltt=2&invt=2';
-      const payload = await getEastmoneyMarketProxyPayload(
-        'themes:' + codes.join(','),
-        upstreamUrl
-      );
-      jsonResponse(res, 200, { ok: true, data: payload });
+      const snapshot = await getResilientEastmoneyMarketSnapshot({
+        cacheKey: 'themes:' + codes.join(','),
+        upstreamUrl,
+        targetId: 'themes'
+      });
+      jsonResponse(res, 200, {
+        ok: true,
+        data: snapshot.payload,
+        meta: {
+          source: '东方财富公开题材行情',
+          updatedAt: snapshot.fetchedAt,
+          freshness: snapshot.freshness
+        }
+      });
       return;
     }
 
     if (req.method === 'GET' && pathname === '/market/global-quotes') {
       jsonResponse(res, 200, { ok: true, data: await getYahooGlobalMarketQuotes() });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/market/global-sectors') {
+      const data = await getYahooSectorBoards();
+      jsonResponse(res, 200, { ok: true, data: data.data, meta: data.meta });
       return;
     }
 

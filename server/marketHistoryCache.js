@@ -138,7 +138,7 @@ export async function readMarketHistoryCache(
 }
 
 export async function writeMarketHistoryCache(
-  { cacheKey, provider, targetId, rangeStart, rangeEnd, payload },
+  { cacheKey, provider, targetId, rangeStart, rangeEnd, payload, ttlMs = MARKET_HISTORY_CACHE_TTL_MS },
   env = process.env
 ) {
   try {
@@ -146,7 +146,9 @@ export async function writeMarketHistoryCache(
     if (!databaseProvider || payload === undefined) return false;
     const now = new Date();
     const timestamp = now.toISOString();
-    const expiresAt = new Date(now.getTime() + MARKET_HISTORY_CACHE_TTL_MS).toISOString();
+    const expiresAt = new Date(
+      now.getTime() + Math.max(1_000, Number(ttlMs) || MARKET_HISTORY_CACHE_TTL_MS)
+    ).toISOString();
     const retentionCutoff = new Date(
       now.getTime() - MARKET_HISTORY_CACHE_RETENTION_MS
     ).toISOString();

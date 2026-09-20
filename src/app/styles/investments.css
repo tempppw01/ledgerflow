@@ -2558,6 +2558,93 @@
   line-height: 1.4;
 }
 
+.investments-market-sector-summary {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 12px;
+  padding: 10px 0 12px;
+  border-top: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.investments-market-sector-summary-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.investments-market-sector-summary-head > div {
+  display: grid;
+  gap: 3px;
+}
+
+.investments-market-sector-summary-head strong {
+  color: var(--color-text-primary);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.investments-market-sector-summary-head span,
+.investments-market-sector-summary-head small,
+.investments-market-sector-empty {
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.investments-market-sector-summary-head small {
+  flex: 0 0 auto;
+  font-family: var(--font-number);
+  font-variant-numeric: tabular-nums;
+}
+
+.investments-market-sector-strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+.investments-market-sector-item {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 7px;
+  background: var(--color-bg-subtle);
+}
+
+.investments-market-sector-item b {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.investments-market-sector-item em {
+  font-family: var(--font-number);
+  font-size: 10px;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+.investments-market-sector-item em.is-positive {
+  color: var(--color-danger);
+}
+
+.investments-market-sector-item em.is-negative {
+  color: var(--color-success);
+}
+
+.investments-market-sector-item em.is-flat,
+.investments-market-sector-empty {
+  color: var(--color-text-tertiary);
+}
+
 .investments-market-board-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

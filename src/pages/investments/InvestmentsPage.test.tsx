@@ -25,10 +25,13 @@ const eastmoneyClientMock = vi.hoisted(() => ({
   fetchEastmoneyIndexHistory: vi.fn(),
   fetchGlobalMarketHistory: vi.fn(),
   fetchEastmoneyMarketBoards: vi.fn(),
+  fetchEastmoneyMarketBoardsSnapshot: vi.fn(),
   fetchEastmoneyMarketBoardConstituents: vi.fn(),
   fetchEastmoneyMarketOverview: vi.fn(),
   fetchEastmoneyMarketNews: vi.fn(),
   fetchEastmoneyMarketThemeBoards: vi.fn(),
+  fetchEastmoneyMarketThemeBoardsSnapshot: vi.fn(),
+  fetchGlobalMarketSectorBoards: vi.fn(),
   fetchGlobalMarketOverview: vi.fn()
 }));
 
@@ -80,6 +83,7 @@ vi.mock('../../features/investments/api/eastmoneyMarketClient', () => ({
     { id: 'kr-kospi', market: '韩股', name: '韩国综合', symbol: '^KS11', flag: '🇰🇷' }
   ],
   fetchEastmoneyMarketBoards: eastmoneyClientMock.fetchEastmoneyMarketBoards,
+  fetchEastmoneyMarketBoardsSnapshot: eastmoneyClientMock.fetchEastmoneyMarketBoardsSnapshot,
   fetchEastmoneyMarketBoardConstituents:
     eastmoneyClientMock.fetchEastmoneyMarketBoardConstituents,
   fetchEastmoneyIndexHistory: eastmoneyClientMock.fetchEastmoneyIndexHistory,
@@ -87,6 +91,9 @@ vi.mock('../../features/investments/api/eastmoneyMarketClient', () => ({
   fetchEastmoneyMarketOverview: eastmoneyClientMock.fetchEastmoneyMarketOverview,
   fetchEastmoneyMarketNews: eastmoneyClientMock.fetchEastmoneyMarketNews,
   fetchEastmoneyMarketThemeBoards: eastmoneyClientMock.fetchEastmoneyMarketThemeBoards,
+  fetchEastmoneyMarketThemeBoardsSnapshot:
+    eastmoneyClientMock.fetchEastmoneyMarketThemeBoardsSnapshot,
+  fetchGlobalMarketSectorBoards: eastmoneyClientMock.fetchGlobalMarketSectorBoards,
   fetchGlobalMarketOverview: eastmoneyClientMock.fetchGlobalMarketOverview
 }));
 
@@ -94,6 +101,32 @@ describe('InvestmentsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     eastmoneyClientMock.fetchEastmoneyMarketBoardConstituents.mockResolvedValue([]);
+    eastmoneyClientMock.fetchEastmoneyMarketBoardsSnapshot.mockImplementation(async (...args) => ({
+      boards: await eastmoneyClientMock.fetchEastmoneyMarketBoards(...args),
+      meta: {
+        source: '东方财富公开板块行情',
+        updatedAt: '2026-07-10T15:10:00.000Z',
+        freshness: 'live'
+      }
+    }));
+    eastmoneyClientMock.fetchEastmoneyMarketThemeBoardsSnapshot.mockImplementation(
+      async (...args) => ({
+        boards: await eastmoneyClientMock.fetchEastmoneyMarketThemeBoards(...args),
+        meta: {
+          source: '东方财富公开题材行情',
+          updatedAt: '2026-07-10T15:10:00.000Z',
+          freshness: 'live'
+        }
+      })
+    );
+    eastmoneyClientMock.fetchGlobalMarketSectorBoards.mockResolvedValue({
+      boards: [],
+      meta: {
+        source: 'Yahoo Finance 行业 ETF',
+        updatedAt: '2026-07-10T15:10:00.000Z',
+        freshness: 'live'
+      }
+    });
     eastmoneyClientMock.fetchEastmoneyMarketOverview.mockResolvedValue({
       selectedSecId: '1.000001',
       updatedAt: '2026-07-10T15:10:00.000Z',
@@ -347,7 +380,7 @@ describe('InvestmentsPage', () => {
     expect(screen.getByRole('heading', { name: '今日持仓' })).toBeInTheDocument();
     expect(screen.getByText('今日市场估算')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '今天的市场，说人话' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '今天怎么做' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: '今日行情播报' })).toBeInTheDocument();
 
     await openInvestmentWorkspace('大盘行情');
     expect(await screen.findByText('大盘概览')).toBeInTheDocument();
@@ -917,6 +950,6 @@ describe('InvestmentsPage', () => {
     const deleteButtons = screen.getAllByRole('button', { name: '删除' });
     await userEvent.click(deleteButtons[deleteButtons.length - 1]);
     expect(screen.queryByText('测试行业')).not.toBeInTheDocument();
-    expect(screen.getAllByText(/服务端同源代理/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/东方财富公开题材行情/).length).toBeGreaterThan(0);
   });
 });

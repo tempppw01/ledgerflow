@@ -27,13 +27,14 @@ import {
   EASTMONEY_MARKET_NEWS_CATEGORIES,
   EASTMONEY_MARKET_THEMES,
   GLOBAL_MARKET_INDEXES,
-  fetchEastmoneyMarketBoards,
+  fetchEastmoneyMarketBoardsSnapshot,
+  fetchEastmoneyMarketThemeBoardsSnapshot,
+  fetchGlobalMarketSectorBoards,
   fetchEastmoneyMarketBoardConstituents,
   fetchEastmoneyIndexHistory,
   fetchEastmoneyMarketOverview,
   fetchEastmoneyMarketNews,
   fetchEastmoneyStockSearch,
-  fetchEastmoneyMarketThemeBoards,
   fetchGlobalMarketHistory,
   fetchGlobalMarketOverview,
   fetchGlobalMarketTrend,
@@ -49,7 +50,8 @@ import {
   type EastmoneyMarketTrendPoint,
   type GlobalMarketHistoryPoint,
   type GlobalMarketTrendPoint,
-  type GlobalMarketQuote
+  type GlobalMarketQuote,
+  type MarketDataMeta
 } from '../../features/investments/api/eastmoneyMarketClient';
 import {
   simulateInvestmentPlan,
@@ -107,6 +109,12 @@ const MARKET_THEME_STORAGE_KEY = 'ledgerflow-investment-market-themes-v1';
 type WatchGridColumnCount = (typeof WATCH_GRID_COLUMN_OPTIONS)[number];
 type WatchDisplayMode = 'grid' | 'list';
 type InvestmentWorkspace = 'overview' | 'market' | 'boards' | 'watchlist' | 'news';
+
+const EMPTY_MARKET_DATA_META: MarketDataMeta = {
+  source: '等待行情',
+  updatedAt: '',
+  freshness: 'stale'
+};
 
 function normalizeTrackedMarketThemes(value: unknown): EastmoneyMarketTheme[] {
   if (!Array.isArray(value)) return EASTMONEY_MARKET_THEMES;
@@ -1891,7 +1899,7 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
               <DatePicker
                 value={simulationStartDate}
                 onChange={setSimulationStartDate}
-                aria-label="定投开始日期"
+                ariaLabel="定投开始日期"
               />
             </label>
             <label>
@@ -1899,7 +1907,7 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
               <DatePicker
                 value={simulationEndDate}
                 onChange={setSimulationEndDate}
-                aria-label="定投结束日期"
+                ariaLabel="定投结束日期"
               />
             </label>
           </div>
@@ -2772,10 +2780,14 @@ function MarketBreadthDonut({ breadth, label }: { breadth: MarketBreadth; label:
 function MarketBoardsPanel({
   themeBoards,
   industryBoards,
+  globalSectorBoards,
+  globalSectorMeta,
   trackedThemes,
   conceptBoards,
   constituents,
   constituentStatus,
+  themeMeta,
+  industryMeta,
   view,
   selectedThemeCode,
   status,
@@ -2790,10 +2802,14 @@ function MarketBoardsPanel({
 }: {
   themeBoards: EastmoneyMarketBoard[];
   industryBoards: EastmoneyMarketBoard[];
+  globalSectorBoards: EastmoneyMarketBoard[];
+  globalSectorMeta: MarketDataMeta;
   trackedThemes: EastmoneyMarketTheme[];
   conceptBoards: EastmoneyMarketBoard[];
   constituents: Record<string, EastmoneyMarketConstituent[]>;
   constituentStatus: Record<string, 'idle' | 'loading' | 'error'>;
+  themeMeta: MarketDataMeta;
+  industryMeta: MarketDataMeta;
   view: MarketBoardView;
   selectedThemeCode: string;
   status: 'idle' | 'loading' | 'error';
@@ -2828,6 +2844,8 @@ function MarketBoardsPanel({
     : boardUniverse;
   const visibleBoards = filteredBoards.slice(0, 8);
   const breadth = getMarketBreadth(boardUniverse);
+  const activeMeta = view === 'theme' ? themeMeta : industryMeta;
+  const hasYahooFallback = industryMeta.fallback === true;
 
   return (
     <section
@@ -2837,11 +2855,41 @@ function MarketBoardsPanel({
       <div className="investments-market-news-head">
         <div>
           <h3>板块健康度</h3>
-          <p>同时看多个板块，再看领涨公司，先判断市场是在普涨还是轮动。</p>
+          <p>汇总行业涨跌和市场宽度，先判断普涨、普跌还是结构性轮动。</p>
         </div>
         <button type="button" onClick={onRefresh} disabled={status === 'loading'}>
           {status === 'loading' ? '刷新中' : '刷新'}
         </button>
+      </div>
+
+      <div className="investments-market-sector-summary" aria-label="全球行业交叉参照">
+        <div className="investments-market-sector-summary-head">
+          <div>
+            <strong>全球行业交叉参照</strong>
+              <span>用 Yahoo 行业 ETF 做外部市场参照，不和 A 股板块涨跌混算</span>
+          </div>
+          <small>
+            {globalSectorBoards.length > 0
+              ? `${globalSectorBoards.length} 个行业 · ${
+                  globalSectorMeta.freshness === 'stale' ? '缓存' : '实时'
+                }`
+              : '暂无数据'}
+          </small>
+        </div>
+        <div className="investments-market-sector-strip">
+          {globalSectorBoards.length > 0 ? (
+            globalSectorBoards.map((sector) => (
+              <span key={sector.code} className="investments-market-sector-item">
+                <b>{sector.name}</b>
+              <em className={getMarketTone(sector.changePercent)}>
+                  {formatMarketPercent(sector.changePercent)}
+                </em>
+              </span>
+            ))
+          ) : (
+            <span className="investments-market-sector-empty">全球行业数据暂时不可用，不影响 A 股板块监控。</span>
+          )}
+        </div>
       </div>
 
       <div className="investments-market-board-tabs" role="tablist" aria-label="板块类型">
@@ -2964,7 +3012,7 @@ function MarketBoardsPanel({
             <MarketBreadthDonut breadth={breadth} label="热门题材" />
             <div>
               <strong>{visibleBoards.length || '--'} 个板块</strong>
-              <span>按涨跌幅展示前 6 个，卡片内列出领涨公司</span>
+              <span>涨 {breadth.up} · 平 {breadth.flat} · 跌 {breadth.down}，按涨跌幅展示前 8 个</span>
             </div>
           </div>
           <div className="investments-market-board-grid">
@@ -3027,7 +3075,8 @@ function MarketBoardsPanel({
             })}
           </div>
           <p className="investments-market-source-note">
-            数据源：东方财富公开板块与成分股行情 · 服务端同源代理 · 仅展示涨幅靠前公司
+            数据源：{activeMeta.source} · {activeMeta.freshness === 'stale' ? '最近有效快照' : '实时快照'} · 更新于{' '}
+            {formatDateTimeLabel(activeMeta.updatedAt)}
           </p>
         </>
       ) : industryBoards.length === 0 && status !== 'loading' ? (
@@ -3051,7 +3100,10 @@ function MarketBoardsPanel({
             <MarketBreadthDonut breadth={breadth} label="行业榜" />
             <div>
               <strong>{visibleBoards.length || '--'} 个行业</strong>
-              <span>行业强弱与领涨公司一起看，减少只盯一个榜首的误判</span>
+              <span>
+                涨 {breadth.up} · 平 {breadth.flat} · 跌 {breadth.down} ·
+                {hasYahooFallback ? ' 当前使用 Yahoo 行业 ETF 备用数据' : ' 行业强弱与领涨公司同步更新'}
+              </span>
             </div>
           </div>
           <div className="investments-market-board-grid">
@@ -3101,6 +3153,10 @@ function MarketBoardsPanel({
               );
             })}
           </div>
+          <p className="investments-market-source-note">
+            数据源：{activeMeta.source} · {activeMeta.freshness === 'stale' ? '最近有效快照' : '实时快照'} · 更新于{' '}
+            {formatDateTimeLabel(activeMeta.updatedAt)}
+          </p>
         </>
       )}
     </section>
@@ -3303,6 +3359,12 @@ export function InvestmentsPage() {
   const [marketThemeBoards, setMarketThemeBoards] = useState<EastmoneyMarketBoard[]>([]);
   const [marketIndustryBoards, setMarketIndustryBoards] = useState<EastmoneyMarketBoard[]>([]);
   const [marketConceptBoards, setMarketConceptBoards] = useState<EastmoneyMarketBoard[]>([]);
+  const [marketThemeMeta, setMarketThemeMeta] = useState<MarketDataMeta>(EMPTY_MARKET_DATA_META);
+  const [marketIndustryMeta, setMarketIndustryMeta] =
+    useState<MarketDataMeta>(EMPTY_MARKET_DATA_META);
+  const [globalSectorBoards, setGlobalSectorBoards] = useState<EastmoneyMarketBoard[]>([]);
+  const [globalSectorMeta, setGlobalSectorMeta] =
+    useState<MarketDataMeta>(EMPTY_MARKET_DATA_META);
   const [marketBoardConstituents, setMarketBoardConstituents] = useState<
     Record<string, EastmoneyMarketConstituent[]>
   >({});
@@ -3830,16 +3892,29 @@ export function InvestmentsPage() {
       setMarketBoardsError('');
 
       try {
-        const [themesResult, industriesResult, conceptsResult] = await Promise.allSettled([
-          fetchEastmoneyMarketThemeBoards(trackedMarketThemes),
-          fetchEastmoneyMarketBoards('industry'),
-          fetchEastmoneyMarketBoards('concept', 200)
-        ]);
+        const [themesResult, industriesResult, conceptsResult, globalSectorsResult] =
+          await Promise.allSettled([
+            fetchEastmoneyMarketThemeBoardsSnapshot(trackedMarketThemes),
+            fetchEastmoneyMarketBoardsSnapshot('industry'),
+            fetchEastmoneyMarketBoardsSnapshot('concept', 200),
+            fetchGlobalMarketSectorBoards()
+          ]);
         if (cancelled) return;
-        if (themesResult.status === 'fulfilled') setMarketThemeBoards(themesResult.value);
-        if (industriesResult.status === 'fulfilled')
-          setMarketIndustryBoards(industriesResult.value);
-        if (conceptsResult.status === 'fulfilled') setMarketConceptBoards(conceptsResult.value);
+        if (themesResult.status === 'fulfilled') {
+          setMarketThemeBoards(themesResult.value.boards);
+          setMarketThemeMeta(themesResult.value.meta);
+        }
+        if (industriesResult.status === 'fulfilled') {
+          setMarketIndustryBoards(industriesResult.value.boards);
+          setMarketIndustryMeta(industriesResult.value.meta);
+        }
+        if (conceptsResult.status === 'fulfilled') {
+          setMarketConceptBoards(conceptsResult.value.boards);
+        }
+        if (globalSectorsResult.status === 'fulfilled') {
+          setGlobalSectorBoards(globalSectorsResult.value.boards);
+          setGlobalSectorMeta(globalSectorsResult.value.meta);
+        }
 
         if (
           themesResult.status === 'rejected' &&
@@ -3858,10 +3933,16 @@ export function InvestmentsPage() {
       }
     }
 
-    loadMarketBoards();
+    void loadMarketBoards();
+    const interval = window.setInterval(() => {
+      if (document.visibilityState !== 'hidden' && isLiveMarketPollingTime()) {
+        void loadMarketBoards();
+      }
+    }, 180_000);
 
     return () => {
       cancelled = true;
+      window.clearInterval(interval);
     };
   }, [trackedMarketThemes, trackedMarketThemesKey]);
 
@@ -3928,14 +4009,28 @@ export function InvestmentsPage() {
     setMarketBoardsError('');
 
     try {
-      const [themesResult, industriesResult, conceptsResult] = await Promise.allSettled([
-        fetchEastmoneyMarketThemeBoards(trackedMarketThemes),
-        fetchEastmoneyMarketBoards('industry'),
-        fetchEastmoneyMarketBoards('concept', 200)
+      const [themesResult, industriesResult, conceptsResult, globalSectorsResult] =
+        await Promise.allSettled([
+        fetchEastmoneyMarketThemeBoardsSnapshot(trackedMarketThemes),
+        fetchEastmoneyMarketBoardsSnapshot('industry'),
+        fetchEastmoneyMarketBoardsSnapshot('concept', 200),
+        fetchGlobalMarketSectorBoards()
       ]);
-      if (themesResult.status === 'fulfilled') setMarketThemeBoards(themesResult.value);
-      if (industriesResult.status === 'fulfilled') setMarketIndustryBoards(industriesResult.value);
-      if (conceptsResult.status === 'fulfilled') setMarketConceptBoards(conceptsResult.value);
+      if (themesResult.status === 'fulfilled') {
+        setMarketThemeBoards(themesResult.value.boards);
+        setMarketThemeMeta(themesResult.value.meta);
+      }
+      if (industriesResult.status === 'fulfilled') {
+        setMarketIndustryBoards(industriesResult.value.boards);
+        setMarketIndustryMeta(industriesResult.value.meta);
+      }
+      if (conceptsResult.status === 'fulfilled') {
+        setMarketConceptBoards(conceptsResult.value.boards);
+      }
+      if (globalSectorsResult.status === 'fulfilled') {
+        setGlobalSectorBoards(globalSectorsResult.value.boards);
+        setGlobalSectorMeta(globalSectorsResult.value.meta);
+      }
       if (
         themesResult.status === 'rejected' &&
         industriesResult.status === 'rejected' &&
@@ -4351,10 +4446,14 @@ export function InvestmentsPage() {
             <MarketBoardsPanel
               themeBoards={marketThemeBoards}
               industryBoards={marketIndustryBoards}
+              globalSectorBoards={globalSectorBoards}
+              globalSectorMeta={globalSectorMeta}
               trackedThemes={trackedMarketThemes}
               conceptBoards={marketConceptBoards}
               constituents={marketBoardConstituents}
               constituentStatus={marketBoardConstituentStatus}
+              themeMeta={marketThemeMeta}
+              industryMeta={marketIndustryMeta}
               view={marketBoardView}
               selectedThemeCode={selectedMarketThemeCode}
               status={marketBoardsStatus}
