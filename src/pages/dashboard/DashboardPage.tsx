@@ -11,6 +11,8 @@ import { DashboardTopTransactionsCard } from '../../features/dashboard/component
 import { DashboardMonthlyTrendSummaryCard } from '../../features/dashboard/components/DashboardMonthlyTrendSummaryCard';
 import { DashboardWelcomeBanner } from '../../features/dashboard/components/DashboardWelcomeBanner';
 import { DashboardCashflowAgenda } from '../../features/dashboard/components/DashboardCashflowAgenda';
+import { AssetLiabilitySimulationPanel } from '../../features/dashboard/components/AssetLiabilitySimulationPanel';
+import { buildAssetLiabilitySimulation } from '../../features/dashboard/model/assetLiabilitySimulation';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
@@ -201,6 +203,26 @@ export function DashboardPage() {
     [accounts, debts, investmentPositionHistory, investmentPositions, repaymentRecords, transactions]
   );
   const netAssets = netWorthTrend.currentValue;
+  const assetLiabilitySimulation = useMemo(
+    () =>
+      buildAssetLiabilitySimulation({
+        accounts,
+        investmentPositions,
+        transactions,
+        subscriptions,
+        debts,
+        repaymentRecords,
+        days: 30
+      }),
+    [
+      accounts,
+      debts,
+      investmentPositions,
+      repaymentRecords,
+      subscriptions,
+      transactions
+    ]
+  );
 
   const recentMonths = useMemo(
     () =>
@@ -1310,6 +1332,7 @@ export function DashboardPage() {
           onNavigateToSubscriptions={() => navigate('/subscriptions')}
           onNavigateToTransactions={() => navigate('/transactions')}
         />
+        <AssetLiabilitySimulationPanel {...assetLiabilitySimulation} />
         <DashboardModuleCustomizer
           title={tFallback('dashboard.ui.moduleCustomize', '首页模块')}
           hint={tFallback('dashboard.ui.moduleCustomizeHint', '拖动排序，关掉暂时用不上的卡片。')}

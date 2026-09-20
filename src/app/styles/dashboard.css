@@ -190,10 +190,52 @@
 .dashboard-finance-todos button b { display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 50%; background: var(--color-primary-bg); color: var(--color-primary); font-family: var(--font-number); font-size: var(--font-xs); }
 .dashboard-finance-todos button span,.dashboard-finance-todos p { margin: 0; color: var(--color-text-secondary); font-size: var(--font-sm); line-height: var(--leading-relaxed); }
 
+.dashboard-asset-liability-panel { display: grid; gap: var(--space-4); margin-top: var(--space-3); padding: var(--space-4); }
+.dashboard-asset-liability-panel .dashboard-section-header { margin: 0; }
+.dashboard-simulation-badge { flex: 0 0 auto; padding: 4px 8px; border: 1px solid var(--color-border-subtle); border-radius: 999px; color: var(--color-text-secondary); font-size: var(--font-xs); }
+.dashboard-asset-liability-layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(300px, .85fr); gap: var(--space-5); align-items: stretch; }
+.dashboard-asset-liability-chart-wrap { min-width: 0; }
+.dashboard-asset-liability-summary { display: flex; flex-wrap: wrap; gap: 14px 24px; margin-bottom: 8px; color: var(--color-text-secondary); font-size: var(--font-xs); }
+.dashboard-asset-liability-summary span { display: inline-flex; align-items: center; gap: 6px; }
+.dashboard-asset-liability-summary strong { color: var(--color-text-primary); font-family: var(--font-number); font-variant-numeric: tabular-nums; }
+.dashboard-asset-liability-summary i,.dashboard-asset-liability-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--color-primary); }
+.dashboard-asset-liability-summary i.is-asset,.dashboard-asset-liability-legend i.is-asset { background: var(--color-primary); }
+.dashboard-asset-liability-summary i.is-liability,.dashboard-asset-liability-legend i.is-liability { background: var(--color-danger); }
+.dashboard-asset-liability-chart { display: block; width: 100%; min-height: 220px; overflow: visible; }
+.dashboard-asset-liability-grid-line { stroke: var(--color-divider); stroke-width: 1; stroke-dasharray: 3 5; }
+.dashboard-asset-liability-axis-label { fill: var(--color-text-tertiary); font-family: var(--font-number); font-size: 10px; }
+.dashboard-asset-liability-area { fill: color-mix(in srgb, var(--color-primary) 11%, transparent); }
+.dashboard-asset-liability-asset-line,.dashboard-asset-liability-liability-line { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.dashboard-asset-liability-asset-line { stroke: var(--color-primary); }
+.dashboard-asset-liability-liability-line { stroke: var(--color-danger); stroke-dasharray: 7 5; }
+.dashboard-asset-liability-event-dot { fill: var(--color-primary); stroke: var(--color-surface); stroke-width: 2; }
+.dashboard-asset-liability-axis { display: flex; justify-content: space-between; padding: 0 2px 0 48px; color: var(--color-text-tertiary); font-family: var(--font-number); font-size: 10px; }
+.dashboard-asset-liability-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 10px; color: var(--color-text-secondary); font-size: var(--font-xs); }
+.dashboard-asset-liability-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.dashboard-asset-liability-legend small { color: var(--color-text-tertiary); }
+.dashboard-asset-liability-calendar { min-width: 0; padding-left: var(--space-4); border-left: 1px solid var(--color-divider); }
+.dashboard-calendar-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.dashboard-calendar-head strong { color: var(--color-text-primary); font-size: var(--font-sm); }
+.dashboard-calendar-head small { color: var(--color-text-tertiary); font-size: 10px; }
+.dashboard-calendar-weekdays,.dashboard-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.dashboard-calendar-weekdays { margin-bottom: 4px; color: var(--color-text-tertiary); font-size: 10px; text-align: center; }
+.dashboard-calendar-day,.dashboard-calendar-empty { min-height: 42px; }
+.dashboard-calendar-day { display: grid; place-items: center; align-content: center; gap: 2px; border: 1px solid transparent; border-radius: 7px; background: var(--color-bg-subtle); }
+.dashboard-calendar-day.has-event { border-color: color-mix(in srgb, var(--color-primary) 45%, transparent); }
+.dashboard-calendar-day b { color: var(--color-text-secondary); font-family: var(--font-number); font-size: 11px; font-weight: 700; }
+.dashboard-calendar-day small { color: var(--color-text-tertiary); font-family: var(--font-number); font-size: 9px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dashboard-calendar-day.is-positive small { color: var(--color-income); }
+.dashboard-calendar-day.is-negative small { color: var(--color-expense); }
+.dashboard-calendar-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--color-divider); color: var(--color-text-secondary); font-size: var(--font-xs); }
+.dashboard-calendar-foot span { font-family: var(--font-number); font-variant-numeric: tabular-nums; }
+
 @media (max-width: 680px) {
   .dashboard-cashflow-agenda { padding-inline: 0; border-inline: 0; border-radius: 0; background: transparent; box-shadow: none; }
   .dashboard-cashflow-agenda-body { grid-template-columns: 1fr; }
   .dashboard-finance-todos { padding: var(--space-3) 0 0; border-top: 1px solid var(--color-divider); border-left: 0; }
+  .dashboard-asset-liability-panel { padding-inline: 0; border-inline: 0; border-radius: 0; background: transparent; box-shadow: none; }
+  .dashboard-asset-liability-layout { grid-template-columns: 1fr; gap: var(--space-4); }
+  .dashboard-asset-liability-calendar { padding: var(--space-4) 0 0; border-top: 1px solid var(--color-divider); border-left: 0; }
 }
 
 @media (max-width: 720px) {
