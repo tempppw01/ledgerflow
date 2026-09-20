@@ -149,7 +149,7 @@ export function DashboardPage() {
     label: string;
     value: number;
   } | null>(null);
-  const [isWelcomeExpanded, setIsWelcomeExpanded] = useState(false);
+  const [isWelcomeExpanded, setIsWelcomeExpanded] = useState(true);
   const [trendGranularity, setTrendGranularity] = useState<'week' | 'month' | 'year'>('week');
   const [trendMonthOffset, setTrendMonthOffset] = useState(0);
   const [selectedTrendIndex, setSelectedTrendIndex] = useState<number | null>(null);

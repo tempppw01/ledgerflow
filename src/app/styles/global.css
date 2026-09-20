@@ -2932,41 +2932,37 @@ small.mono {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: stretch;
   gap: var(--space-4);
-  padding: clamp(28px, 4vw, 42px) var(--space-6);
-  margin-bottom: var(--space-4);
-  border-radius: var(--radius-xl);
-  background: var(--gradient-hero);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 16%, var(--color-border));
-  box-shadow: var(--shadow-sm);
+  padding: clamp(24px, 4vw, 38px) 0 clamp(22px, 3vw, 30px);
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 30%, var(--color-divider));
+  background:
+    radial-gradient(circle at 8% 20%, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 34%),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-bg-elevated) 72%, transparent), transparent 82%);
+  box-shadow: none;
   animation: surface-rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
-  transition:
-    transform var(--transition-base),
-    box-shadow var(--transition-base),
-    border-color var(--transition-fast);
+  transition: border-color var(--transition-fast);
   overflow: hidden;
-  text-align: center;
+  text-align: left;
 }
 
 .welcome-version-tag {
   position: absolute;
-  top: var(--space-3);
-  right: var(--space-3);
+  top: 10px;
+  right: 0;
   font-size: 11px;
   color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-bg-elevated) 78%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
-  border-radius: var(--radius-full);
-  padding: 2px 8px;
-  backdrop-filter: blur(6px);
+  letter-spacing: 0.02em;
 }
 
 .welcome-content {
-  flex: 0 1 760px;
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 1180px;
   min-width: 0;
   display: grid;
-  justify-items: center;
+  justify-items: start;
   gap: 12px;
 }
 
@@ -2974,76 +2970,75 @@ small.mono {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 12px;
-  border-radius: var(--radius-full);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
-  background: color-mix(in srgb, var(--color-bg-elevated) 84%, transparent);
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--color-primary);
   font-size: var(--font-xs);
-  font-weight: 600;
-  backdrop-filter: blur(6px);
+  font-weight: 650;
 }
 
 .welcome-title-stack {
-  display: grid;
-  justify-items: center;
-  gap: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
   min-width: 0;
 }
 
 .welcome-greeting {
-  margin: 0 0 var(--space-2) 0;
-  font-size: clamp(28px, 4vw, 36px);
+  margin: 0;
+  font-size: clamp(28px, 4vw, 40px);
   font-weight: 800;
   line-height: 1.2;
   color: var(--color-text);
 }
 
 .welcome-data-illustration {
-  width: min(220px, 34vw);
-  max-height: 112px;
+  width: min(132px, 18vw);
+  max-height: 72px;
   object-fit: contain;
-  margin: -2px 0 2px;
-  filter: drop-shadow(0 14px 26px color-mix(in srgb, var(--color-primary) 18%, transparent));
+  margin: 0;
+  filter: drop-shadow(0 10px 20px color-mix(in srgb, var(--color-primary) 18%, transparent));
 }
 
 .welcome-subtitle {
-  margin: 0 0 var(--space-3) 0;
+  margin: 0;
   font-size: var(--font-base);
   line-height: var(--leading-relaxed);
   color: var(--color-text-secondary);
-  max-width: 56ch;
+  max-width: 68ch;
 }
 
 .welcome-tip {
   margin: 0;
   font-size: var(--font-sm);
   color: var(--color-text-secondary);
-  padding: 10px 14px;
-  border-radius: var(--radius-full);
-  background: color-mix(in srgb, var(--color-bg-elevated) 88%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 14%, var(--color-border-light));
+  padding: 2px 0 2px 12px;
+  border-left: 2px solid var(--color-primary);
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   max-width: min(100%, 640px);
 }
 
 .welcome-highlight-grid {
-  width: min(100%, 520px);
+  width: auto;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 0;
+  margin-top: 4px;
 }
 
 .welcome-highlight-grid article {
-  padding: 12px 14px;
-  border-radius: var(--radius-lg);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 14%, var(--color-border-light));
-  background: color-mix(in srgb, var(--color-bg-elevated) 90%, transparent);
+  min-width: 160px;
+  padding: 0 28px 0 0;
   display: grid;
   gap: 4px;
-  box-shadow: var(--shadow-xs);
+}
+
+.welcome-highlight-grid article + article {
+  padding: 0 0 0 28px;
+  border-left: 1px solid var(--color-divider);
 }
 
 .welcome-highlight-grid span {
@@ -3062,7 +3057,7 @@ small.mono {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .welcome-actions button {
@@ -3071,14 +3066,14 @@ small.mono {
 
 /* ── Welcome banner collapsed / expanded states ── */
 .welcome-banner.is-collapsed {
-  padding: clamp(12px, 2vw, 18px) var(--space-5);
+  padding: clamp(12px, 2vw, 18px) 0;
 }
 
 .welcome-banner.is-collapsed .welcome-content--compact {
   flex: 1 1 auto;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: var(--space-4);
   flex-wrap: wrap;
   min-width: 0;
@@ -3116,8 +3111,8 @@ small.mono {
 
 .welcome-toggle-btn {
   position: absolute;
-  bottom: 4px;
-  right: var(--space-3);
+  bottom: 8px;
+  right: 0;
   background: none;
   border: none;
   cursor: pointer;
@@ -4009,8 +4004,7 @@ small.mono {
     align-items: stretch;
     text-align: left;
     gap: 10px;
-    padding: 16px 14px 14px;
-    border-radius: var(--radius-lg);
+    padding: 22px 0 18px;
   }
   .welcome-version-tag {
     top: 10px;
