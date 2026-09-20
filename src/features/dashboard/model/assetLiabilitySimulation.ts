@@ -2,7 +2,12 @@ import type { Account } from '../../../entities/account/types';
 import type { InvestmentPosition } from '../../../entities/investment/types';
 import type { TransactionItem } from '../../../entities/transaction/types';
 import type { SubscriptionItem } from '../../../entities/subscription/types';
-import type { DebtItem, RepaymentRecord } from '../../debt/model/debtMetrics';
+import {
+  calculateDebtDerivedMetrics,
+  calculateDebtScheduledPayment,
+  type DebtItem,
+  type RepaymentRecord
+} from '../../debt/model/debtMetrics';
 
 export interface AssetLiabilitySimulationRow {
   key: string;
@@ -30,6 +35,8 @@ type ScheduledEvent = {
   assetDelta: number;
   liabilityDelta: number;
   label: string;
+  debtId?: string;
+  paymentAmount?: number;
 };
 
 function safeNumber(value: unknown) {
@@ -76,6 +83,30 @@ function accountBalances(accounts: Account[]) {
     },
     { assets: 0, liabilities: 0 }
   );
+}
+
+function clampDayInMonth(year: number, month: number, day: number) {
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  return Math.min(Math.max(1, day), lastDay);
+}
+
+function monthlyRepaymentDates(start: Date, end: Date, repaymentDay: number) {
+  const dates: Date[] = [];
+  const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+
+  while (cursor <= end) {
+    const date = new Date(
+      cursor.getFullYear(),
+      cursor.getMonth(),
+      clampDayInMonth(cursor.getFullYear(), cursor.getMonth(), repaymentDay)
+    );
+    if (date >= start && date <= end) {
+      dates.push(date);
+    }
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  return dates;
 }
 
 function buildScheduledEvents(
@@ -132,15 +163,47 @@ function buildScheduledEvents(
       return;
     }
 
-    (debt.manualRepayments || []).forEach((repayment) => {
+    const manualRepayments = debt.manualRepayments || [];
+    const hasExplicitSchedule = manualRepayments.some(
+      (repayment) => Boolean(repayment.dueDate) && Math.abs(safeNumber(repayment.amount)) > 0
+    );
+
+    manualRepayments.forEach((repayment) => {
       const amount = Math.abs(safeNumber(repayment.amount));
       if (!amount) return;
       include(repayment.dueDate, {
         assetDelta: -amount,
-        liabilityDelta: -amount,
+        liabilityDelta: 0,
+        debtId: debt.id,
+        paymentAmount: amount,
         label: `计划还款 · ${repayment.label || debt.name}`
       });
     });
+
+    if (!hasExplicitSchedule) {
+      const repaymentDay = debt.repaymentDay;
+      const monthlyPayment = Math.abs(calculateDebtScheduledPayment(debt));
+      if (
+        typeof repaymentDay !== 'number' ||
+        !Number.isInteger(repaymentDay) ||
+        repaymentDay < 1 ||
+        repaymentDay > 31 ||
+        monthlyPayment <= 0
+      ) {
+        return;
+      }
+
+      monthlyRepaymentDates(start, end, repaymentDay).forEach((date) => {
+        events.push({
+          date: dateKey(date),
+          assetDelta: -monthlyPayment,
+          liabilityDelta: 0,
+          debtId: debt.id,
+          paymentAmount: monthlyPayment,
+          label: `每月还款 · ${debt.name}`
+        });
+      });
+    }
   });
 
   return events;
@@ -174,6 +237,15 @@ export function buildAssetLiabilitySimulation(input: {
           debt.entryMode !== 'simple' && debt.status !== 'settled' && debt.status !== 'closed'
       )
       .reduce((sum, debt) => sum + Math.max(0, safeNumber(debt.balance)), 0);
+  const projectedDebts = new Map(
+    input.debts
+      .filter(
+        (debt) =>
+          debt.entryMode !== 'simple' && debt.status !== 'settled' && debt.status !== 'closed'
+      )
+      .map((debt) => [debt.id, Math.max(0, safeNumber(debt.balance))])
+  );
+  const debtById = new Map(input.debts.map((debt) => [debt.id, debt]));
   const scheduledEvents = buildScheduledEvents(
     input.transactions,
     input.subscriptions,
@@ -199,9 +271,30 @@ export function buildAssetLiabilitySimulation(input: {
     const key = dateKey(date);
     const dayEvents = eventsByDate.get(key) || [];
     const assetDelta = dayEvents.reduce((sum, event) => sum + event.assetDelta, 0);
-    const liabilityDelta = dayEvents.reduce((sum, event) => sum + event.liabilityDelta, 0);
+    const liabilityDelta = dayEvents.reduce((sum, event) => {
+      if (!event.debtId || !event.paymentAmount) {
+        return sum + event.liabilityDelta;
+      }
+
+      const debt = debtById.get(event.debtId);
+      const outstanding = projectedDebts.get(event.debtId) || 0;
+      if (!debt || outstanding <= 0) return sum;
+
+      const annualRate = Math.max(0, safeNumber(calculateDebtDerivedMetrics(debt).annualRate));
+      const monthlyInterest = outstanding * (annualRate / 100 / 12);
+      const principalReduction = Math.min(
+        outstanding,
+        Math.max(0, event.paymentAmount - monthlyInterest)
+      );
+      projectedDebts.set(event.debtId, outstanding - principalReduction);
+      return sum - principalReduction;
+    }, 0);
+    const projectedDebtTotal = Array.from(projectedDebts.values()).reduce(
+      (sum, balance) => sum + balance,
+      0
+    );
     assets = Math.max(0, assets + assetDelta);
-    liabilities = Math.max(0, liabilities + liabilityDelta);
+    liabilities = Math.max(0, accounts.liabilities + projectedDebtTotal);
     const netWorth = assets - liabilities;
     rows.push({
       key,

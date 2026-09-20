@@ -64,4 +64,38 @@ describe('buildAssetLiabilitySimulation', () => {
     });
     expect(result.hasEvents).toBe(true);
   });
+
+  it('projects recurring monthly repayments and reduces liabilities over time', () => {
+    const result = buildAssetLiabilitySimulation({
+      now: new Date('2026-09-20T08:00:00'),
+      accounts: [{ id: 'cash', name: '现金', type: 'cash', balance: 2000 }],
+      investmentPositions: [],
+      transactions: [],
+      subscriptions: [],
+      debts: [
+        {
+          id: 'loan',
+          name: '固定月供贷款',
+          type: 'loan',
+          balance: 1200,
+          customMinPayment: 300,
+          repaymentDay: 25,
+          annualRate: 0
+        }
+      ],
+      days: 7
+    });
+
+    expect(result.rows[4]).toMatchObject({
+      date: '2026-09-24',
+      assets: 2000,
+      liabilities: 1200
+    });
+    expect(result.rows[5]).toMatchObject({
+      date: '2026-09-25',
+      assets: 1700,
+      liabilities: 900,
+      liabilityDelta: -300
+    });
+  });
 });
