@@ -1,4 +1,4 @@
-import { formatCurrency } from '../../../shared/lib/format';
+import { formatCurrencyAuto } from '../../../shared/lib/format';
 import { toSafeNumber } from '../model/utils';
 
 export interface DashboardMonthlyTrendSummaryCardProps {
@@ -75,7 +75,7 @@ export function DashboardMonthlyTrendSummaryCard({
                   : 'dashboard-summary-main-amount negative'
               }
             >
-              {formatCurrency(monthlyBalance)}
+              {formatCurrencyAuto(monthlyBalance)}
             </span>
           </p>
           <p
@@ -87,12 +87,12 @@ export function DashboardMonthlyTrendSummaryCard({
             <span>环比 {Math.abs(monthOverMonthRate).toFixed(1)}%</span>
             <span>
               ({monthOverMonthChange >= 0 ? '+' : ''}
-              {formatCurrency(monthOverMonthChange)})
+              {formatCurrencyAuto(monthOverMonthChange)})
             </span>
           </p>
           <p className="dashboard-summary-sub">
-            <span className="dashboard-summary-metric income">收入 {formatCurrency(income)}</span>
-            <span className="dashboard-summary-metric expense">支出 {formatCurrency(expense)}</span>
+            <span className="dashboard-summary-metric income">收入 {formatCurrencyAuto(income)}</span>
+            <span className="dashboard-summary-metric expense">支出 {formatCurrencyAuto(expense)}</span>
             <span className="dashboard-summary-metric neutral">交易 {transactionCount} 笔</span>
           </p>
         </div>
@@ -130,7 +130,7 @@ export function DashboardMonthlyTrendSummaryCard({
                       {emoji} {item.name}
                     </p>
                     <p className="dashboard-breakdown-meta">
-                      {item.name} {formatCurrency(item.amount)}，占比 {percentText}
+                      {item.name} {formatCurrencyAuto(item.amount)}，占比 {percentText}
                     </p>
                   </div>
                   <div className="dashboard-breakdown-bar">

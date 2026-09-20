@@ -14,23 +14,25 @@ export function formatCurrency(value: number) {
   }).format(normalized);
 }
 
-/** 金额自动简写：>=1万时使用“万”单位（如 ¥1.25万） */
+/** 金额自动简写：长数字使用“千 / 万”单位，避免挤压布局。 */
 export function formatCurrencyAuto(value: number) {
   const normalized = normalizeCurrencyInput(value, 2);
   const abs = Math.abs(normalized);
 
-  if (abs < 10000) {
+  if (abs < 1000) {
     return formatCurrency(normalized);
   }
 
-  const wan = abs / 10000;
-  const digits = wan >= 100 ? 0 : wan >= 10 ? 1 : 2;
-  const wanText = wan
+  const unit = abs < 10000 ? '千' : '万';
+  const divisor = abs < 10000 ? 1000 : 10000;
+  const compact = abs / divisor;
+  const digits = compact >= 100 ? 0 : compact >= 10 ? 1 : 2;
+  const compactText = compact
     .toFixed(digits)
     .replace(/\.0+$/, '')
     .replace(/(\.\d*[1-9])0+$/, '$1');
 
-  return `${normalized < 0 ? '-' : ''}¥${wanText}万`;
+  return `${normalized < 0 ? '-' : ''}¥${compactText}${unit}`;
 }
 
 /** 货币格式化（固定两位小数） */

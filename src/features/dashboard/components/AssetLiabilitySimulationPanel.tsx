@@ -1,4 +1,4 @@
-import { formatCurrency, formatCurrencyAuto } from '../../../shared/lib/format';
+import { formatCurrencyAuto } from '../../../shared/lib/format';
 import type { AssetLiabilitySimulationRow } from '../model/assetLiabilitySimulation';
 
 type Point = { x: number; y: number };
@@ -61,11 +61,11 @@ export function AssetLiabilitySimulationPanel({
           <div className="dashboard-asset-liability-summary">
             <span>
               <i className="is-asset" />
-              资产 <strong>{formatCurrency(initialAssets)}</strong>
+              资产 <strong>{formatCurrencyAuto(initialAssets)}</strong>
             </span>
             <span>
               <i className="is-liability" />
-              负债 <strong>{formatCurrency(initialLiabilities)}</strong>
+              负债 <strong>{formatCurrencyAuto(initialLiabilities)}</strong>
             </span>
           </div>
           <svg
@@ -155,8 +155,8 @@ export function AssetLiabilitySimulationPanel({
             ))}
           </div>
           <div className="dashboard-calendar-foot">
-            <span>净资产：{formatCurrency(rows.at(-1)?.netWorth || 0)}</span>
-            <span>负债：{formatCurrency(rows.at(-1)?.liabilities || 0)}</span>
+            <span>净资产：{formatCurrencyAuto(rows.at(-1)?.netWorth || 0)}</span>
+            <span>负债：{formatCurrencyAuto(rows.at(-1)?.liabilities || 0)}</span>
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { DATA_INPUT_ILLUSTRATION_URL } from '../../../shared/config/brandAssets';
-import { formatCurrency } from '../../../shared/lib/format';
+import { formatCurrencyAuto } from '../../../shared/lib/format';
 
 export interface DashboardWelcomeBannerProps {
   versionLabel: string;
@@ -52,11 +52,11 @@ export function DashboardWelcomeBanner({
           <div className="welcome-highlight-grid" aria-label="首页欢迎摘要">
             <article>
               <span>本月结余</span>
-              <strong>{formatCurrency(monthlyBalance)}</strong>
+              <strong>{formatCurrencyAuto(monthlyBalance)}</strong>
             </article>
             <article>
               <span>当前净资产</span>
-              <strong>{formatCurrency(netAssets)}</strong>
+              <strong>{formatCurrencyAuto(netAssets)}</strong>
             </article>
           </div>
           <p className="welcome-tip">💡 {tip}</p>
@@ -89,11 +89,11 @@ export function DashboardWelcomeBanner({
           <div className="welcome-highlight-grid" aria-label="首页欢迎摘要">
             <article>
               <span>本月结余</span>
-              <strong>{formatCurrency(monthlyBalance)}</strong>
+              <strong>{formatCurrencyAuto(monthlyBalance)}</strong>
             </article>
             <article>
               <span>当前净资产</span>
-              <strong>{formatCurrency(netAssets)}</strong>
+              <strong>{formatCurrencyAuto(netAssets)}</strong>
             </article>
           </div>
           <div className="welcome-actions">

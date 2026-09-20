@@ -1,4 +1,4 @@
-import { formatCurrency } from '../../../shared/lib/format';
+import { formatCurrencyAuto } from '../../../shared/lib/format';
 
 export interface NetAssetCurveRow {
   key: string;
@@ -22,7 +22,7 @@ function formatDeltaLabel(delta: number) {
   if (Math.abs(delta) < 0.005) {
     return '较上月持平';
   }
-  return `较上月${delta > 0 ? '+' : ''}${formatCurrency(delta)}`;
+  return `较上月${delta > 0 ? '+' : ''}${formatCurrencyAuto(delta)}`;
 }
 
 export function NetAssetCurveCard({
@@ -56,7 +56,7 @@ export function NetAssetCurveCard({
               {item.isCurrent ? <em>当前</em> : null}
             </span>
             <i style={{ width: `${(item.value / maxValue) * 100}%` }} />
-            <strong>{formatCurrency(item.value)}</strong>
+            <strong>{formatCurrencyAuto(item.value)}</strong>
             <small className={item.delta >= 0 ? 'up' : 'down'}>
               {formatDeltaLabel(item.delta)}{item.isEstimated ? ' · 估算' : ''}
             </small>
@@ -65,7 +65,7 @@ export function NetAssetCurveCard({
       </div>
       {worstDropKey && typeof worstDropDelta === 'number' ? (
         <p className="dashboard-net-worst-hint">
-          回撤最多：{formatCurrency(worstDropDelta)}，点月份可以翻当月流水。
+          回撤最多：{formatCurrencyAuto(worstDropDelta)}，点月份可以翻当月流水。
         </p>
       ) : null}
     </article>

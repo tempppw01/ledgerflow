@@ -1,4 +1,4 @@
-import { formatCurrency } from '../../../shared/lib/format';
+import { formatCurrencyAuto } from '../../../shared/lib/format';
 
 export interface DashboardHistoryCompareCardProps {
   previousMonthExpense: number;
@@ -46,15 +46,15 @@ export function DashboardHistoryCompareCard({
           <div className="dashboard-history-metrics dashboard-history-metrics--compact">
             <article>
               <span>上月花了</span>
-              <strong className="expense">{formatCurrency(previousMonthExpense)}</strong>
+              <strong className="expense">{formatCurrencyAuto(previousMonthExpense)}</strong>
             </article>
             <article>
               <span>本季花了</span>
-              <strong className="expense">{formatCurrency(quarterExpense)}</strong>
+              <strong className="expense">{formatCurrencyAuto(quarterExpense)}</strong>
             </article>
             <article>
               <span>今年花了</span>
-              <strong className="expense">{formatCurrency(yearlyExpense)}</strong>
+              <strong className="expense">{formatCurrencyAuto(yearlyExpense)}</strong>
             </article>
           </div>
         </section>

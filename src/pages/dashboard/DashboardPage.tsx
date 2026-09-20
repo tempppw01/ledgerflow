@@ -30,7 +30,7 @@ import {
   getConstellationLabel
 } from '../../features/dashboard/model/utils';
 import { APP_VERSION } from '../../shared/config/app';
-import { formatCurrency } from '../../shared/lib/format';
+import { formatCurrency, formatCurrencyAuto } from '../../shared/lib/format';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
@@ -1299,7 +1299,7 @@ export function DashboardPage() {
             <span className="stat-icon">🧭</span>
             <div>
               <h3>净资产</h3>
-              <strong className="stat-value">{formatCurrency(netAssets)}</strong>
+              <strong className="stat-value">{formatCurrencyAuto(netAssets)}</strong>
             </div>
             <DashboardNetWorthSummary
               value={netAssets}
@@ -1320,7 +1320,7 @@ export function DashboardPage() {
             <span className="stat-icon">💎</span>
             <div>
               <h3>本月结余</h3>
-              <strong className="stat-value">{formatCurrency(monthlyBalance)}</strong>
+              <strong className="stat-value">{formatCurrencyAuto(monthlyBalance)}</strong>
             </div>
           </button>
         </div>
