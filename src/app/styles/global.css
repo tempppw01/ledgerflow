@@ -6338,6 +6338,76 @@ small.mono {
   overflow: auto;
 }
 
+.confirm-flow-copy {
+  display: grid;
+  gap: 12px;
+  color: var(--color-text);
+}
+
+.confirm-flow-copy p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.confirm-flow-copy .muted {
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+}
+
+.amount-breakdown {
+  display: grid;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.amount-breakdown-rows,
+.amount-breakdown-total {
+  display: grid;
+  gap: 9px;
+}
+
+.amount-breakdown-row,
+.amount-breakdown-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.amount-breakdown-label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+}
+
+.amount-breakdown-label small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+}
+
+.amount-breakdown-value {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.amount-breakdown-value.is-warning { color: var(--color-warning, #b7791f); }
+.amount-breakdown-value.is-danger { color: var(--color-danger); }
+.amount-breakdown-value.is-success { color: var(--color-success, #16815c); }
+
+.amount-breakdown-total {
+  padding-top: 10px;
+  border-top: 1px solid var(--color-divider);
+  font-weight: 600;
+}
+
+.amount-breakdown-total .amount-breakdown-value {
+  font-size: 1.08em;
+}
+
 .danger-confirm-copy {
   display: grid;
   gap: var(--space-3);

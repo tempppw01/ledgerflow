@@ -26,6 +26,7 @@ import {
   WEBANK_ICON_URL
 } from '../../shared/config/brandAssets';
 import { formatCurrency } from '../../shared/lib/format';
+import { AmountBreakdown } from '../../shared/ui/AmountBreakdown';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { Toast } from '../../shared/ui/Toast';
 import { DatePicker } from '../../shared/ui/DatePicker';
@@ -4236,13 +4237,22 @@ export function RepaymentManagementPage() {
           title="确认登记本期还款"
           description={
             quickRepaymentPending ? (
-              <>
-                将为“{debts.find((item) => item.id === quickRepaymentPending.debtId)?.name || '该负债'}”
-                登记今日已还 <strong>{formatCurrency(quickRepaymentPending.amount)}</strong>，并同步扣减剩余本金和期数。
-              </>
+              <div className="confirm-flow-copy">
+                <p>
+                  将为“{debts.find((item) => item.id === quickRepaymentPending.debtId)?.name || '该负债'}”登记本期还款。
+                </p>
+                <AmountBreakdown
+                  rows={[
+                    { label: '本期计划还款', amount: formatCurrency(quickRepaymentPending.amount) },
+                    { label: '本次登记金额', amount: formatCurrency(quickRepaymentPending.amount), tone: 'warning' }
+                  ]}
+                  total={{ label: '登记后同步扣减', amount: formatCurrency(quickRepaymentPending.amount), tone: 'success' }}
+                />
+                <p className="muted">登记后会同步更新剩余本金与还款期数。</p>
+              </div>
             ) : null
           }
-          confirmText="确认已还"
+          confirmText={quickRepaymentPending ? `确认登记 ${formatCurrency(quickRepaymentPending.amount)}` : '确认登记'}
           cancelText="暂不登记"
           onConfirm={confirmQuickRepayment}
           onCancel={() => setQuickRepaymentPending(null)}

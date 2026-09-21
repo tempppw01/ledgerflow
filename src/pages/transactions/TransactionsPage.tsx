@@ -21,6 +21,7 @@ import {
   parseBillFileToTransactionsDetailed
 } from '../../shared/lib/billImport';
 import { formatCurrency, formatCurrencyAuto, formatDate } from '../../shared/lib/format';
+import { AmountBreakdown } from '../../shared/ui/AmountBreakdown';
 import { resolveImportDefaultAccountId } from '../../shared/lib/importAccount';
 import { Toast, ToastVariant } from '../../shared/ui/Toast';
 import { DatePicker } from '../../shared/ui/DatePicker';
@@ -3146,10 +3147,23 @@ export function TransactionsPage() {
         title="确认发起退款"
         description={
           pendingRefundTransaction
-            ? `将为“${pendingRefundTransaction.note || '该交易'}”创建一笔退款记录，退款金额为剩余可退 ¥${pendingRefundRemainingAmount.toFixed(2)}。退款后账户余额会自动回补，并写入余额变动明细。`
+            ? (
+              <div className="confirm-flow-copy">
+                <p>将为“{pendingRefundTransaction.note || '该交易'}”创建退款记录。</p>
+                <AmountBreakdown
+                  rows={[
+                    { label: '原交易金额', amount: formatCurrency(Number(pendingRefundTransaction.amount) || 0) },
+                    { label: '已退款金额', amount: formatCurrency(pendingRefundedAmount), tone: 'neutral' },
+                    { label: '本次退款金额', amount: formatCurrency(pendingRefundRemainingAmount), tone: 'warning' }
+                  ]}
+                  total={{ label: '退款后回补账户', amount: formatCurrency(pendingRefundRemainingAmount), tone: 'success' }}
+                />
+                <p className="muted">退款记录会写入余额变动明细，原交易的可退款金额会同步更新。</p>
+              </div>
+            )
             : ''
         }
-        confirmText="确认退款"
+        confirmText={`确认退款（${formatCurrency(pendingRefundRemainingAmount)}）`}
         cancelText="取消"
         danger
         onConfirm={handleRefundConfirm}
