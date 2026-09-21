@@ -7,7 +7,13 @@ const server = await createServer({
   server: {
     host,
     port,
-    strictPort: true
+    strictPort: true,
+    proxy: {
+      '/api': {
+        target: process.env.LEDGERFLOW_API_PROXY_TARGET || 'http://127.0.0.1:3000',
+        changeOrigin: true
+      }
+    }
   }
 });
 

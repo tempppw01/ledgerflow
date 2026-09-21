@@ -32,6 +32,7 @@ import {
 } from './authService.js';
 
 const DEFAULT_PORT = 8787;
+const DEFAULT_HOST = '127.0.0.1';
 const MAX_BODY_BYTES = Number(process.env.LEDGERFLOW_MAX_BODY_BYTES || 50 * 1024 * 1024);
 const API_TOKEN = String(process.env.LEDGERFLOW_API_TOKEN || '').trim();
 const GLOBAL_TREND_CACHE_TTL_MS = 30 * 1000;
@@ -2291,7 +2292,8 @@ export function resolveApiPort(env = process.env) {
 const entryUrl = process.argv[1] ? pathToFileURL(process.argv[1]).href : '';
 if (import.meta.url === entryUrl) {
   const port = resolveApiPort();
-  createLedgerFlowServer().listen(port, () => {
-    console.log(`LedgerFlow API listening on http://127.0.0.1:${port}`);
+  const host = String(process.env.LEDGERFLOW_API_HOST || DEFAULT_HOST).trim() || DEFAULT_HOST;
+  createLedgerFlowServer().listen(port, host, () => {
+    console.log(`LedgerFlow API listening on http://${host}:${port}`);
   });
 }

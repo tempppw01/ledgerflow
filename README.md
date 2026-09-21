@@ -285,6 +285,15 @@ npm install
 npm run dev
 ```
 
+本地 Windows / macOS / Linux 推荐使用内置 SQLite 开发服务（Windows 的 `8787` 可能属于系统排除端口）：
+
+```bash
+npm run server:local
+npm run dev:local
+```
+
+本地 API 默认监听 `127.0.0.1:3000`，数据写入项目 `data/ledgerflow.sqlite`；如需改端口，可设置 `LEDGERFLOW_API_PORT`，并将 `LEDGERFLOW_API_PROXY_TARGET` 指向相同地址。
+
 如果需要本地测试 MySQL 快照 API：
 
 ```bash
