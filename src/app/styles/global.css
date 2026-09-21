@@ -11139,6 +11139,65 @@ body.categories-accounts-resizing {
   color: var(--color-text);
 }
 
+/* 首页预测区保持摘要优先，避免图表与金额快照重复占用首屏。 */
+@media (max-width: 640px) {
+  .dashboard-forecast-chart {
+    margin-top: 6px;
+    padding: 6px;
+    border-radius: 8px;
+  }
+
+  .dashboard-forecast-summary-card {
+    margin-bottom: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+  }
+
+  .dashboard-forecast-summary-card strong {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 12px;
+    line-height: 1.4;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+
+  .dashboard-forecast-summary-card span {
+    display: none;
+  }
+
+  .dashboard-forecast-bars {
+    gap: 6px;
+  }
+
+  .dashboard-forecast-bar-item {
+    gap: 4px;
+  }
+
+  .dashboard-forecast-bar-item strong,
+  .dashboard-forecast-bar-value {
+    font-size: 10px;
+  }
+
+  .dashboard-forecast-bar-track {
+    min-height: 76px;
+    border-radius: 8px;
+  }
+
+  .dashboard-forecast-bar-track i {
+    width: min(22px, 48%);
+    border-radius: 7px 7px 3px 3px;
+  }
+
+  .dashboard-forecast-bar-track i.is-negative {
+    border-radius: 3px 3px 7px 7px;
+  }
+
+  .dashboard-forecast-quick-cards {
+    display: none;
+  }
+}
+
 .about-page {
   max-width: 920px;
   margin: 0 auto;
