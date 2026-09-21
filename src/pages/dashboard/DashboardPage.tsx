@@ -5,7 +5,6 @@ import { NetAssetCurveCard } from '../../features/dashboard/components/NetAssetC
 import { DashboardNetWorthSummary } from '../../features/dashboard/components/DashboardNetWorthSummary';
 import { buildNetWorthTrend } from '../../features/dashboard/model/netWorth';
 import { DashboardModuleCustomizer } from '../../features/dashboard/components/DashboardModuleCustomizer';
-import { DashboardAnomalyInsights } from '../../features/dashboard/components/DashboardAnomalyInsights';
 import { DashboardHistoryCompareCard } from '../../features/dashboard/components/DashboardHistoryCompareCard';
 import { DashboardTopTransactionsCard } from '../../features/dashboard/components/DashboardTopTransactionsCard';
 import { DashboardMonthlyTrendSummaryCard } from '../../features/dashboard/components/DashboardMonthlyTrendSummaryCard';
@@ -41,11 +40,6 @@ const DASHBOARD_MODULES_KEY = 'dashboard_custom_modules_v1';
 
 const DASHBOARD_MODULE_CATALOG = [
   { id: 'dynamic-charts', label: '趋势雷达', description: '钱花在哪、占比多少，一眼扫完' },
-  {
-    id: 'anomaly-insights',
-    label: '省钱雷达',
-    description: '帮你捞出需要留意和做得不错的地方'
-  },
   { id: 'top-transactions', label: '大额账单', description: '本月最值得回看的几笔钱' },
   {
     id: 'history-compare',
@@ -174,20 +168,11 @@ export function DashboardPage() {
     const d = new Date(t.date);
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
   });
-  const hasExpenseTransactions = transactions.some((item) => isActualExpenseType(item.type));
   const income = monthly.filter((t) => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
   const expense = monthly
     .filter((t) => isActualExpenseType(t.type))
     .reduce((sum, t) => sum + t.amount, 0);
   const monthlyBalance = income - expense;
-
-  const subscriptionAlerts = useMemo(
-    () =>
-      subscriptions
-        .filter((item) => item.status === 'due-soon' || item.status === 'expired')
-        .slice(0, 3),
-    [subscriptions]
-  );
 
   const netWorthTrend = useMemo(
     () =>
@@ -1118,84 +1103,6 @@ export function DashboardPage() {
     }));
   }, [cashflowView, categoryMetaMap, currentMonth, currentYear, transactions]);
 
-  const anomalyInsightDisplay = useMemo(() => {
-    const expenseRows = transactions.filter((item) => isActualExpenseType(item.type));
-    if (!expenseRows.length) {
-      return {
-        anomalies: ['暂无支出数据，暂时无法识别异常。'],
-        highlights: ['先记一笔账单，系统就能开始给出异常与亮点判断。'],
-        supportFacts: [] as string[]
-      };
-    }
-
-    const merchantThisWeek = new Map<string, number>();
-    const merchantPrevWeek = new Map<string, number>();
-    const today = new Date();
-    const thisWeekStart = new Date(today);
-    thisWeekStart.setDate(today.getDate() - 6);
-    const prevWeekStart = new Date(today);
-    prevWeekStart.setDate(today.getDate() - 13);
-
-    expenseRows.forEach((item) => {
-      const date = new Date(item.date);
-      const merchant =
-        (item.note || '').trim().slice(0, 12) || categoryNameMap.get(item.categoryId) || '未知商家';
-      if (date >= thisWeekStart) {
-        merchantThisWeek.set(merchant, (merchantThisWeek.get(merchant) || 0) + item.amount);
-      } else if (date >= prevWeekStart && date < thisWeekStart) {
-        merchantPrevWeek.set(merchant, (merchantPrevWeek.get(merchant) || 0) + item.amount);
-      }
-    });
-
-    const anomalies = Array.from(merchantThisWeek.entries())
-      .map(([merchant, amount]) => {
-        const prev = merchantPrevWeek.get(merchant) || 0;
-        return { merchant, amount, prev, ratio: prev > 0 ? amount / prev : amount > 0 ? 99 : 0 };
-      })
-      .filter((item) => item.amount > 100 && item.ratio >= 1.8)
-      .sort((a, b) => b.ratio - a.ratio)
-      .slice(0, 2)
-      .map((item) => {
-        const changeText = item.prev
-          ? `较上周提高 ${((item.ratio - 1) * 100).toFixed(0)}%`
-          : '较上周明显抬升';
-        return `${item.merchant} 本周支出 ${formatCurrency(item.amount)}，${changeText}。`;
-      });
-
-    const monthlyByDay = new Map<string, number>();
-    monthly.forEach((item) => {
-      if (!isActualExpenseType(item.type)) return;
-      const key = item.date.slice(0, 10);
-      monthlyByDay.set(key, (monthlyByDay.get(key) || 0) + item.amount);
-    });
-    const dayValues = Array.from(monthlyByDay.values());
-    const dayAvg = dayValues.reduce((sum, value) => sum + value, 0) / Math.max(dayValues.length, 1);
-    const lowerDays = dayValues.filter((value) => value < dayAvg * 0.7).length;
-    const topExpenseCategory = [...cashflowCategoryRows]
-      .filter((item) => item.amount > 0)
-      .sort((a, b) => b.amount - a.amount)[0];
-
-    return {
-      anomalies: anomalies.length ? anomalies : ['今天账单挺稳，暂时没有异常波动。'],
-      highlights: [
-        `日均支出约 ${formatCurrency(dayAvg)}，有 ${lowerDays} 天属于轻量消费，节奏不错。`,
-        ...(monthlyInsight?.highlights?.slice(0, 2) || [])
-      ].slice(0, 3),
-      supportFacts: [
-        `本月花了 ${formatCurrency(expense)}`,
-        `已记 ${expenseRows.length} 笔`,
-        topExpenseCategory ? `花最多：${topExpenseCategory.name}` : ''
-      ].filter(Boolean)
-    };
-  }, [
-    cashflowCategoryRows,
-    categoryNameMap,
-    expense,
-    monthly,
-    monthlyInsight?.highlights,
-    transactions
-  ]);
-
   useEffect(() => {
     if (!cashflowCategoryRows.length) {
       setSelectedCategoryName(null);
@@ -1406,20 +1313,6 @@ export function DashboardPage() {
                   />
                 ) : null}
               </section>
-            );
-          }
-
-          if (moduleId === 'anomaly-insights') {
-            if (!hasExpenseTransactions && subscriptionAlerts.length === 0) {
-              return null;
-            }
-            return (
-              <DashboardAnomalyInsights
-                key={moduleId}
-                anomalyInsight={anomalyInsightDisplay}
-                onNavigateToSmartBudget={() => navigate('/smart-budget')}
-                onNavigateToTransactions={() => navigate('/transactions')}
-              />
             );
           }
 

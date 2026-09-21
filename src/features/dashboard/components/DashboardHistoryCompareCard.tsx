@@ -34,14 +34,14 @@ export function DashboardHistoryCompareCard({
   monthlyInsightStatus
 }: DashboardHistoryCompareCardProps) {
   return (
-    <article className="panel" style={{ marginTop: 12 }}>
+    <article className="dashboard-history-profile-stream" style={{ marginTop: 12 }}>
       <div className="dashboard-section-header">
         <h3>消费手账</h3>
         <span>过去花了多少 + 本月人设</span>
       </div>
 
       <div className="grid grid-2 dashboard-history-profile-grid" style={{ gap: 12 }}>
-        <section className="panel dashboard-history-card" style={{ margin: 0 }}>
+        <section className="dashboard-history-card">
           <h4>花钱时间线</h4>
           <div className="dashboard-history-metrics dashboard-history-metrics--compact">
             <article>
@@ -59,7 +59,7 @@ export function DashboardHistoryCompareCard({
           </div>
         </section>
 
-        <section className="panel dashboard-profile-card" style={{ margin: 0 }}>
+        <section className="dashboard-profile-card">
           <h4>本月消费人设</h4>
           <div className="dashboard-profile-tags dashboard-profile-tags--compact">
             <span>常买时段：{profile?.timePreference || '待解锁'}</span>

@@ -2763,6 +2763,29 @@
   border-block: 1px solid var(--color-divider);
 }
 
+.dashboard-history-profile-stream {
+  padding: 18px 0;
+  border-block: 1px solid var(--color-divider);
+  background: transparent;
+}
+
+.dashboard-history-profile-stream .dashboard-section-header {
+  margin-bottom: 12px;
+}
+
+.dashboard-history-profile-stream .dashboard-history-profile-grid {
+  background: transparent;
+}
+
+.dashboard-history-profile-stream .dashboard-history-card,
+.dashboard-history-profile-stream .dashboard-profile-card {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
 .dashboard-history-profile-grid > .panel {
   padding: 16px 0;
   border: 0;
