@@ -1199,6 +1199,45 @@
 
 /* 窄视图将快捷操作收敛为图标工具栏，避免按钮文字换行挤压内容。 */
 @media (max-width: 640px) {
+  .transactions-page .transaction-filters-panel {
+    padding-bottom: 10px;
+  }
+
+  .transaction-filters-header {
+    padding-bottom: 10px;
+  }
+
+  .transaction-filters-panel h2 {
+    font-size: 20px;
+    letter-spacing: -0.025em;
+  }
+
+  .transaction-filters-primary-row {
+    gap: 8px;
+  }
+
+  .transaction-filters-panel .field {
+    gap: 4px;
+  }
+
+  .transaction-filters-panel .field label,
+  .transaction-filters-mobile-only-label {
+    font-size: 10px;
+  }
+
+  .transaction-filters-panel input,
+  .transaction-filters-panel select {
+    min-height: 36px;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .transaction-filters-primary-cta button.primary {
+    min-height: 36px;
+    padding-inline: 14px;
+    font-size: 13px;
+  }
+
   .transaction-filters-secondary-row {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
