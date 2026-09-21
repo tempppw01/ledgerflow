@@ -932,69 +932,6 @@ export function DashboardPage() {
 
   const netAssetCurve = netWorthTrend.rows;
 
-  const anomalyInsight = useMemo(() => {
-    const expenseRows = transactions.filter((item) => isActualExpenseType(item.type));
-    if (!expenseRows.length) {
-      return {
-        anomalies: ['暂无支出数据，暂无法识别异常。'],
-        highlights: ['先记一笔账单，系统即可生成亮点分析。']
-      };
-    }
-
-    const merchantThisWeek = new Map<string, number>();
-    const merchantPrevWeek = new Map<string, number>();
-    const today = new Date();
-    const thisWeekStart = new Date(today);
-    thisWeekStart.setDate(today.getDate() - 6);
-    const prevWeekStart = new Date(today);
-    prevWeekStart.setDate(today.getDate() - 13);
-
-    expenseRows.forEach((item) => {
-      const date = new Date(item.date);
-      const merchant =
-        (item.note || '').trim().slice(0, 12) || categoryNameMap.get(item.categoryId) || '未知商家';
-      if (date >= thisWeekStart) {
-        merchantThisWeek.set(merchant, (merchantThisWeek.get(merchant) || 0) + item.amount);
-      } else if (date >= prevWeekStart && date < thisWeekStart) {
-        merchantPrevWeek.set(merchant, (merchantPrevWeek.get(merchant) || 0) + item.amount);
-      }
-    });
-
-    const anomalies = Array.from(merchantThisWeek.entries())
-      .map(([merchant, amount]) => {
-        const prev = merchantPrevWeek.get(merchant) || 0;
-        return { merchant, amount, prev, ratio: prev > 0 ? amount / prev : amount > 0 ? 99 : 0 };
-      })
-      .filter((item) => item.amount > 100 && item.ratio >= 1.8)
-      .sort((a, b) => b.ratio - a.ratio)
-      .slice(0, 2)
-      .map(
-        (item) =>
-          `⚠️ ${item.merchant} 本周支出 ${formatCurrency(item.amount)}，较上周提升 ${item.prev ? `${((item.ratio - 1) * 100).toFixed(0)}%` : '显著增长'}。`
-      );
-
-    const monthlyByDay = new Map<string, number>();
-    monthly.forEach((item) => {
-      if (!isActualExpenseType(item.type)) return;
-      const key = item.date.slice(0, 10);
-      monthlyByDay.set(key, (monthlyByDay.get(key) || 0) + item.amount);
-    });
-    const dayValues = Array.from(monthlyByDay.values());
-    const dayAvg = dayValues.reduce((sum, value) => sum + value, 0) / Math.max(dayValues.length, 1);
-    const lowerDays = dayValues.filter((value) => value < dayAvg * 0.7).length;
-
-    const highlights = [
-      `✅ 本月日均支出约 ${formatCurrency(dayAvg)}，其中 ${lowerDays} 天低于均值 70%，节奏控制较好。`,
-      ...(monthlyInsight?.highlights?.slice(0, 2).map((item) => `✨ AI：${item}`) || [])
-    ].slice(0, 3);
-
-    return {
-      anomalies: anomalies.length ? anomalies : ['未发现明显异常消费激增，当前消费波动相对稳定。'],
-      highlights
-    };
-  }, [categoryNameMap, monthly, monthlyInsight?.highlights, transactions]);
-  void anomalyInsight;
-
   const cashflowCategoryRows = useMemo(() => {
     const map = new Map<
       string,
