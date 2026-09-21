@@ -1,15 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { TrendChart } from '../../features/dashboard/components/TrendChart';
 import { CategoryBreakdownChart } from '../../features/dashboard/components/CategoryBreakdownChart';
-import { NetAssetCurveCard } from '../../features/dashboard/components/NetAssetCurveCard';
 import { DashboardNetWorthSummary } from '../../features/dashboard/components/DashboardNetWorthSummary';
 import { buildNetWorthTrend } from '../../features/dashboard/model/netWorth';
-import { DashboardHistoryCompareCard } from '../../features/dashboard/components/DashboardHistoryCompareCard';
-import { DashboardTopTransactionsCard } from '../../features/dashboard/components/DashboardTopTransactionsCard';
-import { DashboardMonthlyTrendSummaryCard } from '../../features/dashboard/components/DashboardMonthlyTrendSummaryCard';
 import { DashboardWelcomeBanner } from '../../features/dashboard/components/DashboardWelcomeBanner';
 import { DashboardCashflowAgenda } from '../../features/dashboard/components/DashboardCashflowAgenda';
 import { AssetLiabilitySimulationPanel } from '../../features/dashboard/components/AssetLiabilitySimulationPanel';
+import { DashboardMonthlyTrendSummaryCard } from '../../features/dashboard/components/DashboardMonthlyTrendSummaryCard';
 import { buildAssetLiabilitySimulation } from '../../features/dashboard/model/assetLiabilitySimulation';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -1095,6 +1092,11 @@ export function DashboardPage() {
     );
     return worst.delta < 0 ? worst : null;
   }, [netAssetRows]);
+  void displayTopTransactions;
+  void mysticInsight;
+  void quarterExpense;
+  void yearlyExpense;
+  void netAssetWorstDrop;
 
   return (
     <div className="vi-page dashboard-page">
@@ -1168,13 +1170,8 @@ export function DashboardPage() {
           horizonMonths={simulationMonths}
           onHorizonChange={setSimulationMonths}
         />
-        <div className="dashboard-analysis-workspace">
-        {moduleOrder.map((moduleId) => {
-          if (!moduleVisibility[moduleId]) return null;
-          if (moduleId === 'dynamic-charts') {
-            return (
-              <section key={moduleId} className="dashboard-dynamic-grid">
-                <TrendChart
+        <section className="dashboard-dynamic-grid dashboard-analysis-workspace">
+          <TrendChart
                   trendSeries={trendSeries}
                   activeTrendIndex={activeTrendIndex}
                   trendPeakIndex={trendPeakIndex}
@@ -1192,61 +1189,16 @@ export function DashboardPage() {
                     )
                   }
                   trendBarHeight={trendBarHeight}
-                />
-                <CategoryBreakdownChart
+          />
+          <CategoryBreakdownChart
                   cashflowView={cashflowView}
                   activeCategoryItem={activeCategoryItem}
                   donutChart={donutChart}
                   cashflowCategoryRows={cashflowCategoryRows}
                   onCashflowViewChange={setCashflowView}
                   onSelectedCategoryNameChange={setSelectedCategoryName}
-                />
-                {netAssetRows.length > 0 ? (
-                  <NetAssetCurveCard
-                    rows={netAssetRows}
-                    worstDropKey={netAssetWorstDrop?.key}
-                    worstDropDelta={netAssetWorstDrop?.delta}
-                    onNavigateToMonth={(dateFrom, dateTo) => {
-                      navigate(
-                        `/transactions?datePreset=custom&dateFrom=${dateFrom}&dateTo=${dateTo}`
-                      );
-                    }}
-                  />
-                ) : null}
-              </section>
-            );
-          }
-
-          if (moduleId === 'top-transactions') {
-            return <DashboardTopTransactionsCard key={moduleId} items={displayTopTransactions} />;
-          }
-
-          if (moduleId === 'history-compare') {
-            return (
-              <DashboardHistoryCompareCard
-                key={moduleId}
-                previousMonthExpense={recentMonths[recentMonths.length - 2]?.expense || 0}
-                quarterExpense={quarterExpense}
-                yearlyExpense={yearlyExpense}
-                profile={monthlyInsight?.profile}
-                monthlyInsightStatus={monthlyInsightStatus}
-              />
-            );
-          }
-
-          return (
-            <article key={moduleId} className="panel" style={{ marginTop: 12 }}>
-              <h3>{mysticInsight.title}</h3>
-              {mysticInsight.lines.map((line) => (
-                <p key={line}>{line}</p>
-              ))}
-              <p>
-                <strong>{mysticInsight.disclaimer}</strong>
-              </p>
-            </article>
-          );
-        })}
-        </div>
+          />
+        </section>
       </section>
 
       {transactions.length === 0 ? (
@@ -1273,7 +1225,8 @@ export function DashboardPage() {
             }}
           />
         </section>
-      ) : (
+      ) : null}
+      {false ? (
         <div className="grid grid-2 dashboard-main-grid dashboard-analysis-workspace" style={{ marginTop: 16 }}>
           <DashboardMonthlyTrendSummaryCard
             title={tFallback('dashboard.ui.thisMonthTrend', '本月趋势')}
@@ -1443,9 +1396,9 @@ export function DashboardPage() {
                 <span className="forecast">预测</span>
               </div>
               <div className="dashboard-forecast-hover-card">
-                <strong>{hoveredChartPoint ? hoveredChartPoint.label : '悬停数据点'}</strong>
+                <strong>{hoveredChartPoint?.label || '悬停数据点'}</strong>
                 <span>
-                  {hoveredChartPoint ? formatCurrency(hoveredChartPoint.value) : '查看具体数值'}
+                  {hoveredChartPoint ? formatCurrency(hoveredChartPoint?.value ?? 0) : '查看具体数值'}
                 </span>
                 <em>{hoveredChartPoint ? '历史 / 预测属性预览' : '支持鼠标悬停预览'}</em>
               </div>
@@ -1485,7 +1438,7 @@ export function DashboardPage() {
             </p>
           </section>
         </div>
-      )}
+      ) : null}
 
       <DebugLogPanel />
     </div>
