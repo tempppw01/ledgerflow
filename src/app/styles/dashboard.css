@@ -171,7 +171,11 @@
 .dashboard-cashflow-agenda { display: grid; gap: var(--space-3); margin-top: var(--space-3); padding: var(--space-4); }
 .dashboard-cashflow-agenda .dashboard-section-header { margin: 0; }
 .dashboard-cashflow-agenda .dashboard-section-header > strong { color: var(--color-primary); font-size: var(--font-sm); }
-.dashboard-cashflow-agenda-body { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(220px, .6fr); gap: var(--space-4); }
+.dashboard-cashflow-agenda-body { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(180px, .4fr); gap: var(--space-3); }
+.dashboard-cashflow-event { min-height: 48px; padding: 8px 10px; }
+.dashboard-cashflow-event-main { gap: 1px; }
+.dashboard-cashflow-event-main small { font-size: 10px; }
+.dashboard-finance-todos { padding: 10px 0 0 12px; }
 .dashboard-cashflow-timeline { display: grid; align-content: start; border-top: 1px solid var(--color-divider); }
 .dashboard-cashflow-event { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; gap: var(--space-3); align-items: center; width: 100%; padding: 11px 0; border: 0; border-bottom: 1px solid var(--color-divider); background: transparent; color: var(--color-text); text-align: left; cursor: pointer; }
 .dashboard-cashflow-event:hover strong { color: var(--color-primary); }
@@ -267,6 +271,9 @@
 .dashboard-calendar-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
 .dashboard-calendar-head strong { color: var(--color-text); font-size: var(--font-md); }
 .dashboard-calendar-head small { color: var(--color-text-tertiary); font-size: 10px; }
+.dashboard-calendar-modes { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--color-border-light); border-radius: var(--radius-full); }
+.dashboard-calendar-modes button { border: 0; border-radius: var(--radius-full); padding: 3px 7px; background: transparent; color: var(--color-text-tertiary); font-size: 10px; cursor: pointer; }
+.dashboard-calendar-modes button.is-active { background: var(--color-primary); color: #fff; }
 .dashboard-calendar-weekdays,.dashboard-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .dashboard-calendar-weekdays { margin-bottom: 4px; color: var(--color-text-tertiary); font-size: 10px; text-align: center; }
 .dashboard-calendar-day,.dashboard-calendar-empty { min-height: 46px; }
@@ -280,6 +287,8 @@
 .dashboard-calendar-day.is-positive small { color: var(--color-danger); }
 .dashboard-calendar-day.is-negative { border-color: color-mix(in srgb, var(--color-income) 45%, var(--color-border-light)); background: color-mix(in srgb, var(--color-income) calc(var(--calendar-intensity) * 100%), var(--color-bg-elevated)); }
 .dashboard-calendar-day.is-negative small { color: var(--color-income); }
+.dashboard-calendar-grid.is-monthly { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.dashboard-calendar-grid.is-monthly .dashboard-calendar-day { min-height: 42px; }
 .dashboard-calendar-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-top: 14px; padding-top: 11px; border-top: 1px solid var(--color-divider); color: var(--color-text-secondary); font-size: var(--font-xs); }
 .dashboard-calendar-foot span { font-family: var(--font-number); font-variant-numeric: tabular-nums; }
 

@@ -19,7 +19,7 @@ export function DebugLogPanel() {
         aria-label={open ? '收起调试日志' : '展开调试日志'}
         onClick={() => setOpen((v) => !v)}
       >
-        🐞 调试{logs.length > 0 ? ` (${logs.length})` : ''}
+        🐞{logs.length > 0 ? ` ${logs.length}` : ''}
       </button>
 
       {open ? (

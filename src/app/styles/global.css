@@ -2950,7 +2950,7 @@ small.mono {
   content: '';
   position: absolute;
   z-index: -1;
-  inset: -20px -28px;
+  inset: -20px 0;
   border-radius: 34px;
   background:
     radial-gradient(
@@ -2966,14 +2966,8 @@ small.mono {
   filter: blur(12px);
   opacity: 0.92;
   pointer-events: none;
-  -webkit-mask-image: linear-gradient(
-    90deg,
-    transparent 0%,
-    #000 7%,
-    #000 93%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(90deg, transparent 0%, #000 7%, #000 93%, transparent 100%);
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
 .welcome-banner > * {

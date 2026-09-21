@@ -4,7 +4,6 @@ import { CategoryBreakdownChart } from '../../features/dashboard/components/Cate
 import { NetAssetCurveCard } from '../../features/dashboard/components/NetAssetCurveCard';
 import { DashboardNetWorthSummary } from '../../features/dashboard/components/DashboardNetWorthSummary';
 import { buildNetWorthTrend } from '../../features/dashboard/model/netWorth';
-import { DashboardModuleCustomizer } from '../../features/dashboard/components/DashboardModuleCustomizer';
 import { DashboardHistoryCompareCard } from '../../features/dashboard/components/DashboardHistoryCompareCard';
 import { DashboardTopTransactionsCard } from '../../features/dashboard/components/DashboardTopTransactionsCard';
 import { DashboardMonthlyTrendSummaryCard } from '../../features/dashboard/components/DashboardMonthlyTrendSummaryCard';
@@ -159,7 +158,6 @@ export function DashboardPage() {
         boolean
       >
   );
-  const [draggingModule, setDraggingModule] = useState<DashboardModuleId | null>(null);
   const [simulationMonths, setSimulationMonths] = useState<1 | 3 | 6 | 12>(1);
 
   const now = new Date();
@@ -1098,19 +1096,6 @@ export function DashboardPage() {
     return worst.delta < 0 ? worst : null;
   }, [netAssetRows]);
 
-  const moveModule = (from: DashboardModuleId, to: DashboardModuleId) => {
-    if (from === to) return;
-    setModuleOrder((prev) => {
-      const next = prev.slice();
-      const fromIndex = next.indexOf(from);
-      const toIndex = next.indexOf(to);
-      if (fromIndex < 0 || toIndex < 0) return prev;
-      next.splice(fromIndex, 1);
-      next.splice(toIndex, 0, from);
-      return next;
-    });
-  };
-
   return (
     <div className="vi-page dashboard-page">
       <DashboardWelcomeBanner
@@ -1183,34 +1168,6 @@ export function DashboardPage() {
           horizonMonths={simulationMonths}
           onHorizonChange={setSimulationMonths}
         />
-        <DashboardModuleCustomizer
-          title={tFallback('dashboard.ui.moduleCustomize', '首页模块')}
-          hint={tFallback('dashboard.ui.moduleCustomizeHint', '拖动排序，关掉暂时用不上的卡片。')}
-          items={moduleOrder.reduce<
-            Array<{ id: DashboardModuleId; label: string; description: string; checked: boolean }>
-          >((acc, moduleId) => {
-            const module = DASHBOARD_MODULE_CATALOG.find((item) => item.id === moduleId);
-            if (!module) return acc;
-            acc.push({
-              id: module.id,
-              label: module.label,
-              description: module.description,
-              checked: moduleVisibility[module.id]
-            });
-            return acc;
-          }, [])}
-          draggingModuleId={draggingModule}
-          onDragStart={(moduleId) => setDraggingModule(moduleId as DashboardModuleId)}
-          onDrop={(moduleId) => {
-            if (draggingModule) moveModule(draggingModule, moduleId as DashboardModuleId);
-            setDraggingModule(null);
-          }}
-          onDragEnd={() => setDraggingModule(null)}
-          onToggle={(moduleId, checked) =>
-            setModuleVisibility((prev) => ({ ...prev, [moduleId as DashboardModuleId]: checked }))
-          }
-        />
-
         <div className="dashboard-analysis-workspace">
         {moduleOrder.map((moduleId) => {
           if (!moduleVisibility[moduleId]) return null;
