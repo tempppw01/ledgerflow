@@ -251,6 +251,8 @@ export function TransactionFilters({
           type="button"
           className={`transaction-filter-trigger ${sidePanelVisible ? 'active' : ''}`}
           onClick={onToggleSidePanel}
+          aria-label={sidePanelVisible ? '收起洞察' : '查看洞察'}
+          title={sidePanelVisible ? '收起洞察' : '查看洞察'}
         >
           <img
             className="transaction-filter-trigger-icon"
@@ -258,7 +260,9 @@ export function TransactionFilters({
             alt=""
             aria-hidden="true"
           />
-          {sidePanelVisible ? '收起洞察' : '查看洞察'}
+          <span className="transaction-filter-trigger-label">
+            {sidePanelVisible ? '收起洞察' : '查看洞察'}
+          </span>
         </button>
 
         <div className="transaction-filters-quick-tools" role="group" aria-label="快捷开关">
@@ -266,6 +270,8 @@ export function TransactionFilters({
             type="button"
             className={`transaction-filter-trigger transaction-filter-trigger-compact ${bulkSelectionEnabled ? 'active' : ''}`}
             onClick={onToggleBulkSelection}
+            aria-label={bulkSelectionEnabled ? '批量已开' : '批量操作'}
+            title={bulkSelectionEnabled ? '批量已开' : '批量操作'}
           >
             <img
               className="transaction-filter-trigger-icon"
@@ -273,12 +279,16 @@ export function TransactionFilters({
               alt=""
               aria-hidden="true"
             />
-            {bulkSelectionEnabled ? '批量已开' : '批量操作'}
+            <span className="transaction-filter-trigger-label">
+              {bulkSelectionEnabled ? '批量已开' : '批量操作'}
+            </span>
           </button>
           <button
             type="button"
             className={`transaction-filter-trigger transaction-filter-trigger-compact ${privacyMode ? 'active' : ''}`}
             onClick={onTogglePrivacy}
+            aria-label={privacyMode ? '隐私已开' : '隐私模式'}
+            title={privacyMode ? '隐私已开' : '隐私模式'}
           >
             <img
               className="transaction-filter-trigger-icon"
@@ -286,7 +296,9 @@ export function TransactionFilters({
               alt=""
               aria-hidden="true"
             />
-            {privacyMode ? '隐私已开' : '隐私模式'}
+            <span className="transaction-filter-trigger-label">
+              {privacyMode ? '隐私已开' : '隐私模式'}
+            </span>
           </button>
         </div>
 
@@ -297,6 +309,8 @@ export function TransactionFilters({
             onClick={() => setMenuOpen((prev) => !prev)}
             aria-haspopup="true"
             aria-expanded={menuOpen}
+            aria-label="筛选设置"
+            title="筛选设置"
           >
             <img
               className="transaction-filter-trigger-icon"
@@ -304,7 +318,7 @@ export function TransactionFilters({
               alt=""
               aria-hidden="true"
             />
-            筛选设置
+            <span className="transaction-filter-trigger-label">筛选设置</span>
             {advancedChangeCount > 0 ? (
               <span
                 className="transaction-filter-trigger-badge"

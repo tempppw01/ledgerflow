@@ -1197,6 +1197,63 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* 窄视图将快捷操作收敛为图标工具栏，避免按钮文字换行挤压内容。 */
+@media (max-width: 640px) {
+  .transaction-filters-secondary-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: center;
+    gap: 4px;
+  }
+
+  .transaction-filters-secondary-row > .transaction-filter-trigger,
+  .transaction-filters-quick-tools,
+  .transaction-filter-popover {
+    min-width: 0;
+  }
+
+  .transaction-filters-secondary-row > .transaction-filter-trigger,
+  .transaction-filters-quick-tools .transaction-filter-trigger,
+  .transaction-filter-popover > .transaction-filter-trigger {
+    width: 100%;
+    min-height: 38px;
+    padding: 8px 4px;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .transaction-filters-quick-tools {
+    display: contents;
+  }
+
+  .transaction-filter-popover {
+    display: block;
+  }
+
+  .transaction-filter-trigger-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .transaction-filter-trigger-icon {
+    width: 17px;
+    height: 17px;
+  }
+
+  .transaction-filter-trigger-badge {
+    position: absolute;
+    top: 2px;
+    right: calc(50% - 16px);
+  }
+}
+
 /* Transaction workspace — one continuous ledger canvas, not a row of cards.
    The filter controls are a compact command bar; data remains the visual hero. */
 .transactions-page {
