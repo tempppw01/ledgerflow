@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { formatCurrency, formatCurrencyAuto } from '../../../shared/lib/format';
 import type { AssetLiabilitySimulationRow } from '../model/assetLiabilitySimulation';
 import { formatCalendarAmount } from '../model/assetLiabilitySimulationFormat';
@@ -18,14 +19,12 @@ export function AssetLiabilitySimulationPanel({
   rows,
   initialAssets,
   initialLiabilities,
-  hasEvents,
   horizonMonths,
   onHorizonChange
 }: {
   rows: AssetLiabilitySimulationRow[];
   initialAssets: number;
   initialLiabilities: number;
-  hasEvents: boolean;
   horizonMonths: 1 | 3 | 6 | 12;
   onHorizonChange: (months: 1 | 3 | 6 | 12) => void;
 }) {
@@ -45,6 +44,7 @@ export function AssetLiabilitySimulationPanel({
   const assetPoints = rows.map((row, index) => point(row.assets, index));
   const liabilityPoints = rows.map((row, index) => point(row.liabilities, index));
   const gridValues = [max, (max + min) / 2, min];
+  const maxDelta = Math.max(...rows.map((row) => Math.abs(row.delta)), 1);
 
   return (
     <section className="panel dashboard-asset-liability-panel" aria-label="资产负债变动模拟">
@@ -68,7 +68,6 @@ export function AssetLiabilitySimulationPanel({
               </button>
             ))}
           </div>
-          <span className="dashboard-simulation-badge">{hasEvents ? '有安排' : '按现状持平'}</span>
         </div>
       </div>
 
@@ -119,17 +118,6 @@ export function AssetLiabilitySimulationPanel({
               className="dashboard-asset-liability-liability-line"
               d={smoothPath(liabilityPoints)}
             />
-            {rows.map((row, index) =>
-              row.events.length ? (
-                <circle
-                  key={row.key}
-                  className="dashboard-asset-liability-event-dot"
-                  cx={assetPoints[index].x}
-                  cy={assetPoints[index].y}
-                  r="3.5"
-                />
-              ) : null
-            )}
           </svg>
           <div className="dashboard-asset-liability-axis" aria-hidden="true">
             <span>{rows[0]?.label}</span>
@@ -139,7 +127,6 @@ export function AssetLiabilitySimulationPanel({
           <div className="dashboard-asset-liability-legend">
             <span><i className="is-asset" />资产</span>
             <span><i className="is-liability" />负债</span>
-            <small>点线上的标记代表当天有已登记安排</small>
           </div>
         </div>
 
@@ -157,19 +144,27 @@ export function AssetLiabilitySimulationPanel({
             {Array.from({ length: (new Date(`${rows[0]?.date}T00:00:00`).getDay() + 6) % 7 }).map(
               (_, index) => <span className="dashboard-calendar-empty" key={`empty-${index}`} />
             )}
-            {rows.map((row) => (
+            {rows.map((row, index) => {
+              const previous = rows[index - 1];
+              const isMonthStart = Boolean(previous && previous.date.slice(0, 7) !== row.date.slice(0, 7));
+              const intensity = 0.14 + (Math.abs(row.delta) / maxDelta) * 0.34;
+              const style = { '--calendar-intensity': intensity } as CSSProperties;
+              return (
               <div
                 className={`dashboard-calendar-day ${
-                  row.events.length ? 'has-event' : ''
-                } ${row.delta > 0 ? 'is-positive' : row.delta < 0 ? 'is-negative' : ''}`.trim()}
+                  row.delta > 0 ? 'is-positive' : row.delta < 0 ? 'is-negative' : 'is-neutral'
+                } ${isMonthStart ? 'is-month-start' : ''}`.trim()}
                 key={row.key}
+                style={style}
                 aria-label={`${row.label}，当日预计结余 ${formatCurrency(row.delta)}`}
-                title={`${formatCurrency(row.delta)}${row.events.length ? ` · ${row.events.join('、')}` : ' · 当天没有已登记安排'}`}
+                title={formatCurrency(row.delta)}
               >
+                {isMonthStart ? <em>{new Date(`${row.date}T00:00:00`).getMonth() + 1}月</em> : null}
                 <b>{row.date.slice(-2).replace(/^0/, '')}</b>
                 <small>{formatCalendarAmount(row.delta)}</small>
               </div>
-            ))}
+              );
+            })}
           </div>
           <div className="dashboard-calendar-foot">
             <span>净资产：{formatCurrencyAuto(rows.at(-1)?.netWorth || 0)}</span>

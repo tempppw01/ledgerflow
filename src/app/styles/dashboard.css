@@ -270,13 +270,16 @@
 .dashboard-calendar-weekdays,.dashboard-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .dashboard-calendar-weekdays { margin-bottom: 4px; color: var(--color-text-tertiary); font-size: 10px; text-align: center; }
 .dashboard-calendar-day,.dashboard-calendar-empty { min-height: 46px; }
-.dashboard-calendar-day { display: grid; place-items: center; align-content: center; gap: 2px; border: 1px solid var(--color-border-light); border-radius: var(--radius-sm); background: color-mix(in srgb, var(--color-bg-subtle) 62%, var(--color-bg-elevated)); transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast); }
+.dashboard-calendar-day { position: relative; display: grid; place-items: center; align-content: center; gap: 2px; border: 1px solid var(--color-border-light); border-radius: var(--radius-sm); background: color-mix(in srgb, var(--color-bg-subtle) 62%, var(--color-bg-elevated)); transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast); }
 .dashboard-calendar-day:hover { border-color: var(--color-primary-border); background: color-mix(in srgb, var(--color-primary-bg) 58%, var(--color-bg-elevated)); transform: translateY(-1px); }
-.dashboard-calendar-day.has-event { border-color: color-mix(in srgb, var(--color-primary) 52%, var(--color-border)); }
+.dashboard-calendar-day.is-month-start { margin-left: 5px; border-left: 2px solid var(--color-primary); box-shadow: -5px 0 0 color-mix(in srgb, var(--color-primary) 12%, transparent); }
+.dashboard-calendar-day.is-month-start em { position: absolute; top: 2px; left: 5px; color: var(--color-primary); font-size: 8px; font-style: normal; font-weight: 700; }
 .dashboard-calendar-day b { color: var(--color-text); font-family: var(--font-number); font-size: 11px; font-weight: 700; }
 .dashboard-calendar-day small { min-width: 0; color: var(--color-text-tertiary); font-family: var(--font-number); font-size: 10px; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; white-space: nowrap; }
-.dashboard-calendar-day.is-positive small { color: var(--color-income); }
-.dashboard-calendar-day.is-negative small { color: var(--color-expense); }
+.dashboard-calendar-day.is-positive { border-color: color-mix(in srgb, var(--color-danger) 45%, var(--color-border-light)); background: color-mix(in srgb, var(--color-danger) calc(var(--calendar-intensity) * 100%), var(--color-bg-elevated)); }
+.dashboard-calendar-day.is-positive small { color: var(--color-danger); }
+.dashboard-calendar-day.is-negative { border-color: color-mix(in srgb, var(--color-income) 45%, var(--color-border-light)); background: color-mix(in srgb, var(--color-income) calc(var(--calendar-intensity) * 100%), var(--color-bg-elevated)); }
+.dashboard-calendar-day.is-negative small { color: var(--color-income); }
 .dashboard-calendar-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-top: 14px; padding-top: 11px; border-top: 1px solid var(--color-divider); color: var(--color-text-secondary); font-size: var(--font-xs); }
 .dashboard-calendar-foot span { font-family: var(--font-number); font-variant-numeric: tabular-nums; }
 
