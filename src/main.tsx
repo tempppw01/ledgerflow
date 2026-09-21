@@ -6,6 +6,7 @@ import './app/styles/index.css';
 import './i18n';
 
 registerSW({
+  immediate: true,
   onNeedRefresh() {
     console.info('检测到新版本，刷新后生效。');
   }
