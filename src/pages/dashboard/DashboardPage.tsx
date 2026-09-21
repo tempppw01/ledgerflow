@@ -160,6 +160,7 @@ export function DashboardPage() {
       >
   );
   const [draggingModule, setDraggingModule] = useState<DashboardModuleId | null>(null);
+  const [simulationMonths, setSimulationMonths] = useState<1 | 3 | 6 | 12>(1);
 
   const now = new Date();
   const currentMonth = now.getMonth();
@@ -197,7 +198,7 @@ export function DashboardPage() {
         subscriptions,
         debts,
         repaymentRecords,
-        days: 30
+        days: simulationMonths * 30
       }),
     [
       accounts,
@@ -205,7 +206,8 @@ export function DashboardPage() {
       investmentPositions,
       repaymentRecords,
       subscriptions,
-      transactions
+      transactions,
+      simulationMonths
     ]
   );
 
@@ -1176,7 +1178,11 @@ export function DashboardPage() {
           onNavigateToSubscriptions={() => navigate('/subscriptions')}
           onNavigateToTransactions={() => navigate('/transactions')}
         />
-        <AssetLiabilitySimulationPanel {...assetLiabilitySimulation} />
+        <AssetLiabilitySimulationPanel
+          {...assetLiabilitySimulation}
+          horizonMonths={simulationMonths}
+          onHorizonChange={setSimulationMonths}
+        />
         <DashboardModuleCustomizer
           title={tFallback('dashboard.ui.moduleCustomize', '首页模块')}
           hint={tFallback('dashboard.ui.moduleCustomizeHint', '拖动排序，关掉暂时用不上的卡片。')}

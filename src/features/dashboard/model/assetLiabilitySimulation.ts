@@ -220,7 +220,7 @@ export function buildAssetLiabilitySimulation(input: {
   now?: Date;
 }): AssetLiabilitySimulation {
   const start = startOfDay(input.now || new Date());
-  const dayCount = Math.max(7, Math.min(60, Math.floor(input.days || 30)));
+  const dayCount = Math.max(7, Math.min(365, Math.floor(input.days || 30)));
   const end = new Date(start);
   end.setDate(end.getDate() + dayCount - 1);
   const accounts = accountBalances(input.accounts);

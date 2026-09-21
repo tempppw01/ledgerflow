@@ -18,12 +18,16 @@ export function AssetLiabilitySimulationPanel({
   rows,
   initialAssets,
   initialLiabilities,
-  hasEvents
+  hasEvents,
+  horizonMonths,
+  onHorizonChange
 }: {
   rows: AssetLiabilitySimulationRow[];
   initialAssets: number;
   initialLiabilities: number;
   hasEvents: boolean;
+  horizonMonths: 1 | 3 | 6 | 12;
+  onHorizonChange: (months: 1 | 3 | 6 | 12) => void;
 }) {
   const width = 720;
   const height = 280;
@@ -47,9 +51,25 @@ export function AssetLiabilitySimulationPanel({
       <div className="dashboard-section-header dashboard-section-header-tight">
         <div>
           <h4>资产负债变动模拟</h4>
-          <p>按已登记的交易、还款和续费安排推演未来 30 天，不替你猜未记录的收入。</p>
+          <p>按已登记的交易、还款和续费安排推演未来 {horizonMonths} 个月，不替你猜未记录的收入。</p>
         </div>
-        <span className="dashboard-simulation-badge">{hasEvents ? '有安排' : '按现状持平'}</span>
+        <div className="dashboard-simulation-actions">
+          <div className="dashboard-simulation-pills" role="tablist" aria-label="模拟时间范围">
+            {[1, 3, 6, 12].map((months) => (
+              <button
+                key={months}
+                type="button"
+                role="tab"
+                aria-selected={horizonMonths === months}
+                className={horizonMonths === months ? 'is-active' : ''}
+                onClick={() => onHorizonChange(months as 1 | 3 | 6 | 12)}
+              >
+                {months}个月
+              </button>
+            ))}
+          </div>
+          <span className="dashboard-simulation-badge">{hasEvents ? '有安排' : '按现状持平'}</span>
+        </div>
       </div>
 
       <div className="dashboard-asset-liability-layout">
@@ -68,9 +88,9 @@ export function AssetLiabilitySimulationPanel({
             className="dashboard-asset-liability-chart"
             viewBox={`0 0 ${width} ${height}`}
             role="img"
-            aria-label="未来30天资产负债变动模拟折线图"
+            aria-label={`未来${horizonMonths}个月资产负债变动模拟折线图`}
           >
-            <title>未来30天资产负债变动模拟折线图</title>
+            <title>未来{horizonMonths}个月资产负债变动模拟折线图</title>
             {gridValues.map((value, index) => {
               const y = padding.top + (index / 2) * (height - padding.top - padding.bottom);
               return (
@@ -123,9 +143,9 @@ export function AssetLiabilitySimulationPanel({
           </div>
         </div>
 
-        <div className="dashboard-asset-liability-calendar" aria-label="未来30天金额日历">
+        <div className="dashboard-asset-liability-calendar" aria-label={`未来${horizonMonths}个月金额日历`}>
           <div className="dashboard-calendar-head">
-            <strong>未来 30 天</strong>
+            <strong>未来 {horizonMonths} 个月</strong>
             <small>日期下方为当日预计结余</small>
           </div>
           <div className="dashboard-calendar-weekdays" aria-hidden="true">
