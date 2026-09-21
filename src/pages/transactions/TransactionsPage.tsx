@@ -3144,7 +3144,7 @@ export function TransactionsPage() {
 
       <ConfirmDialog
         open={Boolean(pendingRefundTransaction)}
-        title="确认发起退款"
+        title="确认退款并回补账户"
         description={
           pendingRefundTransaction
             ? (
