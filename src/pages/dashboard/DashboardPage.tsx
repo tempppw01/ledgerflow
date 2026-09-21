@@ -1211,6 +1211,7 @@ export function DashboardPage() {
           }
         />
 
+        <div className="dashboard-analysis-workspace">
         {moduleOrder.map((moduleId) => {
           if (!moduleVisibility[moduleId]) return null;
           if (moduleId === 'dynamic-charts') {
@@ -1288,6 +1289,7 @@ export function DashboardPage() {
             </article>
           );
         })}
+        </div>
       </section>
 
       {transactions.length === 0 ? (
@@ -1315,7 +1317,7 @@ export function DashboardPage() {
           />
         </section>
       ) : (
-        <div className="grid grid-2 dashboard-main-grid" style={{ marginTop: 16 }}>
+        <div className="grid grid-2 dashboard-main-grid dashboard-analysis-workspace" style={{ marginTop: 16 }}>
           <DashboardMonthlyTrendSummaryCard
             title={tFallback('dashboard.ui.thisMonthTrend', '本月趋势')}
             currentMonthLabel={currentMonthLabel}
