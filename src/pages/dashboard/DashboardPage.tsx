@@ -33,6 +33,7 @@ import { EmptyState } from '../../shared/ui/EmptyState';
 
 const FORECAST_CACHE_KEY = 'dashboard_forecast_cache_v1';
 const DASHBOARD_MODULES_KEY = 'dashboard_custom_modules_v1';
+const DASHBOARD_DENSITY_KEY = 'dashboard_density_v1';
 
 const DASHBOARD_MODULE_CATALOG = [
   { id: 'dynamic-charts', label: '趋势雷达', description: '钱花在哪、占比多少，一眼扫完' },
@@ -156,6 +157,21 @@ export function DashboardPage() {
       >
   );
   const [simulationMonths, setSimulationMonths] = useState<1 | 3 | 6 | 12>(1);
+  const [dashboardDensity, setDashboardDensity] = useState<'core' | 'full'>(() => {
+    try {
+      return localStorage.getItem(DASHBOARD_DENSITY_KEY) === 'full' ? 'full' : 'core';
+    } catch {
+      return 'core';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DASHBOARD_DENSITY_KEY, dashboardDensity);
+    } catch {
+      // ignore preference storage errors
+    }
+  }, [dashboardDensity]);
 
   const now = new Date();
   const currentMonth = now.getMonth();
@@ -1170,7 +1186,12 @@ export function DashboardPage() {
           horizonMonths={simulationMonths}
           onHorizonChange={setSimulationMonths}
         />
-        <section className="dashboard-dynamic-grid dashboard-analysis-workspace">
+        <div className="dashboard-density-control" role="group" aria-label="首页信息密度">
+          <span>首页显示</span>
+          <button type="button" className={dashboardDensity === 'core' ? 'is-active' : ''} onClick={() => setDashboardDensity('core')}>核心信息</button>
+          <button type="button" className={dashboardDensity === 'full' ? 'is-active' : ''} onClick={() => setDashboardDensity('full')}>完整分析</button>
+        </div>
+        {dashboardDensity === 'full' ? (trendSeries.some((item) => Math.abs(item.value) > 0.005) || cashflowCategoryRows.some((item) => Math.abs(item.amount) > 0.005) ? <section className="dashboard-dynamic-grid dashboard-analysis-workspace">
           <TrendChart
                   trendSeries={trendSeries}
                   activeTrendIndex={activeTrendIndex}
@@ -1198,7 +1219,10 @@ export function DashboardPage() {
                   onCashflowViewChange={setCashflowView}
                   onSelectedCategoryNameChange={setSelectedCategoryName}
           />
-        </section>
+        </section> : <div className="dashboard-chart-empty" role="status"><strong>记下一笔，趋势就会开始出现</strong><span>有了真实收支后，这里会展示花钱节奏和分类结构。</span><button type="button" onClick={() => navigate('/transactions/new?quick=1')}>记第一笔</button></div>) : null}
+        {dashboardDensity === 'full' ? (
+          <p className="dashboard-density-hint">已显示完整趋势与分类分析；切换到“核心信息”可收起次要图表。</p>
+        ) : null}
       </section>
 
       {transactions.length === 0 ? (

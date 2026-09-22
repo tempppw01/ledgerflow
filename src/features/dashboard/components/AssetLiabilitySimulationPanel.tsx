@@ -51,13 +51,24 @@ export function AssetLiabilitySimulationPanel({
     return !next || next.date.slice(0, 7) !== row.date.slice(0, 7);
   });
   const calendarRows = horizonMonths === 1 ? rows : monthlyRows;
+  const lowestBalance = rows.reduce((lowest, row) => (row.netWorth < lowest.netWorth ? row : lowest), rows[0]);
+  const monthlyDebtChanges = rows.reduce<Record<string, { amount: number; label: string }>>((acc, row) => {
+    const key = row.date.slice(0, 7);
+    acc[key] ||= { amount: 0, label: `${Number(key.slice(5))}月` };
+    acc[key].amount += row.liabilityDelta;
+    return acc;
+  }, {});
+  const fastestDebtDrop = Object.values(monthlyDebtChanges).reduce<{ amount: number; label: string } | null>(
+    (best, current) => (current.amount < 0 && (!best || current.amount < best.amount) ? current : best),
+    null
+  );
 
   return (
     <section className="panel dashboard-asset-liability-panel" aria-label="资产负债变动模拟">
       <div className="dashboard-section-header dashboard-section-header-tight">
         <div>
-          <h4>资产负债变动模拟</h4>
-          <p>按已登记的交易、还款和续费安排推演未来 {horizonMonths} 个月，不替你猜未记录的收入。</p>
+          <h4>资产负债预测</h4>
+          <p>按已登记安排推演未来 {horizonMonths} 个月，帮助你提前看到现金压力。</p>
         </div>
         <div className="dashboard-simulation-actions">
           <div className="dashboard-simulation-pills" role="tablist" aria-label="模拟时间范围">
@@ -75,6 +86,11 @@ export function AssetLiabilitySimulationPanel({
             ))}
           </div>
         </div>
+      </div>
+
+      <div className="dashboard-simulation-insights" aria-label="预测关键节点">
+        <div><span>预计余额最低日</span><strong>{lowestBalance?.label || '暂无数据'}</strong><small>{lowestBalance ? formatCurrencyAuto(lowestBalance.netWorth) : '先登记账户或安排'}</small></div>
+        <div><span>负债下降最快月份</span><strong>{fastestDebtDrop?.label || '暂无还款'}</strong><small>{fastestDebtDrop ? `减少 ${formatCurrencyAuto(Math.abs(fastestDebtDrop.amount))}` : '补充负债还款计划后显示'}</small></div>
       </div>
 
       <div className="dashboard-asset-liability-layout">

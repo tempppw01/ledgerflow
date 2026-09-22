@@ -296,6 +296,19 @@
   gap: 20px;
   align-items: stretch;
 }
+.dashboard-simulation-insights { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.dashboard-simulation-insights > div { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: baseline; padding: 10px 12px; border-left: 2px solid var(--color-primary); background: color-mix(in srgb, var(--color-bg-subtle) 72%, transparent); }
+.dashboard-simulation-insights span { color: var(--color-text-tertiary); font-size: var(--font-xs); }
+.dashboard-simulation-insights strong { color: var(--color-text); font-size: var(--font-sm); }
+.dashboard-simulation-insights small { grid-column: 2; color: var(--color-text-secondary); font-size: var(--font-xs); font-family: var(--font-number); }
+.dashboard-density-control { display: flex; align-items: center; gap: 6px; margin: 12px 0 0; color: var(--color-text-tertiary); font-size: var(--font-xs); }
+.dashboard-density-control button { border: 1px solid var(--color-border-light); border-radius: var(--radius-full); padding: 5px 10px; background: transparent; color: var(--color-text-secondary); font-size: var(--font-xs); cursor: pointer; }
+.dashboard-density-control button.is-active { border-color: var(--color-primary-border); background: var(--color-primary); color: #fff; }
+.dashboard-density-hint { margin: 8px 0 0; color: var(--color-text-tertiary); font-size: var(--font-xs); }
+.dashboard-chart-empty { display: grid; gap: 6px; margin-top: 14px; padding: 18px 0; border-top: 1px solid var(--color-divider); color: var(--color-text-secondary); }
+.dashboard-chart-empty strong { color: var(--color-text); font-size: var(--font-md); }
+.dashboard-chart-empty span { font-size: var(--font-sm); }
+.dashboard-chart-empty button { justify-self: start; margin-top: 4px; border: 0; border-radius: var(--radius-full); padding: 7px 13px; background: var(--color-primary); color: #fff; font-size: var(--font-xs); cursor: pointer; }
 .dashboard-analysis-workspace .dashboard-unified-card {
   grid-template-rows: auto minmax(0, 1fr);
   min-height: 390px;
@@ -360,6 +373,7 @@
 .dashboard-calendar-foot span { font-family: var(--font-number); font-variant-numeric: tabular-nums; }
 
 @media (max-width: 680px) {
+  .dashboard-simulation-insights { grid-template-columns: 1fr; }
   .dashboard-cashflow-agenda { padding-inline: 0; border-inline: 0; border-radius: 0; background: transparent; box-shadow: none; }
   .dashboard-cashflow-agenda-body { grid-template-columns: 1fr; }
   .dashboard-finance-todos { padding: var(--space-3) 0 0; border-top: 1px solid var(--color-divider); border-left: 0; }
