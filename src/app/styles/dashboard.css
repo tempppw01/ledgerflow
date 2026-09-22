@@ -289,6 +289,73 @@
 .dashboard-calendar-day.is-negative small { color: var(--color-income); }
 .dashboard-calendar-grid.is-monthly { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .dashboard-calendar-grid.is-monthly .dashboard-calendar-day { min-height: 42px; }
+
+/* The dashboard's two core review tools share one visual rhythm on desktop. */
+.dashboard-analysis-workspace.dashboard-dynamic-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: stretch;
+}
+.dashboard-analysis-workspace .dashboard-unified-card {
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 390px;
+  padding: 18px;
+  border-radius: var(--radius-lg);
+}
+.dashboard-analysis-workspace .dashboard-section-header {
+  min-height: 40px;
+  align-items: center;
+}
+.dashboard-analysis-workspace .dashboard-section-header h4 {
+  margin: 0;
+  white-space: nowrap;
+}
+.dashboard-analysis-workspace .dashboard-trend-header-actions {
+  justify-content: flex-end;
+}
+.dashboard-analysis-workspace .dashboard-expense-trend-card {
+  display: grid;
+  grid-template-rows: auto minmax(180px, 1fr) auto;
+  min-height: 0;
+  margin: 0;
+  padding: 12px;
+  border-left-width: 3px;
+  border-radius: var(--radius-md);
+}
+.dashboard-analysis-workspace .dashboard-expense-trend-chart {
+  height: auto;
+  min-height: 180px;
+  margin: 0;
+}
+.dashboard-analysis-workspace .dashboard-donut-layout {
+  grid-template-columns: minmax(190px, .9fr) minmax(220px, 1.1fr);
+  gap: 16px;
+  align-items: center;
+}
+.dashboard-analysis-workspace .dashboard-donut-wrap {
+  width: min(100%, 230px);
+  margin: 0 auto;
+}
+.dashboard-analysis-workspace .dashboard-donut-list {
+  grid-template-columns: 1fr;
+  max-height: 235px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.dashboard-analysis-workspace .dashboard-donut-list-item {
+  padding: 10px 11px;
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 780px) {
+  .dashboard-analysis-workspace.dashboard-dynamic-grid { grid-template-columns: 1fr; gap: 14px; }
+  .dashboard-analysis-workspace .dashboard-unified-card { min-height: 0; padding: 14px 0; border-inline: 0; border-radius: 0; background: transparent; box-shadow: none; }
+  .dashboard-analysis-workspace .dashboard-section-header { align-items: flex-start; }
+  .dashboard-analysis-workspace .dashboard-trend-header-actions { width: 100%; justify-content: space-between; }
+  .dashboard-analysis-workspace .dashboard-donut-layout { grid-template-columns: 1fr; }
+  .dashboard-analysis-workspace .dashboard-donut-wrap { width: min(100%, 210px); }
+  .dashboard-analysis-workspace .dashboard-donut-list { max-height: none; }
+}
 .dashboard-calendar-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-top: 14px; padding-top: 11px; border-top: 1px solid var(--color-divider); color: var(--color-text-secondary); font-size: var(--font-xs); }
 .dashboard-calendar-foot span { font-family: var(--font-number); font-variant-numeric: tabular-nums; }
 
