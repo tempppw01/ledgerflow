@@ -113,7 +113,7 @@ describe('fetchEastmoneyMarketQuotes', () => {
     const quotes = await fetchEastmoneyMarketQuotes();
 
     expect(quotes.map((quote) => quote.secId)).toEqual(['1.000001', '0.399001']);
-    expect(fetchMock).toHaveBeenCalledTimes(11);
+    expect(fetchMock).toHaveBeenCalledTimes(5);
   });
 });
 

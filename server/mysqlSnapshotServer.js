@@ -1914,6 +1914,21 @@ export async function handleRequest(req, res) {
       return;
     }
 
+    if (req.method === 'GET' && pathname === '/market/eastmoney/board-trend') {
+      const code = normalizeEastmoneyBoardCode(url.searchParams.get('code'));
+      if (!code) {
+        jsonResponse(res, 400, { ok: false, message: 'Missing Eastmoney board code.' });
+        return;
+      }
+      const upstreamUrl =
+        'https://push2.eastmoney.com/api/qt/stock/trends2/get?secid=90.' +
+        encodeURIComponent(code) +
+        '&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58&iscr=0&iscca=0&ndays=1';
+      const payload = await getEastmoneyMarketProxyPayload('board-trend:' + code, upstreamUrl);
+      jsonResponse(res, 200, { ok: true, data: payload });
+      return;
+    }
+
     if (req.method === 'GET' && pathname === '/market/eastmoney/theme-quotes') {
       const codes = normalizeEastmoneyThemeCodes(url.searchParams.get('codes'));
       if (codes.length === 0) {

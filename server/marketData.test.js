@@ -376,3 +376,30 @@ test('Eastmoney board stocks endpoint proxies constituents for a board', async (
     await closeServer(server);
   }
 });
+
+test('Eastmoney board trend endpoint proxies intraday industry line data', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async (input) => {
+    const url = String(input);
+    assert.match(url, /push2\.eastmoney\.com\/api\/qt\/stock\/trends2\/get\?secid=90\.BK9999/);
+    return new Response(
+      JSON.stringify({ data: { code: 'BK9999', trends: ['09:30,1000', '09:31,1002'] } }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  };
+
+  const server = createLedgerFlowServer();
+  try {
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const address = server.address();
+    const response = await originalFetch(
+      `http://127.0.0.1:${address.port}/api/market/eastmoney/board-trend?code=bk9999`
+    );
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.deepEqual(body.data.data.trends, ['09:30,1000', '09:31,1002']);
+  } finally {
+    global.fetch = originalFetch;
+    await closeServer(server);
+  }
+});

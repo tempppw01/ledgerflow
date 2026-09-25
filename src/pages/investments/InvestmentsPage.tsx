@@ -31,6 +31,7 @@ import {
   fetchEastmoneyMarketThemeBoardsSnapshot,
   fetchGlobalMarketSectorBoards,
   fetchEastmoneyMarketBoardConstituents,
+  fetchEastmoneyMarketBoardTrend,
   fetchEastmoneyIndexHistory,
   fetchEastmoneyMarketOverview,
   fetchEastmoneyMarketNews,
@@ -1996,12 +1997,18 @@ function MarketOverviewPanel({
     chart.points[chart.points.length - 1] ||
     null;
   const hoveredTrendPoint = hoveredTrendIndex === null ? null : activeTrendPoint;
-  const globalQuoteById = new Map(globalQuotes.map((quote) => [quote.id, quote]));
+  const globalQuoteById = useMemo(
+    () => new Map(globalQuotes.map((quote) => [quote.id, quote])),
+    [globalQuotes]
+  );
+  const globalQuotesRef = useRef(globalQuotes);
+  globalQuotesRef.current = globalQuotes;
   const isAnyMarketOpen = isLiveMarketPollingTime();
   const [selectedGlobalId, setSelectedGlobalId] = useState<string | null>(null);
   const [globalChartMode, setGlobalChartMode] = useState<'line' | 'kline'>('line');
   const [globalTrendPoints, setGlobalTrendPoints] = useState<GlobalMarketTrendPoint[]>([]);
   const [globalKlinePoints, setGlobalKlinePoints] = useState<GlobalMarketHistoryPoint[]>([]);
+  const [globalPreviousCloseDate, setGlobalPreviousCloseDate] = useState('');
   const [globalChartStatus, setGlobalChartStatus] = useState<'idle' | 'loading' | 'error'>(
     'idle'
   );
@@ -2046,11 +2053,26 @@ function MarketOverviewPanel({
 
     const request =
       globalChartMode === 'line'
-        ? fetchGlobalMarketTrend(selectedGlobalId).then((points) => {
-            if (!cancelled) setGlobalTrendPoints(points);
+        ? Promise.all([
+            fetchGlobalMarketTrend(selectedGlobalId),
+            fetchGlobalMarketHistory(selectedGlobalId, { range: '1m' })
+          ]).then(([trend, history]) => {
+            if (!cancelled) {
+              setGlobalTrendPoints(trend);
+              const quoteDate = globalQuotesRef.current.find((quote) => quote.id === selectedGlobalId)?.updatedAt.slice(0, 10);
+              setGlobalPreviousCloseDate(
+                history.at(-1)?.date === quoteDate ? history.at(-2)?.date || '' : history.at(-1)?.date || ''
+              );
+            }
           })
         : fetchGlobalMarketHistory(selectedGlobalId, { range: '1m' }).then((points) => {
-            if (!cancelled) setGlobalKlinePoints(points);
+            if (!cancelled) {
+              setGlobalKlinePoints(points);
+              const quoteDate = globalQuotesRef.current.find((quote) => quote.id === selectedGlobalId)?.updatedAt.slice(0, 10);
+              setGlobalPreviousCloseDate(
+                points.at(-1)?.date === quoteDate ? points.at(-2)?.date || '' : points.at(-1)?.date || ''
+              );
+            }
           });
 
     request
@@ -2185,17 +2207,53 @@ function MarketOverviewPanel({
 
       <GlobalMarketClock />
 
-      <div className="investments-global-quotes" aria-label="美日韩大盘行情">
+      <div className="investments-global-quotes" aria-label="全球主要指数行情">
         <div className="investments-global-quotes-head">
           <div>
-            <strong>美日韩大盘</strong>
+            <strong>全球主要指数</strong>
             <span>Yahoo Finance · 同源代理</span>
           </div>
           {globalStatus === 'loading' ? <small>更新中…</small> : null}
           {globalStatus === 'error' ? <small>{globalError || '暂时无法更新'}</small> : null}
         </div>
         <div className="investments-global-quote-grid">
-          {GLOBAL_MARKET_INDEXES.map((index) => {
+          {[
+            ...GLOBAL_MARKET_INDEXES.map((index) => ({ kind: 'global' as const, index })),
+            ...EASTMONEY_MARKET_INDEXES.map((index) => ({ kind: 'china' as const, index }))
+          ].map(({ kind, index }) => {
+            if (kind === 'china') {
+              const quote = quoteBySecId.get(index.secId);
+              const tone = getMarketTone(quote?.changePercent ?? null);
+              return (
+                <article
+                  key={`cn:${index.secId}`}
+                  className={`investments-global-quote-card ${tone} ${
+                    flashingQuoteIds.has(`cn:${index.secId}`) ? 'is-updating' : ''
+                  } ${selectedSecId === index.secId ? 'is-selected' : ''}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={selectedSecId === index.secId}
+                  onClick={() => {
+                    setSelectedGlobalId(null);
+                    onSelect(index.secId);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setSelectedGlobalId(null);
+                      onSelect(index.secId);
+                    }
+                  }}
+                >
+                  <div className="investments-global-quote-name">
+                    <span><i aria-hidden="true">🇨🇳</i>A 股</span>
+                    <strong>{index.name}</strong>
+                  </div>
+                  <b>{formatMarketIndexValue(quote?.value)}</b>
+                  <span className={tone}>{formatMarketPercent(quote?.changePercent ?? null)}</span>
+                </article>
+              );
+            }
             const quote = globalQuoteById.get(index.id);
             const tone = getMarketTone(quote?.changePercent ?? null);
             return (
@@ -2239,9 +2297,9 @@ function MarketOverviewPanel({
               </strong>
               <span>
                 {selectedGlobalQuote
-                  ? `${formatMarketIndexValue(
-                      selectedGlobalQuote.value
-                    )} · 昨收 ${formatMarketIndexValue(selectedGlobalQuote.previousClose)}`
+                  ? `${formatMarketIndexValue(selectedGlobalQuote.value)} · ${
+                      globalPreviousCloseDate ? `${globalPreviousCloseDate} 收盘` : '最近交易日收盘'
+                    } ${formatMarketIndexValue(selectedGlobalQuote.previousClose)}`
                   : 'Yahoo Finance 实时走势'}
               </span>
             </div>
@@ -2474,37 +2532,6 @@ function MarketOverviewPanel({
         </section>
       ) : null}
 
-      <div className="investments-market-index-rail">
-        <div className="investments-market-tabs" role="tablist" aria-label="大盘指数">
-          {EASTMONEY_MARKET_INDEXES.map((item) => {
-            const quote = quoteBySecId.get(item.secId);
-            const changePercent = quote?.changePercent ?? null;
-            const tone = getMarketTone(changePercent);
-            return (
-              <button
-                key={item.secId}
-                type="button"
-                role="tab"
-                aria-selected={selectedSecId === item.secId}
-                className={`investments-market-tab ${
-                  selectedSecId === item.secId ? 'is-active' : ''
-                } ${tone} ${flashingQuoteIds.has(`cn:${item.secId}`) ? 'is-updating' : ''}`}
-                onClick={() => onSelect(item.secId)}
-              >
-                <div className="investments-market-tab-name">
-                  <span>
-                    <i aria-hidden="true">🇨🇳</i>A 股
-                  </span>
-                  <strong>{item.name}</strong>
-                </div>
-                <b>{formatMarketIndexValue(quote?.value)}</b>
-                <em>{formatMarketPercent(changePercent)}</em>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       <div className="investments-market-body">
         <div className="investments-market-main">
           <div
@@ -2694,7 +2721,33 @@ function MarketOverviewPanel({
   );
 }
 
-type MarketBoardView = 'theme' | 'industry';
+type MarketBoardView = string;
+
+function IndustrySparkline({ board }: { board: EastmoneyMarketBoard }) {
+  const [points, setPoints] = useState<number[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetchEastmoneyMarketBoardTrend(board.code)
+      .then((trend) => { if (!cancelled) setPoints(trend.map((point) => point.value)); })
+      .catch(() => { if (!cancelled) setPoints([]); });
+    return () => { cancelled = true; };
+  }, [board.code]);
+  if (points.length < 2) return <span className="investments-industry-sparkline-empty">—</span>;
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  const range = max - min || 1;
+  const coordinates = points.map((point, index) => ({
+    x: 2 + (index / (points.length - 1)) * 96,
+    y: 24 - ((point - min) / range) * 19
+  }));
+  const line = coordinates.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' ');
+  return (
+    <svg className={`investments-industry-sparkline ${getMarketTone(board.changePercent)}`} viewBox="0 0 100 28" aria-label={`${board.name}走势示意`} role="img">
+      <path d={line} />
+      <circle cx={coordinates[coordinates.length - 1].x} cy={coordinates[coordinates.length - 1].y} r="1.8" />
+    </svg>
+  );
+}
 
 const HOT_INDUSTRY_FILTERS: Array<{ id: string; label: string; keywords?: string[] }> = [
   { id: 'all', label: '全部热门', keywords: undefined },
@@ -2778,7 +2831,6 @@ function MarketBreadthDonut({ breadth, label }: { breadth: MarketBreadth; label:
 }
 
 function MarketBoardsPanel({
-  themeBoards,
   industryBoards,
   globalSectorBoards,
   globalSectorMeta,
@@ -2786,13 +2838,11 @@ function MarketBoardsPanel({
   conceptBoards,
   constituents,
   constituentStatus,
-  themeMeta,
   industryMeta,
   view,
   selectedThemeCode,
   status,
   error,
-  onSelectView,
   onSelectTheme,
   onAddTheme,
   onRenameTheme,
@@ -2800,7 +2850,6 @@ function MarketBoardsPanel({
   onRefresh,
   onLoadConstituents
 }: {
-  themeBoards: EastmoneyMarketBoard[];
   industryBoards: EastmoneyMarketBoard[];
   globalSectorBoards: EastmoneyMarketBoard[];
   globalSectorMeta: MarketDataMeta;
@@ -2808,13 +2857,11 @@ function MarketBoardsPanel({
   conceptBoards: EastmoneyMarketBoard[];
   constituents: Record<string, EastmoneyMarketConstituent[]>;
   constituentStatus: Record<string, 'idle' | 'loading' | 'error'>;
-  themeMeta: MarketDataMeta;
   industryMeta: MarketDataMeta;
   view: MarketBoardView;
   selectedThemeCode: string;
   status: 'idle' | 'loading' | 'error';
   error: string;
-  onSelectView: (view: MarketBoardView) => void;
   onSelectTheme: (code: string) => void;
   onAddTheme: (code: string) => void;
   onRenameTheme: (code: string, name: string) => void;
@@ -2830,7 +2877,7 @@ function MarketBoardsPanel({
   const availableConceptBoards = conceptBoards.filter(
     (board) => !trackedThemes.some((theme) => theme.code === board.code)
   );
-  const boardUniverse = [...(view === 'theme' ? themeBoards : industryBoards)]
+  const boardUniverse = [...industryBoards]
     .filter((board) => board.code)
     .sort(
       (a, b) =>
@@ -2844,76 +2891,37 @@ function MarketBoardsPanel({
     : boardUniverse;
   const visibleBoards = filteredBoards.slice(0, 8);
   const breadth = getMarketBreadth(boardUniverse);
-  const activeMeta = view === 'theme' ? themeMeta : industryMeta;
+  const activeMeta = industryMeta;
   const hasYahooFallback = industryMeta.fallback === true;
 
   return (
     <section
       className={`panel investments-market-boards-panel ${status === 'loading' ? 'is-loading' : ''}`}
-      aria-label="行业和概念板块监控"
+      aria-label="A股行业涨跌监控"
     >
       <div className="investments-market-news-head">
         <div>
-          <h3>板块健康度</h3>
-          <p>汇总行业涨跌和市场宽度，先判断普涨、普跌还是结构性轮动。</p>
+          <h3>A 股行业涨跌</h3>
+          <p>行业强弱一眼看清，点击行业可查看领涨公司。</p>
         </div>
         <button type="button" onClick={onRefresh} disabled={status === 'loading'}>
           {status === 'loading' ? '刷新中' : '刷新'}
         </button>
       </div>
 
-      <div className="investments-market-sector-summary" aria-label="全球行业交叉参照">
-        <div className="investments-market-sector-summary-head">
-          <div>
-            <strong>全球行业交叉参照</strong>
-              <span>用 Yahoo 行业 ETF 做外部市场参照，不和 A 股板块涨跌混算</span>
+      {view === 'industry' ? (
+        <div className="investments-market-sector-summary" aria-label="全球行业交叉参照">
+          <div className="investments-market-sector-summary-head">
+            <div><strong>海外行业参考</strong><span>Yahoo Finance 行业 ETF 涨跌</span></div>
+            <small>{globalSectorBoards.length ? `${globalSectorBoards.length} 个 · ${globalSectorMeta.freshness === 'stale' ? '缓存' : '更新'}` : '暂无数据'}</small>
           </div>
-          <small>
-            {globalSectorBoards.length > 0
-              ? `${globalSectorBoards.length} 个行业 · ${
-                  globalSectorMeta.freshness === 'stale' ? '缓存' : '实时'
-                }`
-              : '暂无数据'}
-          </small>
+          <div className="investments-market-sector-strip">
+            {globalSectorBoards.length ? globalSectorBoards.map((sector) => (
+              <span key={sector.code} className="investments-market-sector-item"><b>{sector.name}</b><em className={getMarketTone(sector.changePercent)}>{formatMarketPercent(sector.changePercent)}</em></span>
+            )) : <span className="investments-market-sector-empty">海外行业行情暂时不可用。</span>}
+          </div>
         </div>
-        <div className="investments-market-sector-strip">
-          {globalSectorBoards.length > 0 ? (
-            globalSectorBoards.map((sector) => (
-              <span key={sector.code} className="investments-market-sector-item">
-                <b>{sector.name}</b>
-              <em className={getMarketTone(sector.changePercent)}>
-                  {formatMarketPercent(sector.changePercent)}
-                </em>
-              </span>
-            ))
-          ) : (
-            <span className="investments-market-sector-empty">全球行业数据暂时不可用，不影响 A 股板块监控。</span>
-          )}
-        </div>
-      </div>
-
-      <div className="investments-market-board-tabs" role="tablist" aria-label="板块类型">
-        {(
-          [
-            ['theme', '热门题材'],
-            ['industry', '行业榜']
-          ] as const
-        ).map(([itemView, label]) => (
-          <button
-            key={itemView}
-            type="button"
-            role="tab"
-            aria-selected={view === itemView}
-            className={view === itemView ? 'is-active' : ''}
-            onClick={() => {
-              setExpandedBoardCode('');
-              onSelectView(itemView);
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      ) : null}
 
       {error && status === 'error' ? (
         <p className="investments-market-news-error">{error}</p>
@@ -3097,19 +3105,14 @@ function MarketBoardsPanel({
             ))}
           </div>
           <div className="investments-market-board-overview">
-            <MarketBreadthDonut breadth={breadth} label="行业榜" />
             <div>
-              <strong>{visibleBoards.length || '--'} 个行业</strong>
-              <span>
-                涨 {breadth.up} · 平 {breadth.flat} · 跌 {breadth.down} ·
-                {hasYahooFallback ? ' 当前使用 Yahoo 行业 ETF 备用数据' : ' 行业强弱与领涨公司同步更新'}
-              </span>
+              <strong>{visibleBoards.length || '--'} 个行业 · 涨 {breadth.up} / 跌 {breadth.down}</strong>
+              <span>{hasYahooFallback ? '东方财富行情暂不可用，当前使用 Yahoo 行业 ETF 参考。' : '按涨跌幅排序；每条线展示当日行业走势。'}</span>
             </div>
           </div>
           <div className="investments-market-board-grid">
             {visibleBoards.map((board, index) => {
               const boardConstituents = constituents[board.code] || [];
-              const health = getBoardHealth(board.changePercent);
               return (
                 <article className={`investments-market-board-card ${expandedBoardCode === board.code ? 'is-expanded' : ''}`} key={board.code || `${board.name}-${index}`}>
                   <button className="investments-market-board-card-head" type="button" aria-expanded={expandedBoardCode === board.code} onClick={() => {
@@ -3127,10 +3130,8 @@ function MarketBoardsPanel({
                     <span className="investments-board-expand-mark" aria-hidden="true">{expandedBoardCode === board.code ? '−' : '+'}</span>
                   </button>
                   <div className="investments-market-board-card-meta">
-                    <span>{formatMarketIndexValue(board.value)}</span>
-                    <em className={`investments-board-health ${health.className}`}>
-                      {health.emoji} {health.label}
-                    </em>
+                    <span>指数 {formatMarketIndexValue(board.value)}</span>
+                    <IndustrySparkline board={board} />
                   </div>
                   {expandedBoardCode === board.code ? <div className="investments-market-board-card-stocks" aria-live="polite">
                     <small>领涨公司</small>
@@ -3350,7 +3351,7 @@ export function InvestmentsPage() {
   const [marketNews, setMarketNews] = useState<EastmoneyMarketNewsItem[]>([]);
   const [marketNewsStatus, setMarketNewsStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [marketNewsError, setMarketNewsError] = useState('');
-  const [marketBoardView, setMarketBoardView] = useState<MarketBoardView>('theme');
+  const marketBoardView: MarketBoardView = 'industry';
   const [trackedMarketThemes, setTrackedMarketThemes] =
     useState<EastmoneyMarketTheme[]>(readTrackedMarketThemes);
   const [selectedMarketThemeCode, setSelectedMarketThemeCode] = useState(
@@ -3359,7 +3360,6 @@ export function InvestmentsPage() {
   const [marketThemeBoards, setMarketThemeBoards] = useState<EastmoneyMarketBoard[]>([]);
   const [marketIndustryBoards, setMarketIndustryBoards] = useState<EastmoneyMarketBoard[]>([]);
   const [marketConceptBoards, setMarketConceptBoards] = useState<EastmoneyMarketBoard[]>([]);
-  const [marketThemeMeta, setMarketThemeMeta] = useState<MarketDataMeta>(EMPTY_MARKET_DATA_META);
   const [marketIndustryMeta, setMarketIndustryMeta] =
     useState<MarketDataMeta>(EMPTY_MARKET_DATA_META);
   const [globalSectorBoards, setGlobalSectorBoards] = useState<EastmoneyMarketBoard[]>([]);
@@ -3902,7 +3902,6 @@ export function InvestmentsPage() {
         if (cancelled) return;
         if (themesResult.status === 'fulfilled') {
           setMarketThemeBoards(themesResult.value.boards);
-          setMarketThemeMeta(themesResult.value.meta);
         }
         if (industriesResult.status === 'fulfilled') {
           setMarketIndustryBoards(industriesResult.value.boards);
@@ -4018,7 +4017,6 @@ export function InvestmentsPage() {
       ]);
       if (themesResult.status === 'fulfilled') {
         setMarketThemeBoards(themesResult.value.boards);
-        setMarketThemeMeta(themesResult.value.meta);
       }
       if (industriesResult.status === 'fulfilled') {
         setMarketIndustryBoards(industriesResult.value.boards);
@@ -4442,9 +4440,8 @@ export function InvestmentsPage() {
         ) : null}
 
         {investmentWorkspace === 'boards' ? (
-          <section className="investments-workspace-boards" aria-label="行业和概念板块监控">
+          <section className="investments-workspace-boards" aria-label="A股行业监控">
             <MarketBoardsPanel
-              themeBoards={marketThemeBoards}
               industryBoards={marketIndustryBoards}
               globalSectorBoards={globalSectorBoards}
               globalSectorMeta={globalSectorMeta}
@@ -4452,13 +4449,11 @@ export function InvestmentsPage() {
               conceptBoards={marketConceptBoards}
               constituents={marketBoardConstituents}
               constituentStatus={marketBoardConstituentStatus}
-              themeMeta={marketThemeMeta}
               industryMeta={marketIndustryMeta}
               view={marketBoardView}
               selectedThemeCode={selectedMarketThemeCode}
               status={marketBoardsStatus}
               error={marketBoardsError}
-              onSelectView={setMarketBoardView}
               onSelectTheme={setSelectedMarketThemeCode}
               onAddTheme={handleAddMarketTheme}
               onRenameTheme={handleRenameMarketTheme}

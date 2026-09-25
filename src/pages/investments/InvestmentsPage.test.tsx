@@ -27,6 +27,7 @@ const eastmoneyClientMock = vi.hoisted(() => ({
   fetchEastmoneyMarketBoards: vi.fn(),
   fetchEastmoneyMarketBoardsSnapshot: vi.fn(),
   fetchEastmoneyMarketBoardConstituents: vi.fn(),
+  fetchEastmoneyMarketBoardTrend: vi.fn(),
   fetchEastmoneyMarketOverview: vi.fn(),
   fetchEastmoneyMarketNews: vi.fn(),
   fetchEastmoneyMarketThemeBoards: vi.fn(),
@@ -50,13 +51,7 @@ vi.mock('../../features/investments/api/eastmoneyMarketClient', () => ({
     { secId: '0.399001', code: '399001', name: '深证成指', shortName: '深证' },
     { secId: '0.399006', code: '399006', name: '创业板指', shortName: '创业板' },
     { secId: '1.000688', code: '000688', name: '科创50', shortName: '科创50' },
-    { secId: '0.899050', code: '899050', name: '北证50', shortName: '北证50' },
-    { secId: '1.000016', code: '000016', name: '上证50', shortName: '上证50' },
-    { secId: '1.000300', code: '000300', name: '沪深300', shortName: '沪深300' },
-    { secId: '1.000905', code: '000905', name: '中证500', shortName: '中证500' },
-    { secId: '1.000852', code: '000852', name: '中证1000', shortName: '中证1000' },
-    { secId: '0.399330', code: '399330', name: '深证100', shortName: '深证100' },
-    { secId: '0.399673', code: '399673', name: '创业板50', shortName: '创业板50' }
+    { secId: '1.000300', code: '000300', name: '沪深300', shortName: '沪深300' }
   ],
   EASTMONEY_MARKET_NEWS_CATEGORIES: [
     { id: 'all-day', label: '7×24', column: '102' },
@@ -86,6 +81,7 @@ vi.mock('../../features/investments/api/eastmoneyMarketClient', () => ({
   fetchEastmoneyMarketBoardsSnapshot: eastmoneyClientMock.fetchEastmoneyMarketBoardsSnapshot,
   fetchEastmoneyMarketBoardConstituents:
     eastmoneyClientMock.fetchEastmoneyMarketBoardConstituents,
+  fetchEastmoneyMarketBoardTrend: eastmoneyClientMock.fetchEastmoneyMarketBoardTrend,
   fetchEastmoneyIndexHistory: eastmoneyClientMock.fetchEastmoneyIndexHistory,
   fetchGlobalMarketHistory: eastmoneyClientMock.fetchGlobalMarketHistory,
   fetchEastmoneyMarketOverview: eastmoneyClientMock.fetchEastmoneyMarketOverview,
@@ -101,6 +97,7 @@ describe('InvestmentsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     eastmoneyClientMock.fetchEastmoneyMarketBoardConstituents.mockResolvedValue([]);
+    eastmoneyClientMock.fetchEastmoneyMarketBoardTrend.mockResolvedValue([]);
     eastmoneyClientMock.fetchEastmoneyMarketBoardsSnapshot.mockImplementation(async (...args) => ({
       boards: await eastmoneyClientMock.fetchEastmoneyMarketBoards(...args),
       meta: {
@@ -388,9 +385,8 @@ describe('InvestmentsPage', () => {
       within(screen.getByLabelText('上证指数关键数据')).getByText('1.56万亿')
     ).toBeInTheDocument();
     await openInvestmentWorkspace('板块监控');
-    expect(screen.getByRole('tab', { name: '热门题材' })).toBeInTheDocument();
-    expect(screen.getByLabelText('选择热门题材')).toHaveValue('BK1106');
-    expect(screen.getByText('板块健康度')).toBeInTheDocument();
+    expect(screen.queryByLabelText('选择热门题材')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'A 股行业涨跌' })).toBeInTheDocument();
 
     await openInvestmentWorkspace('市场快讯');
     expect(await screen.findByText('快讯')).toBeInTheDocument();
@@ -419,15 +415,10 @@ describe('InvestmentsPage', () => {
       within(marketPanel as HTMLElement).queryByRole('button', { name: '问 AI 怎么看' })
     ).not.toBeInTheDocument();
     expect(within(marketPanel as HTMLElement).getByText('实时轮询')).toBeInTheDocument();
-    expect(within(marketPanel as HTMLElement).getByLabelText('美日韩大盘行情')).toBeInTheDocument();
-    expect(
-      within(within(marketPanel as HTMLElement).getByLabelText('美日韩大盘行情')).getAllByText('🇺🇸')
-    ).toHaveLength(4);
-    expect(
-      within(screen.getByRole('tablist', { name: '大盘指数' })).getAllByText('🇨🇳')
-    ).toHaveLength(11);
-    const shanghaiIndexTab = within(marketPanel as HTMLElement).getByRole('tab', {
-      name: /A 股 上证指数 3996\.16 -1\.00%/
+    expect(within(marketPanel as HTMLElement).getByLabelText('全球主要指数行情')).toBeInTheDocument();
+    expect((marketPanel as HTMLElement).querySelectorAll('.investments-global-quote-card')).toHaveLength(11);
+    const shanghaiIndexTab = within(marketPanel as HTMLElement).getByRole('button', {
+      name: /A 股 上证指数/
     });
     expect(shanghaiIndexTab).toHaveClass('is-negative');
     expect(screen.getAllByText('¥1.09万').length).toBeGreaterThan(0);
@@ -490,15 +481,13 @@ describe('InvestmentsPage', () => {
     );
 
     await openInvestmentWorkspace('大盘行情');
-    const initialShanghaiTab = await screen.findByRole('tab', {
-      name: /A 股 上证指数 3996\.16 -1\.00%/
-    });
+    const initialShanghaiTab = await screen.findByRole('button', { name: /A 股 上证指数/ });
     expect(initialShanghaiTab).not.toHaveClass('is-updating');
 
-    await userEvent.click(screen.getByRole('tab', { name: /A 股 深证成指/ }));
+    await userEvent.click(screen.getByRole('button', { name: /A 股 深证成指/ }));
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: /A 股 上证指数 4002\.88 \+0\.17%/ })).toHaveClass(
+      expect(screen.getByRole('button', { name: /A 股 上证指数/ })).toHaveClass(
         'is-updating',
         'is-positive'
       );
@@ -819,8 +808,8 @@ describe('InvestmentsPage', () => {
     );
 
     await openInvestmentWorkspace('大盘行情');
-    const indexTab = await screen.findByRole('tab', { name: /A 股 沪深300/ });
-    expect(screen.getByRole('tab', { name: /A 股 上证50/ })).toBeInTheDocument();
+    const indexTab = await screen.findByRole('button', { name: /A 股 沪深300/ });
+    expect(screen.queryByRole('button', { name: /A 股 上证50/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '查看上一组指数' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '查看下一组指数' })).not.toBeInTheDocument();
     expect(screen.getByText('纳斯达克 100')).toBeInTheDocument();
@@ -830,11 +819,17 @@ describe('InvestmentsPage', () => {
     await waitFor(() => {
       expect(eastmoneyClientMock.fetchEastmoneyMarketOverview).toHaveBeenLastCalledWith('1.000300');
     });
-    expect(indexTab).toHaveAttribute('aria-selected', 'true');
+    expect(indexTab).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByLabelText('沪深300关键数据')).toBeInTheDocument();
   });
 
   it('可以切换热门题材并更新题材数据图', async () => {
+    eastmoneyClientMock.fetchEastmoneyMarketBoards.mockResolvedValueOnce([
+      {
+        code: 'BK1001', name: '银行', value: 1000, change: 10, changePercent: 1,
+        volume: 100, amount: 10000, upCount: 20, downCount: 4, flatCount: 1
+      }
+    ]);
     eastmoneyClientMock.fetchEastmoneyMarketThemeBoards.mockResolvedValue([
       {
         code: 'BK1106',
@@ -869,11 +864,8 @@ describe('InvestmentsPage', () => {
     );
 
     await openInvestmentWorkspace('板块监控');
-    const themeSelect = await screen.findByLabelText('选择热门题材');
-    await userEvent.selectOptions(themeSelect, 'BK1128');
-
-    expect(themeSelect).toHaveValue('BK1128');
-    expect(screen.getByLabelText('热门题材涨跌分布')).toBeInTheDocument();
+    expect((await screen.findAllByText('银行')).length).toBeGreaterThan(1);
+    expect(screen.getByRole('heading', { name: 'A 股行业涨跌' })).toBeInTheDocument();
   });
 
   it('可以切换大盘历史区间并运行定投模拟', async () => {
@@ -932,24 +924,8 @@ describe('InvestmentsPage', () => {
     );
 
     await openInvestmentWorkspace('板块监控');
-    await screen.findByText('板块健康度');
-    const addTheme = screen.getByLabelText('添加可跟踪题材');
-    await userEvent.selectOptions(addTheme, 'BK0001');
-    await userEvent.click(screen.getByRole('button', { name: '添加' }));
-    expect(screen.getByRole('option', { name: '测试细分行业' })).toBeInTheDocument();
-
-    await userEvent.click(screen.getByText('管理已跟踪题材'));
-    const editButtons = screen.getAllByRole('button', { name: '修改' });
-    await userEvent.click(editButtons[editButtons.length - 1]);
-    const editInput = screen.getByLabelText('修改 测试细分行业 的显示名称');
-    await userEvent.clear(editInput);
-    await userEvent.type(editInput, '测试行业');
-    await userEvent.click(screen.getByRole('button', { name: '保存' }));
-    expect(screen.getAllByText('测试行业').length).toBeGreaterThan(0);
-
-    const deleteButtons = screen.getAllByRole('button', { name: '删除' });
-    await userEvent.click(deleteButtons[deleteButtons.length - 1]);
-    expect(screen.queryByText('测试行业')).not.toBeInTheDocument();
-    expect(screen.getAllByText(/东方财富公开题材行情/).length).toBeGreaterThan(0);
+    expect(await screen.findByText('测试细分行业')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'A 股行业涨跌' })).toBeInTheDocument();
+    expect(screen.getByText(/东方财富公开板块行情/)).toBeInTheDocument();
   });
 });

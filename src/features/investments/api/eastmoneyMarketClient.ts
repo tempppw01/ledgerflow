@@ -123,6 +123,11 @@ export interface EastmoneyMarketBoard {
   flatCount: number | null;
 }
 
+export interface EastmoneyMarketBoardTrendPoint {
+  time: string;
+  value: number;
+}
+
 export interface MarketDataMeta {
   source: string;
   updatedAt: string;
@@ -280,13 +285,7 @@ export const EASTMONEY_MARKET_INDEXES: EastmoneyMarketIndex[] = [
   { secId: '0.399001', code: '399001', name: '深证成指', shortName: '深证' },
   { secId: '0.399006', code: '399006', name: '创业板指', shortName: '创业板' },
   { secId: '1.000688', code: '000688', name: '科创50', shortName: '科创50' },
-  { secId: '0.899050', code: '899050', name: '北证50', shortName: '北证50' },
-  { secId: '1.000016', code: '000016', name: '上证50', shortName: '上证50' },
-  { secId: '1.000300', code: '000300', name: '沪深300', shortName: '沪深300' },
-  { secId: '1.000905', code: '000905', name: '中证500', shortName: '中证500' },
-  { secId: '1.000852', code: '000852', name: '中证1000', shortName: '中证1000' },
-  { secId: '0.399330', code: '399330', name: '深证100', shortName: '深证100' },
-  { secId: '0.399673', code: '399673', name: '创业板50', shortName: '创业板50' }
+  { secId: '1.000300', code: '000300', name: '沪深300', shortName: '沪深300' }
 ];
 
 export const GLOBAL_MARKET_INDEXES: GlobalMarketIndex[] = [
@@ -741,6 +740,19 @@ export async function fetchEastmoneyMarketBoardConstituents(
     change: toNullableNumber(item.f4),
     changePercent: toNullableNumber(item.f3)
   }));
+}
+
+export async function fetchEastmoneyMarketBoardTrend(code: string): Promise<EastmoneyMarketBoardTrendPoint[]> {
+  const normalizedCode = String(code || '').trim().toUpperCase();
+  if (!/^BK\d{4}$/.test(normalizedCode)) return [];
+  const response = await fetch(`/api/market/eastmoney/board-trend?code=${encodeURIComponent(normalizedCode)}`);
+  if (!response.ok) throw new Error('行业走势图加载失败。');
+  const body = (await response.json()) as { data?: { data?: { trends?: unknown[] } } };
+  return (body.data?.data?.trends || []).flatMap((entry) => {
+    const [time, value] = String(entry || '').split(',');
+    const numericValue = toNullableNumber(value);
+    return time && numericValue !== null ? [{ time, value: numericValue }] : [];
+  });
 }
 
 export async function fetchEastmoneyMarketThemeBoards(

@@ -7568,3 +7568,50 @@
 .investments-market-history-disclosure > summary span { margin-left: auto; color: var(--color-text-secondary); font-size: var(--font-xs); font-weight: 400; }
 .investments-market-history-disclosure[open] > .investments-market-history-section { animation: boardReveal 180ms ease both; }
 @media (max-width: 640px) { .investments-market-history-disclosure > summary { align-items: flex-start; } .investments-market-history-disclosure > summary span { max-width: 15ch; text-align: right; } }
+
+/* Keep A-share and overseas benchmark quotes together in one horizontally browsable rail. */
+.investments-global-quote-grid {
+  display: grid;
+  grid-auto-columns: minmax(144px, 1fr);
+  grid-auto-flow: column;
+  grid-template-columns: none;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.investments-global-quote-card {
+  min-width: 144px;
+}
+
+.investments-market-board-card-meta:has(.investments-industry-sparkline) {
+  align-items: center;
+  min-height: 35px;
+}
+
+.investments-industry-sparkline {
+  width: min(45%, 112px);
+  height: 32px;
+  overflow: visible;
+}
+
+.investments-industry-sparkline path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.investments-industry-sparkline circle {
+  fill: currentColor;
+}
+
+.investments-industry-sparkline.is-positive { color: var(--color-danger); }
+.investments-industry-sparkline.is-negative { color: var(--color-success); }
+.investments-industry-sparkline.is-flat { color: var(--color-text-tertiary); }
+.investments-industry-sparkline-empty { color: var(--color-text-tertiary); }
+
+@media (max-width: 680px) {
+  .investments-global-quote-grid { grid-auto-columns: 150px; }
+}
