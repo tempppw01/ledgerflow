@@ -24,6 +24,7 @@ const eastmoneyClientMock = vi.hoisted(() => ({
   fetchEastmoneyFundSnapshot: vi.fn(),
   fetchEastmoneyIndexHistory: vi.fn(),
   fetchGlobalMarketHistory: vi.fn(),
+  fetchGlobalMarketTrend: vi.fn(),
   fetchEastmoneyMarketBoards: vi.fn(),
   fetchEastmoneyMarketBoardsSnapshot: vi.fn(),
   fetchEastmoneyMarketBoardConstituents: vi.fn(),
@@ -84,6 +85,7 @@ vi.mock('../../features/investments/api/eastmoneyMarketClient', () => ({
   fetchEastmoneyMarketBoardTrend: eastmoneyClientMock.fetchEastmoneyMarketBoardTrend,
   fetchEastmoneyIndexHistory: eastmoneyClientMock.fetchEastmoneyIndexHistory,
   fetchGlobalMarketHistory: eastmoneyClientMock.fetchGlobalMarketHistory,
+  fetchGlobalMarketTrend: eastmoneyClientMock.fetchGlobalMarketTrend,
   fetchEastmoneyMarketOverview: eastmoneyClientMock.fetchEastmoneyMarketOverview,
   fetchEastmoneyMarketNews: eastmoneyClientMock.fetchEastmoneyMarketNews,
   fetchEastmoneyMarketThemeBoards: eastmoneyClientMock.fetchEastmoneyMarketThemeBoards,
@@ -98,6 +100,7 @@ describe('InvestmentsPage', () => {
     vi.clearAllMocks();
     eastmoneyClientMock.fetchEastmoneyMarketBoardConstituents.mockResolvedValue([]);
     eastmoneyClientMock.fetchEastmoneyMarketBoardTrend.mockResolvedValue([]);
+    eastmoneyClientMock.fetchGlobalMarketTrend.mockResolvedValue([]);
     eastmoneyClientMock.fetchEastmoneyMarketBoardsSnapshot.mockImplementation(async (...args) => ({
       boards: await eastmoneyClientMock.fetchEastmoneyMarketBoards(...args),
       meta: {
@@ -417,6 +420,13 @@ describe('InvestmentsPage', () => {
     expect(within(marketPanel as HTMLElement).getByText('实时轮询')).toBeInTheDocument();
     expect(within(marketPanel as HTMLElement).getByLabelText('全球主要指数行情')).toBeInTheDocument();
     expect((marketPanel as HTMLElement).querySelectorAll('.investments-global-quote-card')).toHaveLength(11);
+    await userEvent.click(within(marketPanel as HTMLElement).getByRole('button', { name: /美股 道琼斯/ }));
+    expect(marketPanel?.querySelector('.investments-global-trend-panel')).toBeInTheDocument();
+    expect(marketPanel?.querySelector('.investments-market-body')).not.toBeInTheDocument();
+    expect(marketPanel?.querySelector('.investments-market-history-disclosure')).not.toBeInTheDocument();
+    await userEvent.click(within(marketPanel as HTMLElement).getByRole('button', { name: /A 股 上证指数/ }));
+    expect(marketPanel?.querySelector('.investments-global-trend-panel')).not.toBeInTheDocument();
+    expect(marketPanel?.querySelector('.investments-market-body')).toBeInTheDocument();
     const shanghaiIndexTab = within(marketPanel as HTMLElement).getByRole('button', {
       name: /A 股 上证指数/
     });

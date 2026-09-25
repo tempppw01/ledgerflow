@@ -2532,7 +2532,7 @@ function MarketOverviewPanel({
         </section>
       ) : null}
 
-      <div className="investments-market-body">
+      {!selectedGlobalId ? <div className="investments-market-body">
         <div className="investments-market-main">
           <div
             className="investments-market-mini-stats"
@@ -2703,9 +2703,9 @@ function MarketOverviewPanel({
             </span>
           </div>
         </aside>
-      </div>
+      </div> : null}
 
-      <details className="investments-market-history-disclosure">
+      {!selectedGlobalId ? <details className="investments-market-history-disclosure">
         <summary>
           查看历史走势与定投模拟
           <span>按需展开，不打断当前行情判断</span>
@@ -2714,7 +2714,7 @@ function MarketOverviewPanel({
           secId={selectedSecId}
           indexName={activeIndex?.name || '大盘指数'}
         />
-      </details>
+      </details> : null}
 
       {error && status === 'error' ? <p className="investments-market-error">{error}</p> : null}
     </section>
