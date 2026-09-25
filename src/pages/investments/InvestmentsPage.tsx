@@ -49,7 +49,6 @@ import {
   type EastmoneyStockSearchResult,
   type EastmoneyMarketTheme,
   type EastmoneyMarketTrendPoint,
-  type GlobalMarketHistoryPoint,
   type GlobalMarketTrendPoint,
   type GlobalMarketQuote,
   type MarketDataMeta
@@ -1447,7 +1446,7 @@ function buildGlobalTrendChartGeometry(points: GlobalMarketTrendPoint[]) {
   };
 }
 
-function buildGlobalKlineChartGeometry(points: GlobalMarketHistoryPoint[]) {
+function buildGlobalKlineChartGeometry(points: GlobalMarketTrendPoint[]) {
   const width = GLOBAL_CHART_WIDTH;
   const height = GLOBAL_CHART_HEIGHT;
   const paddingLeft = GLOBAL_CHART_PADDING.left;
@@ -1460,16 +1459,16 @@ function buildGlobalKlineChartGeometry(points: GlobalMarketHistoryPoint[]) {
     .map((point, index) => ({
       point,
       index,
-      open: point.open ?? point.value,
-      high: point.high ?? point.value,
-      low: point.low ?? point.value,
+      open: point.open,
+      high: point.high,
+      low: point.low,
       close: point.value
     }))
     .filter(
       (
         item
       ): item is {
-        point: GlobalMarketHistoryPoint;
+        point: GlobalMarketTrendPoint;
         index: number;
         open: number;
         high: number;
@@ -1508,7 +1507,7 @@ function buildGlobalKlineChartGeometry(points: GlobalMarketHistoryPoint[]) {
     const tone =
       item.close > item.open ? 'is-positive' : item.close < item.open ? 'is-negative' : 'is-flat';
     return {
-      label: item.point.date,
+      label: item.point.label,
       value: item.close,
       x,
       openY,
@@ -1532,7 +1531,7 @@ function buildGlobalKlineChartGeometry(points: GlobalMarketHistoryPoint[]) {
     plotTop: paddingTop,
     plotBottom: height - paddingBottom,
     candles,
-    labels: [firstPoint.date, middlePoint.date, lastPoint.date].filter(Boolean)
+    labels: [firstPoint.label, middlePoint.label, lastPoint.label].filter(Boolean)
   };
 }
 
@@ -2007,7 +2006,7 @@ function MarketOverviewPanel({
   const [selectedGlobalId, setSelectedGlobalId] = useState<string | null>(null);
   const [globalChartMode, setGlobalChartMode] = useState<'line' | 'kline'>('line');
   const [globalTrendPoints, setGlobalTrendPoints] = useState<GlobalMarketTrendPoint[]>([]);
-  const [globalKlinePoints, setGlobalKlinePoints] = useState<GlobalMarketHistoryPoint[]>([]);
+  const [globalKlinePoints, setGlobalKlinePoints] = useState<GlobalMarketTrendPoint[]>([]);
   const [globalPreviousCloseDate, setGlobalPreviousCloseDate] = useState('');
   const [globalChartStatus, setGlobalChartStatus] = useState<'idle' | 'loading' | 'error'>(
     'idle'
@@ -2052,28 +2051,24 @@ function MarketOverviewPanel({
     setHoveredGlobalPointIndex(null);
 
     const request =
-      globalChartMode === 'line'
-        ? Promise.all([
-            fetchGlobalMarketTrend(selectedGlobalId),
-            fetchGlobalMarketHistory(selectedGlobalId, { range: '1m' })
-          ]).then(([trend, history]) => {
-            if (!cancelled) {
-              setGlobalTrendPoints(trend);
-              const quoteDate = globalQuotesRef.current.find((quote) => quote.id === selectedGlobalId)?.updatedAt.slice(0, 10);
-              setGlobalPreviousCloseDate(
-                history.at(-1)?.date === quoteDate ? history.at(-2)?.date || '' : history.at(-1)?.date || ''
-              );
-            }
-          })
-        : fetchGlobalMarketHistory(selectedGlobalId, { range: '1m' }).then((points) => {
-            if (!cancelled) {
-              setGlobalKlinePoints(points);
-              const quoteDate = globalQuotesRef.current.find((quote) => quote.id === selectedGlobalId)?.updatedAt.slice(0, 10);
-              setGlobalPreviousCloseDate(
-                points.at(-1)?.date === quoteDate ? points.at(-2)?.date || '' : points.at(-1)?.date || ''
-              );
-            }
-          });
+      Promise.allSettled([
+        fetchGlobalMarketTrend(selectedGlobalId),
+        fetchGlobalMarketHistory(selectedGlobalId, { range: '1m' })
+      ]).then(([trendResult, historyResult]) => {
+        if (trendResult.status === 'rejected') throw trendResult.reason;
+        if (!cancelled) {
+          const trend = trendResult.value;
+          setGlobalTrendPoints(trend);
+          setGlobalKlinePoints(trend);
+          const history = historyResult.status === 'fulfilled' ? historyResult.value : [];
+          const quoteDate = globalQuotesRef.current
+            .find((quote) => quote.id === selectedGlobalId)
+            ?.updatedAt.slice(0, 10);
+          setGlobalPreviousCloseDate(
+            history.at(-1)?.date === quoteDate ? history.at(-2)?.date || '' : history.at(-1)?.date || ''
+          );
+        }
+      });
 
     request
       .then(() => {
@@ -2089,6 +2084,24 @@ function MarketOverviewPanel({
 
     return () => {
       cancelled = true;
+    };
+  }, [globalChartMode, selectedGlobalId]);
+
+  useEffect(() => {
+    if (!selectedGlobalId || globalChartMode !== 'kline') return;
+    let cancelled = false;
+    const timer = window.setInterval(() => {
+      fetchGlobalMarketTrend(selectedGlobalId)
+        .then((points) => {
+          if (!cancelled) setGlobalKlinePoints(points);
+        })
+        .catch(() => {
+          // Keep the last complete candle snapshot visible through brief provider hiccups.
+        });
+    }, 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
     };
   }, [globalChartMode, selectedGlobalId]);
 

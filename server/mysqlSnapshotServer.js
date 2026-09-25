@@ -899,9 +899,13 @@ function parseYahooMarketHistory(payload) {
   return timestamps
     .map((timestamp, index) => {
       const date = new Date(Number(timestamp) * 1000);
-      const value = Number(closes[index]);
+      const rawValue = closes[index];
+      const value = rawValue === null || rawValue === undefined ? NaN : Number(rawValue);
       if (!Number.isFinite(date.getTime()) || !Number.isFinite(value)) return null;
-      const previousValue = Number(closes[index - 1]);
+      const rawPreviousValue = closes[index - 1];
+      const previousValue = rawPreviousValue === null || rawPreviousValue === undefined
+        ? NaN
+        : Number(rawPreviousValue);
       const changePercent =
         Number.isFinite(previousValue) && previousValue !== 0
           ? ((value - previousValue) / previousValue) * 100
@@ -909,9 +913,9 @@ function parseYahooMarketHistory(payload) {
       return {
         date: date.toISOString().slice(0, 10),
         value,
-        open: Number.isFinite(Number(opens[index])) ? Number(opens[index]) : null,
-        high: Number.isFinite(Number(highs[index])) ? Number(highs[index]) : null,
-        low: Number.isFinite(Number(lows[index])) ? Number(lows[index]) : null,
+        open: opens[index] != null && Number.isFinite(Number(opens[index])) ? Number(opens[index]) : null,
+        high: highs[index] != null && Number.isFinite(Number(highs[index])) ? Number(highs[index]) : null,
+        low: lows[index] != null && Number.isFinite(Number(lows[index])) ? Number(lows[index]) : null,
         changePercent,
         volume: Number.isFinite(Number(volumes[index])) ? Number(volumes[index]) : null,
         amount: null
@@ -933,9 +937,13 @@ function parseYahooMarketTrend(index, payload) {
   return timestamps
     .map((timestamp, pointIndex) => {
       const date = new Date(Number(timestamp) * 1000);
-      const value = Number(closes[pointIndex]);
+      const rawValue = closes[pointIndex];
+      const value = rawValue === null || rawValue === undefined ? NaN : Number(rawValue);
       if (!Number.isFinite(date.getTime()) || !Number.isFinite(value)) return null;
-      const previousValue = Number(closes[pointIndex - 1]);
+      const rawPreviousValue = closes[pointIndex - 1];
+      const previousValue = rawPreviousValue === null || rawPreviousValue === undefined
+        ? NaN
+        : Number(rawPreviousValue);
       const changePercent =
         Number.isFinite(previousValue) && previousValue !== 0
           ? ((value - previousValue) / previousValue) * 100
@@ -948,9 +956,9 @@ function parseYahooMarketTrend(index, payload) {
         dateTime: date.toISOString(),
         label,
         value,
-        open: Number.isFinite(Number(opens[pointIndex])) ? Number(opens[pointIndex]) : value,
-        high: Number.isFinite(Number(highs[pointIndex])) ? Number(highs[pointIndex]) : value,
-        low: Number.isFinite(Number(lows[pointIndex])) ? Number(lows[pointIndex]) : value,
+        open: opens[pointIndex] != null && Number.isFinite(Number(opens[pointIndex])) ? Number(opens[pointIndex]) : value,
+        high: highs[pointIndex] != null && Number.isFinite(Number(highs[pointIndex])) ? Number(highs[pointIndex]) : value,
+        low: lows[pointIndex] != null && Number.isFinite(Number(lows[pointIndex])) ? Number(lows[pointIndex]) : value,
         average: null,
         changePercent,
         volume: Number.isFinite(Number(volumes[pointIndex]))

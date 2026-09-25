@@ -403,3 +403,45 @@ test('Eastmoney board trend endpoint proxies intraday industry line data', async
     await closeServer(server);
   }
 });
+
+test('global market trend parser omits Yahoo null candle values instead of drawing fake zero candles', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async (input) => {
+    const url = String(input);
+    assert.match(url, /query1\.finance\.yahoo\.com\/v8\/finance\/chart\/%5EDJI\?interval=5m&range=1d/);
+    return new Response(
+      JSON.stringify({
+        chart: {
+          result: [{
+            timestamp: [Date.parse('2026-09-24T13:30:00Z') / 1000, Date.parse('2026-09-24T13:35:00Z') / 1000, Date.parse('2026-09-24T13:40:00Z') / 1000],
+            indicators: { quote: [{
+              open: [100, null, 102],
+              high: [101, null, 103],
+              low: [99, null, 101],
+              close: [100.5, null, 102.5],
+              volume: [1000, null, 1500]
+            }] }
+          }]
+        }
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  };
+
+  const server = createLedgerFlowServer();
+  try {
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const address = server.address();
+    const response = await originalFetch(
+      `http://127.0.0.1:${address.port}/api/market/global-trend?id=us-dow`
+    );
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.data.points.length, 2);
+    assert.deepEqual(body.data.points.map((point) => point.value), [100.5, 102.5]);
+    assert.ok(body.data.points.every((point) => point.high >= point.low));
+  } finally {
+    global.fetch = originalFetch;
+    await closeServer(server);
+  }
+});
