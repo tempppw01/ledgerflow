@@ -1119,10 +1119,33 @@ export function InvestmentChatPanel({
         ) : null}
 
       {showHero ? (
-        <div className="chat-assistant-hero">
-          <h2>投资助手</h2>
-          <p>讨论基金、股票、市场和资产配置；结合持仓与公开信息分析，不承诺收益。</p>
-        </div>
+        <section className="chat-mode-welcome chat-investment-welcome" aria-label="AI 投资助手">
+          <div className="chat-mode-welcome-copy">
+            <div className="chat-mode-welcome-eyebrow">AI 投资助手 <span>·</span> 看懂市场，也看懂自己的持仓</div>
+            <h2>投资上的问题，<em>一起理清楚</em></h2>
+            <p>聊基金、股票和资产配置；结合你的持仓与公开信息分析，不承诺收益。</p>
+            <div className="chat-mode-welcome-features">
+              <div>
+                <b>01</b>
+                <span>看市场<small>梳理行情与近期变化</small></span>
+              </div>
+              <div>
+                <b>02</b>
+                <span>看持仓<small>结合你的自选与投资组合</small></span>
+              </div>
+              <div>
+                <b>03</b>
+                <span>做判断<small>说明依据与需要留意的风险</small></span>
+              </div>
+            </div>
+          </div>
+          <img
+            className="chat-mode-welcome-illustration chat-investment-illustration"
+            src={INVESTMENT_HERO_ILLUSTRATION_URL}
+            alt=""
+            aria-hidden="true"
+          />
+        </section>
       ) : null}
 
       {messages.length > 0 ? (
@@ -1221,11 +1244,15 @@ export function InvestmentChatPanel({
           <p>例如：这只基金现在适合继续定投吗？</p>
         </div>
       ) : (
-        <div className="investments-ai-empty">
-          <img src={INVESTMENT_HERO_ILLUSTRATION_URL} alt="" aria-hidden="true" />
-          <strong>先丢一个基金问题给我</strong>
-          <p>例如：这只基金现在适合继续定投吗？</p>
-        </div>
+        <article className="chat-msg chat-investment-starter">
+          <Avatar />
+          <div className="chat-msg-body">
+            <div className="chat-msg-header">投资助手</div>
+            <div className="chat-msg-content">
+              <p>可以从你的持仓、基金定投或今天的市场开始问。我会把结论和判断依据说清楚。</p>
+            </div>
+          </div>
+        </article>
       )}
 
       {showComposer ? (

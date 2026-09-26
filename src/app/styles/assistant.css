@@ -261,81 +261,71 @@
   min-width: 0;
   min-height: 0;
   flex-direction: column;
-  overflow: auto;
-  padding: 24px clamp(22px, 6vw, 96px) 24px;
+  overflow: hidden;
+  padding: 0 clamp(22px, 6vw, 96px);
 }
 
 .chat-investment-mode-content > .chat-investment-panel {
   display: flex;
   flex: 1 1 auto;
   width: 100%;
-  max-width: none;
+  max-width: 1240px;
   max-height: none;
-  min-height: 100%;
+  min-height: 0;
   margin-inline: auto;
   align-items: stretch;
   flex-direction: column;
-  overflow: visible;
-}
-
-.chat-investment-mode-content > .chat-investment-panel .chat-assistant-hero {
-  width: min(100%, 1040px);
-  margin: 0 auto 12px;
-  padding: 0 0 18px;
-  border-bottom: 1px solid var(--color-divider);
-  background: transparent;
-}
-
-.chat-investment-mode-content > .chat-investment-panel .investments-ai-empty-compact {
-  flex: 1 1 auto;
-  min-height: 0;
-  width: min(100%, 1040px);
-  margin-inline: auto;
-  grid-template-columns: minmax(150px, 0.36fr) minmax(0, 1fr);
-  grid-template-rows: auto auto;
-  align-content: center;
-  justify-items: start;
-  column-gap: clamp(20px, 5vw, 64px);
-  text-align: left;
-}
-
-.chat-investment-mode-content > .chat-investment-panel .investments-ai-empty-compact img {
-  grid-column: 1;
-  grid-row: 1 / span 2;
-  width: min(100%, 220px);
-  max-height: 210px;
-}
-
-.chat-investment-mode-content > .chat-investment-panel .investments-ai-empty-compact strong {
-  align-self: end;
-  font-size: clamp(20px, 2vw, 28px);
-}
-
-.chat-investment-mode-content > .chat-investment-panel .investments-ai-empty-compact p {
-  max-width: 36em;
-  font-size: 14px;
+  overflow: hidden;
 }
 
 .chat-investment-mode-content > .chat-investment-panel.is-empty {
   justify-content: stretch;
 }
 
-.chat-investment-mode-content > .chat-investment-panel .investments-ai-composer {
+.chat-investment-welcome {
   flex: 0 0 auto;
-  width: min(100%, 1040px);
-  margin: 18px auto 0;
+  width: 100%;
+  min-height: clamp(250px, 34vh, 360px);
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 0.56fr);
 }
 
-.chat-investment-mode-content > .chat-investment-panel .investments-ai-messages-area {
-  width: min(100%, 1040px);
-  margin-inline: auto;
-  border: 0;
-  background: transparent;
+.chat-investment-welcome .chat-investment-illustration {
+  width: min(100%, 280px);
+  max-height: 230px;
+}
+
+.chat-investment-panel.is-empty > .chat-investment-starter {
+  align-self: center;
+  width: min(100%, 900px);
+  margin-block: auto;
+}
+
+.chat-investment-mode-content .investments-ai-links {
+  display: flex;
+  flex: 0 0 auto;
+  width: min(100%, 780px);
+  margin: 0 auto 8px;
+  justify-content: flex-start;
+}
+
+.chat-investment-mode-content .investments-ai-links .button-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.chat-investment-mode-content .investments-ai-links .button-with-icon:hover {
+  color: var(--color-primary);
 }
 
 .chat-investment-mode-content .investments-ai-composer {
-  width: min(100%, 900px);
-  margin: 20px auto 0;
+  flex: 0 0 auto;
+  width: min(100%, 780px);
+  margin: 0 auto 18px;
 }
 
 .chat-investment-mode-content .investments-ai-messages-area {
@@ -349,19 +339,21 @@
     padding-inline: 16px;
   }
 
-  .chat-investment-mode-content > .chat-investment-panel.is-empty .investments-ai-empty-compact {
-    min-height: clamp(180px, 30vh, 280px);
-    grid-template-columns: minmax(88px, 0.28fr) minmax(0, 1fr);
-    column-gap: 16px;
+  .chat-investment-welcome {
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .chat-investment-mode-content > .chat-investment-panel .investments-ai-empty-compact img {
-    width: min(100%, 140px);
-    max-height: 150px;
+  .chat-investment-welcome .chat-investment-illustration {
+    display: none;
   }
 
-  .chat-investment-mode-content > .chat-investment-panel .chat-assistant-hero {
-    padding-bottom: 14px;
+  .chat-investment-mode-content > .chat-investment-panel.is-empty {
+    overflow-y: auto;
+  }
+
+  .chat-investment-panel.is-empty > .chat-investment-starter {
+    margin-block: 28px;
   }
 }
 

@@ -329,7 +329,7 @@ describe('AssistantPage', () => {
     expect(screen.getByRole('button', { name: 'AI 信贷管家' })).toHaveClass('active');
   });
 
-  it('投资助手模式展示独立投资会话，不回退到通用助手', () => {
+  it('投资助手复用其他助手的欢迎区和对话布局，同时保留投资专属会话', () => {
     window.sessionStorage.setItem('ledgerflow.assistant.activeMode', 'investment');
     useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
 
@@ -340,8 +340,11 @@ describe('AssistantPage', () => {
     );
 
     expect(screen.getByRole('button', { name: 'AI 投资助手' })).toHaveClass('active');
-    expect(screen.getByRole('heading', { name: '投资助手' })).toBeInTheDocument();
-    expect(container.querySelector('.chat-investment-mode-content .chat-investment-panel')).not.toBeNull();
+    expect(screen.getByRole('heading', { name: /投资上的问题/ })).toBeInTheDocument();
+    expect(container.querySelector('.chat-investment-mode-content .chat-mode-welcome')).not.toBeNull();
+    expect(container.querySelector('.chat-investment-mode-content .chat-investment-starter')).not.toBeNull();
+    expect(container.querySelector('.chat-investment-mode-content .investments-ai-composer')).not.toBeNull();
+    expect(container.querySelector('.chat-general-welcome')).toBeNull();
   });
 
   it('AI 信贷管家首屏应展示结构化的工作说明', async () => {
