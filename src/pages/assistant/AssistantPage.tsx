@@ -2504,12 +2504,11 @@ export function AssistantPage() {
                 ) : (
                   <div className="chat-stream-waiting">
                     正在把思考整理成回复
-                    <img
-                      className="chat-typing-loader"
-                      src="https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/load.gif"
-                      alt=""
-                      aria-hidden="true"
-                    />
+                    <span className="chat-typing-dots" aria-hidden="true">
+                      <i />
+                      <i />
+                      <i />
+                    </span>
                   </div>
                 )}
               </div>
@@ -2523,12 +2522,11 @@ export function AssistantPage() {
                 <div className="chat-msg-header">助手</div>
                 <div className="chat-typing">
                   模型思考中
-                  <img
-                    className="chat-typing-loader"
-                    src="https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/load.gif"
-                    alt=""
-                    aria-hidden="true"
-                  />
+                  <span className="chat-typing-dots" aria-hidden="true">
+                    <i />
+                    <i />
+                    <i />
+                  </span>
                 </div>
               </div>
             </article>
