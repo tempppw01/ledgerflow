@@ -102,7 +102,7 @@ interface UseAssistantWorkbenchInput {
     recordMode?: string;
     note?: string;
   }>;
-  sceneMode?: 'bookkeeping' | 'assistant' | 'credit';
+  sceneMode?: 'bookkeeping' | 'assistant' | 'credit' | 'investment';
   globalMemories?: GlobalMemoryItem[];
 }
 
@@ -425,8 +425,10 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
 
     try {
       const isConversationalMode =
-        input.sceneMode === 'assistant' || input.sceneMode === 'credit';
-      const basePrompt = !isConversationalMode
+        input.sceneMode === 'assistant' || input.sceneMode === 'credit' || input.sceneMode === 'investment';
+      const basePrompt = input.sceneMode === 'investment'
+        ? `${ANALYSIS_AGENT_PROMPT}\n\n你是用户的投资理财助手，重点讨论基金、股票、市场走势、资产配置、定投和风险管理。结合用户提供的持仓与市场信息给出有依据的分析，区分事实、估算与不确定性，不承诺收益、不把短期波动包装成确定预测，并提醒投资决策由用户自行承担。`
+        : !isConversationalMode
         ? JSON_AGENT_PROMPT
         : input.sceneMode === 'credit'
           ? CREDIT_ANALYSIS_AGENT_PROMPT

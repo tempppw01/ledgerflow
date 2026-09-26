@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import { useTranslation } from 'react-i18next';
 import {
   ASSISTANT_MODE_CHANGED_EVENT,
+  getAssistantModeSpark,
   getAssistantModeLabel,
   readAssistantModeFromSessionStorage
 } from '../../features/assistant/shared/assistantMode';
@@ -92,6 +93,9 @@ export function AppLayout() {
   );
   const [assistantWorkspaceTitle, setAssistantWorkspaceTitle] = useState(() =>
     getAssistantModeLabel(readAssistantModeFromSessionStorage(), t)
+  );
+  const [assistantWorkspaceMode, setAssistantWorkspaceMode] = useState(() =>
+    readAssistantModeFromSessionStorage()
   );
   const recycleBinItemCount = useFinanceStore(
     (state) =>
@@ -335,7 +339,9 @@ export function AppLayout() {
 
   useEffect(() => {
     const syncAssistantWorkspaceTitle = () => {
-      setAssistantWorkspaceTitle(getAssistantModeLabel(readAssistantModeFromSessionStorage(), t));
+      const mode = readAssistantModeFromSessionStorage();
+      setAssistantWorkspaceMode(mode);
+      setAssistantWorkspaceTitle(getAssistantModeLabel(mode, t));
     };
 
     syncAssistantWorkspaceTitle();
@@ -760,6 +766,11 @@ export function AppLayout() {
               </div>
             ) : null}
             <div className="workspace-topbar-title" title={currentWorkspaceTitle}>
+              {location.pathname.startsWith('/assistant') ? (
+                <span className="workspace-title-spark" key={assistantWorkspaceMode} aria-hidden="true">
+                  {getAssistantModeSpark(assistantWorkspaceMode)}
+                </span>
+              ) : null}
               {currentWorkspaceTitle}
             </div>
           </div>

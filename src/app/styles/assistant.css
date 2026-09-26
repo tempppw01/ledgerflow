@@ -242,6 +242,42 @@
   animation: chat-mode-spark 2.8s ease-in-out infinite;
 }
 
+.workspace-title-spark {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  margin-right: 7px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary-bg) 75%, transparent);
+  animation: chat-mode-spark 2.8s ease-in-out infinite;
+}
+
+.chat-investment-mode-content {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0 clamp(22px, 6vw, 96px) 18px;
+}
+
+.chat-investment-mode-content > .chat-investment-panel {
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-title-spark {
+    animation-duration: 0.01ms;
+  }
+}
+
 .chat-mode-switch-options {
   position: static;
   display: inline-flex;

@@ -1120,8 +1120,8 @@ export function InvestmentChatPanel({
 
       {showHero ? (
         <div className="chat-assistant-hero">
-          <h2>助手</h2>
-          <p>基金、持仓、截图和问题都可以直接丢给我，我先帮你把结论说清楚。</p>
+          <h2>投资助手</h2>
+          <p>讨论基金、股票、市场和资产配置；结合持仓与公开信息分析，不承诺收益。</p>
         </div>
       ) : null}
 

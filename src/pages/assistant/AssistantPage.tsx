@@ -49,6 +49,7 @@ import {
   readAssistantModeFromSessionStorage,
   type AssistantMode
 } from '../../features/assistant/shared/assistantMode';
+import { InvestmentChatPanel } from '../../features/assistant/investment-chat/InvestmentChatPanel';
 import {
   BOT_ICON_URL,
   IMAGE_ICON_URL,
@@ -190,7 +191,8 @@ interface DuplicateReviewPair {
 const CHAT_HISTORY_CACHE_KEYS: Record<AssistantMode, string> = {
   bookkeeping: 'ledgerflow.assistant.chatHistory.bookkeeping',
   assistant: 'ledgerflow.assistant.chatHistory.assistant',
-  credit: 'ledgerflow.assistant.chatHistory.credit'
+  credit: 'ledgerflow.assistant.chatHistory.credit',
+  investment: 'ledgerflow.assistant.chatHistory.investment'
 };
 
 const ASSISTANT_INTRO_ILLUSTRATION_URL =
@@ -666,7 +668,8 @@ export function AssistantPage() {
   const memoryExtractionSignatureRef = useRef<Record<AssistantMode, string>>({
     bookkeeping: '',
     assistant: '',
-    credit: ''
+    credit: '',
+    investment: ''
   });
   const hasInitializedModeHistoryRef = useRef(false);
   const activeHistoryModeRef = useRef<AssistantMode>(mode);
@@ -716,7 +719,8 @@ export function AssistantPage() {
   const lastAssistantRef = useRef<Record<AssistantMode, string>>({
     bookkeeping: '',
     assistant: '',
-    credit: ''
+    credit: '',
+    investment: ''
   });
   const pendingRequestModeRef = useRef<AssistantMode>('assistant');
   const messageEndRef = useRef<HTMLDivElement | null>(null);
@@ -1625,7 +1629,6 @@ export function AssistantPage() {
     >
       <header className="chat-topbar chat-topbar-no-title">
         <div className="chat-mode-switch" aria-label="模式切换">
-          <span className="chat-mode-switch-spark" aria-hidden="true">✦</span>
           <div className="chat-mode-switch-options">
             <button
               type="button"
@@ -1647,6 +1650,13 @@ export function AssistantPage() {
               onClick={() => selectAssistantMode('credit')}
             >
               {t('assistant.ui.creditMode')}
+            </button>
+            <button
+              type="button"
+              className={mode === 'investment' ? 'active' : ''}
+              onClick={() => selectAssistantMode('investment')}
+            >
+              AI 投资助手
             </button>
           </div>
         </div>
@@ -1674,6 +1684,13 @@ export function AssistantPage() {
           </button>
         </div>
       </header>
+
+      {mode === 'investment' ? (
+        <div className="chat-investment-mode-content">
+          <InvestmentChatPanel showHero showComposer defaultWebEnabled />
+        </div>
+      ) : (
+        <>
 
       <section className={`chat-messages-area ${isWideLayout ? 'is-wide' : ''}`}>
         <div className={`chat-messages-inner ${isWideLayout ? 'is-wide' : ''}`}>
@@ -2950,6 +2967,8 @@ export function AssistantPage() {
         visible={wb.toast.visible}
         onClose={() => wb.setToastVisible(false)}
       />
+        </>
+      )}
     </div>
   );
 }

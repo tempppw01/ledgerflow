@@ -309,7 +309,7 @@ describe('AssistantPage', () => {
     expect(screen.queryByText('📌 这个模式适合什么')).not.toBeInTheDocument();
   });
 
-  it('模式切换应始终展示三个常规助手模式', async () => {
+  it('模式切换包含账务、通用、信贷和投资四类助手', async () => {
     useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
 
     const { container } = render(
@@ -319,8 +319,8 @@ describe('AssistantPage', () => {
     );
 
     const options = container.querySelector('.chat-mode-switch-options');
-    expect(options?.querySelectorAll('button')).toHaveLength(3);
-    expect(screen.queryByText('投资理财')).not.toBeInTheDocument();
+    expect(options?.querySelectorAll('button')).toHaveLength(4);
+    expect(screen.getByRole('button', { name: 'AI 投资助手' })).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'AI 信贷管家' }));
@@ -329,7 +329,7 @@ describe('AssistantPage', () => {
     expect(screen.getByRole('button', { name: 'AI 信贷管家' })).toHaveClass('active');
   });
 
-  it('旧版投资理财模式会回退至 AI 助手，不再展示右侧投资会话', () => {
+  it('投资助手模式展示独立投资会话，不回退到通用助手', () => {
     window.sessionStorage.setItem('ledgerflow.assistant.activeMode', 'investment');
     useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
 
@@ -339,9 +339,9 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('button', { name: 'AI 助手' })).toHaveClass('active');
-    expect(container.querySelector('.chat-messages-area.is-investment-mode')).toBeNull();
-    expect(container.querySelector('.chat-investment-stage')).toBeNull();
+    expect(screen.getByRole('button', { name: 'AI 投资助手' })).toHaveClass('active');
+    expect(screen.getByRole('heading', { name: '投资助手' })).toBeInTheDocument();
+    expect(container.querySelector('.chat-investment-mode-content .chat-investment-panel')).not.toBeNull();
   });
 
   it('AI 信贷管家首屏应展示结构化的工作说明', async () => {

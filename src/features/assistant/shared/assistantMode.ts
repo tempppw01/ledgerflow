@@ -1,12 +1,12 @@
 import type { TFunction } from 'i18next';
 
-export type AssistantMode = 'bookkeeping' | 'assistant' | 'credit';
+export type AssistantMode = 'bookkeeping' | 'assistant' | 'credit' | 'investment';
 
 export const ASSISTANT_ACTIVE_MODE_STORAGE_KEY = 'ledgerflow.assistant.activeMode';
 export const ASSISTANT_MODE_CHANGED_EVENT = 'ledgerflow:assistant-mode-changed';
 
 export function isAssistantMode(value: unknown): value is AssistantMode {
-  return value === 'bookkeeping' || value === 'assistant' || value === 'credit';
+  return value === 'bookkeeping' || value === 'assistant' || value === 'credit' || value === 'investment';
 }
 
 export function readAssistantModeFromSessionStorage(): AssistantMode {
@@ -31,5 +31,23 @@ export function getAssistantModeLabel(mode: AssistantMode, t: TFunction): string
     return t('assistant.ui.creditMode');
   }
 
+  if (mode === 'investment') {
+    return '投资助手';
+  }
+
   return t('assistant.ui.assistantMode');
+}
+
+export function getAssistantModeSpark(mode: AssistantMode): string {
+  switch (mode) {
+    case 'bookkeeping':
+      return '✎';
+    case 'credit':
+      return '◈';
+    case 'investment':
+      return '↗';
+    case 'assistant':
+    default:
+      return '✦';
+  }
 }
