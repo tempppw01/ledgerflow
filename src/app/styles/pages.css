@@ -1416,11 +1416,278 @@
   box-shadow: none;
 }
 
+.transaction-filter-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: color-mix(in srgb, #101827 38%, transparent);
+  backdrop-filter: blur(5px);
+  animation: transaction-filter-backdrop-in 160ms ease-out;
+}
+
 .transaction-filter-popover-panel {
-  margin-top: 2px;
+  position: relative;
+  inset: auto;
+  width: min(760px, calc(100vw - 48px));
+  max-width: 760px;
+  max-height: min(84vh, 760px);
+  margin: 0;
+  padding: 0;
+  overflow: auto;
   border-color: var(--color-divider);
-  border-radius: var(--radius-sm);
+  border-radius: 18px;
   box-shadow: var(--shadow-dropdown);
+  background: var(--color-bg-elevated);
+  animation: transaction-filter-dialog-in 180ms ease-out;
+}
+
+.transaction-filter-dialog-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 26px 28px 20px;
+  border-bottom: 1px solid var(--color-divider);
+  background: var(--color-bg-elevated);
+}
+
+.transaction-filter-dialog-header .transaction-filter-popover-head {
+  gap: 6px;
+  margin: 0;
+}
+
+.transaction-filter-dialog-head strong,
+.transaction-filter-dialog-header .transaction-filter-popover-head strong {
+  font-size: 21px;
+  letter-spacing: -0.025em;
+}
+
+.transaction-filter-dialog-eyebrow {
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.transaction-filter-dialog-close {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--color-divider);
+  border-radius: 50%;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+  font-size: 23px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.transaction-filter-dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 28px;
+  padding: 6px 28px 24px;
+}
+
+.transaction-filter-dialog-section {
+  min-width: 0;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.transaction-filter-dialog-section-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.transaction-filter-dialog-index {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.03em;
+}
+
+.transaction-filter-dialog-section-heading h3 {
+  margin: 0 0 4px;
+  color: var(--color-text);
+  font-size: var(--font-sm);
+  font-weight: 680;
+}
+
+.transaction-filter-dialog-section-heading p {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-xs);
+  line-height: 1.5;
+}
+
+.transaction-filter-dialog-section .field label {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-xs);
+}
+
+.transaction-filter-dialog-section .field select {
+  width: 100%;
+  min-height: 42px;
+}
+
+.transaction-filter-dialog-section .transaction-column-check-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.transaction-filter-dialog-section .transaction-column-check-grid label {
+  min-height: 36px;
+  padding: 7px 9px;
+  border: 1px solid var(--color-divider);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-bg-subtle) 45%, transparent);
+  font-size: var(--font-xs);
+}
+
+.transaction-filter-dialog-import {
+  grid-column: 1 / -1;
+  border-bottom: 0;
+}
+
+.transaction-filter-dialog-import-controls {
+  display: grid;
+  grid-template-columns: minmax(200px, 0.8fr) minmax(0, 1.2fr);
+  align-items: end;
+  gap: 18px;
+}
+
+.transaction-filter-dialog-import .transaction-filter-actions-grid-inline {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.transaction-filter-dialog-import .transaction-filter-actions-grid-inline button {
+  min-height: 40px;
+  padding-inline: 8px;
+  font-size: var(--font-xs);
+}
+
+.transaction-filter-dialog-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 28px;
+  border-top: 1px solid var(--color-divider);
+  background: var(--color-bg-elevated);
+}
+
+.transaction-filter-reset,
+.transaction-filter-done {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.transaction-filter-reset {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+}
+
+.transaction-filter-reset:hover {
+  color: var(--color-danger, #c2413b);
+  background: color-mix(in srgb, var(--color-danger, #c2413b) 8%, transparent);
+}
+
+.transaction-filter-done {
+  min-width: 112px;
+}
+
+@keyframes transaction-filter-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes transaction-filter-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 680px) {
+  .transaction-filter-dialog-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .transaction-filter-popover-panel {
+    width: 100%;
+    max-width: none;
+    max-height: min(88dvh, 760px);
+    border-radius: 18px 18px 0 0;
+  }
+
+  .transaction-filter-dialog-header {
+    padding: 20px 20px 16px;
+  }
+
+  .transaction-filter-dialog-grid {
+    grid-template-columns: 1fr;
+    padding: 0 20px 18px;
+  }
+
+  .transaction-filter-dialog-import {
+    grid-column: auto;
+  }
+
+  .transaction-filter-dialog-import-controls {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .transaction-filter-dialog-import .transaction-filter-actions-grid-inline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .transaction-filter-dialog-footer {
+    padding: 12px 20px max(12px, env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transaction-filter-dialog-backdrop,
+  .transaction-filter-popover-panel {
+    animation: none;
+  }
 }
 
 .transactions-split-layout {
@@ -1801,22 +2068,175 @@
   margin: 0 auto;
   padding: clamp(24px, 5vw, 56px) clamp(18px, 4vw, 48px) 72px;
 }
-.help-header { max-width: 680px; padding-bottom: 26px; }
-.help-eyebrow { margin: 0 0 10px; color: var(--color-primary); font-size: var(--font-sm); font-weight: 600; }
-.help-header h1, .help-faq h2 { margin: 0; color: var(--color-text); font-weight: 680; letter-spacing: 0; }
-.help-header h1 { font-size: clamp(27px, 4vw, 40px); line-height: 1.2; }
-.help-header > p:last-child { margin: 14px 0 0; color: var(--color-text-secondary); font-size: var(--font-md); line-height: 1.75; }
-.help-jump-nav { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 14px 0; border-top: 1px solid var(--color-divider); border-bottom: 1px solid var(--color-divider); }
-.help-jump-nav a, .help-guide-content > a { color: var(--color-text-secondary); font-size: var(--font-sm); text-decoration: none; }
-.help-jump-nav a:hover, .help-guide-content > a:hover { color: var(--color-primary); }
-.help-start-strip { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 0; border-bottom: 1px solid var(--color-divider); }
-.help-start-strip div { display: grid; gap: 4px; }.help-start-strip strong { font-size: var(--font-md); }.help-start-strip span { color: var(--color-text-secondary); font-size: var(--font-sm); }
-.help-start-strip a { flex-shrink: 0; min-height: 36px; display: inline-flex; align-items: center; padding: 0 13px; color: var(--color-on-primary); background: var(--color-primary); border-radius: 5px; text-decoration: none; font-size: var(--font-sm); font-weight: 600; }
-.help-guide-list { display: grid; }.help-guide-section { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 20px; padding: 30px 0; border-bottom: 1px solid var(--color-divider); scroll-margin-top: 24px; }
-.help-guide-number { color: var(--color-primary); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }.help-guide-content h2 { margin: 0; font-size: 21px; font-weight: 650; }.help-guide-content > p { margin: 8px 0 14px; color: var(--color-text-secondary); line-height: 1.7; }
-.help-guide-content ol { margin: 0 0 16px; padding-left: 20px; color: var(--color-text); font-size: var(--font-sm); line-height: 1.8; }.help-guide-content > a { color: var(--color-primary); font-weight: 600; }.help-guide-content > a span { margin-left: 3px; font-size: 18px; vertical-align: -1px; }
-.help-faq { padding-top: 36px; }.help-faq header { margin-bottom: 12px; }.help-faq h2 { font-size: 24px; }.help-faq details { border-bottom: 1px solid var(--color-divider); }.help-faq summary { cursor: pointer; padding: 17px 0; color: var(--color-text); font-size: var(--font-md); font-weight: 560; }.help-faq p { max-width: 760px; margin: 0 0 17px; color: var(--color-text-secondary); font-size: var(--font-sm); line-height: 1.75; }
-@media (max-width: 640px) { .help-page { padding-top: 24px; }.help-jump-nav { gap: 10px 14px; }.help-start-strip { align-items: flex-start; flex-direction: column; }.help-guide-section { grid-template-columns: 1fr; gap: 8px; padding: 24px 0; }.help-guide-number { font-size: 12px; }.help-guide-content h2 { font-size: 19px; } }
+.help-header {
+  max-width: 680px;
+  padding-bottom: 26px;
+}
+.help-eyebrow {
+  margin: 0 0 10px;
+  color: var(--color-primary);
+  font-size: var(--font-sm);
+  font-weight: 600;
+}
+.help-header h1,
+.help-faq h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-weight: 680;
+  letter-spacing: 0;
+}
+.help-header h1 {
+  font-size: clamp(27px, 4vw, 40px);
+  line-height: 1.2;
+}
+.help-header > p:last-child {
+  margin: 14px 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-md);
+  line-height: 1.75;
+}
+.help-jump-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 14px 0;
+  border-top: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
+}
+.help-jump-nav a,
+.help-guide-content > a {
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+  text-decoration: none;
+}
+.help-jump-nav a:hover,
+.help-guide-content > a:hover {
+  color: var(--color-primary);
+}
+.help-start-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+.help-start-strip div {
+  display: grid;
+  gap: 4px;
+}
+.help-start-strip strong {
+  font-size: var(--font-md);
+}
+.help-start-strip span {
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+}
+.help-start-strip a {
+  flex-shrink: 0;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 13px;
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+  border-radius: 5px;
+  text-decoration: none;
+  font-size: var(--font-sm);
+  font-weight: 600;
+}
+.help-guide-list {
+  display: grid;
+}
+.help-guide-section {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  gap: 20px;
+  padding: 30px 0;
+  border-bottom: 1px solid var(--color-divider);
+  scroll-margin-top: 24px;
+}
+.help-guide-number {
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.help-guide-content h2 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 650;
+}
+.help-guide-content > p {
+  margin: 8px 0 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+.help-guide-content ol {
+  margin: 0 0 16px;
+  padding-left: 20px;
+  color: var(--color-text);
+  font-size: var(--font-sm);
+  line-height: 1.8;
+}
+.help-guide-content > a {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+.help-guide-content > a span {
+  margin-left: 3px;
+  font-size: 18px;
+  vertical-align: -1px;
+}
+.help-faq {
+  padding-top: 36px;
+}
+.help-faq header {
+  margin-bottom: 12px;
+}
+.help-faq h2 {
+  font-size: 24px;
+}
+.help-faq details {
+  border-bottom: 1px solid var(--color-divider);
+}
+.help-faq summary {
+  cursor: pointer;
+  padding: 17px 0;
+  color: var(--color-text);
+  font-size: var(--font-md);
+  font-weight: 560;
+}
+.help-faq p {
+  max-width: 760px;
+  margin: 0 0 17px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+  line-height: 1.75;
+}
+@media (max-width: 640px) {
+  .help-page {
+    padding-top: 24px;
+  }
+  .help-jump-nav {
+    gap: 10px 14px;
+  }
+  .help-start-strip {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .help-guide-section {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 24px 0;
+  }
+  .help-guide-number {
+    font-size: 12px;
+  }
+  .help-guide-content h2 {
+    font-size: 19px;
+  }
+}
 
 @media (max-width: 640px) {
   .transaction-detail-drawer {
