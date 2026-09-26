@@ -500,8 +500,21 @@ body {
   line-height: 1;
 }
 
+.nav-icon-frame {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  line-height: 0;
+}
+
 .nav-image-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
+  object-position: center;
 }
 
 .button-with-icon {
@@ -547,6 +560,10 @@ body {
 
 .collapsed .sidebar-link-icon {
   font-size: 18px;
+}
+
+.collapsed .nav-icon-frame {
+  flex-basis: 22px;
 }
 
 .sidebar-link:hover {

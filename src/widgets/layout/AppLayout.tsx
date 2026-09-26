@@ -68,7 +68,11 @@ function truncateMobileInsightText(value: string, maxLength: number) {
 
 function renderNavIcon(item: { icon: string; iconSrc?: string }, className: string) {
   if (item.iconSrc) {
-    return <img className={`${className} nav-image-icon`} src={item.iconSrc} alt="" />;
+    return (
+      <span className={`${className} nav-icon-frame`} aria-hidden="true">
+        <img className="nav-image-icon" src={item.iconSrc} alt="" />
+      </span>
+    );
   }
 
   return <span className={className}>{item.icon}</span>;
