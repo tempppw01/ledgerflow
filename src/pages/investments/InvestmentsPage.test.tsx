@@ -951,6 +951,16 @@ describe('InvestmentsPage', () => {
     expect(chart.querySelectorAll('.investments-global-kline-volume-bar')).toHaveLength(3);
     expect(chart).toHaveTextContent('成交量');
     expect(chart.querySelectorAll('.investments-global-kline-candle rect')).toHaveLength(3);
+    const chartWrap = chart.parentElement!;
+    vi.spyOn(chartWrap, 'getBoundingClientRect').mockReturnValue({
+      x: 0, y: 0, left: 0, top: 0, right: 560, bottom: 282, width: 560, height: 282,
+      toJSON: () => ({})
+    } as DOMRect);
+    fireEvent.mouseMove(chartWrap, { clientX: 280 });
+    expect(await screen.findByRole('status', { name: 'K线详情' })).toHaveTextContent('开');
+    expect(screen.getByRole('status', { name: 'K线详情' })).toHaveTextContent('高');
+    expect(screen.getByRole('status', { name: 'K线详情' })).toHaveTextContent('低');
+    expect(screen.getByRole('status', { name: 'K线详情' })).toHaveTextContent('量');
   });
 
   it('可以增删改自选题材并保留数据来源', async () => {

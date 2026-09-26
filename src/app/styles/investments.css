@@ -1221,8 +1221,45 @@
 }
 
 .investments-global-kline-wrap {
+  position: relative;
   display: grid;
   gap: 8px;
+}
+
+.investments-global-kline-tooltip {
+  position: absolute;
+  z-index: 2;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 5px 12px;
+  min-width: 180px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--color-border-light) 74%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 94%, transparent);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+  pointer-events: none;
+  font-size: 11px;
+}
+
+.investments-global-kline-tooltip strong {
+  grid-column: 1 / -1;
+  color: var(--color-text-primary);
+  font-size: 12px;
+}
+
+.investments-global-kline-tooltip span {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--color-text-secondary);
+}
+
+.investments-global-kline-tooltip b {
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .investments-global-kline-svg {
@@ -1263,6 +1300,11 @@
 
 .investments-global-kline-candle.is-flat {
   color: var(--color-text-secondary);
+}
+
+.investments-global-kline-candle.is-hovered rect {
+  stroke: var(--color-text-primary);
+  stroke-width: 1;
 }
 
 .investments-global-kline-volume-divider {

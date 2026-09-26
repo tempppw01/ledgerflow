@@ -218,6 +218,10 @@ type GlobalMarketTrendChartPoint = GlobalMarketTrendPoint & {
 type GlobalKlineChartPoint = {
   label: string;
   value: number;
+  open: number;
+  high: number;
+  low: number;
+  volume: number | null;
   x: number;
   bodyWidth: number;
   openY: number;
@@ -1518,6 +1522,10 @@ function buildGlobalKlineChartGeometry(points: GlobalMarketTrendPoint[]) {
     return {
       label: item.point.label,
       value: item.close,
+      open: item.open,
+      high: item.high,
+      low: item.low,
+      volume: item.point.volume,
       x,
       bodyWidth: Math.max(2, Math.min(10, slotWidth * 0.58)),
       openY,
@@ -2039,6 +2047,10 @@ function MarketOverviewPanel({
     selectedGlobalId === null ? undefined : globalQuoteById.get(selectedGlobalId);
   const globalTrendChart = buildGlobalTrendChartGeometry(globalTrendPoints);
   const globalKlineChart = buildGlobalKlineChartGeometry(globalKlinePoints);
+  const hoveredGlobalCandle =
+    hoveredGlobalPointIndex === null
+      ? null
+      : globalKlineChart.candles[hoveredGlobalPointIndex] || null;
   const globalActiveTrendPoint =
     globalTrendChart.points[
       hoveredGlobalPointIndex ?? globalTrendChart.points.length - 1
@@ -2210,6 +2222,23 @@ function MarketOverviewPanel({
       }
     });
 
+    setHoveredGlobalPointIndex(closestIndex);
+  }
+
+  function handleGlobalKlinePointerMove(event: MouseEvent<HTMLDivElement>) {
+    if (!globalKlineChart.candles.length) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (rect.width <= 0) return;
+    const x = ((event.clientX - rect.left) / rect.width) * globalKlineChart.width;
+    let closestIndex = 0;
+    let closestDistance = Number.POSITIVE_INFINITY;
+    globalKlineChart.candles.forEach((candle, index) => {
+      const distance = Math.abs(candle.x - x);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
     setHoveredGlobalPointIndex(closestIndex);
   }
 
@@ -2491,7 +2520,21 @@ function MarketOverviewPanel({
                 </div>
               )
             ) : globalKlineChart.candles.length ? (
-              <div className="investments-global-kline-wrap">
+              <div
+                className="investments-global-kline-wrap"
+                onMouseMove={handleGlobalKlinePointerMove}
+                onMouseLeave={() => setHoveredGlobalPointIndex(null)}
+              >
+                {hoveredGlobalCandle ? (
+                  <div className="investments-global-kline-tooltip" role="status" aria-label="K线详情">
+                    <strong>{hoveredGlobalCandle.label}</strong>
+                    <span>开 <b>{formatMarketIndexValue(hoveredGlobalCandle.open)}</b></span>
+                    <span>高 <b>{formatMarketIndexValue(hoveredGlobalCandle.high)}</b></span>
+                    <span>低 <b>{formatMarketIndexValue(hoveredGlobalCandle.low)}</b></span>
+                    <span>收 <b>{formatMarketIndexValue(hoveredGlobalCandle.value)}</b></span>
+                    <span>量 <b>{formatMarketAmount(hoveredGlobalCandle.volume)}</b></span>
+                  </div>
+                ) : null}
                 <svg
                   className={`investments-global-kline-svg ${getMarketTone(
                     selectedGlobalQuote?.changePercent
@@ -2536,7 +2579,10 @@ function MarketOverviewPanel({
                     const bodyTop = Math.min(candle.openY, candle.closeY);
                     const bodyHeight = Math.max(2, Math.abs(candle.closeY - candle.openY));
                     return (
-                      <g className={`investments-global-kline-candle ${candle.tone}`} key={candle.label}>
+                      <g
+                        className={`investments-global-kline-candle ${candle.tone} ${hoveredGlobalCandle?.label === candle.label ? 'is-hovered' : ''}`}
+                        key={candle.label}
+                      >
                         <line x1={candle.x} x2={candle.x} y1={candle.highY} y2={candle.lowY} />
                         <rect
                           x={candle.x - candle.bodyWidth / 2}
@@ -2548,6 +2594,15 @@ function MarketOverviewPanel({
                       </g>
                     );
                   })}
+                  {hoveredGlobalCandle ? (
+                    <line
+                      className="investments-market-chart-cursor"
+                      x1={hoveredGlobalCandle.x}
+                      x2={hoveredGlobalCandle.x}
+                      y1={globalKlineChart.plotTop}
+                      y2={globalKlineChart.volumeBottom}
+                    />
+                  ) : null}
                   {globalKlineChart.volumeBars.map((bar) => (
                     <rect
                       key={`volume:${bar.label}`}
