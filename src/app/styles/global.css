@@ -13383,28 +13383,39 @@ body.categories-accounts-resizing {
   appearance: none;
   width: 16px;
   height: 16px;
-  border-radius: 50%;
+  border-radius: 4px;
   border: 1.5px solid var(--color-border-strong, var(--color-border));
   background: var(--color-bg-elevated);
-  display: inline-grid;
-  place-content: center;
+  display: grid;
+  place-items: center;
+  flex: 0 0 16px;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .smart-budget-choice-card input::before {
-  content: '';
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  transform: scale(0);
-  transition: transform 0.15s ease-in-out;
-  background: var(--color-primary);
+  content: '✓';
+  color: white;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  opacity: 0;
+  transform: scale(0.65);
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
 }
 
 .smart-budget-choice-card input:checked {
   border-color: var(--color-primary);
+  background: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 14%, transparent);
 }
 
 .smart-budget-choice-card input:checked::before {
+  opacity: 1;
   transform: scale(1);
 }
 
