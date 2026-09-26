@@ -150,6 +150,7 @@ export interface InvestmentWatchItem {
   buyFeeRate?: string;
   fundCompany?: string;
   lastAnalysisAt?: string;
+  lastDataAt?: string;
   createdAt: string;
   updatedAt: string;
 }

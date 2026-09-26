@@ -477,6 +477,7 @@ function normalizeInvestmentWatchItem(
     buyFeeRate: normalizeOptionalString(item.buyFeeRate),
     fundCompany: normalizeOptionalString(item.fundCompany),
     lastAnalysisAt: normalizeOptionalString(item.lastAnalysisAt),
+    lastDataAt: normalizeOptionalString(item.lastDataAt),
     createdAt: item.createdAt || now,
     updatedAt: item.updatedAt || now
   };

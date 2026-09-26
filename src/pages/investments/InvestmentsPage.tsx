@@ -163,11 +163,37 @@ function formatDateTimeLabel(value?: string) {
   }
 }
 
+function formatFundDataFreshness(value?: string) {
+  if (!value) return '数据更新时间暂不可用';
+  const normalizedValue = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(value)
+    ? value.replace(' ', 'T')
+    : value;
+  const date = new Date(normalizedValue);
+  if (!Number.isFinite(date.getTime())) return `数据时间：${value}`;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return `净值日期 ${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+  }
+  const now = new Date();
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  const dayLabel =
+    date.toDateString() === now.toDateString()
+      ? '今天'
+      : date.toDateString() === yesterday.toDateString()
+        ? '昨天'
+        : `${date.getMonth() + 1}月${date.getDate()}日`;
+  const time = date.toLocaleTimeString('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+  return `估值更新至${dayLabel} ${time}`;
+}
+
 function getAnalysisRiskLabel(riskLevel?: InvestmentFundAnalysis['riskLevel']) {
   if (riskLevel === 'low') return '偏稳';
   if (riskLevel === 'medium') return '均衡';
   if (riskLevel === 'high') return '进取';
-  return '待判断';
+  return '';
 }
 
 function getAnalysisRiskClass(riskLevel?: InvestmentFundAnalysis['riskLevel']) {
@@ -4277,7 +4303,8 @@ export function InvestmentsPage() {
       netValue: snapshot.netValue || item.netValue,
       addedReturn: estimatedChange || item.addedReturn,
       buyFeeRate: snapshot.buyFeeRate || item.buyFeeRate,
-      lastAnalysisAt: new Date().toISOString()
+      lastAnalysisAt: new Date().toISOString(),
+      lastDataAt: snapshot.estimatedAt || snapshot.netValueDate || item.lastDataAt
     });
 
     return snapshot.name || item.name;
@@ -4435,8 +4462,7 @@ export function InvestmentsPage() {
             .filter(Boolean)
             .join(' · ') || existing?.lastSummary,
         lastRiskLevel: existing?.lastRiskLevel || 'unknown',
-        investmentAdvice:
-          existing?.investmentAdvice || '先加入自选观察，再结合持仓和风险偏好决定。',
+        investmentAdvice: existing?.investmentAdvice || '',
         adviceReasons: existing?.adviceReasons || [],
         riskNotes: existing?.riskNotes || [],
         nextActions: existing?.nextActions || [],
@@ -4458,6 +4484,7 @@ export function InvestmentsPage() {
         buyFeeRate: snapshot.buyFeeRate || existing?.buyFeeRate,
         fundCompany: existing?.fundCompany,
         lastAnalysisAt: new Date().toISOString(),
+        lastDataAt: snapshot.estimatedAt || snapshot.netValueDate || existing?.lastDataAt,
         createdAt: existing?.createdAt,
         updatedAt: existing?.updatedAt
       });
@@ -4793,7 +4820,11 @@ export function InvestmentsPage() {
                       const otherDetailSections = detailSections.filter(
                         (section) => section.title !== '历史业绩'
                       );
-                      const primaryTag = item.tags[0];
+                      const investmentAdvice = item.investmentAdvice?.trim();
+                      const showInvestmentAdvice = Boolean(
+                        investmentAdvice &&
+                          !/先加入自选观察|先加入关注列表/.test(investmentAdvice)
+                      );
                       const holdingsPreview = item.fundHoldings?.slice(0, 3) || [];
                       const assetAllocationPreview = item.assetAllocation?.slice(0, 3) || [];
                       const performancePoints = parseWatchPerformancePoints(
@@ -4828,7 +4859,7 @@ export function InvestmentsPage() {
                               <span className="investments-watch-card-category">
                                 {watchCategory.label}
                               </span>
-                              {item.lastRiskLevel ? (
+                              {item.lastRiskLevel && getAnalysisRiskLabel(item.lastRiskLevel) ? (
                                 <span
                                   className={`investments-analysis-risk ${getAnalysisRiskClass(
                                     item.lastRiskLevel
@@ -4850,13 +4881,11 @@ export function InvestmentsPage() {
                               </button>
                             </div>
                           </div>
-                          <div className="investments-watch-card-brief">
-                            <span>自选记录</span>
-                            <strong>
-                              {item.investmentAdvice || item.lastVerdict || '等待补充观察记录'}
-                            </strong>
-                            {primaryTag ? <em>{primaryTag}</em> : null}
-                          </div>
+                          {showInvestmentAdvice ? (
+                            <div className="investments-watch-card-brief">
+                              <strong>{investmentAdvice}</strong>
+                            </div>
+                          ) : null}
                           <div
                             className="investments-watch-card-mini-stats"
                             aria-label="基金关键数据"
@@ -4943,11 +4972,7 @@ export function InvestmentsPage() {
                             </button>
                           </div>
                           <div className="investments-watch-card-meta">
-                            <span>
-                              {item.lastAnalysisAt
-                                ? `更新于 ${formatDateTimeLabel(item.lastAnalysisAt)}`
-                                : '暂未分析'}
-                            </span>
+                            <span>{formatFundDataFreshness(item.lastDataAt)}</span>
                           </div>
 
                           {isExpanded ? (

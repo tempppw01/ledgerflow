@@ -539,8 +539,10 @@ describe('InvestmentsPage', () => {
     await userEvent.click(screen.getByText('招商中证白酒指数(LOF)A'));
     expect(screen.getByText('单位净值 0.5162（2026-06-25）')).toBeInTheDocument();
     expect(screen.getByText(/估算涨跌 -3\.10%/)).toBeInTheDocument();
+    expect(screen.queryByText('待判断')).not.toBeInTheDocument();
+    expect(screen.queryByText('自选记录')).not.toBeInTheDocument();
+    expect(screen.queryByText(/先加入自选观察/)).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: '添加关注' }));
-    expect(screen.getByText('关注中')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '添加关注' })).not.toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /刷新 招商中证白酒指数.*基金资料/ })
@@ -554,8 +556,10 @@ describe('InvestmentsPage', () => {
       platform: '东方财富',
       buyFeeRate: '0.10%',
       addedReturn: '-3.10%',
-      netValue: '0.5162'
+      netValue: '0.5162',
+      lastDataAt: '2026-06-26 15:00'
     });
+    expect(screen.getByText('估值更新至6月26日 15:00')).toBeInTheDocument();
   });
 
   it('可以一键刷新全部自选基金资料', async () => {
