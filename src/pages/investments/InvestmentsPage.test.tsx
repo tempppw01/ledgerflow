@@ -926,6 +926,33 @@ describe('InvestmentsPage', () => {
     expect(screen.getByText('模拟盈亏')).toBeInTheDocument();
   });
 
+  it('国际 K 线同步显示盘中成交量柱', async () => {
+    eastmoneyClientMock.fetchGlobalMarketTrend.mockResolvedValue([
+      {
+        dateTime: '2026-09-25T13:30:00.000Z', label: '09:30', value: 100.5,
+        open: 100, high: 101, low: 99, average: null, changePercent: null, volume: 1200, amount: null
+      },
+      {
+        dateTime: '2026-09-25T13:35:00.000Z', label: '09:35', value: 102.5,
+        open: 100.5, high: 103, low: 100, average: null, changePercent: 1.99, volume: 2400, amount: null
+      },
+      {
+        dateTime: '2026-09-25T13:40:00.000Z', label: '09:40', value: 101.5,
+        open: 102.5, high: 103, low: 101, average: null, changePercent: -0.98, volume: 1800, amount: null
+      }
+    ]);
+
+    render(<MemoryRouter><InvestmentsPage /></MemoryRouter>);
+    await openInvestmentWorkspace('大盘行情');
+    await userEvent.click(await screen.findByRole('button', { name: /美股 道琼斯/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'K 线' }));
+
+    const chart = await screen.findByRole('img', { name: '道琼斯K线图' });
+    expect(chart.querySelectorAll('.investments-global-kline-volume-bar')).toHaveLength(3);
+    expect(chart).toHaveTextContent('成交量');
+    expect(chart.querySelectorAll('.investments-global-kline-candle rect')).toHaveLength(3);
+  });
+
   it('可以增删改自选题材并保留数据来源', async () => {
     render(
       <MemoryRouter>

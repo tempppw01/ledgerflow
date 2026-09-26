@@ -1265,6 +1265,20 @@
   color: var(--color-text-secondary);
 }
 
+.investments-global-kline-volume-divider {
+  stroke-dasharray: 3 4;
+  opacity: 0.55;
+}
+
+.investments-global-kline-volume-label {
+  fill: var(--color-text-tertiary);
+  font-size: 9px;
+}
+
+.investments-global-kline-volume-bar.is-positive { fill: var(--color-danger); opacity: 0.62; }
+.investments-global-kline-volume-bar.is-negative { fill: var(--color-success); opacity: 0.62; }
+.investments-global-kline-volume-bar.is-flat { fill: var(--color-text-secondary); opacity: 0.55; }
+
 .investments-global-kline-wrap .investments-market-time-axis {
   margin-top: 2px;
 }

@@ -219,6 +219,7 @@ type GlobalKlineChartPoint = {
   label: string;
   value: number;
   x: number;
+  bodyWidth: number;
   openY: number;
   highY: number;
   lowY: number;
@@ -1448,13 +1449,14 @@ function buildGlobalTrendChartGeometry(points: GlobalMarketTrendPoint[]) {
 
 function buildGlobalKlineChartGeometry(points: GlobalMarketTrendPoint[]) {
   const width = GLOBAL_CHART_WIDTH;
-  const height = GLOBAL_CHART_HEIGHT;
+  const height = GLOBAL_CHART_HEIGHT + 58;
   const paddingLeft = GLOBAL_CHART_PADDING.left;
   const paddingRight = GLOBAL_CHART_PADDING.right;
   const paddingTop = GLOBAL_CHART_PADDING.top;
-  const paddingBottom = GLOBAL_CHART_PADDING.bottom;
+  const paddingBottom = 18;
   const usableWidth = width - paddingLeft - paddingRight;
-  const usableHeight = height - paddingTop - paddingBottom;
+  const priceBottom = height - 84;
+  const usableHeight = priceBottom - paddingTop;
   const chartPoints = points
     .map((point, index) => ({
       point,
@@ -1490,8 +1492,11 @@ function buildGlobalKlineChartGeometry(points: GlobalMarketTrendPoint[]) {
       plotLeft: paddingLeft,
       plotRight: width - paddingRight,
       plotTop: paddingTop,
-      plotBottom: height - paddingBottom,
+      plotBottom: priceBottom,
+      volumeTop: height - 62,
+      volumeBottom: height - paddingBottom,
       candles: [] as GlobalKlineChartPoint[],
+      volumeBars: [] as Array<{ x: number; y: number; height: number; tone: string; label: string; volume: number }>,
       labels: [] as string[]
     };
   }
@@ -1499,8 +1504,12 @@ function buildGlobalKlineChartGeometry(points: GlobalMarketTrendPoint[]) {
   const min = Math.min(...chartPoints.map((item) => item.low));
   const max = Math.max(...chartPoints.map((item) => item.high));
   const spread = Math.max(max - min, 0.01);
-  const candles = chartPoints.map((item) => {
-    const x = paddingLeft + (item.index / Math.max(chartPoints.length - 1, 1)) * usableWidth;
+  const maxVolume = Math.max(1, ...chartPoints.map((item) => item.point.volume || 0));
+  const volumeTop = height - 62;
+  const volumeBottom = height - paddingBottom;
+  const slotWidth = usableWidth / Math.max(chartPoints.length, 1);
+  const candles = chartPoints.map((item, index) => {
+    const x = paddingLeft + (index / Math.max(chartPoints.length - 1, 1)) * usableWidth;
     const y = (value: number) => paddingTop + (1 - (value - min) / spread) * usableHeight;
     const openY = y(item.open);
     const closeY = y(item.close);
@@ -1510,12 +1519,21 @@ function buildGlobalKlineChartGeometry(points: GlobalMarketTrendPoint[]) {
       label: item.point.label,
       value: item.close,
       x,
+      bodyWidth: Math.max(2, Math.min(10, slotWidth * 0.58)),
       openY,
       highY: y(item.high),
       lowY: y(item.low),
       closeY,
       tone
     };
+  });
+  const volumeBars = chartPoints.flatMap((item, index) => {
+    const volume = item.point.volume;
+    if (volume === null || !Number.isFinite(volume) || volume <= 0) return [];
+    const barHeight = Math.max(2, ((volume / maxVolume) * (volumeBottom - volumeTop)));
+    const x = paddingLeft + (index / Math.max(chartPoints.length - 1, 1)) * usableWidth;
+    const tone = item.close > item.open ? 'is-positive' : item.close < item.open ? 'is-negative' : 'is-flat';
+    return [{ x, y: volumeBottom - barHeight, height: barHeight, tone, label: item.point.label, volume }];
   });
   const firstPoint = chartPoints[0].point;
   const middlePoint = chartPoints[Math.floor(chartPoints.length / 2)].point;
@@ -1529,8 +1547,11 @@ function buildGlobalKlineChartGeometry(points: GlobalMarketTrendPoint[]) {
     plotLeft: paddingLeft,
     plotRight: width - paddingRight,
     plotTop: paddingTop,
-    plotBottom: height - paddingBottom,
+    plotBottom: priceBottom,
+    volumeTop,
+    volumeBottom,
     candles,
+    volumeBars,
     labels: [firstPoint.label, middlePoint.label, lastPoint.label].filter(Boolean)
   };
 }
@@ -2489,6 +2510,13 @@ function MarketOverviewPanel({
                       y2={globalKlineChart.plotTop + (globalKlineChart.plotBottom - globalKlineChart.plotTop) * ratio}
                     />
                   ))}
+                  <line
+                    className="investments-market-chart-grid investments-global-kline-volume-divider"
+                    x1={globalKlineChart.plotLeft}
+                    x2={globalKlineChart.plotRight}
+                    y1={globalKlineChart.volumeTop}
+                    y2={globalKlineChart.volumeTop}
+                  />
                   {[
                     { label: globalKlineChart.max, y: globalKlineChart.plotTop },
                     { label: (globalKlineChart.min ?? 0) + (globalKlineChart.max && globalKlineChart.min !== null ? (globalKlineChart.max - globalKlineChart.min) / 2 : 0), y: (globalKlineChart.plotTop + globalKlineChart.plotBottom) / 2 },
@@ -2511,15 +2539,35 @@ function MarketOverviewPanel({
                       <g className={`investments-global-kline-candle ${candle.tone}`} key={candle.label}>
                         <line x1={candle.x} x2={candle.x} y1={candle.highY} y2={candle.lowY} />
                         <rect
-                          x={candle.x - 3}
+                          x={candle.x - candle.bodyWidth / 2}
                           y={bodyTop}
-                          width="6"
+                          width={candle.bodyWidth}
                           height={bodyHeight}
                           rx="1"
                         />
                       </g>
                     );
                   })}
+                  {globalKlineChart.volumeBars.map((bar) => (
+                    <rect
+                      key={`volume:${bar.label}`}
+                      className={`investments-global-kline-volume-bar ${bar.tone}`}
+                      x={bar.x - Math.max(1, Math.min(5, (globalKlineChart.plotRight - globalKlineChart.plotLeft) / Math.max(globalKlineChart.volumeBars.length, 1) * 0.32))}
+                      y={bar.y}
+                      width={Math.max(2, Math.min(10, (globalKlineChart.plotRight - globalKlineChart.plotLeft) / Math.max(globalKlineChart.candles.length, 1) * 0.58))}
+                      height={bar.height}
+                      rx="1"
+                    >
+                      <title>{`${bar.label} · 成交量 ${formatMarketAmount(bar.volume)}`}</title>
+                    </rect>
+                  ))}
+                  <text
+                    className="investments-market-chart-axis-label investments-global-kline-volume-label"
+                    x={globalKlineChart.plotLeft}
+                    y={globalKlineChart.volumeTop + 12}
+                  >
+                    成交量
+                  </text>
                 </svg>
                 {globalKlineChart.labels.length ? (
                   <div className="investments-market-time-axis" aria-hidden="true">
