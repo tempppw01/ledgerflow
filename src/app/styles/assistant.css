@@ -256,20 +256,56 @@
 }
 
 .chat-investment-mode-content {
-  display: flex;
-  flex: 1 1 auto;
+  display: block;
+  flex: 1 1 0;
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
   padding: 0 clamp(22px, 6vw, 96px) 18px;
 }
 
 .chat-investment-mode-content > .chat-investment-panel {
+  display: flex;
   width: 100%;
   max-width: none;
   max-height: none;
+  min-height: 100%;
+  margin-inline: auto;
+  align-items: stretch;
+  flex-direction: column;
+  overflow: visible;
+}
+
+.chat-investment-mode-content > .chat-investment-panel.is-empty {
+  justify-content: flex-start;
+}
+
+.chat-investment-mode-content > .chat-investment-panel.is-empty .investments-ai-empty-compact {
+  width: min(100%, 680px);
+  min-height: clamp(260px, 42vh, 440px);
+  margin-inline: auto;
+  align-content: center;
+}
+
+.chat-investment-mode-content .investments-ai-composer {
+  width: min(100%, 900px);
+  margin: 20px auto 0;
+}
+
+.chat-investment-mode-content .investments-ai-messages-area {
+  width: 100%;
+  min-height: 0;
   flex: 1 1 auto;
-  overflow: hidden;
+}
+
+@media (max-width: 720px) {
+  .chat-investment-mode-content {
+    padding-inline: 16px;
+  }
+
+  .chat-investment-mode-content > .chat-investment-panel.is-empty .investments-ai-empty-compact {
+    min-height: clamp(220px, 34vh, 340px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
