@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   TransactionDatePreset,
   TransactionFilterState,
@@ -98,7 +99,11 @@ export function TransactionFilters({
         return;
       }
       const target = event.target;
-      if (target instanceof Node && !menuRef.current.contains(target)) {
+      if (
+        target instanceof Node &&
+        !menuRef.current.contains(target) &&
+        !document.querySelector('.transaction-filter-dialog-backdrop')?.contains(target)
+      ) {
         setMenuOpen(false);
       }
     };
@@ -333,141 +338,147 @@ export function TransactionFilters({
             ) : null}
           </button>
 
-          {menuOpen ? (
-            <div className="transaction-filter-dialog-backdrop" onClick={() => setMenuOpen(false)}>
-              <div
-                className="transaction-filter-popover-panel"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="tx-filter-dialog-title"
-                onClick={(event) => event.stopPropagation()}
-              >
-                <div className="transaction-filter-dialog-header">
-                  <div className="transaction-filter-popover-head">
-                    <span className="transaction-filter-dialog-eyebrow">交易记录 · 个性化</span>
-                    <strong id="tx-filter-dialog-title">筛选与显示设置</strong>
-                    <span>按来源整理流水，并自定义表格信息。</span>
-                  </div>
-                  <button
-                    type="button"
-                    className="transaction-filter-dialog-close"
-                    aria-label="关闭筛选设置"
-                    onClick={() => setMenuOpen(false)}
+          {menuOpen
+            ? createPortal(
+                <div
+                  className="transaction-filter-dialog-backdrop"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <div
+                    className="transaction-filter-popover-panel"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="tx-filter-dialog-title"
+                    onClick={(event) => event.stopPropagation()}
                   >
-                    ×
-                  </button>
-                </div>
-
-                <div className="transaction-filter-dialog-grid">
-                  <section className="transaction-filter-dialog-section">
-                    <div className="transaction-filter-dialog-section-heading">
-                      <span className="transaction-filter-dialog-index">01</span>
-                      <div>
-                        <h3>来源筛选</h3>
-                        <p>只查看来自特定渠道的记录</p>
+                    <div className="transaction-filter-dialog-header">
+                      <div className="transaction-filter-popover-head">
+                        <span className="transaction-filter-dialog-eyebrow">交易记录 · 个性化</span>
+                        <strong id="tx-filter-dialog-title">筛选与显示设置</strong>
+                        <span>按来源整理流水，并自定义表格信息。</span>
                       </div>
-                    </div>
-                    <div className="field" style={{ marginBottom: 0 }}>
-                      <label htmlFor="tx-filter-source">交易来源</label>
-                      <select
-                        id="tx-filter-source"
-                        aria-label="按来源筛选"
-                        value={filters.source}
-                        onChange={(event) =>
-                          onSourceChange(event.target.value as TransactionSourceFilter)
-                        }
+                      <button
+                        type="button"
+                        className="transaction-filter-dialog-close"
+                        aria-label="关闭筛选设置"
+                        onClick={() => setMenuOpen(false)}
                       >
-                        <option value="all">全部来源</option>
-                        <option value="manual">手工录入</option>
-                        <option value="wechat">微信导入</option>
-                        <option value="alipay">支付宝</option>
-                        <option value="ai">AI 记账</option>
-                      </select>
+                        ×
+                      </button>
                     </div>
-                  </section>
 
-                  <section className="transaction-filter-dialog-section">
-                    <div className="transaction-filter-dialog-section-heading">
-                      <span className="transaction-filter-dialog-index">02</span>
-                      <div>
-                        <h3>表格显示</h3>
-                        <p>
-                          选择需要展示的信息
-                          {hiddenColumnCount > 0 ? ` · 已收起 ${hiddenColumnCount} 项` : ''}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="transaction-column-check-grid">
-                      {columnOptions.map((option) => (
-                        <label key={`filter-col-${option.key}`}>
-                          <input
-                            type="checkbox"
-                            checked={visibleColumns[option.key]}
-                            onChange={() => onToggleColumn(option.key)}
-                          />
-                          <span>{option.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </section>
+                    <div className="transaction-filter-dialog-grid">
+                      <section className="transaction-filter-dialog-section">
+                        <div className="transaction-filter-dialog-section-heading">
+                          <span className="transaction-filter-dialog-index">01</span>
+                          <div>
+                            <h3>来源筛选</h3>
+                            <p>只查看来自特定渠道的记录</p>
+                          </div>
+                        </div>
+                        <div className="field" style={{ marginBottom: 0 }}>
+                          <label htmlFor="tx-filter-source">交易来源</label>
+                          <select
+                            id="tx-filter-source"
+                            aria-label="按来源筛选"
+                            value={filters.source}
+                            onChange={(event) =>
+                              onSourceChange(event.target.value as TransactionSourceFilter)
+                            }
+                          >
+                            <option value="all">全部来源</option>
+                            <option value="manual">手工录入</option>
+                            <option value="wechat">微信导入</option>
+                            <option value="alipay">支付宝</option>
+                            <option value="ai">AI 记账</option>
+                          </select>
+                        </div>
+                      </section>
 
-                  <section className="transaction-filter-dialog-section transaction-filter-dialog-import">
-                    <div className="transaction-filter-dialog-section-heading">
-                      <span className="transaction-filter-dialog-index">03</span>
-                      <div>
-                        <h3>导入与整理</h3>
-                        <p>管理账单导入方式及重复记录</p>
-                      </div>
-                    </div>
-                    <div className="transaction-filter-dialog-import-controls">
-                      <div className="field" style={{ marginBottom: 0 }}>
-                        <label htmlFor="tx-import-mode">账单导入模式</label>
-                        <select
-                          id="tx-import-mode"
-                          aria-label="账单导入模式"
-                          value={importMode}
-                          onChange={(event) =>
-                            onImportModeChange(event.target.value as BillImportMode)
-                          }
-                        >
-                          <option value="incremental">增量（跳过重复）</option>
-                          <option value="merge">合并（覆盖重复）</option>
-                          <option value="overwrite">覆盖（清空后导入）</option>
-                        </select>
-                      </div>
-                      <div className="transaction-filter-actions-grid transaction-filter-actions-grid-inline transaction-filter-actions-grid-compact">
-                        <button type="button" onClick={onExport}>
-                          导出 CSV
-                        </button>
-                        <button type="button" onClick={onCheckDuplicates}>
-                          检测重复
-                        </button>
-                        <button type="button" onClick={onImportWechat}>
-                          导入微信
-                        </button>
-                        <button type="button" onClick={onImportAlipay}>
-                          导入支付宝
-                        </button>
-                      </div>
-                    </div>
-                  </section>
-                </div>
+                      <section className="transaction-filter-dialog-section">
+                        <div className="transaction-filter-dialog-section-heading">
+                          <span className="transaction-filter-dialog-index">02</span>
+                          <div>
+                            <h3>表格显示</h3>
+                            <p>
+                              选择需要展示的信息
+                              {hiddenColumnCount > 0 ? ` · 已收起 ${hiddenColumnCount} 项` : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="transaction-column-check-grid">
+                          {columnOptions.map((option) => (
+                            <label key={`filter-col-${option.key}`}>
+                              <input
+                                type="checkbox"
+                                checked={visibleColumns[option.key]}
+                                onChange={() => onToggleColumn(option.key)}
+                              />
+                              <span>{option.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </section>
 
-                <div className="transaction-filter-dialog-footer">
-                  <button type="button" className="transaction-filter-reset" onClick={onClear}>
-                    清空筛选条件
-                  </button>
-                  <button
-                    type="button"
-                    className="primary transaction-filter-done"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    完成
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : null}
+                      <section className="transaction-filter-dialog-section transaction-filter-dialog-import">
+                        <div className="transaction-filter-dialog-section-heading">
+                          <span className="transaction-filter-dialog-index">03</span>
+                          <div>
+                            <h3>导入与整理</h3>
+                            <p>管理账单导入方式及重复记录</p>
+                          </div>
+                        </div>
+                        <div className="transaction-filter-dialog-import-controls">
+                          <div className="field" style={{ marginBottom: 0 }}>
+                            <label htmlFor="tx-import-mode">账单导入模式</label>
+                            <select
+                              id="tx-import-mode"
+                              aria-label="账单导入模式"
+                              value={importMode}
+                              onChange={(event) =>
+                                onImportModeChange(event.target.value as BillImportMode)
+                              }
+                            >
+                              <option value="incremental">增量（跳过重复）</option>
+                              <option value="merge">合并（覆盖重复）</option>
+                              <option value="overwrite">覆盖（清空后导入）</option>
+                            </select>
+                          </div>
+                          <div className="transaction-filter-actions-grid transaction-filter-actions-grid-inline transaction-filter-actions-grid-compact">
+                            <button type="button" onClick={onExport}>
+                              导出 CSV
+                            </button>
+                            <button type="button" onClick={onCheckDuplicates}>
+                              检测重复
+                            </button>
+                            <button type="button" onClick={onImportWechat}>
+                              导入微信
+                            </button>
+                            <button type="button" onClick={onImportAlipay}>
+                              导入支付宝
+                            </button>
+                          </div>
+                        </div>
+                      </section>
+                    </div>
+
+                    <div className="transaction-filter-dialog-footer">
+                      <button type="button" className="transaction-filter-reset" onClick={onClear}>
+                        清空筛选条件
+                      </button>
+                      <button
+                        type="button"
+                        className="primary transaction-filter-done"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        完成
+                      </button>
+                    </div>
+                  </div>
+                </div>,
+                document.body
+              )
+            : null}
         </div>
       </div>
     </section>
