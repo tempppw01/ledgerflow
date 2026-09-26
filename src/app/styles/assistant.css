@@ -278,6 +278,11 @@
   overflow: hidden;
 }
 
+.chat-investment-mode-content > .chat-investment-panel.chat-kawaii-panel {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
 .chat-investment-mode-content > .chat-investment-panel.is-empty {
   justify-content: stretch;
 }
