@@ -1802,32 +1802,20 @@ export function AssistantPage() {
             <article className="chat-msg">
               {renderChatAvatar('assistant')}
               <div className="chat-msg-body">
-                <div className="chat-msg-header">信贷汇总快照</div>
-                <div className="chat-credit-overview-card">
-                  <div className="chat-credit-overview-grid">
-                    <div>
+                <div className="chat-msg-header">信贷概览</div>
+                <div className="chat-credit-overview-card is-compact">
+                  <div className="chat-credit-overview-grid is-compact">
+                    <div className="is-primary">
                       <span>当前总欠款</span>
                       <strong>¥{creditOverview.totalDebt.toFixed(2)}</strong>
                     </div>
                     <div>
-                      <span>本月总应还</span>
-                      <strong>¥{creditOverview.totalDueThisMonth.toFixed(2)}</strong>
+                      <span>本月待还</span>
+                      <strong>¥{creditOverview.currentGap.toFixed(2)}</strong>
                     </div>
                     <div>
                       <span>本月已还</span>
                       <strong>¥{creditOverview.totalPaidThisMonth.toFixed(2)}</strong>
-                    </div>
-                    <div>
-                      <span>当前还差</span>
-                      <strong>¥{creditOverview.currentGap.toFixed(2)}</strong>
-                    </div>
-                    <div>
-                      <span>最低还款合计</span>
-                      <strong>¥{creditOverview.totalMinimumPayment.toFixed(2)}</strong>
-                    </div>
-                    <div>
-                      <span>剩余利息估算</span>
-                      <strong>¥{creditOverview.totalRemainingInterest.toFixed(2)}</strong>
                     </div>
                   </div>
                   {creditOverview.dueSoonItems.length > 0 ? (
@@ -1844,17 +1832,25 @@ export function AssistantPage() {
                       ))}
                     </div>
                   ) : null}
+                  <details className="chat-credit-overview-details">
+                    <summary>更多还款数据</summary>
+                    <div className="chat-credit-overview-extra">
+                      <span>本月总应还 <strong>¥{creditOverview.totalDueThisMonth.toFixed(2)}</strong></span>
+                      <span>最低还款合计 <strong>¥{creditOverview.totalMinimumPayment.toFixed(2)}</strong></span>
+                      <span>剩余利息估算 <strong>¥{creditOverview.totalRemainingInterest.toFixed(2)}</strong></span>
+                    </div>
+                  </details>
                   <div className="chat-credit-actions">
                     <button
                       type="button"
-                      className="chat-secondary-action-btn"
+                      className="chat-secondary-action-btn is-compact"
                       onClick={() => navigate('/repayment-management')}
                     >
-                      去看完整台账
+                      查看完整台账
                     </button>
                     <button
                       type="button"
-                      className="chat-secondary-action-btn"
+                      className="chat-secondary-action-btn is-compact"
                       onClick={() => submitPrompt('帮我看本月总应还、已还多少、还差多少，并指出最值得先处理的项目')}
                     >
                       继续做汇总分析

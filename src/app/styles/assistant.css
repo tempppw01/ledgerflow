@@ -2030,15 +2030,36 @@
   margin-bottom: var(--space-3);
 }
 
+.chat-credit-overview-card.is-compact {
+  width: min(100%, 680px);
+  gap: 10px;
+  padding: 12px;
+  margin-bottom: var(--space-2);
+}
+
 .chat-credit-overview-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--space-3);
 }
 
+.chat-credit-overview-grid.is-compact {
+  grid-template-columns: 1.15fr 1fr 1fr;
+  gap: 8px;
+}
+
 .chat-credit-overview-grid > div {
   display: grid;
   gap: 2px;
+}
+
+.chat-credit-overview-grid.is-compact > div {
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+
+.chat-credit-overview-grid.is-compact > div.is-primary {
+  background: color-mix(in srgb, var(--color-primary-bg) 68%, var(--color-bg-subtle));
 }
 
 .chat-credit-overview-grid span {
@@ -2050,6 +2071,10 @@
   font-size: 18px;
   color: var(--color-text);
   font-weight: 700;
+}
+
+.chat-credit-overview-grid.is-compact strong {
+  font-size: 16px;
 }
 
 .chat-credit-overview-due-list {
@@ -2066,6 +2091,34 @@
   padding: 2px 6px;
   font-size: 10px;
   color: var(--color-text-secondary);
+}
+
+.chat-credit-overview-details {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.chat-credit-overview-details summary {
+  width: fit-content;
+  cursor: pointer;
+  user-select: none;
+}
+
+.chat-credit-overview-extra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding: 8px 0 0;
+}
+
+.chat-credit-overview-extra strong {
+  margin-left: 3px;
+  color: var(--color-text);
+}
+
+.chat-credit-actions button.is-compact {
+  padding: 5px 9px;
+  font-size: 11px;
 }
 
 /* ---------- Credit Confirmation ---------- */
