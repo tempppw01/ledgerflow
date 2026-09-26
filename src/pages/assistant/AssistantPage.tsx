@@ -2536,7 +2536,14 @@ export function AssistantPage() {
         >
           {shouldShowError ? (
             <div className="chat-error-strip" role="alert">
-              <span>{wb.error}</span>
+              <details className="chat-error-details">
+                <summary>
+                  <span className="chat-error-summary-label">请求失败</span>
+                  <span className="chat-error-summary-text">{wb.error}</span>
+                  <span className="chat-error-expand">详情</span>
+                </summary>
+                <pre className="chat-error-detail-text">{wb.error}</pre>
+              </details>
               <button type="button" onClick={retryLastPrompt} disabled={wb.status === 'recognizing'}>
                 重试
               </button>

@@ -3025,6 +3025,61 @@
   color: var(--color-danger);
 }
 
+.chat-error-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-error-details summary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.chat-error-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.chat-error-summary-label {
+  flex: 0 0 auto;
+  font-weight: 650;
+}
+
+.chat-error-summary-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-error-expand {
+  flex: 0 0 auto;
+  opacity: 0.8;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.chat-error-details[open] summary {
+  margin-bottom: 6px;
+}
+
+.chat-error-details[open] .chat-error-summary-text {
+  display: none;
+}
+
+.chat-error-detail-text {
+  max-height: 180px;
+  margin: 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  line-height: 1.5;
+}
+
 .chat-error-strip button {
   font-size: var(--font-xs);
   padding: 2px 6px;

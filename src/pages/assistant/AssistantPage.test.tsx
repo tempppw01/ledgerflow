@@ -900,6 +900,29 @@ describe('AssistantPage', () => {
     sessionStorageGetItemSpy.mockRestore();
   });
 
+  it('长错误默认折叠显示摘要，展开后可查看完整错误并重试', () => {
+    const detailedError = `请求失败（HTTP 503）：${'模型当前无可用渠道。'.repeat(20)}`;
+    useAssistantWorkbenchMock.mockReturnValue({
+      ...createWorkbenchMock(),
+      error: detailedError
+    });
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    const details = screen.getByText('请求失败').closest('details');
+    expect(details).not.toBeNull();
+    expect(details).not.toHaveAttribute('open');
+    expect(screen.getByRole('button', { name: '重试' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('请求失败').closest('summary')!);
+    expect(details).toHaveAttribute('open');
+    expect(details?.querySelector('pre')?.textContent).toBe(detailedError);
+  });
+
   it('继续追问生成服务不可用时，回退建议仍应围绕当前对话动态生成', async () => {
     vi.mocked(sendAiChat).mockRejectedValueOnce(new Error('服务暂不可用'));
     useAssistantWorkbenchMock.mockReturnValue({
