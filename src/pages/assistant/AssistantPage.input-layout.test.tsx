@@ -244,4 +244,30 @@ describe('AssistantPage input layout', () => {
       expect(form).toHaveClass('is-compact');
     }
   });
+
+  it('toggles between standard and full-width message layouts', async () => {
+    useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
+
+    const { container } = render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    const messages = container.querySelector('.chat-messages-inner');
+    const toggle = screen.getByRole('button', { name: '拉伸显示' });
+    expect(messages).not.toHaveClass('is-wide');
+
+    await act(async () => {
+      fireEvent.click(toggle);
+    });
+
+    expect(messages).toHaveClass('is-wide');
+    expect(screen.getByRole('button', { name: '切换为标准宽度' })).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '切换为标准宽度' }));
+    });
+    expect(messages).not.toHaveClass('is-wide');
+  });
 });

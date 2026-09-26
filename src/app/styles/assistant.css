@@ -3558,8 +3558,18 @@
 
 .chat-messages-inner {
   width: min(100%, 1240px);
+  max-width: 1040px;
   padding: clamp(28px, 5vw, 74px) clamp(22px, 6vw, 96px) 30px;
   gap: 18px;
+  transition:
+    width 240ms ease,
+    max-width 240ms ease,
+    padding 240ms ease;
+}
+
+.chat-messages-inner.is-wide {
+  width: 100%;
+  max-width: none;
 }
 
 .chat-topbar {
@@ -3779,6 +3789,12 @@
 @media (max-width: 768px) {
   .chat-messages-inner {
     padding: 28px 20px 20px;
+  }
+
+  .chat-messages-inner,
+  .chat-messages-inner.is-wide {
+    width: 100%;
+    max-width: none;
   }
 
   .chat-mode-switch-options button,
