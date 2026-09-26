@@ -7164,10 +7164,12 @@ input[type='date']:focus {
   font-weight: 700;
 }
 
-.quick-add-amount-input input {
+.quick-add-amount-input input,
+.quick-add-amount-input textarea {
   width: min(100%, 390px);
   min-width: 120px;
-  height: 74px;
+  min-height: 74px;
+  max-height: 196px;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -7178,10 +7180,14 @@ input[type='date']:focus {
   font-size: clamp(52px, 9vw, 76px);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  line-height: 1;
+  line-height: 1.05;
+  text-align: center;
+  overflow-wrap: anywhere;
+  resize: none;
 }
 
-.quick-add-amount-input input:focus {
+.quick-add-amount-input input:focus,
+.quick-add-amount-input textarea:focus {
   box-shadow: none;
 }
 

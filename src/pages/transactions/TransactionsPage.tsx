@@ -552,7 +552,7 @@ export function TransactionsPage() {
   const [quickAddDraftStatus, setQuickAddDraftStatus] = useState(
     initialQuickDraft ? '已恢复未完成草稿' : ''
   );
-  const quickAddAmountInputRef = useRef<HTMLInputElement | null>(null);
+  const quickAddAmountInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [tablePanelWidth, setTablePanelWidth] = useState(860);
   const [sidePanelVisible, setSidePanelVisible] = useState(() => restoreSidePanelVisible());
   const [pieAnimationProgress, setPieAnimationProgress] = useState(1);
@@ -1089,30 +1089,19 @@ export function TransactionsPage() {
 
   useLayoutEffect(() => {
     const input = quickAddAmountInputRef.current;
-    const container = input?.parentElement;
-    if (!input || !container) return;
+    if (!input) return;
 
-    const fitAmountText = () => {
-      input.style.removeProperty('font-size');
-      const style = window.getComputedStyle(input);
-      const baseFontSize = Number.parseFloat(style.fontSize) || 76;
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      if (!context) return;
-
-      const availableWidth = Math.max(80, input.clientWidth - 4);
-      context.font = `${style.fontWeight} ${baseFontSize}px ${style.fontFamily}`;
-      const textWidth = context.measureText(quickAddExpression || '0').width;
-      const fittedFontSize = Math.max(
-        22,
-        Math.min(baseFontSize, (baseFontSize * availableWidth) / Math.max(textWidth, 1))
-      );
-      input.style.fontSize = `${fittedFontSize}px`;
+    const resizeAmountInput = () => {
+      input.style.height = 'auto';
+      const lineHeight = Number.parseFloat(window.getComputedStyle(input).lineHeight) || 58;
+      const maxHeight = lineHeight * 3 + 8;
+      input.style.height = `${Math.min(Math.max(input.scrollHeight, lineHeight), maxHeight)}px`;
+      input.style.overflowY = input.scrollHeight > maxHeight ? 'auto' : 'hidden';
     };
 
-    fitAmountText();
-    const resizeObserver = new ResizeObserver(fitAmountText);
-    resizeObserver.observe(container);
+    resizeAmountInput();
+    const resizeObserver = new ResizeObserver(resizeAmountInput);
+    resizeObserver.observe(input);
     return () => resizeObserver.disconnect();
   }, [quickAddExpression, quickAddOpen]);
 
@@ -2939,12 +2928,13 @@ export function TransactionsPage() {
                   <label htmlFor="quick-add-expression">金额</label>
                   <div className="quick-add-amount-input">
                     <span aria-hidden="true">¥</span>
-                    <input
+                    <textarea
                       id="quick-add-expression"
                       ref={quickAddAmountInputRef}
                       autoFocus
                       inputMode="decimal"
                       placeholder="0"
+                      rows={1}
                       value={quickAddExpression}
                       onChange={(event) => setQuickAddExpression(event.target.value)}
                       aria-describedby="quick-add-budget-hint"
