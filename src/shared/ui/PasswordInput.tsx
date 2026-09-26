@@ -5,6 +5,7 @@ import { cn } from '../lib/cn';
 type PasswordInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> & {
   containerClassName?: string;
   toggleClassName?: string;
+  compactMask?: boolean;
   showLabel?: string;
   hideLabel?: string;
 };
@@ -17,13 +18,19 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(fu
     className,
     containerClassName,
     toggleClassName,
+    compactMask = false,
     disabled,
+    onChange,
+    readOnly,
+    value,
     showLabel = '显示内容',
     hideLabel = '隐藏内容',
     ...rest
   } = props;
   const [visible, setVisible] = useState(false);
   const nextLabel = visible ? hideLabel : showLabel;
+  const hasValue = value != null && value !== '';
+  const isCompactMaskVisible = compactMask && !visible && hasValue;
 
   return (
     <div className={cn('password-input-row', containerClassName)}>
@@ -32,7 +39,10 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(fu
         ref={ref}
         className={className}
         disabled={disabled}
+        readOnly={readOnly || isCompactMaskVisible}
+        value={isCompactMaskVisible ? '••••••••' : value}
         type={visible ? 'text' : 'password'}
+        onChange={onChange}
       />
       <button
         type="button"

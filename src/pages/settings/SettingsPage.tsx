@@ -730,6 +730,7 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
             <div className="field">
               <label>{t('settings.apiKey')}</label>
               <PasswordInput
+                compactMask
                 value={apiKey}
                 onChange={(e) => {
                   setApiKey(e.target.value);
