@@ -1254,7 +1254,20 @@ export function AssistantPage() {
   const buildAssistantMessageText = useCallback(
     (responseMode: AssistantMode) => {
       if (responseMode === 'bookkeeping' && wb.entries.length > 0) {
-        return `这次我先帮你整理出了 ${wb.entries.length} 条可保存账单。你可以先核对、去重，再决定要不要落到账本。`;
+        const entries = wb.entries;
+        if (entries.length === 1) {
+          const entry = entries[0];
+          const amount = new Intl.NumberFormat('zh-CN', {
+            style: 'currency',
+            currency: entry.currency && entry.currency !== 'unknown' ? entry.currency : 'CNY',
+            minimumFractionDigits: 2
+          }).format(entry.amount);
+          const description = entry.note?.trim() || entry.category || '这笔账';
+          return `记下了：${description}，${entry.type === 'income' ? '收入' : '支出'} ${amount}。确认一下分类和账户，没问题就保存到账本吧。`;
+        }
+
+        const total = entries.reduce((sum, entry) => sum + Math.abs(entry.amount), 0);
+        return `我整理好了 ${entries.length} 笔账单，合计 ¥${total.toFixed(2)}。你可以先检查每笔的备注、分类和账户，确认后再一起保存。`;
       }
       const fallbackFromReasoning = wb.rawReasoning
         ? '模型已返回思考过程，但还没有输出正式回复。'
@@ -1264,7 +1277,7 @@ export function AssistantPage() {
       }
       return wb.rawContent || fallbackFromReasoning;
     },
-    [wb.entries.length, wb.rawContent, wb.rawReasoning]
+    [wb.entries, wb.rawContent, wb.rawReasoning]
   );
 
   const submitPrompt = (prompt: string) => {

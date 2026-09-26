@@ -305,7 +305,9 @@
   color: var(--color-text-tertiary);
   font-size: 12px;
   font-weight: 650;
-  transition: color 160ms ease, transform 160ms ease;
+  transition:
+    color 160ms ease,
+    transform 160ms ease;
 }
 
 .chat-mode-switch-options button::after {
@@ -319,7 +321,9 @@
   content: '';
   opacity: 0;
   transform: scaleX(0.35);
-  transition: opacity 160ms ease, transform 160ms ease;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
 }
 
 .chat-mode-switch-options button:hover {
@@ -337,8 +341,15 @@
 }
 
 @keyframes chat-mode-spark {
-  0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.72; }
-  50% { transform: rotate(12deg) scale(1.12); opacity: 1; }
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1);
+    opacity: 0.72;
+  }
+  50% {
+    transform: rotate(12deg) scale(1.12);
+    opacity: 1;
+  }
 }
 
 .chat-topbar-title {
@@ -1551,7 +1562,8 @@
   width: 58px;
   height: 58px;
   flex: 0 0 auto;
-  background: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/calculator.svg') center / contain no-repeat;
+  background: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/calculator.svg')
+    center / contain no-repeat;
 }
 
 .chat-assistant-intro-illustration {
@@ -2887,6 +2899,141 @@
   font-size: var(--font-xs);
 }
 
+.chat-bill-preview-header,
+.chat-bill-preview-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.chat-bill-preview-header {
+  margin-bottom: 10px;
+}
+
+.chat-bill-preview-kicker {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--color-success, #24a86a);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.chat-bill-preview .chat-bill-preview-header h3 {
+  margin: 0;
+  font-size: var(--font-md);
+}
+
+.chat-bill-check-duplicates {
+  flex: 0 0 auto;
+  padding: 7px 11px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  font-size: var(--font-xs);
+  cursor: pointer;
+}
+
+.chat-bill-rows {
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.chat-bill-row-item {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 66%, var(--color-bg-subtle));
+}
+
+.chat-bill-row-copy {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.chat-bill-row-copy > strong {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: var(--font-sm);
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-bill-row-copy > small {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  font-size: 11px;
+}
+
+.chat-bill-row-value {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+}
+
+.chat-bill-row-value > strong {
+  font-size: var(--font-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.chat-bill-row-value > strong.is-expense {
+  color: var(--color-danger, #df5b55);
+}
+
+.chat-bill-row-value > strong.is-income {
+  color: var(--color-success, #24a86a);
+}
+
+.chat-bill-row-extra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+}
+
+.chat-bill-row-subscription {
+  grid-column: 1 / -1;
+}
+
+.chat-bill-preview-footer {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-divider);
+}
+
+.chat-bill-preview-footer > span {
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+}
+
+.chat-bill-preview-footer > button {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 9px 16px;
+  border-radius: 9px;
+  font-size: var(--font-sm);
+}
+
+@media (max-width: 560px) {
+  .chat-bill-preview-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .chat-bill-preview-footer > button {
+    width: 100%;
+  }
+}
+
 .chat-dup-badge {
   justify-self: start;
   font-size: 10px;
@@ -3641,7 +3788,11 @@
 /* ---------- Three assistant modes: one shared, calm starting canvas ---------- */
 .chat-messages-area {
   background:
-    radial-gradient(circle at 78% 3%, color-mix(in srgb, var(--color-primary-bg) 38%, transparent), transparent 30rem),
+    radial-gradient(
+      circle at 78% 3%,
+      color-mix(in srgb, var(--color-primary-bg) 38%, transparent),
+      transparent 30rem
+    ),
     var(--color-bg);
 }
 
@@ -3842,7 +3993,8 @@
   margin: 0;
   padding: 11px 0;
   border: 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-warning, #e6a23c) 30%, var(--color-divider));
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--color-warning, #e6a23c) 30%, var(--color-divider));
   border-radius: 0;
   background: transparent;
   text-align: left;
