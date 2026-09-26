@@ -8,5 +8,8 @@ describe('formatCurrencyAuto', () => {
     expect(formatCurrencyAuto(42547.67)).toBe('¥4.25万');
     expect(formatCurrencyAuto(-42547.67)).toBe('-¥4.25万');
     expect(formatCurrencyAuto(1234567)).toBe('¥123万');
+    expect(formatCurrencyAuto(165935693235659840)).toBe('¥16.6京');
+    expect(formatCurrencyAuto(1234567890123)).toBe('¥1.23兆');
+    expect(formatCurrencyAuto(-9876543210)).toBe('-¥98.8亿');
   });
 });

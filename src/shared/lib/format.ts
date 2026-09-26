@@ -14,7 +14,7 @@ export function formatCurrency(value: number) {
   }).format(normalized);
 }
 
-/** 金额自动简写：长数字使用“千 / 万”单位，避免挤压布局。 */
+/** 金额自动简写：按中文数量级缩写，避免长数字挤压布局。 */
 export function formatCurrencyAuto(value: number) {
   const normalized = normalizeCurrencyInput(value, 2);
   const abs = Math.abs(normalized);
@@ -23,16 +23,24 @@ export function formatCurrencyAuto(value: number) {
     return formatCurrency(normalized);
   }
 
-  const unit = abs < 10000 ? '千' : '万';
-  const divisor = abs < 10000 ? 1000 : 10000;
-  const compact = abs / divisor;
+  const units = [
+    { threshold: 1e24, divisor: 1e24, label: '秭' },
+    { threshold: 1e20, divisor: 1e20, label: '垓' },
+    { threshold: 1e16, divisor: 1e16, label: '京' },
+    { threshold: 1e12, divisor: 1e12, label: '兆' },
+    { threshold: 1e8, divisor: 1e8, label: '亿' },
+    { threshold: 1e4, divisor: 1e4, label: '万' },
+    { threshold: 1e3, divisor: 1e3, label: '千' }
+  ];
+  const unit = units.find((item) => abs >= item.threshold) || units[units.length - 1];
+  const compact = abs / unit.divisor;
   const digits = compact >= 100 ? 0 : compact >= 10 ? 1 : 2;
   const compactText = compact
     .toFixed(digits)
     .replace(/\.0+$/, '')
     .replace(/(\.\d*[1-9])0+$/, '$1');
 
-  return `${normalized < 0 ? '-' : ''}¥${compactText}${unit}`;
+  return `${normalized < 0 ? '-' : ''}¥${compactText}${unit.label}`;
 }
 
 /** 货币格式化（固定两位小数） */
