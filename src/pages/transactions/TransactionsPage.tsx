@@ -2,6 +2,7 @@ import {
   ChangeEvent,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -551,6 +552,7 @@ export function TransactionsPage() {
   const [quickAddDraftStatus, setQuickAddDraftStatus] = useState(
     initialQuickDraft ? '已恢复未完成草稿' : ''
   );
+  const quickAddAmountInputRef = useRef<HTMLInputElement | null>(null);
   const [tablePanelWidth, setTablePanelWidth] = useState(860);
   const [sidePanelVisible, setSidePanelVisible] = useState(() => restoreSidePanelVisible());
   const [pieAnimationProgress, setPieAnimationProgress] = useState(1);
@@ -1084,6 +1086,35 @@ export function TransactionsPage() {
     });
     setQuickAddError('');
   }, []);
+
+  useLayoutEffect(() => {
+    const input = quickAddAmountInputRef.current;
+    const container = input?.parentElement;
+    if (!input || !container) return;
+
+    const fitAmountText = () => {
+      input.style.removeProperty('font-size');
+      const style = window.getComputedStyle(input);
+      const baseFontSize = Number.parseFloat(style.fontSize) || 76;
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      if (!context) return;
+
+      const availableWidth = Math.max(80, input.clientWidth - 4);
+      context.font = `${style.fontWeight} ${baseFontSize}px ${style.fontFamily}`;
+      const textWidth = context.measureText(quickAddExpression || '0').width;
+      const fittedFontSize = Math.max(
+        22,
+        Math.min(baseFontSize, (baseFontSize * availableWidth) / Math.max(textWidth, 1))
+      );
+      input.style.fontSize = `${fittedFontSize}px`;
+    };
+
+    fitAmountText();
+    const resizeObserver = new ResizeObserver(fitAmountText);
+    resizeObserver.observe(container);
+    return () => resizeObserver.disconnect();
+  }, [quickAddExpression, quickAddOpen]);
 
   useEffect(() => {
     const evaluated = evaluateCalculatorExpression(quickAddExpression);
@@ -2910,6 +2941,7 @@ export function TransactionsPage() {
                     <span aria-hidden="true">¥</span>
                     <input
                       id="quick-add-expression"
+                      ref={quickAddAmountInputRef}
                       autoFocus
                       inputMode="decimal"
                       placeholder="0"
@@ -3146,22 +3178,37 @@ export function TransactionsPage() {
         open={Boolean(pendingRefundTransaction)}
         title="确认退款并回补账户"
         description={
-          pendingRefundTransaction
-            ? (
-              <div className="confirm-flow-copy">
-                <p>将为“{pendingRefundTransaction.note || '该交易'}”创建退款记录。</p>
-                <AmountBreakdown
-                  rows={[
-                    { label: '原交易金额', amount: formatCurrency(Number(pendingRefundTransaction.amount) || 0) },
-                    { label: '已退款金额', amount: formatCurrency(pendingRefundedAmount), tone: 'neutral' },
-                    { label: '本次退款金额', amount: formatCurrency(pendingRefundRemainingAmount), tone: 'warning' }
-                  ]}
-                  total={{ label: '退款后回补账户', amount: formatCurrency(pendingRefundRemainingAmount), tone: 'success' }}
-                />
-                <p className="muted">退款记录会写入余额变动明细，原交易的可退款金额会同步更新。</p>
-              </div>
-            )
-            : ''
+          pendingRefundTransaction ? (
+            <div className="confirm-flow-copy">
+              <p>将为“{pendingRefundTransaction.note || '该交易'}”创建退款记录。</p>
+              <AmountBreakdown
+                rows={[
+                  {
+                    label: '原交易金额',
+                    amount: formatCurrency(Number(pendingRefundTransaction.amount) || 0)
+                  },
+                  {
+                    label: '已退款金额',
+                    amount: formatCurrency(pendingRefundedAmount),
+                    tone: 'neutral'
+                  },
+                  {
+                    label: '本次退款金额',
+                    amount: formatCurrency(pendingRefundRemainingAmount),
+                    tone: 'warning'
+                  }
+                ]}
+                total={{
+                  label: '退款后回补账户',
+                  amount: formatCurrency(pendingRefundRemainingAmount),
+                  tone: 'success'
+                }}
+              />
+              <p className="muted">退款记录会写入余额变动明细，原交易的可退款金额会同步更新。</p>
+            </div>
+          ) : (
+            ''
+          )
         }
         confirmText={`确认退款（${formatCurrency(pendingRefundRemainingAmount)}）`}
         cancelText="取消"
