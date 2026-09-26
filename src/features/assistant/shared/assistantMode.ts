@@ -6,7 +6,9 @@ export const ASSISTANT_ACTIVE_MODE_STORAGE_KEY = 'ledgerflow.assistant.activeMod
 export const ASSISTANT_MODE_CHANGED_EVENT = 'ledgerflow:assistant-mode-changed';
 
 export function isAssistantMode(value: unknown): value is AssistantMode {
-  return value === 'bookkeeping' || value === 'assistant' || value === 'credit' || value === 'investment';
+  return (
+    value === 'bookkeeping' || value === 'assistant' || value === 'credit' || value === 'investment'
+  );
 }
 
 export function readAssistantModeFromSessionStorage(): AssistantMode {
@@ -32,7 +34,7 @@ export function getAssistantModeLabel(mode: AssistantMode, t: TFunction): string
   }
 
   if (mode === 'investment') {
-    return '投资助手';
+    return 'AI 投资助手';
   }
 
   return t('assistant.ui.assistantMode');

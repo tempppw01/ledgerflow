@@ -118,7 +118,7 @@ export function AppLayout() {
         items: [
           {
             to: '/assistant',
-            label: tFallback('nav.assistantBookkeeping', 'AI助手'),
+            label: getAssistantModeLabel(assistantWorkspaceMode, t),
             icon: '🤖',
             iconSrc: CHAT_ICON_URL
           },
@@ -208,7 +208,7 @@ export function AppLayout() {
         ]
       }
     ],
-    [recycleBinIconUrl, t]
+    [assistantWorkspaceMode, recycleBinIconUrl, t]
   );
 
   const mobileQuickGroups: Array<{ title: string; items: QuickEntry[] }> = useMemo(
@@ -217,7 +217,7 @@ export function AppLayout() {
         title: tFallback('nav.commonFeatures', '常用功能'),
         items: [
           {
-            label: tFallback('nav.assistantBookkeeping', 'AI助手'),
+            label: getAssistantModeLabel(assistantWorkspaceMode, t),
             icon: '🤖',
             iconSrc: CHAT_ICON_URL,
             to: '/assistant'
@@ -298,7 +298,7 @@ export function AppLayout() {
         ]
       }
     ],
-    [recycleBinIconUrl, t]
+    [assistantWorkspaceMode, recycleBinIconUrl, t]
   );
 
   const currentWorkspaceTitle = useMemo(() => {
@@ -771,7 +771,11 @@ export function AppLayout() {
             ) : null}
             <div className="workspace-topbar-title" title={currentWorkspaceTitle}>
               {location.pathname.startsWith('/assistant') ? (
-                <span className="workspace-title-spark" key={assistantWorkspaceMode} aria-hidden="true">
+                <span
+                  className="workspace-title-spark"
+                  key={assistantWorkspaceMode}
+                  aria-hidden="true"
+                >
                   {getAssistantModeSpark(assistantWorkspaceMode)}
                 </span>
               ) : null}
