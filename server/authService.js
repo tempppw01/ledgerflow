@@ -414,6 +414,16 @@ export async function changePassword(provider, auth, input, env = process.env) {
   }, env);
 }
 
+export async function verifyCurrentPassword(provider, auth, input, env = process.env) {
+  return withAuthDatabase(provider, async (database) => {
+    const user = await database.get('SELECT password_hash FROM auth_users WHERE id = ?', [auth.user.id]);
+    if (!user || !(await verifyPassword(input?.currentPassword, user.password_hash))) {
+      throw new Error('当前密码不正确。');
+    }
+    return { ok: true };
+  }, env);
+}
+
 export async function updateUserProfile(provider, auth, input, env = process.env) {
   return withAuthDatabase(provider, async (database) => {
     const currentUser = await database.get(

@@ -21,6 +21,7 @@ import {
 import {
   authenticateSession,
   changePassword,
+  verifyCurrentPassword,
   getAuthStatus,
   getUserSessions,
   loginUser,
@@ -2035,6 +2036,7 @@ export async function handleRequest(req, res) {
       pathname === '/auth/logout' ||
       pathname === '/auth/profile' ||
       pathname === '/auth/change-password' ||
+      pathname === '/auth/verify-password' ||
       pathname === '/auth/revoke-sessions' ||
       pathname === '/auth/sessions' ||
       pathname.startsWith('/auth/sessions/')
@@ -2138,6 +2140,11 @@ export async function handleRequest(req, res) {
 
       if (req.method === 'POST' && pathname === '/auth/change-password') {
         jsonResponse(res, 200, await changePassword(provider, session, await readJsonBody(req)));
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/auth/verify-password') {
+        jsonResponse(res, 200, await verifyCurrentPassword(provider, session, await readJsonBody(req)));
         return;
       }
 

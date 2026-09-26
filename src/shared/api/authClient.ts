@@ -90,6 +90,13 @@ export function changeAccountPassword(input: { currentPassword: string; newPassw
   });
 }
 
+export function verifyAccountPassword(input: { currentPassword: string }) {
+  return request<{ ok: boolean }>('/auth/verify-password', {
+    method: 'POST',
+    body: JSON.stringify(input)
+  });
+}
+
 export function revokeOtherAccountSessions() {
   return request<{ ok: boolean }>('/auth/revoke-sessions', { method: 'POST' });
 }

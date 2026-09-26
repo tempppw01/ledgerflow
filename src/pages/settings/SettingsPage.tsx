@@ -5,6 +5,7 @@ import { fetchEmbeddings } from '../../features/assistant/api/openaiEmbeddingCli
 import { useAuth } from '../../features/auth/ui/authContext';
 import {
   changeAccountPassword,
+  verifyAccountPassword,
   getAccountSessions,
   revokeAccountSession,
   revokeOtherAccountSessions,
@@ -221,6 +222,8 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordStatus, setPasswordStatus] = useState('');
   const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordVerified, setPasswordVerified] = useState(false);
+  const [passwordVerifying, setPasswordVerifying] = useState(false);
   const [sessionStatus, setSessionStatus] = useState('');
   const [sessionSaving, setSessionSaving] = useState(false);
   const [sessions, setSessions] = useState<AuthSession[]>([]);
@@ -352,6 +355,20 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
 
   const handleChangePassword = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!passwordVerified) {
+      try {
+        setPasswordVerifying(true);
+        setPasswordStatus('正在验证当前密码…');
+        await verifyAccountPassword({ currentPassword });
+        setPasswordVerified(true);
+        setPasswordStatus('验证通过，请设置新密码。');
+      } catch (error) {
+        setPasswordStatus(error instanceof Error ? error.message : '密码验证失败。');
+      } finally {
+        setPasswordVerifying(false);
+      }
+      return;
+    }
     if (newPassword !== confirmPassword) {
       setPasswordStatus('两次输入的新密码不一致。');
       return;
@@ -363,6 +380,7 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      setPasswordVerified(false);
       setPasswordStatus('密码已更新，其他已登录设备已退出。');
     } catch (error) {
       setPasswordStatus(error instanceof Error ? error.message : '修改密码失败。');
@@ -574,49 +592,83 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                     <p>更新后，其他设备会自动退出。</p>
                   </div>
                 </div>
-                <form className="settings-password-form" onSubmit={handleChangePassword}>
-                  <label className="field">
-                    <span>当前密码</span>
-                    <PasswordInput
-                      value={currentPassword}
-                      onChange={(event) => setCurrentPassword(event.target.value)}
-                      autoComplete="current-password"
-                      showLabel={t('settings.show')}
-                      hideLabel={t('settings.hide')}
-                      required
-                    />
-                  </label>
-                  <label className="field">
-                    <span>新密码</span>
-                    <PasswordInput
-                      value={newPassword}
-                      onChange={(event) => setNewPassword(event.target.value)}
-                      autoComplete="new-password"
-                      minLength={10}
-                      maxLength={200}
-                      showLabel={t('settings.show')}
-                      hideLabel={t('settings.hide')}
-                      required
-                    />
-                  </label>
-                  <label className="field">
-                    <span>确认新密码</span>
-                    <PasswordInput
-                      value={confirmPassword}
-                      onChange={(event) => setConfirmPassword(event.target.value)}
-                      autoComplete="new-password"
-                      minLength={10}
-                      maxLength={200}
-                      showLabel={t('settings.show')}
-                      hideLabel={t('settings.hide')}
-                      required
-                    />
-                  </label>
-                  <button type="submit" className="secondary" disabled={passwordSaving}>
-                    {passwordSaving ? '更新中...' : '更新密码'}
-                  </button>
+                <form
+                  className={`settings-password-form${passwordVerified ? ' is-verified' : ''}`}
+                  onSubmit={handleChangePassword}
+                >
+                  {!passwordVerified ? (
+                    <div className="settings-password-step" key="verify">
+                      <label className="field">
+                        <span>当前密码</span>
+                        <PasswordInput
+                          value={currentPassword}
+                          onChange={(event) => setCurrentPassword(event.target.value)}
+                          autoComplete="current-password"
+                          showLabel={t('settings.show')}
+                          hideLabel={t('settings.hide')}
+                          required
+                        />
+                      </label>
+                      <button type="submit" className="secondary" disabled={passwordVerifying}>
+                        {passwordVerifying ? '验证中…' : '验证身份'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="settings-password-step settings-password-step-new" key="new-password">
+                      <div className="settings-password-verified">
+                        <span className="settings-password-verified-mark" aria-hidden="true">✓</span>
+                        身份验证通过
+                        <button
+                          type="button"
+                          className="settings-password-reverify"
+                          onClick={() => {
+                            setPasswordVerified(false);
+                            setNewPassword('');
+                            setConfirmPassword('');
+                            setPasswordStatus('');
+                          }}
+                        >
+                          重新验证
+                        </button>
+                      </div>
+                      <label className="field">
+                        <span>新密码</span>
+                        <PasswordInput
+                          value={newPassword}
+                          onChange={(event) => setNewPassword(event.target.value)}
+                          autoComplete="new-password"
+                          minLength={10}
+                          maxLength={200}
+                          showLabel={t('settings.show')}
+                          hideLabel={t('settings.hide')}
+                          required
+                        />
+                      </label>
+                      <label className="field">
+                        <span>确认新密码</span>
+                        <PasswordInput
+                          value={confirmPassword}
+                          onChange={(event) => setConfirmPassword(event.target.value)}
+                          autoComplete="new-password"
+                          minLength={10}
+                          maxLength={200}
+                          showLabel={t('settings.show')}
+                          hideLabel={t('settings.hide')}
+                          required
+                        />
+                      </label>
+                      <button type="submit" className="secondary" disabled={passwordSaving}>
+                        {passwordSaving ? '更新中...' : '更新密码'}
+                      </button>
+                    </div>
+                  )}
                   {passwordStatus ? (
-                    <small className="settings-account-status">{passwordStatus}</small>
+                    <small
+                      className={`settings-account-status${passwordStatus.includes('不正确') || passwordStatus.includes('失败') ? ' is-error' : passwordVerified ? ' is-success' : ''}`}
+                      role="status"
+                    >
+                      {passwordStatus}
+                    </small>
                   ) : null}
                 </form>
               </section>

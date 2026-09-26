@@ -853,6 +853,14 @@ body {
   line-height: 1.5;
 }
 
+.settings-account-status.is-error {
+  color: var(--color-danger);
+}
+
+.settings-account-status.is-success {
+  color: var(--color-success, #16845b);
+}
+
 .settings-account-eyebrow {
   margin-bottom: 2px !important;
   color: var(--color-primary) !important;
@@ -934,6 +942,90 @@ body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
   align-items: end;
+}
+
+.settings-password-step {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: end;
+  grid-column: 1 / -1;
+  animation: settings-password-step-in 320ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+.settings-password-step .field {
+  min-width: 0;
+  margin: 0;
+}
+
+.settings-password-step-new {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settings-password-verified {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-success, #16845b);
+  font-size: var(--font-xs);
+  font-weight: 600;
+}
+
+.settings-password-verified-mark {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 50%;
+  color: white;
+  background: var(--color-success, #16845b);
+  animation: settings-password-check-in 380ms cubic-bezier(0.2, 0.8, 0.25, 1.25) both;
+}
+
+.settings-password-reverify {
+  margin-left: auto;
+  padding: 2px 0;
+  border: 0;
+  color: var(--color-text-secondary);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.settings-password-reverify:hover {
+  color: var(--color-primary);
+}
+
+@keyframes settings-password-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+    clip-path: inset(0 0 100% 0 round 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    clip-path: inset(0 0 0 0 round 8px);
+  }
+}
+
+@keyframes settings-password-check-in {
+  from {
+    opacity: 0;
+    transform: scale(0.65) rotate(-25deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-password-step,
+  .settings-password-verified-mark {
+    animation-duration: 0.01ms;
+  }
 }
 
 .settings-password-form .field:last-of-type,

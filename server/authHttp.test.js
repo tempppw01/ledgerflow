@@ -114,6 +114,22 @@ test('HTTP auth protects relational data and scopes it to the session user', asy
     assert.equal(profile.status, 200);
     assert.equal((await json(profile)).user.displayName, 'Updated Owner');
 
+    const rejectedPasswordVerification = await post(
+      '/api/auth/verify-password',
+      { currentPassword: 'wrong-owner-password' },
+      ownerCookie
+    );
+    assert.equal(rejectedPasswordVerification.status, 401);
+    assert.equal((await json(rejectedPasswordVerification)).message, '当前密码不正确。');
+
+    const verifiedPassword = await post(
+      '/api/auth/verify-password',
+      { currentPassword: 'owner-secure-password' },
+      ownerCookie
+    );
+    assert.equal(verifiedPassword.status, 200);
+    assert.equal((await json(verifiedPassword)).ok, true);
+
     const changedPassword = await post(
       '/api/auth/change-password',
       { currentPassword: 'owner-secure-password', newPassword: 'updated-owner-password' },
