@@ -83,10 +83,12 @@ describe('BalanceChangesPage', () => {
 
     renderPage();
 
-    const toggle = screen.getByRole('button', { name: /支出 \/ 扣减/ });
+    const toggle = screen.getByRole('button', { name: /余额减少/ });
 
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByLabelText('余额变化路径')).not.toBeInTheDocument();
+    expect(screen.getByText('−¥11.00')).toBeInTheDocument();
+    expect(screen.queryByText('阅读方式')).not.toBeInTheDocument();
 
     fireEvent.click(toggle);
 
