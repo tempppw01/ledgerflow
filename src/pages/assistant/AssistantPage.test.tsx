@@ -899,4 +899,34 @@ describe('AssistantPage', () => {
 
     sessionStorageGetItemSpy.mockRestore();
   });
+
+  it('继续追问生成服务不可用时，回退建议仍应围绕当前对话动态生成', async () => {
+    vi.mocked(sendAiChat).mockRejectedValueOnce(new Error('服务暂不可用'));
+    useAssistantWorkbenchMock.mockReturnValue({
+      ...createWorkbenchMock(),
+      rawContent: '最近餐饮和通勤支出明显增加，其中工作日外卖是主要原因。',
+      status: 'ready'
+    });
+
+    const sessionStorageGetItemSpy = vi
+      .spyOn(window.sessionStorage.__proto__, 'getItem')
+      .mockImplementation((key) => {
+        if (String(key).includes('chatHistory.assistant')) {
+          return JSON.stringify([
+            { id: 'follow-up-user', role: 'user', text: '最近支出趋势里，餐饮和通勤为什么上升？' }
+          ]);
+        }
+        return '[]';
+      });
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole('button', { name: /餐饮和通勤/ })).toBeInTheDocument();
+    expect(screen.queryByText('把这个变化拆成几个阶段，我想看真正的拐点。')).not.toBeInTheDocument();
+    sessionStorageGetItemSpy.mockRestore();
+  });
 });

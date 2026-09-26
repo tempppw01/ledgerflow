@@ -2738,6 +2738,18 @@
   font-size: var(--font-sm);
 }
 
+.chat-token-usage {
+  margin: 8px 0 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-xs);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.chat-token-usage.is-error {
+  color: var(--color-danger);
+}
+
 /* ---------- Disclaimer ---------- */
 .chat-disclaimer {
   margin: 0;

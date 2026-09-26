@@ -159,6 +159,7 @@ interface ChatHistoryItem {
   usageText?: string;
   reasoningText?: string;
   embeddingSummaryText?: string;
+  embeddingSummaryIsError?: boolean;
   embeddingDebugText?: string;
   followUpPrompts?: string[];
   creditItems?: CreditExtractedItem[];
@@ -510,56 +511,31 @@ function mapCreditItemToRepaymentPrefill(item: CreditExtractedItem) {
 
 function buildFollowUpPrompts(answer: string, history: ChatHistoryItem[]): string[] {
   const latestUserQuestion = [...history].reverse().find((item) => item.role === 'user')?.text?.trim() || '';
-  const questionSnippet = latestUserQuestion.replace(/\s+/g, ' ').trim().slice(0, 16);
-  const questionIntents = rankAssistantIntents(latestUserQuestion);
-  const answerIntents = rankAssistantIntents(answer);
-  const mergedIntents = Array.from(new Set([...questionIntents, ...answerIntents]));
+  const compact = (text: string) => text.replace(/\s+/g, ' ').replace(/[。！？?；;]+$/g, '').trim();
+  const question = compact(latestUserQuestion);
+  const response = compact(answer);
+  const topic = (question || response).slice(0, 18).replace(/[，,：:]+$/g, '');
+  if (!topic) return [];
 
-  const candidates: Array<{ prompt: string; score: number }> = [];
-  const pushCandidate = (prompt: string, score: number) => {
-    if (!prompt.trim()) return;
-    candidates.push({ prompt, score });
-  };
+  const intents = Array.from(new Set([
+    ...rankAssistantIntents(question),
+    ...rankAssistantIntents(response)
+  ]));
+  const focus = intents[0];
+  const prompts = focus === 'trend'
+    ? [`“${topic}”接下来重点观察什么指标？`, `这段变化里，哪个时间点最值得拿来对比？`, `如果趋势反转，最早会出现什么信号？`]
+    : focus === 'risk'
+      ? [`“${topic}”最大的实际风险会落在哪里？`, `有哪些新信息会改变刚才的风险判断？`, `现在先做哪一步能降低“${topic}”的影响？`]
+      : focus === 'planning'
+        ? [`围绕“${topic}”，这周最先做哪件事？`, `怎么把“${topic}”拆成容易执行的两步？`, `做到什么程度可以判断这套计划有效？`]
+        : focus === 'decision'
+          ? [`比较“${topic}”时，最该优先看哪个条件？`, `换一个更保守的前提，“${topic}”结论会变吗？`, `做决定前还缺哪条关键信息？`]
+          : focus === 'category'
+            ? [`“${topic}”主要由哪些具体项目拉动？`, `这部分里哪些支出可以调整、哪些不适合动？`, `拿哪个周期对比“${topic}”最有参考价值？`]
+            : [`“${topic}”的判断依据具体来自哪里？`, `关于“${topic}”，还需要补充什么信息才能判断？`, `把“${topic}”落实的话，下一步可以怎么做？`];
 
-  mergedIntents.forEach((intent, index) => {
-    const baseScore = 100 - index * 10;
-    if (intent === 'trend') {
-      pushCandidate('把这个变化拆成几个阶段，我想看真正的拐点。', baseScore);
-      pushCandidate('如果按现在的节奏继续走，下个阶段最先恶化的会是什么？', baseScore - 2);
-    }
-    if (intent === 'review') {
-      pushCandidate('别只复述现象，继续往下拆一层真正原因。', baseScore);
-      pushCandidate('如果只允许保留一个复盘结论，你觉得最关键的是哪一个？', baseScore - 2);
-    }
-    if (intent === 'planning') {
-      pushCandidate('把建议压缩成一个这周就能执行的小清单。', baseScore);
-      pushCandidate('如果我这周只能先做一件事，你建议先做哪一步？', baseScore - 2);
-    }
-    if (intent === 'decision') {
-      pushCandidate('如果你必须明确站一边，你现在会怎么选？', baseScore);
-      pushCandidate('换成更保守的前提，你的判断会不会变？', baseScore - 2);
-    }
-    if (intent === 'risk') {
-      pushCandidate('你刚才提到的风险里，哪个最容易被低估？', baseScore);
-      pushCandidate('把风险按短期影响和长期拖累重新排一下。', baseScore - 2);
-    }
-    if (intent === 'category') {
-      pushCandidate('按分类重新排一下优先级，只保留最值得先处理的几项。', baseScore);
-      pushCandidate('把金额最大和最容易忽视的分类分开说，我想看差别。', baseScore - 2);
-    }
-  });
-
-  pushCandidate(questionSnippet ? `围绕“${questionSnippet}${latestUserQuestion.length > 16 ? '…' : ''}”这个点，只展开最关键的一层。` : '', 60);
-  pushCandidate('哪些判断已经比较稳，哪些地方还需要我补数据？', 50);
-  pushCandidate('把刚才那段话压缩成一句提醒，写给下周的我。', 40);
-
-  const ranked = candidates
-    .sort((a, b) => b.score - a.score)
-    .filter((item, index, list) => list.findIndex((candidate) => candidate.prompt === item.prompt) === index)
-    .slice(0, 4)
-    .map((item) => item.prompt);
-
-  return ranked;
+  // 问题本身过长时，减少重复引用，保持按钮短而具体。
+  return Array.from(new Set(prompts.map(normalizeFollowUpPrompt))).slice(0, 3);
 }
 
 function normalizeFollowUpPrompt(prompt: string): string {
@@ -1485,6 +1461,9 @@ export function AssistantPage() {
       usageText,
       reasoningText: wb.rawReasoning || undefined,
       embeddingSummaryText,
+      embeddingSummaryIsError: Boolean(
+        responseMode !== 'bookkeeping' && showEmbeddingSummary && wb.embeddingDebug.enabled && wb.embeddingDebug.downgraded
+      ),
       embeddingDebugText,
       followUpPrompts:
         responseMode === 'credit'
@@ -2219,7 +2198,9 @@ export function AssistantPage() {
                   </details>
                 ) : null}
                 {item.role === 'assistant' && item.embeddingSummaryText ? (
-                  <p className="chat-token-usage">{item.embeddingSummaryText}</p>
+                  <p className={`chat-token-usage${item.embeddingSummaryIsError ? ' is-error' : ''}`}>
+                    {item.embeddingSummaryText}
+                  </p>
                 ) : null}
                 {item.role === 'assistant' && item.followUpPrompts && item.followUpPrompts.length > 0 ? (
                   <div className="chat-follow-up-block">
