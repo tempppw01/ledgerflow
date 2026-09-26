@@ -321,6 +321,11 @@ function detectSource(
   return 'manual';
 }
 
+function getQuickAddAmountFontSize(value: string) {
+  const characterCount = value.replace(/\s/g, '').length;
+  return Math.max(32, Math.min(76, 76 - Math.max(0, characterCount - 10) * 1.8));
+}
+
 function buildDuplicateSignature(item: {
   date: string;
   amount: number;
@@ -2936,6 +2941,7 @@ export function TransactionsPage() {
                       placeholder="0"
                       rows={1}
                       value={quickAddExpression}
+                      style={{ fontSize: `${getQuickAddAmountFontSize(quickAddExpression)}px` }}
                       onChange={(event) => setQuickAddExpression(event.target.value)}
                       aria-describedby="quick-add-budget-hint"
                     />
