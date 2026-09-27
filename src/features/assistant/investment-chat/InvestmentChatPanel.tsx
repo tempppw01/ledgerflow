@@ -1118,7 +1118,7 @@ export function InvestmentChatPanel({
           </header>
         ) : null}
 
-      {showHero ? (
+      {showHero && messages.length === 0 ? (
         <section className="chat-mode-welcome chat-investment-welcome" aria-label="AI 投资助手">
           <div className="chat-mode-welcome-copy">
             <div className="chat-mode-welcome-eyebrow">AI 投资助手 <span>·</span> 看懂市场，也看懂自己的持仓</div>

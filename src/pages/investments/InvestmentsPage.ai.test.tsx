@@ -360,6 +360,23 @@ describe('Investment assistant chat', () => {
     expect(screen.getByText('美国')).toBeInTheDocument();
   });
 
+  it('hides the investment welcome illustration after a conversation has started', () => {
+    useAppPreferences.setState({
+      investmentAiMessages: [
+        { id: 'user-1', role: 'user', text: '最近美股趋势', createdAt: '2026-07-16T09:00:00.000Z' }
+      ]
+    });
+
+    render(
+      <MemoryRouter>
+        <InvestmentChatPanel />
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByRole('region', { name: 'AI 投资助手' })).not.toBeInTheDocument();
+    expect(screen.getByText('最近美股趋势')).toBeInTheDocument();
+  });
+
   it('keeps the composer compact until the input is focused', () => {
     render(
       <MemoryRouter>
