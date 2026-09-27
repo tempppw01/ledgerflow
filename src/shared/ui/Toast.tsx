@@ -9,9 +9,19 @@ interface ToastProps {
   visible: boolean;
   duration?: number;
   onClose: () => void;
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
-export function Toast({ message, variant = 'success', visible, duration = 2200, onClose }: ToastProps) {
+export function Toast({
+  message,
+  variant = 'success',
+  visible,
+  duration = 2200,
+  onClose,
+  actionLabel,
+  onAction
+}: ToastProps) {
   useEffect(() => {
     if (!visible) {
       return;
@@ -28,5 +38,21 @@ export function Toast({ message, variant = 'success', visible, duration = 2200, 
     return null;
   }
 
-  return <div className={cn('toast', `toast-${variant}`)}>{message}</div>;
+  return (
+    <div className={cn('toast', `toast-${variant}`)} role="status" aria-live="polite">
+      <span>{message}</span>
+      {actionLabel && onAction ? (
+        <button
+          type="button"
+          className="toast-action"
+          onClick={() => {
+            onAction();
+            onClose();
+          }}
+        >
+          {actionLabel}
+        </button>
+      ) : null}
+    </div>
+  );
 }

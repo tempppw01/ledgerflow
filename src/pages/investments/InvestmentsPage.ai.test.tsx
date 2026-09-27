@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Account } from '../../entities/account/types';
 import type { TransactionItem } from '../../entities/transaction/types';
 import { InvestmentChatPanel } from '../../features/assistant/investment-chat/InvestmentChatPanel';
@@ -50,6 +50,11 @@ vi.mock('../../features/assistant/workbench/workbenchUtils', () => ({
 }));
 
 describe('Investment assistant chat', () => {
+  afterEach(() => {
+    useAppPreferences.setState({ investmentAiMessages: [] });
+    useAppPreferences.persist.clearStorage();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     navigateMock.mockReset();
@@ -239,12 +244,12 @@ describe('Investment assistant chat', () => {
       </MemoryRouter>
     );
 
-    const emptyIllustration = container.querySelector<HTMLImageElement>(
-      '.investments-ai-empty img'
+    const welcomeIllustration = container.querySelector<HTMLImageElement>(
+      '.chat-investment-welcome img'
     );
 
-    expect(screen.getByText('先丢一个基金问题给我')).toBeInTheDocument();
-    expect(emptyIllustration?.src).toBe(INVESTMENT_HERO_ILLUSTRATION_URL);
+    expect(screen.getByRole('region', { name: 'AI 投资助手' })).toBeInTheDocument();
+    expect(welcomeIllustration?.src).toBe(INVESTMENT_HERO_ILLUSTRATION_URL);
   });
 
   it('centers the compact empty state and shows a prompt', () => {

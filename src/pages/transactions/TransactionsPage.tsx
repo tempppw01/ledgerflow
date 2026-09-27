@@ -399,6 +399,7 @@ export function TransactionsPage() {
   const addTransaction = useFinanceStore((s) => s.addTransaction);
   const updateTransaction = useFinanceStore((s) => s.updateTransaction);
   const removeTransaction = useFinanceStore((s) => s.removeTransaction);
+  const restoreTransaction = useFinanceStore((s) => s.restoreTransaction);
   const refundTransaction = useFinanceStore((s) => s.refundTransaction);
   const clearAllAccountBills = useFinanceStore((s) => s.clearAllAccountBills);
   const confirmedSmartBudgetPlan = useSmartBudgetStore((s) => s.confirmedPlan);
@@ -473,6 +474,7 @@ export function TransactionsPage() {
     message: '',
     variant: 'success'
   });
+  const [lastAddedTransactionId, setLastAddedTransactionId] = useState<string | null>(null);
   const [pendingImport, setPendingImport] = useState<{
     fileName: string;
     source: BillSource;
@@ -964,6 +966,7 @@ export function TransactionsPage() {
   };
 
   const showToast = (message: string, variant: ToastVariant) => {
+    setLastAddedTransactionId(null);
     setToast({ visible: true, message, variant });
   };
 
@@ -1208,7 +1211,7 @@ export function TransactionsPage() {
       return;
     }
 
-    addTransaction({
+    const transactionId = addTransaction({
       type: quickAddType,
       categoryId: quickAddCategoryId,
       accountId: quickAddAccountId,
@@ -1223,7 +1226,19 @@ export function TransactionsPage() {
     closeQuickAddDrawer();
     resetQuickAddForm();
     setPage(1);
-    showToast(t('transactions.quickAdd.saved'), 'success');
+    setLastAddedTransactionId(transactionId);
+    setToast({
+      visible: true,
+      message: `${t('transactions.quickAdd.saved')} · ${formatCurrency(amount)} · ${quickAddNote.trim() || t('transactions.quickAdd.defaultNote')}`,
+      variant: 'success'
+    });
+  };
+
+  const undoLastQuickAdd = () => {
+    if (!lastAddedTransactionId) return;
+    restoreTransaction(lastAddedTransactionId);
+    setLastAddedTransactionId(null);
+    showToast('已撤销这笔记账，可在回收站恢复。', 'warning');
   };
 
   const showImportNotice = (message: string, variant: ToastVariant) => {
@@ -3232,7 +3247,13 @@ export function TransactionsPage() {
         visible={toast.visible}
         message={toast.message}
         variant={toast.variant}
-        onClose={() => setToast((prev) => ({ ...prev, visible: false }))}
+        duration={lastAddedTransactionId && toast.variant === 'success' ? 6000 : 2200}
+        actionLabel={lastAddedTransactionId && toast.variant === 'success' ? '撤销' : undefined}
+        onAction={undoLastQuickAdd}
+        onClose={() => {
+          setToast((prev) => ({ ...prev, visible: false }));
+          setLastAddedTransactionId(null);
+        }}
       />
     </div>
   );

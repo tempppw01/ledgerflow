@@ -12,6 +12,15 @@ export type ConfirmedSmartBudgetPlan = {
 };
 
 export type SmartBudgetPlanHistoryItem = ConfirmedSmartBudgetPlan;
+const SMART_BUDGET_DRAFT_KEY = 'ledgerflow-smart-budget-wizard-draft-v1';
+
+function clearWizardDraft() {
+  try {
+    window.localStorage.removeItem(SMART_BUDGET_DRAFT_KEY);
+  } catch {
+    // Ignore unavailable browser storage.
+  }
+}
 
 interface SmartBudgetState {
   confirmedPlan: ConfirmedSmartBudgetPlan | null;
@@ -31,6 +40,7 @@ export const useSmartBudgetStore = create<SmartBudgetState>()(
       confirmedPlan: null,
       history: [],
       confirmPlan: ({ answers, recommendation }) => {
+        clearWizardDraft();
         set((state) => {
           const nextPlan = {
             answers,
@@ -47,8 +57,14 @@ export const useSmartBudgetStore = create<SmartBudgetState>()(
           };
         });
       },
-      restorePlan: (plan) => set({ confirmedPlan: plan }),
-      clearPlan: () => set({ confirmedPlan: null })
+      restorePlan: (plan) => {
+        clearWizardDraft();
+        set({ confirmedPlan: plan });
+      },
+      clearPlan: () => {
+        clearWizardDraft();
+        set({ confirmedPlan: null });
+      }
     }),
     {
       name: 'ledgerflow-smart-budget',

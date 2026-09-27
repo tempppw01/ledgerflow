@@ -35,6 +35,23 @@ import { RepaymentDashboard } from '../../features/debt/components/RepaymentDash
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const REPAYMENT_CACHE_KEY = 'ledgerflow-repayment-advice-cache-v1';
 const REPAYMENT_COLLAPSE_STATE_KEY = 'ledgerflow-repayment-collapse-state-v1';
+const SIMPLE_DEBT_DRAFT_KEY = 'ledgerflow-simple-repayment-draft-v1';
+
+function readSimpleDebtDraft(): { name: string; dueDate: string; amount: string } | null {
+  try {
+    const raw = window.localStorage.getItem(SIMPLE_DEBT_DRAFT_KEY);
+    if (!raw) return null;
+    const value = JSON.parse(raw) as Partial<{ name: string; dueDate: string; amount: string }>;
+    return {
+      name: typeof value.name === 'string' ? value.name : '',
+      dueDate: typeof value.dueDate === 'string' ? value.dueDate : '',
+      amount: typeof value.amount === 'string' ? value.amount : ''
+    };
+  } catch {
+    return null;
+  }
+}
+
 interface RepaymentAdviceCacheItem {
   key: string;
   advice: string;
@@ -1100,10 +1117,13 @@ export function RepaymentManagementPage() {
   } = useAppPreferences();
   const { baseUrl, apiKey, model } = useAiSettings();
   const [error, setError] = useState('');
-  const [debtName, setDebtName] = useState('');
+  const [debtName, setDebtName] = useState(() => readSimpleDebtDraft()?.name || '');
   const [debtEntryMode, setDebtEntryMode] = useState<DebtEntryMode>('standard');
-  const [simpleDueDate, setSimpleDueDate] = useState('');
-  const [simpleAmount, setSimpleAmount] = useState('');
+  const [simpleDueDate, setSimpleDueDate] = useState(() => readSimpleDebtDraft()?.dueDate || '');
+  const [simpleAmount, setSimpleAmount] = useState(() => readSimpleDebtDraft()?.amount || '');
+  const [simpleDebtDraftStatus, setSimpleDebtDraftStatus] = useState(() =>
+    readSimpleDebtDraft() ? '已恢复未完成草稿' : ''
+  );
   const [debtType, setDebtType] = useState<DebtType>('credit-card');
   const [debtPlanMode, setDebtPlanMode] = useState<DebtPlanMode>('structured');
   const [debtBalance, setDebtBalance] = useState('');
@@ -1177,6 +1197,24 @@ export function RepaymentManagementPage() {
   useEffect(() => {
     writeRepaymentCollapseState(repaymentCollapseState);
   }, [repaymentCollapseState]);
+
+  useEffect(() => {
+    if (debtEntryMode !== 'simple' || editingDebtId) return;
+    if (!debtName.trim() && !simpleDueDate && !simpleAmount.trim()) {
+      window.localStorage.removeItem(SIMPLE_DEBT_DRAFT_KEY);
+      setSimpleDebtDraftStatus('');
+      return;
+    }
+    try {
+      window.localStorage.setItem(
+        SIMPLE_DEBT_DRAFT_KEY,
+        JSON.stringify({ name: debtName, dueDate: simpleDueDate, amount: simpleAmount })
+      );
+      setSimpleDebtDraftStatus('输入内容会自动保存');
+    } catch {
+      // Keep the entry form usable when browser storage is unavailable.
+    }
+  }, [debtEntryMode, debtName, editingDebtId, simpleDueDate, simpleAmount]);
 
   const startEditingDebt = useCallback((item: DebtItem) => {
     setEditingDebtId(item.id);
@@ -1818,6 +1856,8 @@ export function RepaymentManagementPage() {
     setDebtStatus('active');
     setDebtFormError('');
     setPrefillHint('');
+    window.localStorage.removeItem(SIMPLE_DEBT_DRAFT_KEY);
+    setSimpleDebtDraftStatus('');
     setShowDebtPressurePreview(false);
     setDebtPressurePreview([]);
     if (afterEdit) setEditingDebtId('');
@@ -2030,6 +2070,8 @@ export function RepaymentManagementPage() {
       } else {
         addDebt(simplePayload);
       }
+      window.localStorage.removeItem(SIMPLE_DEBT_DRAFT_KEY);
+      setSimpleDebtDraftStatus('');
       resetDebtForm(true);
       setSelectedDebtId(editingDebtId || '');
       setDebtToastVisible(true);
@@ -2714,10 +2756,12 @@ export function RepaymentManagementPage() {
                   type="button"
                   className="primary repayment-debt-list-btn"
                   onClick={() => {
+                    const simpleDraft = readSimpleDebtDraft();
                     setEditingDebtId('');
-                    setDebtEntryMode('standard');
-                    setSimpleDueDate('');
-                    setDebtName('');
+                    setDebtEntryMode(simpleDraft ? 'simple' : 'standard');
+                    setSimpleDueDate(simpleDraft?.dueDate || '');
+                    setSimpleAmount(simpleDraft?.amount || '');
+                    setDebtName(simpleDraft?.name || '');
                     setDebtBalance('');
                     setDebtBalanceManuallyEdited(false);
                     setDebtAnnualRate('');
@@ -4156,6 +4200,9 @@ export function RepaymentManagementPage() {
                     <p className="debt-simple-form-intro">
                       先记下项目、日期和本期金额；需要时可以升级为完整负债管理。
                     </p>
+                    <small className="debt-simple-draft-status" role="status">
+                      {simpleDebtDraftStatus || '填写内容会自动保存，稍后可继续'}
+                    </small>
                     <div className="debt-simple-form-fields">
                       <label className="debt-form-field debt-simple-form-project">
                         <span className="debt-form-field-label">还款项目</span>

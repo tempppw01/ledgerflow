@@ -650,7 +650,8 @@ function markTrashedAt<T extends { trashedAt?: string }>(item: T): T {
 }
 
 function clearTrashedAt<T extends { trashedAt?: string }>(item: T): T {
-  const { trashedAt, ...rest } = item;
+  const rest = { ...item };
+  delete rest.trashedAt;
   return rest as T;
 }
 
@@ -771,11 +772,13 @@ export const useFinanceStore = create<FinanceState>()(
         void syncChangeIfNeeded({ entity: 'transactions', action: 'delete', id });
       },
       restoreTransaction: (id) => {
+        let restoredRow: TransactionItem | null = null;
         set((s) => {
           const restored = restoreFromTrash(s.transactions, s.trashedTransactions, id);
           if (!restored.restored) {
             return s;
           }
+          restoredRow = restored.restored;
           const transactions = ensureUniqueById(restored.active);
           return {
             transactions,
@@ -783,6 +786,9 @@ export const useFinanceStore = create<FinanceState>()(
             ...rebuildStateSlices(s.accounts, transactions, s.balanceChangeEntries)
           };
         });
+        if (restoredRow) {
+          void syncChangeIfNeeded({ entity: 'transactions', action: 'insert', row: restoredRow });
+        }
       },
       permanentlyDeleteTransaction: (id) => {
         set((s) => ({

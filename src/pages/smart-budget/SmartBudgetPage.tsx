@@ -19,6 +19,26 @@ import {
 } from '../../features/smart-budget/model/budgetInsights';
 
 const CORE_BUDGET_CATEGORIES = ['固定支出', '储蓄/投资'] as const;
+const SMART_BUDGET_DRAFT_KEY = 'ledgerflow-smart-budget-wizard-draft-v1';
+
+function readSmartBudgetDraft(): {
+  answers?: BudgetAnswers;
+  recommendation?: BudgetRecommendation | null;
+  step?: number;
+} | null {
+  try {
+    const raw = window.localStorage.getItem(SMART_BUDGET_DRAFT_KEY);
+    if (!raw) return null;
+    const value = JSON.parse(raw) as {
+      answers?: BudgetAnswers;
+      recommendation?: BudgetRecommendation | null;
+      step?: number;
+    };
+    return value && typeof value === 'object' ? value : null;
+  } catch {
+    return null;
+  }
+}
 
 function normalizeBudgetCategoryName(raw: string): string {
   return raw.trim().toLocaleLowerCase('zh-CN');
@@ -220,11 +240,15 @@ export function SmartBudgetPage() {
     confirmedPlan ? 'management' : 'setup'
   );
   const [setupOpen, setSetupOpen] = useState(() => !confirmedPlan);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(() => readSmartBudgetDraft()?.step || 1);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'overspent' | 'safe'>('all');
-  const [answers, setAnswers] = useState<BudgetAnswers>(initialAnswers);
-  const [draftRecommendation, setDraftRecommendation] = useState<BudgetRecommendation | null>(null);
+  const [answers, setAnswers] = useState<BudgetAnswers>(
+    () => readSmartBudgetDraft()?.answers || initialAnswers
+  );
+  const [draftRecommendation, setDraftRecommendation] = useState<BudgetRecommendation | null>(
+    () => readSmartBudgetDraft()?.recommendation || null
+  );
   const [draftTotalDelta, setDraftTotalDelta] = useState(0);
   const [selectedMonthKey, setSelectedMonthKey] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<BudgetTrackingRow | null>(null);
@@ -246,6 +270,27 @@ export function SmartBudgetPage() {
   const [historyOpen, setHistoryOpen] = useState(false);
 
   const monthOptions = useMemo(() => getRecentMonthOptions(transactions), [transactions]);
+
+  useEffect(() => {
+    const hasSetupProgress =
+      Boolean(draftRecommendation) || step > 1 || JSON.stringify(answers) !== JSON.stringify(initialAnswers);
+    if (mode !== 'setup' || !hasSetupProgress) {
+      try {
+        window.localStorage.removeItem(SMART_BUDGET_DRAFT_KEY);
+      } catch {
+        // Ignore unavailable browser storage.
+      }
+      return;
+    }
+    try {
+      window.localStorage.setItem(
+        SMART_BUDGET_DRAFT_KEY,
+        JSON.stringify({ answers, recommendation: draftRecommendation, step })
+      );
+    } catch {
+      // The in-memory wizard remains usable if browser storage is unavailable.
+    }
+  }, [answers, draftRecommendation, mode, step]);
 
   const activeMonthKey = selectedMonthKey || monthOptions[0]?.key || '';
 
@@ -682,6 +727,11 @@ export function SmartBudgetPage() {
 
     const syncedDraft = syncRecommendationWithExpenseCategories(draftRecommendation, categories);
     confirmPlan({ answers, recommendation: syncedDraft });
+    try {
+      window.localStorage.removeItem(SMART_BUDGET_DRAFT_KEY);
+    } catch {
+      // Ignore unavailable browser storage.
+    }
     setSetupOpen(false);
     setMode('management');
   };

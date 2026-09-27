@@ -6228,6 +6228,22 @@ small.mono {
   border-left: 3px solid var(--color-warning);
 }
 
+.toast-action {
+  margin-left: var(--space-3);
+  padding: 2px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.toast-action:hover {
+  text-decoration: underline;
+}
+
 @keyframes toast-in {
   from {
     opacity: 0;

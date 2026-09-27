@@ -141,6 +141,13 @@
   line-height: 1.6;
 }
 
+.debt-simple-draft-status {
+  display: block;
+  margin-top: -12px;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+}
+
 .debt-simple-form-fields {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(170px, .8fr) minmax(150px, .7fr);
