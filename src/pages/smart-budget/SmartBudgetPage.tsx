@@ -274,12 +274,17 @@ export function SmartBudgetPage() {
   useEffect(() => {
     const hasSetupProgress =
       Boolean(draftRecommendation) || step > 1 || JSON.stringify(answers) !== JSON.stringify(initialAnswers);
-    if (mode !== 'setup' || !hasSetupProgress) {
+    // Only drop the stored draft when the wizard is genuinely untouched.
+    // Leaving the setup view must not discard progress the user can still resume.
+    if (!hasSetupProgress) {
       try {
         window.localStorage.removeItem(SMART_BUDGET_DRAFT_KEY);
       } catch {
         // Ignore unavailable browser storage.
       }
+      return;
+    }
+    if (mode !== 'setup') {
       return;
     }
     try {

@@ -399,7 +399,6 @@ export function TransactionsPage() {
   const addTransaction = useFinanceStore((s) => s.addTransaction);
   const updateTransaction = useFinanceStore((s) => s.updateTransaction);
   const removeTransaction = useFinanceStore((s) => s.removeTransaction);
-  const restoreTransaction = useFinanceStore((s) => s.restoreTransaction);
   const refundTransaction = useFinanceStore((s) => s.refundTransaction);
   const clearAllAccountBills = useFinanceStore((s) => s.clearAllAccountBills);
   const confirmedSmartBudgetPlan = useSmartBudgetStore((s) => s.confirmedPlan);
@@ -1236,8 +1235,7 @@ export function TransactionsPage() {
 
   const undoLastQuickAdd = () => {
     if (!lastAddedTransactionId) return;
-    restoreTransaction(lastAddedTransactionId);
-    setLastAddedTransactionId(null);
+    removeTransaction(lastAddedTransactionId);
     showToast('已撤销这笔记账，可在回收站恢复。', 'warning');
   };
 

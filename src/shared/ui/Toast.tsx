@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { cn } from '../lib/cn';
 
 export type ToastVariant = 'success' | 'error' | 'warning';
@@ -22,17 +22,23 @@ export function Toast({
   actionLabel,
   onAction
 }: ToastProps) {
+  // Keep the latest handler without letting re-renders restart the countdown.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!visible) {
       return;
     }
 
     const timer = window.setTimeout(() => {
-      onClose();
+      onCloseRef.current();
     }, duration);
 
     return () => window.clearTimeout(timer);
-  }, [visible, duration, onClose]);
+  }, [visible, duration]);
 
   if (!visible) {
     return null;
@@ -45,10 +51,7 @@ export function Toast({
         <button
           type="button"
           className="toast-action"
-          onClick={() => {
-            onAction();
-            onClose();
-          }}
+          onClick={onAction}
         >
           {actionLabel}
         </button>
