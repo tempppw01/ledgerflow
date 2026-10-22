@@ -511,7 +511,9 @@ async function getEastmoneyStockQuotes(secIds) {
 }
 
 function normalizeEastmoneyStockSearchQuery(value) {
-  const query = String(value || '').trim().slice(0, 32);
+  const query = String(value || '')
+    .trim()
+    .slice(0, 32);
   return query.replace(/\s+/g, ' ');
 }
 
@@ -598,7 +600,9 @@ function normalizeEastmoneyThemeCodes(value) {
 }
 
 function normalizeEastmoneyBoardCode(value) {
-  const code = String(value || '').trim().toUpperCase();
+  const code = String(value || '')
+    .trim()
+    .toUpperCase();
   return /^BK\d{4}$/.test(code) ? code : '';
 }
 
@@ -746,7 +750,9 @@ const TONGHUASHUN_NEWS_PATHS = {
 };
 
 function normalizeTonghuashunNewsCategory(value) {
-  const category = String(value || '').trim().toLowerCase();
+  const category = String(value || '')
+    .trim()
+    .toLowerCase();
   return TONGHUASHUN_NEWS_PATHS[category] || 'today_list';
 }
 
@@ -779,7 +785,9 @@ function parseTonghuashunNewsHtml(html) {
     const titleAnchorMarkup = titleAnchor[0];
     const titleHref = titleAnchorMarkup.match(/\bhref=["']([^"']+)["']/i);
     if (!titleHref) continue;
-    const link = String(titleHref[1] || '').trim().replace(/^http:/i, 'https:');
+    const link = String(titleHref[1] || '')
+      .trim()
+      .replace(/^http:/i, 'https:');
     const title = decodeHtmlEntities(
       titleAnchorMarkup.replace(/^<[\s\S]*?>|<\/a>$/gi, '').replace(/<[^>]+>/g, '')
     );
@@ -787,7 +795,9 @@ function parseTonghuashunNewsHtml(html) {
     const publishedAt = decodeHtmlEntities(String(timeMatch?.[1] || ''));
     const summaryAnchor = block.match(/<a\b[^>]*class="[^"]*arc-cont[^"]*"[^>]*>[\s\S]*?<\/a>/i);
     const summary = decodeHtmlEntities(
-      String(summaryAnchor?.[0] || '').replace(/^<[\s\S]*?>|<\/a>$/gi, '').replace(/<[^>]+>/g, '')
+      String(summaryAnchor?.[0] || '')
+        .replace(/^<[\s\S]*?>|<\/a>$/gi, '')
+        .replace(/<[^>]+>/g, '')
     );
     const id = `${decodeHtmlEntities(title)}-${link}`;
 
@@ -904,9 +914,10 @@ function parseYahooMarketHistory(payload) {
       const value = rawValue === null || rawValue === undefined ? NaN : Number(rawValue);
       if (!Number.isFinite(date.getTime()) || !Number.isFinite(value)) return null;
       const rawPreviousValue = closes[index - 1];
-      const previousValue = rawPreviousValue === null || rawPreviousValue === undefined
-        ? NaN
-        : Number(rawPreviousValue);
+      const previousValue =
+        rawPreviousValue === null || rawPreviousValue === undefined
+          ? NaN
+          : Number(rawPreviousValue);
       const changePercent =
         Number.isFinite(previousValue) && previousValue !== 0
           ? ((value - previousValue) / previousValue) * 100
@@ -914,9 +925,16 @@ function parseYahooMarketHistory(payload) {
       return {
         date: date.toISOString().slice(0, 10),
         value,
-        open: opens[index] != null && Number.isFinite(Number(opens[index])) ? Number(opens[index]) : null,
-        high: highs[index] != null && Number.isFinite(Number(highs[index])) ? Number(highs[index]) : null,
-        low: lows[index] != null && Number.isFinite(Number(lows[index])) ? Number(lows[index]) : null,
+        open:
+          opens[index] != null && Number.isFinite(Number(opens[index]))
+            ? Number(opens[index])
+            : null,
+        high:
+          highs[index] != null && Number.isFinite(Number(highs[index]))
+            ? Number(highs[index])
+            : null,
+        low:
+          lows[index] != null && Number.isFinite(Number(lows[index])) ? Number(lows[index]) : null,
         changePercent,
         volume: Number.isFinite(Number(volumes[index])) ? Number(volumes[index]) : null,
         amount: null
@@ -942,9 +960,10 @@ function parseYahooMarketTrend(index, payload) {
       const value = rawValue === null || rawValue === undefined ? NaN : Number(rawValue);
       if (!Number.isFinite(date.getTime()) || !Number.isFinite(value)) return null;
       const rawPreviousValue = closes[pointIndex - 1];
-      const previousValue = rawPreviousValue === null || rawPreviousValue === undefined
-        ? NaN
-        : Number(rawPreviousValue);
+      const previousValue =
+        rawPreviousValue === null || rawPreviousValue === undefined
+          ? NaN
+          : Number(rawPreviousValue);
       const changePercent =
         Number.isFinite(previousValue) && previousValue !== 0
           ? ((value - previousValue) / previousValue) * 100
@@ -957,14 +976,21 @@ function parseYahooMarketTrend(index, payload) {
         dateTime: date.toISOString(),
         label,
         value,
-        open: opens[pointIndex] != null && Number.isFinite(Number(opens[pointIndex])) ? Number(opens[pointIndex]) : value,
-        high: highs[pointIndex] != null && Number.isFinite(Number(highs[pointIndex])) ? Number(highs[pointIndex]) : value,
-        low: lows[pointIndex] != null && Number.isFinite(Number(lows[pointIndex])) ? Number(lows[pointIndex]) : value,
+        open:
+          opens[pointIndex] != null && Number.isFinite(Number(opens[pointIndex]))
+            ? Number(opens[pointIndex])
+            : value,
+        high:
+          highs[pointIndex] != null && Number.isFinite(Number(highs[pointIndex]))
+            ? Number(highs[pointIndex])
+            : value,
+        low:
+          lows[pointIndex] != null && Number.isFinite(Number(lows[pointIndex]))
+            ? Number(lows[pointIndex])
+            : value,
         average: null,
         changePercent,
-        volume: Number.isFinite(Number(volumes[pointIndex]))
-          ? Number(volumes[pointIndex])
-          : null,
+        volume: Number.isFinite(Number(volumes[pointIndex])) ? Number(volumes[pointIndex]) : null,
         amount: null
       };
     })
@@ -1046,11 +1072,11 @@ async function getYahooSectorBoards() {
     });
 
     if (merged.length > 0) {
-      const updatedAt = GLOBAL_MARKET_SECTORS
-        .map((sector) => globalMarketSectorCache.get(sector.id)?.updatedAt)
-        .filter(Boolean)
-        .sort()
-        .at(-1) || new Date().toISOString();
+      const updatedAt =
+        GLOBAL_MARKET_SECTORS.map((sector) => globalMarketSectorCache.get(sector.id)?.updatedAt)
+          .filter(Boolean)
+          .sort()
+          .at(-1) || new Date().toISOString();
       const value = {
         data: { total: merged.length, diff: merged },
         meta: {
@@ -1082,8 +1108,9 @@ async function getYahooSectorBoards() {
     clearTimeout(timeout);
   }
 
-  const fallback = globalMarketSectorSnapshotCache?.value
-    || (await readMarketHistoryCache(cacheKey, { allowExpired: true }))?.payload;
+  const fallback =
+    globalMarketSectorSnapshotCache?.value ||
+    (await readMarketHistoryCache(cacheKey, { allowExpired: true }))?.payload;
   if (fallback?.data?.diff?.length) {
     const value = {
       data: fallback.data,
@@ -1892,10 +1919,7 @@ export async function handleRequest(req, res) {
 
     if (req.method === 'GET' && pathname === '/market/eastmoney/board-stocks') {
       const code = normalizeEastmoneyBoardCode(url.searchParams.get('code'));
-      const pageSize = Math.min(
-        8,
-        Math.max(1, Number(url.searchParams.get('pageSize') || 3) || 3)
-      );
+      const pageSize = Math.min(8, Math.max(1, Number(url.searchParams.get('pageSize') || 3) || 3));
       if (!code) {
         jsonResponse(res, 400, { ok: false, message: 'Missing Eastmoney board code.' });
         return;
@@ -1983,14 +2007,23 @@ export async function handleRequest(req, res) {
       );
       const dates = resolveEastmoneyHistoryDates(url.searchParams);
       if (!index || !dates) {
-        jsonResponse(res, 400, { ok: false, message: 'Missing or invalid global market history parameters.' });
+        jsonResponse(res, 400, {
+          ok: false,
+          message: 'Missing or invalid global market history parameters.'
+        });
         return;
       }
       const data = await getYahooGlobalMarketHistory(index, dates);
       jsonResponse(res, 200, {
         ok: true,
         data,
-        meta: { id: index.id, symbol: index.symbol, start: dates.start, end: dates.end, range: dates.range }
+        meta: {
+          id: index.id,
+          symbol: index.symbol,
+          start: dates.start,
+          end: dates.end,
+          range: dates.range
+        }
       });
       return;
     }
@@ -2000,7 +2033,10 @@ export async function handleRequest(req, res) {
         (item) => item.id === String(url.searchParams.get('id') || '').trim()
       );
       if (!index) {
-        jsonResponse(res, 400, { ok: false, message: 'Missing or invalid global market trend parameters.' });
+        jsonResponse(res, 400, {
+          ok: false,
+          message: 'Missing or invalid global market trend parameters.'
+        });
         return;
       }
       const data = await getYahooGlobalMarketTrend(index);
@@ -2144,7 +2180,11 @@ export async function handleRequest(req, res) {
       }
 
       if (req.method === 'POST' && pathname === '/auth/verify-password') {
-        jsonResponse(res, 200, await verifyCurrentPassword(provider, session, await readJsonBody(req)));
+        jsonResponse(
+          res,
+          200,
+          await verifyCurrentPassword(provider, session, await readJsonBody(req))
+        );
         return;
       }
 
@@ -2211,16 +2251,25 @@ export async function handleRequest(req, res) {
       await migrateRelationalDatabase(setup.provider);
       const session = await requireUserSession(req, res, setup.provider);
       if (!session) return;
-      jsonResponse(
-        res,
-        200,
-        await replaceRelationalData(
+      try {
+        const payload = await readJsonBody(req);
+        if (!payload || typeof payload !== 'object') {
+          throw new Error('Invalid payload: expected an object');
+        }
+        const result = await replaceRelationalData(
           setup.provider,
-          await readJsonBody(req),
+          payload,
           process.env,
           session.user.ledgerUserId
-        )
-      );
+        );
+        jsonResponse(res, 200, result);
+      } catch (error) {
+        console.error('[/data/import] Error during data import:', error);
+        jsonResponse(res, 500, {
+          ok: false,
+          message: error instanceof Error ? error.message : 'Data import failed'
+        });
+      }
       return;
     }
 

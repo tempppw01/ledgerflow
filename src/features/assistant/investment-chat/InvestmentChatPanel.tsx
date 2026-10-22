@@ -28,13 +28,18 @@ import { fetchAiModels, sendAiChatStream } from '../api/openaiCompatibleClient';
 import { buildWebSearchPrompt, fetchWebSearchContext } from '../api/webSearchClient';
 import { renderMarkdownContent } from '../ui/MarkdownRenderer';
 import {
+  ChatChevronUpIcon,
+  ChatChevronsDownUpIcon,
+  ChatChevronsUpDownIcon,
+  ChatGlobeIcon,
+  ChatGlobeOffIcon,
+  ChatModelIcon,
+  ChatSendIcon,
+  ChatStopIcon,
+  ChatUploadIcon
+} from '../ui/chatIcons';
+import {
   BOT_ICON_URL,
-  CHEVRON_UP_ICON_URL,
-  CHEVRONS_DOWN_UP_ICON_URL,
-  CHEVRONS_UP_DOWN_ICON_URL,
-  GLOBE_ICON_URL,
-  GLOBE_OFF_ICON_URL,
-  IMAGE_ICON_URL,
   INVESTMENT_HERO_ILLUSTRATION_URL,
   USER_ICON_URL
 } from '../../../shared/config/brandAssets';
@@ -49,7 +54,15 @@ import { InvestmentAiMessageDetails } from './InvestmentAiMessageDetails';
 
 type Message = ReturnType<typeof createInvestmentAiMessage>;
 type InvestmentChatProgress = 'market' | 'web' | 'thinking' | 'answering' | '';
-type FloatingResizeEdge = 'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-right' | 'bottom-left';
+type FloatingResizeEdge =
+  | 'top'
+  | 'right'
+  | 'bottom'
+  | 'left'
+  | 'top-left'
+  | 'top-right'
+  | 'bottom-right'
+  | 'bottom-left';
 
 type FloatingPanelBounds = {
   left: number;
@@ -542,7 +555,7 @@ export function InvestmentChatComposer({
       {showLinks ? (
         <div className="investments-ai-links">
           <Link to="/investments" className="button-with-icon">
-            <img src={IMAGE_ICON_URL} alt="" aria-hidden="true" />
+            <ChatUploadIcon className="chat-svg-icon" />
             投资资料与管理
           </Link>
         </div>
@@ -622,12 +635,7 @@ export function InvestmentChatComposer({
                   title={`支持上传或粘贴最多 ${MAX_INVESTMENT_AI_IMAGES} 张截图`}
                   aria-label="上传基金截图"
                 >
-                  <img
-                    className="chat-upload-icon"
-                    src={IMAGE_ICON_URL}
-                    alt=""
-                    aria-hidden="true"
-                  />
+                  <ChatUploadIcon className="chat-svg-icon" />
                 </button>
                 <button
                   type="button"
@@ -637,12 +645,11 @@ export function InvestmentChatComposer({
                   aria-label={webEnabled ? '关闭联网核验' : '开启联网核验'}
                   title={webEnabled ? '已开启联网核验' : '开启联网核验'}
                 >
-                  <img
-                    className="chat-upload-icon"
-                    src={webEnabled ? GLOBE_ICON_URL : GLOBE_OFF_ICON_URL}
-                    alt=""
-                    aria-hidden="true"
-                  />
+                  {webEnabled ? (
+                    <ChatGlobeIcon className="chat-svg-icon" />
+                  ) : (
+                    <ChatGlobeOffIcon className="chat-svg-icon" />
+                  )}
                 </button>
                 <button
                   type="button"
@@ -652,14 +659,11 @@ export function InvestmentChatComposer({
                   aria-label={suggestionsCollapsed ? '展开消息' : '折叠消息'}
                   title={suggestionsCollapsed ? '展开消息' : '折叠消息'}
                 >
-                  <img
-                    className="chat-upload-icon"
-                    src={
-                      suggestionsCollapsed ? CHEVRONS_UP_DOWN_ICON_URL : CHEVRONS_DOWN_UP_ICON_URL
-                    }
-                    alt=""
-                    aria-hidden="true"
-                  />
+                  {suggestionsCollapsed ? (
+                    <ChatChevronsUpDownIcon className="chat-svg-icon" />
+                  ) : (
+                    <ChatChevronsDownUpIcon className="chat-svg-icon" />
+                  )}
                 </button>
                 <div
                   className="chat-model-selector chat-model-selector-inline investments-ai-model-selector"
@@ -681,7 +685,9 @@ export function InvestmentChatComposer({
                     title={getModelDisplayLabel(model || '选择模型')}
                     ref={modelTriggerRef}
                   >
-                    <span className="chat-model-trigger-icon">@</span>
+                    <span className="chat-model-trigger-icon">
+                      <ChatModelIcon className="chat-svg-icon chat-model-trigger-glyph" />
+                    </span>
                     <span className="chat-model-inline-label">
                       {getModelDisplayLabel(model || '选择模型')}
                     </span>
@@ -742,12 +748,7 @@ export function InvestmentChatComposer({
                 title="返回页面顶部"
                 aria-label="返回页面顶部"
               >
-                <img
-                  className="chat-upload-icon"
-                  src={CHEVRON_UP_ICON_URL}
-                  alt=""
-                  aria-hidden="true"
-                />
+                <ChatChevronUpIcon className="chat-svg-icon" />
               </button>
               {loading ? (
                 <button
@@ -757,9 +758,7 @@ export function InvestmentChatComposer({
                   title="停止生成"
                   aria-label="停止生成"
                 >
-                  <span className="chat-send-stop-icon" aria-hidden="true">
-                    ■
-                  </span>
+                  <ChatStopIcon className="chat-svg-icon chat-svg-icon--filled chat-send-stop-icon" />
                 </button>
               ) : (
                 <button
@@ -769,7 +768,7 @@ export function InvestmentChatComposer({
                   title="发送"
                   aria-label="开始分析"
                 >
-                  ↑
+                  <ChatSendIcon className="chat-svg-icon" />
                 </button>
               )}
             </div>
@@ -1118,162 +1117,177 @@ export function InvestmentChatPanel({
           </header>
         ) : null}
 
-      {showHero && messages.length === 0 ? (
-        <section className="chat-mode-welcome chat-investment-welcome" aria-label="AI 投资助手">
-          <div className="chat-mode-welcome-copy">
-            <div className="chat-mode-welcome-eyebrow">AI 投资助手 <span>·</span> 看懂市场，也看懂自己的持仓</div>
-            <h2>投资上的问题，<em>一起理清楚</em></h2>
-            <p>聊基金、股票和资产配置；结合你的持仓与公开信息分析，不承诺收益。</p>
-            <div className="chat-mode-welcome-features">
-              <div>
-                <b>01</b>
-                <span>看市场<small>梳理行情与近期变化</small></span>
+        {showHero && messages.length === 0 ? (
+          <section className="chat-mode-welcome chat-investment-welcome" aria-label="AI 投资助手">
+            <div className="chat-mode-welcome-copy">
+              <div className="chat-mode-welcome-eyebrow">
+                AI 投资助手 <span>·</span> 看懂市场，也看懂自己的持仓
               </div>
-              <div>
-                <b>02</b>
-                <span>看持仓<small>结合你的自选与投资组合</small></span>
-              </div>
-              <div>
-                <b>03</b>
-                <span>做判断<small>说明依据与需要留意的风险</small></span>
-              </div>
-            </div>
-          </div>
-          <img
-            className="chat-mode-welcome-illustration chat-investment-illustration"
-            src={INVESTMENT_HERO_ILLUSTRATION_URL}
-            alt=""
-            aria-hidden="true"
-          />
-        </section>
-      ) : null}
-
-      {messages.length > 0 ? (
-        <div className="chat-messages-area investments-ai-messages-area">
-          <div
-            className={`investments-ai-history-actions ${historyTurns.length > 2 ? '' : 'is-compact'}`}
-          >
-            {historyTurns.length > 2 ? (
-              <nav className="investments-ai-history-nav" aria-label="投资聊天记录导航">
-                <span>{historyTurns.length} 轮</span>
-                <select
-                  aria-label="跳转到历史提问"
-                  value={selectedHistoryMessageId}
-                  onChange={(event) => {
-                    const messageId = event.target.value;
-                    setSelectedHistoryMessageId(messageId);
-                    scrollToMessage(messageId);
-                  }}
-                >
-                  {historyTurns.map((item, index) => (
-                    <option key={item.id} value={item.id}>
-                      {getInvestmentChatHistoryLabel(item.text, index)}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => scrollToMessage(latestMessageId, 'end')}
-                  aria-label="回到最新消息"
-                  title="回到最新消息"
-                >
-                  最新
-                </button>
-              </nav>
-            ) : null}
-            <button
-              type="button"
-              className="investments-ai-clear-context"
-              onClick={() => setClearContextConfirmOpen(true)}
-              aria-label="清空上下文"
-              title="清空上下文"
-            >
-              清空上下文
-            </button>
-          </div>
-          <div className="chat-messages-inner">
-            {messages.map((item) => (
-              <article
-                key={item.id}
-                ref={(element) => {
-                  if (element) messageRefs.current.set(item.id, element);
-                  else messageRefs.current.delete(item.id);
-                }}
-                className={`chat-msg ${item.role === 'user' ? 'chat-msg-user' : ''}`}
-              >
-                <Avatar user={item.role === 'user'} />
-                <div className="chat-msg-body">
-                  <div className="chat-msg-header">{item.role === 'user' ? '你' : '助手'}</div>
-                  <div className="chat-msg-content chat-msg-content-rich">
-                    {renderMarkdownContent(
-                      item.role === 'assistant'
-                        ? getInvestmentAssistantDisplayText(item.text, item.analysis)
-                        : item.text
-                    )}
-                  </div>
-                  {item.role === 'assistant' ? (
-                    <InvestmentAiMessageDetails
-                      reasoning={item.reasoning}
-                      webTrace={item.webTrace}
-                      auxiliaryInfo={item.auxiliaryInfo}
-                    />
-                  ) : null}
-                  {item.attachmentImages?.length ? (
-                    <div className="investments-ai-message-attachments">
-                      {item.attachmentImages.map((url, index) => (
-                        <a key={`${item.id}-${index}`} href={url} target="_blank" rel="noreferrer">
-                          <img src={url} alt={`附带图片 ${index + 1}`} />
-                        </a>
-                      ))}
-                    </div>
-                  ) : item.attachmentCount ? (
-                    <p className="investments-ai-attachment-note">
-                      附带 {item.attachmentCount} 张图片
-                    </p>
-                  ) : null}
+              <h2>
+                投资上的问题，<em>一起理清楚</em>
+              </h2>
+              <p>聊基金、股票和资产配置；结合你的持仓与公开信息分析，不承诺收益。</p>
+              <div className="chat-mode-welcome-features">
+                <div>
+                  <b>01</b>
+                  <span>
+                    看市场<small>梳理行情与近期变化</small>
+                  </span>
                 </div>
-              </article>
-            ))}
-            <div aria-hidden="true" />
-          </div>
-        </div>
-      ) : isCompact ? (
-        <div className="investments-ai-empty-compact" aria-label="投资理财空状态">
-          <img src={INVESTMENT_HERO_ILLUSTRATION_URL} alt="" aria-hidden="true" />
-          <strong>先丢一个基金问题给我</strong>
-          <p>例如：这只基金现在适合继续定投吗？</p>
-        </div>
-      ) : (
-        <article className="chat-msg chat-investment-starter">
-          <Avatar />
-          <div className="chat-msg-body">
-            <div className="chat-msg-header">投资助手</div>
-            <div className="chat-msg-content">
-              <p>可以从你的持仓、基金定投或今天的市场开始问。我会把结论和判断依据说清楚。</p>
+                <div>
+                  <b>02</b>
+                  <span>
+                    看持仓<small>结合你的自选与投资组合</small>
+                  </span>
+                </div>
+                <div>
+                  <b>03</b>
+                  <span>
+                    做判断<small>说明依据与需要留意的风险</small>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <img
+              className="chat-mode-welcome-illustration chat-investment-illustration"
+              src={INVESTMENT_HERO_ILLUSTRATION_URL}
+              alt=""
+              aria-hidden="true"
+            />
+          </section>
+        ) : null}
+
+        {messages.length > 0 ? (
+          <div className="chat-messages-area investments-ai-messages-area">
+            <div
+              className={`investments-ai-history-actions ${historyTurns.length > 2 ? '' : 'is-compact'}`}
+            >
+              {historyTurns.length > 2 ? (
+                <nav className="investments-ai-history-nav" aria-label="投资聊天记录导航">
+                  <span>{historyTurns.length} 轮</span>
+                  <select
+                    aria-label="跳转到历史提问"
+                    value={selectedHistoryMessageId}
+                    onChange={(event) => {
+                      const messageId = event.target.value;
+                      setSelectedHistoryMessageId(messageId);
+                      scrollToMessage(messageId);
+                    }}
+                  >
+                    {historyTurns.map((item, index) => (
+                      <option key={item.id} value={item.id}>
+                        {getInvestmentChatHistoryLabel(item.text, index)}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => scrollToMessage(latestMessageId, 'end')}
+                    aria-label="回到最新消息"
+                    title="回到最新消息"
+                  >
+                    最新
+                  </button>
+                </nav>
+              ) : null}
+              <button
+                type="button"
+                className="investments-ai-clear-context"
+                onClick={() => setClearContextConfirmOpen(true)}
+                aria-label="清空上下文"
+                title="清空上下文"
+              >
+                清空上下文
+              </button>
+            </div>
+            <div className="chat-messages-inner">
+              {messages.map((item) => (
+                <article
+                  key={item.id}
+                  ref={(element) => {
+                    if (element) messageRefs.current.set(item.id, element);
+                    else messageRefs.current.delete(item.id);
+                  }}
+                  className={`chat-msg ${item.role === 'user' ? 'chat-msg-user' : ''}`}
+                >
+                  <Avatar user={item.role === 'user'} />
+                  <div className="chat-msg-body">
+                    <div className="chat-msg-header">{item.role === 'user' ? '你' : '助手'}</div>
+                    <div className="chat-msg-content chat-msg-content-rich">
+                      {renderMarkdownContent(
+                        item.role === 'assistant'
+                          ? getInvestmentAssistantDisplayText(item.text, item.analysis)
+                          : item.text
+                      )}
+                    </div>
+                    {item.role === 'assistant' ? (
+                      <InvestmentAiMessageDetails
+                        reasoning={item.reasoning}
+                        webTrace={item.webTrace}
+                        auxiliaryInfo={item.auxiliaryInfo}
+                      />
+                    ) : null}
+                    {item.attachmentImages?.length ? (
+                      <div className="investments-ai-message-attachments">
+                        {item.attachmentImages.map((url, index) => (
+                          <a
+                            key={`${item.id}-${index}`}
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <img src={url} alt={`附带图片 ${index + 1}`} />
+                          </a>
+                        ))}
+                      </div>
+                    ) : item.attachmentCount ? (
+                      <p className="investments-ai-attachment-note">
+                        附带 {item.attachmentCount} 张图片
+                      </p>
+                    ) : null}
+                  </div>
+                </article>
+              ))}
+              <div aria-hidden="true" />
             </div>
           </div>
-        </article>
-      )}
+        ) : isCompact ? (
+          <div className="investments-ai-empty-compact" aria-label="投资理财空状态">
+            <img src={INVESTMENT_HERO_ILLUSTRATION_URL} alt="" aria-hidden="true" />
+            <strong>先丢一个基金问题给我</strong>
+            <p>例如：这只基金现在适合继续定投吗？</p>
+          </div>
+        ) : (
+          <article className="chat-msg chat-investment-starter">
+            <Avatar />
+            <div className="chat-msg-body">
+              <div className="chat-msg-header">投资助手</div>
+              <div className="chat-msg-content">
+                <p>可以从你的持仓、基金定投或今天的市场开始问。我会把结论和判断依据说清楚。</p>
+              </div>
+            </div>
+          </article>
+        )}
 
-      {showComposer ? (
-        <InvestmentChatComposer
-          showLinks={!isCompact}
-          defaultWebEnabled={defaultWebEnabled}
-          contextNote={contextNote}
-          onPromptSubmitted={handlePromptSubmitted}
-          clearContextVersion={clearContextVersion}
+        {showComposer ? (
+          <InvestmentChatComposer
+            showLinks={!isCompact}
+            defaultWebEnabled={defaultWebEnabled}
+            contextNote={contextNote}
+            onPromptSubmitted={handlePromptSubmitted}
+            clearContextVersion={clearContextVersion}
+          />
+        ) : null}
+
+        <ConfirmDialog
+          open={clearContextConfirmOpen}
+          title="清空聊天上下文"
+          description="确定清空本次投资聊天上下文吗？此操作不可恢复。"
+          confirmText="清空"
+          danger
+          onConfirm={clearContext}
+          onCancel={() => setClearContextConfirmOpen(false)}
         />
-      ) : null}
-
-      <ConfirmDialog
-        open={clearContextConfirmOpen}
-        title="清空聊天上下文"
-        description="确定清空本次投资聊天上下文吗？此操作不可恢复。"
-        confirmText="清空"
-        danger
-        onConfirm={clearContext}
-        onCancel={() => setClearContextConfirmOpen(false)}
-      />
       </section>
     </>
   );

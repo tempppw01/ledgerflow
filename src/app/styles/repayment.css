@@ -70,7 +70,10 @@
   background: color-mix(in srgb, var(--color-bg-subtle) 68%, transparent);
   color: var(--color-text-primary);
   text-align: left;
-  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
 }
 
 .repayment-debt-preset:hover,
@@ -150,7 +153,7 @@
 
 .debt-simple-form-fields {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(170px, .8fr) minmax(150px, .7fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(170px, 0.8fr) minmax(150px, 0.7fr);
   gap: 20px;
   align-items: end;
 }
@@ -161,7 +164,7 @@
 
 @media (max-width: 900px) {
   .debt-simple-form-fields {
-    grid-template-columns: minmax(0, 1fr) minmax(170px, .8fr);
+    grid-template-columns: minmax(0, 1fr) minmax(170px, 0.8fr);
   }
 
   .debt-simple-form-project {
@@ -352,9 +355,8 @@
 }
 
 .repayment-console .repayment-income-toolbar {
-  grid-template-columns: minmax(210px, 0.72fr) minmax(320px, 1fr);
   margin: 0;
-  padding: 18px 0;
+  padding: 14px 0;
   border-bottom: 1px solid var(--color-divider);
   background: transparent;
 }
@@ -661,7 +663,9 @@
   opacity: 0;
   pointer-events: none;
   transform: translate(-50%, -3px);
-  transition: opacity 140ms ease, transform 140ms ease;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
   white-space: nowrap;
 }
 
@@ -753,11 +757,14 @@
 
 @media (max-width: 1120px) {
   .repayment-console .repayment-income-toolbar {
-    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
   }
 
   .repayment-console .repayment-income-editor {
-    grid-column: 1 / -1;
+    flex-basis: auto;
+    width: 100%;
   }
 
   .repayment-record-secondary-fields {
@@ -868,43 +875,210 @@
   --principal-color: #409ad6;
   --interest-color: #f2a147;
 }
-.debt-pressure-controls { display: flex; gap: 18px; border-bottom: 1px solid var(--color-divider); }
-.debt-pressure-controls button {
-  background: none; border: 0; border-radius: 0; padding: 8px 0 9px;
-  color: var(--color-text-secondary); font-size: 13px; font-weight: 650; box-shadow: none;
+.debt-pressure-controls {
+  display: flex;
+  gap: 18px;
+  border-bottom: 1px solid var(--color-divider);
 }
-.debt-pressure-controls button[aria-pressed='true'] { color: var(--color-text); box-shadow: inset 0 -2px var(--color-primary); }
-.debt-pressure-readout { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 16px; padding: 14px 0 12px; }
-.debt-pressure-readout > div:first-child { display: grid; gap: 4px; }
-.debt-pressure-readout span { font-size: 13px; color: var(--color-text-secondary); }
-.debt-pressure-readout strong { font-size: 23px; font-variant-numeric: tabular-nums; letter-spacing: -0.025em; overflow-wrap: anywhere; }
-.debt-pressure-interest-readout { display: grid; grid-template-columns: auto auto auto; align-items: baseline; gap: 5px; padding: 7px 10px; border: 1px solid color-mix(in srgb, var(--interest-color) 24%, var(--color-divider)); border-radius: var(--radius-md); background: color-mix(in srgb, var(--interest-color) 7%, transparent); }
-.debt-pressure-interest-readout span { font-size: 11px; }
-.debt-pressure-interest-readout strong { color: var(--interest-color); font-size: 14px; }
-.debt-pressure-interest-readout em { color: var(--color-text-tertiary); font-size: 11px; font-style: normal; }
-.debt-pressure-plot { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px; }
-.debt-pressure-scale { display: flex; flex-direction: column; justify-content: space-between; padding: 18px 0; color: var(--color-text-secondary); font-family: var(--font-number); font-size: 11px; }
-.debt-pressure-chart--readable .debt-pressure-plot svg { width: 100%; height: 162px; min-height: 0; display: block; overflow: visible; }
-.debt-pressure-axis { stroke: var(--color-divider); stroke-width: 1; vector-effect: non-scaling-stroke; }
-.debt-pressure-amount-base { fill: color-mix(in srgb, var(--principal-color) 46%, transparent); transition: opacity 180ms ease, transform 180ms ease; }
-.debt-pressure-interest-bar { fill: var(--interest-color); filter: drop-shadow(0 4px 7px color-mix(in srgb, var(--interest-color) 27%, transparent)); transition: opacity 180ms ease; }
-.debt-pressure-chart--readable .debt-pressure-remaining-area { fill: url(#debt-pressure-remaining-fill); }
-.debt-pressure-chart--readable .debt-pressure-remaining-glow { fill: none; stroke: color-mix(in srgb, var(--principal-color) 60%, transparent); stroke-width: 8; vector-effect: non-scaling-stroke; }
-.debt-pressure-chart--readable .debt-pressure-remaining-line { fill: none; stroke: var(--principal-color); stroke-width: 2.2; stroke-dasharray: none; vector-effect: non-scaling-stroke; }
-.debt-pressure-principal-dot { fill: var(--color-bg-elevated); stroke: var(--principal-color); stroke-width: 2; vector-effect: non-scaling-stroke; }
-.debt-pressure-dates { display: flex; justify-content: space-between; padding-left: 39px; color: var(--color-text-secondary); font-family: var(--font-number); font-size: 12px; }
-.debt-pressure-interest-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; margin: 13px 0 2px; padding: 9px 11px; border-left: 2px solid var(--interest-color); background: linear-gradient(90deg, color-mix(in srgb, var(--interest-color) 8%, transparent), transparent 68%); }
-.debt-pressure-interest-summary > div { display: flex; align-items: center; gap: 12px; }
-.debt-pressure-interest-summary strong { color: var(--color-text); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.debt-pressure-interest-summary strong em { color: var(--interest-color); font-style: normal; }
-.debt-pressure-interest-legend { display: inline-flex; align-items: center; gap: 5px; color: var(--color-text-secondary); font-size: 11px; }
-.debt-pressure-interest-legend i { width: 7px; height: 7px; border-radius: 50%; background: color-mix(in srgb, var(--principal-color) 58%, transparent); }
-.debt-pressure-interest-legend.is-interest i { background: var(--interest-color); box-shadow: 0 0 9px color-mix(in srgb, var(--interest-color) 46%, transparent); }
-.debt-pressure-period { display: flex; align-items: center; gap: 12px; font-size: 12px; margin-top: 10px; }
-.debt-pressure-period input[type='range'] { min-width: 0; flex: 1; width: 0; height: 28px; padding: 0; accent-color: var(--color-primary); }
-.debt-pressure-footnote { margin-top: 6px; font-size: 12px; color: var(--color-text-secondary); overflow-wrap: anywhere; }
-.debt-pressure-plot { position: relative; }
-.debt-pressure-hit-area { cursor: crosshair; }
+.debt-pressure-controls button {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 8px 0 9px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 650;
+  box-shadow: none;
+}
+.debt-pressure-controls button[aria-pressed='true'] {
+  color: var(--color-text);
+  box-shadow: inset 0 -2px var(--color-primary);
+}
+.debt-pressure-readout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 16px;
+  padding: 14px 0 12px;
+}
+.debt-pressure-readout > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+.debt-pressure-readout span {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.debt-pressure-readout strong {
+  font-size: 23px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+.debt-pressure-interest-readout {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  align-items: baseline;
+  gap: 5px;
+  padding: 7px 10px;
+  border: 1px solid color-mix(in srgb, var(--interest-color) 24%, var(--color-divider));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--interest-color) 7%, transparent);
+}
+.debt-pressure-interest-readout span {
+  font-size: 11px;
+}
+.debt-pressure-interest-readout strong {
+  color: var(--interest-color);
+  font-size: 14px;
+}
+.debt-pressure-interest-readout em {
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  font-style: normal;
+}
+.debt-pressure-plot {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px;
+}
+.debt-pressure-scale {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px 0;
+  color: var(--color-text-secondary);
+  font-family: var(--font-number);
+  font-size: 11px;
+}
+.debt-pressure-chart--readable .debt-pressure-plot svg {
+  width: 100%;
+  height: 162px;
+  min-height: 0;
+  display: block;
+  overflow: visible;
+}
+.debt-pressure-axis {
+  stroke: var(--color-divider);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.debt-pressure-amount-base {
+  fill: color-mix(in srgb, var(--principal-color) 46%, transparent);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+.debt-pressure-interest-bar {
+  fill: var(--interest-color);
+  filter: drop-shadow(0 4px 7px color-mix(in srgb, var(--interest-color) 27%, transparent));
+  transition: opacity 180ms ease;
+}
+.debt-pressure-chart--readable .debt-pressure-remaining-area {
+  fill: url(#debt-pressure-remaining-fill);
+}
+.debt-pressure-chart--readable .debt-pressure-remaining-glow {
+  fill: none;
+  stroke: color-mix(in srgb, var(--principal-color) 60%, transparent);
+  stroke-width: 8;
+  vector-effect: non-scaling-stroke;
+}
+.debt-pressure-chart--readable .debt-pressure-remaining-line {
+  fill: none;
+  stroke: var(--principal-color);
+  stroke-width: 2.2;
+  stroke-dasharray: none;
+  vector-effect: non-scaling-stroke;
+}
+.debt-pressure-principal-dot {
+  fill: var(--color-bg-elevated);
+  stroke: var(--principal-color);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.debt-pressure-dates {
+  display: flex;
+  justify-content: space-between;
+  padding-left: 39px;
+  color: var(--color-text-secondary);
+  font-family: var(--font-number);
+  font-size: 12px;
+}
+.debt-pressure-interest-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  margin: 13px 0 2px;
+  padding: 9px 11px;
+  border-left: 2px solid var(--interest-color);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--interest-color) 8%, transparent),
+    transparent 68%
+  );
+}
+.debt-pressure-interest-summary > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.debt-pressure-interest-summary strong {
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.debt-pressure-interest-summary strong em {
+  color: var(--interest-color);
+  font-style: normal;
+}
+.debt-pressure-interest-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+.debt-pressure-interest-legend i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--principal-color) 58%, transparent);
+}
+.debt-pressure-interest-legend.is-interest i {
+  background: var(--interest-color);
+  box-shadow: 0 0 9px color-mix(in srgb, var(--interest-color) 46%, transparent);
+}
+.debt-pressure-period {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  margin-top: 10px;
+}
+.debt-pressure-period input[type='range'] {
+  min-width: 0;
+  flex: 1;
+  width: 0;
+  height: 28px;
+  padding: 0;
+  accent-color: var(--color-primary);
+}
+.debt-pressure-footnote {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+.debt-pressure-plot {
+  position: relative;
+}
+.debt-pressure-hit-area {
+  cursor: crosshair;
+}
 .debt-pressure-tooltip {
   position: absolute;
   top: 0;
@@ -921,12 +1095,27 @@
   font-size: 12px;
   overflow-wrap: anywhere;
 }
-.debt-pressure-tooltip strong { font-size: 14px; font-variant-numeric: tabular-nums; }
+.debt-pressure-tooltip strong {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
 
 @media (max-width: 640px) {
-  .debt-pressure-readout strong { font-size: 20px; }
-  .debt-pressure-interest-readout { width: 100%; justify-content: start; }
-  .debt-pressure-chart--readable .debt-pressure-plot svg { height: 146px; }
-  .debt-pressure-interest-summary { align-items: flex-start; flex-direction: column; }
-  .debt-pressure-dates { padding-left: 34px; }
+  .debt-pressure-readout strong {
+    font-size: 20px;
+  }
+  .debt-pressure-interest-readout {
+    width: 100%;
+    justify-content: start;
+  }
+  .debt-pressure-chart--readable .debt-pressure-plot svg {
+    height: 146px;
+  }
+  .debt-pressure-interest-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .debt-pressure-dates {
+    padding-left: 34px;
+  }
 }

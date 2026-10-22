@@ -4,3 +4,23 @@ coverage
 .vscode
 .DS_Store
 *.log
+
+# Local runtime data and credentials
+.env
+.env.*
+!.env.example
+data/
+
+# Browser automation artifacts
+.playwright-cli/
+playwright-report/
+test-results/
+/playwright.config.ts
+
+# One-off local maintenance output
+/*.py
+/test-optimization.ps1
+/narrow-check.png
+/screenshot.png
+/OPTIMIZATION_COMPLETE.md
+/OPTIMIZATION_SUMMARY.md

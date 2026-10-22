@@ -12,14 +12,16 @@
 .recycle-bin-empty-state .empty-state-icon {
   margin-bottom: var(--space-4);
   opacity: 1;
+  animation: none;
 }
 
 .recycle-bin-empty-illustration {
-  width: min(188px, 42vw);
+  width: min(280px, 60vw);
   max-width: 100%;
   height: auto;
   display: block;
   margin: 0 auto;
+  animation: none;
 }
 
 .recycle-bin-header,

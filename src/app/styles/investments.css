@@ -1006,8 +1006,16 @@
   inset: auto -12% 4px 26%;
   height: 24px;
   opacity: 0.12;
-  background:
-    linear-gradient(140deg, transparent 0 18%, var(--market-quote-tone, var(--color-primary)) 19% 21%, transparent 22% 38%, var(--market-quote-tone, var(--color-primary)) 39% 41%, transparent 42% 58%, var(--market-quote-tone, var(--color-primary)) 59% 61%, transparent 62%);
+  background: linear-gradient(
+    140deg,
+    transparent 0 18%,
+    var(--market-quote-tone, var(--color-primary)) 19% 21%,
+    transparent 22% 38%,
+    var(--market-quote-tone, var(--color-primary)) 39% 41%,
+    transparent 42% 58%,
+    var(--market-quote-tone, var(--color-primary)) 59% 61%,
+    transparent 62%
+  );
   filter: blur(1.5px);
   pointer-events: none;
 }
@@ -1317,9 +1325,18 @@
   font-size: 9px;
 }
 
-.investments-global-kline-volume-bar.is-positive { fill: var(--color-danger); opacity: 0.62; }
-.investments-global-kline-volume-bar.is-negative { fill: var(--color-success); opacity: 0.62; }
-.investments-global-kline-volume-bar.is-flat { fill: var(--color-text-secondary); opacity: 0.55; }
+.investments-global-kline-volume-bar.is-positive {
+  fill: var(--color-danger);
+  opacity: 0.62;
+}
+.investments-global-kline-volume-bar.is-negative {
+  fill: var(--color-success);
+  opacity: 0.62;
+}
+.investments-global-kline-volume-bar.is-flat {
+  fill: var(--color-text-secondary);
+  opacity: 0.55;
+}
 
 .investments-global-kline-wrap .investments-market-time-axis {
   margin-top: 2px;
@@ -4257,7 +4274,7 @@
   color: var(--color-warning);
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: .04em;
+  letter-spacing: 0.04em;
 }
 
 .investments-market-closure-notice strong {
@@ -4536,7 +4553,15 @@
   border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
   border-radius: 8px;
   background: color-mix(in srgb, var(--color-bg-elevated) 88%, var(--color-primary-bg));
-  font-size: 13px;
+}
+
+.investments-ai-input-toolbar .chat-upload-btn .chat-svg-icon {
+  color: var(--color-primary);
+}
+
+.investments-ai-input-toolbar .chat-model-trigger-glyph {
+  width: 14px;
+  height: 14px;
 }
 
 .investments-ai-input-toolbar .investments-ai-model-trigger .chat-model-inline-label {
@@ -4571,8 +4596,8 @@
 }
 
 .chat-send-stop-icon {
-  font-size: 14px;
-  line-height: 1;
+  width: 13px;
+  height: 13px;
 }
 
 .investments-watchlist-list {
@@ -7608,22 +7633,97 @@
   }
 }
 
-.investments-hot-industry-filters { display:flex; flex-wrap:wrap; gap:6px; margin:14px 0 4px; }
-.investments-hot-industry-filters button { border:0; border-bottom:1px solid transparent; background:transparent; color:var(--color-text-secondary); padding:7px 10px; font-size:12px; font-weight:700; cursor:pointer; }
-.investments-hot-industry-filters button.is-active { color:var(--color-primary); border-bottom-color:var(--color-primary); }
-.investments-market-board-card-head { width:100%; text-align:left; cursor:pointer; }
-.investments-market-board-card-head .investments-board-expand-mark { margin-left:auto; color:var(--color-text-tertiary); font-size:18px; font-weight:400; }
-.investments-market-board-card-stocks { animation: boardReveal 180ms ease both; }
-@keyframes boardReveal { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+.investments-hot-industry-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 14px 0 4px;
+}
+.investments-hot-industry-filters button {
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-secondary);
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.investments-hot-industry-filters button.is-active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+.investments-market-board-card-head {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+.investments-market-board-card-head .investments-board-expand-mark {
+  margin-left: auto;
+  color: var(--color-text-tertiary);
+  font-size: 18px;
+  font-weight: 400;
+}
+.investments-market-board-card-stocks {
+  animation: boardReveal 180ms ease both;
+}
+@keyframes boardReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
-.investments-market-history-disclosure { margin-top: var(--space-3); border-top: 1px solid var(--color-divider); }
-.investments-market-history-disclosure > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) 0; color: var(--color-text); cursor: pointer; font-size: var(--font-sm); font-weight: 700; list-style: none; }
-.investments-market-history-disclosure > summary::-webkit-details-marker { display: none; }
-.investments-market-history-disclosure > summary::before { content: '+'; color: var(--color-primary); font-size: 18px; font-weight: 400; }
-.investments-market-history-disclosure[open] > summary::before { content: '−'; }
-.investments-market-history-disclosure > summary span { margin-left: auto; color: var(--color-text-secondary); font-size: var(--font-xs); font-weight: 400; }
-.investments-market-history-disclosure[open] > .investments-market-history-section { animation: boardReveal 180ms ease both; }
-@media (max-width: 640px) { .investments-market-history-disclosure > summary { align-items: flex-start; } .investments-market-history-disclosure > summary span { max-width: 15ch; text-align: right; } }
+.investments-market-history-disclosure {
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--color-divider);
+}
+.investments-market-history-disclosure > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: var(--font-sm);
+  font-weight: 700;
+  list-style: none;
+}
+.investments-market-history-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.investments-market-history-disclosure > summary::before {
+  content: '+';
+  color: var(--color-primary);
+  font-size: 18px;
+  font-weight: 400;
+}
+.investments-market-history-disclosure[open] > summary::before {
+  content: '−';
+}
+.investments-market-history-disclosure > summary span {
+  margin-left: auto;
+  color: var(--color-text-secondary);
+  font-size: var(--font-xs);
+  font-weight: 400;
+}
+.investments-market-history-disclosure[open] > .investments-market-history-section {
+  animation: boardReveal 180ms ease both;
+}
+@media (max-width: 640px) {
+  .investments-market-history-disclosure > summary {
+    align-items: flex-start;
+  }
+  .investments-market-history-disclosure > summary span {
+    max-width: 15ch;
+    text-align: right;
+  }
+}
 
 /* Keep A-share and overseas benchmark quotes together in one horizontally browsable rail. */
 .investments-global-quote-grid {
@@ -7663,11 +7763,60 @@
   fill: currentColor;
 }
 
-.investments-industry-sparkline.is-positive { color: var(--color-danger); }
-.investments-industry-sparkline.is-negative { color: var(--color-success); }
-.investments-industry-sparkline.is-flat { color: var(--color-text-tertiary); }
-.investments-industry-sparkline-empty { color: var(--color-text-tertiary); }
+.investments-industry-sparkline.is-positive {
+  color: var(--color-danger);
+}
+.investments-industry-sparkline.is-negative {
+  color: var(--color-success);
+}
+.investments-industry-sparkline.is-flat {
+  color: var(--color-text-tertiary);
+}
+.investments-industry-sparkline-empty {
+  color: var(--color-text-tertiary);
+}
 
 @media (max-width: 680px) {
-  .investments-global-quote-grid { grid-auto-columns: 150px; }
+  .investments-global-quote-grid {
+    grid-auto-columns: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .investments-global-clock-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .investments-global-clock-head > div {
+    width: 100%;
+  }
+
+  .investments-global-clock-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .investments-global-clock-zone {
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .investments-global-clock-note {
+    text-align: left;
+  }
+
+  .investments-global-market-statuses {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .investments-global-timeline-summary {
+    grid-template-columns: auto repeat(2, minmax(0, 1fr));
+  }
+
+  .investments-global-timeline-summary > span {
+    font-size: 8px;
+    padding: 3px 4px;
+  }
 }

@@ -2802,11 +2802,15 @@
   cursor: not-allowed;
 }
 
-.chat-icon-action-img {
+.chat-icon-action-svg {
   width: 14px;
   height: 14px;
   display: block;
-  object-fit: contain;
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   pointer-events: none;
 }
 
@@ -3592,16 +3596,48 @@
   border-radius: var(--radius-full);
   background: transparent;
   color: var(--color-text-secondary);
-  font-size: 0;
   cursor: pointer;
   transition: all 150ms ease;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
 }
 
-.chat-input-toolbar-btn::before {
-  content: '⌫';
-  font-size: 15px;
-  line-height: 1;
+.chat-svg-icon {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  display: block;
+  flex: 0 0 auto;
+  pointer-events: none;
+}
+
+.chat-svg-icon--filled {
+  fill: currentColor;
+  stroke: none;
+}
+
+.chat-model-trigger-glyph {
+  width: 17px;
+  height: 17px;
+}
+
+.chat-input-toolbar-btn-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .chat-input-toolbar-btn:hover:not(:disabled) {
@@ -3824,13 +3860,6 @@
 .chat-upload-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-.chat-upload-icon {
-  width: 17px;
-  height: 17px;
-  object-fit: contain;
-  display: block;
 }
 
 .chat-send-btn {

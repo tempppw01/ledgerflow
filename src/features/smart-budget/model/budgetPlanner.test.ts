@@ -5,8 +5,8 @@ describe('generateBudgetRecommendation', () => {
   it('should keep total category budgets equal to monthly income', () => {
     const result = generateBudgetRecommendation({
       identity: 'employee',
-      monthlyIncomeK: 12,
-      monthlyFixedExpenseK: 4,
+      monthlyIncome: 12000,
+      monthlyFixedExpense: 4000,
       savingsRatio: 0.35
     });
 
@@ -19,8 +19,8 @@ describe('generateBudgetRecommendation', () => {
     expect(() =>
       generateBudgetRecommendation({
         identity: 'student',
-        monthlyIncomeK: 0,
-        monthlyFixedExpenseK: 1,
+        monthlyIncome: 0,
+        monthlyFixedExpense: 1000,
         savingsRatio: 0.2
       })
     ).toThrow('每月收入必须大于 0。');
@@ -30,8 +30,8 @@ describe('generateBudgetRecommendation', () => {
     expect(() =>
       generateBudgetRecommendation({
         identity: 'freelancer',
-        monthlyIncomeK: 6,
-        monthlyFixedExpenseK: 6,
+        monthlyIncome: 6000,
+        monthlyFixedExpense: 6000,
         savingsRatio: 0.3
       })
     ).toThrow('固定支出需要小于月收入，才能生成可执行预算。');
@@ -40,8 +40,8 @@ describe('generateBudgetRecommendation', () => {
   it('supports quick category budget edits on result page', () => {
     const result = generateBudgetRecommendation({
       identity: 'employee',
-      monthlyIncomeK: 10,
-      monthlyFixedExpenseK: 3,
+      monthlyIncome: 10000,
+      monthlyFixedExpense: 3000,
       savingsRatio: 0.3
     });
 

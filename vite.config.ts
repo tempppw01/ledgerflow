@@ -4,6 +4,15 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 const appLogoUrl = 'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/logo.webp';
 
+const apiProxyTarget = process.env.LEDGERFLOW_API_PROXY_TARGET || 'http://127.0.0.1:8787';
+
+const apiProxy = {
+  '/api': {
+    target: apiProxyTarget,
+    changeOrigin: true
+  }
+};
+
 function manualChunks(id: string) {
   if (!id.includes('node_modules')) {
     return undefined;
@@ -39,12 +48,11 @@ function manualChunks(id: string) {
 
 export default defineConfig({
   server: {
-    proxy: {
-      '/api': {
-        target: process.env.LEDGERFLOW_API_PROXY_TARGET || 'http://127.0.0.1:8787',
-        changeOrigin: true
-      }
-    }
+    proxy: apiProxy
+  },
+  // 构建产物预览时同样需要把 /api 转发到后端，否则前端无法完成数据库初始化。
+  preview: {
+    proxy: apiProxy
   },
   plugins: [
     react(),

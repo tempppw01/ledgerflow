@@ -2,10 +2,55 @@ export type UserIdentity = 'student' | 'employee' | 'freelancer' | 'other';
 
 export type BudgetAnswers = {
   identity: UserIdentity;
-  monthlyIncomeK: number;
-  monthlyFixedExpenseK: number;
+  /** 每月到手收入，单位：元 */
+  monthlyIncome: number;
+  /** 每月固定支出（房租、房贷、订阅等），单位：元 */
+  monthlyFixedExpense: number;
   savingsRatio: number;
 };
+
+export const DEFAULT_BUDGET_ANSWERS: BudgetAnswers = {
+  identity: 'employee',
+  monthlyIncome: 10000,
+  monthlyFixedExpense: 3000,
+  savingsRatio: 0.3
+};
+
+/**
+ * 兼容旧版本持久化的数据。
+ * 早期版本用「千」为单位保存收入与固定支出，这里统一换算成「元」。
+ */
+export function normalizeBudgetAnswers(raw: unknown): BudgetAnswers {
+  const source = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+
+  const identityValue = String(source.identity || 'employee');
+  const identity: UserIdentity = (
+    ['student', 'employee', 'freelancer', 'other'] as UserIdentity[]
+  ).includes(identityValue as UserIdentity)
+    ? (identityValue as UserIdentity)
+    : 'employee';
+
+  const readAmount = (value: unknown, legacyK: unknown): number => {
+    const direct = Number(value);
+    if (Number.isFinite(direct) && direct > 0) {
+      return Math.round(direct);
+    }
+    const legacy = Number(legacyK);
+    if (Number.isFinite(legacy) && legacy > 0) {
+      return Math.round(legacy * 1000);
+    }
+    return 0;
+  };
+
+  const savingsRatio = Number(source.savingsRatio);
+
+  return {
+    identity,
+    monthlyIncome: readAmount(source.monthlyIncome, source.monthlyIncomeK),
+    monthlyFixedExpense: readAmount(source.monthlyFixedExpense, source.monthlyFixedExpenseK),
+    savingsRatio: Number.isFinite(savingsRatio) ? Math.min(0.6, Math.max(0.1, savingsRatio)) : 0.3
+  };
+}
 
 export type BudgetCategoryPlan = {
   category: string;
@@ -19,6 +64,13 @@ export type BudgetRecommendation = {
   disposableIncome: number;
   savingsAmount: number;
   flexibleBudget: number;
+  /** 分类分摊算法版本，用于判断是否需要重新同步账本分类。 */
+  distributionVersion?: number;
+  /**
+   身份对应的灵活分类权重（键为推荐分类名，值为相对权重）。
+   同步到账本分类时用它做分配依据，保证每次同步结果一致。
+   */
+  flexibleWeights?: Record<string, number>;
   categoryBudgets: BudgetCategoryPlan[];
 };
 
@@ -102,10 +154,6 @@ const FLEXIBLE_CATEGORY_WEIGHT: Record<
   ]
 };
 
-function toAmountFromK(value: number): number {
-  return Math.round(value * 1000);
-}
-
 function roundToTen(amount: number): number {
   return Math.round(amount / 10) * 10;
 }
@@ -121,15 +169,37 @@ function normalizeWeights(
 }
 
 /**
+ * 所有身份预设的平均权重，用于「不知道用户身份」时给出中性分配。
+ * 例如账本里的分类名一个都对不上身份预设，也不至于出现 0 额度。
+ */
+export const CANONICAL_IDENTITY_WEIGHTS: Record<string, number> = (() => {
+  const identities = Object.keys(FLEXIBLE_CATEGORY_WEIGHT) as UserIdentity[];
+  const totals = new Map<string, number>();
+
+  identities.forEach((identity) => {
+    FLEXIBLE_CATEGORY_WEIGHT[identity].forEach((item) => {
+      totals.set(item.category, (totals.get(item.category) || 0) + item.weight / identities.length);
+    });
+  });
+
+  return Object.fromEntries(totals);
+})();
+
+export function getIdentityCategoryWeights(identity: UserIdentity): Record<string, number> {
+  return Object.fromEntries(
+    FLEXIBLE_CATEGORY_WEIGHT[identity].map((item) => [item.category, item.weight])
+  );
+}
+/**
  * 根据四个问答结果生成预算建议。
- * - 问题 2/3 使用“千”为单位输入，函数内部统一转为元。
+ * - 收入与固定支出均以元为单位输入。
  * - 预算会拆分为固定支出、储蓄与灵活支出分类，且总额严格等于月收入。
  */
 export function generateBudgetRecommendation(answers: BudgetAnswers): BudgetRecommendation {
-  if (!Number.isFinite(answers.monthlyIncomeK) || answers.monthlyIncomeK <= 0) {
+  if (!Number.isFinite(answers.monthlyIncome) || answers.monthlyIncome <= 0) {
     throw new Error('每月收入必须大于 0。');
   }
-  if (!Number.isFinite(answers.monthlyFixedExpenseK) || answers.monthlyFixedExpenseK < 0) {
+  if (!Number.isFinite(answers.monthlyFixedExpense) || answers.monthlyFixedExpense < 0) {
     throw new Error('固定支出不能小于 0。');
   }
   if (
@@ -140,8 +210,8 @@ export function generateBudgetRecommendation(answers: BudgetAnswers): BudgetReco
     throw new Error('预算比例应在 10%~60% 之间。');
   }
 
-  const monthlyIncome = toAmountFromK(answers.monthlyIncomeK);
-  const monthlyFixedExpense = toAmountFromK(answers.monthlyFixedExpenseK);
+  const monthlyIncome = Math.round(answers.monthlyIncome);
+  const monthlyFixedExpense = Math.round(answers.monthlyFixedExpense);
 
   if (monthlyFixedExpense >= monthlyIncome) {
     throw new Error('固定支出需要小于月收入，才能生成可执行预算。');
@@ -191,6 +261,7 @@ export function generateBudgetRecommendation(answers: BudgetAnswers): BudgetReco
     disposableIncome,
     savingsAmount,
     flexibleBudget,
+    flexibleWeights: getIdentityCategoryWeights(answers.identity),
     categoryBudgets
   };
 }

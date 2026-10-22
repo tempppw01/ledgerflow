@@ -58,10 +58,7 @@ import {
   type InvestmentSimulationFrequency,
   type InvestmentSimulationResult
 } from '../../features/investments/model/investmentSimulator';
-import {
-  INFO_ICON_URL,
-  ROTATE_CCW_ICON_URL
-} from '../../shared/config/brandAssets';
+import { INFO_ICON_URL, ROTATE_CCW_ICON_URL } from '../../shared/config/brandAssets';
 import { formatCurrencyAuto } from '../../shared/lib/format';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
@@ -108,7 +105,7 @@ const MARKET_THEME_STORAGE_KEY = 'ledgerflow-investment-market-themes-v1';
 
 type WatchGridColumnCount = (typeof WATCH_GRID_COLUMN_OPTIONS)[number];
 type WatchDisplayMode = 'grid' | 'list';
-type InvestmentWorkspace = 'overview' | 'market' | 'boards' | 'watchlist' | 'news';
+type InvestmentWorkspace = 'overview' | 'boards' | 'watchlist' | 'news';
 
 const EMPTY_MARKET_DATA_META: MarketDataMeta = {
   source: '等待行情',
@@ -775,7 +772,8 @@ function HoldingsTodayPanel({
       </div>
 
       <p className="investments-today-note">
-        自选持仓按今日涨跌幅从高到低排列，TOP 3 仅标记有行情的基金；没有基金行情时再按主要指数平均涨跌估算。
+        自选持仓按今日涨跌幅从高到低排列，TOP 3
+        仅标记有行情的基金；没有基金行情时再按主要指数平均涨跌估算。
       </p>
 
       <div className="investments-position-glance-list">
@@ -1228,7 +1226,9 @@ function GlobalMarketClock() {
 
       {closureNotice ? (
         <aside className="investments-market-closure-notice" aria-label={closureNotice.eyebrow}>
-          <span className="investments-market-closure-icon" aria-hidden="true">!</span>
+          <span className="investments-market-closure-icon" aria-hidden="true">
+            !
+          </span>
           <div>
             <span className="investments-market-closure-eyebrow">{closureNotice.eyebrow}</span>
             <strong>{closureNotice.title}</strong>
@@ -1394,7 +1394,9 @@ function MarketClosureBanner() {
 
   return (
     <aside className="investments-market-closure-banner" aria-label={notice.eyebrow}>
-      <span className="investments-market-closure-icon" aria-hidden="true">!</span>
+      <span className="investments-market-closure-icon" aria-hidden="true">
+        !
+      </span>
       <div>
         <span className="investments-market-closure-eyebrow">{notice.eyebrow}</span>
         <strong>{notice.title}</strong>
@@ -1526,7 +1528,14 @@ function buildGlobalKlineChartGeometry(points: GlobalMarketTrendPoint[]) {
       volumeTop: height - 62,
       volumeBottom: height - paddingBottom,
       candles: [] as GlobalKlineChartPoint[],
-      volumeBars: [] as Array<{ x: number; y: number; height: number; tone: string; label: string; volume: number }>,
+      volumeBars: [] as Array<{
+        x: number;
+        y: number;
+        height: number;
+        tone: string;
+        label: string;
+        volume: number;
+      }>,
       labels: [] as string[]
     };
   }
@@ -1564,10 +1573,13 @@ function buildGlobalKlineChartGeometry(points: GlobalMarketTrendPoint[]) {
   const volumeBars = chartPoints.flatMap((item, index) => {
     const volume = item.point.volume;
     if (volume === null || !Number.isFinite(volume) || volume <= 0) return [];
-    const barHeight = Math.max(2, ((volume / maxVolume) * (volumeBottom - volumeTop)));
+    const barHeight = Math.max(2, (volume / maxVolume) * (volumeBottom - volumeTop));
     const x = paddingLeft + (index / Math.max(chartPoints.length - 1, 1)) * usableWidth;
-    const tone = item.close > item.open ? 'is-positive' : item.close < item.open ? 'is-negative' : 'is-flat';
-    return [{ x, y: volumeBottom - barHeight, height: barHeight, tone, label: item.point.label, volume }];
+    const tone =
+      item.close > item.open ? 'is-positive' : item.close < item.open ? 'is-negative' : 'is-flat';
+    return [
+      { x, y: volumeBottom - barHeight, height: barHeight, tone, label: item.point.label, volume }
+    ];
   });
   const firstPoint = chartPoints[0].point;
   const middlePoint = chartPoints[Math.floor(chartPoints.length / 2)].point;
@@ -1671,20 +1683,17 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
     Number(defaultStartDate.slice(-2))
   );
   const [simulationAmount, setSimulationAmount] = useState('1000');
-  const [simulationStartDate, setSimulationStartDate] = useState(() =>
-    defaultStartDate
-  );
+  const [simulationStartDate, setSimulationStartDate] = useState(() => defaultStartDate);
   const [simulationEndDate, setSimulationEndDate] = useState(() => formatDateInputValue(today));
   const [simulationStatus, setSimulationStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [simulationError, setSimulationError] = useState('');
   const [simulationResult, setSimulationResult] = useState<InvestmentSimulationResult | null>(null);
-  const historyTarget =
-    MARKET_HISTORY_TARGETS.find((item) => item.id === historyTargetId) || {
-      id: `cn:${secId}`,
-      provider: 'eastmoney' as const,
-      identifier: secId,
-      label: `🇨🇳 A 股 · ${indexName}`
-    };
+  const historyTarget = MARKET_HISTORY_TARGETS.find((item) => item.id === historyTargetId) || {
+    id: `cn:${secId}`,
+    provider: 'eastmoney' as const,
+    identifier: secId,
+    label: `🇨🇳 A 股 · ${indexName}`
+  };
 
   useEffect(() => {
     setHistoryTargetId((current) => (current.startsWith('cn:') ? `cn:${secId}` : current));
@@ -1772,7 +1781,8 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
         <div>
           <h4>{historyTarget.label.replace(/^.+?·\s*/, '')}历史走势</h4>
           <p>
-            {historyTarget.provider === 'yahoo' ? 'Yahoo Finance 日线数据' : '东方财富日线数据'} · 按需获取；优先内存缓存，配置 MySQL/SQLite 后落库 7 天，长期未访问自动清理
+            {historyTarget.provider === 'yahoo' ? 'Yahoo Finance 日线数据' : '东方财富日线数据'} ·
+            按需获取；优先内存缓存，配置 MySQL/SQLite 后落库 7 天，长期未访问自动清理
           </p>
         </div>
         <div className="investments-market-history-controls">
@@ -2001,7 +2011,8 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
         </form>
       </div>
       <p className="investments-market-source-note investments-simulation-method-note">
-        计算口径：按计划日在历史日线中顺延到下一个可用交易日买入，期末按结束日前最后收盘价估值；收益率为模拟盈亏 ÷ 累计投入，未年化。仅模拟指数点位，不代表实际基金收益，且不含申购费、分红、税费和滑点。
+        计算口径：按计划日在历史日线中顺延到下一个可用交易日买入，期末按结束日前最后收盘价估值；收益率为模拟盈亏
+        ÷ 累计投入，未年化。仅模拟指数点位，不代表实际基金收益，且不含申购费、分红、税费和滑点。
       </p>
     </section>
   );
@@ -2063,9 +2074,7 @@ function MarketOverviewPanel({
   const [globalTrendPoints, setGlobalTrendPoints] = useState<GlobalMarketTrendPoint[]>([]);
   const [globalKlinePoints, setGlobalKlinePoints] = useState<GlobalMarketTrendPoint[]>([]);
   const [globalPreviousCloseDate, setGlobalPreviousCloseDate] = useState('');
-  const [globalChartStatus, setGlobalChartStatus] = useState<'idle' | 'loading' | 'error'>(
-    'idle'
-  );
+  const [globalChartStatus, setGlobalChartStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [globalChartError, setGlobalChartError] = useState('');
   const [hoveredGlobalPointIndex, setHoveredGlobalPointIndex] = useState<number | null>(null);
   const selectedGlobalIndex = GLOBAL_MARKET_INDEXES.find((item) => item.id === selectedGlobalId);
@@ -2078,11 +2087,10 @@ function MarketOverviewPanel({
       ? null
       : globalKlineChart.candles[hoveredGlobalPointIndex] || null;
   const globalActiveTrendPoint =
-    globalTrendChart.points[
-      hoveredGlobalPointIndex ?? globalTrendChart.points.length - 1
-    ] || globalTrendChart.points[globalTrendChart.points.length - 1] || null;
-  const globalHoveredTrendPoint =
-    hoveredGlobalPointIndex === null ? null : globalActiveTrendPoint;
+    globalTrendChart.points[hoveredGlobalPointIndex ?? globalTrendChart.points.length - 1] ||
+    globalTrendChart.points[globalTrendChart.points.length - 1] ||
+    null;
+  const globalHoveredTrendPoint = hoveredGlobalPointIndex === null ? null : globalActiveTrendPoint;
   const quoteUpdateSignature = [
     ...quotes.map((quote) => `cn:${quote.secId}:${quote.value ?? ''}:${quote.changePercent ?? ''}`),
     ...globalQuotes.map(
@@ -2109,25 +2117,26 @@ function MarketOverviewPanel({
     setGlobalChartError('');
     setHoveredGlobalPointIndex(null);
 
-    const request =
-      Promise.allSettled([
-        fetchGlobalMarketTrend(selectedGlobalId),
-        fetchGlobalMarketHistory(selectedGlobalId, { range: '1m' })
-      ]).then(([trendResult, historyResult]) => {
-        if (trendResult.status === 'rejected') throw trendResult.reason;
-        if (!cancelled) {
-          const trend = trendResult.value;
-          setGlobalTrendPoints(trend);
-          setGlobalKlinePoints(trend);
-          const history = historyResult.status === 'fulfilled' ? historyResult.value : [];
-          const quoteDate = globalQuotesRef.current
-            .find((quote) => quote.id === selectedGlobalId)
-            ?.updatedAt.slice(0, 10);
-          setGlobalPreviousCloseDate(
-            history.at(-1)?.date === quoteDate ? history.at(-2)?.date || '' : history.at(-1)?.date || ''
-          );
-        }
-      });
+    const request = Promise.allSettled([
+      fetchGlobalMarketTrend(selectedGlobalId),
+      fetchGlobalMarketHistory(selectedGlobalId, { range: '1m' })
+    ]).then(([trendResult, historyResult]) => {
+      if (trendResult.status === 'rejected') throw trendResult.reason;
+      if (!cancelled) {
+        const trend = trendResult.value;
+        setGlobalTrendPoints(trend);
+        setGlobalKlinePoints(trend);
+        const history = historyResult.status === 'fulfilled' ? historyResult.value : [];
+        const quoteDate = globalQuotesRef.current
+          .find((quote) => quote.id === selectedGlobalId)
+          ?.updatedAt.slice(0, 10);
+        setGlobalPreviousCloseDate(
+          history.at(-1)?.date === quoteDate
+            ? history.at(-2)?.date || ''
+            : history.at(-1)?.date || ''
+        );
+      }
+    });
 
     request
       .then(() => {
@@ -2235,8 +2244,7 @@ function MarketOverviewPanel({
     const rect = event.currentTarget.getBoundingClientRect();
     if (rect.width <= 0) return;
 
-    const x =
-      ((event.clientX - rect.left) / rect.width) * globalTrendChart.width;
+    const x = ((event.clientX - rect.left) / rect.width) * globalTrendChart.width;
     let closestIndex = 0;
     let closestDistance = Number.POSITIVE_INFINITY;
 
@@ -2335,7 +2343,9 @@ function MarketOverviewPanel({
                   }}
                 >
                   <div className="investments-global-quote-name">
-                    <span><i aria-hidden="true">🇨🇳</i>A 股</span>
+                    <span>
+                      <i aria-hidden="true">🇨🇳</i>A 股
+                    </span>
                     <strong>{index.name}</strong>
                   </div>
                   <b>{formatMarketIndexValue(quote?.value)}</b>
@@ -2467,13 +2477,22 @@ function MarketOverviewPanel({
                           className="investments-market-chart-baseline"
                           x1={globalTrendChart.plotLeft}
                           x2={globalTrendChart.plotRight}
-                          y1={globalTrendChart.plotTop + (globalTrendChart.plotBottom - globalTrendChart.plotTop) * ratio}
-                          y2={globalTrendChart.plotTop + (globalTrendChart.plotBottom - globalTrendChart.plotTop) * ratio}
+                          y1={
+                            globalTrendChart.plotTop +
+                            (globalTrendChart.plotBottom - globalTrendChart.plotTop) * ratio
+                          }
+                          y2={
+                            globalTrendChart.plotTop +
+                            (globalTrendChart.plotBottom - globalTrendChart.plotTop) * ratio
+                          }
                         />
                       ))}
                       {[
                         { label: globalTrendChart.max, y: globalTrendChart.plotTop },
-                        { label: globalTrendChart.mid, y: (globalTrendChart.plotTop + globalTrendChart.plotBottom) / 2 },
+                        {
+                          label: globalTrendChart.mid,
+                          y: (globalTrendChart.plotTop + globalTrendChart.plotBottom) / 2
+                        },
                         { label: globalTrendChart.min, y: globalTrendChart.plotBottom }
                       ].map((axis) => (
                         <text
@@ -2552,13 +2571,27 @@ function MarketOverviewPanel({
                 onMouseLeave={() => setHoveredGlobalPointIndex(null)}
               >
                 {hoveredGlobalCandle ? (
-                  <div className="investments-global-kline-tooltip" role="status" aria-label="K线详情">
+                  <div
+                    className="investments-global-kline-tooltip"
+                    role="status"
+                    aria-label="K线详情"
+                  >
                     <strong>{hoveredGlobalCandle.label}</strong>
-                    <span>开 <b>{formatMarketIndexValue(hoveredGlobalCandle.open)}</b></span>
-                    <span>高 <b>{formatMarketIndexValue(hoveredGlobalCandle.high)}</b></span>
-                    <span>低 <b>{formatMarketIndexValue(hoveredGlobalCandle.low)}</b></span>
-                    <span>收 <b>{formatMarketIndexValue(hoveredGlobalCandle.value)}</b></span>
-                    <span>量 <b>{formatMarketAmount(hoveredGlobalCandle.volume)}</b></span>
+                    <span>
+                      开 <b>{formatMarketIndexValue(hoveredGlobalCandle.open)}</b>
+                    </span>
+                    <span>
+                      高 <b>{formatMarketIndexValue(hoveredGlobalCandle.high)}</b>
+                    </span>
+                    <span>
+                      低 <b>{formatMarketIndexValue(hoveredGlobalCandle.low)}</b>
+                    </span>
+                    <span>
+                      收 <b>{formatMarketIndexValue(hoveredGlobalCandle.value)}</b>
+                    </span>
+                    <span>
+                      量 <b>{formatMarketAmount(hoveredGlobalCandle.volume)}</b>
+                    </span>
                   </div>
                 ) : null}
                 <svg
@@ -2575,8 +2608,14 @@ function MarketOverviewPanel({
                       className="investments-market-chart-grid"
                       x1={globalKlineChart.plotLeft}
                       x2={globalKlineChart.plotRight}
-                      y1={globalKlineChart.plotTop + (globalKlineChart.plotBottom - globalKlineChart.plotTop) * ratio}
-                      y2={globalKlineChart.plotTop + (globalKlineChart.plotBottom - globalKlineChart.plotTop) * ratio}
+                      y1={
+                        globalKlineChart.plotTop +
+                        (globalKlineChart.plotBottom - globalKlineChart.plotTop) * ratio
+                      }
+                      y2={
+                        globalKlineChart.plotTop +
+                        (globalKlineChart.plotBottom - globalKlineChart.plotTop) * ratio
+                      }
                     />
                   ))}
                   <line
@@ -2588,7 +2627,14 @@ function MarketOverviewPanel({
                   />
                   {[
                     { label: globalKlineChart.max, y: globalKlineChart.plotTop },
-                    { label: (globalKlineChart.min ?? 0) + (globalKlineChart.max && globalKlineChart.min !== null ? (globalKlineChart.max - globalKlineChart.min) / 2 : 0), y: (globalKlineChart.plotTop + globalKlineChart.plotBottom) / 2 },
+                    {
+                      label:
+                        (globalKlineChart.min ?? 0) +
+                        (globalKlineChart.max && globalKlineChart.min !== null
+                          ? (globalKlineChart.max - globalKlineChart.min) / 2
+                          : 0),
+                      y: (globalKlineChart.plotTop + globalKlineChart.plotBottom) / 2
+                    },
                     { label: globalKlineChart.min, y: globalKlineChart.plotBottom }
                   ].map((axis) => (
                     <text
@@ -2633,9 +2679,28 @@ function MarketOverviewPanel({
                     <rect
                       key={`volume:${bar.label}`}
                       className={`investments-global-kline-volume-bar ${bar.tone}`}
-                      x={bar.x - Math.max(1, Math.min(5, (globalKlineChart.plotRight - globalKlineChart.plotLeft) / Math.max(globalKlineChart.volumeBars.length, 1) * 0.32))}
+                      x={
+                        bar.x -
+                        Math.max(
+                          1,
+                          Math.min(
+                            5,
+                            ((globalKlineChart.plotRight - globalKlineChart.plotLeft) /
+                              Math.max(globalKlineChart.volumeBars.length, 1)) *
+                              0.32
+                          )
+                        )
+                      }
                       y={bar.y}
-                      width={Math.max(2, Math.min(10, (globalKlineChart.plotRight - globalKlineChart.plotLeft) / Math.max(globalKlineChart.candles.length, 1) * 0.58))}
+                      width={Math.max(
+                        2,
+                        Math.min(
+                          10,
+                          ((globalKlineChart.plotRight - globalKlineChart.plotLeft) /
+                            Math.max(globalKlineChart.candles.length, 1)) *
+                            0.58
+                        )
+                      )}
                       height={bar.height}
                       rx="1"
                     >
@@ -2674,189 +2739,196 @@ function MarketOverviewPanel({
         </section>
       ) : null}
 
-      {!selectedGlobalId ? <div className="investments-market-body">
-        <div className="investments-market-main">
-          <div
-            className="investments-market-mini-stats"
-            aria-label={`${activeIndex?.name || '大盘'}关键数据`}
-          >
-            <span>
-              最新 <strong>{formatMarketIndexValue(selectedQuoteData?.value)}</strong>
-            </span>
-            <span>
-              最高 <strong>{formatMarketIndexValue(selectedQuoteData?.high)}</strong>
-            </span>
-            <span>
-              最低 <strong>{formatMarketIndexValue(selectedQuoteData?.low)}</strong>
-            </span>
-            <span>
-              成交额 <strong>{formatMarketAmount(selectedQuoteData?.amount)}</strong>
-            </span>
-          </div>
+      {!selectedGlobalId ? (
+        <div className="investments-market-body">
+          <div className="investments-market-main">
+            <div
+              className="investments-market-mini-stats"
+              aria-label={`${activeIndex?.name || '大盘'}关键数据`}
+            >
+              <span>
+                最新 <strong>{formatMarketIndexValue(selectedQuoteData?.value)}</strong>
+              </span>
+              <span>
+                最高 <strong>{formatMarketIndexValue(selectedQuoteData?.high)}</strong>
+              </span>
+              <span>
+                最低 <strong>{formatMarketIndexValue(selectedQuoteData?.low)}</strong>
+              </span>
+              <span>
+                成交额 <strong>{formatMarketAmount(selectedQuoteData?.amount)}</strong>
+              </span>
+            </div>
 
-          <div
-            className="investments-market-chart-wrap"
-            key={selectedSecId}
-            onMouseLeave={() => setHoveredTrendIndex(null)}
-          >
-            {chart.linePath ? (
-              <div className="investments-market-chart-stage" onMouseMove={handleChartPointerMove}>
-                <svg
-                  className={`investments-market-chart ${getMarketTone(
-                    selectedQuoteData?.changePercent
-                  )}`}
-                  viewBox={`0 0 ${chart.width} ${chart.height}`}
-                  role="img"
-                  aria-label={`${activeIndex?.name || '指数'}分时走势`}
+            <div
+              className="investments-market-chart-wrap"
+              key={selectedSecId}
+              onMouseLeave={() => setHoveredTrendIndex(null)}
+            >
+              {chart.linePath ? (
+                <div
+                  className="investments-market-chart-stage"
+                  onMouseMove={handleChartPointerMove}
                 >
-                  <defs>
-                    <linearGradient id="investments-market-area" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stopColor="currentColor" stopOpacity="0.22" />
-                      <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" />
-                    </linearGradient>
-                  </defs>
-                  <path className="investments-market-chart-area" d={chart.areaPath} />
-                  {[0, 0.5, 1].map((ratio) => (
-                    <line
-                      key={ratio}
-                      className="investments-market-chart-grid"
-                      x1={chart.plotLeft}
-                      x2={chart.plotRight}
-                      y1={chart.plotTop + (chart.plotBottom - chart.plotTop) * ratio}
-                      y2={chart.plotTop + (chart.plotBottom - chart.plotTop) * ratio}
-                    />
-                  ))}
-                  {chart.mid !== null ? (
-                    <line
-                      className="investments-market-chart-baseline"
-                      x1={chart.plotLeft}
-                      x2={chart.plotRight}
-                      y1={(chart.plotTop + chart.plotBottom) / 2}
-                      y2={(chart.plotTop + chart.plotBottom) / 2}
-                    />
-                  ) : null}
-                  {[
-                    { label: chart.max, y: chart.plotTop },
-                    { label: chart.mid, y: (chart.plotTop + chart.plotBottom) / 2 },
-                    { label: chart.min, y: chart.plotBottom }
-                  ].map((axis) => (
-                    <text
-                      key={`${axis.label}-${axis.y}`}
-                      className="investments-market-chart-axis-label"
-                      x="2"
-                      y={axis.y}
-                      dominantBaseline="middle"
-                    >
-                      {axis.label === null ? '' : formatMarketIndexValue(axis.label)}
-                    </text>
-                  ))}
-                  {hoveredTrendPoint ? (
-                    <>
-                      <line
-                        className="investments-market-chart-cursor"
-                        x1={hoveredTrendPoint.x}
-                        x2={hoveredTrendPoint.x}
-                        y1={chart.plotTop}
-                        y2={chart.plotBottom}
-                      />
-                      <circle
-                        className="investments-market-chart-point"
-                        cx={hoveredTrendPoint.x}
-                        cy={hoveredTrendPoint.y}
-                        r="4.5"
-                      />
-                    </>
-                  ) : null}
-                  <path className="investments-market-chart-line" d={chart.linePath} />
-                </svg>
-                {hoveredTrendPoint ? (
-                  <div
-                    className="investments-market-chart-tooltip"
-                    style={{
-                      left: `${(hoveredTrendPoint.x / chart.width) * 100}%`,
-                      top: `${Math.max(8, ((hoveredTrendPoint.y - 14) / chart.height) * 100)}%`
-                    }}
-                    aria-hidden="true"
+                  <svg
+                    className={`investments-market-chart ${getMarketTone(
+                      selectedQuoteData?.changePercent
+                    )}`}
+                    viewBox={`0 0 ${chart.width} ${chart.height}`}
+                    role="img"
+                    aria-label={`${activeIndex?.name || '指数'}分时走势`}
                   >
-                    <strong>{hoveredTrendPoint.label}</strong>
-                    <span>{formatMarketIndexValue(hoveredTrendPoint.value)}</span>
-                  </div>
-                ) : null}
-              </div>
-            ) : (
-              <div className="investments-market-chart-empty">
-                <strong>
-                  {status === 'error'
-                    ? '行情暂时没有连上'
-                    : isSwitchingTrend
-                      ? '正在切换指数'
-                      : '等待分时线'}
-                </strong>
-                <span>{error || `${activeIndex?.name || '指数'}分时线加载后会显示在这里。`}</span>
-              </div>
-            )}
+                    <defs>
+                      <linearGradient id="investments-market-area" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="currentColor" stopOpacity="0.22" />
+                        <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" />
+                      </linearGradient>
+                    </defs>
+                    <path className="investments-market-chart-area" d={chart.areaPath} />
+                    {[0, 0.5, 1].map((ratio) => (
+                      <line
+                        key={ratio}
+                        className="investments-market-chart-grid"
+                        x1={chart.plotLeft}
+                        x2={chart.plotRight}
+                        y1={chart.plotTop + (chart.plotBottom - chart.plotTop) * ratio}
+                        y2={chart.plotTop + (chart.plotBottom - chart.plotTop) * ratio}
+                      />
+                    ))}
+                    {chart.mid !== null ? (
+                      <line
+                        className="investments-market-chart-baseline"
+                        x1={chart.plotLeft}
+                        x2={chart.plotRight}
+                        y1={(chart.plotTop + chart.plotBottom) / 2}
+                        y2={(chart.plotTop + chart.plotBottom) / 2}
+                      />
+                    ) : null}
+                    {[
+                      { label: chart.max, y: chart.plotTop },
+                      { label: chart.mid, y: (chart.plotTop + chart.plotBottom) / 2 },
+                      { label: chart.min, y: chart.plotBottom }
+                    ].map((axis) => (
+                      <text
+                        key={`${axis.label}-${axis.y}`}
+                        className="investments-market-chart-axis-label"
+                        x="2"
+                        y={axis.y}
+                        dominantBaseline="middle"
+                      >
+                        {axis.label === null ? '' : formatMarketIndexValue(axis.label)}
+                      </text>
+                    ))}
+                    {hoveredTrendPoint ? (
+                      <>
+                        <line
+                          className="investments-market-chart-cursor"
+                          x1={hoveredTrendPoint.x}
+                          x2={hoveredTrendPoint.x}
+                          y1={chart.plotTop}
+                          y2={chart.plotBottom}
+                        />
+                        <circle
+                          className="investments-market-chart-point"
+                          cx={hoveredTrendPoint.x}
+                          cy={hoveredTrendPoint.y}
+                          r="4.5"
+                        />
+                      </>
+                    ) : null}
+                    <path className="investments-market-chart-line" d={chart.linePath} />
+                  </svg>
+                  {hoveredTrendPoint ? (
+                    <div
+                      className="investments-market-chart-tooltip"
+                      style={{
+                        left: `${(hoveredTrendPoint.x / chart.width) * 100}%`,
+                        top: `${Math.max(8, ((hoveredTrendPoint.y - 14) / chart.height) * 100)}%`
+                      }}
+                      aria-hidden="true"
+                    >
+                      <strong>{hoveredTrendPoint.label}</strong>
+                      <span>{formatMarketIndexValue(hoveredTrendPoint.value)}</span>
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="investments-market-chart-empty">
+                  <strong>
+                    {status === 'error'
+                      ? '行情暂时没有连上'
+                      : isSwitchingTrend
+                        ? '正在切换指数'
+                        : '等待分时线'}
+                  </strong>
+                  <span>{error || `${activeIndex?.name || '指数'}分时线加载后会显示在这里。`}</span>
+                </div>
+              )}
 
-            {chart.labels.length ? (
-              <div className="investments-market-time-axis" aria-hidden="true">
-                {chart.labels.map((label, index) => (
-                  <span key={`${label}-${index}`}>{label}</span>
-                ))}
-              </div>
-            ) : null}
+              {chart.labels.length ? (
+                <div className="investments-market-time-axis" aria-hidden="true">
+                  {chart.labels.map((label, index) => (
+                    <span key={`${label}-${index}`}>{label}</span>
+                  ))}
+                </div>
+              ) : null}
 
-            <div className="investments-market-chart-foot">
-              <div>
-                <strong>{activeTrendText}</strong>
-                <span>
-                  {activeTrendPoint
-                    ? `均价 ${formatMarketIndexValue(activeTrendPoint.average)}`
-                    : '分时点位'}
-                </span>
-              </div>
-              <div>
-                <span>
-                  成交额 <strong>{formatMarketAmount(activeTrendPoint?.amount)}</strong>
-                </span>
-                <span>
-                  成交量 <strong>{formatMarketAmount(activeTrendPoint?.volume)}</strong>
-                </span>
+              <div className="investments-market-chart-foot">
+                <div>
+                  <strong>{activeTrendText}</strong>
+                  <span>
+                    {activeTrendPoint
+                      ? `均价 ${formatMarketIndexValue(activeTrendPoint.average)}`
+                      : '分时点位'}
+                  </span>
+                </div>
+                <div>
+                  <span>
+                    成交额 <strong>{formatMarketAmount(activeTrendPoint?.amount)}</strong>
+                  </span>
+                  <span>
+                    成交量 <strong>{formatMarketAmount(activeTrendPoint?.volume)}</strong>
+                  </span>
+                </div>
               </div>
             </div>
           </div>
+
+          <aside className="investments-market-side" aria-label="大盘成交概览">
+            <div className="investments-market-turnover-card">
+              <span>四大指数成交额</span>
+              <strong>{formatMarketAmount(totalAmount)}</strong>
+              <em>
+                {activeIndex?.shortName || '指数'}{' '}
+                {formatMarketPercent(selectedQuoteData?.changePercent)}
+              </em>
+            </div>
+            <div className="investments-market-side-grid">
+              <span>
+                选中指数
+                <strong>{formatMarketAmount(selectedQuoteData?.amount)}</strong>
+              </span>
+              <span>
+                昨收
+                <strong>{formatMarketIndexValue(selectedQuoteData?.previousClose)}</strong>
+              </span>
+            </div>
+          </aside>
         </div>
+      ) : null}
 
-        <aside className="investments-market-side" aria-label="大盘成交概览">
-          <div className="investments-market-turnover-card">
-            <span>四大指数成交额</span>
-            <strong>{formatMarketAmount(totalAmount)}</strong>
-            <em>
-              {activeIndex?.shortName || '指数'}{' '}
-              {formatMarketPercent(selectedQuoteData?.changePercent)}
-            </em>
-          </div>
-          <div className="investments-market-side-grid">
-            <span>
-              选中指数
-              <strong>{formatMarketAmount(selectedQuoteData?.amount)}</strong>
-            </span>
-            <span>
-              昨收
-              <strong>{formatMarketIndexValue(selectedQuoteData?.previousClose)}</strong>
-            </span>
-          </div>
-        </aside>
-      </div> : null}
-
-      {!selectedGlobalId ? <details className="investments-market-history-disclosure">
-        <summary>
-          查看历史走势与定投模拟
-          <span>按需展开，不打断当前行情判断</span>
-        </summary>
-        <MarketHistoryAndSimulator
-          secId={selectedSecId}
-          indexName={activeIndex?.name || '大盘指数'}
-        />
-      </details> : null}
+      {!selectedGlobalId ? (
+        <details className="investments-market-history-disclosure">
+          <summary>
+            查看历史走势与定投模拟
+            <span>按需展开，不打断当前行情判断</span>
+          </summary>
+          <MarketHistoryAndSimulator
+            secId={selectedSecId}
+            indexName={activeIndex?.name || '大盘指数'}
+          />
+        </details>
+      ) : null}
 
       {error && status === 'error' ? <p className="investments-market-error">{error}</p> : null}
     </section>
@@ -2870,9 +2942,15 @@ function IndustrySparkline({ board }: { board: EastmoneyMarketBoard }) {
   useEffect(() => {
     let cancelled = false;
     fetchEastmoneyMarketBoardTrend(board.code)
-      .then((trend) => { if (!cancelled) setPoints(trend.map((point) => point.value)); })
-      .catch(() => { if (!cancelled) setPoints([]); });
-    return () => { cancelled = true; };
+      .then((trend) => {
+        if (!cancelled) setPoints(trend.map((point) => point.value));
+      })
+      .catch(() => {
+        if (!cancelled) setPoints([]);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [board.code]);
   if (points.length < 2) return <span className="investments-industry-sparkline-empty">—</span>;
   const min = Math.min(...points);
@@ -2882,11 +2960,22 @@ function IndustrySparkline({ board }: { board: EastmoneyMarketBoard }) {
     x: 2 + (index / (points.length - 1)) * 96,
     y: 24 - ((point - min) / range) * 19
   }));
-  const line = coordinates.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' ');
+  const line = coordinates
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+    .join(' ');
   return (
-    <svg className={`investments-industry-sparkline ${getMarketTone(board.changePercent)}`} viewBox="0 0 100 28" aria-label={`${board.name}走势示意`} role="img">
+    <svg
+      className={`investments-industry-sparkline ${getMarketTone(board.changePercent)}`}
+      viewBox="0 0 100 28"
+      aria-label={`${board.name}走势示意`}
+      role="img"
+    >
       <path d={line} />
-      <circle cx={coordinates[coordinates.length - 1].x} cy={coordinates[coordinates.length - 1].y} r="1.8" />
+      <circle
+        cx={coordinates[coordinates.length - 1].x}
+        cy={coordinates[coordinates.length - 1].y}
+        r="1.8"
+      />
     </svg>
   );
 }
@@ -3028,9 +3117,12 @@ function MarketBoardsPanel({
     );
   const activeHotFilter = HOT_INDUSTRY_FILTERS.find((item) => item.id === hotIndustry);
   const activeKeywords = activeHotFilter?.keywords;
-  const filteredBoards = view === 'industry' && activeKeywords
-    ? boardUniverse.filter((board) => activeKeywords.some((keyword) => board.name.includes(keyword)))
-    : boardUniverse;
+  const filteredBoards =
+    view === 'industry' && activeKeywords
+      ? boardUniverse.filter((board) =>
+          activeKeywords.some((keyword) => board.name.includes(keyword))
+        )
+      : boardUniverse;
   const visibleBoards = filteredBoards.slice(0, 8);
   const breadth = getMarketBreadth(boardUniverse);
   const activeMeta = industryMeta;
@@ -3054,13 +3146,29 @@ function MarketBoardsPanel({
       {view === 'industry' ? (
         <div className="investments-market-sector-summary" aria-label="全球行业交叉参照">
           <div className="investments-market-sector-summary-head">
-            <div><strong>海外行业参考</strong><span>Yahoo Finance 行业 ETF 涨跌</span></div>
-            <small>{globalSectorBoards.length ? `${globalSectorBoards.length} 个 · ${globalSectorMeta.freshness === 'stale' ? '缓存' : '更新'}` : '暂无数据'}</small>
+            <div>
+              <strong>海外行业参考</strong>
+              <span>Yahoo Finance 行业 ETF 涨跌</span>
+            </div>
+            <small>
+              {globalSectorBoards.length
+                ? `${globalSectorBoards.length} 个 · ${globalSectorMeta.freshness === 'stale' ? '缓存' : '更新'}`
+                : '暂无数据'}
+            </small>
           </div>
           <div className="investments-market-sector-strip">
-            {globalSectorBoards.length ? globalSectorBoards.map((sector) => (
-              <span key={sector.code} className="investments-market-sector-item"><b>{sector.name}</b><em className={getMarketTone(sector.changePercent)}>{formatMarketPercent(sector.changePercent)}</em></span>
-            )) : <span className="investments-market-sector-empty">海外行业行情暂时不可用。</span>}
+            {globalSectorBoards.length ? (
+              globalSectorBoards.map((sector) => (
+                <span key={sector.code} className="investments-market-sector-item">
+                  <b>{sector.name}</b>
+                  <em className={getMarketTone(sector.changePercent)}>
+                    {formatMarketPercent(sector.changePercent)}
+                  </em>
+                </span>
+              ))
+            ) : (
+              <span className="investments-market-sector-empty">海外行业行情暂时不可用。</span>
+            )}
           </div>
         </div>
       ) : null}
@@ -3162,7 +3270,9 @@ function MarketBoardsPanel({
             <MarketBreadthDonut breadth={breadth} label="热门题材" />
             <div>
               <strong>{visibleBoards.length || '--'} 个板块</strong>
-              <span>涨 {breadth.up} · 平 {breadth.flat} · 跌 {breadth.down}，按涨跌幅展示前 8 个</span>
+              <span>
+                涨 {breadth.up} · 平 {breadth.flat} · 跌 {breadth.down}，按涨跌幅展示前 8 个
+              </span>
             </div>
           </div>
           <div className="investments-market-board-grid">
@@ -3203,29 +3313,40 @@ function MarketBoardsPanel({
                       {health.emoji} {health.label}
                     </em>
                   </div>
-                  {expandedBoardCode === board.code ? <div className="investments-market-board-card-stocks" aria-live="polite">
-                    <small>领涨公司</small>
-                    {constituentStatus[board.code] === 'loading' ? (
-                      <span className="investments-market-board-card-loading">正在同步公司行情…</span>
-                    ) : constituentStatus[board.code] === 'error' ? (
-                      <span className="investments-market-board-card-loading">公司行情暂时不可用，稍后重试。</span>
-                    ) : boardConstituents.length > 0 ? (
-                      boardConstituents.slice(0, 3).map((stock) => (
-                        <div key={stock.code || stock.name}>
-                          <span title={stock.name}>{stock.name}</span>
-                          <b className={getMarketTone(stock.changePercent)}>
-                            {formatMarketPercent(stock.changePercent)}
-                          </b>
-                        </div>
-                      ))
-                    ) : <span className="investments-market-board-card-loading">该板块暂未返回成分股。</span>}
-                  </div> : null}
+                  {expandedBoardCode === board.code ? (
+                    <div className="investments-market-board-card-stocks" aria-live="polite">
+                      <small>领涨公司</small>
+                      {constituentStatus[board.code] === 'loading' ? (
+                        <span className="investments-market-board-card-loading">
+                          正在同步公司行情…
+                        </span>
+                      ) : constituentStatus[board.code] === 'error' ? (
+                        <span className="investments-market-board-card-loading">
+                          公司行情暂时不可用，稍后重试。
+                        </span>
+                      ) : boardConstituents.length > 0 ? (
+                        boardConstituents.slice(0, 3).map((stock) => (
+                          <div key={stock.code || stock.name}>
+                            <span title={stock.name}>{stock.name}</span>
+                            <b className={getMarketTone(stock.changePercent)}>
+                              {formatMarketPercent(stock.changePercent)}
+                            </b>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="investments-market-board-card-loading">
+                          该板块暂未返回成分股。
+                        </span>
+                      )}
+                    </div>
+                  ) : null}
                 </article>
               );
             })}
           </div>
           <p className="investments-market-source-note">
-            数据源：{activeMeta.source} · {activeMeta.freshness === 'stale' ? '最近有效快照' : '实时快照'} · 更新于{' '}
+            数据源：{activeMeta.source} ·{' '}
+            {activeMeta.freshness === 'stale' ? '最近有效快照' : '实时快照'} · 更新于{' '}
             {formatDateTimeLabel(activeMeta.updatedAt)}
           </p>
         </>
@@ -3236,32 +3357,55 @@ function MarketBoardsPanel({
         </div>
       ) : (
         <>
-          <div className="investments-hot-industry-filters" role="toolbar" aria-label="热门行业筛选">
+          <div
+            className="investments-hot-industry-filters"
+            role="toolbar"
+            aria-label="热门行业筛选"
+          >
             {HOT_INDUSTRY_FILTERS.map((filter) => (
-              <button key={filter.id} type="button" className={hotIndustry === filter.id ? 'is-active' : ''} onClick={() => {
-                setExpandedBoardCode('');
-                setHotIndustry(filter.id);
-              }}>
+              <button
+                key={filter.id}
+                type="button"
+                className={hotIndustry === filter.id ? 'is-active' : ''}
+                onClick={() => {
+                  setExpandedBoardCode('');
+                  setHotIndustry(filter.id);
+                }}
+              >
                 {filter.label}
               </button>
             ))}
           </div>
           <div className="investments-market-board-overview">
             <div>
-              <strong>{visibleBoards.length || '--'} 个行业 · 涨 {breadth.up} / 跌 {breadth.down}</strong>
-              <span>{hasYahooFallback ? '东方财富行情暂不可用，当前使用 Yahoo 行业 ETF 参考。' : '按涨跌幅排序；每条线展示当日行业走势。'}</span>
+              <strong>
+                {visibleBoards.length || '--'} 个行业 · 涨 {breadth.up} / 跌 {breadth.down}
+              </strong>
+              <span>
+                {hasYahooFallback
+                  ? '东方财富行情暂不可用，当前使用 Yahoo 行业 ETF 参考。'
+                  : '按涨跌幅排序；每条线展示当日行业走势。'}
+              </span>
             </div>
           </div>
           <div className="investments-market-board-grid">
             {visibleBoards.map((board, index) => {
               const boardConstituents = constituents[board.code] || [];
               return (
-                <article className={`investments-market-board-card ${expandedBoardCode === board.code ? 'is-expanded' : ''}`} key={board.code || `${board.name}-${index}`}>
-                  <button className="investments-market-board-card-head" type="button" aria-expanded={expandedBoardCode === board.code} onClick={() => {
-                    const nextExpanded = expandedBoardCode === board.code ? '' : board.code;
-                    setExpandedBoardCode(nextExpanded);
-                    if (nextExpanded) onLoadConstituents(nextExpanded);
-                  }}>
+                <article
+                  className={`investments-market-board-card ${expandedBoardCode === board.code ? 'is-expanded' : ''}`}
+                  key={board.code || `${board.name}-${index}`}
+                >
+                  <button
+                    className="investments-market-board-card-head"
+                    type="button"
+                    aria-expanded={expandedBoardCode === board.code}
+                    onClick={() => {
+                      const nextExpanded = expandedBoardCode === board.code ? '' : board.code;
+                      setExpandedBoardCode(nextExpanded);
+                      if (nextExpanded) onLoadConstituents(nextExpanded);
+                    }}
+                  >
                     <div>
                       <span>{String(index + 1).padStart(2, '0')}</span>
                       <strong title={board.name}>{board.name}</strong>
@@ -3269,35 +3413,48 @@ function MarketBoardsPanel({
                     <b className={getMarketTone(board.changePercent)}>
                       {formatMarketPercent(board.changePercent)}
                     </b>
-                    <span className="investments-board-expand-mark" aria-hidden="true">{expandedBoardCode === board.code ? '−' : '+'}</span>
+                    <span className="investments-board-expand-mark" aria-hidden="true">
+                      {expandedBoardCode === board.code ? '−' : '+'}
+                    </span>
                   </button>
                   <div className="investments-market-board-card-meta">
                     <span>指数 {formatMarketIndexValue(board.value)}</span>
                     <IndustrySparkline board={board} />
                   </div>
-                  {expandedBoardCode === board.code ? <div className="investments-market-board-card-stocks" aria-live="polite">
-                    <small>领涨公司</small>
-                    {constituentStatus[board.code] === 'loading' ? (
-                      <span className="investments-market-board-card-loading">正在同步公司行情…</span>
-                    ) : constituentStatus[board.code] === 'error' ? (
-                      <span className="investments-market-board-card-loading">公司行情暂时不可用，稍后重试。</span>
-                    ) : boardConstituents.length > 0 ? (
-                      boardConstituents.slice(0, 3).map((stock) => (
-                        <div key={stock.code || stock.name}>
-                          <span title={stock.name}>{stock.name}</span>
-                          <b className={getMarketTone(stock.changePercent)}>
-                            {formatMarketPercent(stock.changePercent)}
-                          </b>
-                        </div>
-                      ))
-                    ) : <span className="investments-market-board-card-loading">该板块暂未返回成分股。</span>}
-                  </div> : null}
+                  {expandedBoardCode === board.code ? (
+                    <div className="investments-market-board-card-stocks" aria-live="polite">
+                      <small>领涨公司</small>
+                      {constituentStatus[board.code] === 'loading' ? (
+                        <span className="investments-market-board-card-loading">
+                          正在同步公司行情…
+                        </span>
+                      ) : constituentStatus[board.code] === 'error' ? (
+                        <span className="investments-market-board-card-loading">
+                          公司行情暂时不可用，稍后重试。
+                        </span>
+                      ) : boardConstituents.length > 0 ? (
+                        boardConstituents.slice(0, 3).map((stock) => (
+                          <div key={stock.code || stock.name}>
+                            <span title={stock.name}>{stock.name}</span>
+                            <b className={getMarketTone(stock.changePercent)}>
+                              {formatMarketPercent(stock.changePercent)}
+                            </b>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="investments-market-board-card-loading">
+                          该板块暂未返回成分股。
+                        </span>
+                      )}
+                    </div>
+                  ) : null}
                 </article>
               );
             })}
           </div>
           <p className="investments-market-source-note">
-            数据源：{activeMeta.source} · {activeMeta.freshness === 'stale' ? '最近有效快照' : '实时快照'} · 更新于{' '}
+            数据源：{activeMeta.source} ·{' '}
+            {activeMeta.freshness === 'stale' ? '最近有效快照' : '实时快照'} · 更新于{' '}
             {formatDateTimeLabel(activeMeta.updatedAt)}
           </p>
         </>
@@ -3505,8 +3662,7 @@ export function InvestmentsPage() {
   const [marketIndustryMeta, setMarketIndustryMeta] =
     useState<MarketDataMeta>(EMPTY_MARKET_DATA_META);
   const [globalSectorBoards, setGlobalSectorBoards] = useState<EastmoneyMarketBoard[]>([]);
-  const [globalSectorMeta, setGlobalSectorMeta] =
-    useState<MarketDataMeta>(EMPTY_MARKET_DATA_META);
+  const [globalSectorMeta, setGlobalSectorMeta] = useState<MarketDataMeta>(EMPTY_MARKET_DATA_META);
   const [marketBoardConstituents, setMarketBoardConstituents] = useState<
     Record<string, EastmoneyMarketConstituent[]>
   >({});
@@ -4152,11 +4308,11 @@ export function InvestmentsPage() {
     try {
       const [themesResult, industriesResult, conceptsResult, globalSectorsResult] =
         await Promise.allSettled([
-        fetchEastmoneyMarketThemeBoardsSnapshot(trackedMarketThemes),
-        fetchEastmoneyMarketBoardsSnapshot('industry'),
-        fetchEastmoneyMarketBoardsSnapshot('concept', 200),
-        fetchGlobalMarketSectorBoards()
-      ]);
+          fetchEastmoneyMarketThemeBoardsSnapshot(trackedMarketThemes),
+          fetchEastmoneyMarketBoardsSnapshot('industry'),
+          fetchEastmoneyMarketBoardsSnapshot('concept', 200),
+          fetchGlobalMarketSectorBoards()
+        ]);
       if (themesResult.status === 'fulfilled') {
         setMarketThemeBoards(themesResult.value.boards);
       }
@@ -4391,8 +4547,7 @@ export function InvestmentsPage() {
   function handleAddStockWatchItem(result: EastmoneyStockSearchResult) {
     const existing = investmentWatchlist.find(
       (item) =>
-        item.code === result.code ||
-        (item.tags.includes('个股') && item.name === result.name)
+        item.code === result.code || (item.tags.includes('个股') && item.name === result.name)
     );
 
     upsertInvestmentWatchItem({
@@ -4511,18 +4666,24 @@ export function InvestmentsPage() {
         <div className="investments-console-stat" aria-label="当前投资概览">
           <div className="investments-console-stat-row">
             <strong>{formatCurrencyAuto(positionSummary.totalCurrentValue)}</strong>
-            <time dateTime={new Date().toISOString()}>{new Date().toLocaleDateString('zh-CN')}</time>
+            <time dateTime={new Date().toISOString()}>
+              {new Date().toLocaleDateString('zh-CN')}
+            </time>
           </div>
-          <span>{investmentWatchlist.length} 只自选 · 今日 {formatMarketPercent(averageMarketChange)}</span>
-          <small>数据更新 · {new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</small>
+          <span>
+            {investmentWatchlist.length} 只自选 · 今日 {formatMarketPercent(averageMarketChange)}
+          </span>
+          <small>
+            数据更新 ·{' '}
+            {new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+          </small>
         </div>
       </header>
 
       <nav className="investments-console-tabs" aria-label="投资理财板块">
         {(
           [
-            ['overview', '今日总览'],
-            ['market', '大盘行情'],
+            ['overview', '今日总览 & 大盘行情'],
             ['boards', '板块监控'],
             ['watchlist', '基金自选'],
             ['news', '市场快讯']
@@ -4544,42 +4705,41 @@ export function InvestmentsPage() {
 
       <main className="investments-console-workspace">
         {investmentWorkspace === 'overview' ? (
-          <section
-            className="investments-core-grid investments-workspace-overview"
-            aria-label="今日投资看板"
-          >
-            <HoldingsTodayPanel
-              positions={activePositions}
-              watchlist={investmentWatchlist}
-              totalCurrentValue={positionSummary.totalCurrentValue}
-              totalProfit={positionSummary.totalProfit}
-              profitRate={positionSummary.profitRate}
-              marketChange={averageMarketChange}
-            />
-            <PlainMarketBriefingPanel
-              marketChange={averageMarketChange}
-              themeBoards={marketThemeBoards}
-              news={marketNews}
-              insight={marketInsight}
-              algorithmSignals={marketAlgorithmSignals}
-              insightStatus={marketInsightStatus}
-            />
-          </section>
-        ) : null}
-
-        {investmentWorkspace === 'market' ? (
-          <section className="investments-workspace-market" aria-label="大盘和市场监控">
-            <MarketOverviewPanel
-              overview={marketOverview}
-              globalQuotes={globalMarketQuotes}
-              globalStatus={globalMarketStatus}
-              globalError={globalMarketError}
-              selectedSecId={selectedMarketSecId}
-              status={marketStatus}
-              error={marketError}
-              onSelect={setSelectedMarketSecId}
-            />
-          </section>
+          <>
+            <section
+              className="investments-core-grid investments-workspace-overview"
+              aria-label="今日投资看板"
+            >
+              <HoldingsTodayPanel
+                positions={activePositions}
+                watchlist={investmentWatchlist}
+                totalCurrentValue={positionSummary.totalCurrentValue}
+                totalProfit={positionSummary.totalProfit}
+                profitRate={positionSummary.profitRate}
+                marketChange={averageMarketChange}
+              />
+              <PlainMarketBriefingPanel
+                marketChange={averageMarketChange}
+                themeBoards={marketThemeBoards}
+                news={marketNews}
+                insight={marketInsight}
+                algorithmSignals={marketAlgorithmSignals}
+                insightStatus={marketInsightStatus}
+              />
+            </section>
+            <section className="investments-workspace-market" aria-label="大盘和市场监控">
+              <MarketOverviewPanel
+                overview={marketOverview}
+                globalQuotes={globalMarketQuotes}
+                globalStatus={globalMarketStatus}
+                globalError={globalMarketError}
+                selectedSecId={selectedMarketSecId}
+                status={marketStatus}
+                error={marketError}
+                onSelect={setSelectedMarketSecId}
+              />
+            </section>
+          </>
         ) : null}
 
         {investmentWorkspace === 'boards' ? (
@@ -4622,478 +4782,478 @@ export function InvestmentsPage() {
 
         {investmentWorkspace === 'watchlist' ? (
           <section className="investments-workspace-watchlist" aria-label="基金自选">
-          <aside
-            className="panel investments-watchlist-panel"
-            data-investment-support-title="基金自选"
-          >
-            <div className="investments-section-head investments-watchlist-head">
-              <div>
-                <h3>基金自选</h3>
-              </div>
-              <div className="investments-watchlist-actions">
-                <span className="badge">{investmentWatchlist.length} 只</span>
-                <button
-                  type="button"
-                  className={`investments-watchlist-refresh-all-btn ${refreshingAllWatchItems ? 'is-loading' : ''}`}
-                  onClick={() => void handleRefreshAllWatchItems()}
-                  disabled={
-                    refreshingAllWatchItems ||
-                    refreshingWatchItemId !== null ||
-                    investmentWatchlist.length === 0
-                  }
-                  aria-label="刷新全部自选基金资料"
-                  title="刷新全部自选基金资料"
-                >
-                  <img src={ROTATE_CCW_ICON_URL} alt="" aria-hidden="true" />
-                </button>
-              </div>
-            </div>
-
-            <form className="investments-fund-lookup" onSubmit={handleFundLookupSubmit}>
-              <label htmlFor="investment-fund-code">添加基金代码</label>
-              <div className="investments-fund-lookup-row">
-                <input
-                  id="investment-fund-code"
-                  inputMode="numeric"
-                  pattern="\d{6}"
-                  maxLength={6}
-                  value={fundLookupCode}
-                  placeholder="例如 161725"
-                  onChange={(event) => {
-                    setFundLookupCode(event.target.value.replace(/\D/g, '').slice(0, 6));
-                    if (fundLookupError) setFundLookupError('');
-                    if (fundLookupStatus === 'error') setFundLookupStatus('idle');
-                  }}
-                  disabled={fundLookupStatus === 'loading'}
-                />
-                <button
-                  type="submit"
-                  className="button-with-icon primary"
-                  disabled={fundLookupStatus === 'loading' || fundLookupCode.length < 6}
-                >
-                  <img src={INFO_ICON_URL} alt="" aria-hidden="true" />
-                  {fundLookupStatus === 'loading' ? '获取中' : '获取资料'}
-                </button>
-              </div>
-              {fundLookupError ? (
-                <p className="investments-fund-lookup-error">{fundLookupError}</p>
-              ) : null}
-            </form>
-
-            <form
-              className="investments-fund-lookup investments-stock-lookup"
-              onSubmit={handleStockLookupSubmit}
+            <aside
+              className="panel investments-watchlist-panel"
+              data-investment-support-title="基金自选"
             >
-              <label htmlFor="investment-stock-query">添加个股自选</label>
-              <div className="investments-fund-lookup-row">
-                <input
-                  id="investment-stock-query"
-                  type="search"
-                  autoComplete="off"
-                  value={stockLookupQuery}
-                  placeholder="搜索股票名、代码或拼音"
-                  onChange={(event) => {
-                    setStockLookupQuery(event.target.value);
-                    if (stockLookupError) setStockLookupError('');
-                    if (stockLookupStatus === 'error') setStockLookupStatus('idle');
-                  }}
-                  disabled={stockLookupStatus === 'loading'}
-                />
-                <button
-                  type="submit"
-                  className="button-with-icon primary"
-                  disabled={stockLookupStatus === 'loading' || !stockLookupQuery.trim()}
-                >
-                  <img src={INFO_ICON_URL} alt="" aria-hidden="true" />
-                  {stockLookupStatus === 'loading' ? '搜索中' : '搜索个股'}
-                </button>
-              </div>
-              {stockLookupError ? (
-                <p className="investments-fund-lookup-error">{stockLookupError}</p>
-              ) : null}
-              {stockLookupResults.length > 0 ? (
-                <div className="investments-stock-lookup-results" aria-label="个股搜索结果">
-                  {stockLookupResults.map((result) => (
-                    <button
-                      key={result.secId}
-                      type="button"
-                      className="investments-stock-lookup-result"
-                      onClick={() => handleAddStockWatchItem(result)}
-                    >
-                      <span>
-                        <strong>{result.name}</strong>
-                        <small>{result.code}</small>
-                      </span>
-                      <em>
-                        {result.securityTypeName || '个股'} · {result.secId}
-                      </em>
-                    </button>
-                  ))}
+              <div className="investments-section-head investments-watchlist-head">
+                <div>
+                  <h3>基金自选</h3>
                 </div>
-              ) : null}
-            </form>
-
-            {investmentWatchlist.length === 0 ? (
-              <div className="investments-watchlist-empty">
-                <strong>还没有自选基金或个股</strong>
-                <p>搜索后觉得值得跟踪，就把基金或股票加入这里。</p>
+                <div className="investments-watchlist-actions">
+                  <span className="badge">{investmentWatchlist.length} 只</span>
+                  <button
+                    type="button"
+                    className={`investments-watchlist-refresh-all-btn ${refreshingAllWatchItems ? 'is-loading' : ''}`}
+                    onClick={() => void handleRefreshAllWatchItems()}
+                    disabled={
+                      refreshingAllWatchItems ||
+                      refreshingWatchItemId !== null ||
+                      investmentWatchlist.length === 0
+                    }
+                    aria-label="刷新全部自选基金资料"
+                    title="刷新全部自选基金资料"
+                  >
+                    <img src={ROTATE_CCW_ICON_URL} alt="" aria-hidden="true" />
+                  </button>
+                </div>
               </div>
-            ) : (
-              <>
-                <div className="investments-watchlist-tools">
-                  <label className="investments-watch-category-select">
-                    <span>分类</span>
-                    <select
-                      aria-label="自选基金分类"
-                      value={selectedWatchCategoryId}
-                      onChange={(event) =>
-                        setSelectedWatchCategoryId(event.target.value as WatchCategoryFilterId)
-                      }
+
+              <form className="investments-fund-lookup" onSubmit={handleFundLookupSubmit}>
+                <label htmlFor="investment-fund-code">添加基金代码</label>
+                <div className="investments-fund-lookup-row">
+                  <input
+                    id="investment-fund-code"
+                    inputMode="numeric"
+                    pattern="\d{6}"
+                    maxLength={6}
+                    value={fundLookupCode}
+                    placeholder="例如 161725"
+                    onChange={(event) => {
+                      setFundLookupCode(event.target.value.replace(/\D/g, '').slice(0, 6));
+                      if (fundLookupError) setFundLookupError('');
+                      if (fundLookupStatus === 'error') setFundLookupStatus('idle');
+                    }}
+                    disabled={fundLookupStatus === 'loading'}
+                  />
+                  <button
+                    type="submit"
+                    className="button-with-icon primary"
+                    disabled={fundLookupStatus === 'loading' || fundLookupCode.length < 6}
+                  >
+                    <img src={INFO_ICON_URL} alt="" aria-hidden="true" />
+                    {fundLookupStatus === 'loading' ? '获取中' : '获取资料'}
+                  </button>
+                </div>
+                {fundLookupError ? (
+                  <p className="investments-fund-lookup-error">{fundLookupError}</p>
+                ) : null}
+              </form>
+
+              <form
+                className="investments-fund-lookup investments-stock-lookup"
+                onSubmit={handleStockLookupSubmit}
+              >
+                <label htmlFor="investment-stock-query">添加个股自选</label>
+                <div className="investments-fund-lookup-row">
+                  <input
+                    id="investment-stock-query"
+                    type="search"
+                    autoComplete="off"
+                    value={stockLookupQuery}
+                    placeholder="搜索股票名、代码或拼音"
+                    onChange={(event) => {
+                      setStockLookupQuery(event.target.value);
+                      if (stockLookupError) setStockLookupError('');
+                      if (stockLookupStatus === 'error') setStockLookupStatus('idle');
+                    }}
+                    disabled={stockLookupStatus === 'loading'}
+                  />
+                  <button
+                    type="submit"
+                    className="button-with-icon primary"
+                    disabled={stockLookupStatus === 'loading' || !stockLookupQuery.trim()}
+                  >
+                    <img src={INFO_ICON_URL} alt="" aria-hidden="true" />
+                    {stockLookupStatus === 'loading' ? '搜索中' : '搜索个股'}
+                  </button>
+                </div>
+                {stockLookupError ? (
+                  <p className="investments-fund-lookup-error">{stockLookupError}</p>
+                ) : null}
+                {stockLookupResults.length > 0 ? (
+                  <div className="investments-stock-lookup-results" aria-label="个股搜索结果">
+                    {stockLookupResults.map((result) => (
+                      <button
+                        key={result.secId}
+                        type="button"
+                        className="investments-stock-lookup-result"
+                        onClick={() => handleAddStockWatchItem(result)}
+                      >
+                        <span>
+                          <strong>{result.name}</strong>
+                          <small>{result.code}</small>
+                        </span>
+                        <em>
+                          {result.securityTypeName || '个股'} · {result.secId}
+                        </em>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </form>
+
+              {investmentWatchlist.length === 0 ? (
+                <div className="investments-watchlist-empty">
+                  <strong>还没有自选基金或个股</strong>
+                  <p>搜索后觉得值得跟踪，就把基金或股票加入这里。</p>
+                </div>
+              ) : (
+                <>
+                  <div className="investments-watchlist-tools">
+                    <label className="investments-watch-category-select">
+                      <span>分类</span>
+                      <select
+                        aria-label="自选基金分类"
+                        value={selectedWatchCategoryId}
+                        onChange={(event) =>
+                          setSelectedWatchCategoryId(event.target.value as WatchCategoryFilterId)
+                        }
+                      >
+                        {WATCH_CATEGORY_FILTERS.map((category) => {
+                          const count = watchCategoryCounts[category.id];
+
+                          return (
+                            <option
+                              key={category.id}
+                              disabled={count === 0 && category.id !== 'all'}
+                              value={category.id}
+                            >
+                              {category.label} {count}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </label>
+                    <div className="investments-watch-grid-controls" aria-label="每行卡片数量">
+                      <button
+                        type="button"
+                        className={watchDisplayMode === 'grid' ? 'is-active' : ''}
+                        onClick={() => setWatchDisplayMode('grid')}
+                        aria-label="卡片监控视图"
+                        aria-pressed={watchDisplayMode === 'grid'}
+                        title="卡片监控视图"
+                      >
+                        <span aria-hidden="true">&#9638;</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={watchDisplayMode === 'list' ? 'is-active' : ''}
+                        onClick={() => setWatchDisplayMode('list')}
+                        aria-label="列表监控视图"
+                        aria-pressed={watchDisplayMode === 'list'}
+                        title="列表监控视图"
+                      >
+                        <span aria-hidden="true">&#9779;</span>
+                      </button>
+                      {watchDisplayMode === 'grid'
+                        ? WATCH_GRID_COLUMN_OPTIONS.map((count) => (
+                            <button
+                              key={count}
+                              type="button"
+                              className={watchGridColumns === count ? 'is-active' : ''}
+                              onClick={() => setWatchGridColumns(count)}
+                              aria-pressed={watchGridColumns === count}
+                            >
+                              {count}
+                            </button>
+                          ))
+                        : null}
+                    </div>
+                  </div>
+
+                  {filteredInvestmentWatchlist.length === 0 ? (
+                    <div className="investments-watchlist-empty investments-watchlist-filter-empty">
+                      <strong>当前分类没有自选基金</strong>
+                      <p>切换到其他分类，或用基金代码添加一只新的。</p>
+                    </div>
+                  ) : (
+                    <div
+                      className={`investments-watchlist-list is-${watchDisplayMode} is-columns-${watchGridColumns}`}
                     >
-                      {WATCH_CATEGORY_FILTERS.map((category) => {
-                        const count = watchCategoryCounts[category.id];
+                      {filteredInvestmentWatchlist.map((item) => {
+                        const isExpanded = expandedWatchItemId === item.id;
+                        const detailSections = compactWatchDetailSections(item);
+                        const performanceSection = detailSections.find(
+                          (section) => section.title === '历史业绩'
+                        );
+                        const otherDetailSections = detailSections.filter(
+                          (section) => section.title !== '历史业绩'
+                        );
+                        const investmentAdvice = item.investmentAdvice?.trim();
+                        const showInvestmentAdvice = Boolean(
+                          investmentAdvice &&
+                          !/先加入自选观察|先加入关注列表/.test(investmentAdvice)
+                        );
+                        const holdingsPreview = item.fundHoldings?.slice(0, 3) || [];
+                        const assetAllocationPreview = item.assetAllocation?.slice(0, 3) || [];
+                        const performancePoints = parseWatchPerformancePoints(
+                          performanceSection?.items || []
+                        );
+                        const watchCategory =
+                          WATCH_CATEGORY_FILTERS.find(
+                            (category) => category.id === getWatchItemCategoryId(item)
+                          ) || WATCH_CATEGORY_FILTERS[WATCH_CATEGORY_FILTERS.length - 1];
+                        const isRefreshing =
+                          refreshingAllWatchItems || refreshingWatchItemId === item.id;
+                        const isFollowing = item.tags.includes('关注中');
 
                         return (
-                          <option
-                            key={category.id}
-                            disabled={count === 0 && category.id !== 'all'}
-                            value={category.id}
+                          <article
+                            key={item.id}
+                            className={`investments-watch-card ${isExpanded ? 'is-expanded' : ''}`}
+                            tabIndex={0}
+                            aria-expanded={isExpanded}
+                            onClick={() => toggleWatchItemDetails(item.id)}
+                            onKeyDown={(event) => handleWatchCardKeyDown(event, item.id)}
                           >
-                            {category.label} {count}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </label>
-                  <div className="investments-watch-grid-controls" aria-label="每行卡片数量">
-                    <button
-                      type="button"
-                      className={watchDisplayMode === 'grid' ? 'is-active' : ''}
-                      onClick={() => setWatchDisplayMode('grid')}
-                      aria-label="卡片监控视图"
-                      aria-pressed={watchDisplayMode === 'grid'}
-                      title="卡片监控视图"
-                    >
-                      <span aria-hidden="true">&#9638;</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={watchDisplayMode === 'list' ? 'is-active' : ''}
-                      onClick={() => setWatchDisplayMode('list')}
-                      aria-label="列表监控视图"
-                      aria-pressed={watchDisplayMode === 'list'}
-                      title="列表监控视图"
-                    >
-                      <span aria-hidden="true">&#9779;</span>
-                    </button>
-                    {watchDisplayMode === 'grid'
-                      ? WATCH_GRID_COLUMN_OPTIONS.map((count) => (
-                          <button
-                            key={count}
-                            type="button"
-                            className={watchGridColumns === count ? 'is-active' : ''}
-                            onClick={() => setWatchGridColumns(count)}
-                            aria-pressed={watchGridColumns === count}
-                          >
-                            {count}
-                          </button>
-                        ))
-                      : null}
-                  </div>
-                </div>
-
-                {filteredInvestmentWatchlist.length === 0 ? (
-                  <div className="investments-watchlist-empty investments-watchlist-filter-empty">
-                    <strong>当前分类没有自选基金</strong>
-                    <p>切换到其他分类，或用基金代码添加一只新的。</p>
-                  </div>
-                ) : (
-                  <div
-                    className={`investments-watchlist-list is-${watchDisplayMode} is-columns-${watchGridColumns}`}
-                  >
-                    {filteredInvestmentWatchlist.map((item) => {
-                      const isExpanded = expandedWatchItemId === item.id;
-                      const detailSections = compactWatchDetailSections(item);
-                      const performanceSection = detailSections.find(
-                        (section) => section.title === '历史业绩'
-                      );
-                      const otherDetailSections = detailSections.filter(
-                        (section) => section.title !== '历史业绩'
-                      );
-                      const investmentAdvice = item.investmentAdvice?.trim();
-                      const showInvestmentAdvice = Boolean(
-                        investmentAdvice &&
-                          !/先加入自选观察|先加入关注列表/.test(investmentAdvice)
-                      );
-                      const holdingsPreview = item.fundHoldings?.slice(0, 3) || [];
-                      const assetAllocationPreview = item.assetAllocation?.slice(0, 3) || [];
-                      const performancePoints = parseWatchPerformancePoints(
-                        performanceSection?.items || []
-                      );
-                      const watchCategory =
-                        WATCH_CATEGORY_FILTERS.find(
-                          (category) => category.id === getWatchItemCategoryId(item)
-                        ) || WATCH_CATEGORY_FILTERS[WATCH_CATEGORY_FILTERS.length - 1];
-                      const isRefreshing =
-                        refreshingAllWatchItems || refreshingWatchItemId === item.id;
-                      const isFollowing = item.tags.includes('关注中');
-
-                      return (
-                        <article
-                          key={item.id}
-                          className={`investments-watch-card ${isExpanded ? 'is-expanded' : ''}`}
-                          tabIndex={0}
-                          aria-expanded={isExpanded}
-                          onClick={() => toggleWatchItemDetails(item.id)}
-                          onKeyDown={(event) => handleWatchCardKeyDown(event, item.id)}
-                        >
-                          <div className="investments-watch-card-head">
-                            <div>
-                              <strong>{item.name}</strong>
-                              <p>
-                                {item.code || '未记录代码'}
-                                {item.platform ? ` · ${item.platform}` : ''}
-                              </p>
-                            </div>
-                            <div className="investments-watch-card-actions">
-                              <span className="investments-watch-card-category">
-                                {watchCategory.label}
-                              </span>
-                              {item.lastRiskLevel && getAnalysisRiskLabel(item.lastRiskLevel) ? (
-                                <span
-                                  className={`investments-analysis-risk ${getAnalysisRiskClass(
-                                    item.lastRiskLevel
-                                  )}`}
-                                >
-                                  {getAnalysisRiskLabel(item.lastRiskLevel)}
+                            <div className="investments-watch-card-head">
+                              <div>
+                                <strong>{item.name}</strong>
+                                <p>
+                                  {item.code || '未记录代码'}
+                                  {item.platform ? ` · ${item.platform}` : ''}
+                                </p>
+                              </div>
+                              <div className="investments-watch-card-actions">
+                                <span className="investments-watch-card-category">
+                                  {watchCategory.label}
                                 </span>
-                              ) : null}
-                              <button
-                                type="button"
-                                className="danger investments-watch-card-remove"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  removeInvestmentWatchItem(item.id);
-                                }}
-                                aria-label={`移除 ${item.name}`}
-                              >
-                                移除
-                              </button>
-                            </div>
-                          </div>
-                          {showInvestmentAdvice ? (
-                            <div className="investments-watch-card-brief">
-                              <strong>{investmentAdvice}</strong>
-                            </div>
-                          ) : null}
-                          <div
-                            className="investments-watch-card-mini-stats"
-                            aria-label="基金关键数据"
-                          >
-                            <span>
-                              <em>净值</em>
-                              <strong>{item.netValue || '待更新'}</strong>
-                            </span>
-                            <span>
-                              <em>收益</em>
-                              <strong>{item.addedReturn || '待更新'}</strong>
-                            </span>
-                            <span className="is-holding">
-                              <em>持有</em>
-                              {editingWatchHoldingId === item.id ? (
-                                <input
-                                  autoFocus
-                                  aria-label={`${item.name}持有份额`}
-                                  className="investments-watch-holding-input"
-                                  inputMode="decimal"
-                                  onChange={(event) =>
-                                    setEditingWatchHoldingValue(event.target.value)
-                                  }
-                                  onClick={(event) => event.stopPropagation()}
-                                  onKeyDown={(event) => {
-                                    event.stopPropagation();
-                                    if (event.key === 'Enter') {
-                                      event.preventDefault();
-                                      handleCommitWatchHoldingShares(item);
-                                    }
-                                    if (event.key === 'Escape') {
-                                      event.preventDefault();
-                                      handleCancelEditingWatchHoldingShares();
-                                    }
-                                  }}
-                                  placeholder="份额"
-                                  type="text"
-                                  value={editingWatchHoldingValue}
-                                />
-                              ) : (
+                                {item.lastRiskLevel && getAnalysisRiskLabel(item.lastRiskLevel) ? (
+                                  <span
+                                    className={`investments-analysis-risk ${getAnalysisRiskClass(
+                                      item.lastRiskLevel
+                                    )}`}
+                                  >
+                                    {getAnalysisRiskLabel(item.lastRiskLevel)}
+                                  </span>
+                                ) : null}
                                 <button
                                   type="button"
-                                  className={`investments-watch-holding-btn ${
-                                    item.holdingShares ? 'has-value' : 'is-empty'
-                                  }`}
+                                  className="danger investments-watch-card-remove"
                                   onClick={(event) => {
                                     event.stopPropagation();
-                                    handleStartEditingWatchHoldingShares(item);
+                                    removeInvestmentWatchItem(item.id);
                                   }}
-                                  title="点击填写持有份额"
+                                  aria-label={`移除 ${item.name}`}
                                 >
-                                  {formatHoldingShares(item.holdingShares) || '待填写'}
+                                  移除
                                 </button>
-                              )}
-                            </span>
-                          </div>
-                          <div className="investments-watch-card-ai-actions">
-                            {!isFollowing ? (
+                              </div>
+                            </div>
+                            {showInvestmentAdvice ? (
+                              <div className="investments-watch-card-brief">
+                                <strong>{investmentAdvice}</strong>
+                              </div>
+                            ) : null}
+                            <div
+                              className="investments-watch-card-mini-stats"
+                              aria-label="基金关键数据"
+                            >
+                              <span>
+                                <em>净值</em>
+                                <strong>{item.netValue || '待更新'}</strong>
+                              </span>
+                              <span>
+                                <em>收益</em>
+                                <strong>{item.addedReturn || '待更新'}</strong>
+                              </span>
+                              <span className="is-holding">
+                                <em>持有</em>
+                                {editingWatchHoldingId === item.id ? (
+                                  <input
+                                    autoFocus
+                                    aria-label={`${item.name}持有份额`}
+                                    className="investments-watch-holding-input"
+                                    inputMode="decimal"
+                                    onChange={(event) =>
+                                      setEditingWatchHoldingValue(event.target.value)
+                                    }
+                                    onClick={(event) => event.stopPropagation()}
+                                    onKeyDown={(event) => {
+                                      event.stopPropagation();
+                                      if (event.key === 'Enter') {
+                                        event.preventDefault();
+                                        handleCommitWatchHoldingShares(item);
+                                      }
+                                      if (event.key === 'Escape') {
+                                        event.preventDefault();
+                                        handleCancelEditingWatchHoldingShares();
+                                      }
+                                    }}
+                                    placeholder="份额"
+                                    type="text"
+                                    value={editingWatchHoldingValue}
+                                  />
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className={`investments-watch-holding-btn ${
+                                      item.holdingShares ? 'has-value' : 'is-empty'
+                                    }`}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      handleStartEditingWatchHoldingShares(item);
+                                    }}
+                                    title="点击填写持有份额"
+                                  >
+                                    {formatHoldingShares(item.holdingShares) || '待填写'}
+                                  </button>
+                                )}
+                              </span>
+                            </div>
+                            <div className="investments-watch-card-ai-actions">
+                              {!isFollowing ? (
+                                <button
+                                  type="button"
+                                  className="investments-watch-follow-btn"
+                                  aria-label="添加关注"
+                                  title="添加关注"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleFollowWatchItem(item);
+                                  }}
+                                >
+                                  <span aria-hidden="true">+</span>
+                                </button>
+                              ) : null}
                               <button
                                 type="button"
-                                className="investments-watch-follow-btn"
-                                aria-label="添加关注"
-                                title="添加关注"
+                                className={`investments-watch-refresh-btn ${isRefreshing ? 'is-loading' : ''}`}
+                                aria-label={`刷新 ${item.name} 基金资料`}
+                                title="刷新基金资料"
+                                disabled={isRefreshing}
                                 onClick={(event) => {
                                   event.stopPropagation();
-                                  handleFollowWatchItem(item);
+                                  void handleRefreshWatchItem(item);
                                 }}
                               >
-                                <span aria-hidden="true">+</span>
+                                <img src={ROTATE_CCW_ICON_URL} alt="" aria-hidden="true" />
                               </button>
-                            ) : null}
-                            <button
-                              type="button"
-                              className={`investments-watch-refresh-btn ${isRefreshing ? 'is-loading' : ''}`}
-                              aria-label={`刷新 ${item.name} 基金资料`}
-                              title="刷新基金资料"
-                              disabled={isRefreshing}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                void handleRefreshWatchItem(item);
-                              }}
-                            >
-                              <img src={ROTATE_CCW_ICON_URL} alt="" aria-hidden="true" />
-                            </button>
-                          </div>
-                          <div className="investments-watch-card-meta">
-                            <span>{formatFundDataFreshness(item.lastDataAt)}</span>
-                          </div>
+                            </div>
+                            <div className="investments-watch-card-meta">
+                              <span>{formatFundDataFreshness(item.lastDataAt)}</span>
+                            </div>
 
-                          {isExpanded ? (
-                            <div className="investments-watch-card-details">
-                              {item.lastSummary ? (
-                                <section className="investments-watch-card-expanded-summary">
-                                  <span>分析摘要</span>
-                                  <p>{item.lastSummary}</p>
-                                </section>
-                              ) : null}
-                              {detailSections.length > 0 ? (
-                                <>
-                                  {performanceSection && performancePoints.length > 0 ? (
-                                    <section className="investments-watch-performance-panel">
-                                      <div className="investments-watch-detail-head">
-                                        <span>{performanceSection.title}</span>
-                                        <small>按不同时间区间连接走势</small>
-                                      </div>
-                                      <WatchPerformanceLineChart points={performancePoints} />
-                                    </section>
-                                  ) : null}
-
-                                  <div className="investments-watch-card-split-grid">
-                                    <section className="investments-watch-card-split is-holdings">
-                                      <span>重仓股票</span>
-                                      {holdingsPreview.length > 0 ? (
-                                        <WatchHoldingQuoteList
-                                          holdings={holdingsPreview}
-                                          quotesByCode={holdingStockQuotes}
-                                        />
-                                      ) : (
-                                        <p>待更新</p>
-                                      )}
-                                    </section>
-                                    <section className="investments-watch-card-split is-assets">
-                                      <span>资产分布</span>
-                                      {assetAllocationPreview.length > 0 ? (
-                                        <div
-                                          className="investments-watch-chip-list"
-                                          aria-label="基金资产分布"
-                                        >
-                                          {assetAllocationPreview.map((value) => {
-                                            const displayValue = formatWatchPreviewItem(value);
-                                            return (
-                                              <strong
-                                                key={`${item.id}-asset-${value}`}
-                                                title={displayValue}
-                                              >
-                                                {displayValue}
-                                              </strong>
-                                            );
-                                          })}
-                                        </div>
-                                      ) : (
-                                        <p>待更新</p>
-                                      )}
-                                    </section>
-                                  </div>
-
-                                  <div className="investments-watch-detail-grid">
-                                    {otherDetailSections.map((section) => (
-                                      <section
-                                        key={`${item.id}-${section.title}`}
-                                        className={`investments-watch-detail-card ${getWatchSectionClassName(
-                                          section.kind
-                                        )}`}
-                                      >
+                            {isExpanded ? (
+                              <div className="investments-watch-card-details">
+                                {item.lastSummary ? (
+                                  <section className="investments-watch-card-expanded-summary">
+                                    <span>分析摘要</span>
+                                    <p>{item.lastSummary}</p>
+                                  </section>
+                                ) : null}
+                                {detailSections.length > 0 ? (
+                                  <>
+                                    {performanceSection && performancePoints.length > 0 ? (
+                                      <section className="investments-watch-performance-panel">
                                         <div className="investments-watch-detail-head">
-                                          <span>{section.title}</span>
-                                          {section.kind === 'chips' ? (
-                                            <small>精选摘要</small>
-                                          ) : null}
+                                          <span>{performanceSection.title}</span>
+                                          <small>按不同时间区间连接走势</small>
                                         </div>
-                                        {section.title === '基金持仓' ? (
+                                        <WatchPerformanceLineChart points={performancePoints} />
+                                      </section>
+                                    ) : null}
+
+                                    <div className="investments-watch-card-split-grid">
+                                      <section className="investments-watch-card-split is-holdings">
+                                        <span>重仓股票</span>
+                                        {holdingsPreview.length > 0 ? (
                                           <WatchHoldingQuoteList
-                                            holdings={section.items}
+                                            holdings={holdingsPreview}
                                             quotesByCode={holdingStockQuotes}
                                           />
-                                        ) : section.kind === 'chips' ? (
-                                          <div className="investments-watch-chip-list">
-                                            {section.items.map((value) => (
-                                              <strong
-                                                key={`${item.id}-${section.title}-${value}`}
-                                                title={value}
-                                              >
-                                                {value}
-                                              </strong>
-                                            ))}
-                                          </div>
-                                        ) : section.kind === 'stat' ? (
-                                          <strong className="investments-watch-detail-stat">
-                                            {section.items[0]}
-                                          </strong>
                                         ) : (
-                                          <div className="investments-watch-detail-copy">
-                                            {section.items.map((value) => (
-                                              <p key={`${item.id}-${section.title}-${value}`}>
-                                                {value}
-                                              </p>
-                                            ))}
-                                          </div>
+                                          <p>待更新</p>
                                         )}
                                       </section>
-                                    ))}
-                                  </div>
-                                </>
-                              ) : (
-                                <p className="investments-watch-card-empty-detail">
-                                  暂无更多资料。
-                                </p>
-                              )}
-                            </div>
-                          ) : null}
-                        </article>
-                      );
-                    })}
-                  </div>
-                )}
-              </>
-            )}
-          </aside>
+                                      <section className="investments-watch-card-split is-assets">
+                                        <span>资产分布</span>
+                                        {assetAllocationPreview.length > 0 ? (
+                                          <div
+                                            className="investments-watch-chip-list"
+                                            aria-label="基金资产分布"
+                                          >
+                                            {assetAllocationPreview.map((value) => {
+                                              const displayValue = formatWatchPreviewItem(value);
+                                              return (
+                                                <strong
+                                                  key={`${item.id}-asset-${value}`}
+                                                  title={displayValue}
+                                                >
+                                                  {displayValue}
+                                                </strong>
+                                              );
+                                            })}
+                                          </div>
+                                        ) : (
+                                          <p>待更新</p>
+                                        )}
+                                      </section>
+                                    </div>
+
+                                    <div className="investments-watch-detail-grid">
+                                      {otherDetailSections.map((section) => (
+                                        <section
+                                          key={`${item.id}-${section.title}`}
+                                          className={`investments-watch-detail-card ${getWatchSectionClassName(
+                                            section.kind
+                                          )}`}
+                                        >
+                                          <div className="investments-watch-detail-head">
+                                            <span>{section.title}</span>
+                                            {section.kind === 'chips' ? (
+                                              <small>精选摘要</small>
+                                            ) : null}
+                                          </div>
+                                          {section.title === '基金持仓' ? (
+                                            <WatchHoldingQuoteList
+                                              holdings={section.items}
+                                              quotesByCode={holdingStockQuotes}
+                                            />
+                                          ) : section.kind === 'chips' ? (
+                                            <div className="investments-watch-chip-list">
+                                              {section.items.map((value) => (
+                                                <strong
+                                                  key={`${item.id}-${section.title}-${value}`}
+                                                  title={value}
+                                                >
+                                                  {value}
+                                                </strong>
+                                              ))}
+                                            </div>
+                                          ) : section.kind === 'stat' ? (
+                                            <strong className="investments-watch-detail-stat">
+                                              {section.items[0]}
+                                            </strong>
+                                          ) : (
+                                            <div className="investments-watch-detail-copy">
+                                              {section.items.map((value) => (
+                                                <p key={`${item.id}-${section.title}-${value}`}>
+                                                  {value}
+                                                </p>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </section>
+                                      ))}
+                                    </div>
+                                  </>
+                                ) : (
+                                  <p className="investments-watch-card-empty-detail">
+                                    暂无更多资料。
+                                  </p>
+                                )}
+                              </div>
+                            ) : null}
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+            </aside>
           </section>
         ) : null}
 

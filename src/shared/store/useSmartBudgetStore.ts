@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
   BudgetAnswers,
-  BudgetRecommendation
+  BudgetRecommendation,
+  normalizeBudgetAnswers
 } from '../../features/smart-budget/model/budgetPlanner';
 
 export type ConfirmedSmartBudgetPlan = {
@@ -26,8 +27,25 @@ interface SmartBudgetState {
   confirmedPlan: ConfirmedSmartBudgetPlan | null;
   history: SmartBudgetPlanHistoryItem[];
   confirmPlan: (payload: { answers: BudgetAnswers; recommendation: BudgetRecommendation }) => void;
+  /** 就地更新当前方案，不新增历史版本（用于看板上的分类微调）。 */
+  updatePlan: (recommendation: BudgetRecommendation) => void;
   restorePlan: (plan: SmartBudgetPlanHistoryItem) => void;
   clearPlan: () => void;
+}
+
+function normalizePlan(raw: unknown): ConfirmedSmartBudgetPlan | null {
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+  const source = raw as Partial<ConfirmedSmartBudgetPlan>;
+  if (!source.recommendation || !source.answers) {
+    return null;
+  }
+  return {
+    answers: normalizeBudgetAnswers(source.answers),
+    recommendation: source.recommendation,
+    confirmedAt: String(source.confirmedAt || new Date().toISOString())
+  };
 }
 
 /**
@@ -61,6 +79,18 @@ export const useSmartBudgetStore = create<SmartBudgetState>()(
         clearWizardDraft();
         set({ confirmedPlan: plan });
       },
+      updatePlan: (recommendation) => {
+        set((state) =>
+          state.confirmedPlan
+            ? {
+                confirmedPlan: {
+                  ...state.confirmedPlan,
+                  recommendation
+                }
+              }
+            : state
+        );
+      },
       clearPlan: () => {
         clearWizardDraft();
         set({ confirmedPlan: null });
@@ -69,11 +99,19 @@ export const useSmartBudgetStore = create<SmartBudgetState>()(
     {
       name: 'ledgerflow-smart-budget',
       partialize: (state) => ({ confirmedPlan: state.confirmedPlan, history: state.history }),
-      merge: (persisted, current) => ({
-        ...current,
-        ...(persisted as Partial<SmartBudgetState>),
-        history: (persisted as Partial<SmartBudgetState>)?.history || []
-      })
+      merge: (persisted, current) => {
+        const source = (persisted || {}) as Partial<SmartBudgetState>;
+        const history = Array.isArray(source.history)
+          ? source.history
+              .map((item) => normalizePlan(item))
+              .filter((item): item is ConfirmedSmartBudgetPlan => Boolean(item))
+          : [];
+        return {
+          ...current,
+          confirmedPlan: normalizePlan(source.confirmedPlan),
+          history
+        };
+      }
     }
   )
 );

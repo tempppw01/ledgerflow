@@ -111,7 +111,6 @@ vi.mock('../../shared/store/useAiSettings', () => ({
     selector ? selector(aiSettingsMocks.state) : aiSettingsMocks.state
 }));
 
-
 const appPreferencesMocks = vi.hoisted(() => {
   const addDebtMock = vi.fn();
   const updateDebtMock = vi.fn();
@@ -155,7 +154,14 @@ const appPreferencesMocks = vi.hoisted(() => {
     (selector: (state: Record<string, unknown>) => unknown) => selector(state),
     { getState: () => state }
   );
-  return { addDebtMock, updateDebtMock, removeDebtMock, addRepaymentRecordMock, state, useAppPreferences };
+  return {
+    addDebtMock,
+    updateDebtMock,
+    removeDebtMock,
+    addRepaymentRecordMock,
+    state,
+    useAppPreferences
+  };
 });
 
 const addDebtMock = appPreferencesMocks.addDebtMock;
@@ -193,7 +199,8 @@ const financeStoreMocks = vi.hoisted(() => {
 });
 
 vi.mock('../../shared/store/useFinanceStore', () => ({
-  useFinanceStore: (selector: (state: Record<string, unknown>) => unknown) => selector(financeStoreMocks.state)
+  useFinanceStore: (selector: (state: Record<string, unknown>) => unknown) =>
+    selector(financeStoreMocks.state)
 }));
 
 vi.mock('../../features/assistant/api/openaiCompatibleClient', () => ({
@@ -284,7 +291,9 @@ describe('AssistantPage', () => {
     await selectAssistantMode('AI 记账');
 
     expect(screen.getByText(/把今天的每一笔/)).toBeInTheDocument();
-    const bookkeepingIllustration = container.querySelector<HTMLImageElement>('.chat-bookkeeping-illustration');
+    const bookkeepingIllustration = container.querySelector<HTMLImageElement>(
+      '.chat-bookkeeping-illustration'
+    );
     expect(bookkeepingIllustration?.src).toContain('/ledgerflow/Illustrations/importing.svg');
   });
 
@@ -301,7 +310,9 @@ describe('AssistantPage', () => {
 
     expect(screen.getAllByRole('button', { name: 'AI 信贷管家' }).length).toBeGreaterThan(0);
     expect(await screen.findByText(/每一笔该还什么/)).toBeInTheDocument();
-    const creditIllustration = container.querySelector<HTMLImageElement>('.chat-credit-illustration');
+    const creditIllustration = container.querySelector<HTMLImageElement>(
+      '.chat-credit-illustration'
+    );
     expect(creditIllustration?.src).toContain('/ledgerflow/Illustrations/importing.svg');
     expect(screen.queryByText('梳理本月应还')).not.toBeInTheDocument();
     expect(screen.queryByText('识别花呗与分期')).not.toBeInTheDocument();
@@ -341,9 +352,15 @@ describe('AssistantPage', () => {
 
     expect(screen.getByRole('button', { name: 'AI 投资助手' })).toHaveClass('active');
     expect(screen.getByRole('heading', { name: /投资上的问题/ })).toBeInTheDocument();
-    expect(container.querySelector('.chat-investment-mode-content .chat-mode-welcome')).not.toBeNull();
-    expect(container.querySelector('.chat-investment-mode-content .chat-investment-starter')).not.toBeNull();
-    expect(container.querySelector('.chat-investment-mode-content .investments-ai-composer')).not.toBeNull();
+    expect(
+      container.querySelector('.chat-investment-mode-content .chat-mode-welcome')
+    ).not.toBeNull();
+    expect(
+      container.querySelector('.chat-investment-mode-content .chat-investment-starter')
+    ).not.toBeNull();
+    expect(
+      container.querySelector('.chat-investment-mode-content .investments-ai-composer')
+    ).not.toBeNull();
     expect(container.querySelector('.chat-general-welcome')).toBeNull();
   });
 
@@ -487,8 +504,6 @@ describe('AssistantPage', () => {
     sessionStorageGetItemSpy.mockRestore();
   });
 
-
-
   it('信贷结果应展示补全进度并提示承接上轮补充', async () => {
     useAssistantWorkbenchMock.mockReturnValue({
       ...createWorkbenchMock(),
@@ -619,8 +634,6 @@ describe('AssistantPage', () => {
     sessionStorageGetItemSpy.mockRestore();
   });
 
-
-
   it('信贷卡片应展示还款计划、账户与流水检索结果', async () => {
     useAssistantWorkbenchMock.mockReturnValue({
       ...createWorkbenchMock(),
@@ -669,9 +682,13 @@ describe('AssistantPage', () => {
 
     expect(await screen.findByText('还款检索结果')).toBeInTheDocument();
     expect(screen.getByText('计划中的应还')).toBeInTheDocument();
-    expect(screen.getByText((content) => content.includes('每月8日') && content.includes('本期约666'))).toBeInTheDocument();
+    expect(
+      screen.getByText((content) => content.includes('每月8日') && content.includes('本期约666'))
+    ).toBeInTheDocument();
     expect(screen.getByText('计划 / 实际账户')).toBeInTheDocument();
-    expect(screen.getByText((content) => content.includes('招商') && content.includes('银行卡'))).toBeInTheDocument();
+    expect(
+      screen.getByText((content) => content.includes('招商') && content.includes('银行卡'))
+    ).toBeInTheDocument();
 
     sessionStorageGetItemSpy.mockRestore();
   });
@@ -860,7 +877,8 @@ describe('AssistantPage', () => {
 
     useAssistantWorkbenchMock.mockReturnValue({
       ...createWorkbenchMock(),
-      rawContent: '最近餐饮和通勤支出一起抬升，本月预算压力主要来自高频小额消费。建议先收紧工作日外卖，再看通勤替代方案。',
+      rawContent:
+        '最近餐饮和通勤支出一起抬升，本月预算压力主要来自高频小额消费。建议先收紧工作日外卖，再看通勤替代方案。',
       status: 'ready'
     });
 
@@ -952,7 +970,41 @@ describe('AssistantPage', () => {
     );
 
     expect(await screen.findByRole('button', { name: /餐饮和通勤/ })).toBeInTheDocument();
-    expect(screen.queryByText('把这个变化拆成几个阶段，我想看真正的拐点。')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('把这个变化拆成几个阶段，我想看真正的拐点。')
+    ).not.toBeInTheDocument();
+    sessionStorageGetItemSpy.mockRestore();
+  });
+
+  it('输入工具条与消息操作栏的图标应使用内联 SVG 而不是外部图片', async () => {
+    useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
+
+    const sessionStorageGetItemSpy = vi
+      .spyOn(window.sessionStorage.__proto__, 'getItem')
+      .mockImplementation((key) => {
+        if (String(key).includes('chatHistory.assistant')) {
+          return JSON.stringify([
+            { id: 'icon-user', role: 'user', text: '本月餐饮花了多少？' },
+            { id: 'icon-assistant', role: 'assistant', text: '本月餐饮共支出 860 元。' }
+          ]);
+        }
+        return '[]';
+      });
+
+    const { container } = render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    const clearButton = screen.getByRole('button', { name: '清空上下文' });
+    expect(clearButton.querySelector('svg')).toHaveAttribute('data-icon', 'chat-clear');
+    expect(clearButton.querySelector('img')).toBeNull();
+
+    const actionIcons = container.querySelectorAll('.chat-icon-action-svg');
+    expect(actionIcons.length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('.chat-icon-action-btn img')).toHaveLength(0);
+
     sessionStorageGetItemSpy.mockRestore();
   });
 });

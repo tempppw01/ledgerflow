@@ -158,34 +158,39 @@
     radial-gradient(circle at 8% -12%, rgba(79, 110, 247, 0.1), transparent 36%),
     radial-gradient(circle at 92% -22%, rgba(32, 201, 151, 0.08), transparent 30%),
     linear-gradient(180deg, #f8faff 0%, #f3f5f9 36%, #eef2f8 100%);
-  --gradient-surface:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-bg-elevated) 97%, rgba(255, 255, 255, 0.9)) 0%,
-      color-mix(in srgb, var(--color-bg-elevated) 93%, var(--color-primary-bg)) 52%,
-      color-mix(in srgb, var(--color-bg-elevated) 90%, var(--color-bg)) 100%
-    );
-  --gradient-surface-muted:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-bg-subtle)) 0%,
-      color-mix(in srgb, var(--color-bg-elevated) 84%, var(--color-bg)) 100%
-    );
+  --gradient-surface: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-bg-elevated) 97%, rgba(255, 255, 255, 0.9)) 0%,
+    color-mix(in srgb, var(--color-bg-elevated) 93%, var(--color-primary-bg)) 52%,
+    color-mix(in srgb, var(--color-bg-elevated) 90%, var(--color-bg)) 100%
+  );
+  --gradient-surface-muted: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-bg-subtle)) 0%,
+    color-mix(in srgb, var(--color-bg-elevated) 84%, var(--color-bg)) 100%
+  );
   --gradient-hero:
-    radial-gradient(circle at top right, color-mix(in srgb, var(--color-primary) 18%, transparent), transparent 46%),
-    radial-gradient(circle at left center, color-mix(in srgb, var(--color-primary-bg) 62%, transparent), transparent 52%),
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--color-primary) 18%, transparent),
+      transparent 46%
+    ),
+    radial-gradient(
+      circle at left center,
+      color-mix(in srgb, var(--color-primary-bg) 62%, transparent),
+      transparent 52%
+    ),
     linear-gradient(
       135deg,
       color-mix(in srgb, var(--color-primary-bg) 92%, var(--color-bg-elevated)) 0%,
       color-mix(in srgb, var(--color-bg-elevated) 88%, rgba(255, 255, 255, 0.94)) 48%,
       color-mix(in srgb, var(--color-bg-elevated) 84%, var(--color-primary-bg)) 100%
     );
-  --gradient-accent-soft:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--color-primary-bg) 90%, var(--color-bg-elevated)) 0%,
-      color-mix(in srgb, var(--color-bg-elevated) 86%, var(--color-bg-subtle)) 100%
-    );
+  --gradient-accent-soft: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-bg) 90%, var(--color-bg-elevated)) 0%,
+    color-mix(in srgb, var(--color-bg-elevated) 86%, var(--color-bg-subtle)) 100%
+  );
 
   /* ---- 字号 ---- */
   --font-xs: 11px;
@@ -244,13 +249,14 @@
 
   /* ---- 字体 ---- */
   --font-sans:
-    'MiSans Ledger', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC',
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI',
+    'Microsoft YaHei UI', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC',
+    sans-serif;
   --font-mono:
     'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --font-number:
-    'Geist Mono Ledger', 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    monospace;
+    'Geist Mono Ledger', 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, monospace;
 
   /* ---- 布局 ---- */
   --sidebar-width: 260px;
@@ -334,11 +340,31 @@
   --color-accent-orange-bg: rgba(249, 115, 22, 0.08);
 
   /* ---- 视觉增强：渐变卡片背景 ---- */
-  --gradient-card-income: linear-gradient(135deg, color-mix(in srgb, var(--color-success) 8%, var(--color-bg-elevated)) 0%, var(--color-bg-elevated) 100%);
-  --gradient-card-expense: linear-gradient(135deg, color-mix(in srgb, var(--color-danger) 6%, var(--color-bg-elevated)) 0%, var(--color-bg-elevated) 100%);
-  --gradient-card-primary: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 8%, var(--color-bg-elevated)) 0%, var(--color-bg-elevated) 100%);
-  --gradient-card-warning: linear-gradient(135deg, color-mix(in srgb, var(--color-warning) 8%, var(--color-bg-elevated)) 0%, var(--color-bg-elevated) 100%);
-  --gradient-card-info: linear-gradient(135deg, color-mix(in srgb, var(--color-accent-cyan) 8%, var(--color-bg-elevated)) 0%, var(--color-bg-elevated) 100%);
+  --gradient-card-income: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-success) 8%, var(--color-bg-elevated)) 0%,
+    var(--color-bg-elevated) 100%
+  );
+  --gradient-card-expense: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-danger) 6%, var(--color-bg-elevated)) 0%,
+    var(--color-bg-elevated) 100%
+  );
+  --gradient-card-primary: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary) 8%, var(--color-bg-elevated)) 0%,
+    var(--color-bg-elevated) 100%
+  );
+  --gradient-card-warning: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-warning) 8%, var(--color-bg-elevated)) 0%,
+    var(--color-bg-elevated) 100%
+  );
+  --gradient-card-info: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-accent-cyan) 8%, var(--color-bg-elevated)) 0%,
+    var(--color-bg-elevated) 100%
+  );
 
   /* ---- 视觉增强：徽章色彩 ---- */
   --badge-bg-default: var(--color-bg-subtle);
@@ -397,21 +423,23 @@
     radial-gradient(circle at 12% -8%, rgba(245, 158, 11, 0.13), transparent 34%),
     radial-gradient(circle at 88% -10%, rgba(45, 212, 191, 0.08), transparent 28%),
     linear-gradient(180deg, #141414 0%, #1a1a1a 48%, #141414 100%);
-  --gradient-surface:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-bg-elevated) 94%, rgba(255, 255, 255, 0.05)) 0%,
-      color-mix(in srgb, var(--color-bg-elevated) 88%, var(--color-primary-bg)) 52%,
-      color-mix(in srgb, var(--color-bg-elevated) 82%, var(--color-bg)) 100%
-    );
-  --gradient-surface-muted:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-bg-elevated) 90%, var(--color-bg-subtle)) 0%,
-      color-mix(in srgb, var(--color-bg-elevated) 82%, var(--color-bg)) 100%
-    );
+  --gradient-surface: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-bg-elevated) 94%, rgba(255, 255, 255, 0.05)) 0%,
+    color-mix(in srgb, var(--color-bg-elevated) 88%, var(--color-primary-bg)) 52%,
+    color-mix(in srgb, var(--color-bg-elevated) 82%, var(--color-bg)) 100%
+  );
+  --gradient-surface-muted: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-bg-elevated) 90%, var(--color-bg-subtle)) 0%,
+    color-mix(in srgb, var(--color-bg-elevated) 82%, var(--color-bg)) 100%
+  );
   --gradient-hero:
-    radial-gradient(circle at top right, color-mix(in srgb, var(--color-primary) 20%, transparent), transparent 48%),
+    radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--color-primary) 20%, transparent),
+      transparent 48%
+    ),
     radial-gradient(circle at left center, rgba(45, 212, 191, 0.07), transparent 48%),
     linear-gradient(
       135deg,
@@ -419,12 +447,11 @@
       color-mix(in srgb, var(--color-bg-elevated) 92%, rgba(26, 26, 26, 0.96)) 52%,
       color-mix(in srgb, var(--color-bg-elevated) 84%, var(--color-primary-bg)) 100%
     );
-  --gradient-accent-soft:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--color-bg-elevated) 92%, var(--color-primary-bg)) 0%,
-      color-mix(in srgb, var(--color-bg-elevated) 88%, var(--color-bg-subtle)) 100%
-    );
+  --gradient-accent-soft: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-bg-elevated) 92%, var(--color-primary-bg)) 0%,
+    color-mix(in srgb, var(--color-bg-elevated) 88%, var(--color-bg-subtle)) 100%
+  );
 
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.16);
   --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.22);
@@ -444,11 +471,31 @@
   --color-accent-purple-bg: rgba(196, 181, 253, 0.1);
   --color-accent-orange: #fb923c;
   --color-accent-orange-bg: rgba(251, 146, 60, 0.14);
-  --gradient-card-income: linear-gradient(135deg, color-mix(in srgb, var(--color-success) 12%, var(--color-bg-elevated)) 0%, var(--color-bg-elevated) 100%);
-  --gradient-card-expense: linear-gradient(135deg, color-mix(in srgb, var(--color-danger) 10%, var(--color-bg-elevated)) 0%, var(--color-bg-elevated) 100%);
-  --gradient-card-primary: linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 12%, var(--color-bg-elevated)) 0%, var(--color-bg-elevated) 100%);
-  --gradient-card-warning: linear-gradient(135deg, color-mix(in srgb, var(--color-warning) 12%, var(--color-bg-elevated)) 0%, var(--color-bg-elevated) 100%);
-  --gradient-card-info: linear-gradient(135deg, color-mix(in srgb, var(--color-accent-cyan) 12%, var(--color-bg-elevated)) 0%, var(--color-bg-elevated) 100%);
+  --gradient-card-income: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-success) 12%, var(--color-bg-elevated)) 0%,
+    var(--color-bg-elevated) 100%
+  );
+  --gradient-card-expense: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-danger) 10%, var(--color-bg-elevated)) 0%,
+    var(--color-bg-elevated) 100%
+  );
+  --gradient-card-primary: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary) 12%, var(--color-bg-elevated)) 0%,
+    var(--color-bg-elevated) 100%
+  );
+  --gradient-card-warning: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-warning) 12%, var(--color-bg-elevated)) 0%,
+    var(--color-bg-elevated) 100%
+  );
+  --gradient-card-info: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-accent-cyan) 12%, var(--color-bg-elevated)) 0%,
+    var(--color-bg-elevated) 100%
+  );
   --badge-bg-default: var(--color-bg-hover);
 }
 
@@ -489,19 +536,21 @@
     radial-gradient(circle at top right, rgba(236, 72, 153, 0.2), transparent 42%),
     radial-gradient(circle at left center, rgba(34, 197, 94, 0.12), transparent 48%),
     linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(17, 24, 39, 0) 56%),
-    linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 12%, var(--color-bg-elevated)) 0%, var(--color-bg-elevated) 100%);
-  --gradient-accent-soft:
     linear-gradient(
       135deg,
-      rgba(99, 102, 241, 0.18) 0%,
-      rgba(34, 197, 94, 0.12) 42%,
-      rgba(236, 72, 153, 0.16) 100%
+      color-mix(in srgb, var(--color-primary) 12%, var(--color-bg-elevated)) 0%,
+      var(--color-bg-elevated) 100%
     );
-  --gradient-card-primary:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, #6366f1 20%, var(--color-bg-elevated)) 0%,
-      color-mix(in srgb, #22c55e 8%, var(--color-bg-elevated)) 48%,
-      color-mix(in srgb, #ec4899 14%, var(--color-bg-elevated)) 100%
-    );
+  --gradient-accent-soft: linear-gradient(
+    135deg,
+    rgba(99, 102, 241, 0.18) 0%,
+    rgba(34, 197, 94, 0.12) 42%,
+    rgba(236, 72, 153, 0.16) 100%
+  );
+  --gradient-card-primary: linear-gradient(
+    135deg,
+    color-mix(in srgb, #6366f1 20%, var(--color-bg-elevated)) 0%,
+    color-mix(in srgb, #22c55e 8%, var(--color-bg-elevated)) 48%,
+    color-mix(in srgb, #ec4899 14%, var(--color-bg-elevated)) 100%
+  );
 }

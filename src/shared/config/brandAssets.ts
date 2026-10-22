@@ -27,9 +27,6 @@ export const PACKAGE_ICON_URL =
 export const GLOBE_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/globe.svg';
 
-export const GLOBE_OFF_ICON_URL =
-  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/globe-off.svg';
-
 export const COPY_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/copy.svg';
 
@@ -51,17 +48,8 @@ export const CHEVRONS_RIGHT_LEFT_ICON_URL =
 export const CHEVRONS_LEFT_RIGHT_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/chevrons-left-right.svg';
 
-export const CHEVRONS_UP_DOWN_ICON_URL =
-  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/chevrons-up-down.svg';
-
-export const CHEVRONS_DOWN_UP_ICON_URL =
-  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/chevrons-down-up.svg';
-
 export const CHEVRON_DOWN_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/chevron-down.svg';
-
-export const CHEVRON_UP_ICON_URL =
-  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/chevron-up.svg';
 
 export const EYE_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/eye.svg';
@@ -143,12 +131,6 @@ export const TRASH_ICON_URL =
 
 export const TRASH_2_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/trash-2.svg';
-
-export const THUMBS_DOWN_ICON_URL =
-  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/thumbs-down.svg';
-
-export const THUMBS_UP_ICON_URL =
-  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/thumbs-up.svg';
 
 export const STAR_ICON_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/star.svg';

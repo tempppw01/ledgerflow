@@ -80,8 +80,7 @@ vi.mock('../../features/investments/api/eastmoneyMarketClient', () => ({
   ],
   fetchEastmoneyMarketBoards: eastmoneyClientMock.fetchEastmoneyMarketBoards,
   fetchEastmoneyMarketBoardsSnapshot: eastmoneyClientMock.fetchEastmoneyMarketBoardsSnapshot,
-  fetchEastmoneyMarketBoardConstituents:
-    eastmoneyClientMock.fetchEastmoneyMarketBoardConstituents,
+  fetchEastmoneyMarketBoardConstituents: eastmoneyClientMock.fetchEastmoneyMarketBoardConstituents,
   fetchEastmoneyMarketBoardTrend: eastmoneyClientMock.fetchEastmoneyMarketBoardTrend,
   fetchEastmoneyIndexHistory: eastmoneyClientMock.fetchEastmoneyIndexHistory,
   fetchGlobalMarketHistory: eastmoneyClientMock.fetchGlobalMarketHistory,
@@ -365,7 +364,9 @@ describe('InvestmentsPage', () => {
   async function openInvestmentWorkspace(
     label: '今日总览' | '大盘行情' | '板块监控' | '基金自选' | '市场快讯'
   ) {
-    await userEvent.click(screen.getByRole('button', { name: label }));
+    const visibleLabel =
+      label === '今日总览' || label === '大盘行情' ? '今日总览 & 大盘行情' : label;
+    await userEvent.click(screen.getByRole('button', { name: visibleLabel }));
   }
 
   it('应展示今日持仓、通俗行情和规则提示', async () => {
@@ -418,13 +419,23 @@ describe('InvestmentsPage', () => {
       within(marketPanel as HTMLElement).queryByRole('button', { name: '问 AI 怎么看' })
     ).not.toBeInTheDocument();
     expect(within(marketPanel as HTMLElement).getByText('实时轮询')).toBeInTheDocument();
-    expect(within(marketPanel as HTMLElement).getByLabelText('全球主要指数行情')).toBeInTheDocument();
-    expect((marketPanel as HTMLElement).querySelectorAll('.investments-global-quote-card')).toHaveLength(11);
-    await userEvent.click(within(marketPanel as HTMLElement).getByRole('button', { name: /美股 道琼斯/ }));
+    expect(
+      within(marketPanel as HTMLElement).getByLabelText('全球主要指数行情')
+    ).toBeInTheDocument();
+    expect(
+      (marketPanel as HTMLElement).querySelectorAll('.investments-global-quote-card')
+    ).toHaveLength(11);
+    await userEvent.click(
+      within(marketPanel as HTMLElement).getByRole('button', { name: /美股 道琼斯/ })
+    );
     expect(marketPanel?.querySelector('.investments-global-trend-panel')).toBeInTheDocument();
     expect(marketPanel?.querySelector('.investments-market-body')).not.toBeInTheDocument();
-    expect(marketPanel?.querySelector('.investments-market-history-disclosure')).not.toBeInTheDocument();
-    await userEvent.click(within(marketPanel as HTMLElement).getByRole('button', { name: /A 股 上证指数/ }));
+    expect(
+      marketPanel?.querySelector('.investments-market-history-disclosure')
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      within(marketPanel as HTMLElement).getByRole('button', { name: /A 股 上证指数/ })
+    );
     expect(marketPanel?.querySelector('.investments-global-trend-panel')).not.toBeInTheDocument();
     expect(marketPanel?.querySelector('.investments-market-body')).toBeInTheDocument();
     const shanghaiIndexTab = within(marketPanel as HTMLElement).getByRole('button', {
@@ -840,8 +851,16 @@ describe('InvestmentsPage', () => {
   it('可以切换热门题材并更新题材数据图', async () => {
     eastmoneyClientMock.fetchEastmoneyMarketBoards.mockResolvedValueOnce([
       {
-        code: 'BK1001', name: '银行', value: 1000, change: 10, changePercent: 1,
-        volume: 100, amount: 10000, upCount: 20, downCount: 4, flatCount: 1
+        code: 'BK1001',
+        name: '银行',
+        value: 1000,
+        change: 10,
+        changePercent: 1,
+        volume: 100,
+        amount: 10000,
+        upCount: 20,
+        downCount: 4,
+        flatCount: 1
       }
     ]);
     eastmoneyClientMock.fetchEastmoneyMarketThemeBoards.mockResolvedValue([
@@ -933,20 +952,48 @@ describe('InvestmentsPage', () => {
   it('国际 K 线同步显示盘中成交量柱', async () => {
     eastmoneyClientMock.fetchGlobalMarketTrend.mockResolvedValue([
       {
-        dateTime: '2026-09-25T13:30:00.000Z', label: '09:30', value: 100.5,
-        open: 100, high: 101, low: 99, average: null, changePercent: null, volume: 1200, amount: null
+        dateTime: '2026-09-25T13:30:00.000Z',
+        label: '09:30',
+        value: 100.5,
+        open: 100,
+        high: 101,
+        low: 99,
+        average: null,
+        changePercent: null,
+        volume: 1200,
+        amount: null
       },
       {
-        dateTime: '2026-09-25T13:35:00.000Z', label: '09:35', value: 102.5,
-        open: 100.5, high: 103, low: 100, average: null, changePercent: 1.99, volume: 2400, amount: null
+        dateTime: '2026-09-25T13:35:00.000Z',
+        label: '09:35',
+        value: 102.5,
+        open: 100.5,
+        high: 103,
+        low: 100,
+        average: null,
+        changePercent: 1.99,
+        volume: 2400,
+        amount: null
       },
       {
-        dateTime: '2026-09-25T13:40:00.000Z', label: '09:40', value: 101.5,
-        open: 102.5, high: 103, low: 101, average: null, changePercent: -0.98, volume: 1800, amount: null
+        dateTime: '2026-09-25T13:40:00.000Z',
+        label: '09:40',
+        value: 101.5,
+        open: 102.5,
+        high: 103,
+        low: 101,
+        average: null,
+        changePercent: -0.98,
+        volume: 1800,
+        amount: null
       }
     ]);
 
-    render(<MemoryRouter><InvestmentsPage /></MemoryRouter>);
+    render(
+      <MemoryRouter>
+        <InvestmentsPage />
+      </MemoryRouter>
+    );
     await openInvestmentWorkspace('大盘行情');
     await userEvent.click(await screen.findByRole('button', { name: /美股 道琼斯/ }));
     await userEvent.click(screen.getByRole('button', { name: 'K 线' }));
@@ -957,7 +1004,14 @@ describe('InvestmentsPage', () => {
     expect(chart.querySelectorAll('.investments-global-kline-candle rect')).toHaveLength(3);
     const chartWrap = chart.parentElement!;
     vi.spyOn(chartWrap, 'getBoundingClientRect').mockReturnValue({
-      x: 0, y: 0, left: 0, top: 0, right: 560, bottom: 282, width: 560, height: 282,
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 560,
+      bottom: 282,
+      width: 560,
+      height: 282,
       toJSON: () => ({})
     } as DOMRect);
     fireEvent.mouseMove(chartWrap, { clientX: 280 });

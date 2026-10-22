@@ -26,6 +26,11 @@ const AI_PROVIDER_PRESETS = [
 ] as const;
 
 const MODEL_PRESETS = [
+  'gpt-6-luna',
+  'claude-haiku-5-5',
+  'gemini-3.8-flash',
+  'glm-5.3',
+  'grok-4.7',
   'gpt-5.5',
   'gpt-5.4-mini',
   'gpt-5.2',
@@ -124,7 +129,7 @@ interface ModelSelectorProps {
 function getModelDisplayLabel(modelId: string): string {
   const value = modelId.trim();
   if (!value) return value;
-  return value === 'gpt-5.5' ? `${value}（推荐）` : value;
+  return value === 'gpt-6-luna' ? `${value}（推荐）` : value;
 }
 
 function mergeModelOptions(value: string, presets: string[], remoteModels: string[]): string[] {
@@ -614,9 +619,14 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                       </button>
                     </div>
                   ) : (
-                    <div className="settings-password-step settings-password-step-new" key="new-password">
+                    <div
+                      className="settings-password-step settings-password-step-new"
+                      key="new-password"
+                    >
                       <div className="settings-password-verified">
-                        <span className="settings-password-verified-mark" aria-hidden="true">✓</span>
+                        <span className="settings-password-verified-mark" aria-hidden="true">
+                          ✓
+                        </span>
                         身份验证通过
                         <button
                           type="button"

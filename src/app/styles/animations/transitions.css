@@ -1,0 +1,71 @@
+/* ============================================================
+   Animation Variables & Tokens
+   ============================================================ */
+:root {
+  /* Animation Durations */
+  --anim-fast: 150ms;
+  --anim-base: 250ms;
+  --anim-slow: 400ms;
+  --anim-slower: 600ms;
+
+  /* Animation Easing */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Performance Hints */
+  --gpu-accelerated: transform, opacity, filter;
+}
+
+/* ============================================================
+   Performance Optimizations
+   ============================================================ */
+.will-animate {
+  will-change: var(--gpu-accelerated);
+}
+
+.will-animate-transform {
+  will-change: transform;
+}
+
+.will-animate-opacity {
+  will-change: opacity;
+}
+
+/* ============================================================
+   Preset Transition Classes
+   ============================================================ */
+.transition-fast {
+  transition: all var(--anim-fast) var(--ease-out);
+}
+
+.transition-base {
+  transition: all var(--anim-base) var(--ease-out);
+}
+
+.transition-slow {
+  transition: all var(--anim-slow) var(--ease-out);
+}
+
+.transition-transform {
+  transition: transform var(--anim-base) var(--ease-out);
+}
+
+.transition-opacity {
+  transition: opacity var(--anim-base) var(--ease-out);
+}
+
+/* Mobile Performance: Reduce Animation Complexity */
+@media (max-width: 768px) {
+  :root {
+    --anim-fast: 100ms;
+    --anim-base: 180ms;
+    --anim-slow: 300ms;
+  }
+
+  .will-animate,
+  .will-animate-transform,
+  .will-animate-opacity {
+    will-change: auto;
+  }
+}

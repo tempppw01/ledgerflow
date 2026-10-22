@@ -4,11 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Account } from '../../entities/account/types';
 import type { TransactionItem } from '../../entities/transaction/types';
 import { InvestmentChatPanel } from '../../features/assistant/investment-chat/InvestmentChatPanel';
-import {
-  GLOBE_ICON_URL,
-  GLOBE_OFF_ICON_URL,
-  INVESTMENT_HERO_ILLUSTRATION_URL
-} from '../../shared/config/brandAssets';
+import { INVESTMENT_HERO_ILLUSTRATION_URL } from '../../shared/config/brandAssets';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { InvestmentsPage } from './InvestmentsPage';
@@ -163,12 +159,12 @@ describe('Investment assistant chat', () => {
     );
 
     const webButton = screen.getByRole('button', { name: '开启联网核验' });
-    expect(webButton.querySelector('img')).toHaveAttribute('src', GLOBE_OFF_ICON_URL);
+    expect(webButton.querySelector('svg')).toHaveAttribute('data-icon', 'chat-globe-off');
 
     fireEvent.click(webButton);
     expect(
-      screen.getByRole('button', { name: '关闭联网核验' }).querySelector('img')
-    ).toHaveAttribute('src', GLOBE_ICON_URL);
+      screen.getByRole('button', { name: '关闭联网核验' }).querySelector('svg')
+    ).toHaveAttribute('data-icon', 'chat-globe');
   });
 
   it('collapses reasoning and auxiliary investment details in assistant messages', () => {
@@ -623,6 +619,7 @@ describe('Investment assistant chat', () => {
       </MemoryRouter>
     );
 
+    fireEvent.click(screen.getByRole('button', { name: '基金自选' }));
     fireEvent.click(screen.getByRole('button', { name: '添加关注' }));
 
     expect(useAppPreferences.getState().investmentWatchlist[0]?.tags).toContain('关注中');

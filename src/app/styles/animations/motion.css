@@ -1,0 +1,439 @@
+/* ============================================================
+   Interactive Motion & Feedback
+   ============================================================ */
+
+/* ============================================================
+   Button Interactions
+   ============================================================ */
+.btn-motion {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform var(--anim-fast) var(--ease-out),
+    box-shadow var(--anim-fast) var(--ease-out),
+    background-color var(--anim-fast) var(--ease-out);
+}
+
+.btn-motion:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+
+.btn-motion:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--color-text) 6%, transparent);
+}
+
+.btn-motion:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Ripple Effect Implementation */
+.btn-motion::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, white 30%, transparent) 0%,
+    transparent 70%
+  );
+  transform: scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.btn-motion:active::after {
+  animation: ripple 0.6s var(--ease-out);
+}
+
+/* ============================================================
+   Card & Panel Interactions
+   ============================================================ */
+.card-motion {
+  transition:
+    transform var(--anim-base) var(--ease-out),
+    box-shadow var(--anim-base) var(--ease-out),
+    border-color var(--anim-base) var(--ease-out);
+}
+
+.card-motion:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--color-text) 10%, transparent);
+  border-color: var(--color-primary-border);
+}
+
+.card-motion:active {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+
+/* ============================================================
+   Navigation Link Interactions
+   ============================================================ */
+.nav-link-motion {
+  position: relative;
+  transition:
+    background-color var(--anim-fast) var(--ease-out),
+    color var(--anim-fast) var(--ease-out),
+    transform var(--anim-fast) var(--ease-out);
+}
+
+.nav-link-motion::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  background: var(--color-primary);
+  border-radius: 0 2px 2px 0;
+  transition: height var(--anim-base) var(--ease-out);
+}
+
+.nav-link-motion:hover::before {
+  height: 60%;
+}
+
+.nav-link-motion.active::before {
+  height: 100%;
+}
+
+.nav-link-motion:active {
+  transform: scale(0.98);
+}
+
+/* ============================================================
+   Input Field Interactions
+   ============================================================ */
+.input-motion {
+  transition:
+    border-color var(--anim-fast) var(--ease-out),
+    box-shadow var(--anim-fast) var(--ease-out),
+    background-color var(--anim-fast) var(--ease-out);
+}
+
+.input-motion:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.input-motion:focus:hover {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 24%, transparent);
+}
+
+/* ============================================================
+   Modal/Dialog Animations
+   ============================================================ */
+.modal-backdrop {
+  animation: fadeIn var(--anim-base) var(--ease-out);
+}
+
+.modal-content {
+  animation: fadeInScale var(--anim-base) var(--ease-out);
+}
+
+.modal-closing .modal-backdrop {
+  animation: fadeOut var(--anim-fast) var(--ease-out);
+}
+
+.modal-closing .modal-content {
+  animation: scaleOut var(--anim-fast) var(--ease-out);
+}
+
+/* ============================================================
+   Sidebar Animations
+   ============================================================ */
+.sidebar-motion {
+  transition: width var(--anim-slow) var(--ease-out);
+}
+
+.sidebar-motion.collapsed {
+  width: var(--sidebar-collapsed-width, 76px);
+}
+
+.sidebar-section-motion {
+  transition:
+    max-height var(--anim-base) var(--ease-out),
+    opacity var(--anim-fast) var(--ease-out);
+}
+
+.sidebar-section-motion[aria-expanded='false'] {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.sidebar-section-motion[aria-expanded='true'] {
+  max-height: 500px;
+  opacity: 1;
+}
+
+/* ============================================================
+   List Item Animations
+   ============================================================ */
+.list-item-motion {
+  transition:
+    transform var(--anim-fast) var(--ease-out),
+    background-color var(--anim-fast) var(--ease-out),
+    opacity var(--anim-fast) var(--ease-out);
+}
+
+.list-item-motion:hover {
+  transform: translateX(4px);
+  background-color: var(--color-bg-hover);
+}
+
+.list-item-motion.entering {
+  animation: staggerIn var(--anim-base) var(--ease-out);
+}
+
+.list-item-motion.leaving {
+  animation: fadeOut var(--anim-fast) var(--ease-out);
+}
+
+/* ============================================================
+   Skeleton Loading
+   ============================================================ */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-border-light) 70%, transparent) 0%,
+    color-mix(in srgb, var(--color-border-light) 90%, transparent) 50%,
+    color-mix(in srgb, var(--color-border-light) 70%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+  border-radius: 4px;
+}
+
+.skeleton-text {
+  height: 1em;
+  margin: 0.25em 0;
+}
+
+.skeleton-circle {
+  border-radius: 50%;
+}
+
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+}
+
+/* ============================================================
+   Loading Spinners
+   ============================================================ */
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spinner 0.8s linear infinite;
+}
+
+.spinner-sm {
+  width: 16px;
+  height: 16px;
+  border-width: 1.5px;
+}
+
+.spinner-lg {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+}
+
+/* ============================================================
+   Success/Error Feedback
+   ============================================================ */
+.success-check {
+  animation: checkmark 0.4s var(--ease-out);
+}
+
+.error-shake {
+  animation: shake 0.4s var(--ease-out);
+}
+
+/* ============================================================
+   Toast/Notification Animations
+   ============================================================ */
+.toast-enter {
+  animation: fadeInDown var(--anim-base) var(--ease-out);
+}
+
+.toast-exit {
+  animation: fadeOut var(--anim-fast) var(--ease-out);
+}
+
+.notification-banner {
+  animation: notificationSlide 4s var(--ease-out);
+}
+
+/* ============================================================
+   Tooltip Animations
+   ============================================================ */
+.tooltip-motion {
+  transition:
+    opacity var(--anim-fast) var(--ease-out),
+    transform var(--anim-fast) var(--ease-out);
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+}
+
+.tooltip-motion.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* ============================================================
+   Dropdown/Menu Animations
+   ============================================================ */
+.dropdown-menu {
+  animation: fadeInUp var(--anim-fast) var(--ease-out);
+  transform-origin: top center;
+}
+
+.dropdown-item-motion {
+  transition:
+    background-color var(--anim-fast) var(--ease-out),
+    transform var(--anim-fast) var(--ease-out);
+}
+
+.dropdown-item-motion:hover {
+  background-color: var(--color-bg-hover);
+  transform: translateX(2px);
+}
+
+/* ============================================================
+   Tab Animations
+   ============================================================ */
+.tab-content-motion {
+  animation: fadeIn var(--anim-base) var(--ease-out);
+}
+
+.tab-indicator-motion {
+  transition:
+    transform var(--anim-base) var(--ease-out),
+    width var(--anim-base) var(--ease-out);
+}
+
+/* ============================================================
+   Progress Bar Animations
+   ============================================================ */
+.progress-bar-motion {
+  animation: progressFill var(--anim-slow) var(--ease-out);
+}
+
+.progress-bar-striped {
+  background-image: linear-gradient(
+    45deg,
+    color-mix(in srgb, white 25%, transparent) 25%,
+    transparent 25%,
+    transparent 50%,
+    color-mix(in srgb, white 25%, transparent) 50%,
+    color-mix(in srgb, white 25%, transparent) 75%,
+    transparent 75%,
+    transparent
+  );
+  background-size: 1rem 1rem;
+  animation: shimmer 1s linear infinite;
+}
+
+/* ============================================================
+   Accordion/Collapse Animations
+   ============================================================ */
+.accordion-content {
+  transition:
+    max-height var(--anim-base) var(--ease-out),
+    opacity var(--anim-fast) var(--ease-out);
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.accordion-content.open {
+  max-height: 1000px;
+  opacity: 1;
+}
+
+.accordion-icon-motion {
+  transition: transform var(--anim-fast) var(--ease-out);
+}
+
+.accordion-content.open + .accordion-icon-motion {
+  transform: rotate(180deg);
+}
+
+/* ============================================================
+   Image/Avatar Animations
+   ============================================================ */
+.avatar-motion {
+  transition:
+    transform var(--anim-base) var(--ease-out),
+    box-shadow var(--anim-base) var(--ease-out);
+}
+
+.avatar-motion:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--color-text) 12%, transparent);
+}
+
+.image-lazy-load {
+  opacity: 0;
+  transition: opacity var(--anim-slow) var(--ease-out);
+}
+
+.image-lazy-load.loaded {
+  opacity: 1;
+}
+
+/* ============================================================
+   Badge/Tag Animations
+   ============================================================ */
+.badge-motion {
+  transition:
+    transform var(--anim-fast) var(--ease-out),
+    background-color var(--anim-fast) var(--ease-out);
+}
+
+.badge-motion:hover {
+  transform: scale(1.1);
+}
+
+.badge-new {
+  animation: pulse 2s var(--ease-bounce) infinite;
+}
+
+/* ============================================================
+   Mobile-Specific Optimizations
+   ============================================================ */
+@media (max-width: 768px) {
+  .card-motion:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .btn-motion:hover {
+    transform: none;
+  }
+
+  .nav-link-motion:hover::before {
+    height: 0;
+  }
+
+  .nav-link-motion.active::before {
+    height: 60%;
+  }
+
+  .tooltip-motion.visible {
+    transform: translateY(0);
+  }
+}

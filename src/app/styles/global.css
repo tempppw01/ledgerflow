@@ -1,4 +1,11 @@
 /* ============================================================
+   Animation System Imports
+   ============================================================ */
+@import './animations/transitions.css';
+@import './animations/keyframes.css';
+@import './animations/motion.css';
+@import './ui-animations.css';
+/* ============================================================
    LedgerFlow — Global Styles
    Design: ezBookkeeping-inspired — restrained, spacious, neutral
    Scope: reset / layout shell / shared primitives / legacy shared rules
@@ -23,10 +30,10 @@ body {
   font-family: var(--font-sans);
   font-size: var(--font-base);
   line-height: var(--leading-normal);
+  font-synthesis: none;
+  text-size-adjust: 100%;
   background: var(--gradient-app-bg);
   color: var(--color-text);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 .app-shell {
@@ -52,6 +59,8 @@ body {
    Sidebar — independent panel feel
    ============================================================ */
 .sidebar {
+  /* Enhanced animation */
+  will-change: width;
   position: sticky;
   top: 0;
   height: 100vh;
@@ -76,19 +85,6 @@ body {
   height: 100%;
   border-radius: 999px;
   background: transparent;
-  pointer-events: none;
-}
-
-.sidebar::before {
-  content: '';
-  position: absolute;
-  right: 0;
-  top: 14px;
-  bottom: 14px;
-  width: 1px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--color-border) 92%, transparent);
-  box-shadow: none;
   pointer-events: none;
 }
 
@@ -328,6 +324,21 @@ body {
   box-shadow: var(--shadow-xs);
 }
 
+.sidebar-overview-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--color-text) 8%, transparent);
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base);
+}
+
+.sidebar-assistant-today-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--color-text) 8%, transparent);
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base);
+}
 .sidebar-assistant-today-card {
   background: var(--color-bg-elevated);
   border: 1px solid var(--color-border);
@@ -587,6 +598,33 @@ body {
 
 .sidebar-link.disabled:hover {
   background: transparent;
+
+  /* Enhanced sidebar link hover with ripple effect */
+  .sidebar-link:not(.disabled)::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      circle at center,
+      color-mix(in srgb, var(--color-primary) 15%, transparent) 0%,
+      transparent 70%
+    );
+    opacity: 0;
+    transform: scale(0.8);
+    transition:
+      opacity var(--transition-fast),
+      transform var(--transition-fast);
+    pointer-events: none;
+  }
+
+  .sidebar-link:not(.disabled):hover::before {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .sidebar-link:not(.disabled):active {
+    transform: scale(0.97);
+  }
   color: var(--color-text-tertiary);
 }
 
@@ -1343,6 +1381,8 @@ body {
 }
 
 .layout-shell.sidebar-is-collapsed .sidebar {
+  /* Enhanced animation */
+  will-change: width;
   box-shadow: none;
 }
 
@@ -6513,9 +6553,15 @@ small.mono {
   color: var(--color-text);
 }
 
-.amount-breakdown-value.is-warning { color: var(--color-warning, #b7791f); }
-.amount-breakdown-value.is-danger { color: var(--color-danger); }
-.amount-breakdown-value.is-success { color: var(--color-success, #16815c); }
+.amount-breakdown-value.is-warning {
+  color: var(--color-warning, #b7791f);
+}
+.amount-breakdown-value.is-danger {
+  color: var(--color-danger);
+}
+.amount-breakdown-value.is-success {
+  color: var(--color-success, #16815c);
+}
 
 .amount-breakdown-total {
   padding-top: 10px;
@@ -7641,6 +7687,8 @@ input[type='date']:focus {
   }
 
   .sidebar {
+    /* Enhanced animation */
+    will-change: width;
     display: none;
   }
 
@@ -8932,7 +8980,9 @@ body.exchange-resizing {
   scrollbar-width: none;
 }
 
-.categories-console-tabs::-webkit-scrollbar { display: none; }
+.categories-console-tabs::-webkit-scrollbar {
+  display: none;
+}
 
 .categories-console-tabs button {
   position: relative;
@@ -8965,8 +9015,12 @@ body.exchange-resizing {
   box-shadow: none;
 }
 
-.categories-console-tabs button.is-active { color: var(--color-text-primary); }
-.categories-console-tabs button.is-active::after { background: var(--color-primary); }
+.categories-console-tabs button.is-active {
+  color: var(--color-text-primary);
+}
+.categories-console-tabs button.is-active::after {
+  background: var(--color-primary);
+}
 
 .categories-console-tabs button span {
   margin-left: 5px;
@@ -9003,7 +9057,9 @@ body.exchange-resizing {
   background: transparent;
 }
 
-.categories-console-workspace .categories-fold-block-tags { margin-top: 0; }
+.categories-console-workspace .categories-fold-block-tags {
+  margin-top: 0;
+}
 
 .categories-console-workspace .categories-fold-summary {
   min-height: 58px;
@@ -9036,7 +9092,9 @@ body.exchange-resizing {
   border-bottom: 1px solid var(--color-divider);
 }
 
-.accounts-console-workspace .account-card-grid { gap: 0; }
+.accounts-console-workspace .account-card-grid {
+  gap: 0;
+}
 
 .accounts-console-workspace .account-card {
   padding: 13px 0;
@@ -13000,12 +13058,11 @@ body.categories-accounts-resizing {
   gap: 6px;
   padding: 14px 16px;
   border-radius: 16px;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-bg-elevated) 90%, white),
-      color-mix(in srgb, var(--color-bg-subtle) 68%, var(--color-bg-elevated))
-    );
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-bg-elevated) 90%, white),
+    color-mix(in srgb, var(--color-bg-subtle) 68%, var(--color-bg-elevated))
+  );
   border: 1px solid color-mix(in srgb, var(--color-border-light) 66%, transparent);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
   transition:
@@ -13158,12 +13215,11 @@ body.categories-accounts-resizing {
   border: 1px solid color-mix(in srgb, var(--color-border-light) 72%, transparent);
   border-radius: 18px;
   padding: 16px 16px 18px;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-bg-elevated) 96%, white),
-      color-mix(in srgb, var(--color-bg-subtle) 72%, var(--color-bg-elevated))
-    );
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-bg-elevated) 96%, white),
+    color-mix(in srgb, var(--color-bg-subtle) 72%, var(--color-bg-elevated))
+  );
   box-shadow:
     0 10px 24px color-mix(in srgb, var(--color-text) 5%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.56);
@@ -13327,12 +13383,11 @@ body.categories-accounts-resizing {
   border: 1px solid color-mix(in srgb, var(--color-border-light) 70%, transparent);
   border-radius: var(--radius-lg);
   padding: 20px;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-bg-elevated) 96%, white),
-      color-mix(in srgb, var(--color-bg-subtle) 72%, var(--color-bg-elevated))
-    );
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-bg-elevated) 96%, white),
+    color-mix(in srgb, var(--color-bg-subtle) 72%, var(--color-bg-elevated))
+  );
   box-shadow:
     0 12px 28px color-mix(in srgb, var(--color-text) 5%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.5);
@@ -13942,7 +13997,7 @@ body.categories-accounts-resizing {
 
 .smart-budget-history-item {
   display: grid;
-  grid-template-columns: minmax(150px, .6fr) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(150px, 0.6fr) minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
   width: 100%;
@@ -13955,16 +14010,37 @@ body.categories-accounts-resizing {
   text-align: left;
 }
 
-.smart-budget-history-item strong { color: var(--color-text-primary); font-size: var(--font-sm); }
-.smart-budget-history-item em { color: var(--color-primary); font-size: var(--font-xs); font-style: normal; }
-.smart-budget-history-item:not(.is-current):hover strong { color: var(--color-primary); }
+.smart-budget-history-item strong {
+  color: var(--color-text-primary);
+  font-size: var(--font-sm);
+}
+.smart-budget-history-item em {
+  color: var(--color-primary);
+  font-size: var(--font-xs);
+  font-style: normal;
+}
+.smart-budget-history-item:not(.is-current):hover strong {
+  color: var(--color-primary);
+}
 
 @media (max-width: 680px) {
-  .smart-budget-page { padding-inline: 16px; }
-  .smart-budget-mode-switch { gap: 12px; overflow-x: auto; }
-  .smart-budget-mode-switch .smart-budget-history-trigger { margin-left: 0; }
-  .smart-budget-history-item { grid-template-columns: 1fr auto; }
-  .smart-budget-history-item strong { grid-column: 1 / -1; grid-row: 2; }
+  .smart-budget-page {
+    padding-inline: 16px;
+  }
+  .smart-budget-mode-switch {
+    gap: 12px;
+    overflow-x: auto;
+  }
+  .smart-budget-mode-switch .smart-budget-history-trigger {
+    margin-left: 0;
+  }
+  .smart-budget-history-item {
+    grid-template-columns: 1fr auto;
+  }
+  .smart-budget-history-item strong {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
 }
 
 /* ============================================================
@@ -18357,7 +18433,10 @@ select.debt-form-input {
 
 .debt-form-manual-row {
   display: grid;
-  grid-template-columns: 28px minmax(96px, 0.88fr) minmax(128px, 0.82fr) minmax(88px, 0.62fr) 48px 28px;
+  grid-template-columns: 28px minmax(96px, 0.88fr) minmax(128px, 0.82fr) minmax(
+      88px,
+      0.62fr
+    ) 48px 28px;
   gap: 12px;
   align-items: end;
 }
@@ -19004,9 +19083,10 @@ select.debt-form-input {
 }
 
 .finance-overview-income-actions.repayment-income-toolbar {
-  display: grid;
-  grid-template-columns: minmax(210px, 0.72fr) minmax(320px, 1fr);
-  gap: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
   margin: 0;
   padding: 12px 14px;
   border-bottom: 1px solid var(--color-divider);
@@ -19018,6 +19098,7 @@ select.debt-form-input {
 }
 
 .repayment-income-toolbar-copy {
+  flex: 1 1 220px;
   display: grid;
   gap: 2px;
   min-width: 0;
@@ -19037,7 +19118,9 @@ select.debt-form-input {
 .repayment-income-editor {
   display: grid;
   grid-template-columns: minmax(180px, 1fr) auto;
+  flex: 0 1 380px;
   gap: 8px;
+  width: min(100%, 380px);
   min-width: 0;
 }
 
@@ -19077,9 +19160,10 @@ select.debt-form-input {
   border-radius: 0;
   background: transparent;
   color: var(--color-text-primary);
-  font-family: var(--font-number);
+  font-family: var(--font-sans);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
   outline: 0;
   box-shadow: none;
 }
@@ -19400,12 +19484,19 @@ select.debt-form-input {
   }
 
   .finance-overview-income-actions.repayment-income-toolbar {
-    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .repayment-income-toolbar-copy {
+    flex: 0 1 auto;
   }
 
   .repayment-income-editor {
-    grid-column: 1 / -1;
+    flex-basis: auto;
     grid-template-columns: minmax(0, 1fr) auto;
+    width: 100%;
   }
 }
 
@@ -19438,12 +19529,19 @@ select.debt-form-input {
   }
 
   .finance-overview-income-actions.repayment-income-toolbar {
-    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .repayment-income-toolbar-copy {
+    flex: 0 1 auto;
   }
 
   .repayment-income-editor {
-    grid-column: 1 / -1;
+    flex-basis: auto;
     grid-template-columns: minmax(0, 1fr) auto;
+    width: 100%;
   }
 
   .repayment-ai-header > div {
@@ -19606,11 +19704,24 @@ select.debt-form-input {
   list-style: none;
 }
 
-.repayment-debt-more-details > summary::-webkit-details-marker { display: none; }
-.repayment-debt-more-details > summary::before { content: '›'; font-size: 17px; transition: transform 160ms ease; }
-.repayment-debt-more-details[open] > summary::before { transform: rotate(90deg); }
-.repayment-debt-more-details summary small { color: var(--color-text-tertiary); font-weight: 500; }
-.repayment-debt-detail-metrics-secondary { margin-top: 3px; }
+.repayment-debt-more-details > summary::-webkit-details-marker {
+  display: none;
+}
+.repayment-debt-more-details > summary::before {
+  content: '›';
+  font-size: 17px;
+  transition: transform 160ms ease;
+}
+.repayment-debt-more-details[open] > summary::before {
+  transform: rotate(90deg);
+}
+.repayment-debt-more-details summary small {
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+}
+.repayment-debt-detail-metrics-secondary {
+  margin-top: 3px;
+}
 
 .repayment-debt-trend {
   margin-top: 16px;
@@ -19727,8 +19838,12 @@ select.debt-form-input {
   font-weight: 700;
 }
 
-.repayment-debt-context-menu button:hover { background: var(--color-bg-subtle); }
-.repayment-debt-context-menu button.is-danger { color: var(--color-danger); }
+.repayment-debt-context-menu button:hover {
+  background: var(--color-bg-subtle);
+}
+.repayment-debt-context-menu button.is-danger {
+  color: var(--color-danger);
+}
 
 .repayment-inline-form .finance-unit-input > .finance-input-floating-label {
   right: auto;
@@ -19753,14 +19868,21 @@ select.debt-form-input {
   }
 
   .repayment-income-editor {
-    grid-template-columns: minmax(220px, 1fr) auto;
+    grid-template-columns: minmax(180px, 1fr) auto;
   }
 }
 
 @media (max-width: 760px) {
-  .repayment-debt-list-tools { padding-right: 0; }
-  .repayment-debt-list-tools label { flex: 1; }
-  .repayment-timeline-day-editor { margin-left: 0; flex-wrap: wrap; }
+  .repayment-debt-list-tools {
+    padding-right: 0;
+  }
+  .repayment-debt-list-tools label {
+    flex: 1;
+  }
+  .repayment-timeline-day-editor {
+    margin-left: 0;
+    flex-wrap: wrap;
+  }
 }
 
 /* Smart budget overview: this is intentionally a stable four-item data band.
@@ -19836,32 +19958,197 @@ select.debt-form-input {
 }
 
 /* 2026 visual refresh: salary workbench and editorial news */
-.finance-salary-workbench { gap: 10px; }
-.finance-salary-hero { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; padding:18px 0 24px; border-bottom:1px solid var(--color-divider); }
-.finance-salary-hero h1 { margin:6px 0 8px; max-width:640px; font-size:clamp(28px,4vw,44px); letter-spacing:-.04em; line-height:1.08; }
-.finance-salary-hero p { max-width:620px; margin:0; color:var(--color-text-secondary); line-height:1.7; }
-.finance-eyebrow { color:var(--color-primary); font-size:11px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
-.finance-salary-hero-mark { color:var(--color-primary); font-size:52px; font-weight:800; line-height:1; }
-.finance-salary-card { display:grid; gap:24px; padding:24px 0; }
-.finance-salary-input-pane { display:grid; grid-template-columns:minmax(220px,.8fr) 1.4fr; gap:28px; align-items:end; }
-.finance-section-heading h2 { margin:7px 0 0; font-size:20px; }
-.finance-salary-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
-.finance-salary-result-grid { display:grid; grid-template-columns:1.15fr 1.15fr 1fr; gap:0; border-block:1px solid var(--color-divider); }
-.finance-salary-metric { padding:20px 22px 18px; border-right:1px solid var(--color-divider); }
-.finance-salary-metric:last-child { border-right:0; }
-.finance-salary-metric.is-primary .finance-overview-number,.finance-salary-metric.is-primary-alt .finance-overview-number { font-size:clamp(25px,3vw,36px); }
-.finance-salary-metric.is-primary .finance-overview-label::before { content:'主结论'; display:block; margin-bottom:5px; color:var(--color-primary); font-size:10px; letter-spacing:.1em; }
-.finance-news-editorial-layout { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(300px,.9fr); gap:28px; margin-top:16px; }
-.finance-news-lead { display:flex; flex-direction:column; justify-content:center; min-height:230px; padding:12px 28px 18px 0; border-right:1px solid var(--color-divider); }
-.finance-news-kicker { color:var(--color-primary); font-size:11px; font-weight:800; letter-spacing:.08em; }
-.finance-news-lead h3 { margin:12px 0 10px; max-width:650px; font-size:clamp(24px,3vw,38px); line-height:1.18; letter-spacing:-.035em; }
-.finance-news-lead p { max-width:600px; margin:0; color:var(--color-text-secondary); line-height:1.7; }
-.finance-news-lead-meta { display:flex; gap:16px; align-items:center; margin-top:20px; color:var(--color-text-tertiary); font-size:12px; }
-.finance-news-lead-meta a { color:var(--color-primary); font-weight:700; }
-.finance-news-editorial-layout .finance-news-compact-list { max-height:390px; overflow:auto; }
-.finance-news-editorial-layout .finance-news-compact-item { display:grid; grid-template-columns:32px minmax(0,1fr); gap:10px; width:100%; padding:14px 8px; text-align:left; }
-.finance-news-index { color:var(--color-text-tertiary); font-size:11px; font-variant-numeric:tabular-nums; }
-.finance-news-item-copy { display:grid; gap:5px; min-width:0; }
-.finance-news-item-copy strong { overflow:hidden; font-size:13px; line-height:1.45; text-overflow:ellipsis; white-space:nowrap; }
-.finance-news-item-copy small { color:var(--color-text-tertiary); font-size:11px; }
-@media (max-width:760px) { .finance-salary-hero { align-items:flex-start; } .finance-salary-hero-mark { display:none; } .finance-salary-input-pane,.finance-news-editorial-layout { grid-template-columns:1fr; gap:16px; } .finance-salary-grid,.finance-salary-result-grid { grid-template-columns:1fr; } .finance-salary-metric { border-right:0; border-bottom:1px solid var(--color-divider); padding-inline:0; } .finance-salary-metric:last-child { border-bottom:0; } .finance-news-lead { min-height:0; border-right:0; border-bottom:1px solid var(--color-divider); padding:4px 0 20px; } .finance-news-lead h3 { font-size:25px; } }
+.finance-salary-workbench {
+  gap: 10px;
+}
+.finance-salary-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 18px 0 24px;
+  border-bottom: 1px solid var(--color-divider);
+}
+.finance-salary-hero h1 {
+  margin: 6px 0 8px;
+  max-width: 640px;
+  font-size: clamp(28px, 4vw, 44px);
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+}
+.finance-salary-hero p {
+  max-width: 620px;
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+.finance-eyebrow {
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.finance-salary-hero-mark {
+  color: var(--color-primary);
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 1;
+}
+.finance-salary-card {
+  display: grid;
+  gap: 24px;
+  padding: 24px 0;
+}
+.finance-salary-input-pane {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) 1.4fr;
+  gap: 28px;
+  align-items: end;
+}
+.finance-section-heading h2 {
+  margin: 7px 0 0;
+  font-size: 20px;
+}
+.finance-salary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.finance-salary-result-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1.15fr 1fr;
+  gap: 0;
+  border-block: 1px solid var(--color-divider);
+}
+.finance-salary-metric {
+  padding: 20px 22px 18px;
+  border-right: 1px solid var(--color-divider);
+}
+.finance-salary-metric:last-child {
+  border-right: 0;
+}
+.finance-salary-metric.is-primary .finance-overview-number,
+.finance-salary-metric.is-primary-alt .finance-overview-number {
+  font-size: clamp(25px, 3vw, 36px);
+}
+.finance-salary-metric.is-primary .finance-overview-label::before {
+  content: '主结论';
+  display: block;
+  margin-bottom: 5px;
+  color: var(--color-primary);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+.finance-news-editorial-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr);
+  gap: 28px;
+  margin-top: 16px;
+}
+.finance-news-lead {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 230px;
+  padding: 12px 28px 18px 0;
+  border-right: 1px solid var(--color-divider);
+}
+.finance-news-kicker {
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.finance-news-lead h3 {
+  margin: 12px 0 10px;
+  max-width: 650px;
+  font-size: clamp(24px, 3vw, 38px);
+  line-height: 1.18;
+  letter-spacing: -0.035em;
+}
+.finance-news-lead p {
+  max-width: 600px;
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+.finance-news-lead-meta {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 20px;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+}
+.finance-news-lead-meta a {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+.finance-news-editorial-layout .finance-news-compact-list {
+  max-height: 390px;
+  overflow: auto;
+}
+.finance-news-editorial-layout .finance-news-compact-item {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 10px;
+  width: 100%;
+  padding: 14px 8px;
+  text-align: left;
+}
+.finance-news-index {
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.finance-news-item-copy {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.finance-news-item-copy strong {
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.finance-news-item-copy small {
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+}
+@media (max-width: 760px) {
+  .finance-salary-hero {
+    align-items: flex-start;
+  }
+  .finance-salary-hero-mark {
+    display: none;
+  }
+  .finance-salary-input-pane,
+  .finance-news-editorial-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .finance-salary-grid,
+  .finance-salary-result-grid {
+    grid-template-columns: 1fr;
+  }
+  .finance-salary-metric {
+    border-right: 0;
+    border-bottom: 1px solid var(--color-divider);
+    padding-inline: 0;
+  }
+  .finance-salary-metric:last-child {
+    border-bottom: 0;
+  }
+  .finance-news-lead {
+    min-height: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-divider);
+    padding: 4px 0 20px;
+  }
+  .finance-news-lead h3 {
+    font-size: 25px;
+  }
+}

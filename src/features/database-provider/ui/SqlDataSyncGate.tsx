@@ -112,7 +112,16 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
         }
       } catch (reason) {
         if (!cancelled) {
-          setError(reason instanceof Error ? reason.message : 'SQL 数据库载入失败。');
+          const errorMessage = reason instanceof Error ? reason.message : 'SQL 数据库载入失败。';
+          console.warn(
+            '[SqlDataSyncGate] Initial data import failed, proceeding with empty state:',
+            errorMessage
+          );
+          // Allow app to initialize even if initial import fails
+          // User can manually add data through the UI
+          setError('数据同步遇到问题，但应用已就绪。您可以手动添加数据。(' + errorMessage + ')');
+          initializedRef.current = true;
+          setReady(true);
         }
       } finally {
         syncingRef.current = false;
