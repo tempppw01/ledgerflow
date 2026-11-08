@@ -11089,22 +11089,7 @@ body.categories-accounts-resizing {
   }
 
   .debug-log-fab-wrap {
-    right: var(--space-3);
-    bottom: var(--space-3);
-  }
-
-  .debug-log-fab {
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    font-size: 0;
-    overflow: hidden;
-  }
-
-  .debug-log-fab::before {
-    content: '🐞';
-    font-size: 16px;
-    line-height: 1;
+    display: none;
   }
 }
 

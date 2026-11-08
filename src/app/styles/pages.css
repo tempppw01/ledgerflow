@@ -2168,7 +2168,8 @@
     padding-top: 24px;
   }
   .help-jump-nav {
-    gap: 10px 14px;
+    display: grid;
+    gap: 6px;
   }
   .help-start-strip {
     align-items: flex-start;

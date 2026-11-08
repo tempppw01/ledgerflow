@@ -617,7 +617,7 @@ export function SmartBudgetPage() {
         <header className="vi-page-head">
           <div className="vi-page-title">
             <h1>智能预算</h1>
-            <p>回答四个问题，生成一份能直接执行下去的月度预算。</p>
+            <p>回答五个问题，生成一份能直接执行下去的月度预算。</p>
           </div>
           {confirmedPlan ? (
             <div className="vi-page-actions">

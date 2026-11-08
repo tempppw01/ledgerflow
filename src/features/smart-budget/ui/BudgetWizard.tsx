@@ -84,7 +84,7 @@ export function BudgetWizard(props: BudgetWizardProps) {
             第 {step} / {stepCount} 步
           </span>
           <h3>{currentMeta.title}</h3>
-          <p>四步就能算出可执行的月度预算，中途离开也可以随时回来。</p>
+          <p>五步就能算出可执行的月度预算，中途离开也可以随时回来。</p>
         </div>
         <div className="sb-wizard-summary">
           {summaryChips.map((item) => (
