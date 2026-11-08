@@ -169,8 +169,15 @@
     "salaryTools": "Salary Tools"
   },
   "settings": {
-    "title": "AI Provider Settings (OpenAI-Compatible)",
+    "title": "Settings",
     "back": "← Back",
+    "intros": {
+      "account": "Manage your display name, password, and signed-in devices.",
+      "openai": "The same Base URL and API key can be used for chat, embedding, and reranking, powering transaction search and trend analysis.",
+      "tavily": "Web search needs a separate Tavily API key to give the AI live news and external references.",
+      "embedding": "Embedding models turn ledger text into vectors for semantic search and similar-transaction matching.",
+      "advanced": "Tune default models, embedding/rerank toggles, and batch concurrency. The defaults are fine for most setups."
+    },
     "intro": "The same Base URL and API key can be used for chat, embedding, and reranking, powering transaction search and trend analysis.",
     "baseUrl": "Provider Base URL",
     "apiKey": "API key",

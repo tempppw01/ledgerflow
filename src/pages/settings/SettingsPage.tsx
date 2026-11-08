@@ -537,7 +537,15 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
       return;
     }
 
-    navigate(-1);
+    // 直接打开 /settings(新标签页或分享链接)时没有可回退的历史,兜底回首页,
+    // 避免“返回”按钮点了没有反应。
+    const historyIndex = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+    if (historyIndex > 0) {
+      navigate(-1);
+      return;
+    }
+
+    navigate('/');
   };
 
   return (
@@ -561,7 +569,7 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
           </button>
         </div>
         <p className="settings-page-intro" style={{ marginTop: 16 }}>
-          {t('settings.intro')}
+          {t(`settings.intros.${activeWorkspace}`, { defaultValue: t('settings.intro') })}
         </p>
 
         <nav className="settings-console-tabs" aria-label={t('settings.tabsAria')} role="tablist">

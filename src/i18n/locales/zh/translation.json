@@ -169,9 +169,16 @@
     "salaryTools": "工资工具"
   },
   "settings": {
-    "title": "AI 服务商设置（OpenAI 兼容）",
+    "title": "设置",
     "back": "← 返回",
     "intro": "同一套 Base URL 和 API 密钥可用于对话、嵌入和重排序，统一支持交易检索与趋势分析。",
+    "intros": {
+      "account": "管理显示名称、登录密码与已登录设备。",
+      "openai": "同一套 Base URL 和 API 密钥可用于对话、嵌入和重排序，统一支持交易检索与趋势分析。",
+      "tavily": "联网检索需要单独的 Tavily API Key，用于给 AI 补充实时资讯与外部资料。",
+      "embedding": "嵌入模型把账目文本转成向量，用于语义检索和相似交易匹配。",
+      "advanced": "调整默认模型、嵌入/重排序开关与批量并发等进阶选项，不确定时保持默认即可。"
+    },
     "baseUrl": "服务商 Base URL",
     "apiKey": "API 密钥",
     "show": "显示",

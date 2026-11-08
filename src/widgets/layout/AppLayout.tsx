@@ -389,6 +389,11 @@ export function AppLayout() {
       return assistantWorkspaceTitle;
     }
 
+    // 设置页是浮层 + 独立路由两种入口,不在侧边导航里,补一条显式标题映射。
+    if (pathname === '/settings' || pathname.startsWith('/settings/')) {
+      return tFallback('layout.accountSettings', '账号设置');
+    }
+
     const navItems = navSections.flatMap((section) => section.items);
     const matchedItem = navItems.find((item) => {
       if (!item.to || item.to === '/') {
@@ -398,7 +403,12 @@ export function AppLayout() {
       return pathname === item.to || pathname.startsWith(`${item.to}/`);
     });
 
-    return matchedItem?.label ?? tFallback('layout.workspaceTitle', '智能记账工作台');
+    if (matchedItem) {
+      return matchedItem.label;
+    }
+
+    // 未命中的路径会落到 404 页面,顶栏标题同步提示,避免显示成默认工作台名称。
+    return tFallback('errors.notFoundTitle', '这个页面不存在');
   }, [assistantWorkspaceTitle, location.pathname, navSections, tFallback]);
   const isInvestmentsRoute = location.pathname.startsWith('/investments');
 
