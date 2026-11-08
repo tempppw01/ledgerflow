@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { toLocalDateKey } from '../../../shared/lib/localDate';
 
 export type TransactionTypeFilter = 'all' | 'income' | 'expense' | 'budget' | 'repayment';
 export type TransactionSourceFilter = 'all' | 'manual' | 'wechat' | 'alipay' | 'ai';
@@ -125,8 +126,8 @@ export function resolveDateRange(filters: TransactionFilterState): { from: strin
     const from = new Date(now.getFullYear(), now.getMonth(), 1);
     const to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     return {
-      from: from.toISOString().slice(0, 10),
-      to: to.toISOString().slice(0, 10)
+      from: toLocalDateKey(from),
+      to: toLocalDateKey(to)
     };
   }
 
@@ -136,8 +137,8 @@ export function resolveDateRange(filters: TransactionFilterState): { from: strin
     const from = new Date(now);
     from.setDate(from.getDate() - 29);
     return {
-      from: from.toISOString().slice(0, 10),
-      to: to.toISOString().slice(0, 10)
+      from: toLocalDateKey(from),
+      to: toLocalDateKey(to)
     };
   }
 
@@ -146,8 +147,8 @@ export function resolveDateRange(filters: TransactionFilterState): { from: strin
     const to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     const from = new Date(now.getFullYear(), now.getMonth() - 2, 1);
     return {
-      from: from.toISOString().slice(0, 10),
-      to: to.toISOString().slice(0, 10)
+      from: toLocalDateKey(from),
+      to: toLocalDateKey(to)
     };
   }
 

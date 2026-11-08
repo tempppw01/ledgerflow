@@ -24,6 +24,7 @@ import {
   getTransactionDirection,
   summarizeTransactions
 } from '../../shared/lib/transactionMetrics';
+import { toLocalDateKey } from '../../shared/lib/localDate';
 import { Toast } from '../../shared/ui/Toast';
 import type { DebtItem } from '../../features/debt/model/debtMetrics';
 import {
@@ -742,7 +743,7 @@ export function AssistantPage() {
   const hasInitializedModeHistoryRef = useRef(false);
   const activeHistoryModeRef = useRef<AssistantMode>(mode);
   const skipHistoryPersistRef = useRef(false);
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = toLocalDateKey(new Date());
   const thisMonthKey = todayKey.slice(0, 7);
   const previousMonthDate = new Date();
   previousMonthDate.setMonth(previousMonthDate.getMonth() - 1);

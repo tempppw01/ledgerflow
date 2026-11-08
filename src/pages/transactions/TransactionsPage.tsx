@@ -22,6 +22,7 @@ import {
   parseBillFileToTransactionsDetailed
 } from '../../shared/lib/billImport';
 import { formatCurrency, formatCurrencyAuto, formatDate } from '../../shared/lib/format';
+import { toLocalDateKey } from '../../shared/lib/localDate';
 import { AmountBreakdown } from '../../shared/ui/AmountBreakdown';
 import { resolveImportDefaultAccountId } from '../../shared/lib/importAccount';
 import { Toast, ToastVariant } from '../../shared/ui/Toast';
@@ -525,7 +526,7 @@ export function TransactionsPage() {
     () => readQuickTransactionDraft(user.ledgerUserId),
     [user.ledgerUserId]
   );
-  const quickAddDefaultDate = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const quickAddDefaultDate = useMemo(() => toLocalDateKey(new Date()), []);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [quickAddType, setQuickAddType] = useState<TransactionType>(
     initialQuickDraft?.type ?? 'expense'

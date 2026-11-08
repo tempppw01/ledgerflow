@@ -5,6 +5,7 @@ import type {
 } from '../../../entities/investment/types';
 import type { TransactionItem } from '../../../entities/transaction/types';
 import type { DebtItem, RepaymentRecord } from '../../debt/model/debtMetrics';
+import { toLocalDateKey } from '../../../shared/lib/localDate';
 
 export interface NetWorthTrendRow {
   key: string;
@@ -59,7 +60,9 @@ function investmentValue(positions: InvestmentPosition[]) {
 
 function debtValue(debts: DebtItem[]) {
   return debts
-    .filter((item) => item.entryMode !== 'simple' && item.status !== 'settled' && item.status !== 'closed')
+    .filter(
+      (item) => item.entryMode !== 'simple' && item.status !== 'settled' && item.status !== 'closed'
+    )
     .reduce((sum, item) => sum + Math.max(0, amount(item.balance)), 0);
 }
 
@@ -82,7 +85,12 @@ export function buildNetWorthTrend(input: {
   repaymentRecords?: RepaymentRecord[];
   months?: number;
   now?: Date;
-}): { rows: NetWorthTrendRow[]; currentValue: number; hasEstimate: boolean; breakdown: NetWorthBreakdown } {
+}): {
+  rows: NetWorthTrendRow[];
+  currentValue: number;
+  hasEstimate: boolean;
+  breakdown: NetWorthBreakdown;
+} {
   const now = input.now || new Date();
   const monthCount = Math.max(3, Math.min(12, input.months || 6));
   const currentKey = monthKey(now);
@@ -104,7 +112,10 @@ export function buildNetWorthTrend(input: {
     const date = new Date(item.createdAt);
     if (!Number.isNaN(date.getTime())) {
       const key = monthKey(date);
-      historyByMonth.set(key, (historyByMonth.get(key) || 0) + Math.max(0, amount(item.currentValue)));
+      historyByMonth.set(
+        key,
+        (historyByMonth.get(key) || 0) + Math.max(0, amount(item.currentValue))
+      );
     }
   });
 
@@ -130,10 +141,13 @@ export function buildNetWorthTrend(input: {
       (currentDebts + futureRepayments);
     rows.push({
       key,
-      label: date.getFullYear() === now.getFullYear() ? `${date.getMonth() + 1}月` : `${String(date.getFullYear()).slice(-2)}年${date.getMonth() + 1}月`,
+      label:
+        date.getFullYear() === now.getFullYear()
+          ? `${date.getMonth() + 1}月`
+          : `${String(date.getFullYear()).slice(-2)}年${date.getMonth() + 1}月`,
       value,
       dateFrom: `${key}-01`,
-      dateTo: end.toISOString().slice(0, 10),
+      dateTo: toLocalDateKey(end),
       hasTransactions: (monthlyNet.get(key) || 0) !== 0 || hasInvestmentHistory,
       isEstimated: !hasInvestmentHistory,
       isCurrent: key === currentKey

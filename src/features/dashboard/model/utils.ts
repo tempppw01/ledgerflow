@@ -1,3 +1,5 @@
+import { toLocalDateKey } from '../../../shared/lib/localDate';
+
 export interface ForecastPayload {
   summary: string;
   points: number[];
@@ -68,8 +70,8 @@ export function monthBounds(date = new Date()) {
   const start = new Date(year, month, 1);
   const end = new Date(year, month + 1, 0);
   return {
-    from: start.toISOString().slice(0, 10),
-    to: end.toISOString().slice(0, 10)
+    from: toLocalDateKey(start),
+    to: toLocalDateKey(end)
   };
 }
 

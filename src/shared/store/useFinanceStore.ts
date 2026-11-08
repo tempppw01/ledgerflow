@@ -13,6 +13,7 @@ import { SubscriptionItem } from '../../entities/subscription/types';
 import { syncChangeIfNeeded } from '../lib/dataSync';
 import { generateId } from '../lib/id';
 import { getSignedAmount } from '../lib/transactionMetrics';
+import { isBalanceAffectingStatus } from '../lib/localDate';
 
 interface CategoryLearningRule {
   id: string;
@@ -503,7 +504,11 @@ function computeAccountBalances(accounts: Account[], transactions: TransactionIt
   return normalizedAccounts.map((account) => {
     const base = roundCurrency(Number(account.initialBalance ?? 0));
     const delta = transactions.reduce((sum, item) => {
-      if (item.accountId !== account.id) {
+      if (
+        item.accountId !== account.id ||
+        item.trashedAt ||
+        !isBalanceAffectingStatus(item.status)
+      ) {
         return sum;
       }
       return sum + getSignedAmount(item);
@@ -1027,7 +1032,7 @@ export const useFinanceStore = create<FinanceState>()(
           const beforeBalance = roundCurrency(Number(target.balance ?? target.initialBalance ?? 0));
           const transactions = s.transactions;
           const txDelta = transactions.reduce((sum, tx) => {
-            if (tx.accountId !== id) {
+            if (tx.accountId !== id || tx.trashedAt || !isBalanceAffectingStatus(tx.status)) {
               return sum;
             }
             return sum + getSignedAmount(tx);

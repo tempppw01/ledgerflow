@@ -19,6 +19,7 @@ import {
 import { APP_VERSION } from '../../shared/config/app';
 import { formatCurrencyAuto } from '../../shared/lib/format';
 import { formatMonth } from '../../shared/lib/i18nDate';
+import { toLocalDateKey } from '../../shared/lib/localDate';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { EmptyState } from '../../shared/ui/EmptyState';
@@ -198,7 +199,7 @@ export function DashboardPage() {
           shortLabel: formatMonth(date, locale),
           value: item.expense,
           dateFrom: `${year}-${String(month).padStart(2, '0')}-01`,
-          dateTo: new Date(year, month, 0).toISOString().slice(0, 10)
+          dateTo: toLocalDateKey(new Date(year, month, 0))
         };
       });
     }

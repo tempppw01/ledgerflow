@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { toLocalDateKey } from '../../shared/lib/localDate';
 import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
 import {
   analyzeFinancialOverview,
@@ -233,8 +234,8 @@ function getRangeDateBounds(range: { key: FinancialAnalysisRangeKey; days: numbe
   if (range.key === 'month') {
     const start = new Date(current.getFullYear(), current.getMonth(), 1);
     return {
-      from: start.toISOString().slice(0, 10),
-      to: current.toISOString().slice(0, 10)
+      from: toLocalDateKey(start),
+      to: toLocalDateKey(current)
     };
   }
 
@@ -243,8 +244,8 @@ function getRangeDateBounds(range: { key: FinancialAnalysisRangeKey; days: numbe
   start.setDate(start.getDate() - (days - 1));
 
   return {
-    from: start.toISOString().slice(0, 10),
-    to: current.toISOString().slice(0, 10)
+    from: toLocalDateKey(start),
+    to: toLocalDateKey(current)
   };
 }
 

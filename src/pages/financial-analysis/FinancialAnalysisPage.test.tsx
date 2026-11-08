@@ -777,7 +777,7 @@ describe('FinancialAnalysisPage', () => {
     fireEvent.click(within(cycleCard as HTMLElement).getByRole('button', { name: '继续处理' }));
 
     expect(navigateMock).toHaveBeenCalledWith(
-      '/transactions?datePreset=custom&dateFrom=2026-03-22&dateTo=2026-04-20'
+      '/transactions?datePreset=custom&dateFrom=2026-03-23&dateTo=2026-04-21'
     );
   });
 
@@ -858,7 +858,7 @@ describe('FinancialAnalysisPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '查看消费明细' }));
     expect(navigateMock).toHaveBeenCalledWith(
-      '/transactions?type=expense&datePreset=custom&dateFrom=2026-03-22&dateTo=2026-04-20'
+      '/transactions?type=expense&datePreset=custom&dateFrom=2026-03-23&dateTo=2026-04-21'
     );
 
     fireEvent.click(screen.getByRole('button', { name: '去 AI 助手' }));

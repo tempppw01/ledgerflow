@@ -3,6 +3,7 @@ import type { Account } from '../../../entities/account/types';
 import type { Category } from '../../../entities/category/types';
 import type { TransactionItem, TransactionType } from '../../../entities/transaction/types';
 import type { AiBillItem, AiBillResult, DraftBillEntry, ValidationIssue } from './workbenchTypes';
+import { toLocalDateKey } from '../../../shared/lib/localDate';
 
 const MAX_PROMPT_TRANSACTIONS = 1200;
 const CHINA_NETWORK_TIME_API = 'https://api.m.taobao.com/rest/api3.do?api=mtop.common.getTimestamp';
@@ -192,7 +193,7 @@ export function buildTransactionPromptContext(
       : inferTransactionFocusDays(focusQuestion);
   const maxRows = Math.max(1, Math.floor(options?.maxRows || MAX_PROMPT_TRANSACTIONS));
   const cutoffDate = recentDays
-    ? new Date(Date.now() - recentDays * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+    ? toLocalDateKey(new Date(Date.now() - recentDays * 24 * 60 * 60 * 1000))
     : '';
   const scopedRows = cutoffDate
     ? normalizedAll.filter((item) => item.date >= cutoffDate)
