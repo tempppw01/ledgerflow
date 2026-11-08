@@ -10,6 +10,16 @@
   "app": {
     "title": "LedgerFlow 记账软件"
   },
+  "errors": {
+    "notFoundTitle": "这个页面不存在",
+    "notFoundDescription": "链接可能已经失效,或者地址被输错了。回到工作台继续记账吧。",
+    "genericTitle": "页面出了点问题",
+    "genericDescription": "渲染这个页面时发生了错误。可以先返回首页,或回到上一页重试。",
+    "chunkTitle": "页面资源已更新",
+    "chunkDescription": "应用版本已经更新,当前页面还在使用旧资源。刷新一次即可继续。",
+    "backHome": "返回首页",
+    "backPrevious": "返回上一页"
+  },
   "auth": {
     "checkingStatus": "正在检查账号状态…",
     "statusFailed": "无法连接账号服务。",

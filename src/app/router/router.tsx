@@ -1,6 +1,7 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { DatabaseInitializationGate } from '../../features/database-provider/ui/DatabaseInitializationGate';
 import { AppLayout } from '../../widgets/layout/AppLayout';
+import { NotFoundPage, RouteErrorPage } from './RouteErrorPage';
 import {
   AboutPage,
   AssistantPage,
@@ -27,6 +28,7 @@ import {
 export const router = createBrowserRouter([
   {
     path: '/',
+    errorElement: <RouteErrorPage />,
     element: (
       <DatabaseInitializationGate>
         <AppLayout />
@@ -55,7 +57,8 @@ export const router = createBrowserRouter([
       { path: 'smart-budget', element: <SmartBudgetPage /> },
       { path: 'global-memory', element: <GlobalMemoryPage /> },
       { path: 'help', element: <HelpPage /> },
-      { path: 'tags', element: <Navigate to="/categories-accounts" replace /> }
+      { path: 'tags', element: <Navigate to="/categories-accounts" replace /> },
+      { path: '*', element: <NotFoundPage /> }
     ]
   }
 ]);

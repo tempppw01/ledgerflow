@@ -10,6 +10,16 @@
   "app": {
     "title": "LedgerFlow Bookkeeping"
   },
+  "errors": {
+    "notFoundTitle": "This page does not exist",
+    "notFoundDescription": "The link may have expired or the address was mistyped. Head back to the workspace to keep tracking.",
+    "genericTitle": "Something went wrong",
+    "genericDescription": "An error occurred while rendering this page. Try going back home or returning to the previous page.",
+    "chunkTitle": "A newer version is available",
+    "chunkDescription": "The app has been updated and this page is still using old assets. Refresh to continue.",
+    "backHome": "Back to home",
+    "backPrevious": "Go back"
+  },
   "auth": {
     "checkingStatus": "Checking account status…",
     "statusFailed": "Unable to reach the account service.",

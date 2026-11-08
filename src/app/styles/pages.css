@@ -3460,3 +3460,92 @@
     justify-content: center;
   }
 }
+
+/* Route error / 404 fallback */
+.route-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: min(62vh, 560px);
+  padding: clamp(24px, 5vw, 56px) 16px;
+}
+
+.route-error-panel {
+  width: min(520px, 100%);
+  padding: clamp(28px, 5vw, 44px);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-elevated);
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.route-error-code {
+  margin: 0 0 var(--space-3);
+  font-size: clamp(40px, 9vw, 64px);
+  font-weight: 800;
+  line-height: 1;
+  color: color-mix(in srgb, var(--color-primary) 78%, var(--color-text));
+  letter-spacing: 0.02em;
+}
+
+.route-error-title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-xl);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.route-error-description {
+  margin: 0 0 var(--space-5);
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
+.route-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.route-error-primary,
+.route-error-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-size: var(--font-sm);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.route-error-primary {
+  border: 1px solid color-mix(in srgb, var(--color-primary) 42%, transparent);
+  background: var(--color-primary);
+  color: #1f1300;
+}
+
+.route-error-primary:hover,
+.route-error-primary:focus-visible {
+  background: var(--color-primary-hover);
+}
+
+.route-error-secondary {
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+}
+
+.route-error-secondary:hover,
+.route-error-secondary:focus-visible {
+  border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
+  color: var(--color-primary);
+}
