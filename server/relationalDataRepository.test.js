@@ -24,7 +24,9 @@ test('relational repository imports and rebuilds core business data from SQLite 
       'sqlite',
       {
         finance: {
-          accounts: [{ id: 'account-cash', name: 'Cash', type: 'cash', initialBalance: 100, balance: 75 }],
+          accounts: [
+            { id: 'account-cash', name: 'Cash', type: 'cash', initialBalance: 100, balance: 75 }
+          ],
           categories: [{ id: 'category-food', name: 'Food', kind: 'expense' }],
           transactions: [
             {
@@ -67,7 +69,12 @@ test('relational repository imports and rebuilds core business data from SQLite 
     assert.deepEqual(bootstrap.data.finance.transactions[0].tags, ['daily']);
     assert.equal(bootstrap.data.preferences.debts[0].balance, 50);
 
-    await replaceRelationalData('sqlite', { finance: {}, preferences: {}, globalMemories: [] }, env, 'default');
+    await replaceRelationalData(
+      'sqlite',
+      { finance: {}, preferences: {}, globalMemories: [] },
+      env,
+      'default'
+    );
     const cleared = await getRelationalDataStatus('sqlite', env, 'default');
     assert.equal(cleared.hasData, false);
     assert.equal(cleared.counts.transactions, 0);
@@ -158,20 +165,72 @@ test('relational repository keeps separate users isolated during replacement and
       first.user.ledgerUserId
     );
 
-    const firstBootstrap = await getRelationalBootstrap(
-      'sqlite',
-      env,
-      first.user.ledgerUserId
-    );
-    const secondBootstrap = await getRelationalBootstrap(
-      'sqlite',
-      env,
-      second.user.ledgerUserId
-    );
+    const firstBootstrap = await getRelationalBootstrap('sqlite', env, first.user.ledgerUserId);
+    const secondBootstrap = await getRelationalBootstrap('sqlite', env, second.user.ledgerUserId);
     assert.equal(firstBootstrap.counts.transactions, 0);
     assert.equal(secondBootstrap.counts.transactions, 1);
     assert.equal(secondBootstrap.data.finance.transactions[0].id, 'second-transaction');
     assert.deepEqual(secondBootstrap.data.finance.transactions[0].tags, ['second-tag']);
+  } finally {
+    await rm(dataDirectory, { recursive: true, force: true });
+  }
+});
+
+test('relational repository isolates users that import identical seed ids', async () => {
+  const dataDirectory = await mkdtemp(path.join(os.tmpdir(), 'ledgerflow-relational-shared-ids-'));
+  const env = {
+    LEDGERFLOW_DATA_DIR: dataDirectory,
+    SQLITE_PATH: '',
+    LEDGERFLOW_REGISTRATION_MODE: 'open'
+  };
+  const payload = () => ({
+    finance: {
+      accounts: [{ id: 'acc-cash', name: 'Cash', type: 'cash', initialBalance: 0, balance: 0 }],
+      categories: [{ id: 'cat-food', name: 'Food', kind: 'expense' }],
+      transactions: [
+        {
+          id: 'txn-lunch',
+          type: 'expense',
+          accountId: 'acc-cash',
+          categoryId: 'cat-food',
+          amount: 25,
+          date: '2026-08-01T00:00:00.000Z',
+          note: 'Lunch',
+          tags: ['daily']
+        }
+      ]
+    },
+    preferences: {},
+    globalMemories: [{ id: 'memory-1', title: 'Seed', content: 'Seed memory' }]
+  });
+
+  try {
+    await migrateRelationalDatabase('sqlite', env);
+    const first = await registerUser(
+      'sqlite',
+      { email: 'seed-first@example.com', password: 'first-secure-password' },
+      env
+    );
+    const second = await registerUser(
+      'sqlite',
+      { email: 'seed-second@example.com', password: 'second-secure-password' },
+      env
+    );
+
+    await replaceRelationalData('sqlite', payload(), env, first.user.ledgerUserId);
+    await replaceRelationalData('sqlite', payload(), env, second.user.ledgerUserId);
+
+    const firstBootstrap = await getRelationalBootstrap('sqlite', env, first.user.ledgerUserId);
+    const secondBootstrap = await getRelationalBootstrap('sqlite', env, second.user.ledgerUserId);
+
+    assert.equal(firstBootstrap.counts.transactions, 1);
+    assert.equal(secondBootstrap.counts.transactions, 1);
+    assert.equal(firstBootstrap.data.finance.accounts[0].id, 'acc-cash');
+    assert.equal(secondBootstrap.data.finance.transactions[0].id, 'txn-lunch');
+    assert.equal(secondBootstrap.data.finance.transactions[0].accountId, 'acc-cash');
+    assert.equal(secondBootstrap.data.finance.transactions[0].categoryId, 'cat-food');
+    assert.deepEqual(secondBootstrap.data.finance.transactions[0].tags, ['daily']);
+    assert.equal(secondBootstrap.data.globalMemories[0].id, 'memory-1');
   } finally {
     await rm(dataDirectory, { recursive: true, force: true });
   }
