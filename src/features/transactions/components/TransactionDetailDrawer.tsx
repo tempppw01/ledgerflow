@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   TransactionAttachmentItem,
   TransactionItem,
@@ -364,6 +364,7 @@ export function TransactionDetailDrawer({
   const drawerRef = useRef<HTMLDivElement | null>(null);
   const resizeStateRef = useRef<{ startY: number; startHeight: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const navigate = useNavigate();
 
   const handleAttachmentSelect = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -709,12 +710,14 @@ export function TransactionDetailDrawer({
               ↩️ 发起退款
             </button>
           ) : null}
-          <Link to={`/transactions/${transaction.id}`} style={{ textDecoration: 'none' }}>
-            <button type="button" className="button-with-icon primary">
-              <img src={PEN_TOOL_ICON_URL} alt="" aria-hidden="true" />
-              编辑
-            </button>
-          </Link>
+          <button
+            type="button"
+            className="button-with-icon primary"
+            onClick={() => navigate(`/transactions/${transaction.id}`)}
+          >
+            <img src={PEN_TOOL_ICON_URL} alt="" aria-hidden="true" />
+            编辑
+          </button>
           <button type="button" className="danger" onClick={onDelete}>
             删除
           </button>

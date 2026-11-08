@@ -74,15 +74,19 @@ function BankBrandIcon() {
 function renderAccountLabel(accountName: string) {
   const brand = detectAccountBrand(accountName);
   if (!brand) {
-    return accountName;
+    return (
+      <span className="transaction-account-name" title={accountName}>
+        {accountName}
+      </span>
+    );
   }
 
   return (
-    <span className="transaction-account-with-icon">
+    <span className="transaction-account-with-icon" title={accountName}>
       {brand === 'alipay' ? <AlipayBrandIcon /> : null}
       {brand === 'wechat' ? <WechatBrandIcon /> : null}
       {brand === 'bank' ? <BankBrandIcon /> : null}
-      <span>{accountName}</span>
+      <span className="transaction-account-name">{accountName}</span>
     </span>
   );
 }

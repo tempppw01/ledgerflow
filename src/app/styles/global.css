@@ -2638,6 +2638,24 @@ tr:hover td {
   line-height: 1;
 }
 
+/* 账户列偏窄时用省略号收尾,避免在账户名中间折行;完整名称由 title 提示。 */
+.transaction-table-wrap thead th.transaction-col-account {
+  min-width: 132px;
+}
+
+.transaction-table-wrap tbody td .transaction-account-with-icon {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.transaction-table-wrap tbody td .transaction-account-name {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .alipay-icon,
 .wechat-icon,
 .bank-icon {
@@ -8570,6 +8588,26 @@ body.exchange-resizing {
 
 .tag-panel-actions a {
   font-size: var(--font-sm);
+}
+
+.tag-panel-link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: 8px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  font-size: var(--font-base);
+  font-weight: 500;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.tag-panel-link-button:hover {
+  background: var(--color-bg-hover);
 }
 
 /* ============================================================

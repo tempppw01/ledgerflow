@@ -58,13 +58,20 @@ export function TagsPage() {
 
   return (
     <section className="panel tags-page vi-page">
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      <div
+        className="row"
+        style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}
+      >
         <h2 style={{ margin: 0 }}>🏷️ 交易标签</h2>
         <small style={{ color: 'var(--color-text-secondary)' }}>共 {groups.length} 个标签</small>
       </div>
 
       {groups.length === 0 ? (
-        <EmptyState title="暂无标签数据" description="先通过交易详情或 AI 助手写入标签后，这里会自动聚合展示。" icon="🏷️" />
+        <EmptyState
+          title="暂无标签数据"
+          description="先通过交易详情或 AI 助手写入标签后，这里会自动聚合展示。"
+          icon="🏷️"
+        />
       ) : (
         <div className="tags-grid">
           {groups.map((group) => (
@@ -75,8 +82,8 @@ export function TagsPage() {
               </header>
 
               <div className="row" style={{ marginBottom: 10 }}>
-                <Link to={buildTransactionsLink(group.label)}>
-                  <button type="button">查看全部</button>
+                <Link className="tag-panel-link-button" to={buildTransactionsLink(group.label)}>
+                  查看全部
                 </Link>
               </div>
 

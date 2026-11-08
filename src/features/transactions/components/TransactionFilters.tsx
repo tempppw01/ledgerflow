@@ -270,7 +270,12 @@ export function TransactionFilters({
             aria-hidden="true"
           />
           <span className="transaction-filter-trigger-label">
-            {sidePanelVisible ? '收起洞察' : '查看洞察'}
+            <span className="transaction-filter-trigger-label-full">
+              {sidePanelVisible ? '收起洞察' : '查看洞察'}
+            </span>
+            <span className="transaction-filter-trigger-label-short" aria-hidden="true">
+              洞察
+            </span>
           </span>
         </button>
 
@@ -289,7 +294,12 @@ export function TransactionFilters({
               aria-hidden="true"
             />
             <span className="transaction-filter-trigger-label">
-              {bulkSelectionEnabled ? '批量已开' : '批量操作'}
+              <span className="transaction-filter-trigger-label-full">
+                {bulkSelectionEnabled ? '批量已开' : '批量操作'}
+              </span>
+              <span className="transaction-filter-trigger-label-short" aria-hidden="true">
+                批量
+              </span>
             </span>
           </button>
           <button
@@ -306,7 +316,12 @@ export function TransactionFilters({
               aria-hidden="true"
             />
             <span className="transaction-filter-trigger-label">
-              {privacyMode ? '隐私已开' : '隐私模式'}
+              <span className="transaction-filter-trigger-label-full">
+                {privacyMode ? '隐私已开' : '隐私模式'}
+              </span>
+              <span className="transaction-filter-trigger-label-short" aria-hidden="true">
+                隐私
+              </span>
             </span>
           </button>
         </div>
@@ -327,7 +342,12 @@ export function TransactionFilters({
               alt=""
               aria-hidden="true"
             />
-            <span className="transaction-filter-trigger-label">筛选设置</span>
+            <span className="transaction-filter-trigger-label">
+              <span className="transaction-filter-trigger-label-full">筛选设置</span>
+              <span className="transaction-filter-trigger-label-short" aria-hidden="true">
+                筛选
+              </span>
+            </span>
             {advancedChangeCount > 0 ? (
               <span
                 className="transaction-filter-trigger-badge"

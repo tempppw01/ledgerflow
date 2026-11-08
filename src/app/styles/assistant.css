@@ -4012,6 +4012,8 @@
   font-weight: 760;
   letter-spacing: -0.055em;
   line-height: 1.14;
+  /* 换行时把两行长度拉匀,避免最后一个字被单独挤到下一行。 */
+  text-wrap: balance;
 }
 
 .chat-mode-welcome h2 em {
