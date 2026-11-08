@@ -7,6 +7,7 @@ import type { SubscriptionItem } from '../../entities/subscription/types';
 import type { TransactionItem } from '../../entities/transaction/types';
 import type { DebtItem, RepaymentRecord } from '../../features/debt/model/debtMetrics';
 import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
+import '../../i18n';
 import { FinancialAnalysisPage } from './FinancialAnalysisPage';
 
 const navigateMock = vi.fn();
