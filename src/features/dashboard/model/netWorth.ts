@@ -6,6 +6,7 @@ import type {
 import type { TransactionItem } from '../../../entities/transaction/types';
 import type { DebtItem, RepaymentRecord } from '../../debt/model/debtMetrics';
 import { toLocalDateKey } from '../../../shared/lib/localDate';
+import { getSignedAmount } from '../../../shared/lib/transactionMetrics';
 
 export interface NetWorthTrendRow {
   key: string;
@@ -67,13 +68,8 @@ function debtValue(debts: DebtItem[]) {
 }
 
 function transactionNet(rows: TransactionItem[]) {
-  return rows.reduce((sum, item) => {
-    if (item.type === 'income') return sum + amount(item.amount);
-    if (item.type === 'expense' || item.type === 'repayment' || item.type === 'budget') {
-      return sum - amount(item.amount);
-    }
-    return sum;
-  }, 0);
+  // 统一走方向化金额,退款/冲正按原始类型反向记账,避免净资产被推错方向。
+  return rows.reduce((sum, item) => sum + getSignedAmount(item), 0);
 }
 
 export function buildNetWorthTrend(input: {

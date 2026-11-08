@@ -23,6 +23,12 @@ import {
 } from '../../shared/lib/billImport';
 import { formatCurrency, formatCurrencyAuto, formatDate } from '../../shared/lib/format';
 import { toLocalDateKey } from '../../shared/lib/localDate';
+import {
+  getSignedAmount,
+  getTransactionDirection,
+  isTransactionRefundLike,
+  summarizeTransactions
+} from '../../shared/lib/transactionMetrics';
 import { AmountBreakdown } from '../../shared/ui/AmountBreakdown';
 import { resolveImportDefaultAccountId } from '../../shared/lib/importAccount';
 import { Toast, ToastVariant } from '../../shared/ui/Toast';
@@ -838,8 +844,7 @@ export function TransactionsPage() {
     count: number;
     maxExpense: TransactionRowView | null;
   }>(() => {
-    let income = 0;
-    let expense = 0;
+    const summary = summarizeTransactions(sortedRows.map((row) => row.item));
     let maxExpense: TransactionRowView | null = null;
 
     sortedRows.forEach((row) => {
@@ -847,16 +852,13 @@ export function TransactionsPage() {
       if (!Number.isFinite(amount) || amount <= 0) {
         return;
       }
-      if (row.item.type === 'income') {
-        income += amount;
-        return;
-      }
       if (
-        row.item.type === 'expense' ||
-        row.item.type === 'repayment' ||
-        row.item.type === 'budget'
+        (row.item.type === 'expense' ||
+          row.item.type === 'repayment' ||
+          row.item.type === 'budget') &&
+        row.item.adjustmentKind !== 'refund' &&
+        row.item.adjustmentKind !== 'reversal'
       ) {
-        expense += amount;
         if (!maxExpense || amount > maxExpense.item.amount) {
           maxExpense = row;
         }
@@ -864,9 +866,9 @@ export function TransactionsPage() {
     });
 
     return {
-      income,
-      expense,
-      net: income - expense,
+      income: summary.incomeTotal,
+      expense: summary.expenseTotal,
+      net: summary.netTotal,
       count: sortedRows.length,
       maxExpense
     };
@@ -1578,15 +1580,10 @@ export function TransactionsPage() {
     const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1120,height=860');
     const popupBlocked = !printWindow;
 
-    const totalAmount = selectedRows.reduce((sum, row) => sum + Number(row.item.amount || 0), 0);
-    const incomeTotal = selectedRows.reduce(
-      (sum, row) => sum + (row.item.type === 'income' ? Number(row.item.amount || 0) : 0),
-      0
-    );
-    const expenseTotal = selectedRows.reduce(
-      (sum, row) => sum + (row.item.type !== 'income' ? Number(row.item.amount || 0) : 0),
-      0
-    );
+    const printSummary = summarizeTransactions(selectedRows.map((row) => row.item));
+    const totalAmount = printSummary.overallTotal;
+    const incomeTotal = printSummary.incomeTotal;
+    const expenseTotal = printSummary.expenseTotal;
     const maskAmountText = (value: number) => (privacyMode ? '¥••••' : formatCurrency(value));
     const maskPrintText = (value?: string) => {
       if (!value?.trim()) return '—';
@@ -1604,7 +1601,13 @@ export function TransactionsPage() {
 
     const tableRows = selectedRows
       .map(({ item, categoryName, accountName }) => {
-        const amountText = `${item.type === 'income' ? '+' : '-'}${maskAmountText(item.amount)}`;
+        const direction = getTransactionDirection(item);
+        const typeLabel = isTransactionRefundLike(item)
+          ? item.adjustmentKind === 'refund'
+            ? '退款'
+            : '冲正'
+          : txTypeLabel(item.type);
+        const amountText = `${direction === 'inflow' ? '+' : '-'}${maskAmountText(item.amount)}`;
         const safeCategory = maskPrintText(categoryName || '未分类');
         const safeAccount = maskPrintText(accountName || '未指定账户');
         const safeNote = maskPrintText(item.note || '—');
@@ -1615,19 +1618,19 @@ export function TransactionsPage() {
           ? `
           <tr>
             <td class="col-date">${escapeHtml(formatDate(item.date))}</td>
-            <td class="col-type">${escapeHtml(txTypeLabel(item.type))}</td>
+            <td class="col-type">${escapeHtml(typeLabel)}</td>
             <td class="col-category">${escapeHtml(safeCategory)}</td>
-            <td class="col-amount ${item.type === 'income' ? 'amount-income' : 'amount-expense'}">${escapeHtml(amountText)}</td>
+            <td class="col-amount ${direction === 'inflow' ? 'amount-income' : 'amount-expense'}">${escapeHtml(amountText)}</td>
             <td class="col-status">${escapeHtml(txStatusLabel(item.status))}</td>
           </tr>
         `
           : `
           <tr>
             <td class="col-date">${escapeHtml(formatDate(item.date))}</td>
-            <td class="col-type">${escapeHtml(txTypeLabel(item.type))}</td>
+            <td class="col-type">${escapeHtml(typeLabel)}</td>
             <td class="col-category">${escapeHtml(safeCategory)}</td>
             ${bulkPrintFields.includeAccount ? `<td class="col-account">${escapeHtml(safeAccount)}</td>` : ''}
-            <td class="col-amount ${item.type === 'income' ? 'amount-income' : 'amount-expense'}">${escapeHtml(amountText)}</td>
+            <td class="col-amount ${direction === 'inflow' ? 'amount-income' : 'amount-expense'}">${escapeHtml(amountText)}</td>
             <td class="col-status">${escapeHtml(txStatusLabel(item.status))}</td>
             ${bulkPrintFields.includeNote ? `<td class="col-note">${escapeHtml(safeNote)}</td>` : ''}
             ${bulkPrintFields.includeOrderNo ? `<td class="col-order">${escapeHtml(safeOrderNo)} / ${escapeHtml(safeMerchantOrderNo)}</td>` : ''}
@@ -2215,7 +2218,7 @@ export function TransactionsPage() {
       .map((row) => row.item)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .map((item) => {
-        const signed = item.type === 'income' ? item.amount : -item.amount;
+        const signed = getSignedAmount(item);
         running += Number.isFinite(signed) ? signed : 0;
         return {
           label: formatDate(item.date),

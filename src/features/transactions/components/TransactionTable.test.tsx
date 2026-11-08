@@ -875,5 +875,10 @@ describe('TransactionTable', () => {
     expect(document.querySelector('#transaction-row-tx-refund')).toHaveClass(
       'transaction-row-refund-like'
     );
+    const refundRow = document.querySelector('#transaction-row-tx-refund');
+    expect(refundRow).not.toBeNull();
+    expect(within(refundRow as HTMLElement).getByLabelText('退款')).toHaveClass(
+      'transaction-type-badge-income'
+    );
   });
 });

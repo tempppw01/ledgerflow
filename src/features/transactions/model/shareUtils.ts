@@ -1,5 +1,13 @@
 import { formatCurrencyAuto, formatDate } from '../../../shared/lib/format';
-import type { TransactionItem, TransactionSource, TransactionType } from '../../../entities/transaction/types';
+import type {
+  TransactionItem,
+  TransactionSource,
+  TransactionType
+} from '../../../entities/transaction/types';
+import {
+  getTransactionDirection,
+  isTransactionRefundLike
+} from '../../../shared/lib/transactionMetrics';
 
 export type BillShareTemplate = 'full' | 'masked' | 'summary';
 
@@ -7,7 +15,20 @@ export type BillShareTemplate = 'full' | 'masked' | 'summary';
  * 获取交易类型标签
  */
 export function txTypeLabel(type: TransactionType) {
-  return type === 'income' ? '收入' : type === 'budget' ? '预算' : type === 'repayment' ? '还款' : '支出';
+  return type === 'income'
+    ? '收入'
+    : type === 'budget'
+      ? '预算'
+      : type === 'repayment'
+        ? '还款'
+        : '支出';
+}
+
+function transactionTypeLabel(transaction: TransactionItem) {
+  if (isTransactionRefundLike(transaction)) {
+    return transaction.adjustmentKind === 'refund' ? '退款' : '冲正';
+  }
+  return txTypeLabel(transaction.type);
 }
 
 /**
@@ -50,14 +71,26 @@ export function buildTransactionShareText(input: {
   includeAttachments: boolean;
   includeAccount: boolean;
 }) {
-  const { transaction, categoryName, accountName, source, template, includeNote, includeAttachments, includeAccount } = input;
+  const {
+    transaction,
+    categoryName,
+    accountName,
+    source,
+    template,
+    includeNote,
+    includeAttachments,
+    includeAccount
+  } = input;
   const isMasked = template === 'masked';
   const isSummary = template === 'summary';
-  const amountText = isMasked ? '¥••••' : formatCurrencyAuto(transaction.amount);
+  const direction = getTransactionDirection(transaction);
+  const amountText = isMasked
+    ? '¥••••'
+    : `${direction === 'inflow' ? '+' : '-'}${formatCurrencyAuto(transaction.amount)}`;
   const noteText = transaction.note?.trim() || '—';
   const attachmentCount = transaction.attachments?.length || 0;
   const lines = [
-    `【账单分享】${txTypeLabel(transaction.type)}`,
+    `【账单分享】${transactionTypeLabel(transaction)}`,
     `金额：${amountText}`,
     `日期：${formatDate(transaction.date)}`,
     `分类：${isMasked ? maskShareText(categoryName) : categoryName || '—'}`
@@ -69,7 +102,9 @@ export function buildTransactionShareText(input: {
 
   if (!isSummary) {
     lines.push(`状态：${txStatusLabel(transaction.status)}`);
-    lines.push(`来源：${source === 'ai' ? 'AI 记账' : source === 'wechat' ? '微信导入' : source === 'alipay' ? '支付宝' : '手工录入'}`);
+    lines.push(
+      `来源：${source === 'ai' ? 'AI 记账' : source === 'wechat' ? '微信导入' : source === 'alipay' ? '支付宝' : '手工录入'}`
+    );
   }
 
   if (includeNote) {
@@ -77,7 +112,9 @@ export function buildTransactionShareText(input: {
   }
 
   if (!isSummary && transaction.tags?.length) {
-    lines.push(`标签：${isMasked ? `${transaction.tags.length} 个标签` : transaction.tags.join(' / ')}`);
+    lines.push(
+      `标签：${isMasked ? `${transaction.tags.length} 个标签` : transaction.tags.join(' / ')}`
+    );
   }
 
   if (!isSummary && includeAttachments) {

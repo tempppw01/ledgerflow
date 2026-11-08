@@ -825,7 +825,8 @@ export function analyzeFinancialOverview(input: {
   const repaymentRecordsInRange = input.repaymentRecords.filter((item) =>
     isInRange(item.paidAt, start, today)
   );
-  const savingsRate = summary.incomeTotal > 0 ? summary.netTotal / summary.incomeTotal : 0;
+  const netIncome = summary.incomeTotal - summary.incomeReversalTotal;
+  const savingsRate = netIncome > 0 ? summary.netTotal / netIncome : 0;
   const hasEnoughData = rangeTransactions.length >= MIN_ANALYSIS_TRANSACTION_COUNT;
   const habits = buildHabitInsights(rangeTransactions, input.categories, messages);
   const avoidableSignals = buildAvoidableSignals(rangeTransactions, input.categories, messages);

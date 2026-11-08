@@ -1,6 +1,11 @@
 import { formatCurrency, formatDate } from '../../../shared/lib/format';
-import { TransactionItem, TransactionType } from '../../../entities/transaction/types';
+import { TransactionItem } from '../../../entities/transaction/types';
 import { PDF_CHINESE_FONT_URL } from '../../../shared/config/brandAssets';
+import {
+  getTransactionDirection,
+  isTransactionRefundLike,
+  summarizeTransactions
+} from '../../../shared/lib/transactionMetrics';
 
 export type BulkPrintTemplate = 'full' | 'summary';
 
@@ -28,8 +33,18 @@ export type ExportTransactionsPdfInput = {
 let pdfRuntimePromise: Promise<[typeof import('pdf-lib'), typeof import('fontkit')]> | null = null;
 let cachedFontBytesPromise: Promise<ArrayBuffer> | null = null;
 
-function txTypeLabel(type: TransactionType) {
-  return type === 'income' ? '收入' : type === 'budget' ? '预算' : type === 'repayment' ? '还款' : '支出';
+function txTypeLabel(item: TransactionItem) {
+  if (isTransactionRefundLike(item)) {
+    return item.adjustmentKind === 'refund' ? '退款' : '冲正';
+  }
+  const { type } = item;
+  return type === 'income'
+    ? '收入'
+    : type === 'budget'
+      ? '预算'
+      : type === 'repayment'
+        ? '还款'
+        : '支出';
 }
 
 function txStatusLabel(status?: TransactionItem['status']) {
@@ -92,15 +107,10 @@ export async function exportTransactionsPdf(input: ExportTransactionsPdfInput) {
   const pageHeight = 841.89;
   const maxTextWidth = pageWidth - margin * 2;
 
-  const totalAmount = rows.reduce((sum, row) => sum + Number(row.item.amount || 0), 0);
-  const incomeTotal = rows.reduce(
-    (sum, row) => sum + (row.item.type === 'income' ? Number(row.item.amount || 0) : 0),
-    0
-  );
-  const expenseTotal = rows.reduce(
-    (sum, row) => sum + (row.item.type !== 'income' ? Number(row.item.amount || 0) : 0),
-    0
-  );
+  const summary = summarizeTransactions(rows.map((row) => row.item));
+  const totalAmount = summary.overallTotal;
+  const incomeTotal = summary.incomeTotal;
+  const expenseTotal = summary.expenseTotal;
 
   const maskAmountText = (value: number) => (privacyMode ? '¥••••' : formatCurrency(value));
   const maskPrintText = (value?: string) => {
@@ -128,7 +138,12 @@ export async function exportTransactionsPdf(input: ExportTransactionsPdfInput) {
     }
   };
 
-  const drawLine = (textLine: string, x = margin, color = rgb(0.07, 0.09, 0.15), size = fontSize) => {
+  const drawLine = (
+    textLine: string,
+    x = margin,
+    color = rgb(0.07, 0.09, 0.15),
+    size = fontSize
+  ) => {
     page.drawText(textLine, { x, y: cursorY, size, font, color });
     cursorY -= lineHeight;
   };
@@ -144,8 +159,12 @@ export async function exportTransactionsPdf(input: ExportTransactionsPdfInput) {
   drawLine(`时间范围：${dateRangeText}`);
   drawLine(`生成时间：${generatedAtText}`);
   drawLine(`交易条数：${rows.length} 条`);
-  drawLine(`金额合计：${maskAmountText(totalAmount)} ｜ 收入合计：${maskAmountText(incomeTotal)} ｜ 支出合计：${maskAmountText(expenseTotal)}`);
-  drawLine(`导出模式：${privacyMode ? '隐私模式（已脱敏）' : '完整模式'} ｜ 模板：${bulkPrintTemplate === 'summary' ? '摘要' : '完整'}`);
+  drawLine(
+    `金额合计：${maskAmountText(totalAmount)} ｜ 收入合计：${maskAmountText(incomeTotal)} ｜ 支出合计：${maskAmountText(expenseTotal)}`
+  );
+  drawLine(
+    `导出模式：${privacyMode ? '隐私模式（已脱敏）' : '完整模式'} ｜ 模板：${bulkPrintTemplate === 'summary' ? '摘要' : '完整'}`
+  );
   cursorY -= 6;
 
   rows.forEach(({ item, categoryName, accountName }, index) => {
@@ -153,25 +172,41 @@ export async function exportTransactionsPdf(input: ExportTransactionsPdfInput) {
       `分类：${maskPrintText(categoryName || '未分类')}`,
       bulkPrintFields.includeAccount ? `账户：${maskPrintText(accountName || '未指定账户')}` : '',
       `状态：${txStatusLabel(item.status)}`,
-      bulkPrintFields.includeOrderNo && item.orderNo ? `订单号：${maskPrintText(item.orderNo)}` : '',
-      bulkPrintFields.includeOrderNo && item.merchantOrderNo ? `商户单号：${maskPrintText(item.merchantOrderNo)}` : ''
+      bulkPrintFields.includeOrderNo && item.orderNo
+        ? `订单号：${maskPrintText(item.orderNo)}`
+        : '',
+      bulkPrintFields.includeOrderNo && item.merchantOrderNo
+        ? `商户单号：${maskPrintText(item.merchantOrderNo)}`
+        : ''
     ].filter(Boolean);
 
     const extraLines = [
-      bulkPrintFields.includeNote && bulkPrintTemplate !== 'summary' ? `备注：${maskPrintText(item.note || '—')}` : '',
-      bulkPrintFields.includeTags && item.tags?.length ? `标签：${maskPrintText(item.tags.join(' / '))}` : ''
+      bulkPrintFields.includeNote && bulkPrintTemplate !== 'summary'
+        ? `备注：${maskPrintText(item.note || '—')}`
+        : '',
+      bulkPrintFields.includeTags && item.tags?.length
+        ? `标签：${maskPrintText(item.tags.join(' / '))}`
+        : ''
     ].filter(Boolean);
 
-    const lines = bulkPrintTemplate === 'summary'
-      ? [
-          `${index + 1}. ${formatDate(item.date)}  ${txTypeLabel(item.type)}  ${item.type === 'income' ? '+' : '-'}${maskAmountText(item.amount)}`,
-          detailLineParts.filter((part) => !part.startsWith('账户：') && !part.startsWith('订单号：') && !part.startsWith('商户单号：')).join(' ｜ ')
-        ]
-      : [
-          `${index + 1}. ${formatDate(item.date)}  ${txTypeLabel(item.type)}  ${item.type === 'income' ? '+' : '-'}${maskAmountText(item.amount)}`,
-          detailLineParts.join(' ｜ '),
-          ...extraLines
-        ];
+    const lines =
+      bulkPrintTemplate === 'summary'
+        ? [
+            `${index + 1}. ${formatDate(item.date)}  ${txTypeLabel(item)}  ${getTransactionDirection(item) === 'inflow' ? '+' : '-'}${maskAmountText(item.amount)}`,
+            detailLineParts
+              .filter(
+                (part) =>
+                  !part.startsWith('账户：') &&
+                  !part.startsWith('订单号：') &&
+                  !part.startsWith('商户单号：')
+              )
+              .join(' ｜ ')
+          ]
+        : [
+            `${index + 1}. ${formatDate(item.date)}  ${txTypeLabel(item)}  ${getTransactionDirection(item) === 'inflow' ? '+' : '-'}${maskAmountText(item.amount)}`,
+            detailLineParts.join(' ｜ '),
+            ...extraLines
+          ];
 
     const requiredHeight = lines.length * lineHeight + 10;
     ensureSpace(requiredHeight);

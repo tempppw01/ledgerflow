@@ -3,7 +3,11 @@ import { createPortal } from 'react-dom';
 import { TransactionItem, TransactionStatus } from '../../../entities/transaction/types';
 import { EMPTY_CATEGORY_FILTER_VALUE } from '../model/categoryQuickFilter';
 import { formatCurrencyAuto, formatDate } from '../../../shared/lib/format';
-import { summarizeTransactions } from '../../../shared/lib/transactionMetrics';
+import {
+  getTransactionDirection,
+  isTransactionRefundLike,
+  summarizeTransactions
+} from '../../../shared/lib/transactionMetrics';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { TableSkeleton } from '../../../shared/ui/TableSkeleton';
 import { DatePicker } from '../../../shared/ui/DatePicker';
@@ -419,6 +423,9 @@ export function TransactionTable({
       case 'date':
         return formatDate(item.date);
       case 'type':
+        if (isTransactionRefundLike(item)) {
+          return item.adjustmentKind === 'refund' ? '退款' : '冲正';
+        }
         return item.type === 'income'
           ? '收入'
           : item.type === 'budget'
@@ -461,20 +468,7 @@ export function TransactionTable({
   };
 
   const pageSummary = useMemo(() => {
-    const incomeTotal = rows.reduce(
-      (sum, row) => (row.item.type === 'income' ? sum + row.item.amount : sum),
-      0
-    );
-    const expenseTotal = rows.reduce(
-      (sum, row) => (row.item.type !== 'income' ? sum + row.item.amount : sum),
-      0
-    );
-    return {
-      incomeTotal,
-      expenseTotal,
-      netTotal: incomeTotal - expenseTotal,
-      overallTotal: rows.reduce((sum, row) => sum + row.item.amount, 0)
-    };
+    return summarizeTransactions(rows.map((row) => row.item));
   }, [rows]);
 
   const taskSummary = useMemo(() => {
@@ -982,10 +976,23 @@ export function TransactionTable({
                               budget: { short: '预', label: '预算' },
                               repayment: { short: '还', label: '还款' }
                             };
-                            const badge = typeBadgeMap[item.type];
+                            const isAdjustment = isTransactionRefundLike(item);
+                            const badge =
+                              isAdjustment && item.adjustmentKind
+                                ? {
+                                    short: item.adjustmentKind === 'refund' ? '退' : '冲',
+                                    label: item.adjustmentKind === 'refund' ? '退款' : '冲正'
+                                  }
+                                : typeBadgeMap[item.type];
+                            const badgeTone = isAdjustment
+                              ? getTransactionDirection(item) === 'inflow'
+                                ? 'income'
+                                : 'expense'
+                              : item.type;
                             const isAiSource = item.source === 'ai';
                             const isHighExpense =
                               item.type === 'expense' &&
+                              !isAdjustment &&
                               Number(item.amount) >= highExpenseThreshold;
                             const shouldShowAnomaly = isHighExpense && highExpenseThreshold > 0;
                             const anomalyHint = shouldShowAnomaly
@@ -997,7 +1004,7 @@ export function TransactionTable({
                                 <td key={`${item.id}-${column.key}`}>
                                   <div className="transaction-type-cell">
                                     <span
-                                      className={`transaction-type-badge transaction-type-badge-${item.type}`}
+                                      className={`transaction-type-badge transaction-type-badge-${badgeTone}`}
                                       aria-label={badge.label}
                                       title={badge.label}
                                     >
@@ -1039,7 +1046,7 @@ export function TransactionTable({
                               <td
                                 key={`${item.id}-${column.key}`}
                                 className={`transaction-amount-cell ${
-                                  item.type === 'income'
+                                  getTransactionDirection(item) === 'inflow'
                                     ? 'transaction-amount-income'
                                     : 'transaction-amount-expense'
                                 }`}
@@ -1157,7 +1164,7 @@ export function TransactionTable({
                       <header>
                         <strong
                           className={`transaction-amount-cell ${
-                            item.type === 'income'
+                            getTransactionDirection(item) === 'inflow'
                               ? 'transaction-amount-income'
                               : 'transaction-amount-expense'
                           }`}
@@ -1176,6 +1183,7 @@ export function TransactionTable({
                             </span>
                           ) : null}
                           {item.type === 'expense' &&
+                          !isTransactionRefundLike(item) &&
                           Number(item.amount) >= highExpenseThreshold ? (
                             <span
                               className="transaction-inline-tag transaction-inline-tag-warn"

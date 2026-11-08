@@ -7,6 +7,10 @@ import {
   TransactionStatus
 } from '../../../entities/transaction/types';
 import { formatCurrency, formatDateTime } from '../../../shared/lib/format';
+import {
+  getTransactionDirection,
+  isTransactionRefundLike
+} from '../../../shared/lib/transactionMetrics';
 import { buildA4PrintBaseStyles, buildA4PrintSheetStyles } from '../../../shared/lib/printStyles';
 import {
   ALIPAY_LOGO_URL,
@@ -114,7 +118,23 @@ function renderAccountLabel(accountName: string): ReactNode {
   );
 }
 
-function renderTypeLabel(type: TransactionItem['type']) {
+function renderTypeLabel(transaction: TransactionItem) {
+  const { type } = transaction;
+  if (isTransactionRefundLike(transaction)) {
+    const label = transaction.adjustmentKind === 'refund' ? '退款' : '冲正';
+    return (
+      <span
+        className={`transaction-type-badge transaction-type-badge-${
+          getTransactionDirection(transaction) === 'inflow' ? 'income' : 'expense'
+        }`}
+        aria-label={label}
+        title={label}
+      >
+        {transaction.adjustmentKind === 'refund' ? '退' : '冲'}
+      </span>
+    );
+  }
+
   if (type === 'income' || type === 'expense') {
     return (
       <span
@@ -151,7 +171,7 @@ function escapeHtml(value: string): string {
 
 function buildAbnormalAlert(input: TransactionItem): { title: string; detail: string } | null {
   const amount = Number(input.amount) || 0;
-  if (input.type !== 'expense' || amount < 500) return null;
+  if (input.type !== 'expense' || isTransactionRefundLike(input) || amount < 500) return null;
   return {
     title: '金额异常提醒',
     detail: `该笔支出（${formatCurrency(amount)}）显著偏高，建议检查是否重复记账，或确认是否为一次性大额消费。`
@@ -426,9 +446,13 @@ export function TransactionDetailDrawer({
       return;
     }
 
-    const amountText = `${transaction.type === 'income' ? '+' : '-'}${formatCurrency(transaction.amount)}`;
-    const typeText =
-      transaction.type === 'income'
+    const direction = getTransactionDirection(transaction);
+    const amountText = `${direction === 'inflow' ? '+' : '-'}${formatCurrency(transaction.amount)}`;
+    const typeText = isTransactionRefundLike(transaction)
+      ? transaction.adjustmentKind === 'refund'
+        ? '退款'
+        : '冲正'
+      : transaction.type === 'income'
         ? '收入'
         : transaction.type === 'expense'
           ? '支出'
@@ -458,7 +482,7 @@ export function TransactionDetailDrawer({
                 <h1 class="title">账单详情</h1>
                 <p class="sub">交易编号：${escapeHtml(transaction.id)}</p>
               </div>
-              <div class="amount ${transaction.type === 'income' ? 'income' : 'expense'}">${escapeHtml(amountText)}</div>
+              <div class="amount ${direction === 'inflow' ? 'income' : 'expense'}">${escapeHtml(amountText)}</div>
             </header>
 
             <section class="grid">
@@ -585,13 +609,17 @@ export function TransactionDetailDrawer({
           <section className="transaction-detail-summary" aria-label="账单摘要">
             <div>
               <p className="transaction-detail-kicker">
-                {renderTypeLabel(transaction.type)}
+                {renderTypeLabel(transaction)}
                 <span>{categoryName}</span>
               </p>
-              <strong className={transaction.type === 'income' ? 'text-income' : 'text-expense'}>
+              <strong
+                className={
+                  getTransactionDirection(transaction) === 'inflow' ? 'text-income' : 'text-expense'
+                }
+              >
                 {privacyMode
                   ? maskAmount()
-                  : `${transaction.type === 'income' ? '+' : '-'}${formatCurrency(transaction.amount)}`}
+                  : `${getTransactionDirection(transaction) === 'inflow' ? '+' : '-'}${formatCurrency(transaction.amount)}`}
               </strong>
             </div>
             <p>

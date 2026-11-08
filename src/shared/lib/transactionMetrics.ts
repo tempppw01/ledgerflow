@@ -10,7 +10,7 @@ function safeAmount(raw: number): number {
   return amount;
 }
 
-function isRefundLike(tx: TransactionItem): boolean {
+export function isTransactionRefundLike(tx: TransactionItem): boolean {
   return tx.adjustmentKind === 'refund' || tx.adjustmentKind === 'reversal';
 }
 
@@ -19,11 +19,13 @@ function isExpenseLike(type: TransactionType): boolean {
 }
 
 export function getTransactionDirection(tx: TransactionItem): TransactionDirection {
-  if (tx.type === 'income') {
-    return 'inflow';
+  if (isTransactionRefundLike(tx)) {
+    // 退款/冲正与原始交易方向相反:支出退款是资金回流(流入),
+    // 收入退款是把钱退还对方(流出)。退款行的 type 记录的是原始类型。
+    return tx.type === 'income' ? 'outflow' : 'inflow';
   }
 
-  if (isRefundLike(tx)) {
+  if (tx.type === 'income') {
     return 'inflow';
   }
 
@@ -40,6 +42,8 @@ export function getSignedAmount(tx: TransactionItem): number {
 
 export interface TransactionSummary {
   incomeTotal: number;
+  /** 收入被退款/冲正退回的金额,需要从收入里抵扣。 */
+  incomeReversalTotal: number;
   expenseTotal: number;
   refundTotal: number;
   netTotal: number;
@@ -48,62 +52,49 @@ export interface TransactionSummary {
 
 /**
  * 统一统计口径：
- * - 退款/冲正不计入收入
- * - 支出按“原始支出 - 退款/冲正”得到净支出
+ * - 支出退款/冲正抵减支出
+ * - 收入退款/冲正抵减收入
+ * - 两类调整互不串账,避免收入退款被算成消费
  */
 export function summarizeTransactions(rows: TransactionItem[]): TransactionSummary {
-  const refundByOrigin = new Map<string, number>();
-  let orphanRefundTotal = 0;
-
-  rows.forEach((tx) => {
-    if (!isRefundLike(tx)) {
-      return;
-    }
-    const amount = safeAmount(tx.amount);
-    if (amount <= 0) {
-      return;
-    }
-    if (tx.refundOfTransactionId) {
-      refundByOrigin.set(
-        tx.refundOfTransactionId,
-        (refundByOrigin.get(tx.refundOfTransactionId) || 0) + amount
-      );
-      return;
-    }
-    orphanRefundTotal += amount;
-  });
-
   const incomeTotal = rows.reduce((sum, tx) => {
-    if (tx.type !== 'income' || isRefundLike(tx)) {
+    if (tx.type !== 'income' || isTransactionRefundLike(tx)) {
       return sum;
     }
     return sum + safeAmount(tx.amount);
   }, 0);
 
   const grossExpense = rows.reduce((sum, tx) => {
-    if (isRefundLike(tx) || !isExpenseLike(tx.type)) {
+    if (isTransactionRefundLike(tx) || !isExpenseLike(tx.type)) {
       return sum;
     }
     return sum + safeAmount(tx.amount);
   }, 0);
 
-  const linkedRefundTotal = rows.reduce((sum, tx) => {
-    if (isRefundLike(tx) || !isExpenseLike(tx.type)) {
+  const incomeReversalTotal = rows.reduce((sum, tx) => {
+    if (!isTransactionRefundLike(tx) || tx.type !== 'income') {
       return sum;
     }
-    const sourceAmount = safeAmount(tx.amount);
-    const linkedRefund = safeAmount(refundByOrigin.get(tx.id) || 0);
-    return sum + Math.min(sourceAmount, linkedRefund);
+    return sum + safeAmount(tx.amount);
   }, 0);
 
-  const refundTotal = linkedRefundTotal + orphanRefundTotal;
-  const expenseTotal = Math.max(0, grossExpense - refundTotal);
+  const expenseRefundTotal = rows.reduce((sum, tx) => {
+    if (!isTransactionRefundLike(tx) || tx.type === 'income') {
+      return sum;
+    }
+    return sum + safeAmount(tx.amount);
+  }, 0);
+
+  const netExpense = grossExpense - expenseRefundTotal;
+  const expenseTotal = Math.max(0, netExpense);
 
   return {
     incomeTotal,
+    incomeReversalTotal,
     expenseTotal,
-    refundTotal,
-    netTotal: incomeTotal - expenseTotal,
+    refundTotal: expenseRefundTotal + incomeReversalTotal,
+    // 净额直接按资金方向汇总,退款超过当期支出时仍需保留多出的回流金额。
+    netTotal: incomeTotal - incomeReversalTotal - netExpense,
     overallTotal: rows.reduce((sum, tx) => sum + safeAmount(tx.amount), 0)
   };
 }

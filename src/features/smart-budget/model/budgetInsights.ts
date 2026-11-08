@@ -76,14 +76,16 @@ export function buildBudgetTrackingRows(params: {
     }
 
     const key = normalizeCategoryName(categoryName);
-    spentByCategory.set(key, (spentByCategory.get(key) || 0) + Number(item.amount || 0));
+    const refundLike = item.adjustmentKind === 'refund' || item.adjustmentKind === 'reversal';
+    const signedAmount = refundLike ? -Number(item.amount || 0) : Number(item.amount || 0);
+    spentByCategory.set(key, (spentByCategory.get(key) || 0) + signedAmount);
   });
 
   return recommendation.categoryBudgets
     .filter((item) => !['固定支出', '储蓄/投资'].includes(item.category))
     .map((item) => {
       const key = normalizeCategoryName(item.category);
-      const spentAmount = Math.round((spentByCategory.get(key) || 0) * 100) / 100;
+      const spentAmount = Math.max(0, Math.round((spentByCategory.get(key) || 0) * 100) / 100);
       const budgetAmount = item.amount;
       const diff = spentAmount - budgetAmount;
       const ratio = budgetAmount > 0 ? spentAmount / budgetAmount : 0;

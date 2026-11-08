@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { formatCurrency } from '../../shared/lib/format';
+import { summarizeTransactions } from '../../shared/lib/transactionMetrics';
 import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import {
@@ -250,16 +251,12 @@ export function SmartBudgetPage() {
   }, [statusFilter, trackingRows]);
 
   const monthTotals = useMemo(() => {
-    let income = 0;
-    let expense = 0;
-    transactions.forEach((item) => {
+    const monthTransactions = transactions.filter((item) => {
       const date = parseDateInput(item.date);
-      if (Number.isNaN(date.getTime()) || formatMonthKey(date) !== activeMonthKey) return;
-      const amount = Number(item.amount || 0);
-      if (item.type === 'income') income += amount;
-      if (item.type === 'expense') expense += amount;
+      return !Number.isNaN(date.getTime()) && formatMonthKey(date) === activeMonthKey;
     });
-    return { income, expense };
+    const summary = summarizeTransactions(monthTransactions);
+    return { income: summary.incomeTotal, expense: summary.expenseTotal };
   }, [transactions, activeMonthKey]);
 
   const overview = useMemo(

@@ -148,6 +148,8 @@ describe('TransactionDetailDrawer', () => {
     );
 
     expect(screen.getByText('退款 / 冲正')).toBeInTheDocument();
+    expect(screen.getByLabelText('退款')).toHaveClass('transaction-type-badge-income');
+    expect(screen.getByText('+¥25.00')).toHaveClass('text-income');
     expect(screen.getByText(/原始订单/)).toBeInTheDocument();
 
     expect(screen.getByText(/关联原单：原始订单/)).toBeInTheDocument();

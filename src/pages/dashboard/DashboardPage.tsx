@@ -20,6 +20,11 @@ import { APP_VERSION } from '../../shared/config/app';
 import { formatCurrencyAuto } from '../../shared/lib/format';
 import { formatMonth } from '../../shared/lib/i18nDate';
 import { toLocalDateKey } from '../../shared/lib/localDate';
+import {
+  getSignedAmount,
+  isTransactionRefundLike,
+  summarizeTransactions
+} from '../../shared/lib/transactionMetrics';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { EmptyState } from '../../shared/ui/EmptyState';
@@ -73,11 +78,8 @@ export function DashboardPage() {
     const d = new Date(t.date);
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
   });
-  const income = monthly.filter((t) => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-  const expense = monthly
-    .filter((t) => isActualExpenseType(t.type))
-    .reduce((sum, t) => sum + t.amount, 0);
-  const monthlyBalance = income - expense;
+  const monthlySummary = summarizeTransactions(monthly);
+  const monthlyBalance = monthlySummary.netTotal;
 
   const netWorthTrend = useMemo(
     () =>
@@ -128,19 +130,16 @@ export function DashboardPage() {
         const d = new Date(currentYear, currentMonth - (5 - i), 1);
         const key = monthKey(d);
         const rows = transactions.filter((t) => monthKey(new Date(t.date)) === key);
-        const mIncome = rows
-          .filter((t) => t.type === 'income')
-          .reduce((sum, t) => sum + t.amount, 0);
-        const mExpense = rows
-          .filter((t) => isActualExpenseType(t.type))
-          .reduce((sum, t) => sum + t.amount, 0);
+        const summary = summarizeTransactions(rows);
+        const mIncome = summary.incomeTotal;
+        const mExpense = summary.expenseTotal;
         const shortLabel = formatMonth(d, locale);
         return {
           key,
           shortLabel,
           income: mIncome,
           expense: mExpense,
-          balance: mIncome - mExpense,
+          balance: summary.netTotal,
           transactionCount: rows.length
         };
       }),
@@ -177,9 +176,7 @@ export function DashboardPage() {
         const rows = transactions.filter(
           (item) => new Date(item.date).getFullYear() === targetYear
         );
-        const yearExpense = rows
-          .filter((item) => isActualExpenseType(item.type))
-          .reduce((sum, item) => sum + item.amount, 0);
+        const yearExpense = summarizeTransactions(rows).expenseTotal;
         return {
           label: String(targetYear),
           shortLabel: String(targetYear),
@@ -210,11 +207,18 @@ export function DashboardPage() {
     const daysInMonth = new Date(baseYear, baseMonth + 1, 0).getDate();
     const dailyMap = new Map<number, number>();
     transactions.forEach((item) => {
-      if (!isActualExpenseType(item.type)) return;
+      if (
+        !isActualExpenseType(item.type) &&
+        item.adjustmentKind !== 'refund' &&
+        item.adjustmentKind !== 'reversal'
+      ) {
+        return;
+      }
       const date = new Date(item.date);
       if (date.getMonth() !== baseMonth || date.getFullYear() !== baseYear) return;
       const day = date.getDate();
-      dailyMap.set(day, (dailyMap.get(day) || 0) + item.amount);
+      // 退款/冲正会抵减当期支出,用方向化金额避免把退款又算成一笔消费。
+      dailyMap.set(day, (dailyMap.get(day) || 0) - getSignedAmount(item));
     });
 
     const weekCount = Math.ceil(daysInMonth / 7);
@@ -225,6 +229,7 @@ export function DashboardPage() {
       for (let day = startDay; day <= endDay; day += 1) {
         value += dailyMap.get(day) || 0;
       }
+      value = Math.max(0, value);
 
       return {
         label: t('dashboard.ui.weekLabel', {
@@ -319,7 +324,8 @@ export function DashboardPage() {
       return d.getMonth() === prevMonth && d.getFullYear() === prevYear;
     });
 
-    const includeRow = (type: string) => {
+    const includeRow = (item: (typeof transactions)[number]) => {
+      const type = item.type;
       if (cashflowView === 'expense') {
         return type === 'expense' || type === 'repayment';
       }
@@ -329,15 +335,18 @@ export function DashboardPage() {
       return type === 'income' || type === 'expense' || type === 'repayment';
     };
 
-    const signedAmount = (type: string, amount: number) => {
+    const signedAmount = (item: (typeof transactions)[number]) => {
       if (cashflowView === 'net') {
-        return type === 'income' ? amount : -amount;
+        return getSignedAmount(item);
       }
-      return amount;
+      if (isTransactionRefundLike(item)) {
+        return -item.amount;
+      }
+      return item.amount;
     };
 
     thisMonthRows.forEach((item) => {
-      if (!includeRow(item.type)) return;
+      if (!includeRow(item)) return;
       const categoryMeta = categoryMetaMap.get(item.categoryId);
       const name = categoryMeta?.name || item.categoryId || '未分类';
       const current = map.get(name) || {
@@ -346,12 +355,12 @@ export function DashboardPage() {
         icon: categoryMeta?.icon || '🏷️',
         color: categoryMeta?.color
       };
-      current.amount += signedAmount(item.type, item.amount);
+      current.amount += signedAmount(item);
       map.set(name, current);
     });
 
     prevMonthRows.forEach((item) => {
-      if (!includeRow(item.type)) return;
+      if (!includeRow(item)) return;
       const categoryMeta = categoryMetaMap.get(item.categoryId);
       const name = categoryMeta?.name || item.categoryId || '未分类';
       const current = map.get(name) || {
@@ -360,7 +369,7 @@ export function DashboardPage() {
         icon: categoryMeta?.icon || '🏷️',
         color: categoryMeta?.color
       };
-      current.prevAmount += signedAmount(item.type, item.amount);
+      current.prevAmount += signedAmount(item);
       map.set(name, current);
     });
 

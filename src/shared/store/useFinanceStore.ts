@@ -335,8 +335,9 @@ function normalizeTransactionSemantic(
 ): TransactionItem {
   const nextCategoryId = tx.categoryId || fallbackCategoryId || tx.categoryId;
   const adjustmentKind = normalizeAdjustmentKind(tx, categoryName);
-  const nextType =
-    adjustmentKind === 'normal' ? tx.type : tx.type === 'income' ? 'expense' : tx.type;
+  // 退款/冲正行保留原始收支类型,方向由 getTransactionDirection 依类型取反计算,
+  // 这样「收入退款」才会正确地表现为资金流出而不是又记一笔流入。
+  const nextType = tx.type;
 
   return {
     ...tx,
@@ -835,7 +836,7 @@ export const useFinanceStore = create<FinanceState>()(
 
           const refundRow: TransactionItem = {
             id: generateId(),
-            type: original.type === 'income' ? 'expense' : original.type,
+            type: original.type,
             categoryId: original.categoryId,
             accountId: original.accountId,
             amount: refundAmount,
