@@ -23,7 +23,24 @@ interface RecognitionSuggestion {
 const MAX_AMOUNT = 999999999.99;
 const MIN_DATE = '2000-01-01T00:00';
 const MAX_DATE = '2100-12-31T23:59';
-const CALCULATOR_KEYS = ['C', '⌫', '7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3', '=', '0', '.'] as const;
+const CALCULATOR_KEYS = [
+  'C',
+  '⌫',
+  '7',
+  '8',
+  '9',
+  '-',
+  '4',
+  '5',
+  '6',
+  '+',
+  '1',
+  '2',
+  '3',
+  '=',
+  '0',
+  '.'
+] as const;
 
 type CalculatorKey = string;
 
@@ -76,7 +93,7 @@ function appendCalculatorToken(prev: string, token: CalculatorKey): string {
     if (!prev || isCalculatorOperator(prev.slice(-1))) {
       return `${prev}0.`;
     }
-    const lastSegment = prev.split(/[+\-]/).pop() || '';
+    const lastSegment = prev.split(/[+-]/).pop() || '';
     if (lastSegment.includes('.')) {
       return prev;
     }
@@ -245,14 +262,14 @@ export function TransactionEditPage() {
 
   const draftHasContent = Boolean(
     amount.trim() ||
-      note.trim() ||
-      tags.trim() ||
-      orderNo.trim() ||
-      merchantOrderNo.trim() ||
-      type !== 'expense' ||
-      categoryId !== (categories[0]?.id ?? '') ||
-      accountId !== (accounts[0]?.id ?? '') ||
-      status !== 'completed'
+    note.trim() ||
+    tags.trim() ||
+    orderNo.trim() ||
+    merchantOrderNo.trim() ||
+    type !== 'expense' ||
+    categoryId !== (categories[0]?.id ?? '') ||
+    accountId !== (accounts[0]?.id ?? '') ||
+    status !== 'completed'
   );
 
   useEffect(() => {
@@ -493,7 +510,10 @@ export function TransactionEditPage() {
         </small>
       ) : null}
       {!id ? (
-        <small style={{ color: 'var(--color-text-secondary)', display: 'block', marginBottom: 10 }} role="status">
+        <small
+          style={{ color: 'var(--color-text-secondary)', display: 'block', marginBottom: 10 }}
+          role="status"
+        >
           {draftStatus || '输入内容会自动保存为草稿'}
         </small>
       ) : null}

@@ -6,6 +6,8 @@ export default defineConfig({
     setupFiles: './src/test/setup.ts',
     globals: true,
     css: true,
-    testTimeout: 15000
+    testTimeout: 15000,
+    include: ['src/**/*.test.{ts,tsx}'],
+    exclude: ['server/**', '.playwright-cli/**', 'node_modules/**']
   }
 });

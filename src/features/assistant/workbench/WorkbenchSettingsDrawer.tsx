@@ -1,4 +1,5 @@
 import { PasswordInput } from '../../../shared/ui/PasswordInput';
+import { DEFAULT_AI_MODEL } from '../../../shared/config/aiModels';
 
 interface WorkbenchSettingsDrawerProps {
   open: boolean;
@@ -79,7 +80,7 @@ export function WorkbenchSettingsDrawer(props: WorkbenchSettingsDrawerProps) {
             <input
               value={model}
               onChange={(e) => onChangeModel(e.target.value)}
-              placeholder="gpt-5.5"
+              placeholder={DEFAULT_AI_MODEL}
             />
             {models.length > 0 ? (
               <div className="assistant-wb-model-chips">

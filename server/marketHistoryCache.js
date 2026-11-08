@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
-import { DatabaseSync } from 'node:sqlite';
 import { getDatabaseSetupStatus, getSqliteDatabasePath } from './databaseProvider.js';
 import { migrateRelationalDatabase } from './relationalDatabase.js';
 import { withMysqlConnection } from './databaseConnection.js';
+import { openSqliteDatabase } from './sqliteDatabase.js';
 
 export const MARKET_HISTORY_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MARKET_HISTORY_CACHE_RETENTION_MS = 180 * 24 * 60 * 60 * 1000;
@@ -52,7 +52,7 @@ async function getCacheProvider(env) {
 
 async function withCacheDatabase(provider, handler, env) {
   if (provider === 'sqlite') {
-    const database = new DatabaseSync(getSqliteDatabasePath(env));
+    const database = openSqliteDatabase(env);
     database.exec('PRAGMA journal_mode = WAL;');
     try {
       return await handler({

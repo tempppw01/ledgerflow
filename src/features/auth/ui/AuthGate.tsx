@@ -207,7 +207,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
           >
             {mode === 'register' ? '已有账号？去登录' : '创建第一个账号'}
           </button>
-        ) : null}
+        ) : (
+          <p className="auth-registration-note">当前实例未开放自助注册,请使用已有账号登录。</p>
+        )}
 
         {error ? (
           <button type="button" className="auth-retry-button" onClick={() => void loadStatus()}>

@@ -87,7 +87,6 @@ export const CREDIT_ANALYSIS_AGENT_PROMPT = `你是 LedgerFlow AI 信贷管家�
 - 若没有识别出明确的信贷/分期项目，不要伪造 JSON 项；改为给人工核对建议。
 - 对缺字段场景，优先把字段留空并写入 pendingFields，不要胡算。`;
 
-
 export function buildRepaymentPromptContext(input: {
   debts: Array<{
     id: string;
@@ -117,7 +116,8 @@ export function buildRepaymentPromptContext(input: {
     name: item.name,
     type: item.type,
     balance: Number((Number(item.balance) || 0).toFixed(2)),
-    annualRate: typeof item.annualRate === 'number' ? Number(item.annualRate.toFixed(4)) : undefined,
+    annualRate:
+      typeof item.annualRate === 'number' ? Number(item.annualRate.toFixed(4)) : undefined,
     repaymentPlan: {
       repaymentDay: item.repaymentDay,
       paymentAccount: item.paymentAccount || '',
@@ -183,16 +183,16 @@ export function buildTransactionPromptContext(
     }))
     .sort((a, b) => b.date.localeCompare(a.date));
 
-  const focusQuestion = String(options?.focusQuestion || '').trim().toLowerCase();
+  const focusQuestion = String(options?.focusQuestion || '')
+    .trim()
+    .toLowerCase();
   const recentDays =
     options?.recentDays && Number.isFinite(options.recentDays) && options.recentDays > 0
       ? Math.floor(options.recentDays)
       : inferTransactionFocusDays(focusQuestion);
   const maxRows = Math.max(1, Math.floor(options?.maxRows || MAX_PROMPT_TRANSACTIONS));
   const cutoffDate = recentDays
-    ? new Date(Date.now() - recentDays * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .slice(0, 10)
+    ? new Date(Date.now() - recentDays * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
     : '';
   const scopedRows = cutoffDate
     ? normalizedAll.filter((item) => item.date >= cutoffDate)
@@ -297,13 +297,15 @@ function normalizeType(type: unknown): TransactionType | null {
 function normalizeAmount(value: unknown): number {
   if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
   if (typeof value !== 'string') return 0;
-  const cleaned = value.replace(/[A-Za-z$¥￥€£₩₽₹₫₴₦₱, -\u0020]/g, '').trim();
+  const cleaned = value.replace(/[\sA-Za-z$¥€£₩₽₹₫₴₦₱,-]/g, '').trim();
   const parsed = Number(cleaned);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function normalizeCurrency(value: unknown): string {
-  const text = String(value || '').trim().toUpperCase();
+  const text = String(value || '')
+    .trim()
+    .toUpperCase();
   if (!text) return 'unknown';
   if (['CNY', 'RMB', 'CNH'].includes(text)) return 'CNY';
   if (['USD', 'US$'].includes(text)) return 'USD';
@@ -365,7 +367,9 @@ function addMonths(dateText: string, monthsToAdd: number): string {
   const formatLocalDate = (year: number, monthIndex: number, day: number) =>
     `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-  const match = String(dateText || '').trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const match = String(dateText || '')
+    .trim()
+    .match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (match) {
     const [, year, month, day] = match;
     const yearNumber = Number(year);
@@ -415,7 +419,11 @@ function detectSubscriptionSuggestion(input: {
   if (/(会员|月卡|年卡|续费|自动续费|订阅|subscription|premium|plus|pro)/i.test(haystack)) {
     return { kind: 'membership', reason: '识别到会员/续费/订阅类关键词，像是周期性会员支出。' };
   }
-  if (/(spotify|netflix|youtube|icloud|google one|chatgpt|claude|midjourney|notion|figma|cursor)/i.test(haystack)) {
+  if (
+    /(spotify|netflix|youtube|icloud|google one|chatgpt|claude|midjourney|notion|figma|cursor)/i.test(
+      haystack
+    )
+  ) {
     return { kind: 'digital', reason: '识别到常见数字服务名，像是周期性数字订阅。' };
   }
   return undefined;
@@ -459,10 +467,17 @@ export function normalizeAiBill(raw: unknown): AiBillResult | null {
           : 'unknown',
       orderNo: row.orderNo?.trim() || undefined,
       merchantOrderNo: row.merchantOrderNo?.trim() || undefined,
-      currency: normalizeCurrency((row as { currency?: unknown }).currency) !== 'unknown'
-        ? normalizeCurrency((row as { currency?: unknown }).currency)
-        : detectCurrency((row as { originalAmountText?: unknown }).originalAmountText ?? row.amount, `${row.note || ''} ${row.category || ''}`),
-      originalAmountText: String((row as { originalAmountText?: unknown }).originalAmountText || row.amount || '').trim() || undefined,
+      currency:
+        normalizeCurrency((row as { currency?: unknown }).currency) !== 'unknown'
+          ? normalizeCurrency((row as { currency?: unknown }).currency)
+          : detectCurrency(
+              (row as { originalAmountText?: unknown }).originalAmountText ?? row.amount,
+              `${row.note || ''} ${row.category || ''}`
+            ),
+      originalAmountText:
+        String(
+          (row as { originalAmountText?: unknown }).originalAmountText || row.amount || ''
+        ).trim() || undefined,
       needsReview: Array.isArray(rawRow.needsReview)
         ? rawRow.needsReview
             .map((item) => String(item).trim())
@@ -549,7 +564,8 @@ export function validateDraft(entry: DraftBillEntry): ValidationIssue[] {
   };
   const reviewFields = ['amount', 'date', 'type', 'currency'] as const;
   const requestedReviews = (entry.needsReview || []).filter(
-    (field): field is (typeof reviewFields)[number] => reviewFields.includes(field as (typeof reviewFields)[number])
+    (field): field is (typeof reviewFields)[number] =>
+      reviewFields.includes(field as (typeof reviewFields)[number])
   );
   requestedReviews.forEach((field) => {
     if (issues.some((item) => item.field === field)) return;

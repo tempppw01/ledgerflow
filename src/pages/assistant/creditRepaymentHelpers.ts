@@ -27,10 +27,13 @@ interface CreditRepaymentAnalysis {
 function normalizeCreditIdentity(text: string): string {
   return String(text || '')
     .toLocaleLowerCase('zh-CN')
-    .replace(/[\s\-_（）()【】\[\]·•:：/]/g, '');
+    .replace(/[\s\-_()【】\u005B\u005D·•：/]/g, '');
 }
 
-function findMatchingDebt(item: CreditRepaymentSummaryItem, debts: DebtItem[]): DebtItem | undefined {
+function findMatchingDebt(
+  item: CreditRepaymentSummaryItem,
+  debts: DebtItem[]
+): DebtItem | undefined {
   const currentKey = normalizeCreditIdentity(`${item.title}${item.productType}`);
   return debts.find((debt) => {
     const debtKey = normalizeCreditIdentity(`${debt.name}${debt.type}`);
@@ -61,14 +64,21 @@ function analyzeCreditRepayment(
 
   const latestRecord = relatedRecords[0];
   const paymentAccounts = Array.from(
-    new Set(relatedRecords.map((record) => String(record.paymentAccount || '').trim()).filter(Boolean))
+    new Set(
+      relatedRecords.map((record) => String(record.paymentAccount || '').trim()).filter(Boolean)
+    )
   );
-  const plannedAmount = toMoneyNumber(item.dueAmount) || (matchedDebt ? Number(matchedDebt.customMinPayment || 0) : 0);
-  const recentPaidAmount = relatedRecords.slice(0, 3).reduce((sum, record) => sum + Number(record.amount || 0), 0);
+  const plannedAmount =
+    toMoneyNumber(item.dueAmount) || (matchedDebt ? Number(matchedDebt.customMinPayment || 0) : 0);
+  const recentPaidAmount = relatedRecords
+    .slice(0, 3)
+    .reduce((sum, record) => sum + Number(record.amount || 0), 0);
   const gapAmount = Math.max(0, plannedAmount - recentPaidAmount);
 
   const hasAccountMismatch = Boolean(
-    matchedDebt?.paymentAccount && paymentAccounts.length > 0 && !paymentAccounts.includes(matchedDebt.paymentAccount)
+    matchedDebt?.paymentAccount &&
+    paymentAccounts.length > 0 &&
+    !paymentAccounts.includes(matchedDebt.paymentAccount)
   );
 
   let status: CreditRepaymentStatus = 'unmatched';
@@ -76,7 +86,10 @@ function analyzeCreditRepayment(
     status = 'unmatched';
   } else if (hasAccountMismatch) {
     status = 'account-mismatch';
-  } else if ((plannedAmount > 0 && gapAmount > 0) || (plannedAmount > recentPaidAmount && recentPaidAmount > 0)) {
+  } else if (
+    (plannedAmount > 0 && gapAmount > 0) ||
+    (plannedAmount > recentPaidAmount && recentPaidAmount > 0)
+  ) {
     status = 'partially-paid';
   } else {
     status = 'aligned';
@@ -147,7 +160,10 @@ function buildGapReason(status: CreditRepaymentStatus, analysis: CreditRepayment
   }
 }
 
-function buildGapExplanationItems(status: CreditRepaymentStatus, analysis: CreditRepaymentAnalysis): string[] {
+function buildGapExplanationItems(
+  status: CreditRepaymentStatus,
+  analysis: CreditRepaymentAnalysis
+): string[] {
   const items: string[] = [];
 
   if (analysis.plannedAmount > 0) {
@@ -187,7 +203,10 @@ function buildGapExplanationItems(status: CreditRepaymentStatus, analysis: Credi
   return items;
 }
 
-function buildShortfallAction(status: CreditRepaymentStatus, analysis: CreditRepaymentAnalysis): string {
+function buildShortfallAction(
+  status: CreditRepaymentStatus,
+  analysis: CreditRepaymentAnalysis
+): string {
   switch (status) {
     case 'unmatched':
       return analysis.matchedDebt
@@ -223,7 +242,9 @@ export function buildCreditRepaymentLookupSummary(
         .filter(Boolean)
         .join(' · ')
     : item.repaymentDate || item.dueAmount
-      ? [item.repaymentDate || '', item.dueAmount ? `本期约${item.dueAmount}` : ''].filter(Boolean).join(' · ')
+      ? [item.repaymentDate || '', item.dueAmount ? `本期约${item.dueAmount}` : '']
+          .filter(Boolean)
+          .join(' · ')
       : undefined;
 
   const paymentAccountText = matchedDebt?.paymentAccount
@@ -258,7 +279,8 @@ export function buildCreditRepaymentGapSummary(
   repaymentRecords: RepaymentRecord[]
 ): CreditRepaymentGapSummary | undefined {
   const analysis = analyzeCreditRepayment(item, debts, repaymentRecords);
-  const { matchedDebt, paymentAccounts, plannedAmount, recentPaidAmount, gapAmount, status } = analysis;
+  const { matchedDebt, paymentAccounts, plannedAmount, recentPaidAmount, gapAmount, status } =
+    analysis;
 
   if (plannedAmount <= 0 && recentPaidAmount <= 0 && !matchedDebt) {
     return undefined;

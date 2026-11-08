@@ -27,10 +27,7 @@ import { resolveImportDefaultAccountId } from '../../shared/lib/importAccount';
 import { Toast, ToastVariant } from '../../shared/ui/Toast';
 import { DatePicker } from '../../shared/ui/DatePicker';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
-import {
-  TransactionDetailDrawer,
-  TransactionDetailSectionKey
-} from '../../features/transactions/components/TransactionDetailDrawer';
+import { TransactionDetailDrawer } from '../../features/transactions/components/TransactionDetailDrawer';
 import { TransactionFilters } from '../../features/transactions/components/TransactionFilters';
 import { AmountKeypad } from '../../features/transactions/components/AmountKeypad';
 import {
@@ -163,18 +160,9 @@ const COLUMN_OPTIONS: Array<{ key: TransactionColumnKey; label: string }> = [
   { key: 'note', label: '备注' }
 ];
 
-const DEFAULT_DETAIL_SECTIONS: Record<TransactionDetailSectionKey, boolean> = {
-  base: true,
-  source: true,
-  note: true,
-  tags: true,
-  json: false
-};
-
 const TX_VISIBLE_COLUMNS_KEY = 'ledgerflow.transactions.visibleColumns';
 const TX_COLUMN_ORDER_KEY = 'ledgerflow.transactions.columnOrder';
 const TX_COLUMN_WIDTHS_KEY = 'ledgerflow.transactions.columnWidths';
-const TX_DETAIL_SECTIONS_KEY = 'ledgerflow.transactions.detailSections';
 
 const COLUMN_MIN_WIDTHS: Record<TransactionColumnKey, number> = {
   date: 90,
@@ -528,11 +516,6 @@ export function TransactionsPage() {
   const [columnOrder, setColumnOrder] = useState<TransactionColumnKey[]>(() =>
     restoreColumnOrder(TX_COLUMN_ORDER_KEY)
   );
-  const [visibleDetailSections, setVisibleDetailSections] = useState<
-    Record<TransactionDetailSectionKey, boolean>
-  >(() =>
-    restoreRecordState<TransactionDetailSectionKey>(TX_DETAIL_SECTIONS_KEY, DEFAULT_DETAIL_SECTIONS)
-  );
   const [columnWidths, setColumnWidths] = useState<Partial<Record<TransactionColumnKey, number>>>(
     () => restoreColumnWidths(TX_COLUMN_WIDTHS_KEY)
   );
@@ -554,7 +537,7 @@ export function TransactionsPage() {
   const [quickAddCalculatedAmount, setQuickAddCalculatedAmount] = useState<number | null>(null);
   const [quickAddDate, setQuickAddDate] = useState(initialQuickDraft?.date ?? quickAddDefaultDate);
   const [quickAddNote, setQuickAddNote] = useState(initialQuickDraft?.note ?? '');
-  const [quickAddError, setQuickAddError] = useState('');
+  const [quickAddErrorKey, setQuickAddErrorKey] = useState('');
   const [quickAddDraftStatus, setQuickAddDraftStatus] = useState(
     initialQuickDraft ? '已恢复未完成草稿' : ''
   );
@@ -619,10 +602,6 @@ export function TransactionsPage() {
   useEffect(() => {
     window.localStorage.setItem(TX_COLUMN_ORDER_KEY, JSON.stringify(columnOrder));
   }, [columnOrder]);
-
-  useEffect(() => {
-    window.localStorage.setItem(TX_DETAIL_SECTIONS_KEY, JSON.stringify(visibleDetailSections));
-  }, [visibleDetailSections]);
 
   useEffect(() => {
     window.localStorage.setItem(TX_PAGE_SIZE_KEY, String(pageSize));
@@ -693,7 +672,7 @@ export function TransactionsPage() {
     }
 
     setSelectedId(null);
-    setQuickAddError('');
+    setQuickAddErrorKey('');
     setQuickAddOpen(true);
 
     const next = new URLSearchParams(searchParams);
@@ -964,10 +943,10 @@ export function TransactionsPage() {
     fileInputRef.current?.click();
   };
 
-  const showToast = (message: string, variant: ToastVariant) => {
+  const showToast = useCallback((message: string, variant: ToastVariant) => {
     setLastAddedTransactionId(null);
     setToast({ visible: true, message, variant });
-  };
+  }, []);
 
   const handleAttachmentUploaded = useCallback(
     (attachment: TransactionAttachmentItem) => {
@@ -986,7 +965,7 @@ export function TransactionsPage() {
     (message: string, tone: 'success' | 'error' | 'warning') => {
       showToast(message, tone);
     },
-    []
+    [showToast]
   );
 
   const quickAddCategoryOptions = useMemo(() => {
@@ -1061,20 +1040,20 @@ export function TransactionsPage() {
     setQuickAddCalculatedAmount(null);
     setQuickAddDate(quickAddDefaultDate);
     setQuickAddNote('');
-    setQuickAddError('');
+    setQuickAddErrorKey('');
     setQuickAddDraftStatus('');
     clearQuickTransactionDraft(user.ledgerUserId);
   };
 
   const openQuickAddDrawer = () => {
     setSelectedId(null);
-    setQuickAddError('');
+    setQuickAddErrorKey('');
     setQuickAddOpen(true);
   };
 
   const closeQuickAddDrawer = useCallback(() => {
     setQuickAddOpen(false);
-    setQuickAddError('');
+    setQuickAddErrorKey('');
   }, []);
 
   const handleQuickAddKeypadInput = useCallback((key: string) => {
@@ -1091,7 +1070,7 @@ export function TransactionsPage() {
       }
       return `${prev}${key}`;
     });
-    setQuickAddError('');
+    setQuickAddErrorKey('');
   }, []);
 
   useLayoutEffect(() => {
@@ -1197,16 +1176,16 @@ export function TransactionsPage() {
 
   const handleSaveQuickAdd = () => {
     if (!quickAddCategoryId) {
-      setQuickAddError(t('transactions.quickAdd.error.selectCategory'));
+      setQuickAddErrorKey('transactions.quickAdd.error.selectCategory');
       return;
     }
     if (!quickAddAccountId) {
-      setQuickAddError(t('transactions.quickAdd.error.selectAccount'));
+      setQuickAddErrorKey('transactions.quickAdd.error.selectAccount');
       return;
     }
     const amount = Number(quickAddAmount);
     if (!Number.isFinite(amount) || amount <= 0) {
-      setQuickAddError(t('transactions.quickAdd.error.invalidAmount'));
+      setQuickAddErrorKey('transactions.quickAdd.error.invalidAmount');
       return;
     }
 
@@ -1437,7 +1416,7 @@ export function TransactionsPage() {
     }
   };
 
-  const fallbackCopyText = (text: string) => {
+  const fallbackCopyText = useCallback((text: string) => {
     if (typeof document === 'undefined') {
       throw new Error('document unavailable');
     }
@@ -1455,25 +1434,28 @@ export function TransactionsPage() {
     if (!succeeded) {
       throw new Error('execCommand copy failed');
     }
-  };
+  }, []);
 
-  const copyText = async (text: string, successMessage: string) => {
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        fallbackCopyText(text);
-      }
-      showToast(successMessage, 'success');
-    } catch {
+  const copyText = useCallback(
+    async (text: string, successMessage: string) => {
       try {
-        fallbackCopyText(text);
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          fallbackCopyText(text);
+        }
         showToast(successMessage, 'success');
       } catch {
-        showToast('复制失败，请检查浏览器权限。', 'error');
+        try {
+          fallbackCopyText(text);
+          showToast(successMessage, 'success');
+        } catch {
+          showToast('复制失败，请检查浏览器权限。', 'error');
+        }
       }
-    }
-  };
+    },
+    [fallbackCopyText, showToast]
+  );
 
   useEffect(() => {
     setSelectedIds((prev) => prev.filter((id) => transactions.some((item) => item.id === id)));
@@ -2096,19 +2078,6 @@ export function TransactionsPage() {
       ...prev,
       [key]: Math.max(COLUMN_MIN_WIDTHS[key], Math.min(COLUMN_MAX_WIDTH, Math.round(width)))
     }));
-  };
-
-  const handleToggleDetailSection = (key: TransactionDetailSectionKey) => {
-    setVisibleDetailSections((prev) => {
-      const next = !prev[key];
-      if (!next) {
-        const enabledCount = Object.values(prev).filter(Boolean).length;
-        if (enabledCount <= 1) {
-          return prev;
-        }
-      }
-      return { ...prev, [key]: next };
-    });
   };
 
   const hasQuickFilters =
@@ -2889,8 +2858,6 @@ export function TransactionsPage() {
         onAttachmentUploadStatus={handleAttachmentUploadStatus}
         aiRecategorizing={selected ? aiRecategorizingId === selected.id : false}
         privacyMode={privacyMode}
-        visibleSections={visibleDetailSections}
-        onToggleSection={handleToggleDetailSection}
         onQuickAdd={openQuickAddDrawer}
       />
 
@@ -3059,7 +3026,7 @@ export function TransactionsPage() {
                   </div>
                 </div>
 
-                {quickAddError ? <small className="error">{quickAddError}</small> : null}
+                {quickAddErrorKey ? <small className="error">{t(quickAddErrorKey)}</small> : null}
               </section>
 
               <section className="quick-add-keypad-panel" role="group" aria-label="金额键盘">

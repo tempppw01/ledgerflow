@@ -1684,11 +1684,38 @@ async function proxyWebdavRequest(req, res, url, pathname) {
 
 function statusForError(error) {
   const message = error instanceof Error ? error.message : '';
+  if (/SQLITE_BUSY|SQLITE_LOCKED|database is locked/i.test(message)) return 503;
   if (/邮箱或密码不正确|当前密码不正确/.test(message)) return 401;
   if (/未开放新账号注册/.test(message)) return 403;
   if (/该邮箱无法注册/.test(message)) return 409;
   if (/请输入有效|至少需要|不能超过/.test(message)) return 400;
   return 500;
+}
+
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+// 账本导入是整表替换(先清空再写入),残缺的 payload 会静默清空用户数据,
+// 所以顶层三个分组必须完整且类型正确才允许写入。
+function relationalImportPayloadError(payload) {
+  if (!isPlainObject(payload)) return '导入数据必须是 JSON 对象。';
+  if (!isPlainObject(payload.finance)) return '导入数据缺少 finance 分组。';
+  if (!isPlainObject(payload.preferences)) return '导入数据缺少 preferences 分组。';
+  if (!Array.isArray(payload.globalMemories)) return '导入数据缺少 globalMemories 列表。';
+  return '';
+}
+
+// 同库多账本时,本地种子数据使用固定 ID(acc-cash、cat-food 等)。第二个账本
+// 首次导入会撞上其他账本占用的主键,raw 500 既无法诊断也会让前端进入重试风暴。
+// 这里把它归类成 409,并带上冲突表名,便于用户理解为什么没有写进去。
+function relationalImportConflictMessage(error) {
+  const raw = String(error?.message || '');
+  const uniqueViolation = /UNIQUE constraint failed/i.test(raw) || /Duplicate entry/i.test(raw);
+  if (!uniqueViolation) return '';
+  const table = raw.match(/UNIQUE constraint failed:\s*([A-Za-z0-9_]+)/)?.[1];
+  const suffix = table ? `(冲突表:${table})` : '';
+  return `该账号的数据 ID 与数据库中其他账本重复${suffix},为避免互相覆盖已拒绝写入。`;
 }
 
 export async function handleRequest(req, res) {
@@ -2252,9 +2279,23 @@ export async function handleRequest(req, res) {
       const session = await requireUserSession(req, res, setup.provider);
       if (!session) return;
       try {
-        const payload = await readJsonBody(req);
-        if (!payload || typeof payload !== 'object') {
-          throw new Error('Invalid payload: expected an object');
+        let payload;
+        try {
+          payload = await readJsonBody(req);
+        } catch {
+          jsonResponse(res, 400, {
+            ok: false,
+            message: '请求体不是合法的 JSON,已拒绝导入。'
+          });
+          return;
+        }
+        const payloadError = relationalImportPayloadError(payload);
+        if (payloadError) {
+          jsonResponse(res, 400, {
+            ok: false,
+            message: `${payloadError}已拒绝写入以避免清空账本。`
+          });
+          return;
         }
         const result = await replaceRelationalData(
           setup.provider,
@@ -2264,10 +2305,19 @@ export async function handleRequest(req, res) {
         );
         jsonResponse(res, 200, result);
       } catch (error) {
-        console.error('[/data/import] Error during data import:', error);
+        const conflictMessage = relationalImportConflictMessage(error);
+        if (conflictMessage) {
+          console.warn(
+            '[/api/data/import] Ledger id conflict, rejected without writing:',
+            error?.message
+          );
+          jsonResponse(res, 409, { ok: false, message: conflictMessage });
+          return;
+        }
+        console.error('[/api/data/import] Error during data import:', error);
         jsonResponse(res, 500, {
           ok: false,
-          message: error instanceof Error ? error.message : 'Data import failed'
+          message: '导入账本数据失败,请稍后重试。'
         });
       }
       return;

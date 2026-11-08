@@ -6,10 +6,7 @@ import {
   FINANCIAL_ANALYSIS_RANGE_OPTIONS,
   type FinancialAnalysisRangeKey
 } from '../../features/financial-analysis/model/analysis';
-import {
-  BADGE_DOLLAR_SIGN_ICON_URL,
-  SCALE_ICON_URL
-} from '../../shared/config/brandAssets';
+import { BADGE_DOLLAR_SIGN_ICON_URL, SCALE_ICON_URL } from '../../shared/config/brandAssets';
 import { formatCurrency } from '../../shared/lib/format';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
@@ -89,7 +86,10 @@ function normalizeAiPayload(raw: unknown): AiFinancialAnalysisPayload | null {
   const summary = String(payload.summary || '').trim();
   const normalizeList = (value: unknown) =>
     Array.isArray(value)
-      ? value.map((item) => String(item || '').trim()).filter(Boolean).slice(0, 3)
+      ? value
+          .map((item) => String(item || '').trim())
+          .filter(Boolean)
+          .slice(0, 3)
       : [];
   const actions = Array.isArray(payload.actions)
     ? payload.actions
@@ -128,7 +128,8 @@ function normalizeAiPayload(raw: unknown): AiFinancialAnalysisPayload | null {
             habits,
             avoidable,
             profile: profile || 'AI 暂未形成稳定画像',
-            confidenceNote: confidenceNote || '该结论由 AI 结合当前账本样本生成，仍需与你的真实消费背景一起判断。'
+            confidenceNote:
+              confidenceNote || '该结论由 AI 结合当前账本样本生成，仍需与你的真实消费背景一起判断。'
           };
         })()
       : undefined;
@@ -218,7 +219,16 @@ export function FinancialAnalysisPage() {
         repaymentRecords,
         monthlyIncome
       }),
-    [accounts, categories, debts, monthlyIncome, range, repaymentRecords, subscriptions, transactions]
+    [
+      accounts,
+      categories,
+      debts,
+      monthlyIncome,
+      range,
+      repaymentRecords,
+      subscriptions,
+      transactions
+    ]
   );
 
   const aiInput = useMemo(
@@ -290,7 +300,9 @@ export function FinancialAnalysisPage() {
         .filter((item) => item.type === 'income')
         .reduce((sum, item) => sum + item.amount, 0);
       const expense = rows
-        .filter((item) => item.type === 'expense' || item.type === 'repayment' || item.type === 'budget')
+        .filter(
+          (item) => item.type === 'expense' || item.type === 'repayment' || item.type === 'budget'
+        )
         .reduce((sum, item) => sum + item.amount, 0);
       return {
         label: `${month + 1}月`,
@@ -301,15 +313,24 @@ export function FinancialAnalysisPage() {
     });
   }, [transactions]);
 
-  const latestMarketRow = marketRows[marketRows.length - 1] || {
-    label: range.label,
-    income: analysis.metrics[0]?.value || 0,
-    expense: analysis.metrics[1]?.value || 0,
-    net: analysis.metrics[2]?.value || 0
-  };
-  const previousMarketRow = marketRows[marketRows.length - 2] || latestMarketRow;
+  const { latestMarketRow, previousMarketRow } = useMemo(() => {
+    const latest = marketRows[marketRows.length - 1] || {
+      label: range.label,
+      income: analysis.metrics[0]?.value || 0,
+      expense: analysis.metrics[1]?.value || 0,
+      net: analysis.metrics[2]?.value || 0
+    };
+    return {
+      latestMarketRow: latest,
+      previousMarketRow: marketRows[marketRows.length - 2] || latest
+    };
+  }, [analysis.metrics, marketRows, range.label]);
   const marketBarScale = useMemo(
-    () => Math.max(...marketRows.map((item) => Math.max(Math.abs(item.net), item.income, item.expense)), 1),
+    () =>
+      Math.max(
+        ...marketRows.map((item) => Math.max(Math.abs(item.net), item.income, item.expense)),
+        1
+      ),
     [marketRows]
   );
   const marketCards = useMemo(
@@ -376,7 +397,12 @@ export function FinancialAnalysisPage() {
     }
 
     return actions.slice(0, 3);
-  }, [analysis.previous.abnormalExpense?.id, navigate, rangeTransactionDates.from, rangeTransactionDates.to]);
+  }, [
+    analysis.previous.abnormalExpense?.id,
+    navigate,
+    rangeTransactionDates.from,
+    rangeTransactionDates.to
+  ]);
 
   const presentQuickActions = useMemo<FinancialAnalysisQuickAction[]>(() => {
     const actions: FinancialAnalysisQuickAction[] = [];
@@ -404,7 +430,12 @@ export function FinancialAnalysisPage() {
     });
 
     return actions.slice(0, 3);
-  }, [analysis.present.debtPressureRatio, analysis.present.disposableIncome, analysis.present.fixedExpenseRatio, navigate]);
+  }, [
+    analysis.present.debtPressureRatio,
+    analysis.present.disposableIncome,
+    analysis.present.fixedExpenseRatio,
+    navigate
+  ]);
 
   const futureQuickActions = useMemo<FinancialAnalysisQuickAction[]>(() => {
     const actions: FinancialAnalysisQuickAction[] = [];
@@ -518,7 +549,9 @@ ${JSON.stringify(aiInput)}`
         <div className="financial-analysis-hero-head">
           <div>
             <h2>财务分析</h2>
-            <p className="muted">看清过去、理解现在、规划未来。分析页会先整理本地账目，再交给大模型生成更贴近决策的解释与动作建议。</p>
+            <p className="muted">
+              看清过去、理解现在、规划未来。分析页会先整理本地账目，再交给大模型生成更贴近决策的解释与动作建议。
+            </p>
           </div>
           <div className="financial-analysis-range-switcher" aria-label="分析周期切换">
             {FINANCIAL_ANALYSIS_RANGE_OPTIONS.map((item) => (
@@ -556,7 +589,10 @@ ${JSON.stringify(aiInput)}`
 
         <div className="financial-analysis-metrics-grid">
           {analysis.metrics.map((item) => (
-            <article key={item.label} className={`financial-analysis-metric-card tone-${item.tone || 'neutral'}`}>
+            <article
+              key={item.label}
+              className={`financial-analysis-metric-card tone-${item.tone || 'neutral'}`}
+            >
               <span>{item.label}</span>
               <strong>{metricValue(item.label, item.value, item.help)}</strong>
             </article>
@@ -579,21 +615,30 @@ ${JSON.stringify(aiInput)}`
           </header>
           <div className="financial-analysis-market-ticker">
             {marketCards.map((item) => (
-              <article key={item.label} className={`financial-analysis-market-card tone-${item.tone}`}>
+              <article
+                key={item.label}
+                className={`financial-analysis-market-card tone-${item.tone}`}
+              >
                 <span>{item.label}</span>
                 <strong>{formatCurrency(item.value)}</strong>
                 <small>{formatDelta(item.delta)}</small>
               </article>
             ))}
           </div>
-          <div className="financial-analysis-market-bars" role="list" aria-label="最近6个月资金动态">
+          <div
+            className="financial-analysis-market-bars"
+            role="list"
+            aria-label="最近6个月资金动态"
+          >
             {marketRows.map((item) => (
               <div key={item.label} role="listitem" className="financial-analysis-market-bar-item">
                 <span>{item.label}</span>
                 <div className="financial-analysis-market-bar-track">
                   <i
                     className={item.net >= 0 ? 'is-positive' : 'is-negative'}
-                    style={{ height: `${Math.max(14, (Math.abs(item.net) / marketBarScale) * 96)}px` }}
+                    style={{
+                      height: `${Math.max(14, (Math.abs(item.net) / marketBarScale) * 96)}px`
+                    }}
                   />
                 </div>
                 <strong>{formatCurrency(item.net)}</strong>
@@ -657,16 +702,15 @@ ${JSON.stringify(aiInput)}`
             </div>
           ) : (
             <>
-            <div className="financial-analysis-ai-empty">
-              <div>
-                <strong>AI 还没开始解读</strong>
-                <p className="muted">生成后会补齐过去、现在、未来的重点判断。</p>
+              <div className="financial-analysis-ai-empty">
+                <div>
+                  <strong>AI 还没开始解读</strong>
+                  <p className="muted">生成后会补齐过去、现在、未来的重点判断。</p>
+                </div>
               </div>
-              <button type="button" onClick={runAiAnalysis} disabled={aiStatus === 'loading'}>
-                {aiStatus === 'loading' ? '分析中..' : '生成 AI 解读'}
-              </button>
-            </div>
-            <p className="muted">点击“生成 AI 解读”，让模型结合当前财务快照输出更完整的过去 / 现在 / 未来分析。</p>
+              <p className="muted">
+                点击“生成 AI 解读”，让模型结合当前财务快照输出更完整的过去 / 现在 / 未来分析。
+              </p>
             </>
           )}
         </article>
@@ -679,7 +723,10 @@ ${JSON.stringify(aiInput)}`
               <img src={SCALE_ICON_URL} alt="" aria-hidden="true" />
               行为洞察：消费习惯与画像
             </h3>
-            <p className="muted">先展示本地规则结果；生成 AI 解读后，这里会补充更细的消费语境判断。以下结论属于行为推测，不等同于人格定论。</p>
+            <p className="muted">
+              先展示本地规则结果；生成 AI
+              解读后，这里会补充更细的消费语境判断。以下结论属于行为推测，不等同于人格定论。
+            </p>
           </div>
           <span className="metric-chip">
             可优化项
@@ -716,7 +763,8 @@ ${JSON.stringify(aiInput)}`
           </article>
         ) : (
           <p className="financial-analysis-confidence" style={{ marginBottom: 12 }}>
-            点击上方“生成 AI 解读”后，这里会补充更细的消费习惯判断，帮助你在样本偏少时也得到保守分析。
+            点击上方“生成 AI
+            解读”后，这里会补充更细的消费习惯判断，帮助你在样本偏少时也得到保守分析。
           </p>
         )}
 
@@ -725,7 +773,10 @@ ${JSON.stringify(aiInput)}`
             <h4>消费习惯推断</h4>
             <div className="financial-analysis-ai-columns">
               {analysis.behavior.habits.map((item) => (
-                <div key={item.title} className={`financial-analysis-highlight ${behaviorToneClass(item.tone)}`}>
+                <div
+                  key={item.title}
+                  className={`financial-analysis-highlight ${behaviorToneClass(item.tone)}`}
+                >
                   <strong>{item.title}</strong>
                   <p>{item.detail}</p>
                 </div>
@@ -738,7 +789,10 @@ ${JSON.stringify(aiInput)}`
             {analysis.behavior.avoidableSignals.length > 0 ? (
               <div className="financial-analysis-ai-columns">
                 {analysis.behavior.avoidableSignals.map((item) => (
-                  <div key={item.title} className={`financial-analysis-highlight ${behaviorToneClass(item.tone)}`}>
+                  <div
+                    key={item.title}
+                    className={`financial-analysis-highlight ${behaviorToneClass(item.tone)}`}
+                  >
                     <strong>{item.title}</strong>
                     <p>{item.detail}</p>
                     <div className="financial-analysis-stat-grid">
@@ -790,18 +844,20 @@ ${JSON.stringify(aiInput)}`
                   )
                 }
               >
-                鏌ョ湅娑堣垂鏄庣粏
+                查看消费明细
               </button>
               <button
                 className="financial-analysis-profile-action"
-                aria-label="去 AI 助手"
+                aria-label="在 AI 助手中继续分析消费画像"
                 type="button"
                 onClick={() => navigate('/assistant')}
               >
-                鍘?AI 鍔╂墜
+                去 AI 助手
               </button>
             </div>
-            <p className="financial-analysis-confidence">{analysis.behavior.consumerProfile.disclaimer}</p>
+            <p className="financial-analysis-confidence">
+              {analysis.behavior.consumerProfile.disclaimer}
+            </p>
           </article>
 
           <article className="financial-analysis-subcard">
@@ -809,7 +865,9 @@ ${JSON.stringify(aiInput)}`
             <div className="financial-analysis-ai-columns">
               <article className="financial-analysis-subcard">
                 <h4>去看高频消费</h4>
-                <p className="financial-analysis-paragraph">回到交易页聚焦当前分析周期，优先核对高频小额、娱乐购物和备注重复的场景。</p>
+                <p className="financial-analysis-paragraph">
+                  回到交易页聚焦当前分析周期，优先核对高频小额、娱乐购物和备注重复的场景。
+                </p>
                 <div className="financial-analysis-actions">
                   <button
                     type="button"
@@ -824,13 +882,15 @@ ${JSON.stringify(aiInput)}`
                       )
                     }
                   >
-                    查看消费明细
+                    筛选当前周期明细
                   </button>
                 </div>
               </article>
               <article className="financial-analysis-subcard">
                 <h4>让 AI 继续拆解</h4>
-                <p className="financial-analysis-paragraph">如果你想把“哪些消费其实可以砍”继续往下拆，可以直接带着当前习惯洞察去问 AI 助手。</p>
+                <p className="financial-analysis-paragraph">
+                  如果你想把“哪些消费其实可以砍”继续往下拆，可以直接带着当前习惯洞察去问 AI 助手。
+                </p>
                 <div className="financial-analysis-actions">
                   <button type="button" onClick={() => navigate('/assistant')}>
                     去 AI 助手
@@ -898,7 +958,8 @@ ${JSON.stringify(aiInput)}`
               <div className="financial-analysis-highlight warning">
                 <strong>异常支出提醒</strong>
                 <p>
-                  {analysis.previous.abnormalExpense.note || '未备注'} · {formatCurrency(analysis.previous.abnormalExpense.amount)}
+                  {analysis.previous.abnormalExpense.note || '未备注'} ·{' '}
+                  {formatCurrency(analysis.previous.abnormalExpense.amount)}
                 </p>
               </div>
             ) : null}

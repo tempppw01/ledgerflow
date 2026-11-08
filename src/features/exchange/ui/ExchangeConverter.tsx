@@ -105,7 +105,7 @@ export function ExchangeConverter({ rates, base }: ExchangeConverterProps) {
     setToCode(fromCode);
   };
 
-  const appendToken = (token: string) => {
+  const appendToken = useCallback((token: string) => {
     setError('');
     setExpression((prev) => {
       if (prev === '0' && /^\d$/.test(token)) {
@@ -113,9 +113,9 @@ export function ExchangeConverter({ rates, base }: ExchangeConverterProps) {
       }
       return `${prev}${token}`;
     });
-  };
+  }, []);
 
-  const applyEqual = () => {
+  const applyEqual = useCallback(() => {
     const value = evaluateExpression(expression);
     if (value === null) {
       setError('表达式无效，无法计算');
@@ -123,29 +123,38 @@ export function ExchangeConverter({ rates, base }: ExchangeConverterProps) {
     }
     setError('');
     setExpression(prettyNumber(value));
-  };
+  }, [expression]);
 
-  const applyKey = (key: (typeof KEYPAD)[number]) => {
-    if (key === 'C') {
-      setExpression('0');
-      setError('');
-      return;
-    }
-    if (key === '⌫') {
-      setError('');
-      setExpression((prev) => (prev.length <= 1 ? '0' : prev.slice(0, -1)));
-      return;
-    }
-    if (key === '=') {
-      applyEqual();
-      return;
-    }
-    appendToken(key);
-  };
+  const applyKey = useCallback(
+    (key: (typeof KEYPAD)[number]) => {
+      if (key === 'C') {
+        setExpression('0');
+        setError('');
+        return;
+      }
+      if (key === '⌫') {
+        setError('');
+        setExpression((prev) => (prev.length <= 1 ? '0' : prev.slice(0, -1)));
+        return;
+      }
+      if (key === '=') {
+        applyEqual();
+        return;
+      }
+      appendToken(key);
+    },
+    [appendToken, applyEqual]
+  );
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || event.isComposing) {
+      if (
+        event.defaultPrevented ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        event.isComposing
+      ) {
         return;
       }
 

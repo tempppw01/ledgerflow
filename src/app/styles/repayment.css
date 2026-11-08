@@ -764,7 +764,7 @@
 
   .repayment-console .repayment-income-editor {
     flex-basis: auto;
-    width: 100%;
+    width: min(100%, 300px);
   }
 
   .repayment-record-secondary-fields {

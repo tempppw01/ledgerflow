@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { getAssistantModeLabel } from './assistantMode';
 
 describe('getAssistantModeLabel', () => {
-  it('uses an explicit investment assistant label in the workspace', () => {
+  it('resolves the investment label through the translation function', () => {
     const t = ((key: string) => key) as never;
-    expect(getAssistantModeLabel('investment', t)).toBe('AI 投资助手');
+    expect(getAssistantModeLabel('investment', t)).toBe('assistant.ui.investmentMode');
   });
 });

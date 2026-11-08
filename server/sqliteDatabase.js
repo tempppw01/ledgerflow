@@ -2,8 +2,19 @@ import { mkdir } from 'node:fs/promises';
 import { DatabaseSync } from 'node:sqlite';
 import { getDatabaseDataDirectory, getSqliteDatabasePath } from './databaseProvider.js';
 
-function openDatabase(env = process.env) {
-  return new DatabaseSync(getSqliteDatabasePath(env));
+function resolveBusyTimeoutMs(env = process.env) {
+  const configured = Number(env.LEDGERFLOW_SQLITE_BUSY_TIMEOUT_MS);
+  if (!Number.isFinite(configured)) return 5000;
+  return Math.min(Math.max(Math.trunc(configured), 0), 30000);
+}
+
+export function openSqliteDatabase(env = process.env) {
+  const database = new DatabaseSync(getSqliteDatabasePath(env));
+  database.exec(`
+    PRAGMA busy_timeout = ${resolveBusyTimeoutMs(env)};
+    PRAGMA foreign_keys = ON;
+  `);
+  return database;
 }
 
 function ensureSchema(database) {
@@ -53,7 +64,7 @@ function parsePayload(value) {
 
 export async function ensureSqliteDatabase(env = process.env) {
   await mkdir(getDatabaseDataDirectory(env), { recursive: true });
-  const database = openDatabase(env);
+  const database = openSqliteDatabase(env);
   try {
     ensureSchema(database);
     writeMetadata(database, 'storage_provider', 'sqlite');
@@ -66,7 +77,7 @@ export async function ensureSqliteDatabase(env = process.env) {
 export async function testSqliteDatabase(env = process.env) {
   const start = Date.now();
   const { path } = await ensureSqliteDatabase(env);
-  const database = openDatabase(env);
+  const database = openSqliteDatabase(env);
   try {
     database.prepare('SELECT 1 AS ok').get();
     return {
@@ -81,7 +92,7 @@ export async function testSqliteDatabase(env = process.env) {
 
 export async function saveSqliteSnapshot(input, env = process.env) {
   await ensureSqliteDatabase(env);
-  const database = openDatabase(env);
+  const database = openSqliteDatabase(env);
   try {
     ensureSchema(database);
     database
@@ -124,7 +135,7 @@ export async function saveSqliteSnapshot(input, env = process.env) {
 
 export async function getLatestSqliteSnapshot(userId, env = process.env) {
   await ensureSqliteDatabase(env);
-  const database = openDatabase(env);
+  const database = openSqliteDatabase(env);
   try {
     const row = database
       .prepare(

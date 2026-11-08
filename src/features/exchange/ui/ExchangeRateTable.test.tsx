@@ -22,9 +22,9 @@ describe('ExchangeRateTable', () => {
 
     render(<ExchangeRateTable rates={rates} {...baseProps} />);
 
-    expect(screen.getByText('⬆️ 上涨')).toBeInTheDocument();
-    expect(screen.getByText('⬇️ 下跌')).toBeInTheDocument();
-    expect(screen.getByText('⟷ 持平')).toBeInTheDocument();
+    expect(screen.getByText('↗ 上涨')).toBeInTheDocument();
+    expect(screen.getByText('↘ 下跌')).toBeInTheDocument();
+    expect(screen.getByText('→ 持平')).toBeInTheDocument();
   });
 
   it('首次加载无趋势数据时不展示图标', () => {

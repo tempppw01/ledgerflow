@@ -1421,6 +1421,7 @@
 
 .investments-global-clock-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 16px;
   align-items: end;
@@ -1429,6 +1430,7 @@
 
 .investments-global-clock-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
 }
@@ -5502,17 +5504,13 @@
   padding: 0;
   border: 1px solid color-mix(in srgb, var(--color-primary) 42%, var(--color-border-light));
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 32% 22%, color-mix(in srgb, white 72%, transparent), transparent 35%),
-    linear-gradient(
-      145deg,
-      var(--color-primary),
-      color-mix(in srgb, var(--color-accent) 72%, var(--color-primary))
-    );
+  background: linear-gradient(
+    145deg,
+    var(--color-primary),
+    color-mix(in srgb, var(--color-accent) 72%, var(--color-primary))
+  );
   color: #fff;
-  box-shadow:
-    0 12px 26px color-mix(in srgb, var(--color-primary) 26%, transparent),
-    0 0 0 5px color-mix(in srgb, var(--color-primary-bg) 72%, transparent);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--color-primary) 22%, transparent);
   cursor: pointer;
   transition:
     transform 180ms ease,
@@ -5524,9 +5522,7 @@
 .investment-chat-floating-launcher:focus-visible {
   transform: translateY(-3px) scale(1.04);
   filter: saturate(1.08);
-  box-shadow:
-    0 16px 32px color-mix(in srgb, var(--color-primary) 32%, transparent),
-    0 0 0 7px color-mix(in srgb, var(--color-primary-bg) 82%, transparent);
+  box-shadow: 0 14px 28px color-mix(in srgb, var(--color-primary) 28%, transparent);
 }
 
 .investment-chat-floating-launcher:focus-visible {
@@ -6982,6 +6978,14 @@
 }
 
 @media (max-width: 1200px) {
+  .investments-global-clock-head {
+    align-items: flex-start;
+  }
+
+  .investments-global-market-statuses {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .investments-core-grid {
     grid-template-columns: minmax(0, 1.3fr) minmax(220px, 0.85fr);
   }
@@ -7253,7 +7257,17 @@
   }
 
   .investments-console-tabs button {
-    padding-inline: 12px;
+    min-height: 44px;
+    padding: 8px 10px;
+    line-height: 1.3;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .investments-console-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
   }
 
   .investments-market-history-head {
@@ -7326,13 +7340,20 @@
   }
 
   .investments-global-timeline-summary {
-    display: flex;
-    overflow-x: auto;
-    padding-bottom: 3px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+
+  .investments-global-timeline-summary > strong {
+    grid-column: 1 / -1;
   }
 
   .investments-global-timeline-summary > span {
-    flex: 0 0 auto;
+    flex: initial;
+    min-width: 0;
   }
 
   .investments-global-clock-note {
@@ -7726,17 +7747,19 @@
 }
 
 /* Keep A-share and overseas benchmark quotes together in one horizontally browsable rail. */
-.investments-global-quote-grid {
-  display: grid;
-  grid-auto-columns: minmax(144px, 1fr);
-  grid-auto-flow: column;
-  grid-template-columns: none;
-  overflow-x: auto;
-  scrollbar-width: thin;
-}
+@media (min-width: 681px) {
+  .investments-global-quote-grid {
+    display: grid;
+    grid-auto-columns: minmax(144px, 1fr);
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
 
-.investments-global-quote-card {
-  min-width: 144px;
+  .investments-global-quote-card {
+    min-width: 144px;
+  }
 }
 
 .investments-market-board-card-meta:has(.investments-industry-sparkline) {
@@ -7778,7 +7801,23 @@
 
 @media (max-width: 680px) {
   .investments-global-quote-grid {
-    grid-auto-columns: 150px;
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow-x: visible;
+  }
+
+  .investments-global-quote-card {
+    min-width: 0;
+    border-bottom: 1px solid var(--color-divider);
+  }
+
+  .investments-global-quote-card:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .investments-global-quote-card:last-child {
+    border-bottom: 0;
   }
 }
 
@@ -7809,10 +7848,6 @@
 
   .investments-global-market-statuses {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .investments-global-timeline-summary {
-    grid-template-columns: auto repeat(2, minmax(0, 1fr));
   }
 
   .investments-global-timeline-summary > span {

@@ -1,3 +1,5 @@
+import { DEFAULT_AI_MODEL } from './aiModels';
+
 const DEFAULT_API_BASE_URL = '/api';
 
 function normalizeApiBaseUrl(url: string) {
@@ -17,7 +19,7 @@ export const ENV = {
   logLevel: import.meta.env.VITE_LOG_LEVEL || 'info',
   aiBaseUrl: import.meta.env.VITE_AI_BASE_URL || 'https://ai.shuaihong.fun/v1',
   aiApiKey: import.meta.env.VITE_AI_API_KEY || '',
-  aiDefaultModel: import.meta.env.VITE_AI_DEFAULT_MODEL || 'gpt-6-luna',
+  aiDefaultModel: import.meta.env.VITE_AI_DEFAULT_MODEL || DEFAULT_AI_MODEL,
   tavilyApiKey: import.meta.env.VITE_TAVILY_API_KEY || '',
   tavilyBaseUrl: import.meta.env.VITE_TAVILY_BASE_URL || 'https://api.tavily.com',
   localWebSearchEndpoint: import.meta.env.VITE_LOCAL_WEB_SEARCH_ENDPOINT || '/api/web-search',

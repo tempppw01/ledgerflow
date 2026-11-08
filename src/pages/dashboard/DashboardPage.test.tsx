@@ -5,6 +5,9 @@ import { DashboardPage } from './DashboardPage';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: {
+      resolvedLanguage: 'zh'
+    },
     t: (key: string) => {
       const map: Record<string, string> = {
         'dashboard.ui.welcome': '欢迎使用 LedgerFlow',
@@ -23,7 +26,7 @@ describe('DashboardPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText(/欢迎使用 LedgerFlow/)).toBeInTheDocument();
+    expect(screen.getByText(/今天的钱花在哪/)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '核心资产仪表盘' })).toBeInTheDocument();
   });
 });

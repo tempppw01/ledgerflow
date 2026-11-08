@@ -34,7 +34,7 @@ export function getAssistantModeLabel(mode: AssistantMode, t: TFunction): string
   }
 
   if (mode === 'investment') {
-    return 'AI 投资助手';
+    return t('assistant.ui.investmentMode');
   }
 
   return t('assistant.ui.assistantMode');

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   getDatabaseSetupStatus,
   type DatabaseSetupStatus
@@ -12,6 +12,13 @@ interface DatabaseInitializationGateProps {
 }
 
 const DATABASE_STATUS_CACHE_KEY = 'ledgerflow-database-status-cache';
+const DATABASE_STATUS_RETRY_DELAYS_MS = [250, 750];
+
+function wait(ms: number) {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
 
 function readCachedStatus(): DatabaseSetupStatus | null {
   try {
@@ -47,23 +54,44 @@ export function DatabaseInitializationGate({ children }: DatabaseInitializationG
   const [status, setStatus] = useState<DatabaseSetupStatus | null>(() => readCachedStatus());
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(() => !readCachedStatus());
+  const requestIdRef = useRef(0);
 
   const loadStatus = useCallback(async () => {
-    try {
-      setLoading(!readCachedStatus());
-      setError('');
-      const nextStatus = await getDatabaseSetupStatus();
-      writeCachedStatus(nextStatus);
-      setStatus(nextStatus);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : '无法连接数据库初始化服务。');
-    } finally {
-      setLoading(false);
+    const requestId = ++requestIdRef.current;
+    setLoading(!readCachedStatus());
+    setError('');
+
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt <= DATABASE_STATUS_RETRY_DELAYS_MS.length; attempt += 1) {
+      if (attempt > 0) {
+        await wait(DATABASE_STATUS_RETRY_DELAYS_MS[attempt - 1]);
+        if (requestId !== requestIdRef.current) return;
+      }
+
+      try {
+        const nextStatus = await getDatabaseSetupStatus();
+        if (requestId !== requestIdRef.current) return;
+        writeCachedStatus(nextStatus);
+        setStatus(nextStatus);
+        setError('');
+        setLoading(false);
+        return;
+      } catch (reason) {
+        if (requestId !== requestIdRef.current) return;
+        lastError = reason;
+      }
     }
+
+    if (requestId !== requestIdRef.current) return;
+    setError(lastError instanceof Error ? lastError.message : '无法连接数据库初始化服务。');
+    setLoading(false);
   }, []);
 
   useEffect(() => {
     void loadStatus();
+    return () => {
+      requestIdRef.current += 1;
+    };
   }, [loadStatus]);
 
   const handleInitialized = (nextStatus: DatabaseSetupStatus) => {

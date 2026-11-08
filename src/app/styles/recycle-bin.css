@@ -10,13 +10,14 @@
 }
 
 .recycle-bin-empty-state .empty-state-icon {
+  width: 100%;
   margin-bottom: var(--space-4);
   opacity: 1;
   animation: none;
 }
 
-.recycle-bin-empty-illustration {
-  width: min(280px, 60vw);
+.recycle-bin-empty-state .empty-state-icon img.recycle-bin-empty-illustration {
+  width: min(280px, 72vw);
   max-width: 100%;
   height: auto;
   display: block;

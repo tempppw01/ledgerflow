@@ -3906,13 +3906,7 @@
 
 /* ---------- Three assistant modes: one shared, calm starting canvas ---------- */
 .chat-messages-area {
-  background:
-    radial-gradient(
-      circle at 78% 3%,
-      color-mix(in srgb, var(--color-primary-bg) 38%, transparent),
-      transparent 30rem
-    ),
-    var(--color-bg);
+  background: var(--color-bg);
 }
 
 .chat-messages-inner {
@@ -3983,21 +3977,6 @@
   padding: clamp(18px, 3.2vw, 48px) 0 clamp(28px, 3.2vw, 46px);
   border-bottom: 1px solid var(--color-divider);
   overflow: hidden;
-}
-
-.chat-mode-welcome::after {
-  position: absolute;
-  right: 6%;
-  bottom: -18%;
-  width: min(44vw, 520px);
-  aspect-ratio: 1;
-  border: 1px solid color-mix(in srgb, var(--color-primary) 14%, transparent);
-  border-radius: 50%;
-  box-shadow:
-    0 0 0 46px color-mix(in srgb, var(--color-primary) 4%, transparent),
-    0 0 0 94px color-mix(in srgb, var(--color-primary) 2%, transparent);
-  content: '';
-  pointer-events: none;
 }
 
 .chat-mode-welcome-copy,
@@ -4167,12 +4146,6 @@
     grid-template-columns: minmax(0, 1fr);
     min-height: 0;
     padding-block: 18px 26px;
-  }
-
-  .chat-mode-welcome::after {
-    right: -30%;
-    bottom: -30%;
-    width: 330px;
   }
 
   .chat-mode-welcome h2 {

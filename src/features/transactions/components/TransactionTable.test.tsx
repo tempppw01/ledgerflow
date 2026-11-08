@@ -30,7 +30,10 @@ vi.mock('react-i18next', () => ({
         'transactions.bulk.exportPdf': '📄 导出 PDF',
         'transactions.bulk.exportingPdf': '⏳ 正在导出 PDF…',
         'transactions.bulk.delete': '删除所选',
-        'transactions.bulk.clearSelection': '清空选择'
+        'transactions.bulk.clearSelection': '清空选择',
+        'datePicker.ariaLabel': '选择日期',
+        'datePicker.dialogLabel': '日期选择器',
+        'datePicker.placeholder': '选择日期'
       };
       return dict[key] || key;
     }
@@ -304,9 +307,9 @@ describe('TransactionTable', () => {
       />
     );
 
-    const dateInput = screen.getByPlaceholderText('筛选日期');
-    expect(dateInput).toHaveAttribute('min', '2026-02-01');
-    expect(dateInput).toHaveAttribute('max', '2026-02-28');
+    const datePicker = screen.getByRole('button', { name: '选择日期' }).closest('.lf-date-picker');
+    expect(datePicker).toHaveAttribute('data-min-date', '2026-02-01');
+    expect(datePicker).toHaveAttribute('data-max-date', '2026-02-28');
   });
 
   it('批量 AI 重分类进行中时按钮可点击并展示停止状态', () => {

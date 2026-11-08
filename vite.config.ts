@@ -1,10 +1,38 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-const appLogoUrl = 'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/logo.webp';
+const appLogoUrl =
+  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/public/logo.png?v=2';
 
 const apiProxyTarget = process.env.LEDGERFLOW_API_PROXY_TARGET || 'http://127.0.0.1:8787';
+
+const DEV_SW_CLEANUP_SOURCE = `
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    const cacheKeys = await caches.keys();
+    await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+    await self.registration.unregister();
+    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    await Promise.all(clients.map((client) => client.navigate(client.url)));
+  })());
+});
+`;
+
+function devServiceWorkerCleanup(): Plugin {
+  return {
+    name: 'ledgerflow-dev-service-worker-cleanup',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use('/sw.js', (_request, response) => {
+        response.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+        response.setHeader('Cache-Control', 'no-store');
+        response.end(DEV_SW_CLEANUP_SOURCE);
+      });
+    }
+  };
+}
 
 const apiProxy = {
   '/api': {
@@ -56,6 +84,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    devServiceWorkerCleanup(),
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
@@ -68,14 +97,19 @@ export default defineConfig({
         icons: [
           {
             src: appLogoUrl,
-            sizes: '720x720',
-            type: 'image/webp',
+            sizes: '1254x1254',
+            type: 'image/png',
             purpose: 'any maskable'
           }
         ]
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // 新版本构建完成后立即接管,避免旧 Service Worker 继续返回过期的 chunk。
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
+        navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
             urlPattern:

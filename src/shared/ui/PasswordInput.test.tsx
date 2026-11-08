@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
+import '../../i18n';
 import { PasswordInput } from './PasswordInput';
 
 function ApiKeyField() {

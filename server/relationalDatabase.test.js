@@ -9,6 +9,24 @@ import {
   getRelationalDatabaseStatus,
   migrateRelationalDatabase
 } from './relationalDatabase.js';
+import { openSqliteDatabase } from './sqliteDatabase.js';
+
+test('SQLite connections wait for transient locks and enforce foreign keys', async () => {
+  const dataDirectory = await mkdtemp(path.join(os.tmpdir(), 'ledgerflow-sqlite-options-'));
+  const env = { LEDGERFLOW_DATA_DIR: dataDirectory, SQLITE_PATH: '' };
+
+  try {
+    const database = openSqliteDatabase(env);
+    try {
+      assert.equal(database.prepare('PRAGMA busy_timeout').get().timeout, 5000);
+      assert.equal(database.prepare('PRAGMA foreign_keys').get().foreign_keys, 1);
+    } finally {
+      database.close();
+    }
+  } finally {
+    await rm(dataDirectory, { recursive: true, force: true });
+  }
+});
 
 test('SQLite relational schema migrates and is idempotent', async () => {
   const dataDirectory = await mkdtemp(path.join(os.tmpdir(), 'ledgerflow-relational-'));

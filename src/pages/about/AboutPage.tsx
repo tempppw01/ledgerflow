@@ -4,7 +4,8 @@ import { APP_GITHUB_URL, APP_LOGO_URL, APP_VERSION } from '../../shared/config/a
 
 interface UpdateCheckResult {
   status: 'idle' | 'checking' | 'error' | 'up-to-date' | 'update-available';
-  message: string;
+  messageKey?: string;
+  messageParams?: Record<string, string | number>;
   latestVersion?: string;
   latestUrl?: string;
 }
@@ -34,12 +35,11 @@ function compareVersion(a: string, b: string) {
 export function AboutPage() {
   const { t } = useTranslation();
   const [updateResult, setUpdateResult] = useState<UpdateCheckResult>({
-    status: 'idle',
-    message: ''
+    status: 'idle'
   });
 
   const handleCheckUpdate = async () => {
-    setUpdateResult({ status: 'checking', message: t('about.update.checking') });
+    setUpdateResult({ status: 'checking', messageKey: 'about.update.checking' });
     try {
       const response = await fetch(
         'https://api.github.com/repos/tempppw01/ledgerflow/releases/latest',
@@ -47,20 +47,27 @@ export function AboutPage() {
       );
 
       if (!response.ok) {
-        throw new Error(t('about.update.httpError', { status: response.status }));
+        setUpdateResult({
+          status: 'error',
+          messageKey: 'about.update.httpError',
+          messageParams: { status: response.status }
+        });
+        return;
       }
 
       const data = (await response.json()) as { tag_name?: string; html_url?: string };
       const latestTag = data.tag_name || '';
       if (!latestTag) {
-        throw new Error(t('about.update.noVersion'));
+        setUpdateResult({ status: 'error', messageKey: 'about.update.noVersion' });
+        return;
       }
 
       const cmp = compareVersion(APP_VERSION, latestTag);
       if (cmp >= 0) {
         setUpdateResult({
           status: 'up-to-date',
-          message: t('about.update.latest', { version: APP_VERSION }),
+          messageKey: 'about.update.latest',
+          messageParams: { version: APP_VERSION },
           latestVersion: latestTag,
           latestUrl: data.html_url
         });
@@ -69,17 +76,22 @@ export function AboutPage() {
 
       setUpdateResult({
         status: 'update-available',
-        message: t('about.update.available', { version: latestTag }),
+        messageKey: 'about.update.available',
+        messageParams: { version: latestTag },
         latestVersion: latestTag,
         latestUrl: data.html_url
       });
-    } catch (error) {
+    } catch {
       setUpdateResult({
         status: 'error',
-        message: error instanceof Error ? error.message : t('about.update.failed')
+        messageKey: 'about.update.failed'
       });
     }
   };
+
+  const updateMessage = updateResult.messageKey
+    ? t(updateResult.messageKey, updateResult.messageParams)
+    : '';
 
   return (
     <section className="about-page vi-page">
@@ -117,9 +129,9 @@ export function AboutPage() {
           </button>
         </div>
 
-        {updateResult.message ? (
+        {updateMessage ? (
           <div className={`about-update-result ${updateResult.status}`} role="status">
-            <p>{updateResult.message}</p>
+            <p>{updateMessage}</p>
             {updateResult.status === 'update-available' && updateResult.latestUrl ? (
               <a href={updateResult.latestUrl} target="_blank" rel="noreferrer">
                 {t('about.update.goLatest', { version: updateResult.latestVersion })}

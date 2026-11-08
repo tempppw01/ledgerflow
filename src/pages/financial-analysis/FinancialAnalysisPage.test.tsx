@@ -60,7 +60,9 @@ vi.mock('../../shared/store/useAppPreferences', () => ({
 }));
 
 vi.mock('../../shared/store/useAiSettings', () => ({
-  useAiSettings: (selector: (state: any) => unknown) =>
+  useAiSettings: (
+    selector: (state: { baseUrl: string; apiKey: string; model: string }) => unknown
+  ) =>
     selector({
       baseUrl: 'https://example.com/v1',
       apiKey: 'test-key',
@@ -162,9 +164,30 @@ describe('FinancialAnalysisPage', () => {
         }
       ],
       categories: [
-        { id: 'cat-food', name: '餐饮', kind: 'expense', color: '#f97316', icon: '🍜', sortOrder: 1 },
-        { id: 'cat-rent', name: '住房', kind: 'expense', color: '#8b5cf6', icon: '🏠', sortOrder: 2 },
-        { id: 'cat-salary', name: '工资', kind: 'income', color: '#16a34a', icon: '💰', sortOrder: 3 }
+        {
+          id: 'cat-food',
+          name: '餐饮',
+          kind: 'expense',
+          color: '#f97316',
+          icon: '🍜',
+          sortOrder: 1
+        },
+        {
+          id: 'cat-rent',
+          name: '住房',
+          kind: 'expense',
+          color: '#8b5cf6',
+          icon: '🏠',
+          sortOrder: 2
+        },
+        {
+          id: 'cat-salary',
+          name: '工资',
+          kind: 'income',
+          color: '#16a34a',
+          icon: '💰',
+          sortOrder: 3
+        }
       ],
       accounts: [
         { id: 'acc-cash', name: '现金', type: 'cash', initialBalance: 500, balance: 200 },
@@ -216,7 +239,9 @@ describe('FinancialAnalysisPage', () => {
 
     const abnormalQuickActionCard = screen.getByText('定位异常流水').closest('article');
     expect(abnormalQuickActionCard).not.toBeNull();
-    fireEvent.click(within(abnormalQuickActionCard as HTMLElement).getByRole('button', { name: '继续处理' }));
+    fireEvent.click(
+      within(abnormalQuickActionCard as HTMLElement).getByRole('button', { name: '继续处理' })
+    );
     expect(navigateMock).toHaveBeenCalledWith('/transactions/tx-prev-abnormal');
 
     const pressureCard = screen.getByText('查看还款压力').closest('article');
@@ -226,7 +251,9 @@ describe('FinancialAnalysisPage', () => {
 
     const subscriptionCard = screen.getByText('检查即将续费订阅').closest('article');
     expect(subscriptionCard).not.toBeNull();
-    fireEvent.click(within(subscriptionCard as HTMLElement).getByRole('button', { name: '去处理' }));
+    fireEvent.click(
+      within(subscriptionCard as HTMLElement).getByRole('button', { name: '去处理' })
+    );
     expect(navigateMock).toHaveBeenCalledWith('/subscriptions');
   });
 
@@ -295,10 +322,38 @@ describe('FinancialAnalysisPage', () => {
         }
       ],
       categories: [
-        { id: 'cat-food', name: '餐饮', kind: 'expense', color: '#f97316', icon: '🍜', sortOrder: 1 },
-        { id: 'cat-transport', name: '交通', kind: 'expense', color: '#0ea5e9', icon: '🚇', sortOrder: 2 },
-        { id: 'cat-shopping', name: '购物', kind: 'expense', color: '#8b5cf6', icon: '🛍️', sortOrder: 3 },
-        { id: 'cat-salary', name: '工资', kind: 'income', color: '#16a34a', icon: '💰', sortOrder: 4 }
+        {
+          id: 'cat-food',
+          name: '餐饮',
+          kind: 'expense',
+          color: '#f97316',
+          icon: '🍜',
+          sortOrder: 1
+        },
+        {
+          id: 'cat-transport',
+          name: '交通',
+          kind: 'expense',
+          color: '#0ea5e9',
+          icon: '🚇',
+          sortOrder: 2
+        },
+        {
+          id: 'cat-shopping',
+          name: '购物',
+          kind: 'expense',
+          color: '#8b5cf6',
+          icon: '🛍️',
+          sortOrder: 3
+        },
+        {
+          id: 'cat-salary',
+          name: '工资',
+          kind: 'income',
+          color: '#16a34a',
+          icon: '💰',
+          sortOrder: 4
+        }
       ],
       accounts: [
         { id: 'acc-cash', name: '现金', type: 'cash', initialBalance: 500, balance: 180 },
@@ -319,7 +374,9 @@ describe('FinancialAnalysisPage', () => {
     expect(screen.getByText('消费习惯推断')).toBeInTheDocument();
     expect(screen.getByText('可压缩支出信号')).toBeInTheDocument();
     expect(screen.getByText('消费者画像推测')).toBeInTheDocument();
-    expect(screen.getByText(/规划型消费者|舒适优先型消费者|即时反馈型消费者|平衡观察型消费者/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/规划型消费者|舒适优先型消费者|即时反馈型消费者|平衡观察型消费者/)
+    ).toBeInTheDocument();
     expect(screen.getByText(/该画像只基于当前账本行为特征推测/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '查看消费明细' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '去 AI 助手' })).toBeInTheDocument();
@@ -370,9 +427,30 @@ describe('FinancialAnalysisPage', () => {
         }
       ],
       categories: [
-        { id: 'cat-food', name: '餐饮', kind: 'expense', color: '#f97316', icon: '🍜', sortOrder: 1 },
-        { id: 'cat-shopping', name: '购物', kind: 'expense', color: '#8b5cf6', icon: '🛍️', sortOrder: 2 },
-        { id: 'cat-salary', name: '工资', kind: 'income', color: '#16a34a', icon: '💰', sortOrder: 3 }
+        {
+          id: 'cat-food',
+          name: '餐饮',
+          kind: 'expense',
+          color: '#f97316',
+          icon: '🍜',
+          sortOrder: 1
+        },
+        {
+          id: 'cat-shopping',
+          name: '购物',
+          kind: 'expense',
+          color: '#8b5cf6',
+          icon: '🛍️',
+          sortOrder: 2
+        },
+        {
+          id: 'cat-salary',
+          name: '工资',
+          kind: 'income',
+          color: '#16a34a',
+          icon: '💰',
+          sortOrder: 3
+        }
       ],
       accounts: [
         { id: 'acc-cash', name: '现金', type: 'cash', initialBalance: 500, balance: 252 },
@@ -390,9 +468,15 @@ describe('FinancialAnalysisPage', () => {
     renderPage();
 
     expect(screen.queryByText('行为样本不足')).not.toBeInTheDocument();
-    expect(screen.getByText(/餐饮支出较集中|购物支出较集中|消费节奏整体分散|高频小额支出偏多/)).toBeInTheDocument();
-    expect(screen.getAllByText(/餐饮里可能有可压缩支出|购物里可能有可压缩支出/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/舒适优先型消费者|即时反馈型消费者|平衡观察型消费者|规划型消费者/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/餐饮支出较集中|购物支出较集中|消费节奏整体分散|高频小额支出偏多/)
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByText(/餐饮里可能有可压缩支出|购物里可能有可压缩支出/).length
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getByText(/舒适优先型消费者|即时反馈型消费者|平衡观察型消费者|规划型消费者/)
+    ).toBeInTheDocument();
   });
 
   it('生成 AI 解读后应补充行为洞察判断', async () => {
@@ -405,7 +489,10 @@ describe('FinancialAnalysisPage', () => {
         actions: [{ label: '去制定预算', to: '/smart-budget' }],
         behavior: {
           summary: 'AI 认为你更像场景驱动型消费，容易在便利和情绪补偿场景下放大支出。',
-          habits: ['工作日存在小额高频咖啡消费，说明你有固定提神型开销。', '周末更容易出现临时出行和休闲支出。'],
+          habits: [
+            '工作日存在小额高频咖啡消费，说明你有固定提神型开销。',
+            '周末更容易出现临时出行和休闲支出。'
+          ],
           avoidable: ['餐饮中的饮品和加餐可优先设限。', '购物类消费更适合改成延迟下单。'],
           profile: '场景驱动型消费者',
           confidenceNote: '该结论由 AI 结合当前账本样本生成，样本期较短时应结合近 2~3 周继续观察。'
@@ -467,10 +554,38 @@ describe('FinancialAnalysisPage', () => {
         }
       ],
       categories: [
-        { id: 'cat-food', name: '餐饮', kind: 'expense', color: '#f97316', icon: '🍜', sortOrder: 1 },
-        { id: 'cat-transport', name: '交通', kind: 'expense', color: '#0ea5e9', icon: '🚇', sortOrder: 2 },
-        { id: 'cat-shopping', name: '购物', kind: 'expense', color: '#8b5cf6', icon: '🛍️', sortOrder: 3 },
-        { id: 'cat-salary', name: '工资', kind: 'income', color: '#16a34a', icon: '💰', sortOrder: 4 }
+        {
+          id: 'cat-food',
+          name: '餐饮',
+          kind: 'expense',
+          color: '#f97316',
+          icon: '🍜',
+          sortOrder: 1
+        },
+        {
+          id: 'cat-transport',
+          name: '交通',
+          kind: 'expense',
+          color: '#0ea5e9',
+          icon: '🚇',
+          sortOrder: 2
+        },
+        {
+          id: 'cat-shopping',
+          name: '购物',
+          kind: 'expense',
+          color: '#8b5cf6',
+          icon: '🛍️',
+          sortOrder: 3
+        },
+        {
+          id: 'cat-salary',
+          name: '工资',
+          kind: 'income',
+          color: '#16a34a',
+          icon: '💰',
+          sortOrder: 4
+        }
       ],
       accounts: [
         { id: 'acc-cash', name: '现金', type: 'cash', initialBalance: 500, balance: 180 },
@@ -545,9 +660,30 @@ describe('FinancialAnalysisPage', () => {
         }
       ],
       categories: [
-        { id: 'cat-food', name: '餐饮', kind: 'expense', color: '#f97316', icon: '🍜', sortOrder: 1 },
-        { id: 'cat-rent', name: '住房', kind: 'expense', color: '#8b5cf6', icon: '🏠', sortOrder: 2 },
-        { id: 'cat-salary', name: '工资', kind: 'income', color: '#16a34a', icon: '💰', sortOrder: 3 }
+        {
+          id: 'cat-food',
+          name: '餐饮',
+          kind: 'expense',
+          color: '#f97316',
+          icon: '🍜',
+          sortOrder: 1
+        },
+        {
+          id: 'cat-rent',
+          name: '住房',
+          kind: 'expense',
+          color: '#8b5cf6',
+          icon: '🏠',
+          sortOrder: 2
+        },
+        {
+          id: 'cat-salary',
+          name: '工资',
+          kind: 'income',
+          color: '#16a34a',
+          icon: '💰',
+          sortOrder: 3
+        }
       ],
       accounts: [
         { id: 'acc-cash', name: '现金', type: 'cash', initialBalance: 500, balance: 300 },
@@ -606,8 +742,22 @@ describe('FinancialAnalysisPage', () => {
         }
       ],
       categories: [
-        { id: 'cat-food', name: '餐饮', kind: 'expense', color: '#f97316', icon: '🍜', sortOrder: 1 },
-        { id: 'cat-salary', name: '工资', kind: 'income', color: '#16a34a', icon: '💰', sortOrder: 2 }
+        {
+          id: 'cat-food',
+          name: '餐饮',
+          kind: 'expense',
+          color: '#f97316',
+          icon: '🍜',
+          sortOrder: 1
+        },
+        {
+          id: 'cat-salary',
+          name: '工资',
+          kind: 'income',
+          color: '#16a34a',
+          icon: '💰',
+          sortOrder: 2
+        }
       ],
       accounts: [{ id: 'acc-cash', name: '现金', type: 'cash', initialBalance: 500, balance: 300 }],
       subscriptions: []
@@ -665,9 +815,30 @@ describe('FinancialAnalysisPage', () => {
         }
       ],
       categories: [
-        { id: 'cat-food', name: '餐饮', kind: 'expense', color: '#f97316', icon: '🍜', sortOrder: 1 },
-        { id: 'cat-shopping', name: '购物', kind: 'expense', color: '#8b5cf6', icon: '🛍️', sortOrder: 2 },
-        { id: 'cat-salary', name: '工资', kind: 'income', color: '#16a34a', icon: '💰', sortOrder: 3 }
+        {
+          id: 'cat-food',
+          name: '餐饮',
+          kind: 'expense',
+          color: '#f97316',
+          icon: '🍜',
+          sortOrder: 1
+        },
+        {
+          id: 'cat-shopping',
+          name: '购物',
+          kind: 'expense',
+          color: '#8b5cf6',
+          icon: '🛍️',
+          sortOrder: 2
+        },
+        {
+          id: 'cat-salary',
+          name: '工资',
+          kind: 'income',
+          color: '#16a34a',
+          icon: '💰',
+          sortOrder: 3
+        }
       ],
       accounts: [
         { id: 'acc-cash', name: '现金', type: 'cash', initialBalance: 500, balance: 200 },

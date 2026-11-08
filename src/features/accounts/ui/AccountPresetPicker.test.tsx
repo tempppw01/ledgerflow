@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import '../../../i18n';
 import { AccountPresetPicker } from './AccountPresetPicker';
 import type { AccountPreset } from '../model/accountTypes';
 import { ALIPAY_LOGO_URL, WECHAT_LOGO_URL } from '../../../shared/config/brandAssets';

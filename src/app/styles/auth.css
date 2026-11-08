@@ -94,6 +94,14 @@
   background: transparent;
 }
 
+.auth-registration-note {
+  margin: -6px 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+  line-height: 1.5;
+  text-align: center;
+}
+
 .topbar-account {
   position: relative;
   display: inline-flex;

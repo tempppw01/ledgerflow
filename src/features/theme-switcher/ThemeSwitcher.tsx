@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MONITOR_ICON_URL, MOON_ICON_URL, SUN_ICON_URL } from '../../shared/config/brandAssets';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { AppTheme } from '../../shared/types/app';
 import './theme-switcher.css';
 
-const OPTIONS: Array<{ value: AppTheme; iconSrc: string; label: string }> = [
-  { value: 'system', iconSrc: MONITOR_ICON_URL, label: '跟随设备' },
-  { value: 'dark', iconSrc: MOON_ICON_URL, label: '暗黑' },
-  { value: 'light', iconSrc: SUN_ICON_URL, label: '日间' }
+const OPTIONS: Array<{ value: AppTheme; iconSrc: string; labelKey: string }> = [
+  { value: 'system', iconSrc: MONITOR_ICON_URL, labelKey: 'theme.system' },
+  { value: 'dark', iconSrc: MOON_ICON_URL, labelKey: 'theme.dark' },
+  { value: 'light', iconSrc: SUN_ICON_URL, labelKey: 'theme.light' }
 ];
 
 export function ThemeSwitcher() {
+  const { t } = useTranslation();
   const theme = useAppPreferences((s) => s.theme);
   const setTheme = useAppPreferences((s) => s.setTheme);
   const switcherRef = useRef<HTMLDivElement | null>(null);
@@ -78,21 +80,24 @@ export function ThemeSwitcher() {
       ref={switcherRef}
       className="theme-switcher"
       data-expanded={isExpanded ? 'true' : 'false'}
-      aria-label="主题切换"
+      aria-label={t('theme.switchLabel')}
     >
-      {orderedOptions.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          className={theme === option.value ? 'theme-icon-btn active' : 'theme-icon-btn'}
-          onClick={() => handleOptionClick(option.value)}
-          title={option.label}
-          aria-label={option.label}
-          aria-expanded={theme === option.value && isMobileViewport ? isExpanded : undefined}
-        >
-          <img className="theme-icon" src={option.iconSrc} alt="" aria-hidden="true" />
-        </button>
-      ))}
+      {orderedOptions.map((option) => {
+        const label = t(option.labelKey);
+        return (
+          <button
+            key={option.value}
+            type="button"
+            className={theme === option.value ? 'theme-icon-btn active' : 'theme-icon-btn'}
+            onClick={() => handleOptionClick(option.value)}
+            title={label}
+            aria-label={label}
+            aria-expanded={theme === option.value && isMobileViewport ? isExpanded : undefined}
+          >
+            <img className="theme-icon" src={option.iconSrc} alt="" aria-hidden="true" />
+          </button>
+        );
+      })}
     </div>
   );
 }

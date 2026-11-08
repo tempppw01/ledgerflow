@@ -1,7 +1,7 @@
-﻿import { DatabaseSync } from 'node:sqlite';
 import { mkdir } from 'node:fs/promises';
 import { getDatabaseDataDirectory, getSqliteDatabasePath } from './databaseProvider.js';
 import { withMysqlConnection } from './databaseConnection.js';
+import { openSqliteDatabase } from './sqliteDatabase.js';
 
 export const RELATIONAL_SCHEMA_VERSION = 4;
 const DEFAULT_USER_ID = 'default';
@@ -157,7 +157,7 @@ function now() {
 }
 
 function openSqlite(env) {
-  return new DatabaseSync(getSqliteDatabasePath(env));
+  return openSqliteDatabase(env);
 }
 
 function assertProvider(provider) {

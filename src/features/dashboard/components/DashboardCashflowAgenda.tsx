@@ -1,6 +1,14 @@
-import { formatCurrency } from '../../../shared/lib/format';
-import type { DebtItem } from '../../debt/model/debtMetrics';
+import { useTranslation } from 'react-i18next';
 import type { SubscriptionItem } from '../../../entities/subscription/types';
+import { formatCurrency } from '../../../shared/lib/format';
+import { formatDayMonth } from '../../../shared/lib/i18nDate';
+import type { DebtItem } from '../../debt/model/debtMetrics';
+
+type AgendaDetailKey =
+  | 'debtReminder'
+  | 'plannedRepayment'
+  | 'overdueRenewal'
+  | 'subscriptionRenewal';
 
 type AgendaItem = {
   id: string;
@@ -8,13 +16,20 @@ type AgendaItem = {
   label: string;
   amount: number;
   kind: 'income' | 'expense';
-  detail: string;
+  detailKey: AgendaDetailKey;
 };
 
 export interface DashboardCashflowAgendaProps {
   debts: DebtItem[];
   subscriptions: SubscriptionItem[];
-  transactions: Array<{ id: string; type: string; amount: number; date: string; categoryId?: string; note?: string }>;
+  transactions: Array<{
+    id: string;
+    type: string;
+    amount: number;
+    date: string;
+    categoryId?: string;
+    note?: string;
+  }>;
   onNavigateToRepayments: () => void;
   onNavigateToSubscriptions: () => void;
   onNavigateToTransactions: () => void;
@@ -24,11 +39,6 @@ function toDate(value?: string) {
   if (!value) return null;
   const date = new Date(`${value.slice(0, 10)}T00:00:00`);
   return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function dateLabel(value: string) {
-  const date = toDate(value);
-  return date ? `${date.getMonth() + 1}月${date.getDate()}日` : '待确认';
 }
 
 function nextDays(days: number) {
@@ -47,6 +57,7 @@ export function DashboardCashflowAgenda({
   onNavigateToSubscriptions,
   onNavigateToTransactions
 }: DashboardCashflowAgendaProps) {
+  const { t, i18n } = useTranslation();
   const { start, end } = nextDays(30);
   const items: AgendaItem[] = [];
 
@@ -54,13 +65,27 @@ export function DashboardCashflowAgenda({
     if (debt.entryMode === 'simple' && debt.simpleDueDate) {
       const date = toDate(debt.simpleDueDate);
       if (date && date >= start && date <= end) {
-        items.push({ id: `debt:${debt.id}`, date: debt.simpleDueDate, label: debt.name, amount: debt.simpleAmount || 0, kind: 'expense', detail: '还款提醒' });
+        items.push({
+          id: `debt:${debt.id}`,
+          date: debt.simpleDueDate,
+          label: debt.name,
+          amount: debt.simpleAmount || 0,
+          kind: 'expense',
+          detailKey: 'debtReminder'
+        });
       }
     }
     (debt.manualRepayments || []).forEach((repayment, index) => {
       const date = toDate(repayment.dueDate);
       if (date && date >= start && date <= end) {
-        items.push({ id: `repayment:${debt.id}:${repayment.id || index}`, date: repayment.dueDate || '', label: repayment.label || debt.name, amount: repayment.amount || 0, kind: 'expense', detail: '计划还款' });
+        items.push({
+          id: `repayment:${debt.id}:${repayment.id || index}`,
+          date: repayment.dueDate || '',
+          label: repayment.label || debt.name,
+          amount: repayment.amount || 0,
+          kind: 'expense',
+          detailKey: 'plannedRepayment'
+        });
       }
     });
   });
@@ -75,39 +100,100 @@ export function DashboardCashflowAgenda({
         label: subscription.name,
         amount: subscription.amount,
         kind: 'expense',
-        detail: date < start || subscription.status === 'expired' ? '续费已逾期' : '订阅续费'
+        detailKey:
+          date < start || subscription.status === 'expired'
+            ? 'overdueRenewal'
+            : 'subscriptionRenewal'
       });
     }
   });
 
   const agenda = items.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5);
-  const unresolved = debts.filter((item) => item.entryMode === 'simple' && !item.simpleAmount).length;
-  const unclassified = transactions.filter((item) => !item.categoryId || item.categoryId === 'uncategorized').length;
+  const unresolved = debts.filter(
+    (item) => item.entryMode === 'simple' && !item.simpleAmount
+  ).length;
+  const unclassified = transactions.filter(
+    (item) => !item.categoryId || item.categoryId === 'uncategorized'
+  ).length;
 
   return (
-    <section className="panel dashboard-cashflow-agenda" aria-label="未来三十天现金流与财务待办">
+    <section
+      className="panel dashboard-cashflow-agenda"
+      aria-label={t('dashboard.ui.cashflow.aria')}
+    >
       <div className="dashboard-section-header">
         <div>
-          <h4>未来与待办</h4>
-          <span>先处理逾期项，再看接下来 30 天会发生什么</span>
+          <h4>{t('dashboard.ui.cashflow.title')}</h4>
+          <span>{t('dashboard.ui.cashflow.subtitle')}</span>
         </div>
-        <strong>{agenda.length ? `${agenda.length} 项安排` : '暂无安排'}</strong>
+        <strong>
+          {agenda.length
+            ? t(
+                agenda.length === 1
+                  ? 'dashboard.ui.cashflow.onePlan'
+                  : 'dashboard.ui.cashflow.manyPlans',
+                { count: agenda.length }
+              )
+            : t('dashboard.ui.cashflow.emptyCount')}
+        </strong>
       </div>
       <div className="dashboard-cashflow-agenda-body">
         <div className="dashboard-cashflow-timeline">
-          {agenda.length ? agenda.map((item) => (
-            <button key={item.id} type="button" className="dashboard-cashflow-event" onClick={item.id.startsWith('subscription:') ? onNavigateToSubscriptions : item.id.startsWith('debt:') || item.id.startsWith('repayment:') ? onNavigateToRepayments : onNavigateToTransactions}>
-              <span className="dashboard-cashflow-event-date">{dateLabel(item.date)}</span>
-              <span className="dashboard-cashflow-event-main"><strong>{item.label}</strong><small>{item.detail}</small></span>
-              <b className={item.kind === 'income' ? 'is-income' : 'is-expense'}>{item.amount ? `${item.kind === 'income' ? '+' : '−'}${formatCurrency(item.amount)}` : '金额待补充'}</b>
-            </button>
-          )) : <p className="dashboard-cashflow-empty">未来 30 天暂时没有已登记的还款或续费安排。</p>}
+          {agenda.length ? (
+            agenda.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className="dashboard-cashflow-event"
+                onClick={
+                  item.id.startsWith('subscription:')
+                    ? onNavigateToSubscriptions
+                    : item.id.startsWith('debt:') || item.id.startsWith('repayment:')
+                      ? onNavigateToRepayments
+                      : onNavigateToTransactions
+                }
+              >
+                <span className="dashboard-cashflow-event-date">
+                  {formatDayMonth(item.date, i18n.resolvedLanguage) ||
+                    t('dashboard.ui.cashflow.dateUnknown')}
+                </span>
+                <span className="dashboard-cashflow-event-main">
+                  <strong>{item.label}</strong>
+                  <small>{t(`dashboard.ui.cashflow.${item.detailKey}`)}</small>
+                </span>
+                <b className={item.kind === 'income' ? 'is-income' : 'is-expense'}>
+                  {item.amount
+                    ? `${item.kind === 'income' ? '+' : '−'}${formatCurrency(item.amount)}`
+                    : t('dashboard.ui.cashflow.amountMissing')}
+                </b>
+              </button>
+            ))
+          ) : (
+            <p className="dashboard-cashflow-empty">{t('dashboard.ui.cashflow.empty')}</p>
+          )}
         </div>
-        <div className="dashboard-finance-todos" aria-label="财务待办">
-          <span className="dashboard-cashflow-todo-title">需要处理</span>
-          {unresolved > 0 ? <button type="button" onClick={onNavigateToRepayments}><b>{unresolved}</b><span>笔还款金额待补充</span></button> : null}
-          {unclassified > 0 ? <button type="button" onClick={onNavigateToTransactions}><b>{unclassified}</b><span>笔流水待分类</span></button> : null}
-          {!unresolved && !unclassified ? <p>目前没有高优先级待办。</p> : null}
+        <div
+          className="dashboard-finance-todos"
+          aria-label={t('dashboard.ui.cashflow.todoAria')}
+        >
+          <span className="dashboard-cashflow-todo-title">
+            {t('dashboard.ui.cashflow.todoTitle')}
+          </span>
+          {unresolved > 0 ? (
+            <button type="button" onClick={onNavigateToRepayments}>
+              <b>{unresolved}</b>
+              <span>{t('dashboard.ui.cashflow.unresolvedLabel')}</span>
+            </button>
+          ) : null}
+          {unclassified > 0 ? (
+            <button type="button" onClick={onNavigateToTransactions}>
+              <b>{unclassified}</b>
+              <span>{t('dashboard.ui.cashflow.unclassifiedLabel')}</span>
+            </button>
+          ) : null}
+          {!unresolved && !unclassified ? (
+            <p>{t('dashboard.ui.cashflow.noTodos')}</p>
+          ) : null}
         </div>
       </div>
     </section>

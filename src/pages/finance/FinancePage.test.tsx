@@ -9,7 +9,8 @@ const tMock = (key: string) => {
     'finance.ui.title': '同花顺资讯',
     'finance.ui.subtitle': '市场资讯已经接入同花顺财经，按栏目快速浏览最新动态。',
     'finance.ui.tipTitle': '聚焦市场，不再维护 RSS',
-    'finance.ui.tipBody': '这里只展示同花顺财经资讯阅读；工资计算、个税测算等工具请前往左侧「工资工具」。',
+    'finance.ui.tipBody':
+      '这里只展示同花顺财经资讯阅读；工资计算、个税测算等工具请前往左侧「工资工具」。',
     'finance.ui.sourceLabel': '内置资讯来源',
     'finance.ui.sourceBadge': '单源资讯',
     'finance.ui.sourceTitle': '同花顺财经',
@@ -17,10 +18,12 @@ const tMock = (key: string) => {
     'finance.ui.openSource': '打开同花顺财经网站',
     'finance.ui.sourceSite': '同花顺',
     'finance.ui.categories': '资讯栏目',
+    'finance.ui.marketPulse': '市场脉搏',
     'finance.ui.loading': '正在同步同花顺资讯...',
     'finance.ui.noNews': '暂无同花顺资讯。',
     'finance.ui.loadFailed': '同花顺资讯暂不可用。',
     'finance.ui.readerTitle': '同花顺资讯阅读器',
+    'finance.ui.todayFocus': '今日焦点 · {{source}}',
     'finance.ui.noSummary': '暂无摘要。',
     'finance.ui.openOriginal': '打开原文',
     'finance.ui.dailyIdeaTitle': '今日金融小建议',
@@ -101,7 +104,7 @@ describe('FinancePage', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole('heading', { name: '财政部部署推进财政科学管理工作' }),
+        screen.getByRole('heading', { name: '财政部部署推进财政科学管理工作' })
       ).toBeInTheDocument();
     });
     expect(fetchMock).toHaveBeenCalledWith(

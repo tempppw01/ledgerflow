@@ -1,11 +1,4 @@
 /* ============================================================
-   Animation System Imports
-   ============================================================ */
-@import './animations/transitions.css';
-@import './animations/keyframes.css';
-@import './animations/motion.css';
-@import './ui-animations.css';
-/* ============================================================
    LedgerFlow — Global Styles
    Design: ezBookkeeping-inspired — restrained, spacious, neutral
    Scope: reset / layout shell / shared primitives / legacy shared rules
@@ -59,8 +52,6 @@ body {
    Sidebar — independent panel feel
    ============================================================ */
 .sidebar {
-  /* Enhanced animation */
-  will-change: width;
   position: sticky;
   top: 0;
   height: 100vh;
@@ -598,34 +589,35 @@ body {
 
 .sidebar-link.disabled:hover {
   background: transparent;
-
-  /* Enhanced sidebar link hover with ripple effect */
-  .sidebar-link:not(.disabled)::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(
-      circle at center,
-      color-mix(in srgb, var(--color-primary) 15%, transparent) 0%,
-      transparent 70%
-    );
-    opacity: 0;
-    transform: scale(0.8);
-    transition:
-      opacity var(--transition-fast),
-      transform var(--transition-fast);
-    pointer-events: none;
-  }
-
-  .sidebar-link:not(.disabled):hover::before {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  .sidebar-link:not(.disabled):active {
-    transform: scale(0.97);
-  }
   color: var(--color-text-tertiary);
+}
+
+/* Sidebar link hover ripple + press feedback */
+.sidebar-link:not(.disabled)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle at center,
+    color-mix(in srgb, var(--color-primary) 15%, transparent) 0%,
+    transparent 70%
+  );
+  opacity: 0;
+  transform: scale(0.8);
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
+  pointer-events: none;
+}
+
+.sidebar-link:not(.disabled):hover::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.sidebar-link:not(.disabled):active {
+  transform: scale(0.97);
 }
 
 .sidebar-resize-handle {
@@ -648,6 +640,35 @@ body {
   background: var(--color-bg);
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+.scroll-progress {
+  position: sticky;
+  top: 0;
+  z-index: 230;
+  height: 3px;
+  margin-bottom: -3px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.scroll-progress-bar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 0 999px 999px 0;
+  background: linear-gradient(
+    90deg,
+    var(--color-primary) 0%,
+    var(--color-primary-hover) 72%,
+    color-mix(in srgb, var(--color-primary-hover) 76%, white) 100%
+  );
+  box-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 42%, transparent);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  opacity: 0;
+  transition: opacity 160ms ease;
+  will-change: transform;
 }
 
 .workspace-topbar {
@@ -1381,8 +1402,6 @@ body {
 }
 
 .layout-shell.sidebar-is-collapsed .sidebar {
-  /* Enhanced animation */
-  will-change: width;
   box-shadow: none;
 }
 
@@ -3345,16 +3364,6 @@ small.mono {
   color: var(--color-text-secondary);
 }
 
-@keyframes welcome-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-6px);
-  }
-}
-
 /* ============================================================
    Dashboard — Stat Cards
    ============================================================ */
@@ -3456,7 +3465,6 @@ small.mono {
   font-size: 44px;
   margin-bottom: var(--space-3);
   opacity: 0.7;
-  animation: welcome-float 3.4s ease-in-out infinite;
 }
 
 .empty-state-icon img {
@@ -7687,8 +7695,6 @@ input[type='date']:focus {
   }
 
   .sidebar {
-    /* Enhanced animation */
-    will-change: width;
     display: none;
   }
 
@@ -10522,22 +10528,27 @@ body.categories-accounts-resizing {
 
 .sql-sync-notice {
   position: fixed;
-  right: 18px;
+  right: 100px;
   bottom: 18px;
   z-index: 340;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  max-width: min(420px, calc(100vw - 36px));
+  max-width: min(420px, calc(100vw - 116px));
   min-height: 34px;
   padding: 7px 10px;
   border: 1px solid var(--color-border-light);
   border-radius: 8px;
   color: var(--color-text-secondary);
-  background: color-mix(in srgb, var(--color-bg-elevated) 92%, transparent);
+  background: var(--color-bg-elevated);
   box-shadow: var(--shadow-sm);
-  backdrop-filter: blur(10px);
   font-size: 12px;
+}
+
+.sql-sync-notice > span:not(.sql-sync-notice-dot) {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .sql-sync-notice-dot {
@@ -10554,19 +10565,47 @@ body.categories-accounts-resizing {
   color: var(--color-danger);
 }
 
+.sql-sync-notice.is-warning {
+  border-color: color-mix(in srgb, var(--color-warning) 35%, var(--color-border));
+  color: var(--color-warning);
+}
+
 .sql-sync-notice.is-error .sql-sync-notice-dot {
   background: var(--color-danger);
   animation: none;
 }
 
+.sql-sync-notice.is-warning .sql-sync-notice-dot {
+  background: var(--color-warning);
+  animation: none;
+}
+
 .sql-sync-notice button {
   min-height: 26px;
+  flex: 0 0 auto;
   padding: 3px 8px;
   border: 1px solid currentColor;
   border-radius: 6px;
   color: inherit;
   background: transparent;
   font-size: 11px;
+}
+
+@media (max-width: 640px) {
+  .sql-sync-notice {
+    right: 10px;
+    bottom: 76px;
+    left: 10px;
+    max-width: none;
+    align-items: flex-start;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 900px) {
+  .sql-sync-notice {
+    right: 84px;
+    bottom: 92px;
+  }
 }
 
 @keyframes sql-sync-pulse {
@@ -18433,10 +18472,9 @@ select.debt-form-input {
 
 .debt-form-manual-row {
   display: grid;
-  grid-template-columns: 28px minmax(96px, 0.88fr) minmax(128px, 0.82fr) minmax(
-      88px,
-      0.62fr
-    ) 48px 28px;
+  grid-template-columns:
+    28px minmax(96px, 0.88fr) minmax(128px, 0.82fr) minmax(88px, 0.62fr)
+    48px 28px;
   gap: 12px;
   align-items: end;
 }
@@ -19117,10 +19155,10 @@ select.debt-form-input {
 
 .repayment-income-editor {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) auto;
-  flex: 0 1 380px;
+  grid-template-columns: minmax(128px, 1fr) auto;
+  flex: 0 1 300px;
   gap: 8px;
-  width: min(100%, 380px);
+  width: min(100%, 300px);
   min-width: 0;
 }
 
@@ -19868,7 +19906,7 @@ select.debt-form-input {
   }
 
   .repayment-income-editor {
-    grid-template-columns: minmax(180px, 1fr) auto;
+    grid-template-columns: minmax(128px, 1fr) auto;
   }
 }
 

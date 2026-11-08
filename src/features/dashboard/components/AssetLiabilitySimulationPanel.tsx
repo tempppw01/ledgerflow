@@ -1,5 +1,12 @@
-import { useState, type CSSProperties } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
+import { useTranslation } from 'react-i18next';
 import { formatCurrency, formatCurrencyAuto } from '../../../shared/lib/format';
+import {
+  formatDayMonth,
+  formatMonth,
+  formatMonthKey,
+  formatWeekdayNarrow
+} from '../../../shared/lib/i18nDate';
 import type { AssetLiabilitySimulationRow } from '../model/assetLiabilitySimulation';
 import { formatCalendarAmount } from '../model/assetLiabilitySimulationFormat';
 
@@ -28,6 +35,7 @@ export function AssetLiabilitySimulationPanel({
   horizonMonths: 1 | 3 | 6 | 12;
   onHorizonChange: (months: 1 | 3 | 6 | 12) => void;
 }) {
+  const { t, i18n } = useTranslation();
   const [calendarMode, setCalendarMode] = useState<'balance' | 'assets'>('balance');
   const width = 720;
   const height = 280;
@@ -45,33 +53,60 @@ export function AssetLiabilitySimulationPanel({
   const assetPoints = rows.map((row, index) => point(row.assets, index));
   const liabilityPoints = rows.map((row, index) => point(row.liabilities, index));
   const gridValues = [max, (max + min) / 2, min];
-  const maxDelta = Math.max(...rows.flatMap((row) => [Math.abs(row.delta), Math.abs(row.netWorth)]), 1);
+  const maxDelta = Math.max(
+    ...rows.flatMap((row) => [Math.abs(row.delta), Math.abs(row.netWorth)]),
+    1
+  );
   const monthlyRows = rows.filter((row, index) => {
     const next = rows[index + 1];
     return !next || next.date.slice(0, 7) !== row.date.slice(0, 7);
   });
   const calendarRows = horizonMonths === 1 ? rows : monthlyRows;
-  const lowestBalance = rows.reduce((lowest, row) => (row.netWorth < lowest.netWorth ? row : lowest), rows[0]);
-  const monthlyDebtChanges = rows.reduce<Record<string, { amount: number; label: string }>>((acc, row) => {
+  const lowestBalance = rows.reduce(
+    (lowest, row) => (row.netWorth < lowest.netWorth ? row : lowest),
+    rows[0]
+  );
+  const monthlyDebtChanges = rows.reduce<Record<string, { amount: number }>>((acc, row) => {
     const key = row.date.slice(0, 7);
-    acc[key] ||= { amount: 0, label: `${Number(key.slice(5))}月` };
+    acc[key] ||= { amount: 0 };
     acc[key].amount += row.liabilityDelta;
     return acc;
   }, {});
-  const fastestDebtDrop = Object.values(monthlyDebtChanges).reduce<{ amount: number; label: string } | null>(
-    (best, current) => (current.amount < 0 && (!best || current.amount < best.amount) ? current : best),
+  const fastestDebtDrop = Object.entries(monthlyDebtChanges).reduce<{
+    amount: number;
+    key: string;
+  } | null>(
+    (best, [key, current]) =>
+      current.amount < 0 && (!best || current.amount < best.amount)
+        ? { ...current, key }
+        : best,
     null
+  );
+  const locale = i18n.resolvedLanguage;
+  const weekdayHeaders = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, index) =>
+        formatWeekdayNarrow(new Date(2024, 0, 1 + index), locale)
+      ),
+    [locale]
   );
 
   return (
-    <section className="panel dashboard-asset-liability-panel" aria-label="资产负债变动模拟">
+    <section
+      className="panel dashboard-asset-liability-panel"
+      aria-label={t('dashboard.ui.simulation.aria')}
+    >
       <div className="dashboard-section-header dashboard-section-header-tight">
         <div>
-          <h4>资产负债预测</h4>
-          <p>按已登记安排推演未来 {horizonMonths} 个月，帮助你提前看到现金压力。</p>
+          <h4>{t('dashboard.ui.simulation.title')}</h4>
+          <p>{t('dashboard.ui.simulation.subtitle', { count: horizonMonths })}</p>
         </div>
         <div className="dashboard-simulation-actions">
-          <div className="dashboard-simulation-pills" role="tablist" aria-label="模拟时间范围">
+          <div
+            className="dashboard-simulation-pills"
+            role="tablist"
+            aria-label={t('dashboard.ui.simulation.rangeAria')}
+          >
             {[1, 3, 6, 12].map((months) => (
               <button
                 key={months}
@@ -81,16 +116,42 @@ export function AssetLiabilitySimulationPanel({
                 className={horizonMonths === months ? 'is-active' : ''}
                 onClick={() => onHorizonChange(months as 1 | 3 | 6 | 12)}
               >
-                {months}个月
+                {t('dashboard.ui.simulation.horizonMonths', { count: months })}
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="dashboard-simulation-insights" aria-label="预测关键节点">
-        <div><span>预计余额最低日</span><strong>{lowestBalance?.label || '暂无数据'}</strong><small>{lowestBalance ? formatCurrencyAuto(lowestBalance.netWorth) : '先登记账户或安排'}</small></div>
-        <div><span>负债下降最快月份</span><strong>{fastestDebtDrop?.label || '暂无还款'}</strong><small>{fastestDebtDrop ? `减少 ${formatCurrencyAuto(Math.abs(fastestDebtDrop.amount))}` : '补充负债还款计划后显示'}</small></div>
+      <div className="dashboard-simulation-insights">
+        <div>
+          <span>{t('dashboard.ui.simulation.lowestBalanceDate')}</span>
+          <strong>
+            {lowestBalance
+              ? formatDayMonth(lowestBalance.date, locale)
+              : t('dashboard.ui.simulation.noData')}
+          </strong>
+          <small>
+            {lowestBalance
+              ? formatCurrencyAuto(lowestBalance.netWorth)
+              : t('dashboard.ui.simulation.registerAccounts')}
+          </small>
+        </div>
+        <div>
+          <span>{t('dashboard.ui.simulation.fastestDebtDrop')}</span>
+          <strong>
+            {fastestDebtDrop
+              ? formatMonthKey(fastestDebtDrop.key, locale)
+              : t('dashboard.ui.simulation.noRepayment')}
+          </strong>
+          <small>
+            {fastestDebtDrop
+              ? t('dashboard.ui.simulation.debtReduced', {
+                  amount: formatCurrencyAuto(Math.abs(fastestDebtDrop.amount))
+                })
+              : t('dashboard.ui.simulation.addPlan')}
+          </small>
+        </div>
       </div>
 
       <div className="dashboard-asset-liability-layout">
@@ -98,20 +159,22 @@ export function AssetLiabilitySimulationPanel({
           <div className="dashboard-asset-liability-summary">
             <span>
               <i className="is-asset" />
-              资产 <strong>{formatCurrencyAuto(initialAssets)}</strong>
+              {t('dashboard.ui.simulation.assets')}{' '}
+              <strong>{formatCurrencyAuto(initialAssets)}</strong>
             </span>
             <span>
               <i className="is-liability" />
-              负债 <strong>{formatCurrencyAuto(initialLiabilities)}</strong>
+              {t('dashboard.ui.simulation.liabilities')}{' '}
+              <strong>{formatCurrencyAuto(initialLiabilities)}</strong>
             </span>
           </div>
           <svg
             className="dashboard-asset-liability-chart"
             viewBox={`0 0 ${width} ${height}`}
             role="img"
-            aria-label={`未来${horizonMonths}个月资产负债变动模拟折线图`}
+            aria-label={t('dashboard.ui.simulation.chartAria', { count: horizonMonths })}
           >
-            <title>未来{horizonMonths}个月资产负债变动模拟折线图</title>
+            <title>{t('dashboard.ui.simulation.chartTitle', { count: horizonMonths })}</title>
             {gridValues.map((value, index) => {
               const y = padding.top + (index / 2) * (height - padding.top - padding.bottom);
               return (
@@ -142,59 +205,118 @@ export function AssetLiabilitySimulationPanel({
             />
           </svg>
           <div className="dashboard-asset-liability-axis" aria-hidden="true">
-            <span>{rows[0]?.label}</span>
-            <span>{rows[Math.floor(rows.length / 2)]?.label}</span>
-            <span>{rows.at(-1)?.label}</span>
+            <span>{formatDayMonth(rows[0]?.date || new Date(), locale)}</span>
+            <span>
+              {formatDayMonth(rows[Math.floor(rows.length / 2)]?.date || new Date(), locale)}
+            </span>
+            <span>{formatDayMonth(rows.at(-1)?.date || new Date(), locale)}</span>
           </div>
           <div className="dashboard-asset-liability-legend">
-            <span><i className="is-asset" />资产</span>
-            <span><i className="is-liability" />负债</span>
+            <span>
+              <i className="is-asset" />
+              {t('dashboard.ui.simulation.assets')}
+            </span>
+            <span>
+              <i className="is-liability" />
+              {t('dashboard.ui.simulation.liabilities')}
+            </span>
           </div>
         </div>
 
-        <div className="dashboard-asset-liability-calendar" aria-label={`未来${horizonMonths}个月金额日历`}>
+        <div
+          className="dashboard-asset-liability-calendar"
+          aria-label={t('dashboard.ui.simulation.calendarAria', { count: horizonMonths })}
+        >
           <div className="dashboard-calendar-head">
-            <strong>{horizonMonths === 1 ? '未来 1 个月' : `未来 ${horizonMonths} 个月概览`}</strong>
-            <div className="dashboard-calendar-modes" role="tablist" aria-label="日历显示方式">
-              <button type="button" className={calendarMode === 'balance' ? 'is-active' : ''} onClick={() => setCalendarMode('balance')}>结余</button>
-              <button type="button" className={calendarMode === 'assets' ? 'is-active' : ''} onClick={() => setCalendarMode('assets')}>资产负债</button>
+            <strong>
+              {horizonMonths === 1
+                ? t('dashboard.ui.simulation.oneMonth')
+                : t('dashboard.ui.simulation.monthsOverview', { count: horizonMonths })}
+            </strong>
+            <div
+              className="dashboard-calendar-modes"
+              role="tablist"
+              aria-label={t('dashboard.ui.simulation.calendarModeAria')}
+            >
+              <button
+                type="button"
+                className={calendarMode === 'balance' ? 'is-active' : ''}
+                onClick={() => setCalendarMode('balance')}
+              >
+                {t('dashboard.ui.simulation.balance')}
+              </button>
+              <button
+                type="button"
+                className={calendarMode === 'assets' ? 'is-active' : ''}
+                onClick={() => setCalendarMode('assets')}
+              >
+                {t('dashboard.ui.simulation.assetsAndLiabilities')}
+              </button>
             </div>
           </div>
-          {horizonMonths === 1 ? <div className="dashboard-calendar-weekdays" aria-hidden="true">
-            {['一', '二', '三', '四', '五', '六', '日'].map((day) => (
-              <span key={day}>{day}</span>
-            ))}
-          </div> : null}
+          {horizonMonths === 1 ? (
+            <div className="dashboard-calendar-weekdays" aria-hidden="true">
+              {weekdayHeaders.map((day, index) => (
+                <span key={`${day}-${index}`}>{day}</span>
+              ))}
+            </div>
+          ) : null}
           <div className={`dashboard-calendar-grid ${horizonMonths === 1 ? '' : 'is-monthly'}`}>
-            {horizonMonths === 1 ? Array.from({ length: (new Date(`${rows[0]?.date}T00:00:00`).getDay() + 6) % 7 }).map(
-              (_, index) => <span className="dashboard-calendar-empty" key={`empty-${index}`} />
-            ) : null}
+            {horizonMonths === 1
+              ? Array.from({
+                  length: (new Date(`${rows[0]?.date}T00:00:00`).getDay() + 6) % 7
+                }).map((_, index) => (
+                  <span className="dashboard-calendar-empty" key={`empty-${index}`} />
+                ))
+              : null}
             {calendarRows.map((row, index) => {
               const previous = calendarRows[index - 1];
-              const isMonthStart = Boolean(previous && previous.date.slice(0, 7) !== row.date.slice(0, 7));
+              const isMonthStart = Boolean(
+                previous && previous.date.slice(0, 7) !== row.date.slice(0, 7)
+              );
               const amount = calendarMode === 'assets' ? row.netWorth : row.delta;
               const intensity = 0.14 + (Math.abs(amount) / maxDelta) * 0.34;
               const style = { '--calendar-intensity': intensity } as CSSProperties;
+              const amountLabel =
+                calendarMode === 'assets'
+                  ? t('dashboard.ui.simulation.netWorth')
+                  : t('dashboard.ui.simulation.estimatedBalance');
               return (
-              <div
-                className={`dashboard-calendar-day ${
-                  amount > 0 ? 'is-positive' : amount < 0 ? 'is-negative' : 'is-neutral'
-                } ${isMonthStart ? 'is-month-start' : ''}`.trim()}
-                key={row.key}
-                style={style}
-                aria-label={`${row.label}，${calendarMode === 'assets' ? '净资产' : '预计结余'} ${formatCurrency(amount)}`}
-                title={formatCurrency(amount)}
-              >
-                {(isMonthStart || horizonMonths > 1) ? <em>{new Date(`${row.date}T00:00:00`).getMonth() + 1}月</em> : null}
-                <b>{row.date.slice(-2).replace(/^0/, '')}</b>
-                <small>{calendarMode === 'assets' ? formatCalendarAmount(row.netWorth) : formatCalendarAmount(row.delta)}</small>
-              </div>
+                <div
+                  className={`dashboard-calendar-day ${
+                    amount > 0 ? 'is-positive' : amount < 0 ? 'is-negative' : 'is-neutral'
+                  } ${isMonthStart ? 'is-month-start' : ''}`.trim()}
+                  key={row.key}
+                  style={style}
+                  aria-label={`${formatDayMonth(row.date, locale)},${amountLabel} ${formatCurrency(
+                    amount
+                  )}`}
+                  title={formatCurrency(amount)}
+                >
+                  {isMonthStart || horizonMonths > 1 ? (
+                    <em>{formatMonth(row.date, locale)}</em>
+                  ) : null}
+                  <b>{row.date.slice(-2).replace(/^0/, '')}</b>
+                  <small>
+                    {calendarMode === 'assets'
+                      ? formatCalendarAmount(row.netWorth)
+                      : formatCalendarAmount(row.delta)}
+                  </small>
+                </div>
               );
             })}
           </div>
           <div className="dashboard-calendar-foot">
-            <span>净资产：{formatCurrencyAuto(rows.at(-1)?.netWorth || 0)}</span>
-            <span>负债：{formatCurrencyAuto(rows.at(-1)?.liabilities || 0)}</span>
+            <span>
+              {t('dashboard.ui.simulation.calendarNetWorth', {
+                amount: formatCurrencyAuto(rows.at(-1)?.netWorth || 0)
+              })}
+            </span>
+            <span>
+              {t('dashboard.ui.simulation.calendarLiabilities', {
+                amount: formatCurrencyAuto(rows.at(-1)?.liabilities || 0)
+              })}
+            </span>
           </div>
         </div>
       </div>

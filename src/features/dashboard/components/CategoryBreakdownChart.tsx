@@ -117,7 +117,7 @@ export function CategoryBreakdownChart({
                   </div>
                   <div className="dashboard-donut-list-side">
                     <strong>{formatCurrency(item.amount)}</strong>
-                    <small>本月占比</small>
+                    <small>{t('dashboard.ui.categoryShareThisMonth')}</small>
                   </div>
                 </button>
               );

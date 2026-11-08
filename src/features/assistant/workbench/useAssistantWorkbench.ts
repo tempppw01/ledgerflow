@@ -1,10 +1,20 @@
-import { ClipboardEvent, DragEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ClipboardEvent,
+  DragEvent,
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import { fetchAiModels, sendAiChatStream } from '../api/openaiCompatibleClient';
 import type { Account } from '../../../entities/account/types';
 import type { Category } from '../../../entities/category/types';
 import type { TransactionItem } from '../../../entities/transaction/types';
 import { useDebugLogStore } from '../../../shared/store/useDebugLogStore';
 import { useAiSettings } from '../../../shared/store/useAiSettings';
+import { AI_MODEL_PRESETS, mergeAiModelOptions } from '../../../shared/config/aiModels';
 import {
   clearSemanticRecallIndexCache,
   createEmptyBlockingSemanticRecallResult,
@@ -128,7 +138,7 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
   const [textInput, setTextInput] = useState('');
   const [imageDataUrls, setImageDataUrls] = useState<string[]>([]);
   const [pdfDataUrls, setPdfDataUrls] = useState<string[]>([]);
-  const [models, setModels] = useState<string[]>([]);
+  const [models, setModels] = useState<string[]>(() => [...AI_MODEL_PRESETS]);
   const [loadingModels, setLoadingModels] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [entries, setEntries] = useState<DraftBillEntry[]>([]);
@@ -140,8 +150,12 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
     completionTokens: number;
     totalTokens: number;
   } | null>(null);
-  const [embeddingDebug, setEmbeddingDebug] = useState<EmbeddingRecallDebug>(createIdleEmbeddingDebug());
-  const [semanticRecallCacheMeta, setSemanticRecallCacheMeta] = useState<SemanticRecallCacheMeta>(createSemanticRecallMeta(embeddingModel.trim()));
+  const [embeddingDebug, setEmbeddingDebug] = useState<EmbeddingRecallDebug>(
+    createIdleEmbeddingDebug()
+  );
+  const [semanticRecallCacheMeta, setSemanticRecallCacheMeta] = useState<SemanticRecallCacheMeta>(
+    createSemanticRecallMeta(embeddingModel.trim())
+  );
   const [toast, setToast] = useState<AssistantToastState>({
     message: '',
     variant: 'success',
@@ -152,18 +166,18 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
     Boolean(embeddingChannel.enabled) &&
     Boolean(
       embeddingChannel.baseUrl.trim() ||
-        embeddingChannel.apiKey.trim() ||
-        embeddingChannel.model.trim()
+      embeddingChannel.apiKey.trim() ||
+      embeddingChannel.model.trim()
     );
 
   const effectiveEmbeddingBaseUrl = embeddingOverrideActive
-    ? (embeddingChannel.baseUrl.trim() || input.baseUrl)
+    ? embeddingChannel.baseUrl.trim() || input.baseUrl
     : input.baseUrl;
   const effectiveEmbeddingApiKey = embeddingOverrideActive
-    ? (embeddingChannel.apiKey.trim() || input.apiKey)
+    ? embeddingChannel.apiKey.trim() || input.apiKey
     : input.apiKey;
   const effectiveEmbeddingModel = embeddingOverrideActive
-    ? (embeddingChannel.model.trim() || embeddingModel.trim())
+    ? embeddingChannel.model.trim() || embeddingModel.trim()
     : embeddingModel.trim();
 
   const refreshSemanticRecallCacheMeta = useCallback(() => {
@@ -171,7 +185,10 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
       setSemanticRecallCacheMeta(createSemanticRecallMeta(effectiveEmbeddingModel.trim()));
       return;
     }
-    const next = readSemanticRecallCacheMeta(effectiveEmbeddingBaseUrl, effectiveEmbeddingModel.trim());
+    const next = readSemanticRecallCacheMeta(
+      effectiveEmbeddingBaseUrl,
+      effectiveEmbeddingModel.trim()
+    );
     setSemanticRecallCacheMeta(next);
   }, [effectiveEmbeddingBaseUrl, effectiveEmbeddingModel]);
 
@@ -277,7 +294,9 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
       const list = parsed.filter(
         (item): item is string => typeof item === 'string' && item.trim().length > 0
       );
-      if (list.length > 0) setModels(list);
+      if (list.length > 0) {
+        setModels((current) => mergeAiModelOptions('', AI_MODEL_PRESETS, [...list, ...current]));
+      }
     } catch {
       // ignore cache parse errors
     }
@@ -379,15 +398,17 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
     setError('');
     try {
       const nextModels = await fetchAiModels(input.baseUrl, input.apiKey);
-      setModels(nextModels);
+      const mergedModels = mergeAiModelOptions(input.model, AI_MODEL_PRESETS, nextModels);
+      setModels(mergedModels);
       try {
-        window.localStorage.setItem(MODEL_CACHE_KEY, JSON.stringify(nextModels));
+        window.localStorage.setItem(MODEL_CACHE_KEY, JSON.stringify(mergedModels));
       } catch {
         // ignore storage write errors
       }
       setToast({ visible: true, variant: 'success', message: '模型列表刷新成功' });
     } catch (err) {
       setError(err instanceof Error ? err.message : '模型拉取失败');
+      setModels((current) => mergeAiModelOptions(input.model, AI_MODEL_PRESETS, current));
     } finally {
       setLoadingModels(false);
     }
@@ -425,14 +446,17 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
 
     try {
       const isConversationalMode =
-        input.sceneMode === 'assistant' || input.sceneMode === 'credit' || input.sceneMode === 'investment';
-      const basePrompt = input.sceneMode === 'investment'
-        ? `${ANALYSIS_AGENT_PROMPT}\n\n你是用户的投资理财助手，重点讨论基金、股票、市场走势、资产配置、定投和风险管理。结合用户提供的持仓与市场信息给出有依据的分析，区分事实、估算与不确定性，不承诺收益、不把短期波动包装成确定预测，并提醒投资决策由用户自行承担。`
-        : !isConversationalMode
-        ? JSON_AGENT_PROMPT
-        : input.sceneMode === 'credit'
-          ? CREDIT_ANALYSIS_AGENT_PROMPT
-          : ANALYSIS_AGENT_PROMPT;
+        input.sceneMode === 'assistant' ||
+        input.sceneMode === 'credit' ||
+        input.sceneMode === 'investment';
+      const basePrompt =
+        input.sceneMode === 'investment'
+          ? `${ANALYSIS_AGENT_PROMPT}\n\n你是用户的投资理财助手，重点讨论基金、股票、市场走势、资产配置、定投和风险管理。结合用户提供的持仓与市场信息给出有依据的分析，区分事实、估算与不确定性，不承诺收益、不把短期波动包装成确定预测，并提醒投资决策由用户自行承担。`
+          : !isConversationalMode
+            ? JSON_AGENT_PROMPT
+            : input.sceneMode === 'credit'
+              ? CREDIT_ANALYSIS_AGENT_PROMPT
+              : ANALYSIS_AGENT_PROMPT;
 
       const now = Date.now();
       const embeddingCooldownActive = now > 0 && now < embeddingCooldownUntilRef.current;
@@ -440,7 +464,9 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
 
       setEmbeddingDebug(
         createIdleEmbeddingDebug(
-          isConversationalMode && effectiveEnableEmbeddingModel ? effectiveEmbeddingModel.trim() : ''
+          isConversationalMode && effectiveEnableEmbeddingModel
+            ? effectiveEmbeddingModel.trim()
+            : ''
         )
       );
 
@@ -452,7 +478,8 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
         setToast({
           visible: true,
           variant: 'warning',
-          message: '语义召回服务暂不可用，已临时降级为普通分析（10 分钟）。可稍后重试或前往设置页测试嵌入配置。'
+          message:
+            '语义召回服务暂不可用，已临时降级为普通分析（10 分钟）。可稍后重试或前往设置页测试嵌入配置。'
         });
         addLog({
           action: 'assistant.embedding',

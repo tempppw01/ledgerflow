@@ -66,21 +66,21 @@ export function TrendChart({
               className={trendGranularity === 'week' ? 'active' : ''}
               onClick={() => onTrendGranularityChange('week')}
             >
-              按周
+              {t('dashboard.ui.granularityDay')}
             </button>
             <button
               type="button"
               className={trendGranularity === 'month' ? 'active' : ''}
               onClick={() => onTrendGranularityChange('month')}
             >
-              按月
+              {t('dashboard.ui.granularityMonth')}
             </button>
             <button
               type="button"
               className={trendGranularity === 'year' ? 'active' : ''}
               onClick={() => onTrendGranularityChange('year')}
             >
-              按年
+              {t('dashboard.ui.granularityYear')}
             </button>
           </div>
         </div>

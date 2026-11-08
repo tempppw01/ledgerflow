@@ -359,6 +359,8 @@ export function DatabaseSettingsPage() {
     'aliyun-oss': loadObjectStorageConfig('aliyun-oss'),
     's3-compatible': loadObjectStorageConfig('s3-compatible')
   }));
+  const objectStorageConfigsRef = useRef(objectStorageConfigs);
+  objectStorageConfigsRef.current = objectStorageConfigs;
   const [lastWebdavBackupAt, setLastWebdavBackupAt] = useState(() =>
     readStoredLastWebdavBackupAt(loadWebdavConfig())
   );
@@ -560,7 +562,7 @@ export function DatabaseSettingsPage() {
   }, []);
 
   useEffect(() => {
-    const config = objectStorageConfigs[objectStorageProvider];
+    const config = objectStorageConfigsRef.current[objectStorageProvider];
     const storedBackupAt = readStoredLastObjectStorageBackupAt(config);
     if (storedBackupAt) {
       setLastObjectStorageBackupAt((prev) => ({
@@ -1016,11 +1018,21 @@ export function DatabaseSettingsPage() {
           <p className="sync-tip">导出的备份可直接恢复，也可作为迁移至新数据库实例的原始文件。</p>
           <BackupScopeSelector scope={backupScope} onChange={setBackupScope} />
           <div className="database-data-hub-actions">
-            <button type="button" className="primary button-with-icon" onClick={handleExportJson} disabled={!hasHydrated || !canCreateBackup}>
+            <button
+              type="button"
+              className="primary button-with-icon"
+              onClick={handleExportJson}
+              disabled={!hasHydrated || !canCreateBackup}
+            >
               <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
               导出备份文件
             </button>
-            <button type="button" className="button-with-icon" onClick={() => backupInputRef.current?.click()} disabled={busy}>
+            <button
+              type="button"
+              className="button-with-icon"
+              onClick={() => backupInputRef.current?.click()}
+              disabled={busy}
+            >
               <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
               导入备份文件
             </button>
@@ -1067,7 +1079,15 @@ export function DatabaseSettingsPage() {
                 </div>
               </div>
             ) : null}
-            <input ref={backupInputRef} type="file" title="导入 JSON 备份" aria-label="导入 JSON 备份" accept="application/json,.json" style={{ display: 'none' }} onChange={handleBackupFileImport} />
+            <input
+              ref={backupInputRef}
+              type="file"
+              title="导入 JSON 备份"
+              aria-label="导入 JSON 备份"
+              accept="application/json,.json"
+              style={{ display: 'none' }}
+              onChange={handleBackupFileImport}
+            />
           </div>
         </section>
       ) : null}
@@ -1075,21 +1095,54 @@ export function DatabaseSettingsPage() {
       {backupWorkspace === 'import' ? (
         <section className="database-console-workspace">
           <div className="database-console-workspace-head">
-            <div><span className="database-console-kicker">BILL INGESTION</span><h2>账单导入</h2></div>
+            <div>
+              <span className="database-console-kicker">BILL INGESTION</span>
+              <h2>账单导入</h2>
+            </div>
           </div>
           <p className="sync-tip">支持微信、支付宝官方账单 CSV / TXT（含制表符）和微信 XLSX。</p>
           <div className="database-import-actions">
             <label className="field database-import-mode-field" style={{ marginBottom: 0 }}>
               遇到重复账单时
-              <select aria-label="账单导入模式" value={importMode} onChange={(e) => setImportMode(e.target.value as BillImportMode)}>
+              <select
+                aria-label="账单导入模式"
+                value={importMode}
+                onChange={(e) => setImportMode(e.target.value as BillImportMode)}
+              >
                 <option value="incremental">保留旧账单，重复但有变更时更新为最新</option>
                 <option value="merge">用新账单覆盖重复账单的导入字段</option>
                 <option value="overwrite">清空现有交易后重新导入</option>
               </select>
             </label>
-            <button type="button" onClick={() => { setImportSource('wechat'); billInputRef.current?.click(); }} disabled={!hasHydrated}>导入微信账单</button>
-            <button type="button" onClick={() => { setImportSource('alipay'); billInputRef.current?.click(); }} disabled={!hasHydrated}>导入支付宝账单</button>
-            <input ref={billInputRef} type="file" title="导入账单文件" aria-label="导入账单文件" accept=".csv,text/csv,.txt,text/plain,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style={{ display: 'none' }} onChange={handleImportBillFile} />
+            <button
+              type="button"
+              onClick={() => {
+                setImportSource('wechat');
+                billInputRef.current?.click();
+              }}
+              disabled={!hasHydrated}
+            >
+              导入微信账单
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setImportSource('alipay');
+                billInputRef.current?.click();
+              }}
+              disabled={!hasHydrated}
+            >
+              导入支付宝账单
+            </button>
+            <input
+              ref={billInputRef}
+              type="file"
+              title="导入账单文件"
+              aria-label="导入账单文件"
+              accept=".csv,text/csv,.txt,text/plain,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              style={{ display: 'none' }}
+              onChange={handleImportBillFile}
+            />
           </div>
         </section>
       ) : null}
@@ -1122,7 +1175,11 @@ export function DatabaseSettingsPage() {
                   <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
                   {sqlExporting ? '正在导出...' : '下载 SQL 数据库'}
                 </button>
-                {sqlExportStatus ? <span className="sync-tip" role="status">{sqlExportStatus}</span> : null}
+                {sqlExportStatus ? (
+                  <span className="sync-tip" role="status">
+                    {sqlExportStatus}
+                  </span>
+                ) : null}
               </div>
             </div>
           </section>
@@ -1141,391 +1198,395 @@ export function DatabaseSettingsPage() {
       ) : null}
 
       {backupWorkspace === 'webdav' ? (
-      <section className="database-console-workspace database-remote-backup-card">
-        <div className="database-remote-backup-head">
-          <div>
-            <div className="row" style={{ gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
-              <h3 style={{ margin: 0 }}>WebDAV 备份</h3>
+        <section className="database-console-workspace database-remote-backup-card">
+          <div className="database-remote-backup-head">
+            <div>
+              <div className="row" style={{ gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                <h3 style={{ margin: 0 }}>WebDAV 备份</h3>
+                <span className="sync-tip" style={{ whiteSpace: 'nowrap' }}>
+                  上次备份：{lastWebdavBackupText}
+                </span>
+              </div>
+              <p className="sync-tip" style={{ margin: '6px 0 0' }}>
+                用于远程备份与恢复，默认通过同源代理连接。
+              </p>
+            </div>
+            <div className="database-remote-backup-summary">
               <span className="sync-tip" style={{ whiteSpace: 'nowrap' }}>
-                上次备份：{lastWebdavBackupText}
+                {webdav.proxyEnabled ? '代理已启用' : '浏览器直连'}
               </span>
-            </div>
-            <p className="sync-tip" style={{ margin: '6px 0 0' }}>
-              用于远程备份与恢复，默认通过同源代理连接。
-            </p>
-          </div>
-          <div className="database-remote-backup-summary">
-            <span className="sync-tip" style={{ whiteSpace: 'nowrap' }}>
-              {webdav.proxyEnabled ? '代理已启用' : '浏览器直连'}
-            </span>
-            <button
-              type="button"
-              className="database-remote-backup-toggle"
-              aria-expanded={webdavBackupOpen}
-              onClick={() => setWebdavBackupOpen((prev) => !prev)}
-            >
-              {webdavBackupOpen ? '收起配置' : '展开配置'}
-            </button>
-          </div>
-        </div>
-
-        {webdavBackupOpen ? (
-          <div className="database-remote-backup-body">
-            <div className="grid grid-2" style={{ gap: 10 }}>
-              <div className="field" style={{ marginBottom: 0 }}>
-                <label>{webdav.proxyEnabled ? '真实 WebDAV 地址' : 'WebDAV 地址'}</label>
-                <input
-                  title={webdav.proxyEnabled ? '真实 WebDAV 地址' : 'WebDAV 地址'}
-                  placeholder="https://dav.example.com/remote.php/dav/files/user"
-                  value={webdav.endpoint}
-                  onChange={(e) => setWebdav((prev) => ({ ...prev, endpoint: e.target.value }))}
-                />
-              </div>
-              <div className="field" style={{ marginBottom: 0 }}>
-                <label>远程文件路径</label>
-                <input
-                  title="远程文件路径"
-                  placeholder="ledgerflow/backup.json"
-                  value={webdav.remoteFilePath}
-                  onChange={(e) =>
-                    setWebdav((prev) => ({ ...prev, remoteFilePath: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="field" style={{ marginBottom: 0 }}>
-                <label>用户名</label>
-                <input
-                  title="WebDAV 用户名"
-                  placeholder="请输入用户名"
-                  value={webdav.username}
-                  onChange={(e) => setWebdav((prev) => ({ ...prev, username: e.target.value }))}
-                />
-              </div>
-              <div className="field" style={{ marginBottom: 0 }}>
-                <label>密码</label>
-                <PasswordInput
-                  title="WebDAV 密码"
-                  placeholder="请输入密码"
-                  value={webdav.password}
-                  onChange={(e) => setWebdav((prev) => ({ ...prev, password: e.target.value }))}
-                  showLabel="显示密码"
-                  hideLabel="隐藏密码"
-                />
-              </div>
-            </div>
-
-            <div style={{ marginTop: 10 }}>
-              <button type="button" onClick={() => setWebdavAdvancedOpen((prev) => !prev)}>
-                {webdavAdvancedOpen ? '收起高级选项' : '展开高级选项'}
+              <button
+                type="button"
+                className="database-remote-backup-toggle"
+                aria-expanded={webdavBackupOpen}
+                onClick={() => setWebdavBackupOpen((prev) => !prev)}
+              >
+                {webdavBackupOpen ? '收起配置' : '展开配置'}
               </button>
             </div>
+          </div>
 
-            {webdavAdvancedOpen ? (
-              <div className="grid grid-2" style={{ gap: 10, marginTop: 10 }}>
+          {webdavBackupOpen ? (
+            <div className="database-remote-backup-body">
+              <div className="grid grid-2" style={{ gap: 10 }}>
                 <div className="field" style={{ marginBottom: 0 }}>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                    <input
-                      type="checkbox"
-                      checked={webdav.proxyEnabled}
-                      onChange={(e) =>
-                        setWebdav((prev) => ({ ...prev, proxyEnabled: e.target.checked }))
-                      }
-                    />
-                    启用同源代理
-                  </label>
+                  <label>{webdav.proxyEnabled ? '真实 WebDAV 地址' : 'WebDAV 地址'}</label>
+                  <input
+                    title={webdav.proxyEnabled ? '真实 WebDAV 地址' : 'WebDAV 地址'}
+                    placeholder="https://dav.example.com/remote.php/dav/files/user"
+                    value={webdav.endpoint}
+                    onChange={(e) => setWebdav((prev) => ({ ...prev, endpoint: e.target.value }))}
+                  />
                 </div>
                 <div className="field" style={{ marginBottom: 0 }}>
-                  <label>保留版本数</label>
+                  <label>远程文件路径</label>
                   <input
-                    title="保留版本数"
-                    type="number"
-                    min={1}
-                    max={50}
-                    value={webdav.retainedVersions}
+                    title="远程文件路径"
+                    placeholder="ledgerflow/backup.json"
+                    value={webdav.remoteFilePath}
                     onChange={(e) =>
-                      setWebdav((prev) => ({
-                        ...prev,
-                        retainedVersions: Number(e.target.value) || 1
-                      }))
+                      setWebdav((prev) => ({ ...prev, remoteFilePath: e.target.value }))
                     }
                   />
                 </div>
                 <div className="field" style={{ marginBottom: 0 }}>
-                  <label>代理入口路径</label>
+                  <label>用户名</label>
                   <input
-                    title="代理入口路径"
-                    placeholder="/api/webdav"
-                    value={webdav.proxyBasePath}
-                    onChange={(e) =>
-                      setWebdav((prev) => ({ ...prev, proxyBasePath: e.target.value }))
-                    }
-                    disabled={!webdav.proxyEnabled}
+                    title="WebDAV 用户名"
+                    placeholder="请输入用户名"
+                    value={webdav.username}
+                    onChange={(e) => setWebdav((prev) => ({ ...prev, username: e.target.value }))}
                   />
                 </div>
-                {webdav.proxyEnabled ? (
-                  <div className="field" style={{ marginBottom: 0 }}>
-                    <label>代理令牌</label>
-                    <PasswordInput
-                      title="LedgerFlow API 令牌"
-                      placeholder="与服务端 LEDGERFLOW_API_TOKEN 保持一致"
-                      value={serverApiToken}
-                      onChange={(e) => handleServerApiTokenChange(e.target.value)}
-                      showLabel="显示"
-                      hideLabel="隐藏"
-                    />
-                  </div>
-                ) : null}
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label>密码</label>
+                  <PasswordInput
+                    title="WebDAV 密码"
+                    placeholder="请输入密码"
+                    value={webdav.password}
+                    onChange={(e) => setWebdav((prev) => ({ ...prev, password: e.target.value }))}
+                    showLabel="显示密码"
+                    hideLabel="隐藏密码"
+                  />
+                </div>
               </div>
-            ) : null}
 
-            <p className="sync-tip" style={{ margin: '10px 0 0' }}>
-              {webdav.proxyEnabled
-                ? '当前：同源代理已启用。'
-                : '当前：浏览器直连，可能受跨域限制。'}
-            </p>
-            <p className="sync-tip" style={{ margin: '6px 0 0' }}>
-              当前备份范围：{backupScopeSummary}
-            </p>
-            <div style={{ marginTop: 10 }}>
-              <BackupScopeSelector scope={backupScope} onChange={setBackupScope} />
-            </div>
-
-            <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-              <button type="button" onClick={handleSaveWebdavConfig} disabled={busy}>
-                保存
-              </button>
-              <button
-                type="button"
-                className="primary button-with-icon"
-                onClick={() => void handleWebdavUpload()}
-                disabled={busy || !canCreateBackup}
-              >
-                <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
-                立即备份
-              </button>
-              <button
-                type="button"
-                className="button-with-icon"
-                onClick={() => void handleWebdavDownload()}
-                disabled={busy}
-              >
-                <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
-                恢复备份
-              </button>
-              {webdavStatus ? <span className="sync-tip">{webdavStatus}</span> : null}
-            </div>
-          </div>
-        ) : null}
-      </section>
-      ) : null}
-
-      {backupWorkspace === 'object-storage' ? (
-      <section className="database-console-workspace database-remote-backup-card">
-        <div className="database-remote-backup-head">
-          <div>
-            <div className="row" style={{ gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
-              <h3 style={{ margin: 0 }}>对象存储备份</h3>
-              <span className="sync-tip" style={{ whiteSpace: 'nowrap' }}>
-                上次备份：{lastObjectStorageBackupText}
-              </span>
-            </div>
-            <p className="sync-tip" style={{ margin: '6px 0 0' }}>
-              支持阿里云 OSS 与 S3 兼容服务，适合把备份放到自己的 Bucket。
-            </p>
-          </div>
-          <div className="database-remote-backup-summary">
-            <span className="sync-tip" style={{ whiteSpace: 'nowrap' }}>
-              当前：{objectStorageLabel}
-            </span>
-            <button
-              type="button"
-              className="database-remote-backup-toggle"
-              aria-expanded={objectStorageBackupOpen}
-              onClick={() => setObjectStorageBackupOpen((prev) => !prev)}
-            >
-              {objectStorageBackupOpen ? '收起配置' : '展开配置'}
-            </button>
-          </div>
-        </div>
-
-        {objectStorageBackupOpen ? (
-          <div className="database-remote-backup-body">
-            <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-              {OBJECT_STORAGE_OPTIONS.map((item) => (
-                <button
-                  key={item.value}
-                  type="button"
-                  className={objectStorageProvider === item.value ? 'primary' : undefined}
-                  onClick={() => setObjectStorageProvider(item.value)}
-                >
-                  {item.label}
+              <div style={{ marginTop: 10 }}>
+                <button type="button" onClick={() => setWebdavAdvancedOpen((prev) => !prev)}>
+                  {webdavAdvancedOpen ? '收起高级选项' : '展开高级选项'}
                 </button>
-              ))}
-            </div>
-            <p className="sync-tip" style={{ margin: '8px 0 0' }}>
-              {
-                OBJECT_STORAGE_OPTIONS.find((item) => item.value === objectStorageProvider)
-                  ?.description
-              }
-            </p>
+              </div>
 
-            <div className="grid grid-2" style={{ gap: 10, marginTop: 10 }}>
-              <div className="field" style={{ marginBottom: 0 }}>
-                <label>
-                  {objectStorageProvider === 'aliyun-oss' ? 'OSS Endpoint' : 'S3 Endpoint'}
-                </label>
-                <input
-                  title={objectStorageProvider === 'aliyun-oss' ? 'OSS Endpoint' : 'S3 Endpoint'}
-                  placeholder={
-                    objectStorageProvider === 'aliyun-oss'
-                      ? 'https://oss-cn-guangzhou.aliyuncs.com'
-                      : 'https://s3.example.com'
-                  }
-                  value={objectStorage.endpoint}
-                  onChange={(e) => updateObjectStorage({ endpoint: e.target.value })}
-                />
-              </div>
-              <div className="field" style={{ marginBottom: 0 }}>
-                <label>Bucket</label>
-                <input
-                  title="Bucket"
-                  placeholder="ledgerflow-backup"
-                  value={objectStorage.bucket}
-                  onChange={(e) => updateObjectStorage({ bucket: e.target.value })}
-                />
-              </div>
-              <div className="field" style={{ marginBottom: 0 }}>
-                <label>远程文件路径</label>
-                <input
-                  title="远程文件路径"
-                  placeholder="ledgerflow/backup.json"
-                  value={objectStorage.remoteFilePath}
-                  onChange={(e) => updateObjectStorage({ remoteFilePath: e.target.value })}
-                />
-              </div>
-              <div className="field" style={{ marginBottom: 0 }}>
-                <label>AccessKey ID</label>
-                <input
-                  title="AccessKey ID"
-                  placeholder="请输入 AccessKey ID"
-                  value={objectStorage.accessKeyId}
-                  onChange={(e) => updateObjectStorage({ accessKeyId: e.target.value })}
-                />
-              </div>
-              <div className="field" style={{ marginBottom: 0 }}>
-                <label>AccessKey Secret</label>
-                <PasswordInput
-                  title="AccessKey Secret"
-                  placeholder="仅保存在本次会话"
-                  value={objectStorage.accessKeySecret}
-                  onChange={(e) => updateObjectStorage({ accessKeySecret: e.target.value })}
-                  showLabel="显示密钥"
-                  hideLabel="隐藏密钥"
-                />
-              </div>
-            </div>
-
-            <div style={{ marginTop: 10 }}>
-              <button type="button" onClick={() => setObjectStorageAdvancedOpen((prev) => !prev)}>
-                {objectStorageAdvancedOpen ? '收起高级选项' : '展开高级选项'}
-              </button>
-            </div>
-
-            {objectStorageAdvancedOpen ? (
-              <div className="grid grid-2" style={{ gap: 10, marginTop: 10 }}>
-                <div className="field" style={{ marginBottom: 0 }}>
-                  <label>地域</label>
-                  <input
-                    title="地域"
-                    placeholder={
-                      objectStorageProvider === 'aliyun-oss' ? 'cn-guangzhou' : 'us-east-1'
-                    }
-                    value={objectStorage.region}
-                    onChange={(e) => updateObjectStorage({ region: e.target.value })}
-                  />
-                </div>
-                <div className="field" style={{ marginBottom: 0 }}>
-                  <label>保留版本数</label>
-                  <input
-                    title="保留版本数"
-                    type="number"
-                    min={1}
-                    max={50}
-                    value={objectStorage.retainedVersions}
-                    onChange={(e) =>
-                      updateObjectStorage({ retainedVersions: Number(e.target.value) || 1 })
-                    }
-                  />
-                </div>
-                {objectStorageProvider === 's3-compatible' ? (
+              {webdavAdvancedOpen ? (
+                <div className="grid grid-2" style={{ gap: 10, marginTop: 10 }}>
                   <div className="field" style={{ marginBottom: 0 }}>
                     <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                       <input
                         type="checkbox"
-                        checked={objectStorage.forcePathStyle}
-                        onChange={(e) => updateObjectStorage({ forcePathStyle: e.target.checked })}
+                        checked={webdav.proxyEnabled}
+                        onChange={(e) =>
+                          setWebdav((prev) => ({ ...prev, proxyEnabled: e.target.checked }))
+                        }
                       />
-                      使用路径风格地址
+                      启用同源代理
                     </label>
                   </div>
-                ) : null}
+                  <div className="field" style={{ marginBottom: 0 }}>
+                    <label>保留版本数</label>
+                    <input
+                      title="保留版本数"
+                      type="number"
+                      min={1}
+                      max={50}
+                      value={webdav.retainedVersions}
+                      onChange={(e) =>
+                        setWebdav((prev) => ({
+                          ...prev,
+                          retainedVersions: Number(e.target.value) || 1
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="field" style={{ marginBottom: 0 }}>
+                    <label>代理入口路径</label>
+                    <input
+                      title="代理入口路径"
+                      placeholder="/api/webdav"
+                      value={webdav.proxyBasePath}
+                      onChange={(e) =>
+                        setWebdav((prev) => ({ ...prev, proxyBasePath: e.target.value }))
+                      }
+                      disabled={!webdav.proxyEnabled}
+                    />
+                  </div>
+                  {webdav.proxyEnabled ? (
+                    <div className="field" style={{ marginBottom: 0 }}>
+                      <label>代理令牌</label>
+                      <PasswordInput
+                        title="LedgerFlow API 令牌"
+                        placeholder="与服务端 LEDGERFLOW_API_TOKEN 保持一致"
+                        value={serverApiToken}
+                        onChange={(e) => handleServerApiTokenChange(e.target.value)}
+                        showLabel="显示"
+                        hideLabel="隐藏"
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <p className="sync-tip" style={{ margin: '10px 0 0' }}>
+                {webdav.proxyEnabled
+                  ? '当前：同源代理已启用。'
+                  : '当前：浏览器直连，可能受跨域限制。'}
+              </p>
+              <p className="sync-tip" style={{ margin: '6px 0 0' }}>
+                当前备份范围：{backupScopeSummary}
+              </p>
+              <div style={{ marginTop: 10 }}>
+                <BackupScopeSelector scope={backupScope} onChange={setBackupScope} />
               </div>
-            ) : null}
 
-            <p className="sync-tip" style={{ margin: '10px 0 0' }}>
-              如遇到跨域提示，需要在 Bucket 里允许网页访问；密钥不会长期保存到本地。
-            </p>
-            <p className="sync-tip" style={{ margin: '6px 0 0' }}>
-              当前备份范围：{backupScopeSummary}
-            </p>
-            <div style={{ marginTop: 10 }}>
-              <BackupScopeSelector scope={backupScope} onChange={setBackupScope} />
+              <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                <button type="button" onClick={handleSaveWebdavConfig} disabled={busy}>
+                  保存
+                </button>
+                <button
+                  type="button"
+                  className="primary button-with-icon"
+                  onClick={() => void handleWebdavUpload()}
+                  disabled={busy || !canCreateBackup}
+                >
+                  <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
+                  立即备份
+                </button>
+                <button
+                  type="button"
+                  className="button-with-icon"
+                  onClick={() => void handleWebdavDownload()}
+                  disabled={busy}
+                >
+                  <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
+                  恢复备份
+                </button>
+                {webdavStatus ? <span className="sync-tip">{webdavStatus}</span> : null}
+              </div>
             </div>
+          ) : null}
+        </section>
+      ) : null}
 
-            <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-              <button type="button" onClick={handleSaveObjectStorageConfig} disabled={busy}>
-                保存
-              </button>
+      {backupWorkspace === 'object-storage' ? (
+        <section className="database-console-workspace database-remote-backup-card">
+          <div className="database-remote-backup-head">
+            <div>
+              <div className="row" style={{ gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                <h3 style={{ margin: 0 }}>对象存储备份</h3>
+                <span className="sync-tip" style={{ whiteSpace: 'nowrap' }}>
+                  上次备份：{lastObjectStorageBackupText}
+                </span>
+              </div>
+              <p className="sync-tip" style={{ margin: '6px 0 0' }}>
+                支持阿里云 OSS 与 S3 兼容服务，适合把备份放到自己的 Bucket。
+              </p>
+            </div>
+            <div className="database-remote-backup-summary">
+              <span className="sync-tip" style={{ whiteSpace: 'nowrap' }}>
+                当前：{objectStorageLabel}
+              </span>
               <button
                 type="button"
-                className="primary button-with-icon"
-                onClick={() => void handleObjectStorageUpload()}
-                disabled={busy || !canCreateBackup}
+                className="database-remote-backup-toggle"
+                aria-expanded={objectStorageBackupOpen}
+                onClick={() => setObjectStorageBackupOpen((prev) => !prev)}
               >
-                <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
-                立即备份
+                {objectStorageBackupOpen ? '收起配置' : '展开配置'}
               </button>
-              <button
-                type="button"
-                className="button-with-icon"
-                onClick={() => void handleObjectStorageDownload()}
-                disabled={busy}
-              >
-                <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
-                恢复备份
-              </button>
-              {objectStorageStatus ? <span className="sync-tip">{objectStorageStatus}</span> : null}
             </div>
           </div>
-        ) : null}
-      </section>
+
+          {objectStorageBackupOpen ? (
+            <div className="database-remote-backup-body">
+              <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+                {OBJECT_STORAGE_OPTIONS.map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    className={objectStorageProvider === item.value ? 'primary' : undefined}
+                    onClick={() => setObjectStorageProvider(item.value)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+              <p className="sync-tip" style={{ margin: '8px 0 0' }}>
+                {
+                  OBJECT_STORAGE_OPTIONS.find((item) => item.value === objectStorageProvider)
+                    ?.description
+                }
+              </p>
+
+              <div className="grid grid-2" style={{ gap: 10, marginTop: 10 }}>
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label>
+                    {objectStorageProvider === 'aliyun-oss' ? 'OSS Endpoint' : 'S3 Endpoint'}
+                  </label>
+                  <input
+                    title={objectStorageProvider === 'aliyun-oss' ? 'OSS Endpoint' : 'S3 Endpoint'}
+                    placeholder={
+                      objectStorageProvider === 'aliyun-oss'
+                        ? 'https://oss-cn-guangzhou.aliyuncs.com'
+                        : 'https://s3.example.com'
+                    }
+                    value={objectStorage.endpoint}
+                    onChange={(e) => updateObjectStorage({ endpoint: e.target.value })}
+                  />
+                </div>
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label>Bucket</label>
+                  <input
+                    title="Bucket"
+                    placeholder="ledgerflow-backup"
+                    value={objectStorage.bucket}
+                    onChange={(e) => updateObjectStorage({ bucket: e.target.value })}
+                  />
+                </div>
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label>远程文件路径</label>
+                  <input
+                    title="远程文件路径"
+                    placeholder="ledgerflow/backup.json"
+                    value={objectStorage.remoteFilePath}
+                    onChange={(e) => updateObjectStorage({ remoteFilePath: e.target.value })}
+                  />
+                </div>
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label>AccessKey ID</label>
+                  <input
+                    title="AccessKey ID"
+                    placeholder="请输入 AccessKey ID"
+                    value={objectStorage.accessKeyId}
+                    onChange={(e) => updateObjectStorage({ accessKeyId: e.target.value })}
+                  />
+                </div>
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label>AccessKey Secret</label>
+                  <PasswordInput
+                    title="AccessKey Secret"
+                    placeholder="仅保存在本次会话"
+                    value={objectStorage.accessKeySecret}
+                    onChange={(e) => updateObjectStorage({ accessKeySecret: e.target.value })}
+                    showLabel="显示密钥"
+                    hideLabel="隐藏密钥"
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginTop: 10 }}>
+                <button type="button" onClick={() => setObjectStorageAdvancedOpen((prev) => !prev)}>
+                  {objectStorageAdvancedOpen ? '收起高级选项' : '展开高级选项'}
+                </button>
+              </div>
+
+              {objectStorageAdvancedOpen ? (
+                <div className="grid grid-2" style={{ gap: 10, marginTop: 10 }}>
+                  <div className="field" style={{ marginBottom: 0 }}>
+                    <label>地域</label>
+                    <input
+                      title="地域"
+                      placeholder={
+                        objectStorageProvider === 'aliyun-oss' ? 'cn-guangzhou' : 'us-east-1'
+                      }
+                      value={objectStorage.region}
+                      onChange={(e) => updateObjectStorage({ region: e.target.value })}
+                    />
+                  </div>
+                  <div className="field" style={{ marginBottom: 0 }}>
+                    <label>保留版本数</label>
+                    <input
+                      title="保留版本数"
+                      type="number"
+                      min={1}
+                      max={50}
+                      value={objectStorage.retainedVersions}
+                      onChange={(e) =>
+                        updateObjectStorage({ retainedVersions: Number(e.target.value) || 1 })
+                      }
+                    />
+                  </div>
+                  {objectStorageProvider === 's3-compatible' ? (
+                    <div className="field" style={{ marginBottom: 0 }}>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        <input
+                          type="checkbox"
+                          checked={objectStorage.forcePathStyle}
+                          onChange={(e) =>
+                            updateObjectStorage({ forcePathStyle: e.target.checked })
+                          }
+                        />
+                        使用路径风格地址
+                      </label>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <p className="sync-tip" style={{ margin: '10px 0 0' }}>
+                如遇到跨域提示，需要在 Bucket 里允许网页访问；密钥不会长期保存到本地。
+              </p>
+              <p className="sync-tip" style={{ margin: '6px 0 0' }}>
+                当前备份范围：{backupScopeSummary}
+              </p>
+              <div style={{ marginTop: 10 }}>
+                <BackupScopeSelector scope={backupScope} onChange={setBackupScope} />
+              </div>
+
+              <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                <button type="button" onClick={handleSaveObjectStorageConfig} disabled={busy}>
+                  保存
+                </button>
+                <button
+                  type="button"
+                  className="primary button-with-icon"
+                  onClick={() => void handleObjectStorageUpload()}
+                  disabled={busy || !canCreateBackup}
+                >
+                  <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
+                  立即备份
+                </button>
+                <button
+                  type="button"
+                  className="button-with-icon"
+                  onClick={() => void handleObjectStorageDownload()}
+                  disabled={busy}
+                >
+                  <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
+                  恢复备份
+                </button>
+                {objectStorageStatus ? (
+                  <span className="sync-tip">{objectStorageStatus}</span>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+        </section>
       ) : null}
 
       {backupWorkspace === 'local' ? (
-      <section className="database-console-danger-zone">
-        <h3 style={{ marginTop: 0 }}>数据重制</h3>
-        <p className="sync-tip">清空所有账户账单（交易记录），保留账户与分类。</p>
-        <button
-          type="button"
-          className="danger"
-          onClick={() => {
-            setClearBillsConfirmText('');
-            setClearBillsOpen(true);
-          }}
-        >
-          一键清空所有账户账单
-        </button>
-      </section>
+        <section className="database-console-danger-zone">
+          <h3 style={{ marginTop: 0 }}>数据重制</h3>
+          <p className="sync-tip">清空所有账户账单（交易记录），保留账户与分类。</p>
+          <button
+            type="button"
+            className="danger"
+            onClick={() => {
+              setClearBillsConfirmText('');
+              setClearBillsOpen(true);
+            }}
+          >
+            一键清空所有账户账单
+          </button>
+        </section>
       ) : null}
 
       {webdavRestoreDialogOpen ? (

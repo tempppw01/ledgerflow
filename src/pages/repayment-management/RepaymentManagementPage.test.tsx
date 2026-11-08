@@ -24,7 +24,12 @@ vi.mock('../../shared/store/useAiSettings', () => ({
 }));
 
 vi.mock('../../shared/store/useFinanceStore', () => ({
-  useFinanceStore: (selector: (state: { transactions: never[]; accounts: { id: string; name: string }[] }) => unknown) =>
+  useFinanceStore: (
+    selector: (state: {
+      transactions: never[];
+      accounts: { id: string; name: string }[];
+    }) => unknown
+  ) =>
     selector({
       transactions: [],
       accounts: [{ id: 'account-1', name: '工资卡' }]
@@ -408,11 +413,13 @@ describe('RepaymentManagementPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '登记测试消费贷本期还款' }));
 
-    expect(screen.getByRole('dialog', { name: '确认登记本期还款' })).toBeInTheDocument();
-    expect(screen.getByText(/登记今日已还/)).toHaveTextContent('¥500.00');
+    const confirmDialog = screen.getByRole('dialog', { name: '确认登记本期还款' });
+    expect(confirmDialog).toBeInTheDocument();
+    expect(confirmDialog).toHaveTextContent('本次登记金额');
+    expect(confirmDialog).toHaveTextContent('¥500.00');
     expect(appPreferencesMock.state.addRepaymentRecord).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole('button', { name: '确认已还' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认登记 ¥500.00' }));
 
     expect(appPreferencesMock.state.addRepaymentRecord).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -569,8 +576,6 @@ describe('RepaymentManagementPage', () => {
     expect(screen.getByText(/已自动估算：¥1376\.33/)).toBeInTheDocument();
   });
 
-
-
   it('贷款详情使用本期应还和剩余期数，不展示最低还款或重复月供', () => {
     appPreferencesMock.state.debts = [
       {
@@ -694,7 +699,9 @@ describe('RepaymentManagementPage', () => {
     firstRender.unmount();
 
     render(page());
-    expect(screen.getByText('更多详情', { exact: true }).closest('details')).toHaveAttribute('open');
+    expect(screen.getByText('更多详情', { exact: true }).closest('details')).toHaveAttribute(
+      'open'
+    );
   });
 
   it('会在重新打开页面后保留策略分析和表单更多设置的展开状态', async () => {
@@ -711,19 +718,29 @@ describe('RepaymentManagementPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
     fireEvent.click(screen.getByText('更多设置', { exact: true }));
 
-    expect(screen.getByText('查看完整分析', { exact: true }).closest('details')).toHaveAttribute('open');
-    expect(screen.getByText('更多设置', { exact: true }).closest('details')).toHaveAttribute('open');
+    expect(screen.getByText('查看完整分析', { exact: true }).closest('details')).toHaveAttribute(
+      'open'
+    );
+    expect(screen.getByText('更多设置', { exact: true }).closest('details')).toHaveAttribute(
+      'open'
+    );
     await waitFor(() => {
-      expect(window.localStorage.getItem('ledgerflow-repayment-collapse-state-v1')).toContain(
-        'debtFormMoreSettingsOpen'
-      );
+      const savedState = window.localStorage.getItem('ledgerflow-repayment-collapse-state-v1');
+      expect(savedState).toContain('"aiDetailsOpen":true');
+      expect(savedState).toContain('"debtFormMoreSettingsOpen":true');
     });
     firstRender.unmount();
 
     render(page());
-    expect(screen.getByText('查看完整分析', { exact: true }).closest('details')).toHaveAttribute('open');
+    await waitFor(() => {
+      expect(screen.getByText('查看完整分析', { exact: true }).closest('details')).toHaveAttribute(
+        'open'
+      );
+    });
     fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
-    expect(screen.getByText('更多设置', { exact: true }).closest('details')).toHaveAttribute('open');
+    expect(screen.getByText('更多设置', { exact: true }).closest('details')).toHaveAttribute(
+      'open'
+    );
   });
 
   it('手动逐期计划从下一次还款日和已还期数后的期号开始', () => {
@@ -836,11 +853,18 @@ describe('RepaymentManagementPage', () => {
     expect(screen.getByText('2026/10')).toBeInTheDocument();
     expect(screen.getByText('其中利息')).toBeInTheDocument();
     expect(screen.getByText(/未来利息约/)).toBeInTheDocument();
-    fireEvent.change(screen.getByRole('slider', { name: '查看还款期次' }), { target: { value: '1' } });
+    fireEvent.change(screen.getByRole('slider', { name: '查看还款期次' }), {
+      target: { value: '1' }
+    });
     expect(screen.getByRole('slider', { name: '查看还款期次' })).toHaveValue('1');
     fireEvent.click(screen.getByRole('button', { name: '还款后本金' }));
-    expect(screen.getByRole('button', { name: '还款后本金' })).toHaveAttribute('aria-pressed', 'true');
-    const chart = screen.getByRole('slider', { name: '查看还款期次' }).closest('.debt-pressure-chart')!;
+    expect(screen.getByRole('button', { name: '还款后本金' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    const chart = screen
+      .getByRole('slider', { name: '查看还款期次' })
+      .closest('.debt-pressure-chart')!;
     fireEvent.pointerEnter(chart.querySelectorAll('.debt-pressure-hit-area')[2]);
     expect(screen.getByRole('tooltip')).toHaveTextContent('还款后本金');
     expect(screen.getByRole('slider', { name: '查看还款期次' })).toHaveValue('2');

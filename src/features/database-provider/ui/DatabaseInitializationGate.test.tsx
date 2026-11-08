@@ -87,7 +87,7 @@ describe('DatabaseInitializationGate', () => {
     expect(screen.queryByText('正在检查数据库初始化状态...')).not.toBeInTheDocument();
   });
 
-  it('keeps the application visible when status revalidation temporarily fails', async () => {
+  it('keeps the application visible and retries before showing a status warning', async () => {
     const cachedStatus = {
       initialized: true,
       provider: 'sqlite',
@@ -107,9 +107,39 @@ describe('DatabaseInitializationGate', () => {
 
     expect(screen.getByText('应用内容')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: '初始化数据存储' })).not.toBeInTheDocument();
+    await waitFor(() => expect(getDatabaseSetupStatusMock).toHaveBeenCalledTimes(3), {
+      timeout: 3000
+    });
     expect(
       await screen.findByText('数据库状态检查暂时失败，已继续使用上次确认的配置。')
     ).toBeInTheDocument();
+  });
+
+  it('does not show a warning when a retry succeeds', async () => {
+    const cachedStatus = {
+      initialized: true,
+      provider: 'sqlite',
+      initializedAt: '2026-07-17T00:00:00.000Z',
+      allowedProviders: ['sqlite'],
+      configuredProvider: 'sqlite',
+      configurationMismatch: false
+    };
+    localStorage.setItem('ledgerflow-database-status-cache', JSON.stringify(cachedStatus));
+    getDatabaseSetupStatusMock
+      .mockRejectedValueOnce(new Error('SQLITE_BUSY'))
+      .mockResolvedValue(cachedStatus);
+
+    render(
+      <DatabaseInitializationGate>
+        <div>应用内容</div>
+      </DatabaseInitializationGate>
+    );
+
+    expect(screen.getByText('应用内容')).toBeInTheDocument();
+    await waitFor(() => expect(getDatabaseSetupStatusMock).toHaveBeenCalledTimes(2));
+    expect(
+      screen.queryByText('数据库状态检查暂时失败,已继续使用上次确认的配置。')
+    ).not.toBeInTheDocument();
   });
 
   it('reuses an initialized status after the gate is remounted', async () => {

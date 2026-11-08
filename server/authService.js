@@ -1,4 +1,3 @@
-import { DatabaseSync } from 'node:sqlite';
 import {
   createHash,
   randomBytes,
@@ -6,8 +5,8 @@ import {
   scrypt,
   timingSafeEqual
 } from 'node:crypto';
-import { getSqliteDatabasePath } from './databaseProvider.js';
 import { withMysqlConnection } from './databaseConnection.js';
+import { openSqliteDatabase } from './sqliteDatabase.js';
 
 const DEFAULT_LEDGER_USER_ID = 'default';
 const SESSION_LAST_SEEN_WRITE_INTERVAL_MS = 15 * 60 * 1000;
@@ -116,8 +115,7 @@ function registrationMode(env) {
 
 async function withAuthDatabase(provider, handler, env = process.env) {
   if (provider === 'sqlite') {
-    const database = new DatabaseSync(getSqliteDatabasePath(env));
-    database.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
+    const database = openSqliteDatabase(env);
     try {
       return await handler({
         dialect: 'sqlite',

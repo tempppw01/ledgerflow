@@ -3,13 +3,13 @@ import { formatDateTime } from '../../../shared/lib/format';
 import { useDebugLogStore } from '../../../shared/store/useDebugLogStore';
 
 export function DebugLogPanel() {
-  if (!import.meta.env.DEV) {
-    return null;
-  }
-
   const logs = useDebugLogStore((s) => s.logs);
   const clearLogs = useDebugLogStore((s) => s.clearLogs);
   const [open, setOpen] = useState(false);
+
+  if (!import.meta.env.DEV) {
+    return null;
+  }
 
   return (
     <aside className="debug-log-fab-wrap">
@@ -48,7 +48,9 @@ export function DebugLogPanel() {
                     <div className="debug-log-meta">
                       <span className="mono-inline">{formatDateTime(item.timestamp)}</span>
                       <span className="badge badge-primary">{item.action}</span>
-                      {item.dbType ? <span className="badge">{item.dbType.toUpperCase()}</span> : null}
+                      {item.dbType ? (
+                        <span className="badge">{item.dbType.toUpperCase()}</span>
+                      ) : null}
                     </div>
                     <p>{item.message}</p>
                   </article>

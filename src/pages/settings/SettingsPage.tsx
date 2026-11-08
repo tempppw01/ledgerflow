@@ -12,6 +12,11 @@ import {
   type AuthSession
 } from '../../shared/api/authClient';
 import { CIRCLE_USER_ICON_URL, MONITOR_ICON_URL } from '../../shared/config/brandAssets';
+import {
+  AI_MODEL_PRESETS,
+  getAiModelDisplayLabel,
+  mergeAiModelOptions
+} from '../../shared/config/aiModels';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { PasswordInput } from '../../shared/ui/PasswordInput';
 import { Toast } from '../../shared/ui/Toast';
@@ -22,33 +27,8 @@ const AI_PROVIDER_PRESETS = [
   { value: 'https://generativelanguage.googleapis.com/v1beta/openai', label: 'Gemini' },
   { value: 'https://api.deepseek.com/v1', label: 'DeepSeek' },
   { value: 'https://openrouter.ai/api/v1', label: 'OpenRouter' },
-  { value: 'https://api.siliconflow.cn/v1', label: '硅基流动' }
+  { value: 'https://api.siliconflow.cn/v1', labelKey: 'settings.providerPreset.siliconflow' }
 ] as const;
-
-const MODEL_PRESETS = [
-  'gpt-6-luna',
-  'claude-haiku-5-5',
-  'gemini-3.8-flash',
-  'glm-5.3',
-  'grok-4.7',
-  'gpt-5.5',
-  'gpt-5.4-mini',
-  'gpt-5.2',
-  'gemini-2.5-flash-lite',
-  'gpt-4o-mini',
-  'gpt-4o',
-  'gpt-4-turbo',
-  'gpt-3.5-turbo',
-  'gemini-2.0-flash',
-  'gemini-1.5-pro',
-  'claude-sonnet-4-20250514',
-  'claude-3-5-sonnet-20241022',
-  'deepseek-chat',
-  'deepseek-reasoner',
-  'qwen-turbo',
-  'qwen-plus',
-  'glm-4-flash'
-];
 
 const EMBEDDING_MODEL_PRESETS = [
   'jina-embeddings-v3',
@@ -83,7 +63,7 @@ function isLikelyEmbeddingModelName(modelId: string): boolean {
 }
 
 function buildEmbeddingModelCandidates(remoteModels: string[]): string[] {
-  return mergeModelOptions(
+  return mergeAiModelOptions(
     '',
     EMBEDDING_MODEL_PRESETS,
     remoteModels.filter(isLikelyEmbeddingModelName)
@@ -92,30 +72,47 @@ function buildEmbeddingModelCandidates(remoteModels: string[]): string[] {
 
 function getEmbeddingModelValidationMessage(modelId: string, candidates: string[]): string {
   const value = modelId.trim();
-  if (!value) return '请填写嵌入模型名称。';
-  if (/\s{2,}/.test(value)) return '模型名包含连续空格，建议检查是否误粘贴。';
-  if (/[^\w./:-]/.test(value)) return '模型名包含非常见字符，请确认是否拼写有误。';
+  if (!value) return 'settings.embeddingChannel.validation.empty';
+  if (/\s{2,}/.test(value)) return 'settings.embeddingChannel.validation.spaces';
+  if (/[^\w./:-]/.test(value)) return 'settings.embeddingChannel.validation.characters';
   if (candidates.includes(value)) return '';
   if (!isLikelyEmbeddingModelName(value)) {
-    return '该模型名不像常见 embedding 模型，建议优先选择下拉候选或检查拼写。';
+    return 'settings.embeddingChannel.validation.uncommon';
   }
-  return '该模型不在当前候选列表中，请确认服务端已支持此 embedding 模型。';
+  return 'settings.embeddingChannel.validation.notInList';
 }
 
 function normalizeProviderBaseUrl(url: string): string {
   return url.trim().replace(/\/+$/, '');
 }
 
-function formatAccountSessionTime(value: string | null) {
-  if (!value) return '刚刚';
+function formatAccountSessionTime(value: string | null, locale: 'zh' | 'en'): string | null {
+  if (!value) return null;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '刚刚';
-  return new Intl.DateTimeFormat('zh-CN', {
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'zh-CN', {
     month: 'numeric',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
   }).format(date);
+}
+
+type StatusMessage =
+  | { key: string; params?: Record<string, unknown>; messageKey?: string }
+  | { text: string }
+  | null;
+
+function resolveStatusMessage(
+  message: StatusMessage,
+  t: (key: string, params?: Record<string, unknown>) => string
+): string {
+  if (!message) return '';
+  if ('text' in message) return message.text;
+  const params = message.messageKey
+    ? { ...message.params, message: t(message.messageKey) }
+    : message.params;
+  return t(message.key, params);
 }
 
 interface ModelSelectorProps {
@@ -126,25 +123,6 @@ interface ModelSelectorProps {
   onChange: (value: string) => void;
 }
 
-function getModelDisplayLabel(modelId: string): string {
-  const value = modelId.trim();
-  if (!value) return value;
-  return value === 'gpt-6-luna' ? `${value}（推荐）` : value;
-}
-
-function mergeModelOptions(value: string, presets: string[], remoteModels: string[]): string[] {
-  const uniq = new Set<string>();
-  const options = [value, ...remoteModels, ...presets]
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .filter((item) => {
-      if (uniq.has(item)) return false;
-      uniq.add(item);
-      return true;
-    });
-  return options;
-}
-
 interface SettingsPageProps {
   variant?: 'page' | 'overlay';
   onClose?: () => void;
@@ -152,16 +130,24 @@ interface SettingsPageProps {
 
 type SettingsWorkspace = 'account' | 'openai' | 'tavily' | 'embedding' | 'advanced';
 
-const SETTINGS_WORKSPACES: Array<{ value: SettingsWorkspace; label: string }> = [
-  { value: 'account', label: '账号与安全' },
-  { value: 'openai', label: 'OpenAI' },
-  { value: 'tavily', label: 'Tavily' },
-  { value: 'embedding', label: '嵌入渠道' },
-  { value: 'advanced', label: '高级设置' }
+const SETTINGS_WORKSPACES: Array<{ value: SettingsWorkspace; labelKey: string }> = [
+  { value: 'account', labelKey: 'settings.workspaces.account' },
+  { value: 'openai', labelKey: 'settings.workspaces.openai' },
+  { value: 'tavily', labelKey: 'settings.workspaces.tavily' },
+  { value: 'embedding', labelKey: 'settings.workspaces.embedding' },
+  { value: 'advanced', labelKey: 'settings.workspaces.advanced' }
 ];
 
+function getProviderPresetLabel(
+  preset: { label?: string; labelKey?: string },
+  t: (key: string) => string
+): string {
+  if (preset.label) return preset.label;
+  return preset.labelKey ? t(preset.labelKey) : '';
+}
+
 function ModelSelector({ label, hint, value, presets, onChange }: ModelSelectorProps) {
-  const options = useMemo(() => mergeModelOptions(value, presets, []), [value, presets]);
+  const options = useMemo(() => mergeAiModelOptions(value, presets), [value, presets]);
 
   return (
     <div className="field settings-model-field">
@@ -171,7 +157,7 @@ function ModelSelector({ label, hint, value, presets, onChange }: ModelSelectorP
         <select value={value} onChange={(e) => onChange(e.target.value)}>
           {options.map((item) => (
             <option key={item} value={item}>
-              {getModelDisplayLabel(item)}
+              {getAiModelDisplayLabel(item)}
             </option>
           ))}
         </select>
@@ -220,25 +206,26 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
   const [activeWorkspace, setActiveWorkspace] = useState<SettingsWorkspace>('account');
   const [toastVisible, setToastVisible] = useState(false);
   const [displayName, setDisplayName] = useState(user.displayName);
-  const [profileStatus, setProfileStatus] = useState('');
+  const [profileStatus, setProfileStatus] = useState<StatusMessage>(null);
   const [profileSaving, setProfileSaving] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordStatus, setPasswordStatus] = useState('');
+  const [passwordStatus, setPasswordStatus] = useState<StatusMessage>(null);
+  const [passwordStatusTone, setPasswordStatusTone] = useState<'error' | 'success' | ''>('');
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordVerified, setPasswordVerified] = useState(false);
   const [passwordVerifying, setPasswordVerifying] = useState(false);
-  const [sessionStatus, setSessionStatus] = useState('');
+  const [sessionStatus, setSessionStatus] = useState<StatusMessage>(null);
   const [sessionSaving, setSessionSaving] = useState(false);
   const [sessions, setSessions] = useState<AuthSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
-  const [sessionsError, setSessionsError] = useState('');
+  const [sessionsError, setSessionsError] = useState<StatusMessage>(null);
   const [embeddingTestStatus, setEmbeddingTestStatus] = useState<{
     loading: boolean;
     ok: boolean;
-    message: string;
-  }>({ loading: false, ok: false, message: '' });
+    message: StatusMessage;
+  }>({ loading: false, ok: false, message: null });
   const embeddingModelCandidates = useMemo(() => buildEmbeddingModelCandidates([]), []);
   const embeddingChannelModelValidation = useMemo(
     () => getEmbeddingModelValidationMessage(embeddingChannel.model, embeddingModelCandidates),
@@ -261,16 +248,12 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
   );
   const providerPresetValue = selectedProviderPreset?.value || (baseUrl.trim() ? '__custom__' : '');
   const providerSummary = selectedProviderPreset
-    ? `${
-        currentLanguage === 'en' ? 'Selected provider' : '已选择供应商'
-      }：${selectedProviderPreset.label}`
+    ? t('settings.provider.selected', {
+        name: getProviderPresetLabel(selectedProviderPreset, t)
+      })
     : baseUrl.trim()
-      ? currentLanguage === 'en'
-        ? 'Using a custom provider URL'
-        : '当前使用自定义供应商地址'
-      : currentLanguage === 'en'
-        ? 'Choose a provider preset for quick fill'
-        : '可先选择渠道商快速填充';
+      ? t('settings.provider.custom')
+      : t('settings.provider.choose');
   const embeddingPanelHasContent = Boolean(
     embeddingChannel.enabled ||
     embeddingChannel.baseUrl.trim() ||
@@ -278,16 +261,10 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
     embeddingChannel.model.trim()
   );
   const embeddingPanelStatus = embeddingOverrideActive
-    ? currentLanguage === 'en'
-      ? 'Override active'
-      : '覆盖中'
+    ? t('settings.embeddingChannel.statusOverride')
     : embeddingChannel.enabled
-      ? currentLanguage === 'en'
-        ? 'Enabled'
-        : '已启用'
-      : currentLanguage === 'en'
-        ? 'Disabled'
-        : '未启用';
+      ? t('settings.embeddingChannel.statusEnabled')
+      : t('settings.embeddingChannel.statusDisabled');
   const embeddingEffectiveBaseUrl = embeddingOverrideActive
     ? embeddingChannel.baseUrl.trim() || baseUrl
     : baseUrl;
@@ -296,12 +273,8 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
     : embeddingModel.trim();
   const [embeddingPanelExpanded, setEmbeddingPanelExpanded] = useState(embeddingPanelHasContent);
   const embeddingPanelToggleText = embeddingPanelExpanded
-    ? currentLanguage === 'en'
-      ? 'Collapse'
-      : '收起'
-    : currentLanguage === 'en'
-      ? 'Expand'
-      : '展开';
+    ? t('settings.embeddingChannel.collapse')
+    : t('settings.embeddingChannel.expand');
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -329,11 +302,15 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
   const loadAccountSessions = useCallback(async () => {
     try {
       setSessionsLoading(true);
-      setSessionsError('');
+      setSessionsError(null);
       const result = await getAccountSessions();
       setSessions(result.sessions);
     } catch (error) {
-      setSessionsError(error instanceof Error ? error.message : '无法加载登录设备。');
+      setSessionsError(
+        error instanceof Error
+          ? { text: error.message }
+          : { key: 'settings.account.sessionsLoadFailed' }
+      );
     } finally {
       setSessionsLoading(false);
     }
@@ -347,12 +324,16 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
     event.preventDefault();
     try {
       setProfileSaving(true);
-      setProfileStatus('');
+      setProfileStatus(null);
       const updatedUser = await updateProfile({ displayName });
       setDisplayName(updatedUser.displayName);
-      setProfileStatus('显示名称已保存。');
+      setProfileStatus({ key: 'settings.account.profileSaved' });
     } catch (error) {
-      setProfileStatus(error instanceof Error ? error.message : '保存账户资料失败。');
+      setProfileStatus(
+        error instanceof Error
+          ? { text: error.message }
+          : { key: 'settings.account.profileSaveFailed' }
+      );
     } finally {
       setProfileSaving(false);
     }
@@ -363,32 +344,47 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
     if (!passwordVerified) {
       try {
         setPasswordVerifying(true);
-        setPasswordStatus('正在验证当前密码…');
+        setPasswordStatusTone('');
+        setPasswordStatus({ key: 'settings.account.verifyingPassword' });
         await verifyAccountPassword({ currentPassword });
         setPasswordVerified(true);
-        setPasswordStatus('验证通过，请设置新密码。');
+        setPasswordStatusTone('success');
+        setPasswordStatus({ key: 'settings.account.passwordVerified' });
       } catch (error) {
-        setPasswordStatus(error instanceof Error ? error.message : '密码验证失败。');
+        setPasswordStatusTone('error');
+        setPasswordStatus(
+          error instanceof Error
+            ? { text: error.message }
+            : { key: 'settings.account.passwordVerifyFailed' }
+        );
       } finally {
         setPasswordVerifying(false);
       }
       return;
     }
     if (newPassword !== confirmPassword) {
-      setPasswordStatus('两次输入的新密码不一致。');
+      setPasswordStatusTone('error');
+      setPasswordStatus({ key: 'settings.account.passwordMismatch' });
       return;
     }
     try {
       setPasswordSaving(true);
-      setPasswordStatus('');
+      setPasswordStatusTone('');
+      setPasswordStatus(null);
       await changeAccountPassword({ currentPassword, newPassword });
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setPasswordVerified(false);
-      setPasswordStatus('密码已更新，其他已登录设备已退出。');
+      setPasswordStatusTone('success');
+      setPasswordStatus({ key: 'settings.account.passwordUpdated' });
     } catch (error) {
-      setPasswordStatus(error instanceof Error ? error.message : '修改密码失败。');
+      setPasswordStatusTone('error');
+      setPasswordStatus(
+        error instanceof Error
+          ? { text: error.message }
+          : { key: 'settings.account.passwordChangeFailed' }
+      );
     } finally {
       setPasswordSaving(false);
     }
@@ -397,12 +393,16 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
   const handleRevokeOtherSessions = async () => {
     try {
       setSessionSaving(true);
-      setSessionStatus('');
+      setSessionStatus(null);
       await revokeOtherAccountSessions();
-      setSessionStatus('其他已登录设备已退出。');
+      setSessionStatus({ key: 'settings.account.othersRevoked' });
       await loadAccountSessions();
     } catch (error) {
-      setSessionStatus(error instanceof Error ? error.message : '退出其他设备失败。');
+      setSessionStatus(
+        error instanceof Error
+          ? { text: error.message }
+          : { key: 'settings.account.revokeOthersFailed' }
+      );
     } finally {
       setSessionSaving(false);
     }
@@ -411,12 +411,17 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
   const handleRevokeSession = async (session: AuthSession) => {
     try {
       setSessionSaving(true);
-      setSessionStatus('');
+      setSessionStatus(null);
       await revokeAccountSession(session.id);
-      setSessionStatus(`${session.deviceName} 已退出。`);
+      setSessionStatus({
+        key: 'settings.account.sessionRevoked',
+        params: { device: session.deviceName }
+      });
       await loadAccountSessions();
     } catch (error) {
-      setSessionStatus(error instanceof Error ? error.message : '退出该设备失败。');
+      setSessionStatus(
+        error instanceof Error ? { text: error.message } : { key: 'settings.account.revokeFailed' }
+      );
     } finally {
       setSessionSaving(false);
     }
@@ -441,12 +446,16 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
       setEmbeddingTestStatus({
         loading: false,
         ok: false,
-        message: '请先配置 AI 服务地址（baseUrl）。'
+        message: { key: 'settings.embeddingChannel.test.missingBaseUrl' }
       });
       return;
     }
     if (!effectiveModel.trim()) {
-      setEmbeddingTestStatus({ loading: false, ok: false, message: '请先填写嵌入模型（model）。' });
+      setEmbeddingTestStatus({
+        loading: false,
+        ok: false,
+        message: { key: 'settings.embeddingChannel.test.missingModel' }
+      });
       return;
     }
     const modelValidationMessage = getEmbeddingModelValidationMessage(
@@ -457,17 +466,28 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
       setEmbeddingTestStatus({
         loading: false,
         ok: false,
-        message: `测试前校验未通过：${modelValidationMessage}`
+        message: {
+          key: 'settings.embeddingChannel.test.validationFailed',
+          messageKey: modelValidationMessage
+        }
       });
       return;
     }
     if (!effectiveApiKey.trim()) {
-      setEmbeddingTestStatus({ loading: false, ok: false, message: '请先配置 API Key。' });
+      setEmbeddingTestStatus({
+        loading: false,
+        ok: false,
+        message: { key: 'settings.embeddingChannel.test.missingApiKey' }
+      });
       return;
     }
 
     const startedAt = performance.now();
-    setEmbeddingTestStatus({ loading: true, ok: false, message: '正在测试嵌入配置…' });
+    setEmbeddingTestStatus({
+      loading: true,
+      ok: false,
+      message: { key: 'settings.embeddingChannel.test.testing' }
+    });
     try {
       const vectors = await fetchEmbeddings({
         baseUrl: effectiveBaseUrl,
@@ -481,21 +501,29 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
         setEmbeddingTestStatus({
           loading: false,
           ok: false,
-          message: `测试失败：嵌入服务返回空向量（baseUrl=${effectiveBaseUrl}；model=${effectiveModel}）。`
+          message: {
+            key: 'settings.embeddingChannel.test.emptyVector',
+            params: { baseUrl: effectiveBaseUrl, model: effectiveModel }
+          }
         });
         return;
       }
       setEmbeddingTestStatus({
         loading: false,
         ok: true,
-        message: `测试成功：向量维度 ${dim}，耗时 ${latencyMs}ms（baseUrl=${effectiveBaseUrl}；model=${effectiveModel}）。`
+        message: {
+          key: 'settings.embeddingChannel.test.success',
+          params: { dim, latency: latencyMs, baseUrl: effectiveBaseUrl, model: effectiveModel }
+        }
       });
     } catch (error) {
-      const detail = error instanceof Error ? error.message : '未知错误';
+      const detail = error instanceof Error ? error.message : '';
       setEmbeddingTestStatus({
         loading: false,
         ok: false,
-        message: `测试失败：${detail}`
+        message: detail
+          ? { key: 'settings.embeddingChannel.test.failed', params: { detail } }
+          : { key: 'settings.embeddingChannel.test.unknownError' }
       });
     }
   }, [apiKey, baseUrl, embeddingChannel, embeddingModel, embeddingModelCandidates]);
@@ -529,14 +557,14 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
         >
           <h2 style={{ margin: 0 }}>{t('settings.title')}</h2>
           <button type="button" className="settings-page-close" onClick={handleClose}>
-            {variant === 'overlay' ? '关闭' : t('settings.back')}
+            {variant === 'overlay' ? t('common.close') : t('settings.back')}
           </button>
         </div>
         <p className="settings-page-intro" style={{ marginTop: 16 }}>
           {t('settings.intro')}
         </p>
 
-        <nav className="settings-console-tabs" aria-label="设置分类" role="tablist">
+        <nav className="settings-console-tabs" aria-label={t('settings.tabsAria')} role="tablist">
           {SETTINGS_WORKSPACES.map((workspace) => (
             <button
               key={workspace.value}
@@ -546,7 +574,7 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
               aria-selected={activeWorkspace === workspace.value}
               onClick={() => setActiveWorkspace(workspace.value)}
             >
-              {workspace.label}
+              {t(workspace.labelKey)}
             </button>
           ))}
         </nav>
@@ -562,16 +590,16 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
               <div className="settings-account-heading">
                 <div>
                   <p className="settings-account-eyebrow">ACCOUNT</p>
-                  <h3 id="account-settings-title">账户与安全</h3>
+                  <h3 id="account-settings-title">{t('settings.account.title')}</h3>
                   <span className="settings-account-email" title={user.email}>
                     {user.email}
                   </span>
                 </div>
-                <span className="settings-account-current">当前登录</span>
+                <span className="settings-account-current">{t('settings.account.current')}</span>
               </div>
               <form className="settings-account-profile-form" onSubmit={handleSaveProfile}>
                 <label className="field">
-                  <span>显示名称</span>
+                  <span>{t('settings.account.displayName')}</span>
                   <input
                     value={displayName}
                     onChange={(event) => setDisplayName(event.target.value)}
@@ -581,10 +609,12 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                   />
                 </label>
                 <button type="submit" className="secondary" disabled={profileSaving}>
-                  {profileSaving ? '保存中...' : '保存'}
+                  {profileSaving ? t('settings.account.saving') : t('settings.account.save')}
                 </button>
                 {profileStatus ? (
-                  <small className="settings-account-status">{profileStatus}</small>
+                  <small className="settings-account-status">
+                    {resolveStatusMessage(profileStatus, t)}
+                  </small>
                 ) : null}
               </form>
             </div>
@@ -593,8 +623,8 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
               <section className="settings-account-panel" aria-labelledby="password-settings-title">
                 <div className="settings-account-panel-head">
                   <div>
-                    <h4 id="password-settings-title">密码保护</h4>
-                    <p>更新后，其他设备会自动退出。</p>
+                    <h4 id="password-settings-title">{t('settings.account.passwordTitle')}</h4>
+                    <p>{t('settings.account.passwordDesc')}</p>
                   </div>
                 </div>
                 <form
@@ -604,7 +634,7 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                   {!passwordVerified ? (
                     <div className="settings-password-step" key="verify">
                       <label className="field">
-                        <span>当前密码</span>
+                        <span>{t('settings.account.currentPassword')}</span>
                         <PasswordInput
                           value={currentPassword}
                           onChange={(event) => setCurrentPassword(event.target.value)}
@@ -615,7 +645,9 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                         />
                       </label>
                       <button type="submit" className="secondary" disabled={passwordVerifying}>
-                        {passwordVerifying ? '验证中…' : '验证身份'}
+                        {passwordVerifying
+                          ? t('settings.account.verifying')
+                          : t('settings.account.verify')}
                       </button>
                     </div>
                   ) : (
@@ -627,7 +659,7 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                         <span className="settings-password-verified-mark" aria-hidden="true">
                           ✓
                         </span>
-                        身份验证通过
+                        {t('settings.account.verified')}
                         <button
                           type="button"
                           className="settings-password-reverify"
@@ -635,14 +667,15 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                             setPasswordVerified(false);
                             setNewPassword('');
                             setConfirmPassword('');
-                            setPasswordStatus('');
+                            setPasswordStatus(null);
+                            setPasswordStatusTone('');
                           }}
                         >
-                          重新验证
+                          {t('settings.account.reverify')}
                         </button>
                       </div>
                       <label className="field">
-                        <span>新密码</span>
+                        <span>{t('settings.account.newPassword')}</span>
                         <PasswordInput
                           value={newPassword}
                           onChange={(event) => setNewPassword(event.target.value)}
@@ -655,7 +688,7 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                         />
                       </label>
                       <label className="field">
-                        <span>确认新密码</span>
+                        <span>{t('settings.account.confirmPassword')}</span>
                         <PasswordInput
                           value={confirmPassword}
                           onChange={(event) => setConfirmPassword(event.target.value)}
@@ -668,16 +701,26 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                         />
                       </label>
                       <button type="submit" className="secondary" disabled={passwordSaving}>
-                        {passwordSaving ? '更新中...' : '更新密码'}
+                        {passwordSaving
+                          ? t('settings.account.updating')
+                          : t('settings.account.updatePassword')}
                       </button>
                     </div>
                   )}
                   {passwordStatus ? (
                     <small
-                      className={`settings-account-status${passwordStatus.includes('不正确') || passwordStatus.includes('失败') ? ' is-error' : passwordVerified ? ' is-success' : ''}`}
+                      className={`settings-account-status${
+                        passwordStatusTone === 'error'
+                          ? ' is-error'
+                          : passwordStatusTone === 'success'
+                            ? ' is-success'
+                            : passwordVerified
+                              ? ' is-success'
+                              : ''
+                      }`}
                       role="status"
                     >
-                      {passwordStatus}
+                      {resolveStatusMessage(passwordStatus, t)}
                     </small>
                   ) : null}
                 </form>
@@ -686,8 +729,8 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
               <section className="settings-account-panel" aria-labelledby="device-settings-title">
                 <div className="settings-account-panel-head">
                   <div>
-                    <h4 id="device-settings-title">登录设备</h4>
-                    <p>可随时退出不再使用的设备。</p>
+                    <h4 id="device-settings-title">{t('settings.account.devicesTitle')}</h4>
+                    <p>{t('settings.account.devicesDesc')}</p>
                   </div>
                   <button
                     type="button"
@@ -697,16 +740,18 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                     }
                     onClick={() => void handleRevokeOtherSessions()}
                   >
-                    退出其他设备
+                    {t('settings.account.revokeOthers')}
                   </button>
                 </div>
                 <div className="settings-account-session-list" aria-live="polite">
-                  {sessionsLoading ? <small>正在读取登录设备...</small> : null}
+                  {sessionsLoading ? <small>{t('settings.account.loadingSessions')}</small> : null}
                   {sessionsError ? (
-                    <small className="settings-account-status">{sessionsError}</small>
+                    <small className="settings-account-status">
+                      {resolveStatusMessage(sessionsError, t)}
+                    </small>
                   ) : null}
                   {!sessionsLoading && !sessionsError && sessions.length === 0 ? (
-                    <small>暂未发现有效登录设备。</small>
+                    <small>{t('settings.account.noSessions')}</small>
                   ) : null}
                   {sessions.map((session) => (
                     <div className="settings-account-session-row" key={session.id}>
@@ -714,11 +759,19 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                       <div className="settings-account-session-copy">
                         <div>
                           <strong>{session.deviceName}</strong>
-                          {session.current ? <span>当前设备</span> : null}
+                          {session.current ? (
+                            <span>{t('settings.account.currentDevice')}</span>
+                          ) : null}
                         </div>
                         <small>
-                          最近活跃 {formatAccountSessionTime(session.lastSeenAt)} · 登录于{' '}
-                          {formatAccountSessionTime(session.createdAt)}
+                          {t('settings.account.sessionMeta', {
+                            lastSeen:
+                              formatAccountSessionTime(session.lastSeenAt, currentLanguage) ??
+                              t('common.justNow'),
+                            created:
+                              formatAccountSessionTime(session.createdAt, currentLanguage) ??
+                              t('common.justNow')
+                          })}
                         </small>
                       </div>
                       {session.current ? null : (
@@ -728,14 +781,16 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                           disabled={sessionSaving}
                           onClick={() => void handleRevokeSession(session)}
                         >
-                          退出
+                          {t('settings.account.revoke')}
                         </button>
                       )}
                     </div>
                   ))}
                 </div>
                 {sessionStatus ? (
-                  <small className="settings-account-status">{sessionStatus}</small>
+                  <small className="settings-account-status">
+                    {resolveStatusMessage(sessionStatus, t)}
+                  </small>
                 ) : null}
               </section>
             </div>
@@ -763,14 +818,14 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                     showSaveToast();
                   }}
                 >
-                  <option value="">选择渠道商（快速填充）</option>
+                  <option value="">{t('settings.provider.choosePlaceholder')}</option>
                   {AI_PROVIDER_PRESETS.map((item) => (
                     <option key={item.value} value={item.value}>
-                      {item.label}
+                      {getProviderPresetLabel(item, t)}
                     </option>
                   ))}
                   {baseUrl.trim() && !selectedProviderPreset ? (
-                    <option value="__custom__">自定义地址</option>
+                    <option value="__custom__">{t('settings.provider.customOption')}</option>
                   ) : null}
                 </select>
                 <input
@@ -811,7 +866,7 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                     showSaveToast();
                   }}
                 />
-                记住 API Key（版本更新后无需重填）
+                {t('settings.rememberApiKey')}
               </label>
             </div>
 
@@ -868,18 +923,20 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
             <div className="settings-subpanel settings-subpanel--tavily is-active">
               <div className="settings-subpanel-toggle">
                 <div className="settings-subpanel-copy">
-                  <strong>联网搜索</strong>
-                  <small>让 AI 在回答投资问题时，参考最新资讯、公告和政策。</small>
+                  <strong>{t('settings.tavily.title')}</strong>
+                  <small>{t('settings.tavily.desc')}</small>
                 </div>
                 <span
                   className={`settings-subpanel-chip ${webSearch.tavilyApiKey.trim() ? 'is-active' : ''}`}
                 >
-                  {webSearch.tavilyApiKey.trim() ? '已配置' : '待填写密钥'}
+                  {webSearch.tavilyApiKey.trim()
+                    ? t('settings.tavily.configured')
+                    : t('settings.tavily.missingKey')}
                 </span>
               </div>
               <div className="settings-subpanel-body">
                 <div className="field settings-tavily-key-field">
-                  <label>Tavily 密钥</label>
+                  <label>{t('settings.tavily.keyLabel')}</label>
                   <PasswordInput
                     value={webSearch.tavilyApiKey}
                     placeholder="tvly-..."
@@ -890,15 +947,15 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                     showLabel={t('settings.show')}
                     hideLabel={t('settings.hide')}
                   />
-                  <small>填写后，联网回答会优先参考实时网页信息。</small>
+                  <small>{t('settings.tavily.keyHint')}</small>
                 </div>
 
                 <details className="settings-connection-options">
-                  <summary>连接选项</summary>
-                  <p>默认值可直接使用，仅在自建代理或部署环境有特殊要求时修改。</p>
+                  <summary>{t('settings.tavily.connectionOptions')}</summary>
+                  <p>{t('settings.tavily.connectionHint')}</p>
                   <div className="settings-inline-grid settings-inline-grid--double">
                     <div className="field">
-                      <label>Tavily 服务地址</label>
+                      <label>{t('settings.tavily.baseUrlLabel')}</label>
                       <input
                         value={webSearch.tavilyBaseUrl}
                         placeholder="https://api.tavily.com"
@@ -909,7 +966,7 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                       />
                     </div>
                     <div className="field">
-                      <label>备用搜索地址</label>
+                      <label>{t('settings.tavily.localEndpointLabel')}</label>
                       <input
                         value={webSearch.localEndpoint}
                         placeholder="/api/web-search"
@@ -918,7 +975,7 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                           showSaveToast();
                         }}
                       />
-                      <small>Tavily 暂时不可用时，会自动切换到这里。</small>
+                      <small>{t('settings.tavily.localEndpointHint')}</small>
                     </div>
                   </div>
                 </details>
@@ -961,9 +1018,7 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                         if (event.target.checked) setEmbeddingPanelExpanded(true);
                         showSaveToast();
                       }}
-                      aria-label={
-                        currentLanguage === 'en' ? 'Enable embedding service' : '启用独立嵌入服务'
-                      }
+                      aria-label={t('settings.embeddingChannel.enableAria')}
                     />
                     <span aria-hidden="true" />
                   </label>
@@ -980,22 +1035,18 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
 
               <div className="settings-subpanel-summary">
                 <span>
-                  {currentLanguage === 'en' ? 'Effective model' : '当前生效模型'}：
+                  {t('settings.embeddingChannel.summaryEffectiveModel')}:
                   <strong>
-                    {embeddingEffectiveModel || (currentLanguage === 'en' ? 'Not set' : '未设置')}
+                    {embeddingEffectiveModel || t('settings.embeddingChannel.summaryNotSet')}
                   </strong>
                 </span>
                 <span>
-                  {currentLanguage === 'en' ? 'Service URL' : '服务地址'}：
+                  {t('settings.embeddingChannel.summaryServiceUrl')}:
                   <strong>
-                    {embeddingEffectiveBaseUrl || (currentLanguage === 'en' ? 'Not set' : '未设置')}
+                    {embeddingEffectiveBaseUrl || t('settings.embeddingChannel.summaryNotSet')}
                   </strong>
                 </span>
-                <small>
-                  {currentLanguage === 'en'
-                    ? 'Before using a dedicated service, review how it stores requests and logs.'
-                    : '使用独立服务前，建议确认它如何保存请求内容和日志。'}
-                </small>
+                <small>{t('settings.embeddingChannel.summaryPrivacy')}</small>
               </div>
 
               {embeddingPanelExpanded ? (
@@ -1007,7 +1058,7 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                       <input
                         value={embeddingChannel.model}
                         list="embedding-model-candidates"
-                        placeholder="例如：jina-embeddings-v3"
+                        placeholder={t('settings.embeddingChannel.modelPlaceholder')}
                         onChange={(e) => {
                           setEmbeddingChannel({ model: e.target.value });
                           showSaveToast();
@@ -1026,11 +1077,16 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                               : 'var(--color-success, #15803d)'
                           }}
                         >
-                          {embeddingChannelModelValidation ||
-                            '模型名校验通过，可直接测试嵌入配置。'}
+                          {embeddingChannelModelValidation
+                            ? t(embeddingChannelModelValidation)
+                            : t('settings.embeddingChannel.modelValid')}
                         </small>
                       ) : (
-                        <small>常见模型：{embeddingModelCandidates.slice(0, 4).join(' / ')}</small>
+                        <small>
+                          {t('settings.embeddingChannel.commonModels', {
+                            models: embeddingModelCandidates.slice(0, 4).join(' / ')
+                          })}
+                        </small>
                       )}
                     </div>
 
@@ -1065,21 +1121,17 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
 
                   <div className="settings-embedding-note">
                     <div className="settings-embedding-effective-title">
-                      {currentLanguage === 'en' ? 'How it works' : '使用说明'}
+                      {t('settings.embeddingChannel.howItWorks')}
                     </div>
                     <div className="settings-embedding-effective-copy">
-                      {currentLanguage === 'en'
-                        ? 'When disabled, LedgerFlow uses the embedding settings from OpenAI. When enabled, values entered here take priority and blank fields continue using the original settings.'
-                        : '关闭时沿用 OpenAI 页里的嵌入设置；开启后优先使用这里填写的内容，留空的项目继续沿用原配置。'}{' '}
-                      {currentLanguage === 'en' ? 'Currently using' : '当前使用'}{' '}
+                      {t('settings.embeddingChannel.howItWorksBody')}{' '}
+                      {t('settings.embeddingChannel.currentlyUsing')}{' '}
                       <strong>
-                        {embeddingEffectiveModel ||
-                          (currentLanguage === 'en' ? 'Not set' : '未设置')}
+                        {embeddingEffectiveModel || t('settings.embeddingChannel.summaryNotSet')}
                       </strong>
-                      ，{currentLanguage === 'en' ? 'service URL' : '服务地址'}{' '}
+                      ，{t('settings.embeddingChannel.summaryServiceUrl')}{' '}
                       <strong>
-                        {embeddingEffectiveBaseUrl ||
-                          (currentLanguage === 'en' ? 'Not set' : '未设置')}
+                        {embeddingEffectiveBaseUrl || t('settings.embeddingChannel.summaryNotSet')}
                       </strong>
                       。
                     </div>
@@ -1103,7 +1155,7 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                             : 'var(--color-danger)'
                         }}
                       >
-                        {embeddingTestStatus.message}
+                        {resolveStatusMessage(embeddingTestStatus.message, t)}
                       </small>
                     ) : null}
                   </div>
@@ -1122,7 +1174,7 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                 label={t('settings.model.defaultLabel')}
                 hint={t('settings.model.defaultHint')}
                 value={model}
-                presets={MODEL_PRESETS}
+                presets={AI_MODEL_PRESETS}
                 onChange={(value) => handleSelectModel(setModel, value)}
               />
               <ModelSelector

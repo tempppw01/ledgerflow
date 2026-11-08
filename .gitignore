@@ -18,6 +18,7 @@ test-results/
 /playwright.config.ts
 
 # One-off local maintenance output
+/output/
 /*.py
 /test-optimization.ps1
 /narrow-check.png

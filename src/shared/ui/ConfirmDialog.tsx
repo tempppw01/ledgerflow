@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -16,13 +17,15 @@ export function ConfirmDialog({
   open,
   title,
   description,
-  confirmText = '确认',
-  cancelText = '取消',
+  confirmText,
+  cancelText,
   danger = false,
   confirmDisabled = false,
   onConfirm,
   onCancel
 }: ConfirmDialogProps) {
+  const { t } = useTranslation();
+
   useEffect(() => {
     if (!open) {
       return;
@@ -42,6 +45,9 @@ export function ConfirmDialog({
     return null;
   }
 
+  const resolvedConfirmText = confirmText ?? t('confirmDialog.confirm');
+  const resolvedCancelText = cancelText ?? t('confirmDialog.cancel');
+
   return (
     <div className="dialog-overlay" role="presentation" onClick={onCancel}>
       <section
@@ -55,7 +61,7 @@ export function ConfirmDialog({
         <div className="dialog-body">{description}</div>
         <footer className="dialog-footer">
           <button type="button" onClick={onCancel}>
-            {cancelText}
+            {resolvedCancelText}
           </button>
           <button
             type="button"
@@ -63,7 +69,7 @@ export function ConfirmDialog({
             disabled={confirmDisabled}
             onClick={onConfirm}
           >
-            {confirmText}
+            {resolvedConfirmText}
           </button>
         </footer>
       </section>

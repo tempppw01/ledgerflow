@@ -1,5 +1,6 @@
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 
 type DatePickerProps = {
   id?: string;
@@ -13,7 +14,7 @@ type DatePickerProps = {
   className?: string;
 };
 
-const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日'];
+const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 
 function parseDate(value: string) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
@@ -33,21 +34,18 @@ function formatDate(date: Date) {
   ).padStart(2, '0')}`;
 }
 
-function monthTitle(date: Date) {
-  return `${date.getFullYear()}年${date.getMonth() + 1}月`;
-}
-
 export function DatePicker({
   id,
   value,
   onChange,
   min,
   max,
-  placeholder = '选择日期',
-  ariaLabel = '选择日期',
+  placeholder,
+  ariaLabel,
   disabled = false,
   className = ''
 }: DatePickerProps) {
+  const { t, i18n } = useTranslation();
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -58,9 +56,21 @@ export function DatePicker({
   const [viewDate, setViewDate] = useState(() => selected || today);
   const minDate = parseDate(min || '');
   const maxDate = parseDate(max || '');
+  const resolvedPlaceholder = placeholder ?? t('datePicker.placeholder');
+  const resolvedAriaLabel = ariaLabel ?? t('datePicker.ariaLabel');
+  const resolvedLanguage = i18n?.resolvedLanguage ?? i18n?.language ?? 'zh-CN';
+  const monthTitle = useMemo(
+    () =>
+      new Intl.DateTimeFormat(resolvedLanguage.startsWith('en') ? 'en-US' : 'zh-CN', {
+        year: 'numeric',
+        month: 'long'
+      }).format(viewDate),
+    [resolvedLanguage, viewDate]
+  );
 
   useEffect(() => {
-    if (selected) setViewDate(selected);
+    const nextSelected = parseDate(value);
+    if (nextSelected) setViewDate(nextSelected);
   }, [value]);
 
   useEffect(() => {
@@ -74,9 +84,10 @@ export function DatePicker({
       const estimatedHeight = 322;
       const spaceBelow = window.innerHeight - rect.bottom - 12;
       const spaceAbove = rect.top - 12;
-      const top = spaceBelow >= estimatedHeight || spaceBelow >= spaceAbove
-        ? Math.max(12, Math.min(rect.bottom + 8, window.innerHeight - estimatedHeight - 12))
-        : Math.max(12, rect.top - estimatedHeight - 8);
+      const top =
+        spaceBelow >= estimatedHeight || spaceBelow >= spaceAbove
+          ? Math.max(12, Math.min(rect.bottom + 8, window.innerHeight - estimatedHeight - 12))
+          : Math.max(12, rect.top - estimatedHeight - 8);
       setPopoverPosition({ top, left, width });
     };
     updatePosition();
@@ -84,7 +95,8 @@ export function DatePicker({
     window.addEventListener('scroll', updatePosition, true);
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Node;
-      if (!rootRef.current?.contains(target) && !popoverRef.current?.contains(target)) setOpen(false);
+      if (!rootRef.current?.contains(target) && !popoverRef.current?.contains(target))
+        setOpen(false);
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOpen(false);
@@ -117,58 +129,124 @@ export function DatePicker({
     return result;
   }, [viewDate]);
 
-  const isDisabled = (date: Date) => Boolean((minDate && date < minDate) || (maxDate && date > maxDate));
+  const isDisabled = (date: Date) =>
+    Boolean((minDate && date < minDate) || (maxDate && date > maxDate));
   return (
-    <div ref={rootRef} className={`lf-date-picker ${className}`.trim()}>
+    <div
+      ref={rootRef}
+      className={`lf-date-picker ${className}`.trim()}
+      data-min-date={min || undefined}
+      data-max-date={max || undefined}
+    >
       <button
         type="button"
         id={id}
         ref={triggerRef}
         className={`lf-date-trigger${open ? ' is-open' : ''}${!value ? ' is-empty' : ''}`}
-        aria-label={ariaLabel}
+        aria-label={resolvedAriaLabel}
         aria-expanded={open}
         disabled={disabled}
         onClick={() => setOpen((current) => !current)}
       >
-        <span>{selected ? `${selected.getFullYear()}-${String(selected.getMonth() + 1).padStart(2, '0')}-${String(selected.getDate()).padStart(2, '0')}` : placeholder}</span>
-        <span className="lf-date-icon" aria-hidden="true">▣</span>
+        <span>
+          {selected
+            ? `${selected.getFullYear()}-${String(selected.getMonth() + 1).padStart(2, '0')}-${String(selected.getDate()).padStart(2, '0')}`
+            : resolvedPlaceholder}
+        </span>
+        <span className="lf-date-icon" aria-hidden="true">
+          ▣
+        </span>
       </button>
-      {open ? createPortal(
-        <div ref={popoverRef} className="lf-date-popover" style={popoverPosition} role="dialog" aria-label="日期选择器">
-          <div className="lf-date-header">
-            <button type="button" className="lf-date-nav" aria-label="上个月" onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))}>‹</button>
-            <strong>{monthTitle(viewDate)}</strong>
-            <button type="button" className="lf-date-nav" aria-label="下个月" onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1))}>›</button>
-          </div>
-          <div className="lf-date-weekdays">{WEEKDAYS.map((day) => <span key={day}>{day}</span>)}</div>
-          <div className="lf-date-grid">
-            {days.map((date) => {
-              const dateValue = formatDate(date);
-              const outside = date.getMonth() !== viewDate.getMonth();
-              const active = dateValue === value;
-              const disabledDay = isDisabled(date);
-              return (
+      {open
+        ? createPortal(
+            <div
+              ref={popoverRef}
+              className="lf-date-popover"
+              style={popoverPosition}
+              role="dialog"
+              aria-label={t('datePicker.dialogLabel')}
+            >
+              <div className="lf-date-header">
                 <button
                   type="button"
-                  key={dateValue}
-                  className={`lf-date-day${outside ? ' is-outside' : ''}${active ? ' is-selected' : ''}${!active && dateValue === formatDate(today) ? ' is-today' : ''}`}
-                  disabled={disabledDay}
-                  aria-label={dateValue}
-                  aria-pressed={active}
-                  onClick={() => { onChange(dateValue); setOpen(false); }}
+                  className="lf-date-nav"
+                  aria-label={t('datePicker.prevMonth')}
+                  onClick={() =>
+                    setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))
+                  }
                 >
-                  {date.getDate()}
+                  ‹
                 </button>
-              );
-            })}
-          </div>
-          <div className="lf-date-actions">
-            <button type="button" onClick={() => { if (!isDisabled(today)) { onChange(formatDate(today)); setViewDate(today); setOpen(false); } }}>今天</button>
-            {value ? <button type="button" onClick={() => { onChange(''); setOpen(false); }}>清除</button> : null}
-          </div>
-        </div>,
-        document.body
-      ) : null}
+                <strong>{monthTitle}</strong>
+                <button
+                  type="button"
+                  className="lf-date-nav"
+                  aria-label={t('datePicker.nextMonth')}
+                  onClick={() =>
+                    setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1))
+                  }
+                >
+                  ›
+                </button>
+              </div>
+              <div className="lf-date-weekdays">
+                {WEEKDAY_KEYS.map((day) => (
+                  <span key={day}>{t(`datePicker.weekdays.${day}`)}</span>
+                ))}
+              </div>
+              <div className="lf-date-grid">
+                {days.map((date) => {
+                  const dateValue = formatDate(date);
+                  const outside = date.getMonth() !== viewDate.getMonth();
+                  const active = dateValue === value;
+                  const disabledDay = isDisabled(date);
+                  return (
+                    <button
+                      type="button"
+                      key={dateValue}
+                      className={`lf-date-day${outside ? ' is-outside' : ''}${active ? ' is-selected' : ''}${!active && dateValue === formatDate(today) ? ' is-today' : ''}`}
+                      disabled={disabledDay}
+                      aria-label={dateValue}
+                      aria-pressed={active}
+                      onClick={() => {
+                        onChange(dateValue);
+                        setOpen(false);
+                      }}
+                    >
+                      {date.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="lf-date-actions">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!isDisabled(today)) {
+                      onChange(formatDate(today));
+                      setViewDate(today);
+                      setOpen(false);
+                    }
+                  }}
+                >
+                  {t('datePicker.today')}
+                </button>
+                {value ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange('');
+                      setOpen(false);
+                    }}
+                  >
+                    {t('datePicker.clear')}
+                  </button>
+                ) : null}
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }

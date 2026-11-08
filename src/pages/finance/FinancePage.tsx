@@ -56,7 +56,7 @@ export function FinancePage() {
   const { t, i18n } = useTranslation();
   const [news, setNews] = useState<TonghuashunNewsItem[]>(readCachedNews);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [errorKey, setErrorKey] = useState('');
   const [activeNewsId, setActiveNewsId] = useState('');
   const [category, setCategory] = useState<TonghuashunNewsCategory>('yaowen');
   const [refreshToken, setRefreshToken] = useState(0);
@@ -66,7 +66,7 @@ export function FinancePage() {
 
     async function loadNews() {
       setLoading(true);
-      setError('');
+      setErrorKey('');
 
       try {
         const loaded = await fetchTonghuashunNews(category, 16);
@@ -77,21 +77,20 @@ export function FinancePage() {
           window.localStorage.setItem(FINANCE_NEWS_CACHE_KEY, JSON.stringify(loaded));
           setActiveNewsId((current) => current || loaded[0].id);
         } else {
-          setError(t('finance.ui.noNews'));
+          setErrorKey('finance.ui.noNews');
         }
       } catch (loadError) {
         if ((loadError as Error).name !== 'AbortError') {
-          setError(t('finance.ui.loadFailed'));
+          setErrorKey('finance.ui.loadFailed');
         }
       } finally {
         setLoading(false);
       }
     }
 
-
     loadNews();
     return () => controller.abort();
-  }, [category, i18n.language, refreshToken, t]);
+  }, [category, refreshToken]);
 
   const activeNews = useMemo(
     () => news.find((item) => item.id === activeNewsId) || news[0] || null,
@@ -102,7 +101,7 @@ export function FinancePage() {
     <div className="page-stack finance-page vi-page">
       <section className="vi-section finance-news-section">
         <div className="vi-section-title">
-          <span className="vi-page-kicker">市场脉搏</span>
+          <span className="vi-page-kicker">{t('finance.ui.marketPulse')}</span>
           <h2>{t('finance.ui.title')}</h2>
           <p>{t('finance.ui.subtitle')}</p>
         </div>
@@ -124,7 +123,11 @@ export function FinancePage() {
         </div>
 
         <div className="finance-news-toolbar">
-          <div className="finance-category-tabs" role="tablist" aria-label={t('finance.ui.categories')}>
+          <div
+            className="finance-category-tabs"
+            role="tablist"
+            aria-label={t('finance.ui.categories')}
+          >
             {NEWS_CATEGORIES.map((item) => (
               <button
                 key={item.value}
@@ -149,7 +152,7 @@ export function FinancePage() {
         </div>
 
         {loading ? <p className="muted">{t('finance.ui.loading')}</p> : null}
-        {error ? <p className="muted">{error}</p> : null}
+        {errorKey ? <p className="muted">{t(errorKey)}</p> : null}
 
         {news.length === 0 ? (
           <p className="muted">{t('finance.ui.noNews')}</p>
@@ -157,12 +160,16 @@ export function FinancePage() {
           <div className="finance-news-editorial-layout">
             {activeNews ? (
               <article className="finance-news-lead">
-                <span className="finance-news-kicker">今日焦点 · {activeNews.source}</span>
+                <span className="finance-news-kicker">
+                  {t('finance.ui.todayFocus', { source: activeNews.source })}
+                </span>
                 <h3>{activeNews.title}</h3>
                 <p>{activeNews.summary || t('finance.ui.noSummary')}</p>
                 <div className="finance-news-lead-meta">
                   <small>{formatPublishedAt(activeNews.publishedAt, i18n.language)}</small>
-                  <a href={activeNews.link} target="_blank" rel="noreferrer">{t('finance.ui.openOriginal')} ↗</a>
+                  <a href={activeNews.link} target="_blank" rel="noreferrer">
+                    {t('finance.ui.openOriginal')} ↗
+                  </a>
                 </div>
               </article>
             ) : null}
@@ -177,7 +184,9 @@ export function FinancePage() {
                   <span className="finance-news-index">{String(index + 1).padStart(2, '0')}</span>
                   <span className="finance-news-item-copy">
                     <strong>{item.title}</strong>
-                    <small>{item.source} · {formatPublishedAt(item.publishedAt, i18n.language)}</small>
+                    <small>
+                      {item.source} · {formatPublishedAt(item.publishedAt, i18n.language)}
+                    </small>
                   </span>
                 </button>
               ))}
@@ -185,7 +194,6 @@ export function FinancePage() {
           </div>
         )}
       </section>
-
     </div>
   );
 }

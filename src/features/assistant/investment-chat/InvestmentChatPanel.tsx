@@ -46,6 +46,7 @@ import {
 import { useAiSettings } from '../../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../../shared/store/useAppPreferences';
 import { useFinanceStore } from '../../../shared/store/useFinanceStore';
+import { AI_MODEL_PRESETS, mergeAiModelOptions } from '../../../shared/config/aiModels';
 import { ConfirmDialog } from '../../../shared/ui/ConfirmDialog';
 import { Toast } from '../../../shared/ui/Toast';
 import type { ToastVariant } from '../../../shared/ui/Toast';
@@ -154,7 +155,7 @@ export function InvestmentChatComposer({
   const [webEnabled, setWebEnabled] = useState(defaultWebEnabled);
   const [suggestionsCollapsed, setSuggestionsCollapsed] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
-  const [models, setModels] = useState<string[]>([]);
+  const [models, setModels] = useState<string[]>(() => [...AI_MODEL_PRESETS]);
   const [loadingModels, setLoadingModels] = useState(false);
   const [error, setError] = useState('');
   const [, setStreaming] = useState('');
@@ -295,13 +296,13 @@ export function InvestmentChatComposer({
     setLoadingModels(true);
     try {
       const nextModels = await fetchAiModels(baseUrl, apiKey);
-      setModels(nextModels);
+      setModels(mergeAiModelOptions(model, AI_MODEL_PRESETS, nextModels));
     } catch {
-      setModels([]);
+      setModels((current) => mergeAiModelOptions(model, AI_MODEL_PRESETS, current));
     } finally {
       setLoadingModels(false);
     }
-  }, [apiKey, baseUrl, loadingModels]);
+  }, [apiKey, baseUrl, loadingModels, model]);
 
   const openModelPicker = useCallback(() => {
     setModelOpen(true);

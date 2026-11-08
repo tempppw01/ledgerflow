@@ -1,4 +1,5 @@
 import type { AccountPreset } from '../model/accountTypes';
+import { useTranslation } from 'react-i18next';
 
 interface AccountPresetPickerProps {
   presets: AccountPreset[];
@@ -6,6 +7,8 @@ interface AccountPresetPickerProps {
 }
 
 export function AccountPresetPicker({ presets, onSelect }: AccountPresetPickerProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="account-preset-picker">
       {presets.map((preset) => (
@@ -14,7 +17,7 @@ export function AccountPresetPicker({ presets, onSelect }: AccountPresetPickerPr
           type="button"
           className="account-preset-chip"
           onClick={() => onSelect(preset)}
-          title={`快速添加: ${preset.name}`}
+          title={t('accounts.presetQuickAddTitle', { name: preset.name })}
         >
           <span className="preset-icon">
             {preset.iconUrl ? (

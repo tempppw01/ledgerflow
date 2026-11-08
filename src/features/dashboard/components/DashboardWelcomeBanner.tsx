@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { DATA_INPUT_ILLUSTRATION_URL } from '../../../shared/config/brandAssets';
 import { formatCurrencyAuto } from '../../../shared/lib/format';
 
@@ -28,6 +29,8 @@ export function DashboardWelcomeBanner({
   onNavigateToQuickAdd,
   onNavigateToAssistant
 }: DashboardWelcomeBannerProps) {
+  const { t } = useTranslation();
+
   return (
     <section className={`welcome-banner${isExpanded ? ' is-expanded' : ' is-collapsed'}`}>
       <span className="welcome-version-tag" aria-label={versionLabel}>
@@ -35,10 +38,10 @@ export function DashboardWelcomeBanner({
       </span>
       {isExpanded ? (
         <div className="welcome-content">
-          <div className="welcome-status-badge">今天也适合把账说清楚 ✨</div>
+          <div className="welcome-status-badge">{t('dashboard.ui.statusBadge')}</div>
           <div className="welcome-title-stack">
             <h2 className="welcome-greeting">
-              {greeting}，{welcomeTitle}
+              {t('dashboard.ui.greetingFormat', { greeting, welcomeTitle })}
             </h2>
             <img
               className="welcome-data-illustration"
@@ -49,23 +52,26 @@ export function DashboardWelcomeBanner({
             />
           </div>
           <p className="welcome-subtitle">{welcomeSubtitle}</p>
-          <div className="welcome-highlight-grid" aria-label="首页欢迎摘要">
+          <div
+            className="welcome-highlight-grid"
+            aria-label={t('dashboard.ui.welcomeSummaryAria')}
+          >
             <article>
-              <span>本月结余</span>
+              <span>{t('dashboard.ui.monthlyBalance')}</span>
               <strong>{formatCurrencyAuto(monthlyBalance)}</strong>
             </article>
             <article>
-              <span>当前净资产</span>
+              <span>{t('dashboard.ui.netAssets')}</span>
               <strong>{formatCurrencyAuto(netAssets)}</strong>
             </article>
           </div>
           <p className="welcome-tip">💡 {tip}</p>
           <div className="welcome-actions">
             <button type="button" onClick={onNavigateToQuickAdd}>
-              记一笔
+              {t('dashboard.ui.addTransaction')}
             </button>
             <button type="button" onClick={onNavigateToAssistant}>
-              去问 AI 助手
+              {t('dashboard.ui.askAi')}
             </button>
           </div>
         </div>
@@ -76,7 +82,7 @@ export function DashboardWelcomeBanner({
               className="welcome-greeting"
               style={{ marginBottom: 0, fontSize: 'clamp(18px, 2.5vw, 22px)' }}
             >
-              {greeting}，{welcomeTitle}
+              {t('dashboard.ui.greetingFormat', { greeting, welcomeTitle })}
             </h2>
             <img
               className="welcome-data-illustration"
@@ -86,22 +92,25 @@ export function DashboardWelcomeBanner({
               aria-hidden="true"
             />
           </div>
-          <div className="welcome-highlight-grid" aria-label="首页欢迎摘要">
+          <div
+            className="welcome-highlight-grid"
+            aria-label={t('dashboard.ui.welcomeSummaryAria')}
+          >
             <article>
-              <span>本月结余</span>
+              <span>{t('dashboard.ui.monthlyBalance')}</span>
               <strong>{formatCurrencyAuto(monthlyBalance)}</strong>
             </article>
             <article>
-              <span>当前净资产</span>
+              <span>{t('dashboard.ui.netAssets')}</span>
               <strong>{formatCurrencyAuto(netAssets)}</strong>
             </article>
           </div>
           <div className="welcome-actions">
             <button type="button" onClick={onNavigateToQuickAdd}>
-              记一笔
+              {t('dashboard.ui.addTransaction')}
             </button>
             <button type="button" onClick={onNavigateToAssistant}>
-              去问 AI 助手
+              {t('dashboard.ui.askAi')}
             </button>
           </div>
         </div>
@@ -110,7 +119,9 @@ export function DashboardWelcomeBanner({
         type="button"
         className="welcome-toggle-btn"
         onClick={onToggleExpanded}
-        aria-label={isExpanded ? '收起欢迎横幅' : '展开欢迎横幅'}
+        aria-label={
+          isExpanded ? t('dashboard.ui.collapseWelcome') : t('dashboard.ui.expandWelcome')
+        }
       >
         {isExpanded ? '▴' : '▾'}
       </button>

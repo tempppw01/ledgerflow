@@ -48,14 +48,6 @@ describe('TransactionDetailDrawer', () => {
           onShareBill={() => undefined}
           onDelete={() => undefined}
           onAiRecategorize={() => undefined}
-          visibleSections={{
-            base: true,
-            source: true,
-            note: true,
-            tags: true,
-            json: true
-          }}
-          onToggleSection={() => undefined}
           privacyMode
           onQuickAdd={() => undefined}
         />
@@ -84,14 +76,6 @@ describe('TransactionDetailDrawer', () => {
           onShareBill={() => undefined}
           onDelete={() => undefined}
           onAiRecategorize={() => undefined}
-          visibleSections={{
-            base: true,
-            source: true,
-            note: true,
-            tags: true,
-            json: false
-          }}
-          onToggleSection={() => undefined}
           onQuickAdd={() => undefined}
         />
       </MemoryRouter>
@@ -118,14 +102,6 @@ describe('TransactionDetailDrawer', () => {
           onShareBill={() => undefined}
           onDelete={() => undefined}
           onAiRecategorize={() => undefined}
-          visibleSections={{
-            base: true,
-            source: true,
-            note: true,
-            tags: true,
-            json: false
-          }}
-          onToggleSection={() => undefined}
           onQuickAdd={() => undefined}
         />
       </MemoryRouter>
@@ -166,25 +142,14 @@ describe('TransactionDetailDrawer', () => {
           onShareBill={() => undefined}
           onDelete={() => undefined}
           onAiRecategorize={() => undefined}
-          visibleSections={{
-            base: true,
-            source: true,
-            note: true,
-            tags: true,
-            json: false
-          }}
-          onToggleSection={() => undefined}
           onQuickAdd={() => undefined}
         />
       </MemoryRouter>
     );
 
-    expect(screen.getByLabelText('退款冲正关系')).toBeInTheDocument();
-    expect(screen.getByText('退款单')).toBeInTheDocument();
+    expect(screen.getByText('退款 / 冲正')).toBeInTheDocument();
     expect(screen.getByText(/原始订单/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('tab', { name: '时间轴模式' }));
-    expect(screen.getByLabelText('交易时间轴')).toBeInTheDocument();
     expect(screen.getByText(/关联原单：原始订单/)).toBeInTheDocument();
   });
 
@@ -206,21 +171,12 @@ describe('TransactionDetailDrawer', () => {
           onDelete={() => undefined}
           onAiRecategorize={() => undefined}
           onAttachmentUploadStatus={onAttachmentUploadStatus}
-          visibleSections={{
-            base: true,
-            source: true,
-            note: true,
-            tags: true,
-            json: false
-          }}
-          onToggleSection={() => undefined}
           onQuickAdd={() => undefined}
         />
       </MemoryRouter>
     );
 
-    fireEvent.click(screen.getByRole('tab', { name: '专业模式' }));
-    fireEvent.click(screen.getByRole('button', { name: '插入附件 / 上传附件' }));
+    fireEvent.click(screen.getByRole('button', { name: '上传附件' }));
     expect(onAttachmentUploadStatus).toHaveBeenCalledWith(
       expect.stringContaining('WebDAV 配置'),
       'warning'
@@ -244,20 +200,12 @@ describe('TransactionDetailDrawer', () => {
           onShareBill={onShareBill}
           onDelete={() => undefined}
           onAiRecategorize={() => undefined}
-          visibleSections={{
-            base: true,
-            source: true,
-            note: true,
-            tags: true,
-            json: false
-          }}
-          onToggleSection={() => undefined}
           onQuickAdd={() => undefined}
         />
       </MemoryRouter>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '📤 分享账单' }));
+    fireEvent.click(screen.getByRole('button', { name: '分享' }));
     expect(onShareBill).toHaveBeenCalledTimes(1);
   });
 });
