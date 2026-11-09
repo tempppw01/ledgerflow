@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { fetchEmbeddings } from '../../features/assistant/api/openaiEmbeddingClient';
@@ -149,19 +157,25 @@ function getProviderPresetLabel(
 
 function ModelSelector({ label, hint, value, presets, onChange }: ModelSelectorProps) {
   const options = useMemo(() => mergeAiModelOptions(value, presets), [value, presets]);
+  const listId = useId();
 
   return (
     <div className="field settings-model-field">
       <label>{label}</label>
       <small>{hint}</small>
       <div className="settings-model-select-row">
-        <select value={value} onChange={(e) => onChange(e.target.value)}>
+        <input
+          type="text"
+          list={listId}
+          value={value}
+          placeholder={getAiModelDisplayLabel(presets[0] ?? '')}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        <datalist id={listId}>
           {options.map((item) => (
-            <option key={item} value={item}>
-              {getAiModelDisplayLabel(item)}
-            </option>
+            <option key={item} value={item} label={getAiModelDisplayLabel(item)} />
           ))}
-        </select>
+        </datalist>
       </div>
     </div>
   );
