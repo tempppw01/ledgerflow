@@ -20,6 +20,10 @@
 
 > 说明：项目仍处于快速迭代阶段，功能、界面和数据结构会持续调整。重要数据请务必保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
 
+> [!TIP]
+> **模型 API 推荐**：[ai.shuaihong.fun/v1](https://ai.shuaihong.fun/v1)  
+> 多种模型可用，兼容 OpenAI 接口，每月最低 20 元月费。可在「设置 → OpenAI」中把接口地址换成该服务，为 AI 助手接入更多模型。
+
 <details>
 <summary><strong>展开查看产品截图</strong></summary>
 
