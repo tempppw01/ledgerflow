@@ -91,6 +91,15 @@ describe('useFinanceStore 回归修复', () => {
     expect(updated?.refundOfTransactionId).toBe('tx-origin');
     expect(updated?.attachments).toHaveLength(1);
     expect(updated?.amount).toBe(30);
+    expect(useFinanceStore.getState().accounts[0].balance).toBe(1030);
+    expect(
+      useFinanceStore.getState().balanceChangeEntries.find((item) => item.transactionId === 'tx-refund')
+    ).toMatchObject({
+      relatedTransactionId: 'tx-origin',
+      type: 'transaction-refund',
+      amount: 30,
+      afterBalance: 1030
+    });
   });
 
   it.each(['pending', 'closed', 'failed'] as const)('状态为 %s 的交易不能退款', (status) => {

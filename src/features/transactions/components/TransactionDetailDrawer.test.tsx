@@ -210,4 +210,34 @@ describe('TransactionDetailDrawer', () => {
     fireEvent.click(screen.getByRole('button', { name: '分享' }));
     expect(onShareBill).toHaveBeenCalledTimes(1);
   });
+
+  it('仅对已完成普通交易显示退款入口', () => {
+    const renderDrawer = (status: 'completed' | 'pending') =>
+      render(
+        <MemoryRouter>
+          <TransactionDetailDrawer
+            open
+            transaction={{ ...sample, status }}
+            categoryName="餐饮"
+            accountName="现金"
+            source="manual"
+            onClose={() => undefined}
+            onCopyNote={() => undefined}
+            onCopyJson={() => undefined}
+            onShareBill={() => undefined}
+            onDelete={() => undefined}
+            onRefund={() => undefined}
+            onAiRecategorize={() => undefined}
+            onQuickAdd={() => undefined}
+          />
+        </MemoryRouter>
+      );
+
+    const completedView = renderDrawer('completed');
+    expect(screen.getByRole('button', { name: /发起退款/ })).toBeInTheDocument();
+
+    completedView.unmount();
+    renderDrawer('pending');
+    expect(screen.queryByRole('button', { name: /发起退款/ })).not.toBeInTheDocument();
+  });
 });
