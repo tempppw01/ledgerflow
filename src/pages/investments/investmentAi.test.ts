@@ -5,6 +5,7 @@ import type {
   InvestmentWatchItem
 } from '../../entities/investment/types';
 import {
+  buildInvestmentAssistantAuxiliaryInfo,
   buildInvestmentFundAnalysisPrompt,
   buildInvestmentMarketInsightPrompt,
   buildInvestmentWatchlistReviewPrompt,
@@ -63,6 +64,55 @@ describe('summarizeInvestmentAnalysis', () => {
 
     expect(result.displayText).toBe('');
     expect(getInvestmentAssistantDisplayText(raw)).toBe('Keep watching before adding');
+  });
+});
+
+describe('buildInvestmentAssistantAuxiliaryInfo', () => {
+  it('does not claim successful web verification when search is unavailable', () => {
+    const result = buildInvestmentAssistantAuxiliaryInfo({
+      webEnabled: true,
+      webQuery: '分析沪深 300 ETF',
+      webSearchStatus: 'unavailable',
+      webSearchMessage: '搜索服务暂不可用',
+      webSearchSources: ['公开网络']
+    });
+
+    expect(result.webTrace).toContain('联网核验:未取得可用结果');
+    expect(result.webTrace).toContain('未取得结果原因:搜索服务暂不可用');
+    expect(result.webTrace).not.toContain('已取得可用结果');
+    expect(result.webTrace).not.toContain('已开启联网核验');
+    expect(result.webTrace).not.toContain('采用来源');
+  });
+
+  it('summarizes successful web search results and sources', () => {
+    const result = buildInvestmentAssistantAuxiliaryInfo({
+      webEnabled: true,
+      webQuery: '分析沪深 300 ETF',
+      webSearchStatus: 'success',
+      webSearchMessage: '已自动切换到可达的搜索服务',
+      webSearchSources: ['同花顺', '雪球']
+    });
+
+    expect(result.webTrace).toContain('联网核验:已取得可用结果');
+    expect(result.webTrace).toContain('检索关键词:分析沪深 300 ETF');
+    expect(result.webTrace).toContain('采用来源:同花顺、雪球');
+    expect(result.webTrace).toContain('检索说明:已自动切换到可达的搜索服务');
+    expect(result.webTrace).not.toContain('已开启联网核验');
+  });
+
+  it('marks partially available web search results accurately', () => {
+    const result = buildInvestmentAssistantAuxiliaryInfo({
+      webEnabled: true,
+      webQuery: '查询基金最新净值',
+      webSearchStatus: 'partial',
+      webSearchMessage: '仅同花顺返回结果,雪球暂不可用',
+      webSearchSources: ['同花顺']
+    });
+
+    expect(result.webTrace).toContain('联网核验:仅取得部分可用结果');
+    expect(result.webTrace).toContain('部分结果说明:仅同花顺返回结果,雪球暂不可用');
+    expect(result.webTrace).toContain('采用来源:同花顺');
+    expect(result.webTrace).not.toContain('已取得可用结果');
   });
 });
 

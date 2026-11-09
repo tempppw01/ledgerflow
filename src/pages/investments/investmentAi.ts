@@ -295,11 +295,11 @@ export function buildInvestmentAssistantAuxiliaryInfo(input: {
   timeContext?: string;
   contextNote?: string;
   webSearchPrompt?: string;
-  webSearchStatus?: 'success' | 'unavailable';
+  webSearchStatus?: 'success' | 'partial' | 'unavailable';
   webSearchMessage?: string;
   webSearchSources?: string[];
 }) {
-  const webTrace = [
+  const legacyWebTrace = [
     input.webEnabled
       ? input.webSearchStatus === 'unavailable'
         ? '联网过程：已开启联网核验，但本次未取得可用结果'
@@ -315,6 +315,35 @@ export function buildInvestmentAssistantAuxiliaryInfo(input: {
   ]
     .filter(Boolean)
     .join('\n');
+
+  const webStatusText =
+    input.webSearchStatus === 'unavailable'
+      ? '联网核验:未取得可用结果'
+      : input.webSearchStatus === 'partial'
+        ? '联网核验:仅取得部分可用结果'
+        : input.webSearchStatus === 'success'
+          ? '联网核验:已取得可用结果'
+          : '联网核验:已发起,结果待确认';
+  const hasUsableWebResults =
+    input.webSearchStatus === 'success' || input.webSearchStatus === 'partial';
+  const webMessagePrefix =
+    input.webSearchStatus === 'unavailable'
+      ? '未取得结果原因'
+      : input.webSearchStatus === 'partial'
+        ? '部分结果说明'
+        : '检索说明';
+  const webTrace = input.webEnabled
+    ? [
+        webStatusText,
+        input.webQuery ? `检索关键词:${input.webQuery}` : '',
+        hasUsableWebResults && input.webSearchSources?.length
+          ? `采用来源:${input.webSearchSources.join('、')}`
+          : '',
+        input.webSearchMessage ? `${webMessagePrefix}:${input.webSearchMessage}` : ''
+      ]
+        .filter(Boolean)
+        .join('\n')
+    : legacyWebTrace;
 
   const relatedData = [
     input.timeContext ? `当前时间：${input.timeContext}` : '',
