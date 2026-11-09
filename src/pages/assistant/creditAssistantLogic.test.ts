@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  annualizeCreditInterest,
   enrichCreditItemsForConfirmation,
   formatCreditAccountReference
 } from './creditAssistantLogic';
@@ -70,5 +71,27 @@ describe('creditAssistantLogic account labels', () => {
     expect(formatCreditAccountReference('acc-unknown', accounts)).toBe('acc-unknown');
     expect(formatCreditAccountReference(undefined, accounts)).toBeUndefined();
     expect(formatCreditAccountReference('acc-cmb', [])).toBe('acc-cmb');
+  });
+});
+
+describe('annualizeCreditInterest', () => {
+  it('converts a daily rate to an annual rate', () => {
+    expect(annualizeCreditInterest('0.05%', '日利率')).toBe(18.25);
+  });
+
+  it('converts a monthly rate to an annual rate', () => {
+    expect(annualizeCreditInterest('1.5%', '月利率')).toBe(18);
+  });
+
+  it('keeps annual rates and APR unchanged', () => {
+    expect(annualizeCreditInterest('4.35%', 'APR')).toBe(4.35);
+    expect(annualizeCreditInterest('3.6%', '年利率')).toBe(3.6);
+    expect(annualizeCreditInterest('12%')).toBe(12);
+  });
+
+  it('parses grouped numbers and returns undefined for missing or invalid input', () => {
+    expect(annualizeCreditInterest('1,825', 'APR')).toBe(1825);
+    expect(annualizeCreditInterest(undefined, 'APR')).toBeUndefined();
+    expect(annualizeCreditInterest('待补充', 'APR')).toBeUndefined();
   });
 });

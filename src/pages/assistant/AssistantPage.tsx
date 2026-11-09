@@ -36,6 +36,7 @@ import {
 import type { DraftBillEntry } from '../../features/assistant/workbench/workbenchTypes';
 import type { TransactionItem } from '../../entities/transaction/types';
 import {
+  annualizeCreditInterest,
   buildCreditFollowUpPrompts,
   enrichCreditItemsForConfirmation,
   formatCreditAccountReference,
@@ -506,7 +507,7 @@ function normalizeCreditDebtPayload(item: CreditExtractedItem): Omit<DebtItem, '
   };
 
   const balance = toNumber(prefill.balance) || 0;
-  const annualRate = toNumber(prefill.annualRate);
+  const annualRate = annualizeCreditInterest(item.interest, item.rateType);
   const remainingMonths = toNumber(prefill.remainingMonths);
   const totalPeriods = toNumber(prefill.totalPeriods);
   const paidPeriods = toNumber(prefill.paidPeriods);
@@ -532,6 +533,43 @@ function normalizeCreditDebtPayload(item: CreditExtractedItem): Omit<DebtItem, '
     repaymentRecordMode: 'manual',
     graceDays: 0
   };
+}
+
+function buildCreditDebtUpdatePatch(item: CreditExtractedItem): Partial<Omit<DebtItem, 'id'>> {
+  const prefill = mapCreditItemToRepaymentPrefill(item);
+  const patch: Partial<Omit<DebtItem, 'id'>> = {};
+
+  const name = String(prefill.name || '').trim();
+  if (name) patch.name = name;
+
+  const balance = Number(prefill.balance);
+  if (prefill.balance && Number.isFinite(balance)) patch.balance = balance;
+
+  const annualRate = annualizeCreditInterest(item.interest, item.rateType);
+  if (annualRate !== undefined) patch.annualRate = annualRate;
+
+  const repaymentDay = Number(prefill.repaymentDay);
+  if (prefill.repaymentDay && Number.isFinite(repaymentDay)) patch.repaymentDay = repaymentDay;
+
+  const periods = Number(prefill.totalPeriods);
+  if (prefill.totalPeriods && Number.isFinite(periods)) {
+    patch.totalPeriods = periods;
+    patch.remainingMonths = periods;
+  }
+
+  return patch;
+}
+
+function resolveQuickRepayAmount(
+  creditItem: CreditExtractedItem,
+  debt: DebtItem
+): { amount: number; capped: boolean } | null {
+  const rawAmount = Number(String(creditItem.dueAmount || '').replace(/[^\d.-]/g, ''));
+  if (!Number.isFinite(rawAmount) || rawAmount <= 0) return null;
+  const balance = Math.max(0, debt.balance);
+  const amount = Math.min(rawAmount, balance);
+  if (amount <= 0) return null;
+  return { amount: Number(amount.toFixed(2)), capped: rawAmount > balance };
 }
 
 function mapCreditItemToRepaymentPrefill(item: CreditExtractedItem) {
@@ -819,6 +857,14 @@ export function AssistantPage() {
   const [confirmingCreditId, setConfirmingCreditId] = useState<string | null>(null);
   const [pendingDeleteCreditItem, setPendingDeleteCreditItem] =
     useState<CreditExtractedItem | null>(null);
+  const [pendingQuickRepay, setPendingQuickRepay] = useState<{
+    item: CreditExtractedItem;
+    amount: number;
+    capped: boolean;
+    balanceAfter: number;
+    debtName: string;
+  } | null>(null);
+  const quickRepayLockRef = useRef(false);
   const [modelPickerSource, setModelPickerSource] = useState<'command' | 'toolbar' | null>(null);
   const memoryExtractionSignatureRef = useRef<Record<AssistantMode, string>>({
     bookkeeping: '',
@@ -1343,7 +1389,15 @@ export function AssistantPage() {
     (creditItem: CreditExtractedItem, strategy: 'create' | 'update' = 'create') => {
       const payload = normalizeCreditDebtPayload(creditItem);
       if (strategy === 'update' && creditItem.matchedDebtId) {
-        updateDebt(creditItem.matchedDebtId, payload);
+        const existing = debts.find((item) => item.id === creditItem.matchedDebtId);
+        if (existing) {
+          updateDebt(creditItem.matchedDebtId, {
+            ...existing,
+            ...buildCreditDebtUpdatePatch(creditItem)
+          });
+        } else {
+          updateDebt(creditItem.matchedDebtId, payload);
+        }
       } else {
         addDebt(payload);
       }
@@ -1357,7 +1411,7 @@ export function AssistantPage() {
         creditItem.pendingFields.length > 0 && strategy !== 'update' ? 'warning' : 'success'
       );
     },
-    [addDebt, updateDebt, wb]
+    [addDebt, debts, updateDebt, wb]
   );
 
   const handleDeleteMatchedDebt = useCallback(
@@ -1383,12 +1437,17 @@ export function AssistantPage() {
         wb.setToastState('没找到对应负债，先刷新或去还款管理页核对。', 'warning');
         return;
       }
-      const amountText = String(creditItem.dueAmount || '').replace(/[^\d.-]/g, '');
-      const amount = Number(amountText);
-      if (!Number.isFinite(amount) || amount <= 0) {
-        wb.setToastState('当前应还金额还不够稳定，先补全金额后再登记还款。', 'warning');
+      const resolved = resolveQuickRepayAmount(creditItem, matchedDebt);
+      if (!resolved) {
+        wb.setToastState(
+          matchedDebt.balance <= 0
+            ? '这笔负债已结清，无需再登记还款。'
+            : '当前应还金额还不够稳定，先补全金额后再登记还款。',
+          'warning'
+        );
         return;
       }
+      const amount = resolved.amount;
       const minimumPayment = calculateDebtMinimumPayment(matchedDebt);
       const nextBalance = Math.max(0, Number((matchedDebt.balance - amount).toFixed(2)));
       const shouldAdvancePeriod = amount >= Math.max(1, minimumPayment * 0.98);
@@ -2559,7 +2618,45 @@ export function AssistantPage() {
                                   <button
                                     type="button"
                                     className="chat-secondary-action-btn"
-                                    onClick={() => handleQuickRepaymentRecord(creditItem)}
+                                    onClick={() => {
+                                      const matchedDebt = debts.find(
+                                        (item) => item.id === creditItem.matchedDebtId
+                                      );
+                                      if (!matchedDebt) {
+                                        wb.setToastState(
+                                          '没找到对应负债，先刷新或去还款管理页核对。',
+                                          'warning'
+                                        );
+                                        return;
+                                      }
+                                      const resolved = resolveQuickRepayAmount(
+                                        creditItem,
+                                        matchedDebt
+                                      );
+                                      if (!resolved) {
+                                        wb.setToastState(
+                                          matchedDebt.balance <= 0
+                                            ? '这笔负债已结清，无需再登记还款。'
+                                            : '当前应还金额还不够稳定，先补全金额后再登记还款。',
+                                          'warning'
+                                        );
+                                        return;
+                                      }
+                                      quickRepayLockRef.current = false;
+                                      setPendingQuickRepay({
+                                        item: creditItem,
+                                        amount: resolved.amount,
+                                        capped: resolved.capped,
+                                        balanceAfter: Math.max(
+                                          0,
+                                          Number((matchedDebt.balance - resolved.amount).toFixed(2))
+                                        ),
+                                        debtName:
+                                          matchedDebt.name ||
+                                          creditItem.matchedDebtName ||
+                                          creditItem.title
+                                      });
+                                    }}
                                   >
                                     快速登记已还
                                   </button>
@@ -3378,6 +3475,28 @@ export function AssistantPage() {
               setPendingDeleteCreditItem(null);
             }}
             onCancel={() => setPendingDeleteCreditItem(null)}
+          />
+
+          <ConfirmDialog
+            open={Boolean(pendingQuickRepay)}
+            title="登记这笔已还？"
+            description={
+              pendingQuickRepay
+                ? `将从“${pendingQuickRepay.debtName}”登记一笔 ¥${pendingQuickRepay.amount.toFixed(
+                    2
+                  )} 还款，剩余待还更新为 ¥${pendingQuickRepay.balanceAfter.toFixed(2)}。${
+                    pendingQuickRepay.capped ? ' 当前应还高于剩余待还，已按剩余金额封顶。' : ''
+                  }`
+                : ''
+            }
+            confirmText="确认登记"
+            onConfirm={() => {
+              if (!pendingQuickRepay || quickRepayLockRef.current) return;
+              quickRepayLockRef.current = true;
+              handleQuickRepaymentRecord(pendingQuickRepay.item);
+              setPendingQuickRepay(null);
+            }}
+            onCancel={() => setPendingQuickRepay(null)}
           />
 
           <Toast

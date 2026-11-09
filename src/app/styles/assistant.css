@@ -4018,6 +4018,8 @@
   line-height: 1.14;
   /* 换行时把两行长度拉匀,避免最后一个字被单独挤到下一行。 */
   text-wrap: balance;
+  /* 中文标题只在标点处换行，避免把「什么」这类词拆成两行。 */
+  word-break: keep-all;
 }
 
 .chat-mode-welcome h2 em {

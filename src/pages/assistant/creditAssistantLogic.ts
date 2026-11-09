@@ -20,6 +20,28 @@ function normalizeCreditIdentity(text: string): string {
   return text.replace(/\s+/g, '').replace(/[（）()\-·:：]/g, '').toLowerCase();
 }
 
+const CREDIT_DAYS_PER_YEAR = 365;
+const CREDIT_MONTHS_PER_YEAR = 12;
+
+export function annualizeCreditInterest(
+  interest?: string,
+  rateType?: string
+): number | undefined {
+  if (!interest) return undefined;
+  const match = String(interest).replace(/,/g, '').match(/-?\d+(?:\.\d+)?/);
+  if (!match) return undefined;
+  const value = Number(match[0]);
+  if (!Number.isFinite(value)) return undefined;
+  const type = String(rateType || '');
+  if (/日/.test(type)) {
+    return Number((value * CREDIT_DAYS_PER_YEAR).toFixed(4));
+  }
+  if (/月/.test(type)) {
+    return Number((value * CREDIT_MONTHS_PER_YEAR).toFixed(4));
+  }
+  return value;
+}
+
 export function countCompletedCreditFields(item: CreditExtractedItem): number {
   return [
     item.title,
@@ -196,7 +218,7 @@ function normalizeCreditDebtPayload(item: CreditExtractedItem): Omit<DebtItem, '
 
   const totalPeriodsNumber = extractNumberText(item.remainingPeriods);
   const balance = toNumber(extractNumberText(item.totalDebt) || extractNumberText(item.dueAmount)) || 0;
-  const annualRate = toNumber(extractNumberText(item.interest));
+  const annualRate = annualizeCreditInterest(item.interest, item.rateType);
   const remainingMonths = toNumber(totalPeriodsNumber);
   const totalPeriods = toNumber(totalPeriodsNumber);
   const loanPrincipal = toNumber(extractNumberText(item.totalDebt));
