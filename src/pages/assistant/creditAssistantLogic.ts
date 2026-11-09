@@ -28,11 +28,23 @@ export function annualizeCreditInterest(
   rateType?: string
 ): number | undefined {
   if (!interest) return undefined;
-  const match = String(interest).replace(/,/g, '').match(/-?\d+(?:\.\d+)?/);
+  const interestText = String(interest).trim();
+  const type = String(rateType || '').trim();
+  const hasPercentSignal = /[%％]/.test(interestText);
+  const hasRateLabel = /(利率|费率|apr|年化|月化|日化)/i.test(`${interestText} ${type}`);
+  const hasMoneySignal =
+    /[¥￥]/.test(interestText) || /\d\s*(?:元|块|人民币)/.test(interestText);
+
+  // Provider output sometimes puts a fixed service fee in the interest field.
+  // A money amount must never become an APR without an explicit percent signal.
+  if ((!hasPercentSignal && !hasRateLabel) || (hasMoneySignal && !hasPercentSignal)) {
+    return undefined;
+  }
+
+  const match = interestText.replace(/,/g, '').match(/-?\d+(?:\.\d+)?/);
   if (!match) return undefined;
   const value = Number(match[0]);
-  if (!Number.isFinite(value)) return undefined;
-  const type = String(rateType || '');
+  if (!Number.isFinite(value) || value < 0) return undefined;
   if (/日/.test(type)) {
     return Number((value * CREDIT_DAYS_PER_YEAR).toFixed(4));
   }
@@ -217,7 +229,8 @@ function normalizeCreditDebtPayload(item: CreditExtractedItem): Omit<DebtItem, '
   };
 
   const totalPeriodsNumber = extractNumberText(item.remainingPeriods);
-  const balance = toNumber(extractNumberText(item.totalDebt) || extractNumberText(item.dueAmount)) || 0;
+  const balance = toNumber(extractNumberText(item.totalDebt)) || 0;
+  const dueAmount = toNumber(extractNumberText(item.dueAmount));
   const annualRate = annualizeCreditInterest(item.interest, item.rateType);
   const remainingMonths = toNumber(totalPeriodsNumber);
   const totalPeriods = toNumber(totalPeriodsNumber);
@@ -237,7 +250,7 @@ function normalizeCreditDebtPayload(item: CreditExtractedItem): Omit<DebtItem, '
     totalRepayment,
     repaymentDay,
     paymentAccount: undefined,
-    customMinPayment: undefined,
+    customMinPayment: dueAmount && dueAmount > 0 ? dueAmount : undefined,
     billDay: undefined,
     repaymentMethod: type === 'loan' ? 'equal-installment' : 'minimum-payment',
     repaymentRecordMode: 'manual',

@@ -517,6 +517,7 @@ function normalizeCreditDebtPayload(item: CreditExtractedItem): Omit<DebtItem, '
   };
 
   const balance = toNumber(prefill.balance) || 0;
+  const dueAmount = toNumber(prefill.dueAmount);
   const annualRate = annualizeCreditInterest(item.interest, item.rateType);
   const remainingMonths = toNumber(prefill.remainingMonths);
   const totalPeriods = toNumber(prefill.totalPeriods);
@@ -537,7 +538,7 @@ function normalizeCreditDebtPayload(item: CreditExtractedItem): Omit<DebtItem, '
     totalRepayment,
     repaymentDay,
     paymentAccount: prefill.paymentAccount || undefined,
-    customMinPayment: undefined,
+    customMinPayment: dueAmount && dueAmount > 0 ? dueAmount : undefined,
     billDay: undefined,
     repaymentMethod: prefill.type === 'loan' ? 'equal-installment' : 'minimum-payment',
     repaymentRecordMode: 'manual',
@@ -609,7 +610,8 @@ function mapCreditItemToRepaymentPrefill(item: CreditExtractedItem) {
   return {
     name: item.title,
     type,
-    balance: extractNumberText(item.totalDebt) || extractNumberText(item.dueAmount),
+    balance: extractNumberText(item.totalDebt),
+    dueAmount: extractNumberText(item.dueAmount),
     repaymentDay: extractDayText(item.repaymentDate),
     totalPeriods: totalPeriodsNumber,
     paidPeriods: '',
@@ -1437,6 +1439,17 @@ export function AssistantPage() {
           updateDebt(creditItem.matchedDebtId, payload);
         }
       } else {
+        const prefill = mapCreditItemToRepaymentPrefill(creditItem);
+        if (!(Number(prefill.balance) > 0)) {
+          navigate('/repayment-management', {
+            state: { prefillDebt: prefill }
+          });
+          wb.setToastState(
+            '还缺“剩余待还”金额,已带你到还款管理补齐;当前应还会保留为最低还款额。',
+            'warning'
+          );
+          return;
+        }
         addDebt(payload);
       }
       setConfirmingCreditId(null);
@@ -1449,7 +1462,7 @@ export function AssistantPage() {
         creditItem.pendingFields.length > 0 && strategy !== 'update' ? 'warning' : 'success'
       );
     },
-    [addDebt, debts, updateDebt, wb]
+    [addDebt, debts, navigate, updateDebt, wb]
   );
 
   const handleDeleteMatchedDebt = useCallback(
@@ -2648,7 +2661,7 @@ export function AssistantPage() {
                                 {creditItem.confirmationState === 'ready'
                                   ? '进入保存前确认'
                                   : creditItem.pendingFields.length > 0
-                                    ? '先保存，后续补充'
+                                    ? '补充剩余待还后保存'
                                     : '保存到还款管理'}
                               </button>
                               <button

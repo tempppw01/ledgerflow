@@ -94,4 +94,10 @@ describe('annualizeCreditInterest', () => {
     expect(annualizeCreditInterest(undefined, 'APR')).toBeUndefined();
     expect(annualizeCreditInterest('待补充', 'APR')).toBeUndefined();
   });
+
+  it('does not treat a fixed fee as an annual interest rate', () => {
+    expect(annualizeCreditInterest('服务费 300 元', 'APR')).toBeUndefined();
+    expect(annualizeCreditInterest('¥300', '年利率')).toBeUndefined();
+    expect(annualizeCreditInterest('15.2')).toBeUndefined();
+  });
 });

@@ -502,10 +502,66 @@ describe('AssistantPage', () => {
         expect.objectContaining({
           name: '招联消费贷',
           type: 'consumer-loan',
-          balance: 4200
+          balance: 4200,
+          customMinPayment: 998
         })
       );
     });
+
+    sessionStorageGetItemSpy.mockRestore();
+  });
+
+  it('只有当前应还时不应把应还金额当作总负债直接保存', async () => {
+    addDebtMock.mockClear();
+    const workbench = {
+      ...createWorkbenchMock(),
+      rawContent: '已识别完成',
+      status: 'ready'
+    };
+    useAssistantWorkbenchMock.mockReturnValue(workbench);
+
+    const sessionStorageGetItemSpy = vi
+      .spyOn(window.sessionStorage.__proto__, 'getItem')
+      .mockImplementation((key) => {
+        if (String(key).includes('chatHistory.credit')) {
+          return JSON.stringify([
+            {
+              id: 'credit-assistant-due-only',
+              role: 'assistant',
+              text: '已识别当前应还,但总欠款还不明确。',
+              creditItems: [
+                {
+                  id: 'credit-due-only',
+                  title: '招商信用卡',
+                  productType: '信用卡',
+                  dueAmount: '1200',
+                  repaymentDate: '每月25日',
+                  pendingFields: ['剩余待还'],
+                  confidence: 'medium'
+                }
+              ]
+            }
+          ]);
+        }
+        return '[]';
+      });
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    await selectAssistantMode('AI 信贷管家');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '补充剩余待还后保存' }));
+    });
+
+    expect(addDebtMock).not.toHaveBeenCalled();
+    expect(workbench.setToastState).toHaveBeenCalledWith(
+      expect.stringContaining('剩余待还'),
+      'warning'
+    );
 
     sessionStorageGetItemSpy.mockRestore();
   });
