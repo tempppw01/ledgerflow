@@ -25,7 +25,11 @@ import {
   trimInvestmentAiMessages
 } from '../../../pages/investments/investmentAi';
 import { fetchAiModels, sendAiChatStream } from '../api/openaiCompatibleClient';
-import { buildWebSearchPrompt, fetchWebSearchContext } from '../api/webSearchClient';
+import {
+  buildWebSearchPrompt,
+  fetchWebSearchContext,
+  type WebSearchContext
+} from '../api/webSearchClient';
 import { renderMarkdownContent } from '../ui/MarkdownRenderer';
 import {
   ChatChevronUpIcon,
@@ -86,7 +90,7 @@ const FLOATING_CHAT_VIEWPORT_GUTTER = 16;
 const MAX_INVESTMENT_AI_IMAGES = 4;
 const MAX_INVESTMENT_AI_IMAGE_SIZE_MB = 6;
 const INVESTMENT_CHAT_PROGRESS_LABELS: Record<Exclude<InvestmentChatProgress, ''>, string> = {
-  market: '正在读取当前页面的大盘、板块和快讯数据',
+  market: '正在读取页面持仓、自选和账本数据',
   web: '正在查询公开联网资讯',
   thinking: '正在思考投资结论',
   answering: '正在组织回答'
@@ -306,10 +310,8 @@ export function InvestmentChatComposer({
 
   const openModelPicker = useCallback(() => {
     setModelOpen(true);
-    if (models.length === 0) {
-      void loadModels();
-    }
-  }, [loadModels, models.length]);
+    void loadModels();
+  }, [loadModels]);
 
   const selectModel = useCallback(
     (nextModel: string) => {
@@ -382,7 +384,7 @@ export function InvestmentChatComposer({
       return;
     }
 
-    const requestImages = prompt ? [] : images;
+    const requestImages = images;
     const requestText = cleanPrompt || '请基于这些基金或持仓截图做投资分析。';
     const abortController = new AbortController();
     const requestVersion = requestVersionRef.current + 1;
@@ -414,13 +416,23 @@ export function InvestmentChatComposer({
       await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
       if (!isCurrentRequest()) return;
       let webSearchPrompt = '';
+      let webSearchStatus: WebSearchContext['status'] | undefined;
+      let webSearchMessage: string | undefined;
+      let webSearchSources: string[] | undefined;
       if (webEnabled) {
         setProgress('web');
-        webSearchPrompt = buildWebSearchPrompt(
-          await fetchWebSearchContext(cleanPrompt, webSearch, abortController.signal, {
+        const webSearchContext = await fetchWebSearchContext(
+          cleanPrompt,
+          webSearch,
+          abortController.signal,
+          {
             investmentNewsSources: ['10jqka', 'xueqiu']
-          })
+          }
         );
+        webSearchPrompt = buildWebSearchPrompt(webSearchContext);
+        webSearchStatus = webSearchContext.status;
+        webSearchMessage = webSearchContext.message;
+        webSearchSources = webSearchContext.sources;
       }
       if (!isCurrentRequest()) return;
       setProgress('thinking');
@@ -430,15 +442,23 @@ export function InvestmentChatComposer({
         webQuery: cleanPrompt || requestText,
         timeContext,
         contextNote,
-        webSearchPrompt
+        webSearchPrompt,
+        webSearchStatus,
+        webSearchMessage,
+        webSearchSources
       });
+      const webModeInstruction = !webEnabled
+        ? ''
+        : webSearchStatus === 'unavailable'
+          ? '\n\n联网模式：用户已开启联网核验，但本次检索未返回可用结果。请如实说明当前无法实时核验，不要编造最新行情或净值。'
+          : '\n\n联网模式：用户已开启联网核验。请优先使用以下联网检索上下文核验基金净值、费率、持仓、基金公司和近期表现等最新信息。';
       const result = await sendAiChatStream(
         {
           baseUrl,
           apiKey,
           model,
           systemPrompt: webEnabled
-            ? `${timeContext}\n\n${assistantPrompt}\n\n联网模式：用户已开启联网核验。请优先使用以下联网检索上下文核验基金净值、费率、持仓、基金公司和近期表现等最新信息。\n\n${webSearchPrompt}`
+            ? `${timeContext}\n\n${assistantPrompt}${webModeInstruction}\n\n${webSearchPrompt}`
             : `${timeContext}\n\n${assistantPrompt}`,
           messages: nextMessages.map((item) => ({
             role: item.role,
@@ -657,8 +677,9 @@ export function InvestmentChatComposer({
                   className="chat-upload-btn investments-ai-suggestions-toggle"
                   onClick={() => setSuggestionsCollapsed((value) => !value)}
                   aria-expanded={!suggestionsCollapsed}
-                  aria-label={suggestionsCollapsed ? '展开消息' : '折叠消息'}
-                  title={suggestionsCollapsed ? '展开消息' : '折叠消息'}
+                  aria-controls="investments-ai-suggestions"
+                  aria-label={suggestionsCollapsed ? '展开追问建议' : '收起追问建议'}
+                  title={suggestionsCollapsed ? '展开追问建议' : '收起追问建议'}
                 >
                   {suggestionsCollapsed ? (
                     <ChatChevronsUpDownIcon className="chat-svg-icon" />
@@ -727,7 +748,7 @@ export function InvestmentChatComposer({
                     : null}
                 </div>
                 {!suggestionsCollapsed && followUps.length > 0 ? (
-                  <div className="investments-ai-suggestion-list">
+                  <div className="investments-ai-suggestion-list" id="investments-ai-suggestions">
                     {followUps.map((question) => (
                       <button
                         key={question}

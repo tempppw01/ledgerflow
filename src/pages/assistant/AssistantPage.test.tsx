@@ -41,6 +41,7 @@ vi.mock('react-i18next', () => ({
         'assistant.ui.bookkeepingMode': 'AI 记账',
         'assistant.ui.assistantMode': 'AI 助手',
         'assistant.ui.creditMode': 'AI 信贷管家',
+        'assistant.ui.investmentMode': 'AI 投资助手',
         'assistant.ui.bookkeepingAssistant': 'AI 记账助手',
         'assistant.ui.qaAssistant': 'AI 助手',
         'assistant.ui.quickAdd': '快速记一笔',

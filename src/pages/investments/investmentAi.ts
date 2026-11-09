@@ -295,10 +295,23 @@ export function buildInvestmentAssistantAuxiliaryInfo(input: {
   timeContext?: string;
   contextNote?: string;
   webSearchPrompt?: string;
+  webSearchStatus?: 'success' | 'unavailable';
+  webSearchMessage?: string;
+  webSearchSources?: string[];
 }) {
   const webTrace = [
-    `联网过程：${input.webEnabled ? '已开启联网核验' : '未开启联网核验'}`,
-    input.webEnabled && input.webQuery ? `检索关键词：${input.webQuery}` : ''
+    input.webEnabled
+      ? input.webSearchStatus === 'unavailable'
+        ? '联网过程：已开启联网核验，但本次未取得可用结果'
+        : '联网过程：已开启联网核验'
+      : '联网过程：未开启联网核验',
+    input.webEnabled && input.webQuery ? `检索关键词：${input.webQuery}` : '',
+    input.webEnabled && input.webSearchSources?.length
+      ? `采用来源：${input.webSearchSources.join('、')}`
+      : '',
+    input.webEnabled && input.webSearchStatus === 'unavailable' && input.webSearchMessage
+      ? `未取得结果原因：${input.webSearchMessage}`
+      : ''
   ]
     .filter(Boolean)
     .join('\n');

@@ -1921,7 +1921,7 @@ export function AssistantPage() {
               className={mode === 'investment' ? 'active' : ''}
               onClick={() => selectAssistantMode('investment')}
             >
-              AI 投资助手
+              {t('assistant.ui.investmentMode')}
             </button>
           </div>
         </div>
