@@ -1,10 +1,38 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { sendAiChat, sendAiChatStream } from './openaiCompatibleClient';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ENV } from '../../../shared/config/env';
+import { fetchAiModels, sendAiChat, sendAiChatStream } from './openaiCompatibleClient';
+
+function createStreamResponse(lines: string[]) {
+  return new Response(lines.join('\n'), {
+    status: 200,
+    headers: { 'Content-Type': 'text/event-stream' }
+  });
+}
+
+function mockAbortableFetch() {
+  return vi.spyOn(globalThis, 'fetch').mockImplementation((_input, init) => {
+    return new Promise<Response>((_resolve, reject) => {
+      const signal = init?.signal;
+      const rejectAborted = () => reject(new DOMException('Aborted', 'AbortError'));
+      if (signal?.aborted) {
+        rejectAborted();
+        return;
+      }
+      signal?.addEventListener('abort', rejectAborted, { once: true });
+    });
+  });
+}
 
 describe('openaiCompatibleClient baseUrl validation', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('rejects unsupported protocols but allows plain http endpoints', async () => {
     await expect(
       sendAiChat({
@@ -14,9 +42,11 @@ describe('openaiCompatibleClient baseUrl validation', () => {
       })
     ).rejects.toThrow('仅支持 HTTP/HTTPS 协议');
 
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }] }), { status: 200 })
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }] }), { status: 200 })
+      );
     await sendAiChat({
       baseUrl: 'http://api.example.com/v1',
       model: 'test-model',
@@ -60,6 +90,7 @@ describe('openaiCompatibleClient baseUrl validation', () => {
 
     fetchMock.mockRestore();
   });
+
   it('hides backend plaintext error details and returns stable error code', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response('upstream failed token=abc123 https://internal.example.com', { status: 502 })
@@ -82,6 +113,7 @@ describe('openaiCompatibleClient baseUrl validation', () => {
     expect(warnPayload?.detail || '').not.toContain('abc123');
     expect(warnPayload?.detail || '').not.toContain('internal.example.com');
   });
+
   it('发送 PDF 附件时应使用 file_data 字段而不是 file_url', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
@@ -120,19 +152,18 @@ describe('openaiCompatibleClient baseUrl validation', () => {
   });
 
   it('streams reasoning_content before final text deltas', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(
-        [
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        createStreamResponse([
           'data: {"choices":[{"delta":{"reasoning_content":"先判断场景"}}]}',
           '',
           'data: {"choices":[{"delta":{"content":"可以记一笔。"}}]}',
           '',
           'data: [DONE]',
           ''
-        ].join('\n'),
-        { status: 200 }
-      )
-    );
+        ])
+      );
     const reasoning: string[] = [];
     const content: string[] = [];
     let doneContent = '';
@@ -161,5 +192,238 @@ describe('openaiCompatibleClient baseUrl validation', () => {
     expect(result).toMatchObject({ content: '可以记一笔。', reasoning: '先判断场景' });
 
     fetchMock.mockRestore();
+  });
+
+  it('accepts a terminal finish_reason without a DONE marker', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      createStreamResponse([
+        'data: {"choices":[{"delta":{"content":"完整回复"},"finish_reason":"stop"}]}'
+      ])
+    );
+    const onDone = vi.fn();
+
+    const result = await sendAiChatStream(
+      {
+        baseUrl: 'https://api.example.com/v1',
+        model: 'test-model',
+        messages: [{ role: 'user', text: 'hello' }]
+      },
+      { onDelta: vi.fn(), onDone }
+    );
+
+    expect(result.content).toBe('完整回复');
+    expect(onDone).toHaveBeenCalledWith('完整回复', undefined);
+  });
+
+  it('rejects a stream that ends before DONE or a terminal finish_reason', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      createStreamResponse(['data: {"choices":[{"delta":{"content":"半截回复"}}]}'])
+    );
+    const onError = vi.fn();
+    const onDone = vi.fn();
+
+    await expect(
+      sendAiChatStream(
+        {
+          baseUrl: 'https://api.example.com/v1',
+          model: 'test-model',
+          messages: [{ role: 'user', text: 'hello' }]
+        },
+        { onDelta: vi.fn(), onDone, onError }
+      )
+    ).rejects.toMatchObject({
+      code: 'AI_CHAT_STREAM_INCOMPLETE',
+      retryable: true
+    });
+
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onDone).not.toHaveBeenCalled();
+  });
+
+  it('tolerates and records malformed chunks when valid content still completes', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      createStreamResponse([
+        'data: {not-json}',
+        'data: {"choices":[{"delta":{"content":"有效回复"}}]}',
+        'data: [DONE]'
+      ])
+    );
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    const result = await sendAiChatStream(
+      {
+        baseUrl: 'https://api.example.com/v1',
+        model: 'test-model',
+        messages: [{ role: 'user', text: 'hello' }]
+      },
+      { onDelta: vi.fn() }
+    );
+
+    expect(result.content).toBe('有效回复');
+    expect(warnSpy).toHaveBeenCalledWith('[AI_STREAM_MALFORMED_CHUNK]', {
+      count: 1,
+      tolerated: true
+    });
+  });
+
+  it('rejects a stream containing only malformed chunks as a format error', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      createStreamResponse(['data: {not-json}', 'data: null', 'data: {"unexpected":true}'])
+    );
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    await expect(
+      sendAiChatStream(
+        {
+          baseUrl: 'https://api.example.com/v1',
+          model: 'test-model',
+          messages: [{ role: 'user', text: 'hello' }]
+        },
+        { onDelta: vi.fn() }
+      )
+    ).rejects.toMatchObject({
+      code: 'AI_CHAT_STREAM_FORMAT',
+      retryable: true
+    });
+
+    expect(warnSpy).toHaveBeenCalledWith('[AI_STREAM_MALFORMED_CHUNK]', {
+      count: 3,
+      tolerated: false
+    });
+  });
+
+  it('rejects an all-malformed stream even when DONE is received', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      createStreamResponse(['data: {not-json}', 'data: [DONE]'])
+    );
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    await expect(
+      sendAiChatStream(
+        {
+          baseUrl: 'https://api.example.com/v1',
+          model: 'test-model',
+          messages: [{ role: 'user', text: 'hello' }]
+        },
+        { onDelta: vi.fn() }
+      )
+    ).rejects.toMatchObject({
+      code: 'AI_CHAT_STREAM_FORMAT',
+      retryable: true
+    });
+
+    expect(warnSpy).toHaveBeenCalledWith('[AI_STREAM_MALFORMED_CHUNK]', {
+      count: 1,
+      tolerated: false
+    });
+  });
+
+  it('times out regular chat requests with a retryable error', async () => {
+    vi.useFakeTimers();
+    mockAbortableFetch();
+
+    const request = sendAiChat({
+      baseUrl: 'https://api.example.com/v1',
+      model: 'test-model',
+      messages: [{ role: 'user', text: 'hello' }]
+    }).catch((error: unknown) => error);
+
+    await vi.advanceTimersByTimeAsync(ENV.requestTimeoutMs);
+
+    await expect(request).resolves.toMatchObject({
+      code: 'AI_REQUEST_TIMEOUT',
+      retryable: true
+    });
+  });
+
+  it('times out model discovery requests with a retryable error', async () => {
+    vi.useFakeTimers();
+    mockAbortableFetch();
+
+    const request = fetchAiModels('https://api.example.com/v1').catch((error: unknown) => error);
+
+    await vi.advanceTimersByTimeAsync(ENV.requestTimeoutMs);
+
+    await expect(request).resolves.toMatchObject({
+      code: 'AI_REQUEST_TIMEOUT',
+      retryable: true
+    });
+  });
+
+  it('keeps the timeout active while waiting for stream data', async () => {
+    vi.useFakeTimers();
+    const body = new ReadableStream<Uint8Array>({
+      start() {
+        // Keep the stream open to verify the request timeout also covers reads.
+      }
+    });
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(body, { status: 200 }));
+    const onError = vi.fn();
+
+    const request = sendAiChatStream(
+      {
+        baseUrl: 'https://api.example.com/v1',
+        model: 'test-model',
+        messages: [{ role: 'user', text: 'hello' }]
+      },
+      { onDelta: vi.fn(), onError }
+    ).catch((error: unknown) => error);
+
+    await vi.advanceTimersByTimeAsync(ENV.requestTimeoutMs);
+
+    await expect(request).resolves.toMatchObject({
+      code: 'AI_REQUEST_TIMEOUT',
+      retryable: true
+    });
+    expect(onError).toHaveBeenCalledTimes(1);
+  });
+
+  it('merges caller aborts into a retryable cancellation error', async () => {
+    const controller = new AbortController();
+    mockAbortableFetch();
+
+    const request = sendAiChat({
+      baseUrl: 'https://api.example.com/v1',
+      model: 'test-model',
+      messages: [{ role: 'user', text: 'hello' }],
+      signal: controller.signal
+    }).catch((error: unknown) => error);
+
+    controller.abort();
+
+    await expect(request).resolves.toMatchObject({
+      code: 'AI_REQUEST_ABORTED',
+      retryable: true
+    });
+  });
+
+  it('merges caller aborts while reading a streaming response', async () => {
+    const controller = new AbortController();
+    const body = new ReadableStream<Uint8Array>({
+      start() {
+        // Keep the stream open until the caller aborts the request.
+      }
+    });
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(body, { status: 200 }));
+    const onError = vi.fn();
+
+    const request = sendAiChatStream(
+      {
+        baseUrl: 'https://api.example.com/v1',
+        model: 'test-model',
+        messages: [{ role: 'user', text: 'hello' }],
+        signal: controller.signal
+      },
+      { onDelta: vi.fn(), onError }
+    ).catch((error: unknown) => error);
+
+    await Promise.resolve();
+    controller.abort();
+
+    await expect(request).resolves.toMatchObject({
+      code: 'AI_REQUEST_ABORTED',
+      retryable: true
+    });
+    expect(onError).toHaveBeenCalledTimes(1);
   });
 });

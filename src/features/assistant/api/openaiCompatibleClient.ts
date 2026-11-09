@@ -58,6 +58,7 @@ interface ChatCompletionStreamChunk {
       reasoning_content?: string;
       reasoning?: string;
     };
+    finish_reason?: string | null;
   }>;
 }
 
@@ -65,6 +66,76 @@ export interface SendAiChatResult {
   content: string;
   reasoning?: string;
   usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
+}
+
+class AiRequestError extends Error {
+  readonly code: string;
+  readonly retryable: boolean;
+
+  constructor(code: string, message: string) {
+    super(`${message}(错误码:${code})`);
+    this.name = 'AiRequestError';
+    this.code = code;
+    this.retryable = true;
+  }
+}
+
+function createAiRequestError(code: string, message: string): AiRequestError {
+  return new AiRequestError(code, message);
+}
+
+function getAiRequestTimeoutMs() {
+  const configured = Number(ENV.requestTimeoutMs);
+  return Number.isFinite(configured) && configured > 0 ? configured : 8000;
+}
+
+function abortError() {
+  return new DOMException('AI request aborted', 'AbortError');
+}
+
+async function withAiRequestTimeout<T>(
+  externalSignal: AbortSignal | undefined,
+  operation: (signal: AbortSignal) => Promise<T>
+): Promise<T> {
+  const controller = new AbortController();
+  let timedOut = false;
+
+  const abortFromExternalSignal = () => {
+    if (!controller.signal.aborted) {
+      controller.abort(externalSignal?.reason || abortError());
+    }
+  };
+
+  if (externalSignal?.aborted) {
+    abortFromExternalSignal();
+  } else {
+    externalSignal?.addEventListener('abort', abortFromExternalSignal, { once: true });
+  }
+
+  const timer = setTimeout(() => {
+    timedOut = true;
+    if (!controller.signal.aborted) {
+      controller.abort(abortError());
+    }
+  }, getAiRequestTimeoutMs());
+
+  try {
+    if (controller.signal.aborted) {
+      throw abortError();
+    }
+    return await operation(controller.signal);
+  } catch (error) {
+    if (timedOut) {
+      throw createAiRequestError('AI_REQUEST_TIMEOUT', 'AI 请求超时,请重试');
+    }
+    if (externalSignal?.aborted || isAiRequestAbortError(error)) {
+      throw createAiRequestError('AI_REQUEST_ABORTED', 'AI 请求已中止,请重试');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    externalSignal?.removeEventListener('abort', abortFromExternalSignal);
+  }
 }
 
 function sanitizeBackendErrorDetail(raw: string): string {
@@ -134,13 +205,31 @@ function toOutboundMessage(message: ChatMessageInput) {
   };
 }
 
-export async function sendAiChatStream(
+function createStreamAbortPromise(signal: AbortSignal) {
+  let removeListener: () => void = () => undefined;
+  const promise = new Promise<never>((_, reject) => {
+    const onAbort = () => reject(abortError());
+    if (signal.aborted) {
+      onAbort();
+      return;
+    }
+    signal.addEventListener('abort', onAbort, { once: true });
+    removeListener = () => signal.removeEventListener('abort', onAbort);
+  });
+
+  return {
+    promise,
+    cleanup: () => removeListener()
+  };
+}
+
+async function readAiStream(
   input: ChatRequestInput,
+  signal: AbortSignal,
   handlers: {
     onDelta: (delta: string) => void;
     onReasoningDelta?: (delta: string) => void;
     onDone?: (content: string, reasoning?: string) => void;
-    onError?: (error: Error) => void;
   }
 ): Promise<SendAiChatResult> {
   const outboundMessages: ChatMessageInput[] = [
@@ -151,7 +240,7 @@ export async function sendAiChatStream(
   const response = await requestAiService(`${normalizeBaseUrl(input.baseUrl)}/chat/completions`, {
     method: 'POST',
     headers: buildHeaders(input.apiKey),
-    signal: input.signal,
+    signal,
     body: JSON.stringify({
       model: input.model,
       stream: true,
@@ -160,26 +249,22 @@ export async function sendAiChatStream(
   });
 
   if (!response.ok) {
-    const error = await throwSanitizedHttpError(response, 'chat-stream').catch((err) =>
-      err instanceof Error
-        ? err
-        : new Error('AI 服务请求失败（错误码：AI_CHAT_STREAM_HTTP_UNKNOWN）')
-    );
-    handlers.onError?.(error);
-    throw error;
+    await throwSanitizedHttpError(response, 'chat-stream');
   }
 
   if (!response.body) {
-    const error = new Error('AI 服务流式响应为空（错误码：AI_CHAT_STREAM_NO_BODY）');
-    handlers.onError?.(error);
-    throw error;
+    throw new Error('AI 服务流式响应为空(错误码:AI_CHAT_STREAM_NO_BODY)');
   }
 
   const reader = response.body.getReader();
   const decoder = new TextDecoder('utf-8');
+  const abort = createStreamAbortPromise(signal);
   let buffer = '';
   let fullText = '';
   let fullReasoning = '';
+  let validChunkCount = 0;
+  let malformedChunkCount = 0;
+  let completed = false;
 
   const finish = () => {
     const reasoning = fullReasoning.trim();
@@ -187,40 +272,70 @@ export async function sendAiChatStream(
     return { content: fullText, reasoning: reasoning || undefined };
   };
 
+  const warnMalformedChunks = (tolerated: boolean) => {
+    if (malformedChunkCount === 0) return;
+    console.warn('[AI_STREAM_MALFORMED_CHUNK]', {
+      count: malformedChunkCount,
+      tolerated
+    });
+  };
+
   const handleLine = (line: string) => {
     const trimmed = line.trim();
     if (!trimmed.startsWith('data:')) return false;
     const payload = trimmed.replace(/^data:\s*/, '');
+    if (!payload) return false;
     if (payload === '[DONE]') {
+      completed = true;
       return true;
     }
 
+    let parsed: unknown;
     try {
-      const chunk = JSON.parse(payload) as ChatCompletionStreamChunk;
-      const first = chunk.choices?.[0];
-      const delta = first?.delta;
-      const deltaText = normalizeMessageContent(delta?.content);
-      const messageText = fullText ? '' : normalizeMessageContent(first?.message?.content);
-      const textPart = deltaText || messageText;
-      const reasoningPart =
-        delta?.reasoning_content ||
-        delta?.reasoning ||
-        delta?.reasoningContent ||
-        first?.message?.reasoning_content ||
-        first?.message?.reasoning ||
-        '';
-
-      if (reasoningPart) {
-        fullReasoning += reasoningPart;
-        handlers.onReasoningDelta?.(reasoningPart);
-      }
-
-      if (textPart) {
-        fullText += textPart;
-        handlers.onDelta(textPart);
-      }
+      parsed = JSON.parse(payload);
     } catch {
-      // ignore malformed chunk
+      malformedChunkCount += 1;
+      return false;
+    }
+
+    if (
+      !parsed ||
+      typeof parsed !== 'object' ||
+      Array.isArray(parsed) ||
+      !Array.isArray((parsed as ChatCompletionStreamChunk).choices)
+    ) {
+      malformedChunkCount += 1;
+      return false;
+    }
+
+    const chunk = parsed as ChatCompletionStreamChunk;
+    const first = chunk.choices?.[0];
+    validChunkCount += 1;
+    const delta = first?.delta;
+    const deltaText = normalizeMessageContent(delta?.content);
+    const messageText = fullText ? '' : normalizeMessageContent(first?.message?.content);
+    const textPart = deltaText || messageText;
+    const reasoningPart =
+      delta?.reasoning_content ||
+      delta?.reasoning ||
+      delta?.reasoningContent ||
+      first?.message?.reasoning_content ||
+      first?.message?.reasoning ||
+      '';
+
+    if (reasoningPart) {
+      fullReasoning += reasoningPart;
+      handlers.onReasoningDelta?.(reasoningPart);
+    }
+
+    if (textPart) {
+      fullText += textPart;
+      handlers.onDelta(textPart);
+    }
+
+    if (typeof first?.finish_reason === 'string' && first.finish_reason.trim()) {
+      completed = true;
+      return true;
     }
 
     return false;
@@ -228,23 +343,62 @@ export async function sendAiChatStream(
 
   try {
     while (true) {
-      const { value, done } = await reader.read();
+      const { value, done } = await Promise.race([reader.read(), abort.promise]);
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
       buffer = lines.pop() || '';
 
       for (const line of lines) {
-        if (handleLine(line)) return finish();
+        if (handleLine(line)) break;
       }
+      if (completed) break;
     }
 
-    if (buffer.trim() && handleLine(buffer)) return finish();
+    if (!completed) {
+      buffer += decoder.decode();
+      if (buffer.trim() && handleLine(buffer)) {
+        buffer = '';
+      }
+    }
   } finally {
+    abort.cleanup();
     reader.releaseLock();
   }
 
+  if (validChunkCount === 0 && malformedChunkCount > 0) {
+    warnMalformedChunks(false);
+    throw createAiRequestError('AI_CHAT_STREAM_FORMAT', 'AI 服务流式响应格式异常,请重试');
+  }
+
+  if (!completed) {
+    warnMalformedChunks(validChunkCount > 0);
+    throw createAiRequestError('AI_CHAT_STREAM_INCOMPLETE', 'AI 服务流式响应提前结束,请重试');
+  }
+
+  warnMalformedChunks(true);
   return finish();
+}
+
+export async function sendAiChatStream(
+  input: ChatRequestInput,
+  handlers: {
+    onDelta: (delta: string) => void;
+    onReasoningDelta?: (delta: string) => void;
+    onDone?: (content: string, reasoning?: string) => void;
+    onError?: (error: Error) => void;
+  }
+): Promise<SendAiChatResult> {
+  try {
+    return await withAiRequestTimeout(input.signal, (signal) =>
+      readAiStream(input, signal, handlers)
+    );
+  } catch (error) {
+    const normalized =
+      error instanceof Error ? error : new Error('AI 服务请求失败(错误码:AI_CHAT_STREAM_UNKNOWN)');
+    handlers.onError?.(normalized);
+    throw normalized;
+  }
 }
 
 async function requestAiService(input: RequestInfo | URL, init: RequestInit): Promise<Response> {
@@ -301,17 +455,20 @@ function buildHeaders(apiKey?: string) {
 }
 
 export async function fetchAiModels(baseUrl?: string, apiKey?: string): Promise<string[]> {
-  const response = await requestAiService(`${normalizeBaseUrl(baseUrl)}/models`, {
-    method: 'GET',
-    headers: buildHeaders(apiKey)
+  return withAiRequestTimeout(undefined, async (signal) => {
+    const response = await requestAiService(`${normalizeBaseUrl(baseUrl)}/models`, {
+      method: 'GET',
+      headers: buildHeaders(apiKey),
+      signal
+    });
+
+    if (!response.ok) {
+      await throwSanitizedHttpError(response, 'models');
+    }
+
+    const payload = (await response.json()) as ModelsResponse;
+    return (payload.data || []).map((item) => item.id).filter(Boolean);
   });
-
-  if (!response.ok) {
-    await throwSanitizedHttpError(response, 'models');
-  }
-
-  const payload = (await response.json()) as ModelsResponse;
-  return (payload.data || []).map((item) => item.id).filter(Boolean);
 }
 
 function normalizeMessageContent(
@@ -332,39 +489,41 @@ function normalizeMessageContent(
 }
 
 export async function sendAiChat(input: ChatRequestInput): Promise<SendAiChatResult> {
-  const outboundMessages: ChatMessageInput[] = [
-    ...(input.systemPrompt ? [{ role: 'system' as const, text: input.systemPrompt }] : []),
-    ...input.messages
-  ];
+  return withAiRequestTimeout(input.signal, async (signal) => {
+    const outboundMessages: ChatMessageInput[] = [
+      ...(input.systemPrompt ? [{ role: 'system' as const, text: input.systemPrompt }] : []),
+      ...input.messages
+    ];
 
-  const response = await requestAiService(`${normalizeBaseUrl(input.baseUrl)}/chat/completions`, {
-    method: 'POST',
-    headers: buildHeaders(input.apiKey),
-    signal: input.signal,
-    body: JSON.stringify({
-      model: input.model,
-      messages: outboundMessages.map((message) => toOutboundMessage(message))
-    })
+    const response = await requestAiService(`${normalizeBaseUrl(input.baseUrl)}/chat/completions`, {
+      method: 'POST',
+      headers: buildHeaders(input.apiKey),
+      signal,
+      body: JSON.stringify({
+        model: input.model,
+        messages: outboundMessages.map((message) => toOutboundMessage(message))
+      })
+    });
+
+    if (!response.ok) {
+      await throwSanitizedHttpError(response, 'chat');
+    }
+
+    const payload = (await response.json()) as ChatCompletionResponse;
+    const first = payload.choices?.[0]?.message;
+    const content = normalizeMessageContent(first?.content);
+    const reasoning = String(first?.reasoning_content || first?.reasoning || '').trim();
+
+    return {
+      content: content || '模型未返回可解析内容',
+      reasoning: reasoning || undefined,
+      usage: payload.usage
+        ? {
+            promptTokens: Number(payload.usage.prompt_tokens || 0),
+            completionTokens: Number(payload.usage.completion_tokens || 0),
+            totalTokens: Number(payload.usage.total_tokens || 0)
+          }
+        : undefined
+    };
   });
-
-  if (!response.ok) {
-    await throwSanitizedHttpError(response, 'chat');
-  }
-
-  const payload = (await response.json()) as ChatCompletionResponse;
-  const first = payload.choices?.[0]?.message;
-  const content = normalizeMessageContent(first?.content);
-  const reasoning = String(first?.reasoning_content || first?.reasoning || '').trim();
-
-  return {
-    content: content || '模型未返回可解析内容',
-    reasoning: reasoning || undefined,
-    usage: payload.usage
-      ? {
-          promptTokens: Number(payload.usage.prompt_tokens || 0),
-          completionTokens: Number(payload.usage.completion_tokens || 0),
-          totalTokens: Number(payload.usage.total_tokens || 0)
-        }
-      : undefined
-  };
 }
