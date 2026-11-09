@@ -1,5 +1,10 @@
 import { useState } from 'react';
 import type { DraftBillEntry } from '../workbench/workbenchTypes';
+import {
+  isSupportedLedgerCurrency,
+  LEDGER_CURRENCY_CODES,
+  normalizeLedgerCurrency
+} from '../workbench/workbenchUtils';
 
 interface BillPreviewCardProps {
   entries: DraftBillEntry[];
@@ -17,6 +22,29 @@ const typeOptions: Array<{ value: DraftBillEntry['type']; label: string }> = [
   { value: 'income', label: '收入' },
   { value: 'budget', label: '预算' },
   { value: 'repayment', label: '还款' }
+];
+
+const currencyLabels: Record<string, string> = {
+  CNY: '人民币',
+  USD: '美元',
+  HKD: '港币',
+  JPY: '日元',
+  EUR: '欧元',
+  GBP: '英镑',
+  KRW: '韩元',
+  SGD: '新加坡元',
+  AUD: '澳元',
+  CAD: '加元',
+  CHF: '瑞郎',
+  TWD: '新台币'
+};
+
+const currencyOptions = [
+  ...LEDGER_CURRENCY_CODES.map((value) => ({
+    value,
+    label: `${value} ${currencyLabels[value] || ''}`.trim()
+  })),
+  { value: 'UNKNOWN', label: '待确认' }
 ];
 
 function getTypeLabel(type: DraftBillEntry['type']) {
@@ -54,21 +82,21 @@ export function BillPreviewCard({
 
   const needsCurrencyConfirmation = (item: DraftBillEntry) => {
     if (item.currencyConfirmed) return false;
-    return item.issues.some((issue) => issue.field === 'currency');
+    if (!isSupportedLedgerCurrency(item.currency)) return false;
+    return (
+      item.needsReview?.includes('currency') === true ||
+      item.issues.some((issue) => issue.field === 'currency')
+    );
   };
 
   const currencyConfirmationLabel = (item: DraftBillEntry) => {
-    const currency = String(item.currency || '')
-      .trim()
-      .toUpperCase();
+    const currency = normalizeLedgerCurrency(item.currency);
     return !currency || currency === 'CNY' || currency === 'UNKNOWN'
       ? '确认币种为 CNY'
       : '确认按人民币金额入账';
   };
 
-  const saveableCount = entries.filter(
-    (item) => item.selected && item.issues.length === 0
-  ).length;
+  const saveableCount = entries.filter((item) => item.selected && item.issues.length === 0).length;
   const skippedCount = entries.length - saveableCount;
 
   const handleSave = () => {
@@ -103,6 +131,9 @@ export function BillPreviewCard({
       <div className="chat-bill-rows">
         {entries.map((item, index) => {
           const editing = editingId === item.id;
+          const normalizedCurrency = normalizeLedgerCurrency(item.currency);
+          const currencyIsValid = isSupportedLedgerCurrency(normalizedCurrency);
+          const showCurrencyConfirmation = needsCurrencyConfirmation(item);
           return (
             <article
               key={item.id}
@@ -117,9 +148,7 @@ export function BillPreviewCard({
                 <input
                   type="checkbox"
                   checked={item.selected}
-                  onChange={(event) =>
-                    onUpdateEntry?.(item.id, { selected: event.target.checked })
-                  }
+                  onChange={(event) => onUpdateEntry?.(item.id, { selected: event.target.checked })}
                   aria-label={`勾选第 ${index + 1} 笔账单`}
                 />
               </label>
@@ -168,10 +197,10 @@ export function BillPreviewCard({
                 ) : null}
               </div>
 
-              {item.issues.length > 0 ? (
+              {item.issues.length > 0 || showCurrencyConfirmation ? (
                 <div className="chat-bill-issue">
-                  <span>{issueText(item)}</span>
-                  {needsCurrencyConfirmation(item) && onUpdateEntry ? (
+                  <span>{item.issues.length > 0 ? issueText(item) : '需人工确认:币种'}</span>
+                  {showCurrencyConfirmation && onUpdateEntry ? (
                     <button
                       type="button"
                       className="chat-bill-confirm-currency"
@@ -219,21 +248,31 @@ export function BillPreviewCard({
                     <input
                       type="date"
                       value={item.date.slice(0, 10)}
-                      onChange={(event) =>
-                        onUpdateEntry?.(item.id, { date: event.target.value })
-                      }
+                      onChange={(event) => onUpdateEntry?.(item.id, { date: event.target.value })}
                     />
                   </label>
                   <label>
                     币种
-                    <input
-                      value={item.currency || 'CNY'}
+                    <select
+                      value={normalizedCurrency}
+                      aria-invalid={!currencyIsValid}
                       onChange={(event) =>
                         onUpdateEntry?.(item.id, {
-                          currency: event.target.value.trim().toUpperCase() || 'unknown'
+                          currency: normalizeLedgerCurrency(event.target.value)
                         })
                       }
-                    />
+                    >
+                      {!currencyIsValid ? (
+                        <option value={normalizedCurrency}>
+                          {normalizedCurrency}（无效,请重选）
+                        </option>
+                      ) : null}
+                      {currencyOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
                   </label>
                   <label>
                     分类
@@ -258,9 +297,7 @@ export function BillPreviewCard({
                     备注
                     <input
                       value={item.note}
-                      onChange={(event) =>
-                        onUpdateEntry?.(item.id, { note: event.target.value })
-                      }
+                      onChange={(event) => onUpdateEntry?.(item.id, { note: event.target.value })}
                     />
                   </label>
                 </div>

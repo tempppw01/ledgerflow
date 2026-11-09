@@ -7,6 +7,33 @@ import { toLocalDateKey } from '../../../shared/lib/localDate';
 
 const MAX_PROMPT_TRANSACTIONS = 1200;
 const CHINA_NETWORK_TIME_API = 'https://api.m.taobao.com/rest/api3.do?api=mtop.common.getTimestamp';
+export const LEDGER_CURRENCY_CODES = [
+  'CNY',
+  'USD',
+  'HKD',
+  'JPY',
+  'EUR',
+  'GBP',
+  'KRW',
+  'SGD',
+  'AUD',
+  'CAD',
+  'CHF',
+  'TWD'
+] as const;
+
+const LEDGER_CURRENCY_ALIASES: Record<string, string> = {
+  RMB: 'CNY',
+  CNH: 'CNY',
+  人民币: 'CNY',
+  US$: 'USD',
+  HK$: 'HKD',
+  'JP¥': 'JPY',
+  NTD: 'TWD',
+  NT$: 'TWD'
+};
+const LEDGER_CURRENCY_CODE_SET = new Set<string>(LEDGER_CURRENCY_CODES);
+const UNKNOWN_LEDGER_CURRENCY = 'UNKNOWN';
 
 export const JSON_AGENT_PROMPT = `你是 LedgerFlow 个人记账助手，专门处理用户账本中的“记账录入 + 交易分析”。
 
@@ -344,14 +371,21 @@ function detectCurrency(value: unknown, fallbackText?: string): string {
   return 'unknown';
 }
 
-export function normalizeLedgerCurrency(value?: string): string {
-  const normalized = String(value || '')
-    .trim()
+function normalizeCurrencyCode(value?: string): string {
+  return String(value || '')
+    .replace(/\s+/g, '')
     .toUpperCase();
-  if (!normalized || normalized === 'UNKNOWN' || normalized === 'RMB' || normalized === 'CNH') {
-    return 'CNY';
-  }
-  return normalized;
+}
+
+export function normalizeLedgerCurrency(value?: string): string {
+  const normalized = normalizeCurrencyCode(value);
+  if (!normalized) return 'CNY';
+  return LEDGER_CURRENCY_ALIASES[normalized] || normalized;
+}
+
+export function isSupportedLedgerCurrency(value?: string): boolean {
+  const normalized = normalizeLedgerCurrency(value);
+  return normalized === UNKNOWN_LEDGER_CURRENCY || LEDGER_CURRENCY_CODE_SET.has(normalized);
 }
 
 export function resolveTransactionCurrency(tags?: string[]): string {
@@ -587,17 +621,14 @@ export function validateDraft(entry: DraftBillEntry): ValidationIssue[] {
   if (!entry.date || Number.isNaN(new Date(entry.date).getTime()))
     issues.push({ field: 'date', message: '日期格式无效' });
   if (!normalizeType(entry.type)) issues.push({ field: 'type', message: '交易类型无效' });
-  const normalizedCurrency = String(entry.currency || '')
-    .trim()
-    .toUpperCase();
-  const isForeignCurrency =
-    normalizedCurrency &&
-    normalizedCurrency !== 'unknown' &&
-    normalizedCurrency !== 'CNY';
-  if (isForeignCurrency && !/^[A-Z]{3}$/.test(normalizedCurrency)) {
+  const rawCurrency = String(entry.currency || '').trim();
+  const normalizedCurrency = normalizeLedgerCurrency(rawCurrency);
+  const isUnknownCurrency = normalizedCurrency === UNKNOWN_LEDGER_CURRENCY;
+  const isForeignCurrency = normalizedCurrency !== 'CNY' && !isUnknownCurrency;
+  if (!isSupportedLedgerCurrency(normalizedCurrency)) {
     issues.push({
       field: 'currency',
-      message: '币种需填写 3 位国际代码,如 USD、HKD、JPY。'
+      message: `币种 ${rawCurrency || '(空)'} 无效,请选择 3 位国际代码,如 USD、HKD、JPY。`
     });
   } else if (isForeignCurrency && !entry.currencyConfirmed) {
     issues.push({

@@ -83,20 +83,15 @@ describe('BillPreviewCard', () => {
     expect(onUpdateEntry).toHaveBeenCalledWith('draft-usd', { currencyConfirmed: true });
   });
 
-  it('CNY 币种置信度不足时提供确认币种入口', () => {
+  it('needsReview 标记为 currency 时,即使 CNY 暂无校验文案也提供确认入口', () => {
     const onUpdateEntry = vi.fn();
     const cnyEntry: DraftBillEntry = {
       ...entry,
       id: 'draft-cny',
       currency: 'CNY',
       currencyConfirmed: false,
-      issues: [
-        {
-          field: 'currency',
-          message: 'AI 对币种的置信度不足,需人工确认后保存。',
-          needsReview: true
-        }
-      ]
+      needsReview: ['currency'],
+      issues: []
     };
 
     render(
@@ -111,6 +106,76 @@ describe('BillPreviewCard', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '确认币种为 CNY' }));
 
+    expect(screen.getByText('需人工确认:币种')).toBeInTheDocument();
     expect(onUpdateEntry).toHaveBeenCalledWith('draft-cny', { currencyConfirmed: true });
+  });
+
+  it.each(['US', 'U', '12'])(
+    '非法币种 %s 不会让预览崩溃,并保留可见校验且不提供误导确认入口',
+    (currency) => {
+      const invalidEntry: DraftBillEntry = {
+        ...entry,
+        id: `draft-${currency}`,
+        currency,
+        issues: [
+          {
+            field: 'currency',
+            message: `币种 ${currency} 无效,请选择 3 位国际代码,如 USD、HKD、JPY。`
+          }
+        ]
+      };
+
+      expect(() =>
+        render(
+          <BillPreviewCard
+            entries={[invalidEntry]}
+            duplicateCount={0}
+            onCheckDuplicates={vi.fn()}
+            onSave={vi.fn(() => true)}
+            onUpdateEntry={vi.fn()}
+          />
+        )
+      ).not.toThrow();
+
+      expect(screen.getByText(new RegExp(`币种 ${currency} 无效`))).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /确认/ })).not.toBeInTheDocument();
+    }
+  );
+
+  it('币种编辑只写入规范代码,并允许从非法历史值修复', () => {
+    const onUpdateEntry = vi.fn();
+    const invalidEntry: DraftBillEntry = {
+      ...entry,
+      id: 'draft-invalid-currency',
+      currency: 'US',
+      issues: [
+        {
+          field: 'currency',
+          message: '币种 US 无效,请选择 3 位国际代码,如 USD、HKD、JPY。'
+        }
+      ]
+    };
+
+    render(
+      <BillPreviewCard
+        entries={[invalidEntry]}
+        duplicateCount={0}
+        onCheckDuplicates={vi.fn()}
+        onSave={vi.fn(() => true)}
+        onUpdateEntry={onUpdateEntry}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '编辑' }));
+    const currencySelect = screen.getByRole('combobox', { name: '币种' });
+
+    expect(currencySelect).toHaveValue('US');
+    expect(screen.getByRole('option', { name: 'US（无效,请重选）' })).toBeInTheDocument();
+
+    fireEvent.change(currencySelect, { target: { value: 'USD' } });
+
+    expect(onUpdateEntry).toHaveBeenCalledWith('draft-invalid-currency', {
+      currency: 'USD'
+    });
   });
 });

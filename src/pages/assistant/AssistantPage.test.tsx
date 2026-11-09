@@ -340,6 +340,57 @@ describe('AssistantPage', () => {
     expect(screen.getByText(/有 1 笔可能已记过/)).toBeInTheDocument();
   });
 
+  it('AI 记账回复遇到无效币种时应回退人民币格式化而不中断', async () => {
+    window.sessionStorage.setItem('ledgerflow.assistant.activeMode', 'bookkeeping');
+    const workbench = {
+      ...createWorkbenchMock(),
+      textInput: '记一笔',
+      entries: [
+        {
+          id: 'invalid-currency-1',
+          selected: true,
+          type: 'expense',
+          amount: 20,
+          date: '2026-11-09',
+          note: '币种异常账单',
+          category: '餐饮',
+          account: '',
+          tags: [],
+          currency: 'US',
+          issues: [
+            {
+              field: 'currency',
+              message: '币种 US 无效,请选择 3 位国际代码,如 USD、HKD、JPY。'
+            }
+          ]
+        }
+      ]
+    };
+    workbench.handleRecognizeWithPrompt = vi.fn(() => {
+      workbench.status = 'success';
+    });
+    useAssistantWorkbenchMock.mockReturnValue(workbench);
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('发送'));
+    });
+
+    await waitFor(() => {
+      const assistantReply = Array.from(
+        document.querySelectorAll<HTMLElement>('.chat-msg-content')
+      )
+        .map((node) => node.textContent?.replace(/\s+/g, '') || '')
+        .find((text) => text.includes('币种异常账单'));
+      expect(assistantReply).toContain('¥20.00');
+    });
+  });
+
   it('应支持切换到 AI 信贷管家并展示信贷首屏内容', async () => {
     useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
 

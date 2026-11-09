@@ -13,6 +13,10 @@ import type {
 } from '../../features/assistant/creditAssistant/types';
 import { useAssistantWorkbench } from '../../features/assistant/workbench/useAssistantWorkbench';
 import { BillPreviewCard } from '../../features/assistant/ui/BillPreviewCard';
+import {
+  isSupportedLedgerCurrency,
+  normalizeLedgerCurrency
+} from '../../features/assistant/workbench/workbenchUtils';
 import { renderMarkdownContent } from '../../features/assistant/ui/MarkdownRenderer';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useGlobalMemoryStore } from '../../shared/store/useGlobalMemoryStore';
@@ -1548,11 +1552,12 @@ export function AssistantPage() {
         const entries = wb.entries;
         if (entries.length === 1) {
           const entry = entries[0];
-          const amount = new Intl.NumberFormat('zh-CN', {
-            style: 'currency',
-            currency: entry.currency && entry.currency !== 'unknown' ? entry.currency : 'CNY',
-            minimumFractionDigits: 2
-          }).format(entry.amount);
+          const normalizedCurrency = normalizeLedgerCurrency(entry.currency);
+          const displayCurrency =
+            isSupportedLedgerCurrency(normalizedCurrency) && normalizedCurrency !== 'UNKNOWN'
+              ? normalizedCurrency
+              : 'CNY';
+          const amount = formatMoneyByCurrency(entry.amount, displayCurrency);
           const description = entry.note?.trim() || entry.category || '这笔账';
           return `记下了：${description}，${entry.type === 'income' ? '收入' : '支出'} ${amount}。确认一下分类和账户，没问题就保存到账本吧。`;
         }

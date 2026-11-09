@@ -10,8 +10,10 @@ import {
   buildBillContentSignature,
   buildTransactionPromptContext,
   extractJsonString,
+  isSupportedLedgerCurrency,
   JSON_AGENT_PROMPT,
   normalizeAiBill,
+  normalizeLedgerCurrency,
   resolveTransactionCurrency,
   toDraftEntries,
   validateDraft
@@ -27,9 +29,9 @@ describe('workbenchUtils', () => {
     expect(mapAssistantErrorMessage('Load failed')).toBe(
       '无法连接到 AI 服务，请检查接口地址与网络后重试。'
     );
-    expect(
-      mapAssistantErrorMessage('AI 服务请求失败(错误码:AI_CHAT_HTTP_502)')
-    ).toContain('服务暂时不可用');
+    expect(mapAssistantErrorMessage('AI 服务请求失败(错误码:AI_CHAT_HTTP_502)')).toContain(
+      '服务暂时不可用'
+    );
     expect(mapAssistantErrorMessage('provider internal trace abc-def')).toBe(
       'AI 服务调用失败,请检查接口配置、模型名称或 API Key 后重试。'
     );
@@ -279,6 +281,44 @@ describe('workbenchUtils', () => {
     );
   });
 
+  it.each([
+    [' RMB ', 'CNY'],
+    ['cnh', 'CNY'],
+    [' usd ', 'USD'],
+    ['HK$', 'HKD'],
+    ['US', 'US']
+  ])('币种输入应安全规范化:%s -> %s', (input, expected) => {
+    expect(normalizeLedgerCurrency(input)).toBe(expected);
+  });
+
+  it.each(['US', 'U', '12', 'ABC'])('非法币种 %s 不应被视为支持', (currency) => {
+    expect(isSupportedLedgerCurrency(currency)).toBe(false);
+  });
+
+  it.each(['US', 'U', '12', 'ABC'])('非法币种 %s 应生成可见的币种校验问题', (currency) => {
+    const result = normalizeAiBill({
+      transactions: [
+        {
+          type: 'expense',
+          amount: 20,
+          currency,
+          date: '2025-02-03',
+          note: '币种校验',
+          category: '其他',
+          account: '现金'
+        }
+      ]
+    });
+
+    const draft = toDraftEntries(result!)[0];
+    expect(draft.issues).toContainEqual(
+      expect.objectContaining({
+        field: 'currency',
+        message: expect.stringContaining('无效')
+      })
+    );
+  });
+
   it('外币草稿需要显式确认后才能保存,确认后不再产生币种校验错误', () => {
     const result = normalizeAiBill({
       transactions: [
@@ -305,9 +345,11 @@ describe('workbenchUtils', () => {
       })
     );
 
-    expect(validateDraft({ ...draft, currencyConfirmed: true }).some((issue) => issue.field === 'currency')).toBe(
-      false
-    );
+    expect(
+      validateDraft({ ...draft, currencyConfirmed: true }).some(
+        (issue) => issue.field === 'currency'
+      )
+    ).toBe(false);
   });
 
   it('CNY 币种置信度不足时,确认币种后才消除校验错误', () => {
@@ -329,9 +371,9 @@ describe('workbenchUtils', () => {
     const draft = toDraftEntries(result!)[0];
     expect(draft.currency).toBe('CNY');
     expect(draft.currencyConfirmed).toBe(false);
-    expect(
-      draft.issues.some((issue) => issue.field === 'currency' && issue.needsReview)
-    ).toBe(true);
+    expect(draft.issues.some((issue) => issue.field === 'currency' && issue.needsReview)).toBe(
+      true
+    );
     expect(
       validateDraft({ ...draft, currencyConfirmed: true }).some(
         (issue) => issue.field === 'currency'
@@ -397,9 +439,7 @@ describe('workbenchUtils', () => {
     expect(snapshot.includedTransactions).toBe(1);
     expect(snapshot.rows[0].note).toBe('最近消费');
     expect(snapshot.availableAccounts).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: 'acc-wx', name: '微信钱包' })
-      ])
+      expect.arrayContaining([expect.objectContaining({ id: 'acc-wx', name: '微信钱包' })])
     );
   });
 });
