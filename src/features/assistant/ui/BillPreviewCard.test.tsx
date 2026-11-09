@@ -78,8 +78,39 @@ describe('BillPreviewCard', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '确认保留 USD 原币' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认按人民币金额入账' }));
 
     expect(onUpdateEntry).toHaveBeenCalledWith('draft-usd', { currencyConfirmed: true });
+  });
+
+  it('CNY 币种置信度不足时提供确认币种入口', () => {
+    const onUpdateEntry = vi.fn();
+    const cnyEntry: DraftBillEntry = {
+      ...entry,
+      id: 'draft-cny',
+      currency: 'CNY',
+      currencyConfirmed: false,
+      issues: [
+        {
+          field: 'currency',
+          message: 'AI 对币种的置信度不足,需人工确认后保存。',
+          needsReview: true
+        }
+      ]
+    };
+
+    render(
+      <BillPreviewCard
+        entries={[cnyEntry]}
+        duplicateCount={0}
+        onCheckDuplicates={vi.fn()}
+        onSave={vi.fn(() => true)}
+        onUpdateEntry={onUpdateEntry}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '确认币种为 CNY' }));
+
+    expect(onUpdateEntry).toHaveBeenCalledWith('draft-cny', { currencyConfirmed: true });
   });
 });

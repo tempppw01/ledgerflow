@@ -27,6 +27,7 @@ export const JSON_AGENT_PROMPT = `你是 LedgerFlow 个人记账助手，专门�
 - 若语义是未来计划（如“下月/下周/未来想买”）且为消费场景，type 必须为 budget，不能记为实际支出 expense
 - amount 为正数，保留两位小数
 - 必须尽量识别币种 currency：如 CNY、USD、HKD、JPY、EUR、GBP 等；若原文有币种符号或币种单词，必须输出
+- 账本只记录人民币金额:若原文为外币,amount 先保留原始数值,currency 输出原币,并把 currency 放入 needsReview,由用户确认折算后的人民币金额
 - originalAmountText 尽量保留用户原始金额表达，如“$20.50”“HK$300”“1000日元”
 - date 格式为 YYYY-MM-DD，未提供则用今天日期
 - note 必须输出“有规律的快捷记账短语”，不要照抄用户原话：
@@ -343,6 +344,42 @@ function detectCurrency(value: unknown, fallbackText?: string): string {
   return 'unknown';
 }
 
+export function normalizeLedgerCurrency(value?: string): string {
+  const normalized = String(value || '')
+    .trim()
+    .toUpperCase();
+  if (!normalized || normalized === 'UNKNOWN' || normalized === 'RMB' || normalized === 'CNH') {
+    return 'CNY';
+  }
+  return normalized;
+}
+
+export function resolveTransactionCurrency(tags?: string[]): string {
+  const currencyTag = (tags || []).find((tag) => /^币种[:：]/.test(String(tag).trim()));
+  return currencyTag
+    ? normalizeLedgerCurrency(String(currencyTag).replace(/^币种[:：]/, ''))
+    : 'CNY';
+}
+
+export function buildBillContentSignature(input: {
+  date?: string;
+  amount: number;
+  type: TransactionType | 'unknown';
+  note?: string;
+  currency?: string;
+  transactionCurrency?: string;
+}): string {
+  const day = String(input.date || '').slice(0, 10);
+  const amount = Math.round(normalizeAmount(input.amount) * 100) / 100;
+  const type = input.type === 'unknown' ? 'expense' : input.type;
+  const note = String(input.note || '').trim();
+  const currency = input.transactionCurrency
+    ? normalizeLedgerCurrency(input.transactionCurrency)
+    : normalizeLedgerCurrency(input.currency);
+  if (!day || !amount || !note) return '';
+  return `content:${day}|${amount}|${type}|${note}|${currency}`;
+}
+
 function normalizeDateText(value: unknown): string {
   if (typeof value !== 'string' || value.trim().length === 0) return new Date().toISOString();
   const source = value.trim();
@@ -565,7 +602,7 @@ export function validateDraft(entry: DraftBillEntry): ValidationIssue[] {
   } else if (isForeignCurrency && !entry.currencyConfirmed) {
     issues.push({
       field: 'currency',
-      message: `检测到外币 ${entry.currency}，当前不会自动换算成人民币，请确认后再保存。`
+      message: `检测到外币 ${entry.currency}，账本按人民币记录金额，请确认金额已折算为人民币后再保存。`
     });
   }
 
@@ -581,6 +618,7 @@ export function validateDraft(entry: DraftBillEntry): ValidationIssue[] {
       reviewFields.includes(field as (typeof reviewFields)[number])
   );
   requestedReviews.forEach((field) => {
+    if (field === 'currency' && entry.currencyConfirmed) return;
     if (issues.some((item) => item.field === field)) return;
     issues.push({
       field,
@@ -609,7 +647,9 @@ export function toDraftEntries(payload: AiBillResult): DraftBillEntry[] {
       orderNo: item.orderNo,
       merchantOrderNo: item.merchantOrderNo,
       currency: item.currency || 'unknown',
-      currencyConfirmed: !item.currency || item.currency === 'CNY' || item.currency === 'unknown',
+      currencyConfirmed:
+        !(item.needsReview || []).includes('currency') &&
+        (!item.currency || item.currency === 'CNY' || item.currency === 'unknown'),
       originalAmountText: item.originalAmountText,
       issues: []
     };

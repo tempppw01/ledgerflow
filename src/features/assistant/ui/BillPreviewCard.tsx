@@ -41,28 +41,29 @@ export function BillPreviewCard({
 }: BillPreviewCardProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const formatAmount = (item: DraftBillEntry) => {
-    const currency = item.currency && item.currency !== 'unknown' ? item.currency : 'CNY';
     try {
       return new Intl.NumberFormat('zh-CN', {
         style: 'currency',
-        currency,
+        currency: 'CNY',
         minimumFractionDigits: 2
       }).format(item.amount);
     } catch {
-      return `${currency} ${item.amount.toFixed(2)}`;
+      return `¥${item.amount.toFixed(2)}`;
     }
   };
 
   const needsCurrencyConfirmation = (item: DraftBillEntry) => {
+    if (item.currencyConfirmed) return false;
+    return item.issues.some((issue) => issue.field === 'currency');
+  };
+
+  const currencyConfirmationLabel = (item: DraftBillEntry) => {
     const currency = String(item.currency || '')
       .trim()
       .toUpperCase();
-    return (
-      /^[A-Z]{3}$/.test(currency) &&
-      currency !== 'CNY' &&
-      currency !== 'UNKNOWN' &&
-      !item.currencyConfirmed
-    );
+    return !currency || currency === 'CNY' || currency === 'UNKNOWN'
+      ? '确认币种为 CNY'
+      : '确认按人民币金额入账';
   };
 
   const saveableCount = entries.filter(
@@ -176,7 +177,7 @@ export function BillPreviewCard({
                       className="chat-bill-confirm-currency"
                       onClick={() => onUpdateEntry(item.id, { currencyConfirmed: true })}
                     >
-                      确认保留 {item.currency} 原币
+                      {currencyConfirmationLabel(item)}
                     </button>
                   ) : null}
                 </div>

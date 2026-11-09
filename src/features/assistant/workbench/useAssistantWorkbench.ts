@@ -28,6 +28,7 @@ import {
 import type { GlobalMemoryItem } from '../../../shared/store/globalMemory';
 import {
   ANALYSIS_AGENT_PROMPT,
+  buildBillContentSignature,
   CREDIT_ANALYSIS_AGENT_PROMPT,
   buildAssistantSystemPrompt,
   buildTimeContext,
@@ -38,6 +39,7 @@ import {
   normalizeAiBill,
   readImageAsDataUrl,
   readPdfAsDataUrl,
+  resolveTransactionCurrency,
   splitPdfFileByPages,
   toDraftEntries,
   validateDraft
@@ -254,14 +256,23 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
       if (found) return { id: found.id, reason: 'merchantOrderNo' as const };
     }
 
-    const day = String(entry.date || '').slice(0, 10);
-    const amount = normalizeMoney(entry.amount);
+    const signature = buildBillContentSignature({
+      date: entry.date,
+      amount: entry.amount,
+      type: entry.type,
+      note: entry.note,
+      currency: entry.currency
+    });
     const found = input.transactions.find((item) => {
+      if (!signature) return false;
       return (
-        String(item.date).slice(0, 10) === day &&
-        normalizeMoney(item.amount) === amount &&
-        item.type === (entry.type === 'unknown' ? 'expense' : entry.type) &&
-        String(item.note || '').trim() === String(entry.note || '').trim()
+        buildBillContentSignature({
+          date: item.date,
+          amount: item.amount,
+          type: item.type,
+          note: item.note,
+          transactionCurrency: resolveTransactionCurrency(item.tags)
+        }) === signature
       );
     });
     if (found) return { id: found.id, reason: 'content' as const };
@@ -271,12 +282,13 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
   const buildBatchSignature = (entry: DraftBillEntry): string => {
     if (entry.orderNo) return `order:${entry.orderNo}`;
     if (entry.merchantOrderNo) return `merchant:${entry.merchantOrderNo}`;
-    const day = String(entry.date || '').slice(0, 10);
-    const amount = normalizeMoney(entry.amount);
-    const type = entry.type === 'unknown' ? 'expense' : entry.type;
-    const note = String(entry.note || '').trim();
-    if (!day || !amount || !note) return '';
-    return `content:${day}|${amount}|${type}|${note}`;
+    return buildBillContentSignature({
+      date: entry.date,
+      amount: entry.amount,
+      type: entry.type,
+      note: entry.note,
+      currency: entry.currency
+    });
   };
 
   const attachDuplicateMeta = (rows: DraftBillEntry[]) => {

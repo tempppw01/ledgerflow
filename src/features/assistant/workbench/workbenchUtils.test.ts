@@ -7,10 +7,12 @@ import {
 } from './workbenchMapping';
 import {
   buildAssistantSystemPrompt,
+  buildBillContentSignature,
   buildTransactionPromptContext,
   extractJsonString,
   JSON_AGENT_PROMPT,
   normalizeAiBill,
+  resolveTransactionCurrency,
   toDraftEntries,
   validateDraft
 } from './workbenchUtils';
@@ -306,6 +308,54 @@ describe('workbenchUtils', () => {
     expect(validateDraft({ ...draft, currencyConfirmed: true }).some((issue) => issue.field === 'currency')).toBe(
       false
     );
+  });
+
+  it('CNY 币种置信度不足时,确认币种后才消除校验错误', () => {
+    const result = normalizeAiBill({
+      transactions: [
+        {
+          type: 'expense',
+          amount: 12,
+          currency: 'CNY',
+          needsReview: ['currency'],
+          date: '2025-02-03',
+          note: '早餐',
+          category: '餐饮',
+          account: '现金'
+        }
+      ]
+    });
+
+    const draft = toDraftEntries(result!)[0];
+    expect(draft.currency).toBe('CNY');
+    expect(draft.currencyConfirmed).toBe(false);
+    expect(
+      draft.issues.some((issue) => issue.field === 'currency' && issue.needsReview)
+    ).toBe(true);
+    expect(
+      validateDraft({ ...draft, currencyConfirmed: true }).some(
+        (issue) => issue.field === 'currency'
+      )
+    ).toBe(false);
+  });
+
+  it('重复检测签名区分币种,并兼容仅靠标签记录币种的历史交易', () => {
+    const base = {
+      date: '2025-02-03',
+      amount: 20.5,
+      type: 'expense' as const,
+      note: '咖啡'
+    };
+    const cnySignature = buildBillContentSignature({ ...base, currency: 'CNY' });
+    const usdSignature = buildBillContentSignature({ ...base, currency: 'USD' });
+    const usdRowSignature = buildBillContentSignature({
+      ...base,
+      transactionCurrency: resolveTransactionCurrency(['AI识别', '币种:USD'])
+    });
+
+    expect(cnySignature).not.toBe(usdSignature);
+    expect(usdSignature).toBe(usdRowSignature);
+    expect(resolveTransactionCurrency(['AI识别'])).toBe('CNY');
   });
 
   it('交易快照应按最近时间窗口瘦身，同时保留汇总与可用账户', () => {
