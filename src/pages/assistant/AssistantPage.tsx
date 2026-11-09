@@ -559,7 +559,7 @@ function buildFollowUpPrompts(answer: string, history: ChatHistoryItem[]): strin
       .trim();
   const question = compact(latestUserQuestion);
   const response = compact(answer);
-  const topic = (question || response).slice(0, 18).replace(/[，,：:]+$/g, '');
+  const topic = extractFollowUpTopic(question || response);
   if (!topic) return [];
 
   const intents = Array.from(
@@ -613,6 +613,27 @@ function normalizeFollowUpPrompt(prompt: string): string {
     .replace(/^[-*•\d一二三四五六七八九十、.．)）\s]+/, '')
     .trim()
     .slice(0, 48);
+}
+
+function extractFollowUpTopic(source: string): string {
+  const cleaned = source
+    .replace(/[。！？；;]+$/g, '')
+    .replace(/^(?:请帮我|麻烦帮我|帮我|请|麻烦|能否|可否)+/, '')
+    .trim();
+  if (!cleaned) return '';
+  const clauses = cleaned
+    .split(/[，,；;、：:]/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const primaryClause =
+    clauses.find((part) => part.length >= 8) ||
+    clauses.reduce((longest, part) => (part.length > longest.length ? part : longest), '') ||
+    cleaned;
+  const trimmed = primaryClause
+    .replace(/[和与及跟、，,]+$/g, '')
+    .replace(/(?:并|且|以及|然后|再|就|的|了)$/g, '')
+    .trim();
+  return trimmed.length > 16 ? `${trimmed.slice(0, 16)}…` : trimmed;
 }
 
 function parseAiFollowUpPrompts(raw: string): string[] {

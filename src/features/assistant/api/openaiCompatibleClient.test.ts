@@ -5,22 +5,27 @@ describe('openaiCompatibleClient baseUrl validation', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
-  it('rejects non-https protocols to avoid unsafe endpoint usage', async () => {
+  it('rejects unsupported protocols but allows plain http endpoints', async () => {
     await expect(
       sendAiChat({
         baseUrl: 'javascript:alert(1)',
         model: 'test-model',
         messages: [{ role: 'user', text: 'hello' }]
       })
-    ).rejects.toThrow('仅支持 HTTPS 协议');
+    ).rejects.toThrow('仅支持 HTTP/HTTPS 协议');
 
-    await expect(
-      sendAiChat({
-        baseUrl: 'http://api.example.com/v1',
-        model: 'test-model',
-        messages: [{ role: 'user', text: 'hello' }]
-      })
-    ).rejects.toThrow('仅支持 HTTPS 协议');
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }] }), { status: 200 })
+    );
+    await sendAiChat({
+      baseUrl: 'http://api.example.com/v1',
+      model: 'test-model',
+      messages: [{ role: 'user', text: 'hello' }]
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://api.example.com/v1/chat/completions',
+      expect.objectContaining({ method: 'POST' })
+    );
   });
 
   it('normalizes trailing slash before requesting', async () => {

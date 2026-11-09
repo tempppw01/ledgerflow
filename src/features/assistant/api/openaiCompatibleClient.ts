@@ -276,8 +276,8 @@ function normalizeBaseUrl(baseUrl?: string) {
     throw new Error('AI 服务地址格式无效，请使用完整 URL（如 https://api.example.com/v1）');
   }
 
-  if (parsed.protocol !== 'https:') {
-    throw new Error('AI 服务地址仅支持 HTTPS 协议');
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+    throw new Error('AI 服务地址仅支持 HTTP/HTTPS 协议');
   }
 
   return parsed.toString().replace(/\/$/, '');
