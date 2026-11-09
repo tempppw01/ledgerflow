@@ -340,6 +340,42 @@ describe('AssistantPage', () => {
     expect(screen.getByText(/有 1 笔可能已记过/)).toBeInTheDocument();
   });
 
+  it('AI 记账保存中应传入保存状态并阻止重复保存', async () => {
+    const workbench = {
+      ...createWorkbenchMock(),
+      status: 'saving',
+      entries: [
+        {
+          id: 'saving-entry-1',
+          selected: true,
+          type: 'expense',
+          amount: 28,
+          date: '2026-11-09',
+          note: '午餐',
+          category: '餐饮',
+          account: '',
+          tags: [],
+          currency: 'CNY',
+          issues: []
+        }
+      ]
+    };
+    useAssistantWorkbenchMock.mockReturnValue(workbench);
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    await selectAssistantMode('AI 记账');
+
+    const saveButton = screen.getByRole('button', { name: '保存中' });
+    expect(saveButton).toBeDisabled();
+    fireEvent.click(saveButton);
+    expect(workbench.saveSelected).not.toHaveBeenCalled();
+  });
+
   it('AI 记账回复遇到无效币种时应回退人民币格式化而不中断', async () => {
     window.sessionStorage.setItem('ledgerflow.assistant.activeMode', 'bookkeeping');
     const workbench = {

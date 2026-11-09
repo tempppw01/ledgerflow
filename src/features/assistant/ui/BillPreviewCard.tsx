@@ -11,6 +11,7 @@ interface BillPreviewCardProps {
   duplicateCount: number;
   onCheckDuplicates: () => number;
   onSave: (options?: { overwriteDuplicateEntryIds?: string[] }) => boolean;
+  saving?: boolean;
   onUpdateEntry?: (id: string, patch: Partial<DraftBillEntry>) => void;
   onRemoveEntry?: (id: string) => void;
   onCreateSubscription?: (entryId: string) => void;
@@ -62,6 +63,7 @@ export function BillPreviewCard({
   duplicateCount,
   onCheckDuplicates,
   onSave,
+  saving = false,
   onUpdateEntry,
   onRemoveEntry,
   onCreateSubscription,
@@ -100,7 +102,7 @@ export function BillPreviewCard({
   const skippedCount = entries.length - saveableCount;
 
   const handleSave = () => {
-    if (saveableCount === 0) return;
+    if (saving || saveableCount === 0) return;
     if (onSave()) {
       onSaved?.();
     }
@@ -325,10 +327,13 @@ export function BillPreviewCard({
           type="button"
           className="primary"
           onClick={handleSave}
-          disabled={saveableCount === 0}
-          title={saveableCount === 0 ? '请先勾选或修正账单' : undefined}
+          disabled={saving || saveableCount === 0}
+          aria-busy={saving}
+          title={
+            saving ? '正在保存,请稍候' : saveableCount === 0 ? '请先勾选或修正账单' : undefined
+          }
         >
-          保存到账本
+          {saving ? '保存中' : '保存到账本'}
         </button>
       </footer>
     </section>

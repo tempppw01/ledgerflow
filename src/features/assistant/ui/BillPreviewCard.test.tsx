@@ -52,6 +52,47 @@ describe('BillPreviewCard', () => {
     expect(onSaved).toHaveBeenCalledOnce();
   });
 
+  it('保存中显示明确状态并阻止重复提交', () => {
+    const onSave = vi.fn(() => true);
+    render(
+      <BillPreviewCard
+        entries={[entry]}
+        duplicateCount={0}
+        onCheckDuplicates={vi.fn()}
+        onSave={onSave}
+        saving
+      />
+    );
+
+    const saveButton = screen.getByRole('button', { name: '保存中' });
+
+    expect(saveButton).toBeDisabled();
+    expect(saveButton).toHaveAttribute('aria-busy', 'true');
+    fireEvent.click(saveButton);
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('同步保存失败后仍可再次点击重试', () => {
+    const onSave = vi.fn().mockReturnValueOnce(false).mockReturnValueOnce(true);
+    const onSaved = vi.fn();
+    render(
+      <BillPreviewCard
+        entries={[entry]}
+        duplicateCount={0}
+        onCheckDuplicates={vi.fn()}
+        onSave={onSave}
+        onSaved={onSaved}
+      />
+    );
+
+    const saveButton = screen.getByRole('button', { name: '保存到账本' });
+    fireEvent.click(saveButton);
+    fireEvent.click(saveButton);
+
+    expect(onSave).toHaveBeenCalledTimes(2);
+    expect(onSaved).toHaveBeenCalledOnce();
+  });
+
   it('外币账单提供确认原币保存入口', () => {
     const onUpdateEntry = vi.fn();
     const usdEntry: DraftBillEntry = {

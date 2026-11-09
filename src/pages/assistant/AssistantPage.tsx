@@ -2863,6 +2863,7 @@ export function AssistantPage() {
                       duplicateCount={duplicateEntriesCount}
                       onCheckDuplicates={wb.checkDuplicates}
                       onSave={startDuplicateReview}
+                      saving={wb.status === 'saving'}
                       onUpdateEntry={wb.updateEntry}
                       onRemoveEntry={wb.removeEntry}
                       onCreateSubscription={handleCreateSubscriptionFromEntry}
