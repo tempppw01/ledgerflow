@@ -49,6 +49,7 @@ import {
   parseCreditRepaymentDay
 } from './creditAssistantLogic';
 import { resolveCreditRepaymentDueDisplay } from './creditRepaymentHelpers';
+import { inferCreditDebtType } from '../../features/assistant/creditAssistant/debtClassification';
 import {
   ASSISTANT_ACTIVE_MODE_STORAGE_KEY,
   ASSISTANT_MODE_CHANGED_EVENT,
@@ -589,14 +590,7 @@ function resolveQuickRepayAmount(
 }
 
 function mapCreditItemToRepaymentPrefill(item: CreditExtractedItem) {
-  const normalizedTypeText = `${item.productType} ${item.title}`;
-  const type: 'credit-card' | 'consumer-loan' | 'loan' = /房贷|车贷|按揭|贷款/i.test(
-    normalizedTypeText
-  )
-    ? 'loan'
-    : /花呗|白条|分期|消费贷|借呗|现金贷/i.test(normalizedTypeText)
-      ? 'consumer-loan'
-      : 'credit-card';
+  const type = inferCreditDebtType(item.productType, item.title);
 
   const extractNumberText = (value?: string) => {
     if (!value) return '';
@@ -2328,7 +2322,7 @@ export function AssistantPage() {
                             </div>
                             <div className="chat-credit-progress" aria-label="字段补全进度">
                               <div className="chat-credit-progress-head">
-                                <span>{creditItem.completionLabel || '0/6 关键字段已补齐'}</span>
+                                <span>{creditItem.completionLabel || '0/7 项字段已补齐'}</span>
                                 <strong>{creditItem.completionRatio || 0}%</strong>
                               </div>
                               <div className="chat-credit-progress-track">
@@ -2663,7 +2657,7 @@ export function AssistantPage() {
                                 {creditItem.confirmationState === 'ready'
                                   ? '进入保存前确认'
                                   : creditItem.pendingFields.length > 0
-                                    ? '补充剩余待还后保存'
+                                    ? '补充信息后保存'
                                     : '保存到还款管理'}
                               </button>
                               <button

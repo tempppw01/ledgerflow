@@ -12,13 +12,15 @@ function buildItem(overrides: Partial<CreditExtractedItem>): CreditExtractedItem
     id: 'draft-1',
     title: '招商银行信用卡',
     productType: '信用卡',
-    dueAmount: '待补充',
+    dueAmount: '¥1200',
     totalDebt: '¥12860.40',
     repaymentDate: '每月 25 日',
+    remainingPeriods: '12',
+    monthlyAmount: '¥600',
     interest: '18.25%',
     rateType: 'APR',
     rateSource: 'explicit',
-    pendingFields: ['当前应还'],
+    pendingFields: [],
     confidence: 'high',
     ...overrides
   };
@@ -50,6 +52,48 @@ describe('creditAssistantLogic rate summary', () => {
     expect(summaryLine(buildItem({ interest: '4.35%', rateType: undefined }), 'APR/年化')).toBe(
       'APR/年化：4.35%'
     );
+  });
+});
+
+describe('creditAssistantLogic completion and matching', () => {
+  it('counts all seven editable fields and keeps extra pending fields visible', () => {
+    const [complete] = enrichCreditItemsForConfirmation([buildItem({})], [], [], []);
+    expect(complete.completionRatio).toBe(100);
+    expect(complete.completionLabel).toBe('7/7 项字段已补齐');
+
+    const [withAccountPending] = enrichCreditItemsForConfirmation(
+      [buildItem({ pendingFields: ['扣款账户'] })],
+      [],
+      [],
+      []
+    );
+    expect(withAccountPending.completionRatio).toBe(88);
+    expect(withAccountPending.completionLabel).toBe('7/8 项字段已补齐');
+    expect(withAccountPending.pendingFields).toEqual(['扣款账户']);
+    expect(withAccountPending.confirmationState).toBe('ready');
+
+    const [missingCoreField] = enrichCreditItemsForConfirmation(
+      [buildItem({ dueAmount: '待补充' })],
+      [],
+      [],
+      []
+    );
+    expect(missingCoreField.completionLabel).toBe('6/7 项字段已补齐');
+    expect(missingCoreField.pendingFields).toEqual(['当前应还']);
+    expect(missingCoreField.confirmationState).toBe('needs-more-info');
+  });
+
+  it('uses the same saved-debt match for the card status and repayment lookup', () => {
+    const debt = {
+      id: 'debt-card',
+      name: '招商银行信用卡',
+      type: 'credit-card' as const,
+      balance: 5000
+    };
+    const [item] = enrichCreditItemsForConfirmation([buildItem({})], [], [debt], []);
+
+    expect(item.matchReason).toBe('已命中保存负债：招商银行信用卡');
+    expect(item.repaymentLookupSummary?.matchedDebtName).toBe('招商银行信用卡');
   });
 });
 

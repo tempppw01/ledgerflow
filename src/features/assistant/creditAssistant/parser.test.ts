@@ -75,6 +75,30 @@ describe('creditAssistant parser', () => {
     expect(preview[1].pendingFields).toContain('当前应还');
   });
 
+  it('prefers the explicit credit-card label over a generic installment label', () => {
+    const answer = [
+      '```json',
+      JSON.stringify(
+        {
+          creditItems: [
+            {
+              title: '招商银行信用卡',
+              productType: '消费贷/信用卡分期',
+              totalDebt: '¥5000',
+              repaymentDate: '11月20日'
+            }
+          ]
+        },
+        null,
+        2
+      ),
+      '```'
+    ].join('\n');
+
+    const [item] = extractCreditStructuredItems(answer);
+    expect(item.productType).toBe('信用卡');
+  });
+
   it('strips json blocks when building short credit assistant copy', () => {
     const answer = [
       '第一段说明。',
@@ -136,6 +160,6 @@ describe('creditAssistant parser', () => {
     ].join('\n');
 
     const [item] = extractCreditStructuredItems(answer);
-    expect(item.pendingFields).toEqual(['当前应还', '每期金额']);
+    expect(item.pendingFields).toEqual(['当前应还', '剩余期数', '每期金额', '利息/费率']);
   });
 });

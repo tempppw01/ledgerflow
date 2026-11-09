@@ -9,6 +9,7 @@ import {
   resolveRepaymentCycleWindow,
   resolveRepaymentPaidTime
 } from '../../features/debt/model/repaymentCycle';
+import { findMatchingCreditDebt } from '../../features/assistant/creditAssistant/debtClassification';
 
 export {
   resolveRepaymentDueDisplay as resolveCreditRepaymentDueDisplay
@@ -43,23 +44,6 @@ interface CreditRepaymentAnalysis {
   status: CreditRepaymentStatus;
 }
 
-function normalizeCreditIdentity(text: string): string {
-  return String(text || '')
-    .toLocaleLowerCase('zh-CN')
-    .replace(/[\s\-_()【】\u005B\u005D·•：/]/g, '');
-}
-
-function findMatchingDebt(
-  item: CreditRepaymentSummaryItem,
-  debts: DebtItem[]
-): DebtItem | undefined {
-  const currentKey = normalizeCreditIdentity(`${item.title}${item.productType}`);
-  return debts.find((debt) => {
-    const debtKey = normalizeCreditIdentity(`${debt.name}${debt.type}`);
-    return debtKey === currentKey || debtKey.includes(currentKey) || currentKey.includes(debtKey);
-  });
-}
-
 function toMoneyNumber(raw?: string): number {
   const normalized = String(raw || '').replace(/[^\d.-]/g, '');
   const parsed = Number(normalized);
@@ -87,7 +71,7 @@ function analyzeCreditRepayment(
   debts: DebtItem[],
   repaymentRecords: RepaymentRecord[]
 ): CreditRepaymentAnalysis {
-  const matchedDebt = findMatchingDebt(item, debts);
+  const matchedDebt = findMatchingCreditDebt(item, debts);
   const relatedRecords = repaymentRecords
     .filter((record) => (matchedDebt ? record.debtId === matchedDebt.id : false))
     .sort((a, b) => `${b.paidAt}-${b.amount}`.localeCompare(`${a.paidAt}-${a.amount}`, 'zh-CN'));

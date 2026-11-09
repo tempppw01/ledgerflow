@@ -10,7 +10,14 @@ import type {
   CreditFieldSource,
   CreditFieldStatus
 } from '../../features/assistant/creditAssistant/types';
-import { deriveCreditPendingFields } from '../../features/assistant/creditAssistant/parser';
+import {
+  deriveCreditPendingFields,
+  hasCreditFieldValue
+} from '../../features/assistant/creditAssistant/parser';
+import {
+  findMatchingCreditDebt,
+  inferCreditDebtType
+} from '../../features/assistant/creditAssistant/debtClassification';
 
 export interface CreditHistoryLikeItem {
   role: 'user' | 'assistant';
@@ -78,9 +85,10 @@ export function countCompletedCreditFields(item: CreditExtractedItem): number {
     item.dueAmount,
     item.totalDebt,
     item.repaymentDate,
+    item.remainingPeriods,
     item.monthlyAmount,
     item.rateType || item.interest
-  ].filter((value) => String(value || '').trim()).length;
+  ].filter(hasCreditFieldValue).length;
 }
 
 function mergeCreditItemPair(base: CreditExtractedItem, incoming: CreditExtractedItem): CreditExtractedItem {
@@ -89,7 +97,15 @@ function mergeCreditItemPair(base: CreditExtractedItem, incoming: CreditExtracte
       if (field === '当前应还' && (incoming.dueAmount || base.dueAmount)) return false;
       if (field === '剩余待还' && (incoming.totalDebt || base.totalDebt)) return false;
       if (field === '还款日' && (incoming.repaymentDate || base.repaymentDate)) return false;
+      if (field === '剩余期数' && (incoming.remainingPeriods || base.remainingPeriods)) return false;
       if (field === '每期金额' && (incoming.monthlyAmount || base.monthlyAmount)) return false;
+      if (
+        field === '利息/费率' &&
+        (hasCreditFieldValue(incoming.interest || incoming.rateType) ||
+          hasCreditFieldValue(base.interest || base.rateType))
+      ) {
+        return false;
+      }
       return true;
     }
   );
@@ -186,23 +202,6 @@ export function mergeCreditItemsWithHistory(
   return dedupeCreditItems(mergedCurrentItems);
 }
 
-function findMatchingDebt(item: CreditExtractedItem, debts: DebtItem[]): DebtItem | undefined {
-  const currentKey = normalizeCreditIdentity(`${item.title}${item.productType}`);
-  const currentNameKey = normalizeCreditIdentity(item.title);
-  return debts.find((debt) => {
-    const debtKey = normalizeCreditIdentity(`${debt.name}${debt.type}`);
-    const debtNameKey = normalizeCreditIdentity(debt.name);
-    return (
-      debtNameKey === currentNameKey ||
-      debtNameKey.includes(currentNameKey) ||
-      currentNameKey.includes(debtNameKey) ||
-      debtKey === currentKey ||
-      debtKey.includes(currentKey) ||
-      currentKey.includes(debtKey)
-    );
-  });
-}
-
 function formatDebtCompareValue(value: unknown): string {
   if (value === undefined || value === null || value === '') return '未填写';
   return String(value);
@@ -233,12 +232,7 @@ function normalizeCreditDebtPayload(item: CreditExtractedItem): Omit<DebtItem, '
     return match ? match[1] : '';
   };
 
-  const normalizedTypeText = `${item.productType} ${item.title}`;
-  const type: 'credit-card' | 'consumer-loan' | 'loan' = /房贷|车贷|按揭|贷款/i.test(normalizedTypeText)
-    ? 'loan'
-    : /花呗|白条|分期|消费贷|借呗|现金贷/i.test(normalizedTypeText)
-      ? 'consumer-loan'
-      : 'credit-card';
+  const type = inferCreditDebtType(item.productType, item.title);
 
   const toNumber = (value?: string) => {
     if (!value) return undefined;
@@ -372,20 +366,28 @@ export function enrichCreditItemsForConfirmation(
     ).length;
 
     const identityKey = normalizeCreditIdentity(`${item.title}${item.productType}`) || item.id;
-    const completedCount = countCompletedCreditFields(item);
-    const completionRatio = Math.min(100, Math.round((completedCount / 6) * 100));
-    const matchedDebt = findMatchingDebt(item, debts);
-    const conflictFields = buildCreditConflictFields(item, matchedDebt);
-
+    const derivedPendingFields = deriveCreditPendingFields(item);
     const normalizedPendingFields = deriveCreditPendingFields(item, item.pendingFields);
+    const corePendingFields = new Set(derivedPendingFields);
+    const extraPendingFields = normalizedPendingFields.filter(
+      (field) => !corePendingFields.has(field)
+    );
+    const completedCount = countCompletedCreditFields(item);
+    const totalTrackedFields = 7 + extraPendingFields.length;
+    const completionRatio = Math.min(
+      100,
+      Math.round((completedCount / totalTrackedFields) * 100)
+    );
+    const matchedDebt = findMatchingCreditDebt(item, debts);
+    const conflictFields = buildCreditConflictFields(item, matchedDebt);
     const confirmedFields = [
-      item.title ? '产品名称' : '',
-      item.dueAmount ? '当前应还' : '',
-      item.totalDebt ? '剩余待还' : '',
-      item.repaymentDate ? '还款日' : '',
-      item.remainingPeriods ? '剩余期数' : '',
-      item.monthlyAmount ? '每期金额' : '',
-      item.interest || item.rateType ? '利息/费率' : ''
+      hasCreditFieldValue(item.title) ? '产品名称' : '',
+      hasCreditFieldValue(item.dueAmount) ? '当前应还' : '',
+      hasCreditFieldValue(item.totalDebt) ? '剩余待还' : '',
+      hasCreditFieldValue(item.repaymentDate) ? '还款日' : '',
+      hasCreditFieldValue(item.remainingPeriods) ? '剩余期数' : '',
+      hasCreditFieldValue(item.monthlyAmount) ? '每期金额' : '',
+      hasCreditFieldValue(item.interest) || hasCreditFieldValue(item.rateType) ? '利息/费率' : ''
     ].filter(Boolean);
     const recommendedNextFields = normalizedPendingFields.slice(0, 2);
     const mergedTurns = Array.from(new Set([...(item.mergedFromTurns || []), similarHistoryCount > 0 ? similarHistoryCount + 1 : 1]));
@@ -406,11 +408,11 @@ export function enrichCreditItemsForConfirmation(
       recommendedNextFields,
       bindingProgressText:
         normalizedPendingFields.length > 0
-          ? `当前补的是「${item.title || '这笔负债'}」· 已补 ${confirmedFields.length}/7，优先再补 ${recommendedNextFields.join('、') || '关键信息'}`
-          : `当前补的是「${item.title || '这笔负债'}」· 关键字段已基本补齐，可进入确认保存`,
+          ? `当前补的是「${item.title || '这笔负债'}」· 已补 ${completedCount}/${totalTrackedFields},优先再补 ${recommendedNextFields.join('、') || '关键信息'}`
+          : `当前补的是「${item.title || '这笔负债'}」· 字段已补齐,可进入确认保存`,
       completionRatio,
-      completionLabel: `${completedCount}/6 关键字段已补齐`,
-      confirmationState: completedCount >= 4 ? 'ready' : 'needs-more-info',
+      completionLabel: `${completedCount}/${totalTrackedFields} 项字段已补齐`,
+      confirmationState: derivedPendingFields.length === 0 ? 'ready' : 'needs-more-info',
       confirmationSummary: buildCreditConfirmationSummary({
         ...item,
         pendingFields: normalizedPendingFields

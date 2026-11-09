@@ -678,7 +678,7 @@ describe('AssistantPage', () => {
 
     await selectAssistantMode('AI 信贷管家');
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: '补充剩余待还后保存' }));
+      fireEvent.click(screen.getByRole('button', { name: '补充信息后保存' }));
     });
 
     expect(addDebtMock).not.toHaveBeenCalled();
@@ -739,8 +739,8 @@ describe('AssistantPage', () => {
 
     await selectAssistantMode('AI 信贷管家');
 
-    expect(await screen.findByText('6/6 关键字段已补齐')).toBeInTheDocument();
-    expect(screen.getByText('100%')).toBeInTheDocument();
+    expect(await screen.findByText('7/8 项字段已补齐')).toBeInTheDocument();
+    expect(screen.getByText('88%')).toBeInTheDocument();
     expect(screen.getByText('已承接上轮补充')).toBeInTheDocument();
 
     sessionStorageGetItemSpy.mockRestore();
@@ -873,8 +873,8 @@ describe('AssistantPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('计划 / 实际账户')).toBeInTheDocument();
     expect(
-      screen.getByText((content) => content.includes('招商') && content.includes('银行卡'))
-    ).toBeInTheDocument();
+      screen.getAllByText((content) => content.includes('招商') && content.includes('银行卡')).length
+    ).toBeGreaterThan(0);
 
     sessionStorageGetItemSpy.mockRestore();
   });

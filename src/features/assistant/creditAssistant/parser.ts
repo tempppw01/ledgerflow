@@ -1,9 +1,18 @@
 import type { CreditExtractedItem } from './types';
+import { inferCreditProductTypeLabel } from './debtClassification';
 
-const CREDIT_PENDING_FIELD_ORDER = ['当前应还', '剩余待还', '还款日', '每期金额'] as const;
+const CREDIT_PENDING_FIELD_ORDER = [
+  '产品名称',
+  '当前应还',
+  '剩余待还',
+  '还款日',
+  '剩余期数',
+  '每期金额',
+  '利息/费率'
+] as const;
 const CREDIT_PLACEHOLDER_VALUES = new Set(['待补充', '待确认', '未知', '暂无', '识别中', '-', '--']);
 
-function hasCreditFieldValue(value?: string): boolean {
+export function hasCreditFieldValue(value?: string): boolean {
   const text = String(value || '').trim();
   return Boolean(text) && !CREDIT_PLACEHOLDER_VALUES.has(text);
 }
@@ -11,15 +20,25 @@ function hasCreditFieldValue(value?: string): boolean {
 export function deriveCreditPendingFields(
   item: Pick<
     CreditExtractedItem,
-    'dueAmount' | 'totalDebt' | 'repaymentDate' | 'monthlyAmount'
+    | 'title'
+    | 'dueAmount'
+    | 'totalDebt'
+    | 'repaymentDate'
+    | 'remainingPeriods'
+    | 'monthlyAmount'
+    | 'interest'
+    | 'rateType'
   >,
   modelPendingFields: string[] = []
 ): string[] {
   const derived = CREDIT_PENDING_FIELD_ORDER.filter((field) => {
+    if (field === '产品名称') return !hasCreditFieldValue(item.title);
     if (field === '当前应还') return !hasCreditFieldValue(item.dueAmount);
     if (field === '剩余待还') return !hasCreditFieldValue(item.totalDebt);
     if (field === '还款日') return !hasCreditFieldValue(item.repaymentDate);
-    return !hasCreditFieldValue(item.monthlyAmount);
+    if (field === '剩余期数') return !hasCreditFieldValue(item.remainingPeriods);
+    if (field === '每期金额') return !hasCreditFieldValue(item.monthlyAmount);
+    return !hasCreditFieldValue(item.interest) && !hasCreditFieldValue(item.rateType);
   });
   const knownFields = new Set(CREDIT_PENDING_FIELD_ORDER);
   const extraPending = modelPendingFields
@@ -98,19 +117,14 @@ export function extractStreamingCreditPreview(answer: string): CreditExtractedIt
         /建议[：:】]\s*([^\n]+)/i
       ]);
 
-      const productTypeText = `${title} ${block}`;
-      const productType = /房贷|车贷|按揭|贷款/i.test(productTypeText)
-        ? '贷款'
-        : /花呗|白条|分期|消费贷|借呗|现金贷/i.test(productTypeText)
-          ? '消费贷'
-          : /信用卡/i.test(productTypeText)
-            ? '信用卡'
-            : '待识别';
+      const productType = inferCreditProductTypeLabel(title, block);
 
       const pendingFields = deriveCreditPendingFields({
+        title,
         dueAmount,
         totalDebt,
         repaymentDate,
+        remainingPeriods,
         monthlyAmount
       });
 
@@ -150,7 +164,8 @@ export function extractCreditStructuredItems(answer: string): CreditExtractedIte
 
     const items: Array<CreditExtractedItem | null> = parsed.creditItems.map((item, index) => {
         const title = String(item.title || item.product || item.platform || '').trim();
-        const productType = String(item.productType || item.type || '其他').trim();
+        const rawProductType = String(item.productType || item.type || '').trim();
+        const productType = inferCreditProductTypeLabel(rawProductType, title);
         const dueAmount = String(item.dueAmount || '').trim();
         const totalDebt = String(item.totalDebt || item.remainingDebt || '').trim();
         const repaymentDate = String(item.repaymentDate || item.dueDate || '').trim();
@@ -168,7 +183,16 @@ export function extractCreditStructuredItems(answer: string): CreditExtractedIte
           ? item.pendingFields.map((field) => String(field).trim()).filter(Boolean)
           : [];
         const pendingFields = deriveCreditPendingFields(
-          { dueAmount, totalDebt, repaymentDate, monthlyAmount },
+          {
+            title,
+            dueAmount,
+            totalDebt,
+            repaymentDate,
+            remainingPeriods,
+            monthlyAmount,
+            interest,
+            rateType
+          },
           modelPendingFields
         );
         const confidence: CreditExtractedItem['confidence'] =
