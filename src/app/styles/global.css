@@ -11250,6 +11250,30 @@ body.categories-accounts-resizing {
 }
 
 @media (max-width: 640px) {
+  .settings-console-tabs,
+  .database-console-tabs {
+    flex-wrap: wrap;
+    row-gap: 2px;
+    overflow-x: visible;
+  }
+
+  .settings-console-tabs button,
+  .database-console-tabs button {
+    padding-inline: 12px;
+    white-space: nowrap;
+  }
+
+  .settings-console-tabs button.is-active,
+  .database-console-tabs button.is-active {
+    border-radius: var(--radius-sm);
+    background: var(--color-primary-bg);
+  }
+
+  .settings-console-tabs button.is-active::after,
+  .database-console-tabs button.is-active::after {
+    display: none;
+  }
+
   .database-console-header {
     align-items: flex-start;
     flex-direction: column;
@@ -11259,10 +11283,6 @@ body.categories-accounts-resizing {
   .database-console-stat {
     padding-left: 12px;
     text-align: left;
-  }
-
-  .database-console-tabs button {
-    padding-inline: 12px;
   }
 
   .database-console-workspace-head {
