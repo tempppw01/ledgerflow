@@ -418,9 +418,7 @@ describe('AssistantPage', () => {
     });
 
     await waitFor(() => {
-      const assistantReply = Array.from(
-        document.querySelectorAll<HTMLElement>('.chat-msg-content')
-      )
+      const assistantReply = Array.from(document.querySelectorAll<HTMLElement>('.chat-msg-content'))
         .map((node) => node.textContent?.replace(/\s+/g, '') || '')
         .find((text) => text.includes('币种异常账单'));
       expect(assistantReply).toContain('¥20.00');
@@ -873,7 +871,8 @@ describe('AssistantPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('计划 / 实际账户')).toBeInTheDocument();
     expect(
-      screen.getAllByText((content) => content.includes('招商') && content.includes('银行卡')).length
+      screen.getAllByText((content) => content.includes('招商') && content.includes('银行卡'))
+        .length
     ).toBeGreaterThan(0);
 
     sessionStorageGetItemSpy.mockRestore();
@@ -1050,6 +1049,115 @@ describe('AssistantPage', () => {
         pdfDataUrls: []
       })
     );
+  });
+
+  it('提交进行中时应忽略重复发送', async () => {
+    const workbench = {
+      ...createWorkbenchMock(),
+      textInput: '帮我看看最近支出趋势',
+      handleRecognizeWithPrompt: vi.fn(() => new Promise(() => undefined))
+    };
+    useAssistantWorkbenchMock.mockReturnValue(workbench);
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    const sendButton = screen.getByTitle('发送');
+    fireEvent.click(sendButton);
+    fireEvent.click(sendButton);
+
+    expect(workbench.handleRecognizeWithPrompt).toHaveBeenCalledTimes(1);
+  });
+
+  it('缺少 API Key 或模型时不应写入用户消息', async () => {
+    const previousModel = aiSettingsMocks.state.model;
+    const workbench = {
+      ...createWorkbenchMock(),
+      hasApiKey: false,
+      textInput: '这条消息不应该出现'
+    };
+    useAssistantWorkbenchMock.mockReturnValue(workbench);
+
+    const { unmount } = render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByTitle('发送'));
+    expect(workbench.setToastState).toHaveBeenCalledWith('请先配置 API Key', 'warning');
+    expect(workbench.handleRecognizeWithPrompt).not.toHaveBeenCalled();
+    expect(
+      Array.from(document.querySelectorAll('.chat-msg-content')).some((node) =>
+        node.textContent?.includes('这条消息不应该出现')
+      )
+    ).toBe(false);
+    unmount();
+
+    aiSettingsMocks.state.model = '';
+    const modelWorkbench = {
+      ...createWorkbenchMock(),
+      textInput: '缺少模型时也不应该写入'
+    };
+    useAssistantWorkbenchMock.mockReturnValue(modelWorkbench);
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByTitle('发送'));
+    expect(modelWorkbench.setToastState).toHaveBeenCalledWith('请先选择模型', 'warning');
+    expect(modelWorkbench.handleRecognizeWithPrompt).not.toHaveBeenCalled();
+    expect(
+      Array.from(document.querySelectorAll('.chat-msg-content')).some((node) =>
+        node.textContent?.includes('缺少模型时也不应该写入')
+      )
+    ).toBe(false);
+    aiSettingsMocks.state.model = previousModel;
+  });
+
+  it('重试时应保留原附件且不重复追加用户消息', async () => {
+    window.sessionStorage.setItem(
+      'ledgerflow.assistant.chatHistory.assistant',
+      JSON.stringify([
+        {
+          id: 'assistant-user-retry',
+          role: 'user',
+          text: '帮我识别附件',
+          imageDataUrls: ['data:image/png;base64,retry'],
+          pdfDataUrls: ['data:application/pdf;base64,retry']
+        }
+      ])
+    );
+    const workbench = {
+      ...createWorkbenchMock(),
+      textInput: ''
+    };
+    useAssistantWorkbenchMock.mockReturnValue(workbench);
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getAllByText('帮我识别附件')).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: '重新生成' }));
+
+    expect(workbench.handleRecognizeWithPrompt).toHaveBeenCalledTimes(1);
+    expect(workbench.handleRecognizeWithPrompt).toHaveBeenCalledWith(
+      expect.stringContaining('帮我识别附件'),
+      {
+        imageDataUrls: ['data:image/png;base64,retry'],
+        pdfDataUrls: ['data:application/pdf;base64,retry']
+      }
+    );
+    expect(screen.getAllByText('帮我识别附件')).toHaveLength(1);
   });
 
   it('AI 助手回复后应生成与主题相关的继续追问建议', async () => {

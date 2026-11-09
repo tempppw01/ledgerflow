@@ -137,6 +137,7 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const recognizeAbortRef = useRef<AbortController | null>(null);
+  const recognizeInFlightRef = useRef(false);
   const savingRef = useRef(false);
   const entriesRef = useRef<DraftBillEntry[]>([]);
   const embeddingCooldownUntilRef = useRef(0);
@@ -495,6 +496,8 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
     const hasPromptInput =
       Boolean(cleanPrompt) || effectiveImageDataUrls.length > 0 || effectivePdfDataUrls.length > 0;
     if (!hasApiKey || !input.model.trim() || !hasPromptInput) return;
+    if (recognizeInFlightRef.current) return;
+    recognizeInFlightRef.current = true;
     setStatus('recognizing');
     setError('');
     setRawContent('');
@@ -735,6 +738,7 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
       if (recognizeAbortRef.current === controller) {
         recognizeAbortRef.current = null;
       }
+      recognizeInFlightRef.current = false;
     }
   };
 
@@ -931,6 +935,7 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
   const resetWorkbench = () => {
     recognizeAbortRef.current?.abort();
     recognizeAbortRef.current = null;
+    recognizeInFlightRef.current = false;
     setTextInput('');
     setImageDataUrls([]);
     setPdfDataUrls([]);
@@ -944,7 +949,7 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
   };
 
   const stopRecognize = () => {
-    if (status !== 'recognizing') return;
+    if (!recognizeInFlightRef.current && !recognizeAbortRef.current) return;
     recognizeAbortRef.current?.abort();
   };
 

@@ -189,6 +189,12 @@ interface ChatHistoryItem {
   creditItems?: CreditExtractedItem[];
 }
 
+interface SubmitPromptOptions {
+  imageDataUrls?: string[];
+  pdfDataUrls?: string[];
+  appendUserMessage?: boolean;
+}
+
 interface PushInsight {
   id: string;
   title: string;
@@ -206,13 +212,10 @@ interface TodayTodoItem {
   href?: string;
 }
 
-const EMBEDDING_DEGRADED_SUMMARY =
-  '语义增强暂不可用，本次已按普通账本分析继续回答。';
+const EMBEDDING_DEGRADED_SUMMARY = '语义增强暂不可用，本次已按普通账本分析继续回答。';
 
 function formatEmbeddingSummaryForDisplay(summary: string): string {
-  return summary.trim().startsWith('语义召回已降级')
-    ? EMBEDDING_DEGRADED_SUMMARY
-    : summary;
+  return summary.trim().startsWith('语义召回已降级') ? EMBEDDING_DEGRADED_SUMMARY : summary;
 }
 
 interface DuplicateReviewPair {
@@ -975,6 +978,9 @@ export function AssistantPage() {
     investment: ''
   });
   const pendingRequestModeRef = useRef<AssistantMode>('assistant');
+  const submitInFlightRef = useRef(false);
+  const recognitionTurnRef = useRef(0);
+  const renderedRecognitionTurnRef = useRef(0);
   const messageEndRef = useRef<HTMLDivElement | null>(null);
   const [duplicateReviewOpen, setDuplicateReviewOpen] = useState(false);
   const [duplicateReviewPairs, setDuplicateReviewPairs] = useState<DuplicateReviewPair[]>([]);
@@ -1566,10 +1572,22 @@ export function AssistantPage() {
     [wb.entries, wb.rawContent, wb.rawReasoning]
   );
 
-  const submitPrompt = (prompt: string) => {
+  const submitPrompt = (prompt: string, options: SubmitPromptOptions = {}) => {
+    if (submitInFlightRef.current) return;
+
     const clean = prompt.trim();
-    const hasAttachments = wb.imageDataUrls.length > 0 || wb.pdfDataUrls.length > 0;
-    if (wb.status === 'recognizing' || (!clean && !hasAttachments)) return;
+    const imagePayload = [...(options.imageDataUrls ?? wb.imageDataUrls)];
+    const pdfPayload = [...(options.pdfDataUrls ?? wb.pdfDataUrls)];
+    const hasAttachments = imagePayload.length > 0 || pdfPayload.length > 0;
+    if (!clean && !hasAttachments) return;
+    if (!wb.hasApiKey) {
+      wb.setToastState('请先配置 API Key', 'warning');
+      return;
+    }
+    if (!model.trim()) {
+      wb.setToastState('请先选择模型', 'warning');
+      return;
+    }
 
     const requestQuestion = clean || '请根据我上传的附件完成识别与提炼。';
     const requestPrompt =
@@ -1578,26 +1596,33 @@ export function AssistantPage() {
         : mode === 'credit'
           ? buildCreditConversationPrompt(requestQuestion, chatHistory)
           : buildAssistantConversationPrompt(requestQuestion, chatHistory);
-    const imagePayload = [...wb.imageDataUrls];
-    const pdfPayload = [...wb.pdfDataUrls];
-
+    submitInFlightRef.current = true;
+    const recognitionTurn = recognitionTurnRef.current + 1;
+    recognitionTurnRef.current = recognitionTurn;
     pendingRequestModeRef.current = mode;
-    setChatHistory((prev) => [
-      ...prev,
-      {
-        id: `${Date.now()}-user`,
-        role: 'user',
-        text: clean || '（仅发送附件）',
-        imageDataUrls: imagePayload,
-        pdfDataUrls: pdfPayload
-      }
-    ]);
+    lastAssistantRef.current[mode] = '';
+    if (options.appendUserMessage !== false) {
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}-user`,
+          role: 'user',
+          text: clean || '（仅发送附件）',
+          imageDataUrls: imagePayload,
+          pdfDataUrls: pdfPayload
+        }
+      ]);
+    }
     wb.setTextInput('');
     setComposerFocused(false);
     wb.textareaRef.current?.blur();
-    void wb.handleRecognizeWithPrompt(requestPrompt, {
-      imageDataUrls: imagePayload,
-      pdfDataUrls: pdfPayload
+    void Promise.resolve(
+      wb.handleRecognizeWithPrompt(requestPrompt, {
+        imageDataUrls: imagePayload,
+        pdfDataUrls: pdfPayload
+      })
+    ).finally(() => {
+      submitInFlightRef.current = false;
     });
   };
 
@@ -1711,8 +1736,19 @@ export function AssistantPage() {
       return;
     }
 
+    const currentRecognitionTurn = recognitionTurnRef.current;
+    if (
+      currentRecognitionTurn > 0 &&
+      currentRecognitionTurn <= renderedRecognitionTurnRef.current
+    ) {
+      return;
+    }
+
     const messageText = buildAssistantMessageText(responseMode);
     if (!messageText || messageText === lastAssistantRef.current[responseMode]) return;
+    if (currentRecognitionTurn > 0) {
+      renderedRecognitionTurnRef.current = currentRecognitionTurn;
+    }
 
     const flushedSegments = splitStreamingSegments(wb.rawContent);
     setStreamingCommittedSegments(flushedSegments.committed);
@@ -1833,19 +1869,21 @@ export function AssistantPage() {
       .reverse()
       .find((item) => item.role === 'user');
     if (!previousUser) return;
-    wb.setTextInput(previousUser.text === '（仅发送附件）' ? '' : previousUser.text);
-    wb.setImageDataUrls(previousUser.imageDataUrls || []);
-    wb.setPdfDataUrls(previousUser.pdfDataUrls || []);
-    submitPrompt(previousUser.text === '（仅发送附件）' ? '' : previousUser.text);
+    submitPrompt(previousUser.text === '（仅发送附件）' ? '' : previousUser.text, {
+      imageDataUrls: previousUser.imageDataUrls || [],
+      pdfDataUrls: previousUser.pdfDataUrls || [],
+      appendUserMessage: false
+    });
   };
 
   const retryLastPrompt = () => {
     const latestUser = [...chatHistory].reverse().find((item) => item.role === 'user');
     if (!latestUser) return;
-    wb.setTextInput(latestUser.text === '（仅发送附件）' ? '' : latestUser.text);
-    wb.setImageDataUrls(latestUser.imageDataUrls || []);
-    wb.setPdfDataUrls(latestUser.pdfDataUrls || []);
-    submitPrompt(latestUser.text === '（仅发送附件）' ? '' : latestUser.text);
+    submitPrompt(latestUser.text === '（仅发送附件）' ? '' : latestUser.text, {
+      imageDataUrls: latestUser.imageDataUrls || [],
+      pdfDataUrls: latestUser.pdfDataUrls || [],
+      appendUserMessage: false
+    });
   };
 
   const copyMessage = async (text: string) => {
@@ -2161,9 +2199,7 @@ export function AssistantPage() {
                 <article className="chat-msg">
                   {renderChatAvatar('assistant')}
                   <div className="chat-msg-body">
-                    <div className="chat-msg-header">
-                      {t('assistant.ui.creditOverviewTitle')}
-                    </div>
+                    <div className="chat-msg-header">{t('assistant.ui.creditOverviewTitle')}</div>
                     <div className="chat-credit-overview-card is-compact">
                       <div className="chat-credit-overview-grid is-compact">
                         <div className="is-primary">
@@ -3485,9 +3521,7 @@ export function AssistantPage() {
                         </div>
                         <div>
                           <dt>金额</dt>
-                          <dd>
-                            {formatMoneyByCurrency(currentDuplicateReview.existing.amount)}
-                          </dd>
+                          <dd>{formatMoneyByCurrency(currentDuplicateReview.existing.amount)}</dd>
                         </div>
                         <div>
                           <dt>分类</dt>
@@ -3540,7 +3574,9 @@ export function AssistantPage() {
             open={Boolean(pendingDeleteCreditItem)}
             title="删除这笔负债？"
             description={`将从还款管理删除“${
-              pendingDeleteCreditItem?.matchedDebtName || pendingDeleteCreditItem?.title || '这笔负债'
+              pendingDeleteCreditItem?.matchedDebtName ||
+              pendingDeleteCreditItem?.title ||
+              '这笔负债'
             }”。删除后无法在还款管理中继续查看，请确认已经不再需要它。`}
             confirmText="确认删除"
             danger
