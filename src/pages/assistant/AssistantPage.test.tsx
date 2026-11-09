@@ -981,6 +981,42 @@ describe('AssistantPage', () => {
     sessionStorageGetItemSpy.mockRestore();
   });
 
+  it('回退追问主题应聚焦账务主题,而不是截断整句问题', async () => {
+    vi.mocked(sendAiChat).mockRejectedValueOnce(new Error('服务暂不可用'));
+    useAssistantWorkbenchMock.mockReturnValue({
+      ...createWorkbenchMock(),
+      rawContent: '本月收支基本平衡,餐饮支出最值得注意。',
+      status: 'ready'
+    });
+
+    const sessionStorageGetItemSpy = vi
+      .spyOn(window.sessionStorage.__proto__, 'getItem')
+      .mockImplementation((key) => {
+        if (String(key).includes('chatHistory.assistant')) {
+          return JSON.stringify([
+            {
+              id: 'topic-user',
+              role: 'user',
+              text: '帮我总结一下这个月的收支情况,并指出最值得注意的一项支出'
+            }
+          ]);
+        }
+        return '[]';
+      });
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    const followUps = await screen.findAllByRole('button', { name: /这个月收支/ });
+    expect(followUps.length).toBeGreaterThan(0);
+    expect(screen.queryAllByRole('button', { name: /总结一下这个月/ })).toHaveLength(0);
+    expect(screen.queryAllByRole('button', { name: /[“”]/ })).toHaveLength(0);
+    sessionStorageGetItemSpy.mockRestore();
+  });
+
   it('输入工具条与消息操作栏的图标应使用内联 SVG 而不是外部图片', async () => {
     useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
 

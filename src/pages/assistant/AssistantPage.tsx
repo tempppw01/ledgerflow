@@ -189,6 +189,15 @@ interface TodayTodoItem {
   href?: string;
 }
 
+const EMBEDDING_DEGRADED_SUMMARY =
+  '语义增强暂不可用，本次已按普通账本分析继续回答。';
+
+function formatEmbeddingSummaryForDisplay(summary: string): string {
+  return summary.trim().startsWith('语义召回已降级')
+    ? EMBEDDING_DEGRADED_SUMMARY
+    : summary;
+}
+
 interface DuplicateReviewPair {
   entry: DraftBillEntry;
   existing: TransactionItem;
@@ -571,38 +580,38 @@ function buildFollowUpPrompts(answer: string, history: ChatHistoryItem[]): strin
   const prompts =
     focus === 'trend'
       ? [
-          `“${topic}”接下来重点观察什么指标？`,
+          `${topic}接下来重点观察什么变化？`,
           `这段变化里，哪个时间点最值得拿来对比？`,
           `如果趋势反转，最早会出现什么信号？`
         ]
       : focus === 'risk'
         ? [
-            `“${topic}”最大的实际风险会落在哪里？`,
+            `${topic}最大的实际风险会落在哪里？`,
             `有哪些新信息会改变刚才的风险判断？`,
-            `现在先做哪一步能降低“${topic}”的影响？`
+            `现在先做哪一步能降低${topic}的影响？`
           ]
         : focus === 'planning'
           ? [
-              `围绕“${topic}”，这周最先做哪件事？`,
-              `怎么把“${topic}”拆成容易执行的两步？`,
+              `围绕${topic}，这周最先做哪件事？`,
+              `${topic}怎么拆成容易执行的两步？`,
               `做到什么程度可以判断这套计划有效？`
             ]
           : focus === 'decision'
             ? [
-                `比较“${topic}”时，最该优先看哪个条件？`,
-                `换一个更保守的前提，“${topic}”结论会变吗？`,
+                `比较${topic}时，最该优先看哪个条件？`,
+                `换一个更保守的前提，这个结论会变吗？`,
                 `做决定前还缺哪条关键信息？`
               ]
             : focus === 'category'
               ? [
-                  `“${topic}”主要由哪些具体项目拉动？`,
+                  `${topic}主要由哪些具体项目拉动？`,
                   `这部分里哪些支出可以调整、哪些不适合动？`,
-                  `拿哪个周期对比“${topic}”最有参考价值？`
+                  `拿哪个周期对比${topic}最有参考价值？`
                 ]
               : [
-                  `“${topic}”的判断依据具体来自哪里？`,
-                  `关于“${topic}”，还需要补充什么信息才能判断？`,
-                  `把“${topic}”落实的话，下一步可以怎么做？`
+                  `${topic}的判断依据具体来自哪里？`,
+                  `关于${topic}，还需要补充什么信息才能判断？`,
+                  `把${topic}落实的话，下一步可以怎么做？`
                 ];
 
   // 问题本身过长时，减少重复引用，保持按钮短而具体。
@@ -617,12 +626,47 @@ function normalizeFollowUpPrompt(prompt: string): string {
     .slice(0, 48);
 }
 
+const FOLLOW_UP_PERIOD_PATTERN =
+  /(本月|这个月|当月|上月|上个月|本周|这周|本季度|今年|去年|最近|近[一二三四五六七八九十\d]+(?:天|周|个月|年))/;
+
+const FOLLOW_UP_CATEGORY_WORDS =
+  '(?:餐饮|外卖|通勤|交通|房租|住房|购物|娱乐|医疗|教育|人情|旅行|水电|日用|通讯|宠物|学习|保险|子女)';
+
+// 优先匹配用户口中的账务主题,避免把整句问题当作追问主题。
+const FOLLOW_UP_TOPIC_PATTERNS = [
+  /(?:收支|收入|支出|结余|预算|账单|花销|开销|储蓄|存款|现金流)/,
+  new RegExp(
+    `${FOLLOW_UP_CATEGORY_WORDS}(?:[和与及跟、]?${FOLLOW_UP_CATEGORY_WORDS})*(?:支出|花销|开销|费用|消费|预算)?`
+  ),
+  /(?:信用卡|花呗|借呗|房贷|车贷|贷款|负债|还款|分期|利息|手续费)/,
+  /(?:投资|理财|基金|股票|收益|仓位|资产|持仓|行情|回撤)/
+];
+
+function pickFollowUpTopicKeyword(text: string): string {
+  let best = '';
+  for (const pattern of FOLLOW_UP_TOPIC_PATTERNS) {
+    const match = pattern.exec(text);
+    if (!match) continue;
+    const index = typeof match.index === 'number' ? match.index : 0;
+    const lead = text.slice(Math.max(0, index - 6), index);
+    const periods = lead.match(new RegExp(FOLLOW_UP_PERIOD_PATTERN.source, 'g'));
+    const period = periods ? periods[periods.length - 1] : '';
+    const topic = `${period}${match[0]}`.trim();
+    if (topic.length > best.length) best = topic;
+  }
+  return best;
+}
+
 function extractFollowUpTopic(source: string): string {
   const cleaned = source
     .replace(/[。！？；;]+$/g, '')
     .replace(/^(?:请帮我|麻烦帮我|帮我|请|麻烦|能否|可否)+/, '')
     .trim();
   if (!cleaned) return '';
+  const keywordTopic = pickFollowUpTopicKeyword(cleaned);
+  if (keywordTopic) {
+    return keywordTopic.length > 16 ? `${keywordTopic.slice(0, 16)}...` : keywordTopic;
+  }
   const clauses = cleaned
     .split(/[，,；;、：:]/)
     .map((part) => part.trim())
@@ -1563,7 +1607,7 @@ export function AssistantPage() {
         ? wb.embeddingDebug.used
           ? `语义召回：命中 ${wb.embeddingDebug.hitCount} 条，最高相似度 ${wb.embeddingDebug.topScore.toFixed(2)}，平均相似度 ${wb.embeddingDebug.averageScore.toFixed(2)}，耗时 ${wb.embeddingDebug.latencyMs}ms，索引 ${wb.embeddingDebug.indexedDocs} 条。`
           : wb.embeddingDebug.downgraded
-            ? `语义召回已降级：${wb.embeddingDebug.reason || '服务不可用'}（耗时 ${wb.embeddingDebug.latencyMs}ms）。`
+            ? EMBEDDING_DEGRADED_SUMMARY
             : `语义召回未命中可用上下文（耗时 ${wb.embeddingDebug.latencyMs}ms）。`
         : undefined;
 
@@ -2526,7 +2570,7 @@ export function AssistantPage() {
                       <p
                         className={`chat-token-usage${item.embeddingSummaryIsError ? ' is-error' : ''}`}
                       >
-                        {item.embeddingSummaryText}
+                        {formatEmbeddingSummaryForDisplay(item.embeddingSummaryText)}
                       </p>
                     ) : null}
                     {item.role === 'assistant' &&
