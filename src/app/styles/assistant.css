@@ -2985,11 +2985,6 @@
 .chat-bill-row-item {
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-md);
-  padding: 6px 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
 }
 
 .chat-bill-row-item small {
@@ -3040,8 +3035,9 @@
 }
 
 .chat-bill-row-item {
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
   gap: 4px 14px;
   padding: 10px 12px;
   border-radius: 10px;
@@ -3102,6 +3098,88 @@
   grid-column: 1 / -1;
 }
 
+.chat-bill-row-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 2px;
+}
+
+.chat-bill-row-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.chat-bill-row-item.is-unselected {
+  opacity: 0.55;
+}
+
+.chat-bill-row-item.has-issue {
+  border-color: var(--color-warning-border);
+  background: color-mix(in srgb, var(--color-warning) 7%, var(--color-bg-elevated));
+}
+
+.chat-bill-row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-bill-row-actions button {
+  padding: 2px 4px;
+  border: 0;
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.chat-bill-row-actions button:hover {
+  color: var(--color-text-primary);
+}
+
+.chat-bill-issue {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--color-warning);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.chat-bill-edit-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 10px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--color-divider);
+}
+
+.chat-bill-edit-grid label {
+  display: grid;
+  gap: 4px;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+}
+
+.chat-bill-edit-grid input,
+.chat-bill-edit-grid select {
+  width: 100%;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 7px;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  font-size: var(--font-xs);
+}
+
+.chat-bill-edit-wide {
+  grid-column: 1 / -1;
+}
+
 .chat-bill-preview-footer {
   margin-top: 12px;
   padding-top: 10px;
@@ -3129,6 +3207,10 @@
 
   .chat-bill-preview-footer > button {
     width: 100%;
+  }
+
+  .chat-bill-edit-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

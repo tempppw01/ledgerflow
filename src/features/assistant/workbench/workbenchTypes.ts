@@ -35,7 +35,7 @@ export interface AiBillResult {
 }
 
 export interface ValidationIssue {
-  field: 'amount' | 'date' | 'type' | 'currency';
+  field: 'amount' | 'date' | 'type' | 'currency' | 'duplicate';
   message: string;
   needsReview?: boolean;
 }
@@ -61,7 +61,7 @@ export interface DraftBillEntry {
     reason: string;
   };
   duplicateTxId?: string;
-  duplicateReason?: 'orderNo' | 'merchantOrderNo' | 'content';
+  duplicateReason?: 'orderNo' | 'merchantOrderNo' | 'content' | 'batch';
   issues: ValidationIssue[];
 }
 

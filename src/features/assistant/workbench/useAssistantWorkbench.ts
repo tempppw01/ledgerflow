@@ -132,6 +132,7 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const recognizeAbortRef = useRef<AbortController | null>(null);
+  const savingRef = useRef(false);
   const embeddingCooldownUntilRef = useRef(0);
   const embeddingCooldownNoticeRef = useRef(0);
   const [status, setStatus] = useState<WorkbenchStatus>('idle');
@@ -262,15 +263,52 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
     return null;
   };
 
-  const attachDuplicateMeta = (rows: DraftBillEntry[]) =>
-    rows.map((item) => {
+  const buildBatchSignature = (entry: DraftBillEntry): string => {
+    if (entry.orderNo) return `order:${entry.orderNo}`;
+    if (entry.merchantOrderNo) return `merchant:${entry.merchantOrderNo}`;
+    const day = String(entry.date || '').slice(0, 10);
+    const amount = normalizeMoney(entry.amount);
+    const type = entry.type === 'unknown' ? 'expense' : entry.type;
+    const note = String(entry.note || '').trim();
+    if (!day || !amount || !note) return '';
+    return `content:${day}|${amount}|${type}|${note}`;
+  };
+
+  const attachDuplicateMeta = (rows: DraftBillEntry[]) => {
+    const firstSeenIndex = new Map<string, number>();
+    return rows.map((item, index) => {
       const duplicate = detectDuplicate(item);
+      if (duplicate) {
+        return {
+          ...item,
+          duplicateTxId: duplicate.id,
+          duplicateReason: duplicate.reason
+        };
+      }
+
+      const signature = buildBatchSignature(item);
+      const previousIndex = signature ? firstSeenIndex.get(signature) : undefined;
+      if (signature && previousIndex === undefined) {
+        firstSeenIndex.set(signature, index);
+      }
+      if (previousIndex === undefined) {
+        return { ...item, duplicateTxId: undefined, duplicateReason: undefined };
+      }
+
       return {
         ...item,
-        duplicateTxId: duplicate?.id,
-        duplicateReason: duplicate?.reason
+        duplicateTxId: undefined,
+        duplicateReason: 'batch' as const,
+        issues: [
+          ...item.issues,
+          {
+            field: 'duplicate' as const,
+            message: `与第 ${previousIndex + 1} 笔内容相同，疑似同批次重复，请删除或修改后再保存。`
+          }
+        ]
       };
     });
+  };
 
   // 根据当前输入与结果条目，自动维护主状态机。
   useEffect(() => {
@@ -407,7 +445,7 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
       }
       setToast({ visible: true, variant: 'success', message: '模型列表刷新成功' });
     } catch (err) {
-      setError(err instanceof Error ? err.message : '模型拉取失败');
+      setError(err instanceof Error ? mapAssistantErrorMessage(err.message) : '模型拉取失败');
       setModels((current) => mergeAiModelOptions(input.model, AI_MODEL_PRESETS, current));
     } finally {
       setLoadingModels(false);
@@ -681,21 +719,19 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
 
   const updateEntry = (id: string, patch: Partial<DraftBillEntry>) => {
     setEntries((prev) =>
-      prev.map((item) => {
-        if (item.id !== id) return item;
-        const next: DraftBillEntry = {
-          ...item,
-          ...patch,
-          needsReview: clearResolvedReviewFields(item.needsReview, patch)
-        };
-        const duplicate = detectDuplicate(next);
-        return {
-          ...next,
-          duplicateTxId: duplicate?.id,
-          duplicateReason: duplicate?.reason,
-          issues: validateDraft(next)
-        };
-      })
+      attachDuplicateMeta(
+        prev.map((item) => {
+          const next: DraftBillEntry =
+            item.id === id
+              ? {
+                  ...item,
+                  ...patch,
+                  needsReview: clearResolvedReviewFields(item.needsReview, patch)
+                }
+              : item;
+          return { ...next, issues: validateDraft(next) };
+        })
+      )
     );
   };
 
@@ -717,14 +753,17 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
 
   /** 将当前勾选且校验通过的草稿条目写入账本。 */
   const saveSelected = (options?: { overwriteDuplicateEntryIds?: string[] }) => {
+    if (savingRef.current) return false;
     const rows = entries.filter((item) => item.selected && item.issues.length === 0);
     if (rows.length === 0) {
       setToast({ visible: true, variant: 'warning', message: '没有可保存的有效账单' });
       return false;
     }
+    savingRef.current = true;
     setStatus('saving');
     addLog({ action: 'assistant.save', status: 'pending', message: `准备保存 ${rows.length} 条` });
 
+    const committedIds: string[] = [];
     try {
       const overwriteSet = new Set(options?.overwriteDuplicateEntryIds || []);
       const categoryCache = [...input.categories];
@@ -843,13 +882,26 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
         } else {
           input.addTransaction(payload);
         }
+        committedIds.push(item.id);
       });
-      setEntries([]);
-      setStatus('saved');
-      setRawContent('');
-      setRawReasoning('');
-      setLastUsage(null);
-      setToast({ visible: true, variant: 'success', message: `已保存 ${rows.length} 条账单` });
+      const committedSet = new Set(committedIds);
+      const remaining = entries.filter((item) => !committedSet.has(item.id));
+      const skipped = entries.length - rows.length;
+      setEntries(remaining);
+      setStatus(remaining.length > 0 ? 'preview' : 'saved');
+      if (remaining.length === 0) {
+        setRawContent('');
+        setRawReasoning('');
+        setLastUsage(null);
+      }
+      setToast({
+        visible: true,
+        variant: 'success',
+        message:
+          skipped > 0
+            ? `已保存 ${rows.length} 条，另有 ${skipped} 条未勾选或需修正`
+            : `已保存 ${rows.length} 条账单`
+      });
       addLog({
         action: 'assistant.save',
         status: 'success',
@@ -857,11 +909,24 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
       });
       return true;
     } catch (err) {
+      if (committedIds.length > 0) {
+        const committedSet = new Set(committedIds);
+        setEntries((prev) => prev.filter((item) => !committedSet.has(item.id)));
+      }
       const message = err instanceof Error ? err.message : '保存失败，请重试';
       setStatus('error');
-      setToast({ visible: true, variant: 'error', message });
+      setToast({
+        visible: true,
+        variant: 'error',
+        message:
+          committedIds.length > 0
+            ? `${message}，已保存 ${committedIds.length} 条，其余可重试`
+            : message
+      });
       addLog({ action: 'assistant.save', status: 'error', message });
       return false;
+    } finally {
+      savingRef.current = false;
     }
   };
 

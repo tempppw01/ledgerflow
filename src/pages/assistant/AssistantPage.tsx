@@ -25,6 +25,7 @@ import {
   summarizeTransactions
 } from '../../shared/lib/transactionMetrics';
 import { toLocalDateKey } from '../../shared/lib/localDate';
+import { formatMoneyByCurrency } from '../../shared/lib/format';
 import { Toast } from '../../shared/ui/Toast';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import type { DebtItem } from '../../features/debt/model/debtMetrics';
@@ -66,6 +67,14 @@ function getModelDisplayLabel(modelId: string): string {
   const value = modelId.trim();
   if (!value) return value;
   return value === 'gpt-5.4-mini' ? `${value}（推荐）` : value;
+}
+
+function getDraftTypeLabel(type: string): string {
+  if (type === 'expense') return '支出';
+  if (type === 'income') return '收入';
+  if (type === 'budget') return '预算';
+  if (type === 'repayment') return '还款';
+  return '待确认类型';
 }
 
 function inputPlaceholder(
@@ -949,12 +958,6 @@ export function AssistantPage() {
       // ignore storage write errors
     }
   }, [isWideLayout]);
-
-  // 仅保留“被勾选且通过校验”的条目，作为一键保存候选。
-  const selectedValidEntries = useMemo(
-    () => wb.entries.filter((item) => item.selected && item.issues.length === 0),
-    [wb.entries]
-  );
 
   // 预览卡片需要的 JSON 结构，避免在渲染阶段重复构造。
   const duplicateEntriesCount = useMemo(
@@ -2778,7 +2781,7 @@ export function AssistantPage() {
                 </article>
               ))}
 
-              {selectedValidEntries.length > 0 ? (
+              {wb.entries.length > 0 ? (
                 <article className="chat-msg">
                   {renderChatAvatar('success')}
                   <div className="chat-msg-body">
@@ -2788,6 +2791,8 @@ export function AssistantPage() {
                       duplicateCount={duplicateEntriesCount}
                       onCheckDuplicates={wb.checkDuplicates}
                       onSave={startDuplicateReview}
+                      onUpdateEntry={wb.updateEntry}
+                      onRemoveEntry={wb.removeEntry}
                       onCreateSubscription={handleCreateSubscriptionFromEntry}
                     />
                   </div>
@@ -3378,11 +3383,16 @@ export function AssistantPage() {
                         </div>
                         <div>
                           <dt>类型</dt>
-                          <dd>{currentDuplicateReview.entry.type}</dd>
+                          <dd>{getDraftTypeLabel(currentDuplicateReview.entry.type)}</dd>
                         </div>
                         <div>
                           <dt>金额</dt>
-                          <dd>¥{currentDuplicateReview.entry.amount.toFixed(2)}</dd>
+                          <dd>
+                            {formatMoneyByCurrency(
+                              currentDuplicateReview.entry.amount,
+                              currentDuplicateReview.entry.currency
+                            )}
+                          </dd>
                         </div>
                         <div>
                           <dt>分类</dt>
@@ -3407,11 +3417,13 @@ export function AssistantPage() {
                         </div>
                         <div>
                           <dt>类型</dt>
-                          <dd>{currentDuplicateReview.existing.type}</dd>
+                          <dd>{getDraftTypeLabel(currentDuplicateReview.existing.type)}</dd>
                         </div>
                         <div>
                           <dt>金额</dt>
-                          <dd>¥{currentDuplicateReview.existing.amount.toFixed(2)}</dd>
+                          <dd>
+                            {formatMoneyByCurrency(currentDuplicateReview.existing.amount)}
+                          </dd>
                         </div>
                         <div>
                           <dt>分类</dt>

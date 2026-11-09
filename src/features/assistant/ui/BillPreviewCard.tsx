@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { DraftBillEntry } from '../workbench/workbenchTypes';
 
 interface BillPreviewCardProps {
@@ -5,8 +6,27 @@ interface BillPreviewCardProps {
   duplicateCount: number;
   onCheckDuplicates: () => number;
   onSave: (options?: { overwriteDuplicateEntryIds?: string[] }) => boolean;
+  onUpdateEntry?: (id: string, patch: Partial<DraftBillEntry>) => void;
+  onRemoveEntry?: (id: string) => void;
   onCreateSubscription?: (entryId: string) => void;
   onSaved?: () => void;
+}
+
+const typeOptions: Array<{ value: DraftBillEntry['type']; label: string }> = [
+  { value: 'expense', label: '支出' },
+  { value: 'income', label: '收入' },
+  { value: 'budget', label: '预算' },
+  { value: 'repayment', label: '还款' }
+];
+
+function getTypeLabel(type: DraftBillEntry['type']) {
+  return typeOptions.find((option) => option.value === type)?.label || '待确认类型';
+}
+
+function issueText(entry: DraftBillEntry): string {
+  return entry.issues
+    .map((item) => (item.needsReview ? `需人工确认：${item.message}` : item.message))
+    .join('；');
 }
 
 export function BillPreviewCard({
@@ -14,9 +34,12 @@ export function BillPreviewCard({
   duplicateCount,
   onCheckDuplicates,
   onSave,
+  onUpdateEntry,
+  onRemoveEntry,
   onCreateSubscription,
   onSaved
 }: BillPreviewCardProps) {
+  const [editingId, setEditingId] = useState<string | null>(null);
   const formatAmount = (item: DraftBillEntry) =>
     new Intl.NumberFormat('zh-CN', {
       style: 'currency',
@@ -24,15 +47,13 @@ export function BillPreviewCard({
       minimumFractionDigits: 2
     }).format(item.amount);
 
-  const getTypeLabel = (type: DraftBillEntry['type']) => {
-    if (type === 'income') return '收入';
-    if (type === 'expense') return '支出';
-    if (type === 'budget') return '预算';
-    if (type === 'repayment') return '还款';
-    return '待确认类型';
-  };
+  const saveableCount = entries.filter(
+    (item) => item.selected && item.issues.length === 0
+  ).length;
+  const skippedCount = entries.length - saveableCount;
 
   const handleSave = () => {
+    if (saveableCount === 0) return;
     if (onSave()) {
       onSaved?.();
     }
@@ -61,41 +82,185 @@ export function BillPreviewCard({
       )}
 
       <div className="chat-bill-rows">
-        {entries.map((item) => (
-          <article key={item.id} className="chat-bill-row-item">
-            <div className="chat-bill-row-copy">
-              <strong>{item.note?.trim() || item.category || '未填写备注'}</strong>
-              <small>
-                {item.date.slice(0, 10)} <span aria-hidden="true">·</span> {getTypeLabel(item.type)}
-                <span aria-hidden="true">·</span> {item.category || '未分类'}
-                <span aria-hidden="true">·</span> {item.account || '选择账户'}
-              </small>
-              {item.originalAmountText || item.subscriptionSuggestion ? (
-                <div className="chat-bill-row-extra">
-                  {item.originalAmountText ? (
-                    <span>原始金额：{item.originalAmountText}</span>
-                  ) : null}
-                  {item.subscriptionSuggestion ? <span>可加入订阅管理</span> : null}
+        {entries.map((item, index) => {
+          const editing = editingId === item.id;
+          return (
+            <article
+              key={item.id}
+              className={`chat-bill-row-item${item.selected ? '' : ' is-unselected'}${
+                item.issues.length > 0 ? ' has-issue' : ''
+              }`}
+            >
+              <label
+                className="chat-bill-row-check"
+                title={item.selected ? '取消勾选，不保存这笔' : '勾选后保存这笔'}
+              >
+                <input
+                  type="checkbox"
+                  checked={item.selected}
+                  onChange={(event) =>
+                    onUpdateEntry?.(item.id, { selected: event.target.checked })
+                  }
+                  aria-label={`勾选第 ${index + 1} 笔账单`}
+                />
+              </label>
+
+              <div className="chat-bill-row-copy">
+                <strong>{item.note?.trim() || item.category || '未填写备注'}</strong>
+                <small>
+                  {item.date.slice(0, 10)} <span aria-hidden="true">·</span>{' '}
+                  {getTypeLabel(item.type)}
+                  <span aria-hidden="true">·</span> {item.category || '未分类'}
+                  <span aria-hidden="true">·</span> {item.account || '未指定账户'}
+                </small>
+                {item.originalAmountText || item.subscriptionSuggestion ? (
+                  <div className="chat-bill-row-extra">
+                    {item.originalAmountText ? (
+                      <span>原始金额：{item.originalAmountText}</span>
+                    ) : null}
+                    {item.subscriptionSuggestion ? <span>可加入订阅管理</span> : null}
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="chat-bill-row-value">
+                <strong className={`is-${item.type}`}>{formatAmount(item)}</strong>
+                {item.duplicateTxId ? <span className="chat-dup-badge">可能重复</span> : null}
+                {item.duplicateReason === 'batch' ? (
+                  <span className="chat-dup-badge">同批次重复</span>
+                ) : null}
+                {onUpdateEntry || onRemoveEntry ? (
+                  <div className="chat-bill-row-actions">
+                    {onUpdateEntry ? (
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(editing ? null : item.id)}
+                        aria-expanded={editing}
+                      >
+                        {editing ? '收起' : '编辑'}
+                      </button>
+                    ) : null}
+                    {onRemoveEntry ? (
+                      <button type="button" onClick={() => onRemoveEntry(item.id)}>
+                        删除
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+
+              {item.issues.length > 0 ? (
+                <p className="chat-bill-issue">{issueText(item)}</p>
+              ) : null}
+
+              {editing ? (
+                <div className="chat-bill-edit-grid">
+                  <label>
+                    类型
+                    <select
+                      value={item.type === 'unknown' ? 'expense' : item.type}
+                      onChange={(event) =>
+                        onUpdateEntry?.(item.id, {
+                          type: event.target.value as DraftBillEntry['type']
+                        })
+                      }
+                    >
+                      {typeOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    金额
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={item.amount}
+                      onChange={(event) =>
+                        onUpdateEntry?.(item.id, { amount: Number(event.target.value) || 0 })
+                      }
+                    />
+                  </label>
+                  <label>
+                    日期
+                    <input
+                      type="date"
+                      value={item.date.slice(0, 10)}
+                      onChange={(event) =>
+                        onUpdateEntry?.(item.id, { date: event.target.value })
+                      }
+                    />
+                  </label>
+                  <label>
+                    币种
+                    <input
+                      value={item.currency || 'CNY'}
+                      onChange={(event) =>
+                        onUpdateEntry?.(item.id, {
+                          currency: event.target.value.trim().toUpperCase() || 'unknown'
+                        })
+                      }
+                    />
+                  </label>
+                  <label>
+                    分类
+                    <input
+                      value={item.category}
+                      onChange={(event) =>
+                        onUpdateEntry?.(item.id, { category: event.target.value })
+                      }
+                    />
+                  </label>
+                  <label>
+                    账户
+                    <input
+                      value={item.account}
+                      placeholder="如 招商银行储蓄卡"
+                      onChange={(event) =>
+                        onUpdateEntry?.(item.id, { account: event.target.value })
+                      }
+                    />
+                  </label>
+                  <label className="chat-bill-edit-wide">
+                    备注
+                    <input
+                      value={item.note}
+                      onChange={(event) =>
+                        onUpdateEntry?.(item.id, { note: event.target.value })
+                      }
+                    />
+                  </label>
                 </div>
               ) : null}
-            </div>
-            <div className="chat-bill-row-value">
-              <strong className={`is-${item.type}`}>{formatAmount(item)}</strong>
-              {item.duplicateTxId ? <span className="chat-dup-badge">可能重复</span> : null}
-            </div>
-            {item.subscriptionSuggestion ? (
-              <div className="chat-bill-row-subscription">
-                <button type="button" onClick={() => onCreateSubscription?.(item.id)}>
-                  加入订阅管理
-                </button>
-              </div>
-            ) : null}
-          </article>
-        ))}
+
+              {item.subscriptionSuggestion ? (
+                <div className="chat-bill-row-subscription">
+                  <button type="button" onClick={() => onCreateSubscription?.(item.id)}>
+                    加入订阅管理
+                  </button>
+                </div>
+              ) : null}
+            </article>
+          );
+        })}
       </div>
+
       <footer className="chat-bill-preview-footer">
-        <span>核对无误后再保存，可避免重复记账。</span>
-        <button type="button" className="primary" onClick={handleSave}>
+        <span>
+          {skippedCount > 0
+            ? `已勾选可保存 ${saveableCount} 笔，另有 ${skippedCount} 笔未勾选或需修正。`
+            : '核对无误后再保存，可避免重复记账。'}
+        </span>
+        <button
+          type="button"
+          className="primary"
+          onClick={handleSave}
+          disabled={saveableCount === 0}
+          title={saveableCount === 0 ? '请先勾选或修正账单' : undefined}
+        >
           保存到账本
         </button>
       </footer>

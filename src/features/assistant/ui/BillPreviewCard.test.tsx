@@ -30,7 +30,7 @@ describe('BillPreviewCard', () => {
 
     expect(screen.getByText('东城万达 吃饭')).toBeInTheDocument();
     expect(screen.getByText(/支出/)).toBeInTheDocument();
-    expect(screen.getByText(/选择账户/)).toBeInTheDocument();
+    expect(screen.getByText(/未指定账户/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '保存到账本' })).toBeInTheDocument();
     expect(screen.queryByText('expense')).not.toBeInTheDocument();
   });
