@@ -72,6 +72,22 @@ export interface FinanceDataSnapshot {
   trashedSubscriptions?: SubscriptionItem[];
 }
 
+export type TransactionWritePayload = Omit<TransactionItem, 'id'>;
+
+export type TransactionBatchOperation =
+  | { operation: 'add'; payload: TransactionWritePayload }
+  | { operation: 'update'; id: string; payload: TransactionWritePayload };
+
+export interface TransactionBatchWriteResult {
+  addedIds: string[];
+  updatedIds: string[];
+}
+
+export interface AddTransactionAction {
+  (payload: TransactionWritePayload): string;
+  (operations: TransactionBatchOperation[]): TransactionBatchWriteResult;
+}
+
 interface FinanceState {
   hasHydrated: boolean;
   transactions: TransactionItem[];
@@ -85,7 +101,7 @@ interface FinanceState {
   trashedSubscriptions: SubscriptionItem[];
   categoryLearningRules: CategoryLearningRule[];
   categoryLearningEvents: CategoryLearningEvent[];
-  addTransaction: (payload: Omit<TransactionItem, 'id'>) => string;
+  addTransaction: AddTransactionAction;
   updateTransaction: (id: string, payload: Omit<TransactionItem, 'id'>) => void;
   removeTransaction: (id: string) => void;
   restoreTransaction: (id: string) => void;
@@ -328,10 +344,7 @@ function normalizeAdjustmentKind(
   return 'normal';
 }
 
-function normalizeTransactionSemantic(
-  tx: TransactionItem,
-  categoryName: string
-): TransactionItem {
+function normalizeTransactionSemantic(tx: TransactionItem, categoryName: string): TransactionItem {
   const adjustmentKind = normalizeAdjustmentKind(tx, categoryName);
   // 退款/冲正行保留原始收支类型,方向由 getTransactionDirection 依类型取反计算,
   // 这样「收入退款」才会正确地表现为资金流出而不是又记一笔流入。
@@ -427,10 +440,7 @@ function sanitizeCategoriesAndTransactions(
 
       const categoryName = categoryNameById.get(resolvedCategoryId) || '';
 
-      return normalizeTransactionSemantic(
-        { ...tx, categoryId: resolvedCategoryId },
-        categoryName
-      );
+      return normalizeTransactionSemantic({ ...tx, categoryId: resolvedCategoryId }, categoryName);
     });
 
   const nextTransactions = normalizeTransactionList(transactions);
@@ -705,6 +715,38 @@ function createManualAdjustmentEntry(params: {
   };
 }
 
+function createTransactionRow(
+  payload: Omit<TransactionItem, 'id'>,
+  id: string,
+  now: string
+): TransactionItem {
+  return {
+    ...payload,
+    amount: roundCurrency(payload.amount),
+    adjustmentKind: payload.adjustmentKind || 'normal',
+    updatedAt: payload.updatedAt || now,
+    id
+  };
+}
+
+function mergeTransactionRow(
+  existing: TransactionItem,
+  payload: Omit<TransactionItem, 'id'>,
+  id: string,
+  now: string
+): TransactionItem {
+  return {
+    ...existing,
+    ...payload,
+    amount: roundCurrency(payload.amount),
+    adjustmentKind: payload.adjustmentKind ?? existing.adjustmentKind ?? 'normal',
+    refundOfTransactionId: payload.refundOfTransactionId ?? existing.refundOfTransactionId,
+    attachments: payload.attachments ?? existing.attachments,
+    updatedAt: now,
+    id
+  };
+}
+
 export const useFinanceStore = create<FinanceState>()(
   persist(
     (set, get) => ({
@@ -720,15 +762,66 @@ export const useFinanceStore = create<FinanceState>()(
       trashedSubscriptions: defaultTrashedSubscriptions,
       categoryLearningRules: defaultCategoryLearningRules,
       categoryLearningEvents: defaultCategoryLearningEvents,
-      addTransaction: (payload) => {
+      addTransaction: ((payloadOrOperations) => {
+        if (Array.isArray(payloadOrOperations)) {
+          if (payloadOrOperations.length === 0) {
+            return { addedIds: [], updatedIds: [] };
+          }
+
+          const state = get();
+          const transactions = [...state.transactions];
+          const transactionIndexById = new Map(transactions.map((item, index) => [item.id, index]));
+          const addedIds: string[] = [];
+          const updatedIds: string[] = [];
+          const changedRows: Array<{
+            action: 'insert' | 'update';
+            row: TransactionItem;
+            id: string;
+          }> = [];
+          const now = new Date().toISOString();
+
+          payloadOrOperations.forEach((operation) => {
+            if (operation.operation === 'update') {
+              const index = transactionIndexById.get(operation.id);
+              if (index === undefined) {
+                throw new Error(`覆盖目标交易不存在: ${operation.id}`);
+              }
+              const row = mergeTransactionRow(
+                transactions[index],
+                operation.payload,
+                operation.id,
+                now
+              );
+              transactions[index] = row;
+              updatedIds.push(operation.id);
+              changedRows.push({ action: 'update', row, id: operation.id });
+              return;
+            }
+
+            const id = generateId();
+            const row = createTransactionRow(operation.payload, id, now);
+            transactionIndexById.set(id, transactions.length);
+            transactions.push(row);
+            addedIds.push(id);
+            changedRows.push({ action: 'insert', row, id });
+          });
+
+          set({
+            transactions,
+            ...rebuildStateSlices(state.accounts, transactions, state.balanceChangeEntries)
+          });
+          changedRows.forEach(({ action, row, id }) => {
+            if (action === 'insert') {
+              void syncChangeIfNeeded({ entity: 'transactions', action, row });
+            } else {
+              void syncChangeIfNeeded({ entity: 'transactions', action, row, id });
+            }
+          });
+          return { addedIds, updatedIds };
+        }
+
         const id = generateId();
-        const row: TransactionItem = {
-          ...payload,
-          amount: roundCurrency(payload.amount),
-          adjustmentKind: payload.adjustmentKind || 'normal',
-          updatedAt: payload.updatedAt || new Date().toISOString(),
-          id
-        };
+        const row = createTransactionRow(payloadOrOperations, id, new Date().toISOString());
         set((s) => {
           const transactions = [...s.transactions, row];
           return {
@@ -738,7 +831,7 @@ export const useFinanceStore = create<FinanceState>()(
         });
         void syncChangeIfNeeded({ entity: 'transactions', action: 'insert', row });
         return id;
-      },
+      }) as AddTransactionAction,
       updateTransaction: (id, payload) => {
         let updatedRow: TransactionItem | null = null;
         set((s) => {
@@ -748,16 +841,7 @@ export const useFinanceStore = create<FinanceState>()(
           }
           // 编辑表单只提交可编辑字段;退款关联、附件等仅在详情页维护的字段必须保留,
           // 否则一次普通编辑就会把退款单改成普通流水,导致余额方向反掉。
-          const row: TransactionItem = {
-            ...existing,
-            ...payload,
-            amount: roundCurrency(payload.amount),
-            adjustmentKind: payload.adjustmentKind ?? existing.adjustmentKind ?? 'normal',
-            refundOfTransactionId: payload.refundOfTransactionId ?? existing.refundOfTransactionId,
-            attachments: payload.attachments ?? existing.attachments,
-            updatedAt: new Date().toISOString(),
-            id
-          };
+          const row = mergeTransactionRow(existing, payload, id, new Date().toISOString());
           updatedRow = row;
           const transactions = s.transactions.map((item) => (item.id === id ? row : item));
           return {
@@ -766,7 +850,12 @@ export const useFinanceStore = create<FinanceState>()(
           };
         });
         if (updatedRow) {
-          void syncChangeIfNeeded({ entity: 'transactions', action: 'update', row: updatedRow, id });
+          void syncChangeIfNeeded({
+            entity: 'transactions',
+            action: 'update',
+            row: updatedRow,
+            id
+          });
         }
       },
       removeTransaction: (id) => {

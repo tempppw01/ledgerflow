@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TransactionItem } from '../../entities/transaction/types';
 import { normalizeImportedFinanceSnapshot, useFinanceStore } from './useFinanceStore';
 
@@ -7,6 +7,24 @@ const FINANCE_STORAGE_KEY = 'ledgerflow-finance';
 function baseTransaction(overrides: Partial<TransactionItem> = {}): TransactionItem {
   return {
     id: 'tx-1',
+    type: 'expense',
+    categoryId: 'cat-food',
+    accountId: 'acc-1',
+    amount: 100,
+    date: '2026-11-01T12:00:00.000Z',
+    note: '午餐',
+    tags: [],
+    source: 'manual',
+    status: 'completed',
+    updatedAt: '2026-11-01T12:00:00.000Z',
+    ...overrides
+  };
+}
+
+function transactionPayload(
+  overrides: Partial<Omit<TransactionItem, 'id'>> = {}
+): Omit<TransactionItem, 'id'> {
+  return {
     type: 'expense',
     categoryId: 'cat-food',
     accountId: 'acc-1',
@@ -84,16 +102,16 @@ describe('useFinanceStore 回归修复', () => {
       status: 'completed'
     });
 
-    const updated = useFinanceStore
-      .getState()
-      .transactions.find((item) => item.id === 'tx-refund');
+    const updated = useFinanceStore.getState().transactions.find((item) => item.id === 'tx-refund');
     expect(updated?.adjustmentKind).toBe('refund');
     expect(updated?.refundOfTransactionId).toBe('tx-origin');
     expect(updated?.attachments).toHaveLength(1);
     expect(updated?.amount).toBe(30);
     expect(useFinanceStore.getState().accounts[0].balance).toBe(1030);
     expect(
-      useFinanceStore.getState().balanceChangeEntries.find((item) => item.transactionId === 'tx-refund')
+      useFinanceStore
+        .getState()
+        .balanceChangeEntries.find((item) => item.transactionId === 'tx-refund')
     ).toMatchObject({
       relatedTransactionId: 'tx-origin',
       type: 'transaction-refund',
@@ -141,5 +159,85 @@ describe('useFinanceStore 回归修复', () => {
     });
 
     expect(normalized.transactions[0].categoryId).toBe('');
+  });
+
+  it('批量写入在任一覆盖目标缺失时保持账本、余额和流水完全不变', () => {
+    resetStore([baseTransaction({ id: 'tx-existing', amount: 100 })]);
+    const before = useFinanceStore.getState();
+    const beforeTransactions = before.transactions;
+    const beforeAccounts = before.accounts;
+    const beforeBalanceEntries = before.balanceChangeEntries;
+
+    expect(() =>
+      useFinanceStore.getState().addTransaction([
+        {
+          operation: 'add',
+          payload: transactionPayload({ amount: 25, note: '批量新增' })
+        },
+        {
+          operation: 'update',
+          id: 'tx-missing',
+          payload: transactionPayload({ amount: 80, note: '覆盖不存在的交易' })
+        }
+      ])
+    ).toThrow('覆盖目标交易不存在: tx-missing');
+
+    const after = useFinanceStore.getState();
+    expect(after.transactions).toBe(beforeTransactions);
+    expect(after.accounts).toBe(beforeAccounts);
+    expect(after.balanceChangeEntries).toBe(beforeBalanceEntries);
+  });
+
+  it('批量新增和覆盖只提交一次,并统一重算账户余额与余额流水', () => {
+    resetStore([baseTransaction({ id: 'tx-existing', amount: 100 })]);
+    const subscriber = vi.fn();
+    const unsubscribe = useFinanceStore.subscribe(subscriber);
+
+    try {
+      const result = useFinanceStore.getState().addTransaction([
+        {
+          operation: 'update',
+          id: 'tx-existing',
+          payload: transactionPayload({
+            amount: 150,
+            date: '2026-11-01T12:00:00.000Z',
+            note: '覆盖后的午餐'
+          })
+        },
+        {
+          operation: 'add',
+          payload: transactionPayload({
+            amount: 25,
+            date: '2026-11-02T12:00:00.000Z',
+            note: '批量新增'
+          })
+        }
+      ]);
+
+      const state = useFinanceStore.getState();
+      expect(subscriber).toHaveBeenCalledTimes(1);
+      expect(result.updatedIds).toEqual(['tx-existing']);
+      expect(result.addedIds).toHaveLength(1);
+      expect(state.transactions).toHaveLength(2);
+      expect(state.transactions.find((item) => item.id === 'tx-existing')?.amount).toBe(150);
+      expect(state.accounts[0].balance).toBe(825);
+      expect(state.balanceChangeEntries).toHaveLength(2);
+      expect(
+        state.balanceChangeEntries.find((item) => item.transactionId === 'tx-existing')
+      ).toMatchObject({
+        amount: 150,
+        beforeBalance: 1000,
+        afterBalance: 850
+      });
+      expect(
+        state.balanceChangeEntries.find((item) => item.transactionId === result.addedIds[0])
+      ).toMatchObject({
+        amount: 25,
+        beforeBalance: 850,
+        afterBalance: 825
+      });
+    } finally {
+      unsubscribe();
+    }
   });
 });

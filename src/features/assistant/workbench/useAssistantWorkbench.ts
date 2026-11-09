@@ -14,6 +14,10 @@ import type { Category } from '../../../entities/category/types';
 import type { TransactionItem } from '../../../entities/transaction/types';
 import { useDebugLogStore } from '../../../shared/store/useDebugLogStore';
 import { useAiSettings } from '../../../shared/store/useAiSettings';
+import type {
+  AddTransactionAction,
+  TransactionBatchOperation
+} from '../../../shared/store/useFinanceStore';
 import { AI_MODEL_PRESETS, mergeAiModelOptions } from '../../../shared/config/aiModels';
 import {
   clearSemanticRecallIndexCache,
@@ -90,7 +94,7 @@ interface UseAssistantWorkbenchInput {
   transactions: TransactionItem[];
   addCategory: (name: string) => string;
   addAccount: (name: string, type?: Account['type'], initialBalance?: number) => string;
-  addTransaction: (payload: Omit<TransactionItem, 'id'>) => string;
+  addTransaction: AddTransactionAction;
   updateTransaction: (id: string, payload: Omit<TransactionItem, 'id'>) => void;
   debts?: Array<{
     id: string;
@@ -798,9 +802,17 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
     setStatus('saving');
     addLog({ action: 'assistant.save', status: 'pending', message: `准备保存 ${rows.length} 条` });
 
-    const committedIds: string[] = [];
+    const batchOperations: TransactionBatchOperation[] = [];
     try {
       const overwriteSet = new Set(options?.overwriteDuplicateEntryIds || []);
+      const transactionIds = new Set(input.transactions.map((item) => item.id));
+      const missingOverwrite = rows.find(
+        (item) =>
+          item.duplicateTxId && overwriteSet.has(item.id) && !transactionIds.has(item.duplicateTxId)
+      );
+      if (missingOverwrite?.duplicateTxId) {
+        throw new Error(`待覆盖的原交易不存在: ${missingOverwrite.duplicateTxId}`);
+      }
       const categoryCache = [...input.categories];
       const accountCache = [...input.accounts];
       rows.forEach((item) => {
@@ -913,14 +925,18 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
         };
 
         if (item.duplicateTxId && overwriteSet.has(item.id)) {
-          input.updateTransaction(item.duplicateTxId, payload);
+          batchOperations.push({
+            operation: 'update',
+            id: item.duplicateTxId,
+            payload
+          });
         } else {
-          input.addTransaction(payload);
+          batchOperations.push({ operation: 'add', payload });
         }
-        committedIds.push(item.id);
       });
-      const committedSet = new Set(committedIds);
-      const remaining = entries.filter((item) => !committedSet.has(item.id));
+      input.addTransaction(batchOperations);
+      const savedSet = new Set(rows.map((item) => item.id));
+      const remaining = entries.filter((item) => !savedSet.has(item.id));
       const skipped = entries.length - rows.length;
       setEntries(remaining);
       setStatus(remaining.length > 0 ? 'preview' : 'saved');
@@ -944,19 +960,12 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
       });
       return true;
     } catch (err) {
-      if (committedIds.length > 0) {
-        const committedSet = new Set(committedIds);
-        setEntries((prev) => prev.filter((item) => !committedSet.has(item.id)));
-      }
       const message = err instanceof Error ? err.message : '保存失败，请重试';
       setStatus('error');
       setToast({
         visible: true,
         variant: 'error',
-        message:
-          committedIds.length > 0
-            ? `${message}，已保存 ${committedIds.length} 条，其余可重试`
-            : message
+        message
       });
       addLog({ action: 'assistant.save', status: 'error', message });
       return false;
