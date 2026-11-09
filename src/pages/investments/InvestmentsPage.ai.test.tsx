@@ -23,6 +23,7 @@ const financeStoreMock = vi.hoisted(() => ({
 
 const navigateMock = vi.hoisted(() => vi.fn());
 const sendAiChatStreamMock = vi.hoisted(() => vi.fn());
+const fetchAiModelsMock = vi.hoisted(() => vi.fn());
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
@@ -38,6 +39,7 @@ vi.mock('../../shared/store/useFinanceStore', () => ({
 }));
 
 vi.mock('../../features/assistant/api/openaiCompatibleClient', () => ({
+  fetchAiModels: (...args: unknown[]) => fetchAiModelsMock(...args),
   sendAiChatStream: (...args: unknown[]) => sendAiChatStreamMock(...args)
 }));
 
@@ -597,6 +599,180 @@ describe('Investment assistant chat', () => {
       writable: true,
       value: originalFileReader
     });
+  });
+
+  it('keeps attached screenshots when sending a follow-up prompt', async () => {
+    sendAiChatStreamMock.mockResolvedValue({ content: '先观察。', reasoning: '' });
+    useAppPreferences.setState({
+      investmentAiMessages: [
+        {
+          id: 'assistant-follow-up',
+          role: 'assistant',
+          text: '可以继续看基金持仓。',
+          createdAt: '2026-05-20T00:00:00.000Z',
+          followUpPrompts: ['这只基金的行业集中度怎么样?']
+        }
+      ]
+    });
+    const imageFile = new File(['fund-image'], 'fund.png', { type: 'image/png' });
+    const originalFileReader = window.FileReader;
+
+    class MockFileReader {
+      result: string | ArrayBuffer | null = 'data:image/png;base64,ZmFrZQ==';
+      onload: null | (() => void) = null;
+      onerror: null | (() => void) = null;
+
+      readAsDataURL() {
+        this.onload?.();
+      }
+    }
+
+    Object.defineProperty(window, 'FileReader', {
+      writable: true,
+      value: MockFileReader
+    });
+
+    try {
+      render(
+        <MemoryRouter>
+          <InvestmentChatPanel />
+        </MemoryRouter>
+      );
+
+      fireEvent.change(screen.getAllByLabelText('上传基金截图')[0]!, {
+        target: { files: [imageFile] }
+      });
+      await screen.findByLabelText('待分析图片');
+      fireEvent.click(screen.getByRole('button', { name: '这只基金的行业集中度怎么样?' }));
+
+      await waitFor(() => expect(sendAiChatStreamMock).toHaveBeenCalled());
+      const request = sendAiChatStreamMock.mock.calls[0]?.[0] as {
+        messages: Array<{ text: string; imageDataUrls?: string[] }>;
+      };
+      expect(request.messages.at(-1)?.text).toBe('这只基金的行业集中度怎么样?');
+      expect(request.messages.at(-1)?.imageDataUrls).toEqual([
+        'data:image/png;base64,ZmFrZQ=='
+      ]);
+    } finally {
+      Object.defineProperty(window, 'FileReader', {
+        writable: true,
+        value: originalFileReader
+      });
+    }
+  });
+
+  it('clears staged images and draft text when clearing the context', async () => {
+    useAppPreferences.setState({
+      investmentAiMessages: [
+        {
+          id: 'assistant-clear',
+          role: 'assistant',
+          text: '已有上下文。',
+          createdAt: '2026-05-20T00:00:00.000Z'
+        }
+      ]
+    });
+    const imageFile = new File(['fund-image'], 'fund.png', { type: 'image/png' });
+    const originalFileReader = window.FileReader;
+
+    class MockFileReader {
+      result: string | ArrayBuffer | null = 'data:image/png;base64,ZmFrZQ==';
+      onload: null | (() => void) = null;
+      onerror: null | (() => void) = null;
+
+      readAsDataURL() {
+        this.onload?.();
+      }
+    }
+
+    Object.defineProperty(window, 'FileReader', {
+      writable: true,
+      value: MockFileReader
+    });
+
+    try {
+      render(
+        <MemoryRouter>
+          <InvestmentChatPanel />
+        </MemoryRouter>
+      );
+
+      fireEvent.change(screen.getAllByLabelText('上传基金截图')[0]!, {
+        target: { files: [imageFile] }
+      });
+      const input = screen.getByLabelText('基金分析输入框');
+      fireEvent.change(input, { target: { value: '还没发送的草稿' } });
+      await screen.findByLabelText('待分析图片');
+      fireEvent.click(screen.getByRole('button', { name: '清空上下文' }));
+      fireEvent.click(screen.getByRole('button', { name: '清空' }));
+
+      await waitFor(() => {
+        expect(screen.queryByLabelText('待分析图片')).not.toBeInTheDocument();
+        expect(input).toHaveValue('');
+      });
+    } finally {
+      Object.defineProperty(window, 'FileReader', {
+        writable: true,
+        value: originalFileReader
+      });
+    }
+  });
+
+  it('scrolls the investment message area back to the top', async () => {
+    useAppPreferences.setState({
+      investmentAiMessages: [
+        {
+          id: 'user-scroll',
+          role: 'user',
+          text: '第一轮问题',
+          createdAt: '2026-05-20T00:00:00.000Z'
+        },
+        {
+          id: 'assistant-scroll',
+          role: 'assistant',
+          text: '第一轮回答',
+          createdAt: '2026-05-20T00:01:00.000Z'
+        }
+      ]
+    });
+    const windowScrollSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+    try {
+      const { container } = render(
+        <MemoryRouter>
+          <InvestmentChatPanel />
+        </MemoryRouter>
+      );
+
+      const messagesArea = container.querySelector<HTMLElement>(
+        '.chat-investment-panel .investments-ai-messages-area'
+      );
+      expect(messagesArea).not.toBeNull();
+      const scrollSpy = vi.fn();
+      messagesArea!.scrollTo = scrollSpy;
+
+      fireEvent.click(screen.getByRole('button', { name: '返回页面顶部' }));
+
+      expect(scrollSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+      expect(windowScrollSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+    } finally {
+      windowScrollSpy.mockRestore();
+    }
+  });
+
+  it('refreshes available models every time the picker opens', async () => {
+    fetchAiModelsMock.mockResolvedValue(['gpt-5.4', 'remote-investment-model']);
+
+    render(
+      <MemoryRouter>
+        <InvestmentChatPanel />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: /当前模型/ }));
+
+    expect(await screen.findByRole('button', { name: 'remote-investment-model' })).toBeInTheDocument();
+    expect(fetchAiModelsMock).toHaveBeenCalledWith('https://api.example.com/v1', 'sk-test');
   });
 
   it('adds a watchlist card to focus follow status', () => {

@@ -278,10 +278,13 @@ export function InvestmentChatComposer({
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
     setLoading(false);
+    setInput('');
+    setImages([]);
     setError('');
     setStreaming('');
     setStreamingReasoning('');
     setProgress('');
+    setComposerFocused(false);
   }, [clearContextVersion]);
 
   useEffect(
@@ -384,7 +387,7 @@ export function InvestmentChatComposer({
       return;
     }
 
-    const requestImages = images;
+    const requestImages = [...images];
     const requestText = cleanPrompt || '请基于这些基金或持仓截图做投资分析。';
     const abortController = new AbortController();
     const requestVersion = requestVersionRef.current + 1;
@@ -536,7 +539,7 @@ export function InvestmentChatComposer({
   const scrollToConversationTop = useCallback(() => {
     const targets = new Set<HTMLElement>();
     const messagesArea = document.querySelector<HTMLElement>(
-      '.chat-messages-area.is-investment-mode'
+      '.chat-investment-panel .investments-ai-messages-area'
     );
     const supportColumn = textareaRef.current?.closest<HTMLElement>('.investments-support-column');
 
