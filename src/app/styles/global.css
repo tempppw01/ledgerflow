@@ -2787,6 +2787,36 @@ tr:hover td {
   margin-top: var(--space-3);
 }
 
+.transaction-mobile-selection-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+}
+
+.transaction-mobile-selection-bar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.transaction-mobile-selection-bar input[type='checkbox'],
+.transaction-mobile-heading input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
 .transaction-mobile-item {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -2797,6 +2827,17 @@ tr:hover td {
 
 .transaction-mobile-item:hover {
   background: var(--color-bg-hover);
+}
+
+.transaction-mobile-item.is-selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-bg);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
+.transaction-mobile-item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .transaction-mobile-swipe {
@@ -2811,7 +2852,8 @@ tr:hover td {
 }
 
 .transaction-mobile-main {
-  width: 100%;
+  width: calc(100% - 176px);
+  flex: 0 0 calc(100% - 176px);
   min-width: 0;
   padding: var(--space-3);
   display: grid;
@@ -2821,8 +2863,15 @@ tr:hover td {
 .transaction-mobile-main header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-2);
+}
+
+.transaction-mobile-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .transaction-mobile-badges {
@@ -2831,6 +2880,29 @@ tr:hover td {
   gap: 6px;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+.transaction-mobile-more {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  flex: 0 0 32px;
+  padding: 0;
+  border-radius: 999px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.transaction-mobile-more:hover,
+.transaction-mobile-more:focus-visible,
+.transaction-mobile-more[aria-expanded='true'] {
+  border-color: var(--color-border);
+  background: var(--color-bg-subtle);
+  color: var(--color-text);
 }
 
 .transaction-mobile-main p,
@@ -3067,7 +3139,9 @@ tr:hover td {
   }
 
   .transaction-page-size {
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: auto minmax(88px, 1fr);
+    white-space: nowrap;
   }
 
   .transaction-page-nav {
@@ -3097,7 +3171,7 @@ tr:hover td {
   }
 
   .transaction-mobile-main header {
-    flex-direction: column;
+    flex-direction: row;
     align-items: flex-start;
   }
 
@@ -3106,8 +3180,13 @@ tr:hover td {
   }
 
   .transaction-mobile-badges {
-    width: 100%;
-    justify-content: flex-start;
+    width: auto;
+    max-width: 52%;
+    justify-content: flex-end;
+  }
+
+  .transaction-mobile-heading {
+    flex: 1 1 auto;
   }
 
   .transaction-mobile-main small {

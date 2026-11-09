@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { TransactionTable, type TransactionColumnKey } from './TransactionTable';
@@ -880,5 +880,150 @@ describe('TransactionTable', () => {
     expect(within(refundRow as HTMLElement).getByLabelText('退款')).toHaveClass(
       'transaction-type-badge-income'
     );
+  });
+
+  it('移动端批量模式应支持全选、逐笔选择和整卡选择', async () => {
+    const user = userEvent.setup();
+    const onToggleSelectPage = vi.fn();
+    const onToggleSelect = vi.fn();
+    const onOpenDetail = vi.fn();
+
+    render(
+      <TransactionTable
+        rows={[
+          {
+            item: {
+              id: 'tx-mobile-1',
+              date: '2026-03-10',
+              type: 'expense',
+              categoryId: 'cat-1',
+              accountId: 'acc-1',
+              amount: 32,
+              note: '移动午餐',
+              tags: []
+            },
+            categoryName: '餐饮',
+            accountName: '现金'
+          },
+          {
+            item: {
+              id: 'tx-mobile-2',
+              date: '2026-03-11',
+              type: 'expense',
+              categoryId: 'cat-1',
+              accountId: 'acc-1',
+              amount: 18,
+              note: '移动咖啡',
+              tags: []
+            },
+            categoryName: '餐饮',
+            accountName: '现金'
+          }
+        ]}
+        total={2}
+        filteredTotal={2}
+        page={1}
+        pages={1}
+        pageSize={8}
+        pageSizeOptions={[8, 20]}
+        loading={false}
+        hasFilters
+        selectedIds={[]}
+        bulkSelectionEnabled
+        canSelectAllOnPage
+        allPageSelected={false}
+        sortKey="date"
+        sortDirection="desc"
+        {...baseProps}
+        onToggleSelectPage={onToggleSelectPage}
+        onToggleSelect={onToggleSelect}
+        onOpenDetail={onOpenDetail}
+      />
+    );
+
+    const mobileList = screen.getByLabelText('移动端交易列表');
+    await user.click(within(mobileList).getByRole('checkbox', { name: '全选当前页' }));
+    expect(onToggleSelectPage).toHaveBeenCalledWith(true);
+
+    await user.click(
+      within(mobileList).getByRole('checkbox', {
+        name: /选择交易 2026\/3\/10 移动午餐/
+      })
+    );
+    expect(onToggleSelect).toHaveBeenCalledWith('tx-mobile-1', true);
+
+    await user.click(within(mobileList).getByText('移动午餐'));
+    expect(onToggleSelect).toHaveBeenCalledWith('tx-mobile-1', true);
+    expect(onOpenDetail).not.toHaveBeenCalled();
+
+    const firstCard = within(mobileList).getByText('移动午餐').closest('article');
+    expect(firstCard).not.toBeNull();
+    fireEvent.touchStart(firstCard!, { touches: [{ clientX: 240 }] });
+    fireEvent.touchEnd(firstCard!, { changedTouches: [{ clientX: 120 }] });
+    expect(firstCard).not.toHaveClass('is-swiped');
+    expect(firstCard!.querySelector('.transaction-mobile-delete')).toHaveAttribute(
+      'aria-hidden',
+      'true'
+    );
+  });
+
+  it('移动端更多操作应提供详情、分享和删除入口', async () => {
+    const user = userEvent.setup();
+    const onOpenDetail = vi.fn();
+    const onShare = vi.fn();
+    const onDelete = vi.fn();
+
+    render(
+      <TransactionTable
+        rows={[
+          {
+            item: {
+              id: 'tx-mobile-actions',
+              date: '2026-03-12',
+              type: 'expense',
+              categoryId: 'cat-1',
+              accountId: 'acc-1',
+              amount: 28,
+              note: '移动早餐',
+              tags: []
+            },
+            categoryName: '餐饮',
+            accountName: '现金'
+          }
+        ]}
+        total={1}
+        filteredTotal={1}
+        page={1}
+        pages={1}
+        pageSize={8}
+        pageSizeOptions={[8, 20]}
+        loading={false}
+        hasFilters
+        selectedIds={[]}
+        bulkSelectionEnabled={false}
+        canSelectAllOnPage={false}
+        allPageSelected={false}
+        sortKey="date"
+        sortDirection="desc"
+        {...baseProps}
+        onOpenDetail={onOpenDetail}
+        onShare={onShare}
+        onDelete={onDelete}
+      />
+    );
+
+    const mobileList = screen.getByLabelText('移动端交易列表');
+    const moreButton = within(mobileList).getByRole('button', { name: '更多操作 移动早餐' });
+
+    await user.click(moreButton);
+    let menu = await screen.findByRole('menu', { name: '交易操作' });
+    await user.click(within(menu).getByRole('menuitem', { name: '分享账单' }));
+    expect(onShare).toHaveBeenCalledWith('tx-mobile-actions');
+
+    await user.click(moreButton);
+    menu = await screen.findByRole('menu', { name: '交易操作' });
+    await user.click(within(menu).getByRole('menuitem', { name: '删除账单' }));
+    expect(onDelete).toHaveBeenCalledWith('tx-mobile-actions');
+    expect(onOpenDetail).not.toHaveBeenCalled();
   });
 });

@@ -613,14 +613,21 @@ export function TransactionTable({
     if (!contextMenu) return;
 
     const dismiss = () => setContextMenu(null);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setContextMenu(null);
+      }
+    };
     window.addEventListener('click', dismiss);
     window.addEventListener('scroll', dismiss, true);
     window.addEventListener('resize', dismiss);
+    window.addEventListener('keydown', handleKeyDown);
 
     return () => {
       window.removeEventListener('click', dismiss);
       window.removeEventListener('scroll', dismiss, true);
       window.removeEventListener('resize', dismiss);
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, [contextMenu]);
 
@@ -1118,9 +1125,24 @@ export function TransactionTable({
           </div>
 
           <div className="transaction-mobile-list" aria-label="移动端交易列表">
+            {bulkSelectionEnabled && rows.length > 0 ? (
+              <div className="transaction-mobile-selection-bar">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={allPageSelected}
+                    disabled={!canSelectAllOnPage}
+                    onChange={(event) => onToggleSelectPage(event.target.checked)}
+                  />
+                  <span>全选当前页</span>
+                </label>
+                <span>已选 {selectedIds.length} 条</span>
+              </div>
+            ) : null}
             {rows.map(({ item, categoryName, accountName }) => {
               const note = item.note || '（无备注）';
               const isSwiped = swipedId === item.id;
+              const checked = selectedIds.includes(item.id);
               const repeatKey = getRepeatGroupKey(item);
               const repeatInfo = repeatKey ? repeatedMonthlyMap.get(repeatKey) : undefined;
               const repeatLabel = repeatInfo ? getRepeatLabel(repeatInfo.type) : '';
@@ -1130,8 +1152,14 @@ export function TransactionTable({
               return (
                 <article
                   key={`mobile-${item.id}`}
-                  className={`transaction-mobile-item ${isSwiped ? 'is-swiped' : ''}`.trim()}
+                  className={`transaction-mobile-item ${isSwiped ? 'is-swiped' : ''} ${
+                    checked ? 'is-selected' : ''
+                  }`.trim()}
                   onClick={() => {
+                    if (bulkSelectionEnabled) {
+                      onToggleSelect(item.id, !checked);
+                      return;
+                    }
                     if (swipedId === item.id) {
                       setSwipedId(null);
                       return;
@@ -1139,12 +1167,19 @@ export function TransactionTable({
                     onOpenDetail(item.id);
                   }}
                   onTouchStart={(event) => {
+                    if (bulkSelectionEnabled) {
+                      return;
+                    }
                     touchStartXRef.current = event.touches[0]?.clientX ?? null;
                     if (swipedId && swipedId !== item.id) {
                       setSwipedId(null);
                     }
                   }}
                   onTouchEnd={(event) => {
+                    if (bulkSelectionEnabled) {
+                      touchStartXRef.current = null;
+                      return;
+                    }
                     const start = touchStartXRef.current;
                     const end = event.changedTouches[0]?.clientX;
                     touchStartXRef.current = null;
@@ -1162,15 +1197,26 @@ export function TransactionTable({
                   <div className="transaction-mobile-swipe">
                     <div className="transaction-mobile-main">
                       <header>
-                        <strong
-                          className={`transaction-amount-cell ${
-                            getTransactionDirection(item) === 'inflow'
-                              ? 'transaction-amount-income'
-                              : 'transaction-amount-expense'
-                          }`}
-                        >
-                          {privacyMode ? maskAmount() : formatCurrencyAuto(item.amount)}
-                        </strong>
+                        <div className="transaction-mobile-heading">
+                          {bulkSelectionEnabled ? (
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onClick={(event) => event.stopPropagation()}
+                              onChange={(event) => onToggleSelect(item.id, event.target.checked)}
+                              aria-label={`选择交易 ${formatDate(item.date)} ${item.note || ''}`}
+                            />
+                          ) : null}
+                          <strong
+                            className={`transaction-amount-cell ${
+                              getTransactionDirection(item) === 'inflow'
+                                ? 'transaction-amount-income'
+                                : 'transaction-amount-expense'
+                            }`}
+                          >
+                            {privacyMode ? maskAmount() : formatCurrencyAuto(item.amount)}
+                          </strong>
+                        </div>
                         <div className="transaction-mobile-badges">
                           {item.source === 'ai' ? (
                             <span className="transaction-inline-tag transaction-inline-tag-ai">
@@ -1193,6 +1239,28 @@ export function TransactionTable({
                             </span>
                           ) : null}
                         </div>
+                        {!bulkSelectionEnabled ? (
+                          <button
+                            type="button"
+                            className="transaction-mobile-more"
+                            aria-haspopup="menu"
+                            aria-expanded={contextMenu?.id === item.id}
+                            aria-label={`更多操作 ${item.note || formatDate(item.date)}`}
+                            title="更多操作"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setSwipedId(null);
+                              const rect = event.currentTarget.getBoundingClientRect();
+                              setContextMenu({
+                                x: rect.right - 8,
+                                y: rect.bottom + 6,
+                                id: item.id
+                              });
+                            }}
+                          >
+                            ⋯
+                          </button>
+                        ) : null}
                       </header>
                       <p>
                         {note}
@@ -1213,6 +1281,8 @@ export function TransactionTable({
                     <button
                       type="button"
                       className="danger transaction-mobile-delete"
+                      tabIndex={isSwiped ? 0 : -1}
+                      aria-hidden={!isSwiped}
                       onClick={(event) => {
                         event.stopPropagation();
                         setSwipedId(null);
@@ -1224,6 +1294,8 @@ export function TransactionTable({
                     <button
                       type="button"
                       className="transaction-mobile-delete"
+                      tabIndex={isSwiped ? 0 : -1}
+                      aria-hidden={!isSwiped}
                       onClick={(event) => {
                         event.stopPropagation();
                         setSwipedId(null);
@@ -1310,6 +1382,8 @@ export function TransactionTable({
                 <div
                   ref={contextMenuRef}
                   className="transaction-context-menu"
+                  role="menu"
+                  aria-label="交易操作"
                   style={{
                     left: contextMenuPosition?.x ?? contextMenu.x,
                     top: contextMenuPosition?.y ?? contextMenu.y
@@ -1318,6 +1392,7 @@ export function TransactionTable({
                 >
                   <button
                     type="button"
+                    role="menuitem"
                     onClick={() => {
                       onOpenDetail(contextMenu.id);
                       setContextMenu(null);
@@ -1327,6 +1402,7 @@ export function TransactionTable({
                   </button>
                   <button
                     type="button"
+                    role="menuitem"
                     onClick={() => {
                       onShare(contextMenu.id);
                       setContextMenu(null);
@@ -1337,6 +1413,7 @@ export function TransactionTable({
                   <button
                     type="button"
                     className="danger"
+                    role="menuitem"
                     onClick={() => {
                       onDelete(contextMenu.id);
                       setContextMenu(null);
@@ -1344,7 +1421,7 @@ export function TransactionTable({
                   >
                     删除账单
                   </button>
-                  <button type="button" onClick={() => setContextMenu(null)}>
+                  <button type="button" role="menuitem" onClick={() => setContextMenu(null)}>
                     取消
                   </button>
                 </div>,
