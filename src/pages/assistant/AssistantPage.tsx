@@ -43,6 +43,7 @@ import {
   formatCreditAccountReference,
   mergeCreditItemsWithHistory
 } from './creditAssistantLogic';
+import { resolveCreditRepaymentDueDisplay } from './creditRepaymentHelpers';
 import {
   ASSISTANT_ACTIVE_MODE_STORAGE_KEY,
   ASSISTANT_MODE_CHANGED_EVENT,
@@ -900,27 +901,61 @@ export function AssistantPage() {
   const creditOverview = useMemo(() => {
     const monthlyIncome = useAppPreferences.getState().monthlyIncome || 0;
     const summary = calculateDebtSummary(debts, monthlyIncome);
-    const monthKey = new Date().toISOString().slice(0, 7);
     const monthRepaymentRecords = repaymentRecords.filter(
-      (record) => String(record.paidAt || '').slice(0, 7) === monthKey
+      (record) => String(record.paidAt || '').slice(0, 7) === thisMonthKey
     );
-    const totalPaidThisMonth = monthRepaymentRecords.reduce(
-      (sum, record) => sum + Number(record.amount || 0),
+    const monthPaidByDebt = new Map<string, number>();
+    monthRepaymentRecords.forEach((record) => {
+      const debtId = String(record.debtId || '');
+      if (!debtId) return;
+      monthPaidByDebt.set(debtId, (monthPaidByDebt.get(debtId) || 0) + Number(record.amount || 0));
+    });
+
+    const dueItems = debts.map((item) => ({
+      item,
+      minimumPayment: calculateDebtDerivedMetrics(item).minimumPayment,
+      dueDisplay: resolveCreditRepaymentDueDisplay(
+        {
+          debtId: item.id,
+          repaymentDay: item.repaymentDay,
+          minimumPayment: calculateDebtDerivedMetrics(item).minimumPayment
+        },
+        repaymentRecords
+      )
+    }));
+    const totalDueThisMonth = dueItems.reduce((sum, entry) => sum + entry.minimumPayment, 0);
+    const paidByDebt = new Map(
+      dueItems.map((entry) => [
+        entry.item.id,
+        entry.dueDisplay?.paidAmount ?? monthPaidByDebt.get(entry.item.id) ?? 0
+      ])
+    );
+    const totalPaidThisMonth = dueItems.reduce(
+      (sum, entry) => sum + (paidByDebt.get(entry.item.id) || 0),
       0
     );
-    const totalDueThisMonth = debts.reduce(
-      (sum, item) => sum + calculateDebtDerivedMetrics(item).minimumPayment,
+    const currentGap = dueItems.reduce(
+      (sum, entry) =>
+        sum + Math.max(0, entry.minimumPayment - (paidByDebt.get(entry.item.id) || 0)),
       0
     );
-    const dueSoonItems = debts
-      .filter((item) => typeof item.repaymentDay === 'number')
-      .map((item) => ({
-        id: item.id,
-        name: item.name,
-        repaymentDay: item.repaymentDay || 0,
-        minimumPayment: calculateDebtDerivedMetrics(item).minimumPayment
-      }))
-      .sort((a, b) => a.repaymentDay - b.repaymentDay)
+
+    const dueSoonItems = dueItems
+      .filter((entry) => entry.dueDisplay)
+      .map((entry) => {
+        const dueDisplay = entry.dueDisplay!;
+        return {
+          id: entry.item.id,
+          name: entry.item.name,
+          repaymentDay: entry.item.repaymentDay || 0,
+          minimumPayment: entry.minimumPayment,
+          nextDue: dueDisplay.dueDate,
+          daysUntil: dueDisplay.daysUntil,
+          isOverdue: dueDisplay.isOverdue,
+          isPaid: dueDisplay.isPaid
+        };
+      })
+      .sort((a, b) => a.nextDue.getTime() - b.nextDue.getTime() || a.repaymentDay - b.repaymentDay)
       .slice(0, 3);
     const totalRemainingInterest = debts.reduce(
       (sum, item) => sum + (calculateDebtDerivedMetrics(item).remainingInterestCost || 0),
@@ -929,14 +964,14 @@ export function AssistantPage() {
 
     return {
       totalDebt: summary.totalDebt,
-      totalMinimumPayment: summary.totalMinimumPayment,
       totalDueThisMonth,
       totalPaidThisMonth,
-      currentGap: Math.max(0, totalDueThisMonth - totalPaidThisMonth),
+      currentGap,
       totalRemainingInterest,
+      debtCount: debts.length,
       dueSoonItems
     };
-  }, [debts, repaymentRecords]);
+  }, [debts, repaymentRecords, thisMonthKey]);
   const lastAssistantRef = useRef<Record<AssistantMode, string>>({
     bookkeeping: '',
     assistant: '',
@@ -2117,19 +2152,21 @@ export function AssistantPage() {
                 <article className="chat-msg">
                   {renderChatAvatar('assistant')}
                   <div className="chat-msg-body">
-                    <div className="chat-msg-header">信贷概览</div>
+                    <div className="chat-msg-header">
+                      {t('assistant.ui.creditOverviewTitle')}
+                    </div>
                     <div className="chat-credit-overview-card is-compact">
                       <div className="chat-credit-overview-grid is-compact">
                         <div className="is-primary">
-                          <span>当前总欠款</span>
+                          <span>{t('assistant.ui.creditTotalDebt')}</span>
                           <strong>¥{creditOverview.totalDebt.toFixed(2)}</strong>
                         </div>
                         <div>
-                          <span>本月待还</span>
+                          <span>{t('assistant.ui.creditDueThisMonth')}</span>
                           <strong>¥{creditOverview.currentGap.toFixed(2)}</strong>
                         </div>
                         <div>
-                          <span>本月已还</span>
+                          <span>{t('assistant.ui.creditPaidThisMonth')}</span>
                           <strong>¥{creditOverview.totalPaidThisMonth.toFixed(2)}</strong>
                         </div>
                       </div>
@@ -2139,28 +2176,44 @@ export function AssistantPage() {
                             <button
                               key={item.id}
                               type="button"
-                              className="chat-credit-overview-due-chip"
+                              className={`chat-credit-overview-due-chip${item.isOverdue ? ' is-overdue' : ''}`}
                               onClick={() => navigate('/repayment-management')}
                             >
-                              {item.name} · {item.repaymentDay}日 · ¥
-                              {item.minimumPayment.toFixed(0)}
+                              {item.name} ·{' '}
+                              {item.isOverdue
+                                ? t('assistant.ui.creditOverdueDays', {
+                                    days: Math.abs(item.daysUntil)
+                                  })
+                                : item.daysUntil <= 0
+                                  ? t('assistant.ui.creditDueToday')
+                                  : t('assistant.ui.creditDueOn', {
+                                      date: new Intl.DateTimeFormat(undefined, {
+                                        month: 'short',
+                                        day: 'numeric'
+                                      }).format(item.nextDue)
+                                    })}{' '}
+                              · ¥{item.minimumPayment.toFixed(0)}
                             </button>
                           ))}
                         </div>
                       ) : null}
                       <details className="chat-credit-overview-details">
-                        <summary>更多还款数据</summary>
+                        <summary>{t('assistant.ui.creditMoreRepaymentData')}</summary>
                         <div className="chat-credit-overview-extra">
                           <span>
-                            本月总应还{' '}
+                            {t('assistant.ui.creditTotalDueThisMonth')}{' '}
                             <strong>¥{creditOverview.totalDueThisMonth.toFixed(2)}</strong>
                           </span>
                           <span>
-                            最低还款合计{' '}
-                            <strong>¥{creditOverview.totalMinimumPayment.toFixed(2)}</strong>
+                            {t('assistant.ui.creditDebtCount')}{' '}
+                            <strong>
+                              {t('assistant.ui.creditDebtCountValue', {
+                                total: creditOverview.debtCount
+                              })}
+                            </strong>
                           </span>
                           <span>
-                            剩余利息估算{' '}
+                            {t('assistant.ui.creditRemainingInterest')}{' '}
                             <strong>¥{creditOverview.totalRemainingInterest.toFixed(2)}</strong>
                           </span>
                         </div>

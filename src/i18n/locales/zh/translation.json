@@ -447,7 +447,19 @@
       "defaultProvider": "默认服务地址",
       "needApiKeyTitle": "请先配置 API 密钥",
       "needApiKeyDesc": "未检测到可用密钥，助手暂时不能请求模型。",
-      "goSettings": "前往设置"
+      "goSettings": "前往设置",
+      "creditOverviewTitle": "信贷概览",
+      "creditTotalDebt": "当前总欠款",
+      "creditDueThisMonth": "本期待还",
+      "creditPaidThisMonth": "本期已还",
+      "creditMoreRepaymentData": "更多还款数据",
+      "creditTotalDueThisMonth": "本期总应还",
+      "creditDebtCount": "负债账户",
+      "creditDebtCountValue": "{{total}} 个",
+      "creditRemainingInterest": "剩余利息估算",
+      "creditDueToday": "今天到期",
+      "creditDueOn": "{{date}}到期",
+      "creditOverdueDays": "逾期 {{days}} 天"
     }
   },
   "about": {

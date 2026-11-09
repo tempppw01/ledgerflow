@@ -3,6 +3,16 @@ import type {
   CreditRepaymentGapSummary,
   CreditRepaymentLookupSummary
 } from '../../features/assistant/creditAssistant/types';
+import {
+  parseRepaymentDay,
+  REPAYMENT_AMOUNT_TOLERANCE,
+  resolveRepaymentCycleWindow,
+  resolveRepaymentPaidTime
+} from '../../features/debt/model/repaymentCycle';
+
+export {
+  resolveRepaymentDueDisplay as resolveCreditRepaymentDueDisplay
+} from '../../features/debt/model/repaymentCycle';
 
 export interface CreditRepaymentSummaryItem {
   title: string;
@@ -11,13 +21,21 @@ export interface CreditRepaymentSummaryItem {
   repaymentDate?: string;
 }
 
-type CreditRepaymentStatus = 'unmatched' | 'partially-paid' | 'account-mismatch' | 'aligned';
+type CreditRepaymentStatus =
+  | 'unmatched'
+  | 'partially-paid'
+  | 'account-mismatch'
+  | 'unpaid'
+  | 'insufficient-data'
+  | 'aligned';
 
 interface CreditRepaymentAnalysis {
   matchedDebt?: DebtItem;
   relatedRecords: RepaymentRecord[];
+  cycleRecords: RepaymentRecord[];
   latestRecord?: RepaymentRecord;
   paymentAccounts: string[];
+  anchorDay: number | null;
   plannedAmount: number;
   recentPaidAmount: number;
   gapAmount: number;
@@ -47,6 +65,17 @@ function toMoneyNumber(raw?: string): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function resolveRepaymentAnchorDay(
+  item: CreditRepaymentSummaryItem,
+  matchedDebt?: DebtItem
+): number | null {
+  const debtDay = matchedDebt?.repaymentDay;
+  if (typeof debtDay === 'number' && Number.isInteger(debtDay) && debtDay >= 1 && debtDay <= 31) {
+    return debtDay;
+  }
+  return parseRepaymentDay(matchedDebt?.simpleDueDate) ?? parseRepaymentDay(item.repaymentDate);
+}
+
 function formatGapMoney(value: number): string {
   const rounded = Math.round((value + Number.EPSILON) * 100) / 100;
   return `¥${rounded.toFixed(2).replace(/\.00$/, '')}`;
@@ -62,34 +91,50 @@ function analyzeCreditRepayment(
     .filter((record) => (matchedDebt ? record.debtId === matchedDebt.id : false))
     .sort((a, b) => `${b.paidAt}-${b.amount}`.localeCompare(`${a.paidAt}-${a.amount}`, 'zh-CN'));
 
-  const latestRecord = relatedRecords[0];
+  const anchorDay = resolveRepaymentAnchorDay(item, matchedDebt);
+  const cycleWindow = resolveRepaymentCycleWindow(anchorDay, new Date());
+  const cycleRecords = relatedRecords.filter((record) => {
+    const paidTime = resolveRepaymentPaidTime(record.paidAt);
+    if (paidTime === null) {
+      return false;
+    }
+    return paidTime >= cycleWindow.start.getTime() && paidTime <= cycleWindow.end.getTime();
+  });
+  const scopedRecords = cycleRecords.length > 0 ? cycleRecords : relatedRecords.slice(0, 3);
+
+  const latestRecord = scopedRecords[0];
   const paymentAccounts = Array.from(
     new Set(
-      relatedRecords.map((record) => String(record.paymentAccount || '').trim()).filter(Boolean)
+      scopedRecords.map((record) => String(record.paymentAccount || '').trim()).filter(Boolean)
     )
   );
   const plannedAmount =
     toMoneyNumber(item.dueAmount) || (matchedDebt ? Number(matchedDebt.customMinPayment || 0) : 0);
-  const recentPaidAmount = relatedRecords
-    .slice(0, 3)
-    .reduce((sum, record) => sum + Number(record.amount || 0), 0);
+  const recentPaidAmount = cycleRecords.reduce(
+    (sum, record) => sum + Number(record.amount || 0),
+    0
+  );
   const gapAmount = Math.max(0, plannedAmount - recentPaidAmount);
 
   const hasAccountMismatch = Boolean(
     matchedDebt?.paymentAccount &&
+    cycleRecords.length > 0 &&
     paymentAccounts.length > 0 &&
     !paymentAccounts.includes(matchedDebt.paymentAccount)
   );
 
-  let status: CreditRepaymentStatus = 'unmatched';
-  if (!matchedDebt && relatedRecords.length === 0) {
+  const alignedTolerance = REPAYMENT_AMOUNT_TOLERANCE;
+  let status: CreditRepaymentStatus;
+  if (!matchedDebt) {
     status = 'unmatched';
   } else if (hasAccountMismatch) {
     status = 'account-mismatch';
-  } else if (
-    (plannedAmount > 0 && gapAmount > 0) ||
-    (plannedAmount > recentPaidAmount && recentPaidAmount > 0)
-  ) {
+  } else if (plannedAmount <= 0) {
+    // Without a known planned amount we cannot honestly claim alignment.
+    status = 'insufficient-data';
+  } else if (recentPaidAmount <= 0) {
+    status = 'unpaid';
+  } else if (plannedAmount - recentPaidAmount > alignedTolerance) {
     status = 'partially-paid';
   } else {
     status = 'aligned';
@@ -98,8 +143,10 @@ function analyzeCreditRepayment(
   return {
     matchedDebt,
     relatedRecords,
+    cycleRecords,
     latestRecord,
     paymentAccounts,
+    anchorDay,
     plannedAmount,
     recentPaidAmount,
     gapAmount,
@@ -115,6 +162,10 @@ function buildStatusText(status: CreditRepaymentStatus): string {
       return '部分已还';
     case 'account-mismatch':
       return '账户不一致';
+    case 'unpaid':
+      return '本期未还';
+    case 'insufficient-data':
+      return '待确认';
     case 'aligned':
       return '基本对齐';
     default:
@@ -132,8 +183,12 @@ function buildLookupHint(status: CreditRepaymentStatus, analysis: CreditRepaymen
       return '已看到部分还款，但计划应还与最近已还还没完全对齐，建议继续核对是否还有待补录流水。';
     case 'account-mismatch':
       return '计划扣款账户与最近还款账户不一致，优先确认是否换卡扣款、代扣账户变化或记录归属错误。';
+    case 'unpaid':
+      return '计划应还金额已经明确，但当前还款周期内还没有命中还款流水；如果实际已还，建议补录记录或核对还款日期。';
+    case 'insufficient-data':
+      return '已经找到对应负债，但计划应还金额还不够明确，建议先补全本期应还金额，再判断是否对齐。';
     case 'aligned':
-      return '计划应还、最近还款和账户信息基本能对上，可直接继续核对剩余细节。';
+      return '计划应还、本周期还款和账户信息基本能对上，可直接继续核对剩余细节。';
     default:
       return '待进一步确认。';
   }
@@ -153,8 +208,12 @@ function buildGapReason(status: CreditRepaymentStatus, analysis: CreditRepayment
       return analysis.matchedDebt?.paymentAccount
         ? `计划账户是“${analysis.matchedDebt.paymentAccount}”，但最近还款来自“${analysis.paymentAccounts.join(' / ')}”。`
         : '计划账户与最近还款账户暂未对齐。';
+    case 'unpaid':
+      return '当前还款周期内还没有命中还款流水，计划应还暂未看到对应还款。';
+    case 'insufficient-data':
+      return '计划应还金额暂未明确，当前无法判断是否已经对齐。';
     case 'aligned':
-      return '计划应还、最近已还和账户信息基本一致，当前没有明显缺口。';
+      return '计划应还、本周期已还和账户信息基本一致，当前没有明显缺口。';
     default:
       return '待进一步确认。';
   }
@@ -173,9 +232,9 @@ function buildGapExplanationItems(
   }
 
   if (analysis.recentPaidAmount > 0) {
-    items.push(`最近已还 ${formatGapMoney(analysis.recentPaidAmount)}`);
+    items.push(`本周期已还 ${formatGapMoney(analysis.recentPaidAmount)}`);
   } else {
-    items.push('最近未命中稳定还款流水');
+    items.push('本周期未命中还款流水');
   }
 
   if (analysis.gapAmount > 0) {
@@ -200,6 +259,14 @@ function buildGapExplanationItems(
     items.push('账户侧存在不一致，需要优先核对');
   }
 
+  if (status === 'insufficient-data') {
+    items.push('计划应还金额不足，暂时不能判断是否对齐');
+  }
+
+  if (status === 'unpaid') {
+    items.push('本周期暂未命中还款流水');
+  }
+
   return items;
 }
 
@@ -218,6 +285,10 @@ function buildShortfallAction(
         : '建议核对最近是否还有未同步到账的还款记录。';
     case 'account-mismatch':
       return '建议先确认是否换卡扣款、代扣账户变更，或流水归属到错了负债。';
+    case 'unpaid':
+      return '建议补录本期还款流水，或核对扣款日期是否已经过去。';
+    case 'insufficient-data':
+      return '建议先补全本期应还金额，再核对是否已经还款。';
     case 'aligned':
       return '当前缺口不明显，可继续确认期数、利率和剩余成本等细节。';
     default:

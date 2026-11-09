@@ -1,4 +1,5 @@
 import { calculateDebtScheduledPayment, type DebtItem, type RepaymentRecord } from './debtMetrics';
+import { resolveDebtRepaymentDueDisplay } from './repaymentCycle';
 
 export interface RepaymentOverviewInput {
   debts: DebtItem[];
@@ -67,34 +68,15 @@ function daysBetween(from: Date, to: Date): number {
   return Math.round(ms / (1000 * 60 * 60 * 24));
 }
 
-function clampDayInMonth(year: number, month: number, day: number): number {
-  const lastDay = new Date(year, month + 1, 0).getDate();
-  return Math.min(Math.max(1, day), lastDay);
-}
-
-function isSameMonth(date: Date, reference: Date): boolean {
-  return date.getFullYear() === reference.getFullYear() && date.getMonth() === reference.getMonth();
-}
-
 function getScheduledPayment(
   item: DebtItem,
   year: number,
   month: number,
-  fallback: number,
-  referenceDate?: Date
+  fallback: number
 ): number {
   const manual = Array.isArray(item.manualRepayments) ? item.manualRepayments : [];
   if (manual.length === 0) {
     // “本月”只展示尚未到期的账单；若本月还款日已过去，下一笔应落到下个月。
-    if (
-      referenceDate &&
-      typeof item.repaymentDay === 'number' &&
-      year === referenceDate.getFullYear() &&
-      month === referenceDate.getMonth() &&
-      item.repaymentDay < referenceDate.getDate()
-    ) {
-      return 0;
-    }
     return fallback;
   }
   return manual.reduce((sum, row) => {
@@ -121,34 +103,26 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
     return status === 'active' && balance > 0;
   });
 
-  const todayDay = from.getDate();
-
   const financialBreakdown: MonthlyPaymentBreakdownItem[] = activeDebts
     .map((item): MonthlyPaymentBreakdownItem => {
       const payment = getScheduledPayment(
         item,
         from.getFullYear(),
         from.getMonth(),
-        calculateDebtScheduledPayment(item),
-        from
+        calculateDebtScheduledPayment(item)
       );
-      const dueInDays =
-        typeof item.repaymentDay === 'number' && item.repaymentDay >= 1 && item.repaymentDay <= 31
-          ? (item.repaymentDay - todayDay + 31) % 31
-          : null;
-      const tone: MonthlyPaymentBreakdownItem['tone'] =
-        dueInDays === null
+      const dueDisplay = resolveDebtRepaymentDueDisplay(item, payment, input.repaymentRecords, from);
+      const dueInDays = dueDisplay?.daysUntil ?? null;
+      const isPaid = dueDisplay?.isPaid ?? false;
+      const tone: MonthlyPaymentBreakdownItem['tone'] = isPaid
+        ? 'safe'
+        : dueInDays === null
           ? 'safe'
-          : dueInDays === 0
+          : dueInDays <= 3
             ? 'danger'
-            : dueInDays <= 3
-              ? 'danger'
-              : dueInDays <= 7
-                ? 'warning'
-                : 'safe';
-      const paidAmount = input.repaymentRecords
-        .filter((record) => record.debtId === item.id && isSameMonth(new Date(record.paidAt), from))
-        .reduce((sum, record) => sum + Math.max(0, Number(record.amount) || 0), 0);
+            : dueInDays <= 7
+              ? 'warning'
+              : 'safe';
       return {
         id: item.id,
         name: item.name,
@@ -158,8 +132,9 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
         repaymentDay: item.repaymentDay,
         dueInDays,
         tone,
-        paidAmount,
-        isPaid: paidAmount >= Math.max(0.01, payment * 0.98)
+        paidAmount: dueDisplay?.paidAmount ?? 0,
+        isPaid,
+        dueDate: dueDisplay ? normalizeDate(dueDisplay.dueDate) : undefined
       };
     })
     .filter((item) => item.payment > 0)
@@ -201,14 +176,15 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
 
   const thisMonthTotal = breakdown.reduce((sum, item) => sum + item.payment, 0);
 
-  const thisMonthPaid = input.repaymentRecords
-    .filter((record) => {
-      const paidAt = new Date(record.paidAt);
-      return isSameMonth(paidAt, from);
-    })
-    .reduce((sum, record) => sum + Math.max(0, Number(record.amount) || 0), 0);
+  const thisMonthPaid = financialBreakdown.reduce((sum, item) => sum + item.paidAmount, 0);
 
-  const thisMonthRemaining = Math.max(0, thisMonthTotal - thisMonthPaid);
+  // Recurring debts only owe the unpaid gap, while dated reminders have no
+  // repayment history yet, so their stated amount stays fully outstanding.
+  const thisMonthRemaining =
+    financialBreakdown.reduce(
+      (sum, item) => sum + Math.max(0, item.payment - item.paidAmount),
+      0
+    ) + reminderBreakdown.reduce((sum, item) => sum + item.payment, 0);
   const progress = thisMonthTotal > 0 ? Math.min(1, thisMonthPaid / thisMonthTotal) : 0;
 
   let nextDueDate: string | null = null;
@@ -223,16 +199,21 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
       }
       continue;
     }
-    const dueDate = new Date(
-      from.getFullYear(),
-      from.getMonth(),
-      clampDayInMonth(from.getFullYear(), from.getMonth(), item.repaymentDay as number)
-    );
-    const days = daysBetween(from, dueDate);
-    if (days >= 0) {
-      nextDueDate = normalizeDate(dueDate);
-      nextDueDays = days;
+    // Overdue cycles stay in front of the user until they are settled, so the
+    // earliest unpaid (possibly already late) instalment wins over later ones.
+    if (item.dueDate && !item.isPaid) {
+      nextDueDate = item.dueDate;
+      nextDueDays = item.dueInDays;
       break;
+    }
+  }
+  if (!nextDueDate) {
+    const nextSettledCycle = breakdown.find(
+      (item) => !item.isSimpleReminder && item.isPaid && item.dueDate
+    );
+    if (nextSettledCycle?.dueDate) {
+      nextDueDate = nextSettledCycle.dueDate;
+      nextDueDays = nextSettledCycle.dueInDays;
     }
   }
 

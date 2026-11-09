@@ -31,6 +31,7 @@ import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { Toast } from '../../shared/ui/Toast';
 import { DatePicker } from '../../shared/ui/DatePicker';
 import { RepaymentDashboard } from '../../features/debt/components/RepaymentDashboard';
+import { resolveDebtRepaymentDueDisplay } from '../../features/debt/model/repaymentCycle';
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const REPAYMENT_CACHE_KEY = 'ledgerflow-repayment-advice-cache-v1';
@@ -288,7 +289,8 @@ function getManualScheduleStartPeriod(
 }
 
 function buildDebtPressureSchedule(
-  debt: DebtItem
+  debt: DebtItem,
+  options?: { startOffsetMonths?: number }
 ): Array<{ period: string; dueDate: string; amount: number; principal: number; interest: number; remaining: number }> {
   const balance = Math.max(0, Number(debt.balance) || 0);
   const manualRows = Array.isArray(debt.manualRepayments)
@@ -320,9 +322,12 @@ function buildDebtPressureSchedule(
     if (monthlyPayment <= 0) return [];
     const start = new Date();
     const day = typeof debt.repaymentDay === 'number' ? debt.repaymentDay : start.getDate();
-    rows = Array.from({ length: safeMonthCount }, (_, index) => ({
+    // Skip cycles that are already settled so the forecast starts at the next
+    // instalment the user actually still owes.
+    const startOffset = Math.max(0, Math.min(safeMonthCount - 1, Math.floor(options?.startOffsetMonths ?? 0)));
+    rows = Array.from({ length: Math.max(1, safeMonthCount - startOffset) }, (_, index) => ({
       amount: monthlyPayment,
-      dueDate: toISODate(shiftMonthWithDay(start, index, day))
+      dueDate: toISODate(shiftMonthWithDay(start, index + startOffset, day))
     }));
   }
 
@@ -1726,8 +1731,15 @@ export function RepaymentManagementPage() {
 
   const selectedDebtPressurePoints = useMemo(() => {
     if (!selectedDebtOriginal || isSimpleRepaymentReminder(selectedDebtOriginal)) return [];
-    return buildDebtPressureSchedule(selectedDebtOriginal).slice(0, 12);
-  }, [selectedDebtOriginal]);
+    const dueDisplay = resolveDebtRepaymentDueDisplay(
+      selectedDebtOriginal,
+      calculateDebtMinimumPayment(selectedDebtOriginal),
+      repaymentRecords
+    );
+    return buildDebtPressureSchedule(selectedDebtOriginal, {
+      startOffsetMonths: dueDisplay?.isPaid ? 1 : 0
+    }).slice(0, 12);
+  }, [selectedDebtOriginal, repaymentRecords]);
 
   const selectedDebtRecords = useMemo(() => {
     if (!selectedDebtId) return [];

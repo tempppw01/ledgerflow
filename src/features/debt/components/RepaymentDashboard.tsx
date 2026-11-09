@@ -460,11 +460,16 @@ export function RepaymentDashboard({
             </div>
             {overview.nextDueDate ? (
               <span className="repayment-dashboard-next-due">
-                下一笔：{overview.nextDueDate}
+                {overview.nextDueDays !== null && overview.nextDueDays < 0
+                  ? '已逾期：'
+                  : '下一笔：'}
+                {overview.nextDueDate}
                 {overview.nextDueDays !== null
                   ? overview.nextDueDays === 0
                     ? '（今日到期）'
-                    : `（${overview.nextDueDays} 天后）`
+                    : overview.nextDueDays < 0
+                      ? `（已逾期 ${Math.abs(overview.nextDueDays)} 天）`
+                      : `（${overview.nextDueDays} 天后）`
                   : ''}
               </span>
             ) : null}
@@ -519,7 +524,9 @@ export function RepaymentDashboard({
                             ? '未设还款日'
                             : item.dueInDays === 0
                               ? '今日应还'
-                              : `${item.dueInDays} 天后`}
+                              : item.dueInDays < 0
+                                ? `已逾期 ${Math.abs(item.dueInDays)} 天`
+                                : `${item.dueInDays} 天后`}
                         </span>
                         {item.isSimpleReminder ? (
                           <strong>待处理</strong>

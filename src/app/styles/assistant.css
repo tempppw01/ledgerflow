@@ -2231,6 +2231,12 @@
   color: var(--color-text-secondary);
 }
 
+.chat-credit-overview-due-chip.is-overdue {
+  border-color: var(--color-danger-border);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
 .chat-credit-overview-details {
   color: var(--color-text-secondary);
   font-size: 11px;

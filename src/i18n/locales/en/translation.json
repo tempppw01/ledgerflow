@@ -447,7 +447,19 @@
       "defaultProvider": "Default provider endpoint",
       "needApiKeyTitle": "Please configure the API key first",
       "needApiKeyDesc": "No valid key was detected. The assistant cannot call a model right now.",
-      "goSettings": "Go to Settings"
+      "goSettings": "Go to Settings",
+      "creditOverviewTitle": "Credit overview",
+      "creditTotalDebt": "Total debt",
+      "creditDueThisMonth": "Due this cycle",
+      "creditPaidThisMonth": "Paid this cycle",
+      "creditMoreRepaymentData": "More repayment data",
+      "creditTotalDueThisMonth": "Total due this cycle",
+      "creditDebtCount": "Debt accounts",
+      "creditDebtCountValue": "{{total}}",
+      "creditRemainingInterest": "Remaining interest estimate",
+      "creditDueToday": "Due today",
+      "creditDueOn": "Due {{date}}",
+      "creditOverdueDays": "{{days}} days overdue"
     }
   },
   "about": {

@@ -12,7 +12,7 @@ const debt = (overrides: Partial<DebtItem>): DebtItem => ({
 });
 
 describe('getRepaymentOverview', () => {
-  it('sums monthly payments and counts this-month repayments', () => {
+  it('counts repayments inside the current billing cycle only', () => {
     const from = new Date(2026, 7, 5);
     const records: RepaymentRecord[] = [
       {
@@ -27,9 +27,11 @@ describe('getRepaymentOverview', () => {
         id: 'r2',
         debtId: 'd1',
         amount: 100,
-        paidAt: '2026-07-20',
+        // Falls in the previous cycle (before the 07-15 due date), so it must not
+        // be counted towards the 08-15 cycle.
+        paidAt: '2026-07-10',
         recordMode: 'manual',
-        createdAt: '2026-07-20T00:00:00.000Z'
+        createdAt: '2026-07-10T00:00:00.000Z'
       }
     ];
 
@@ -59,7 +61,7 @@ describe('getRepaymentOverview', () => {
         {
           id: 'r1',
           debtId: 'd1',
-          amount: 294,
+          amount: 300,
           paidAt: '2026-08-03',
           recordMode: 'manual',
           createdAt: '2026-08-03T00:00:00.000Z'
@@ -69,9 +71,36 @@ describe('getRepaymentOverview', () => {
     });
 
     expect(result.breakdown[0]).toMatchObject({
-      paidAmount: 294,
+      paidAmount: 300,
       isPaid: true
     });
+    // Once the cycle is settled the reminder moves on to the next due date.
+    expect(result.breakdown[0].dueDate).toBe('2026-09-15');
+    expect(result.nextDueDate).toBe('2026-09-15');
+  });
+
+  it('reports the unpaid gap when a cycle is only partially repaid', () => {
+    const result = getRepaymentOverview({
+      debts: [debt({ customMinPayment: 300 })],
+      repaymentRecords: [
+        {
+          id: 'r1',
+          debtId: 'd1',
+          amount: 100,
+          paidAt: '2026-08-03',
+          recordMode: 'manual',
+          createdAt: '2026-08-03T00:00:00.000Z'
+        }
+      ],
+      fromDate: new Date(2026, 7, 5)
+    });
+
+    expect(result.breakdown[0]).toMatchObject({
+      paidAmount: 100,
+      isPaid: false,
+      dueDate: '2026-08-15'
+    });
+    expect(result.thisMonthRemaining).toBe(200);
   });
 
   it('filters out settled debts', () => {
@@ -120,15 +149,36 @@ describe('getRepaymentOverview', () => {
     expect(result.monthlyProjection[1]).toMatchObject({ monthLabel: '9月', total: 260 });
   });
 
-  it('does not count a regular monthly payment after its due day as this month due', () => {
+  it('keeps the upcoming cycle visible once a due day has just passed', () => {
     const result = getRepaymentOverview({
       debts: [debt({ repaymentDay: 2, customMinPayment: 260 })],
       repaymentRecords: [],
       fromDate: new Date(2026, 7, 28)
     });
 
-    expect(result.thisMonthTotal).toBe(0);
+    expect(result.thisMonthTotal).toBe(260);
+    expect(result.breakdown[0]).toMatchObject({
+      dueDate: '2026-09-02',
+      dueInDays: 5,
+      isPaid: false
+    });
     expect(result.monthlyProjection[0].total).toBe(260);
+  });
+
+  it('flags the previous cycle as overdue while it is still inside the grace window', () => {
+    const result = getRepaymentOverview({
+      debts: [debt({ repaymentDay: 2, customMinPayment: 260 })],
+      repaymentRecords: [],
+      fromDate: new Date(2026, 7, 5)
+    });
+
+    expect(result.breakdown[0]).toMatchObject({
+      dueDate: '2026-08-02',
+      dueInDays: -3,
+      isPaid: false,
+      tone: 'danger'
+    });
+    expect(result.nextDueDays).toBe(-3);
   });
 
   it('keeps a simple repayment reminder without an amount out of payment totals', () => {
