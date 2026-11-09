@@ -51,4 +51,35 @@ describe('BillPreviewCard', () => {
 
     expect(onSaved).toHaveBeenCalledOnce();
   });
+
+  it('外币账单提供确认原币保存入口', () => {
+    const onUpdateEntry = vi.fn();
+    const usdEntry: DraftBillEntry = {
+      ...entry,
+      id: 'draft-usd',
+      amount: 20.5,
+      currency: 'USD',
+      currencyConfirmed: false,
+      issues: [
+        {
+          field: 'currency',
+          message: '检测到外币 USD,当前不会自动换算成人民币,请确认后再保存。'
+        }
+      ]
+    };
+
+    render(
+      <BillPreviewCard
+        entries={[usdEntry]}
+        duplicateCount={0}
+        onCheckDuplicates={vi.fn()}
+        onSave={vi.fn(() => true)}
+        onUpdateEntry={onUpdateEntry}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '确认保留 USD 原币' }));
+
+    expect(onUpdateEntry).toHaveBeenCalledWith('draft-usd', { currencyConfirmed: true });
+  });
 });

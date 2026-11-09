@@ -40,12 +40,30 @@ export function BillPreviewCard({
   onSaved
 }: BillPreviewCardProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
-  const formatAmount = (item: DraftBillEntry) =>
-    new Intl.NumberFormat('zh-CN', {
-      style: 'currency',
-      currency: item.currency && item.currency !== 'unknown' ? item.currency : 'CNY',
-      minimumFractionDigits: 2
-    }).format(item.amount);
+  const formatAmount = (item: DraftBillEntry) => {
+    const currency = item.currency && item.currency !== 'unknown' ? item.currency : 'CNY';
+    try {
+      return new Intl.NumberFormat('zh-CN', {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: 2
+      }).format(item.amount);
+    } catch {
+      return `${currency} ${item.amount.toFixed(2)}`;
+    }
+  };
+
+  const needsCurrencyConfirmation = (item: DraftBillEntry) => {
+    const currency = String(item.currency || '')
+      .trim()
+      .toUpperCase();
+    return (
+      /^[A-Z]{3}$/.test(currency) &&
+      currency !== 'CNY' &&
+      currency !== 'UNKNOWN' &&
+      !item.currencyConfirmed
+    );
+  };
 
   const saveableCount = entries.filter(
     (item) => item.selected && item.issues.length === 0
@@ -150,7 +168,18 @@ export function BillPreviewCard({
               </div>
 
               {item.issues.length > 0 ? (
-                <p className="chat-bill-issue">{issueText(item)}</p>
+                <div className="chat-bill-issue">
+                  <span>{issueText(item)}</span>
+                  {needsCurrencyConfirmation(item) && onUpdateEntry ? (
+                    <button
+                      type="button"
+                      className="chat-bill-confirm-currency"
+                      onClick={() => onUpdateEntry(item.id, { currencyConfirmed: true })}
+                    >
+                      确认保留 {item.currency} 原币
+                    </button>
+                  ) : null}
+                </div>
               ) : null}
 
               {editing ? (

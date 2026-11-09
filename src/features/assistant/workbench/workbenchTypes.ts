@@ -55,6 +55,7 @@ export interface DraftBillEntry {
   orderNo?: string;
   merchantOrderNo?: string;
   currency?: string;
+  currencyConfirmed?: boolean;
   originalAmountText?: string;
   subscriptionSuggestion?: {
     kind: SubscriptionKind;

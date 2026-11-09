@@ -550,7 +550,19 @@ export function validateDraft(entry: DraftBillEntry): ValidationIssue[] {
   if (!entry.date || Number.isNaN(new Date(entry.date).getTime()))
     issues.push({ field: 'date', message: '日期格式无效' });
   if (!normalizeType(entry.type)) issues.push({ field: 'type', message: '交易类型无效' });
-  if (entry.currency && entry.currency !== 'unknown' && entry.currency !== 'CNY') {
+  const normalizedCurrency = String(entry.currency || '')
+    .trim()
+    .toUpperCase();
+  const isForeignCurrency =
+    normalizedCurrency &&
+    normalizedCurrency !== 'unknown' &&
+    normalizedCurrency !== 'CNY';
+  if (isForeignCurrency && !/^[A-Z]{3}$/.test(normalizedCurrency)) {
+    issues.push({
+      field: 'currency',
+      message: '币种需填写 3 位国际代码,如 USD、HKD、JPY。'
+    });
+  } else if (isForeignCurrency && !entry.currencyConfirmed) {
     issues.push({
       field: 'currency',
       message: `检测到外币 ${entry.currency}，当前不会自动换算成人民币，请确认后再保存。`
@@ -597,6 +609,7 @@ export function toDraftEntries(payload: AiBillResult): DraftBillEntry[] {
       orderNo: item.orderNo,
       merchantOrderNo: item.merchantOrderNo,
       currency: item.currency || 'unknown',
+      currencyConfirmed: !item.currency || item.currency === 'CNY' || item.currency === 'unknown',
       originalAmountText: item.originalAmountText,
       issues: []
     };

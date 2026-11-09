@@ -11,7 +11,8 @@ import {
   extractJsonString,
   JSON_AGENT_PROMPT,
   normalizeAiBill,
-  toDraftEntries
+  toDraftEntries,
+  validateDraft
 } from './workbenchUtils';
 import type { Category } from '../../../entities/category/types';
 import type { TransactionItem } from '../../../entities/transaction/types';
@@ -273,6 +274,37 @@ describe('workbenchUtils', () => {
         needsReview: true,
         message: expect.stringContaining('人工确认')
       })
+    );
+  });
+
+  it('外币草稿需要显式确认后才能保存,确认后不再产生币种校验错误', () => {
+    const result = normalizeAiBill({
+      transactions: [
+        {
+          type: 'expense',
+          amount: '$20.50',
+          originalAmountText: '$20.50',
+          date: '2025-02-03',
+          note: '咖啡',
+          category: '餐饮',
+          account: '现金',
+          tags: ['出差']
+        }
+      ]
+    });
+
+    const draft = toDraftEntries(result!)[0];
+    expect(draft.currency).toBe('USD');
+    expect(draft.currencyConfirmed).toBe(false);
+    expect(draft.issues).toContainEqual(
+      expect.objectContaining({
+        field: 'currency',
+        message: expect.stringContaining('确认')
+      })
+    );
+
+    expect(validateDraft({ ...draft, currencyConfirmed: true }).some((issue) => issue.field === 'currency')).toBe(
+      false
     );
   });
 

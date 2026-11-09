@@ -303,6 +303,43 @@ describe('AssistantPage', () => {
     expect(bookkeepingIllustration?.src).toContain('/ledgerflow/Illustrations/importing.svg');
   });
 
+  it('同批次重复账单也应计入预览重复提示', async () => {
+    useAssistantWorkbenchMock.mockReturnValue({
+      ...createWorkbenchMock(),
+      entries: [
+        {
+          id: 'batch-1',
+          selected: true,
+          type: 'expense',
+          amount: 28,
+          date: '2026-09-26',
+          note: '午餐',
+          category: '餐饮',
+          account: '',
+          tags: [],
+          currency: 'CNY',
+          duplicateReason: 'batch',
+          issues: [
+            {
+              field: 'duplicate',
+              message: '与第 1 笔内容相同,疑似同批次重复,请删除或修改后再保存。'
+            }
+          ]
+        }
+      ]
+    });
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    await selectAssistantMode('AI 记账');
+
+    expect(screen.getByText(/有 1 笔可能已记过/)).toBeInTheDocument();
+  });
+
   it('应支持切换到 AI 信贷管家并展示信贷首屏内容', async () => {
     useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
 

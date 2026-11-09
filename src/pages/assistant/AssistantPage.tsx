@@ -998,7 +998,8 @@ export function AssistantPage() {
 
   // 预览卡片需要的 JSON 结构，避免在渲染阶段重复构造。
   const duplicateEntriesCount = useMemo(
-    () => wb.entries.filter((item) => item.duplicateTxId).length,
+    () =>
+      wb.entries.filter((item) => item.duplicateTxId || item.duplicateReason === 'batch').length,
     [wb.entries]
   );
 

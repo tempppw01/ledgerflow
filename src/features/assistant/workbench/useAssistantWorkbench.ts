@@ -133,6 +133,7 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const recognizeAbortRef = useRef<AbortController | null>(null);
   const savingRef = useRef(false);
+  const entriesRef = useRef<DraftBillEntry[]>([]);
   const embeddingCooldownUntilRef = useRef(0);
   const embeddingCooldownNoticeRef = useRef(0);
   const [status, setStatus] = useState<WorkbenchStatus>('idle');
@@ -162,6 +163,10 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
     variant: 'success',
     visible: false
   });
+
+  useEffect(() => {
+    entriesRef.current = entries;
+  }, [entries]);
 
   const embeddingOverrideActive =
     Boolean(embeddingChannel.enabled) &&
@@ -277,12 +282,14 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
   const attachDuplicateMeta = (rows: DraftBillEntry[]) => {
     const firstSeenIndex = new Map<string, number>();
     return rows.map((item, index) => {
+      const baseIssues = item.issues.filter((issue) => issue.field !== 'duplicate');
       const duplicate = detectDuplicate(item);
       if (duplicate) {
         return {
           ...item,
           duplicateTxId: duplicate.id,
-          duplicateReason: duplicate.reason
+          duplicateReason: duplicate.reason,
+          issues: baseIssues
         };
       }
 
@@ -292,7 +299,12 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
         firstSeenIndex.set(signature, index);
       }
       if (previousIndex === undefined) {
-        return { ...item, duplicateTxId: undefined, duplicateReason: undefined };
+        return {
+          ...item,
+          duplicateTxId: undefined,
+          duplicateReason: undefined,
+          issues: baseIssues
+        };
       }
 
       return {
@@ -300,7 +312,7 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
         duplicateTxId: undefined,
         duplicateReason: 'batch' as const,
         issues: [
-          ...item.issues,
+          ...baseIssues,
           {
             field: 'duplicate' as const,
             message: `与第 ${previousIndex + 1} 笔内容相同，疑似同批次重复，请删除或修改后再保存。`
@@ -662,11 +674,10 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
         parsed = null;
       }
 
-      setTextInput('');
-      setImageDataUrls([]);
-      setPdfDataUrls([]);
-
       if (parsed && parsed.transactions.length > 0) {
+        setTextInput('');
+        setImageDataUrls([]);
+        setPdfDataUrls([]);
         setEntries(attachDuplicateMeta(toDraftEntries(parsed)));
         setStatus('preview');
         addLog({
@@ -675,8 +686,15 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
           message: `识别成功，条目 ${parsed.transactions.length}`
         });
       } else {
-        setEntries([]);
-        setStatus('idle');
+        const hadExistingEntries = entriesRef.current.length > 0;
+        setStatus(hadExistingEntries ? 'preview' : 'idle');
+        if (hadExistingEntries) {
+          setToast({
+            visible: true,
+            variant: 'warning',
+            message: '本次没有识别到新的账单,已保留当前待确认记录。'
+          });
+        }
         addLog({
           action: 'assistant.recognize',
           status: 'success',
@@ -718,6 +736,10 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
   };
 
   const updateEntry = (id: string, patch: Partial<DraftBillEntry>) => {
+    const nextPatch =
+      patch.currency !== undefined && patch.currencyConfirmed === undefined
+        ? { ...patch, currencyConfirmed: false }
+        : patch;
     setEntries((prev) =>
       attachDuplicateMeta(
         prev.map((item) => {
@@ -725,8 +747,8 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
             item.id === id
               ? {
                   ...item,
-                  ...patch,
-                  needsReview: clearResolvedReviewFields(item.needsReview, patch)
+                  ...nextPatch,
+                  needsReview: clearResolvedReviewFields(item.needsReview, nextPatch)
                 }
               : item;
           return { ...next, issues: validateDraft(next) };
@@ -745,6 +767,7 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
     if (patch.date !== undefined) resolved.add('date');
     if (patch.type !== undefined) resolved.add('type');
     if (patch.currency !== undefined) resolved.add('currency');
+    if (patch.currencyConfirmed === true) resolved.add('currency');
     if (resolved.size === 0) return currentReview;
     return currentReview.filter((field) => !resolved.has(field));
   }
@@ -989,15 +1012,10 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
     removeEntry,
     saveSelected,
     checkDuplicates: () => {
-      let count = 0;
-      setEntries((prev) =>
-        prev.map((item) => {
-          const duplicate = detectDuplicate(item);
-          if (duplicate) count += 1;
-          return { ...item, duplicateTxId: duplicate?.id, duplicateReason: duplicate?.reason };
-        })
-      );
-      return count;
+      const next = attachDuplicateMeta(entriesRef.current);
+      entriesRef.current = next;
+      setEntries(next);
+      return next.filter((item) => item.duplicateTxId || item.duplicateReason === 'batch').length;
     },
     resetWorkbench,
     applyCommand: (prompt: string) => {
