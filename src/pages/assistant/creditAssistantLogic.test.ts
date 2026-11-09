@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { enrichCreditItemsForConfirmation } from './creditAssistantLogic';
+import {
+  enrichCreditItemsForConfirmation,
+  formatCreditAccountReference
+} from './creditAssistantLogic';
 import type { CreditExtractedItem } from '../../features/assistant/creditAssistant/types';
 
 function buildItem(overrides: Partial<CreditExtractedItem>): CreditExtractedItem {
@@ -45,5 +48,27 @@ describe('creditAssistantLogic rate summary', () => {
     expect(summaryLine(buildItem({ interest: '4.35%', rateType: undefined }), 'APR/年化')).toBe(
       'APR/年化：4.35%'
     );
+  });
+});
+
+describe('creditAssistantLogic account labels', () => {
+  const accounts = [
+    { id: 'acc-cmb', name: '招商银行储蓄卡' },
+    { id: 'acc-cmb-credit', name: '招商银行信用卡' }
+  ];
+
+  it('replaces account ids with their display names', () => {
+    expect(
+      formatCreditAccountReference(
+        'acc-cmb(计划) / acc-cmb-credit(实际)',
+        accounts
+      )
+    ).toBe('招商银行储蓄卡(计划) / 招商银行信用卡(实际)');
+  });
+
+  it('keeps unmatched account ids and empty values unchanged', () => {
+    expect(formatCreditAccountReference('acc-unknown', accounts)).toBe('acc-unknown');
+    expect(formatCreditAccountReference(undefined, accounts)).toBeUndefined();
+    expect(formatCreditAccountReference('acc-cmb', [])).toBe('acc-cmb');
   });
 });

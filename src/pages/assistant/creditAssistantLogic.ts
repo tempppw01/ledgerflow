@@ -156,6 +156,18 @@ function formatDebtCompareValue(value: unknown): string {
   return String(value);
 }
 
+export function formatCreditAccountReference(
+  value: string | undefined,
+  accounts: ReadonlyArray<{ id: string; name: string }>
+): string | undefined {
+  if (!value || accounts.length === 0) return value;
+
+  return [...accounts]
+    .filter((account) => account.id && account.name && account.id !== account.name)
+    .sort((a, b) => b.id.length - a.id.length)
+    .reduce((text, account) => text.split(account.id).join(account.name), value);
+}
+
 function normalizeCreditDebtPayload(item: CreditExtractedItem): Omit<DebtItem, 'id'> {
   const extractNumberText = (value?: string) => {
     if (!value) return '';

@@ -26,6 +26,7 @@ import {
 } from '../../shared/lib/transactionMetrics';
 import { toLocalDateKey } from '../../shared/lib/localDate';
 import { Toast } from '../../shared/ui/Toast';
+import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import type { DebtItem } from '../../features/debt/model/debtMetrics';
 import {
   calculateDebtDerivedMetrics,
@@ -37,6 +38,7 @@ import type { TransactionItem } from '../../entities/transaction/types';
 import {
   buildCreditFollowUpPrompts,
   enrichCreditItemsForConfirmation,
+  formatCreditAccountReference,
   mergeCreditItemsWithHistory
 } from './creditAssistantLogic';
 import {
@@ -754,6 +756,8 @@ export function AssistantPage() {
   const chatHistoryRef = useRef(chatHistory);
   chatHistoryRef.current = chatHistory;
   const [confirmingCreditId, setConfirmingCreditId] = useState<string | null>(null);
+  const [pendingDeleteCreditItem, setPendingDeleteCreditItem] =
+    useState<CreditExtractedItem | null>(null);
   const [modelPickerSource, setModelPickerSource] = useState<'command' | 'toolbar' | null>(null);
   const memoryExtractionSignatureRef = useRef<Record<AssistantMode, string>>({
     bookkeeping: '',
@@ -2242,8 +2246,10 @@ export function AssistantPage() {
                                   <div>
                                     <span>计划 / 实际账户</span>
                                     <strong>
-                                      {creditItem.repaymentLookupSummary.paymentAccountText ||
-                                        '待确认'}
+                                      {formatCreditAccountReference(
+                                        creditItem.repaymentLookupSummary.paymentAccountText,
+                                        accounts
+                                      ) || '待确认'}
                                     </strong>
                                   </div>
                                   <div>
@@ -2299,8 +2305,10 @@ export function AssistantPage() {
                                   <div>
                                     <span>扣款/还款账户</span>
                                     <strong>
-                                      {creditItem.repaymentGapSummary.paymentAccountSummary ||
-                                        '待确认'}
+                                      {formatCreditAccountReference(
+                                        creditItem.repaymentGapSummary.paymentAccountSummary,
+                                        accounts
+                                      ) || '待确认'}
                                     </strong>
                                   </div>
                                 </div>
@@ -2309,17 +2317,25 @@ export function AssistantPage() {
                                   <div className="chat-credit-gap-points">
                                     {creditItem.repaymentGapSummary.explanationItems.map(
                                       (point: string) => (
-                                        <span key={`${creditItem.id}-${point}`}>{point}</span>
+                                        <span key={`${creditItem.id}-${point}`}>
+                                          {formatCreditAccountReference(point, accounts)}
+                                        </span>
                                       )
                                     )}
                                   </div>
                                 ) : null}
                                 <div className="chat-credit-gap-reason">
-                                  {creditItem.repaymentGapSummary.gapReason}
+                                  {formatCreditAccountReference(
+                                    creditItem.repaymentGapSummary.gapReason,
+                                    accounts
+                                  )}
                                 </div>
                                 {creditItem.repaymentGapSummary.shortfallAction ? (
                                   <div className="chat-credit-gap-action">
-                                    {creditItem.repaymentGapSummary.shortfallAction}
+                                    {formatCreditAccountReference(
+                                      creditItem.repaymentGapSummary.shortfallAction,
+                                      accounts
+                                    )}
                                   </div>
                                 ) : null}
                               </div>
@@ -2365,8 +2381,20 @@ export function AssistantPage() {
                                         >
                                           <span>{field.label}</span>
                                           <div>
-                                            <em>当前：{field.currentValue}</em>
-                                            <strong>识别：{field.nextValue}</strong>
+                                            <em>
+                                              当前：
+                                              {formatCreditAccountReference(
+                                                field.currentValue,
+                                                accounts
+                                              )}
+                                            </em>
+                                            <strong>
+                                              识别：
+                                              {formatCreditAccountReference(
+                                                field.nextValue,
+                                                accounts
+                                              )}
+                                            </strong>
                                           </div>
                                         </div>
                                       ))}
@@ -2477,7 +2505,7 @@ export function AssistantPage() {
                                   <button
                                     type="button"
                                     className="chat-secondary-action-btn danger"
-                                    onClick={() => handleDeleteMatchedDebt(creditItem)}
+                                    onClick={() => setPendingDeleteCreditItem(creditItem)}
                                   >
                                     删除这笔负债
                                   </button>
@@ -3273,6 +3301,23 @@ export function AssistantPage() {
               </section>
             </div>
           ) : null}
+
+          <ConfirmDialog
+            open={Boolean(pendingDeleteCreditItem)}
+            title="删除这笔负债？"
+            description={`将从还款管理删除“${
+              pendingDeleteCreditItem?.matchedDebtName || pendingDeleteCreditItem?.title || '这笔负债'
+            }”。删除后无法在还款管理中继续查看，请确认已经不再需要它。`}
+            confirmText="确认删除"
+            danger
+            onConfirm={() => {
+              if (pendingDeleteCreditItem) {
+                handleDeleteMatchedDebt(pendingDeleteCreditItem);
+              }
+              setPendingDeleteCreditItem(null);
+            }}
+            onCancel={() => setPendingDeleteCreditItem(null)}
+          />
 
           <Toast
             message={wb.toast.message}
