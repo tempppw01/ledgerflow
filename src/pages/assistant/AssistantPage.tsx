@@ -230,6 +230,8 @@ const CHAT_HISTORY_CACHE_KEYS: Record<AssistantMode, string> = {
   investment: 'ledgerflow.assistant.chatHistory.investment'
 };
 
+const ASSISTANT_MODE_ORDER: AssistantMode[] = ['bookkeeping', 'assistant', 'credit', 'investment'];
+
 const ASSISTANT_INTRO_ILLUSTRATION_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/importing.svg';
 
@@ -875,6 +877,14 @@ export function AssistantPage() {
   } | null>(null);
   const quickRepayLockRef = useRef(false);
   const [modelPickerSource, setModelPickerSource] = useState<'command' | 'toolbar' | null>(null);
+  const modelTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const modelMenuRef = useRef<HTMLDivElement | null>(null);
+  const modeTabRefs = useRef<Record<AssistantMode, HTMLButtonElement | null>>({
+    bookkeeping: null,
+    assistant: null,
+    credit: null,
+    investment: null
+  });
   const memoryExtractionSignatureRef = useRef<Record<AssistantMode, string>>({
     bookkeeping: '',
     assistant: '',
@@ -1642,24 +1652,55 @@ export function AssistantPage() {
     [wb]
   );
 
+  const restoreModelPickerFocus = useCallback(
+    (source: 'command' | 'toolbar' | null) => {
+      requestAnimationFrame(() => {
+        if (source === 'command') {
+          wb.textareaRef.current?.focus();
+          return;
+        }
+        modelTriggerRef.current?.focus();
+      });
+    },
+    [wb]
+  );
+
+  const closeModelPicker = useCallback(
+    (restoreFocus = true) => {
+      const source = modelPickerSource;
+      setModelOpen(false);
+      setModelPickerSource(null);
+      if (restoreFocus) restoreModelPickerFocus(source);
+    },
+    [modelPickerSource, restoreModelPickerFocus]
+  );
+
+  const focusModelOption = useCallback((index: number) => {
+    const options =
+      modelMenuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]');
+    if (!options?.length) return;
+    const safeIndex =
+      index < 0 ? options.length - 1 : Math.min(Math.max(index, 0), options.length - 1);
+    options[safeIndex]?.focus();
+  }, []);
+
   const handleSelectModel = useCallback(
     (nextModel: string) => {
+      const source = modelPickerSource;
       setModel(nextModel);
-      if (modelPickerSource === 'command') {
+      if (source === 'command') {
         const mentionPattern = /(^|\s)@([^\s@]*)$/;
         const nextInput = wb.textInput.replace(
           mentionPattern,
           (_match, prefix) => `${prefix}@${getModelDisplayLabel(nextModel)} `
         );
         wb.setTextInput(nextInput);
-        requestAnimationFrame(() => {
-          wb.textareaRef.current?.focus();
-        });
       }
       setModelOpen(false);
       setModelPickerSource(null);
+      restoreModelPickerFocus(source);
     },
-    [modelPickerSource, setModel, wb]
+    [modelPickerSource, restoreModelPickerFocus, setModel, wb]
   );
 
   const onInputKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -1669,8 +1710,10 @@ export function AssistantPage() {
     ) {
       if (event.key === 'Escape') {
         event.preventDefault();
-        setModelOpen(false);
-        setModelPickerSource(null);
+        closeModelPicker(false);
+      } else {
+        event.preventDefault();
+        focusModelOption(event.key === 'ArrowDown' ? 0 : -1);
       }
       return;
     }
@@ -1678,6 +1721,43 @@ export function AssistantPage() {
     event.preventDefault();
     if (!wb.canRecognize || wb.status === 'recognizing') return;
     submitPrompt(wb.textInput);
+  };
+
+  const onModelMenuKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const options = Array.from(
+      event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]')
+    );
+    if (!options.length) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeModelPicker();
+      }
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeModelPicker();
+      return;
+    }
+    if (event.key === 'Tab') {
+      setModelOpen(false);
+      setModelPickerSource(null);
+      return;
+    }
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+
+    event.preventDefault();
+    const currentIndex = options.indexOf(document.activeElement as HTMLButtonElement);
+    let nextIndex = currentIndex;
+    if (event.key === 'Home') nextIndex = 0;
+    if (event.key === 'End') nextIndex = options.length - 1;
+    if (event.key === 'ArrowDown')
+      nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % options.length;
+    if (event.key === 'ArrowUp') {
+      nextIndex = currentIndex <= 0 ? options.length - 1 : currentIndex - 1;
+    }
+    options[nextIndex]?.focus();
   };
 
   const syncTextareaHeight = useCallback(() => {
@@ -1720,6 +1800,17 @@ export function AssistantPage() {
       setModelPickerSource(null);
     }
   }, [modelOpen, modelPickerSource, openModelPicker, wb.textInput]);
+
+  useEffect(() => {
+    if (!modelOpen || modelPickerSource !== 'toolbar' || wb.models.length === 0) return;
+    requestAnimationFrame(() => {
+      const selectedIndex = Math.max(
+        0,
+        wb.models.findIndex((item) => item === model)
+      );
+      focusModelOption(selectedIndex);
+    });
+  }, [focusModelOption, model, modelOpen, modelPickerSource, wb.models]);
 
   // 非记账分析时，模型返回自由文本，解析 JSON 失败属于预期，不展示底部红条。
   const shouldShowError =
@@ -1969,6 +2060,28 @@ export function AssistantPage() {
     setMode(nextMode);
   };
 
+  const onModeTabKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    currentMode: AssistantMode
+  ) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const currentIndex = ASSISTANT_MODE_ORDER.indexOf(currentMode);
+    let nextIndex = currentIndex;
+    if (event.key === 'Home') nextIndex = 0;
+    if (event.key === 'End') nextIndex = ASSISTANT_MODE_ORDER.length - 1;
+    if (event.key === 'ArrowRight') {
+      nextIndex = (currentIndex + 1) % ASSISTANT_MODE_ORDER.length;
+    }
+    if (event.key === 'ArrowLeft') {
+      nextIndex = (currentIndex - 1 + ASSISTANT_MODE_ORDER.length) % ASSISTANT_MODE_ORDER.length;
+    }
+
+    const nextMode = ASSISTANT_MODE_ORDER[nextIndex];
+    selectAssistantMode(nextMode);
+    requestAnimationFrame(() => modeTabRefs.current[nextMode]?.focus());
+  };
+
   return (
     <div
       className="chat-fullscreen"
@@ -1977,32 +2090,60 @@ export function AssistantPage() {
     >
       <header className="chat-topbar chat-topbar-no-title">
         <div className="chat-mode-switch" aria-label="模式切换">
-          <div className="chat-mode-switch-options">
+          <div className="chat-mode-switch-options" role="tablist" aria-label="AI 助手模式">
             <button
+              ref={(node) => {
+                modeTabRefs.current.bookkeeping = node;
+              }}
               type="button"
+              role="tab"
+              aria-selected={mode === 'bookkeeping'}
+              tabIndex={mode === 'bookkeeping' ? 0 : -1}
               className={mode === 'bookkeeping' ? 'active' : ''}
               onClick={() => selectAssistantMode('bookkeeping')}
+              onKeyDown={(event) => onModeTabKeyDown(event, 'bookkeeping')}
             >
               {t('assistant.ui.bookkeepingMode')}
             </button>
             <button
+              ref={(node) => {
+                modeTabRefs.current.assistant = node;
+              }}
               type="button"
+              role="tab"
+              aria-selected={mode === 'assistant'}
+              tabIndex={mode === 'assistant' ? 0 : -1}
               className={mode === 'assistant' ? 'active' : ''}
               onClick={() => selectAssistantMode('assistant')}
+              onKeyDown={(event) => onModeTabKeyDown(event, 'assistant')}
             >
               {t('assistant.ui.assistantMode')}
             </button>
             <button
+              ref={(node) => {
+                modeTabRefs.current.credit = node;
+              }}
               type="button"
+              role="tab"
+              aria-selected={mode === 'credit'}
+              tabIndex={mode === 'credit' ? 0 : -1}
               className={mode === 'credit' ? 'active' : ''}
               onClick={() => selectAssistantMode('credit')}
+              onKeyDown={(event) => onModeTabKeyDown(event, 'credit')}
             >
               {t('assistant.ui.creditMode')}
             </button>
             <button
+              ref={(node) => {
+                modeTabRefs.current.investment = node;
+              }}
               type="button"
+              role="tab"
+              aria-selected={mode === 'investment'}
+              tabIndex={mode === 'investment' ? 0 : -1}
               className={mode === 'investment' ? 'active' : ''}
               onClick={() => selectAssistantMode('investment')}
+              onKeyDown={(event) => onModeTabKeyDown(event, 'investment')}
             >
               {t('assistant.ui.investmentMode')}
             </button>
@@ -3227,6 +3368,13 @@ export function AssistantPage() {
                   <textarea
                     ref={wb.textareaRef}
                     className="chat-input-textarea"
+                    aria-label={
+                      mode === 'bookkeeping'
+                        ? 'AI 记账输入'
+                        : mode === 'credit'
+                          ? 'AI 信贷管家输入'
+                          : 'AI 对话输入'
+                    }
                     rows={1}
                     placeholder={inputPlaceholder(wb.status, wb.hasApiKey, mode, t)}
                     value={wb.textInput}
@@ -3249,18 +3397,19 @@ export function AssistantPage() {
 
                       <div className="chat-model-selector chat-model-selector-inline">
                         <button
+                          ref={modelTriggerRef}
                           type="button"
                           className={`chat-model-trigger ${modelOpen ? 'is-open' : ''}`}
                           onClick={() => {
                             if (modelOpen && modelPickerSource === 'toolbar') {
-                              setModelOpen(false);
-                              setModelPickerSource(null);
+                              closeModelPicker(false);
                               return;
                             }
                             openModelPicker('toolbar');
                           }}
-                          aria-haspopup="listbox"
+                          aria-haspopup="menu"
                           aria-expanded={modelOpen}
+                          aria-controls={modelOpen ? 'assistant-model-menu' : undefined}
                           aria-label={`当前模型：${getModelDisplayLabel(model || t('assistant.ui.selectModel'))}`}
                           title={getModelDisplayLabel(model || t('assistant.ui.selectModel'))}
                         >
@@ -3274,9 +3423,12 @@ export function AssistantPage() {
 
                         {modelOpen ? (
                           <div
+                            ref={modelMenuRef}
+                            id="assistant-model-menu"
                             className={`chat-model-dropdown ${modelPickerSource === 'command' ? 'is-command-open' : ''}`}
-                            role="dialog"
+                            role="menu"
                             aria-label="模型列表"
+                            onKeyDown={onModelMenuKeyDown}
                           >
                             <div className="chat-model-list">
                               {wb.models.length === 0 ? (
@@ -3290,6 +3442,8 @@ export function AssistantPage() {
                                   <button
                                     key={item}
                                     type="button"
+                                    role="menuitemradio"
+                                    aria-checked={item === model}
                                     className={`chat-model-option ${item === model ? 'active' : ''}`}
                                     onClick={() => handleSelectModel(item)}
                                   >
@@ -3351,6 +3505,9 @@ export function AssistantPage() {
                   accept="image/*,application/pdf"
                   title="上传账单图片或 PDF"
                   aria-label="上传账单图片或 PDF"
+                  aria-hidden="true"
+                  tabIndex={-1}
+                  hidden
                   onChange={(e) => void wb.handleSetFile(e.target.files?.[0])}
                 />
               </div>

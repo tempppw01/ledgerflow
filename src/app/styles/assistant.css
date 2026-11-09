@@ -388,6 +388,7 @@
 .chat-mode-switch-options button.active {
   position: relative;
   min-width: 0;
+  min-height: 34px;
   padding: 5px 9px 7px;
   border: 0;
   border-radius: 0;
@@ -569,7 +570,7 @@
   gap: 10px;
   min-width: 150px;
   max-width: min(46vw, 280px);
-  height: 36px;
+  height: 40px;
   padding: 4px 12px 4px 5px;
   border: 1px solid var(--color-border);
   border-radius: 14px;
@@ -673,7 +674,8 @@
 .chat-model-option {
   display: block;
   width: 100%;
-  padding: 6px 10px;
+  min-height: 44px;
+  padding: 10px;
   border: none;
   background: transparent;
   text-align: left;
@@ -3733,9 +3735,9 @@
 }
 
 .chat-input-toolbar-btn {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
   padding: 0;
   border: 1px solid transparent;
   border-radius: var(--radius-full);
@@ -3980,9 +3982,9 @@
 }
 
 .chat-upload-btn {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
   border-radius: var(--radius-full);
   border: 1px solid transparent;
   background: transparent;
@@ -4008,9 +4010,9 @@
 }
 
 .chat-send-btn {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
   border-radius: var(--radius-full);
   border: 1px solid var(--color-primary);
   background: var(--color-primary);
@@ -4760,6 +4762,7 @@
   .chat-mode-switch-options button.active {
     width: 100%;
     min-width: 0;
+    min-height: 44px;
     padding-inline: 2px;
     font-size: clamp(10px, 3.2vw, 11px);
     line-height: 1.25;
@@ -4998,13 +5001,15 @@
   }
 
   .chat-upload-btn {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
   }
 
   .chat-send-btn {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
   }
 
   .chat-latest-bill {
@@ -5047,7 +5052,7 @@
   .chat-model-trigger {
     min-width: 0;
     max-width: 54vw;
-    height: 34px;
+    height: 44px;
   }
 
   .chat-model-inline-label {

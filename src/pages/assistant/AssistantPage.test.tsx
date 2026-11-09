@@ -280,7 +280,7 @@ function createWorkbenchMock() {
 
 async function selectAssistantMode(mode: 'AI 记账' | 'AI 信贷管家') {
   await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: mode }));
+    fireEvent.click(screen.getByRole('tab', { name: mode }));
   });
 }
 
@@ -436,7 +436,7 @@ describe('AssistantPage', () => {
 
     await selectAssistantMode('AI 信贷管家');
 
-    expect(screen.getAllByRole('button', { name: 'AI 信贷管家' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('tab', { name: 'AI 信贷管家' }).length).toBeGreaterThan(0);
     expect(await screen.findByText(/每一笔该还什么/)).toBeInTheDocument();
     const creditIllustration = container.querySelector<HTMLImageElement>(
       '.chat-credit-illustration'
@@ -459,13 +459,47 @@ describe('AssistantPage', () => {
 
     const options = container.querySelector('.chat-mode-switch-options');
     expect(options?.querySelectorAll('button')).toHaveLength(4);
-    expect(screen.getByRole('button', { name: 'AI 投资助手' })).toBeInTheDocument();
+    expect(options).toHaveAttribute('role', 'tablist');
+    expect(screen.getByRole('tab', { name: 'AI 投资助手' })).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'AI 信贷管家' }));
+      fireEvent.click(screen.getByRole('tab', { name: 'AI 信贷管家' }));
     });
 
-    expect(screen.getByRole('button', { name: 'AI 信贷管家' })).toHaveClass('active');
+    expect(screen.getByRole('tab', { name: 'AI 信贷管家' })).toHaveClass('active');
+    expect(screen.getByRole('tab', { name: 'AI 信贷管家' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
+  });
+
+  it('模式 tabs 支持方向键与 Home/End,并维持单一 Tab 停靠点', async () => {
+    window.sessionStorage.setItem('ledgerflow.assistant.activeMode', 'assistant');
+    useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    const assistantTab = screen.getByRole('tab', { name: 'AI 助手' });
+    await act(async () => {
+      fireEvent.keyDown(assistantTab, { key: 'ArrowRight' });
+    });
+
+    const creditTab = screen.getByRole('tab', { name: 'AI 信贷管家' });
+    expect(creditTab).toHaveAttribute('aria-selected', 'true');
+    await waitFor(() => expect(creditTab).toHaveFocus());
+    expect(assistantTab).toHaveAttribute('tabindex', '-1');
+
+    await act(async () => {
+      fireEvent.keyDown(creditTab, { key: 'End' });
+    });
+    expect(screen.getByRole('tab', { name: 'AI 投资助手' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
   });
 
   it('投资助手复用其他助手的欢迎区和对话布局，同时保留投资专属会话', () => {
@@ -478,7 +512,7 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('button', { name: 'AI 投资助手' })).toHaveClass('active');
+    expect(screen.getByRole('tab', { name: 'AI 投资助手' })).toHaveClass('active');
     expect(screen.getByRole('heading', { name: /投资上的问题/ })).toBeInTheDocument();
     expect(
       container.querySelector('.chat-investment-mode-content .chat-mode-welcome')
@@ -537,11 +571,11 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByRole('dialog', { name: '模型列表' })).toBeInTheDocument();
+    expect(await screen.findByRole('menu', { name: '模型列表' })).toBeInTheDocument();
     expect(workbench.handleLoadModels).toHaveBeenCalledTimes(1);
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'gpt-test' }));
+      fireEvent.click(screen.getByRole('menuitemradio', { name: 'gpt-test' }));
     });
 
     expect(aiSettingsMocks.setModelMock).toHaveBeenCalledWith('gpt-test');
@@ -562,8 +596,58 @@ describe('AssistantPage', () => {
       fireEvent.click(screen.getByRole('button', { name: '当前模型：gpt-test' }));
     });
 
-    expect(await screen.findByRole('dialog', { name: '模型列表' })).toBeInTheDocument();
+    expect(await screen.findByRole('menu', { name: '模型列表' })).toBeInTheDocument();
     expect(workbench.handleLoadModels).toHaveBeenCalledTimes(1);
+  });
+
+  it('主输入框有稳定名称,隐藏文件输入不进入辅助技术或 Tab 顺序', () => {
+    useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
+
+    const { container } = render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('textbox', { name: 'AI 对话输入' })).toBeInTheDocument();
+    const fileInput = container.querySelector<HTMLInputElement>('input[type="file"]');
+    expect(fileInput).not.toBeNull();
+    expect(fileInput).toHaveAttribute('hidden');
+    expect(fileInput).toHaveAttribute('tabindex', '-1');
+    expect(fileInput).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('模型菜单支持方向键导航并在 Escape 后恢复触发器焦点', async () => {
+    const workbench = {
+      ...createWorkbenchMock(),
+      models: ['gpt-test', 'gpt-next']
+    };
+    useAssistantWorkbenchMock.mockReturnValue(workbench);
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    const trigger = screen.getByRole('button', { name: /当前模型.*gpt-test/ });
+    await act(async () => {
+      fireEvent.click(trigger);
+    });
+    const menu = await screen.findByRole('menu', { name: '模型列表' });
+    const options = screen.getAllByRole('menuitemradio');
+    await waitFor(() => expect(options[0]).toHaveFocus());
+
+    await act(async () => {
+      fireEvent.keyDown(options[0], { key: 'ArrowDown' });
+    });
+    expect(options[1]).toHaveFocus();
+
+    await act(async () => {
+      fireEvent.keyDown(menu, { key: 'Escape' });
+    });
+    expect(screen.queryByRole('menu', { name: '模型列表' })).not.toBeInTheDocument();
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 
   it('信贷识别结果应支持直接保存到还款管理', async () => {

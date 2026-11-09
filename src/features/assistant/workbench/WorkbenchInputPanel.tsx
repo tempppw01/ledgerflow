@@ -75,6 +75,7 @@ export function WorkbenchInputPanel(props: WorkbenchInputPanelProps) {
                 <button
                   type="button"
                   className="chat-thumb-remove"
+                  aria-label={`移除第 ${idx + 1} 张待发送图片`}
                   onClick={() => onRemoveImage(idx)}
                 >
                   ✕
@@ -96,6 +97,9 @@ export function WorkbenchInputPanel(props: WorkbenchInputPanelProps) {
           multiple
           className="chat-file-input-hidden"
           aria-label="上传记账图片"
+          aria-hidden="true"
+          tabIndex={-1}
+          hidden
           onChange={(e) => {
             const files = Array.from(e.target.files || []).filter((file) =>
               file.type.startsWith('image/')
@@ -107,6 +111,8 @@ export function WorkbenchInputPanel(props: WorkbenchInputPanelProps) {
         <button
           type="button"
           className="chat-upload-btn"
+          aria-label="上传记账图片"
+          title="上传记账图片"
           disabled={!hasApiKey}
           onClick={() => fileInputRef.current?.click()}
         >
@@ -117,6 +123,7 @@ export function WorkbenchInputPanel(props: WorkbenchInputPanelProps) {
           rows={2}
           value={textInput}
           className="chat-input-textarea"
+          aria-label="AI 记账输入"
           placeholder={hasApiKey ? '请输入交易内容，或粘贴图片后点击识别' : '请先配置 API Key'}
           disabled={!hasApiKey || submitting}
           onChange={(e) => onTextChange(e.target.value)}
