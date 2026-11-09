@@ -290,6 +290,14 @@ export function ensureAccountId(
 export function mapAssistantErrorMessage(raw: string): string {
   const text = raw.toLowerCase();
   if (
+    text.includes('failed to fetch') ||
+    text.includes('networkerror') ||
+    text.includes('network error') ||
+    text.includes('load failed')
+  ) {
+    return '无法连接到 AI 服务，请检查接口地址与网络后重试。';
+  }
+  if (
     text.includes('pdf') ||
     text.includes('file_url') ||
     text.includes('application/pdf') ||
@@ -300,19 +308,22 @@ export function mapAssistantErrorMessage(raw: string): string {
   }
   if (
     text.includes('http 400') ||
+    text.includes('http_400') ||
     text.includes('improperly formed request') ||
     text.includes('bad_response_status_code')
   ) {
     return '请求格式有误：模型接口未能解析本次请求。请切换标准模型后重试。';
   }
-  if (text.includes('http 401') || text.includes('unauthorized'))
+  if (text.includes('http 401') || text.includes('http_401') || text.includes('unauthorized'))
     return '鉴权失败：请检查 API Key。';
-  if (text.includes('http 403') || text.includes('forbidden'))
+  if (text.includes('http 403') || text.includes('http_403') || text.includes('forbidden'))
     return '权限不足：当前 API Key 无模型访问权限。';
-  if (text.includes('http 404')) return '接口地址或模型不存在：请检查 Base URL 与模型名称。';
-  if (text.includes('http 429') || text.includes('rate limit'))
+  if (text.includes('http 404') || text.includes('http_404'))
+    return '接口地址或模型不存在：请检查 Base URL 与模型名称。';
+  if (text.includes('http 429') || text.includes('http_429') || text.includes('rate limit'))
     return '请求过于频繁：已触发限流，请稍后重试。';
-  if (text.includes('http 5')) return '服务暂时不可用：供应商服务异常，请稍后重试。';
+  if (text.includes('http 5') || text.includes('http_5'))
+    return '服务暂时不可用：供应商服务异常，请稍后重试。';
   return raw;
 }
 

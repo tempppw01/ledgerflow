@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { Account } from '../../../entities/account/types';
-import { ensureAccountId, inferAccountNameFromText } from './workbenchMapping';
+import {
+  ensureAccountId,
+  inferAccountNameFromText,
+  mapAssistantErrorMessage
+} from './workbenchMapping';
 import {
   buildAssistantSystemPrompt,
   buildTransactionPromptContext,
@@ -13,6 +17,18 @@ import type { Category } from '../../../entities/category/types';
 import type { TransactionItem } from '../../../entities/transaction/types';
 
 describe('workbenchUtils', () => {
+  it('网络类错误应转成可读的中文提示', () => {
+    expect(mapAssistantErrorMessage('TypeError: Failed to fetch')).toBe(
+      '无法连接到 AI 服务，请检查接口地址与网络后重试。'
+    );
+    expect(mapAssistantErrorMessage('Load failed')).toBe(
+      '无法连接到 AI 服务，请检查接口地址与网络后重试。'
+    );
+    expect(
+      mapAssistantErrorMessage('AI 服务请求失败(错误码:AI_CHAT_HTTP_502)')
+    ).toContain('服务暂时不可用');
+  });
+
   it('应能从带解释文本的响应中提取 transactions JSON', () => {
     const raw = `这是识别结果：\n\n{\n  "transactions": [{"type":"expense","amount":12.3,"date":"2025-01-01","note":"午餐","category":"餐饮","account":"微信","tags":["餐饮"]}]\n}\n\n请核对。`;
     const jsonText = extractJsonString(raw);

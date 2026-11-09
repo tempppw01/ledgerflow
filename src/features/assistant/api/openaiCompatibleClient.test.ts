@@ -28,6 +28,18 @@ describe('openaiCompatibleClient baseUrl validation', () => {
     );
   });
 
+  it('turns network failures into a friendly connection message', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await expect(
+      sendAiChat({
+        baseUrl: 'https://api.example.com/v1',
+        model: 'test-model',
+        messages: [{ role: 'user', text: 'hello' }]
+      })
+    ).rejects.toThrow('无法连接到 AI 服务，请检查接口地址与网络后重试。');
+  });
+
   it('normalizes trailing slash before requesting', async () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')

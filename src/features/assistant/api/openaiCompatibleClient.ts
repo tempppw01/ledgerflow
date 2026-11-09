@@ -148,7 +148,7 @@ export async function sendAiChatStream(
     ...input.messages
   ];
 
-  const response = await fetch(`${normalizeBaseUrl(input.baseUrl)}/chat/completions`, {
+  const response = await requestAiService(`${normalizeBaseUrl(input.baseUrl)}/chat/completions`, {
     method: 'POST',
     headers: buildHeaders(input.apiKey),
     signal: input.signal,
@@ -247,6 +247,15 @@ export async function sendAiChatStream(
   return finish();
 }
 
+async function requestAiService(input: RequestInfo | URL, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch (error) {
+    if (isAiRequestAbortError(error)) throw error;
+    throw new Error('无法连接到 AI 服务，请检查接口地址与网络后重试。');
+  }
+}
+
 export function isAiRequestAbortError(error: unknown): boolean {
   return error instanceof DOMException
     ? error.name === 'AbortError'
@@ -292,7 +301,7 @@ function buildHeaders(apiKey?: string) {
 }
 
 export async function fetchAiModels(baseUrl?: string, apiKey?: string): Promise<string[]> {
-  const response = await fetch(`${normalizeBaseUrl(baseUrl)}/models`, {
+  const response = await requestAiService(`${normalizeBaseUrl(baseUrl)}/models`, {
     method: 'GET',
     headers: buildHeaders(apiKey)
   });
@@ -328,7 +337,7 @@ export async function sendAiChat(input: ChatRequestInput): Promise<SendAiChatRes
     ...input.messages
   ];
 
-  const response = await fetch(`${normalizeBaseUrl(input.baseUrl)}/chat/completions`, {
+  const response = await requestAiService(`${normalizeBaseUrl(input.baseUrl)}/chat/completions`, {
     method: 'POST',
     headers: buildHeaders(input.apiKey),
     signal: input.signal,
