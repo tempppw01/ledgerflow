@@ -287,6 +287,78 @@ export function ensureAccountId(
   return createdId || accounts[0]?.id || 'acc-unknown';
 }
 
+export interface DraftAccountInput {
+  account?: string;
+  sourceHint?: 'wechat' | 'alipay' | 'bank' | 'cash' | 'unknown';
+  type?: TransactionType | 'unknown';
+  note?: string;
+  tags?: string[];
+}
+
+export interface DraftAccountTarget {
+  source: AccountResolveSource;
+  type: TransactionType;
+  /** 传给 ensureAccountId 的账户名；undefined 表示只复用已有账户。 */
+  name?: string;
+  /** 账户名是否来自本地推断而非模型/用户明确指定。 */
+  inferred: boolean;
+}
+
+/**
+ * 统一账单草稿的账户决策，预览与保存必须共用这一份规则，
+ * 避免出现“预览未指定账户、保存后却落到微信钱包”的不一致。
+ */
+export function resolveDraftAccountTarget(input: DraftAccountInput): DraftAccountTarget {
+  const type: TransactionType =
+    input.type && input.type !== 'unknown' ? input.type : 'expense';
+  const noteAndTagsText = `${input.note || ''} ${(input.tags || []).join(' ')}`;
+
+  let source: AccountResolveSource =
+    input.sourceHint ?? inferSourceFromText(noteAndTagsText);
+  if (source === 'unknown' || source === 'ai') {
+    if (/(现金|cash|现付|纸币|硬币)/i.test(noteAndTagsText)) {
+      source = 'cash';
+    } else if (/(银行|银行卡|储蓄卡|借记卡|bank)/i.test(noteAndTagsText)) {
+      source = 'bank';
+    }
+  }
+
+  const accountHintForInference =
+    source === 'wechat' || source === 'alipay' || source === 'bank' || source === 'cash' || source === 'unknown'
+      ? source
+      : undefined;
+
+  const trimmedAccount = String(input.account || '').trim();
+  const hasGenericAccountName =
+    /^(银行卡|银行账户|储蓄卡|借记卡|bank|bank\s*card|account)$/i.test(trimmedAccount);
+  if (trimmedAccount && !hasGenericAccountName) {
+    return { source, type, name: trimmedAccount, inferred: false };
+  }
+
+  const inferredName = inferAccountNameFromText(noteAndTagsText, accountHintForInference, {
+    type
+  });
+  return { source, type, name: inferredName || undefined, inferred: true };
+}
+
+export function resolveDraftAccountLabel(
+  input: DraftAccountInput,
+  accounts: Account[]
+): { label: string; inferred: boolean } {
+  const target = resolveDraftAccountTarget(input);
+  if (target.name) {
+    const matched = findAccountByName(target.name, accounts);
+    return { label: matched?.name || target.name, inferred: target.inferred };
+  }
+
+  const fallbackId = resolveAccountId(undefined, accounts, {
+    source: target.source,
+    type: target.type
+  });
+  const fallback = accounts.find((item) => item.id === fallbackId);
+  return { label: fallback?.name || '', inferred: true };
+}
+
 export function mapAssistantErrorMessage(raw: string): string {
   const text = raw.toLowerCase();
   if (

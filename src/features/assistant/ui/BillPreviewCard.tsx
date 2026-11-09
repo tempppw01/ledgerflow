@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import type { DraftBillEntry } from '../workbench/workbenchTypes';
+import type { Account } from '../../../entities/account/types';
 import {
   isSupportedLedgerCurrency,
   LEDGER_CURRENCY_CODES,
   normalizeLedgerCurrency
 } from '../workbench/workbenchUtils';
+import { resolveDraftAccountLabel } from '../workbench/workbenchMapping';
 
 interface BillPreviewCardProps {
   entries: DraftBillEntry[];
   duplicateCount: number;
+  accounts?: Account[];
   onCheckDuplicates: () => number;
   onSave: (options?: { overwriteDuplicateEntryIds?: string[] }) => boolean;
   saving?: boolean;
@@ -61,6 +64,7 @@ function issueText(entry: DraftBillEntry): string {
 export function BillPreviewCard({
   entries,
   duplicateCount,
+  accounts = [],
   onCheckDuplicates,
   onSave,
   saving = false,
@@ -133,6 +137,7 @@ export function BillPreviewCard({
       <div className="chat-bill-rows">
         {entries.map((item, index) => {
           const editing = editingId === item.id;
+          const accountLabel = resolveDraftAccountLabel(item, accounts);
           const normalizedCurrency = normalizeLedgerCurrency(item.currency);
           const currencyIsValid = isSupportedLedgerCurrency(normalizedCurrency);
           const showCurrencyConfirmation = needsCurrencyConfirmation(item);
@@ -161,7 +166,8 @@ export function BillPreviewCard({
                   {item.date.slice(0, 10)} <span aria-hidden="true">·</span>{' '}
                   {getTypeLabel(item.type)}
                   <span aria-hidden="true">·</span> {item.category || '未分类'}
-                  <span aria-hidden="true">·</span> {item.account || '未指定账户'}
+                  <span aria-hidden="true">·</span> {accountLabel.label || '未指定账户'}
+                  {accountLabel.label && accountLabel.inferred ? '(自动匹配)' : ''}
                 </small>
                 {item.originalAmountText || item.subscriptionSuggestion ? (
                   <div className="chat-bill-row-extra">
@@ -289,7 +295,9 @@ export function BillPreviewCard({
                     账户
                     <input
                       value={item.account}
-                      placeholder="如 招商银行储蓄卡"
+                      placeholder={
+                        accountLabel.label ? `自动匹配：${accountLabel.label}` : '如 招商银行储蓄卡'
+                      }
                       onChange={(event) =>
                         onUpdateEntry?.(item.id, { account: event.target.value })
                       }

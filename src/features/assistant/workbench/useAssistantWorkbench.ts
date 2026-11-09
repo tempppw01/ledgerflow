@@ -51,15 +51,14 @@ import {
 import {
   ensureAccountId,
   ensureCategoryId,
-  inferAccountNameFromText,
   inferCategoryFromText,
   inferSourceFromText,
   inferTags,
   mapAssistantErrorMessage,
   normalizeMoney,
-  resolveAccountId
+  resolveAccountId,
+  resolveDraftAccountTarget
 } from './workbenchMapping';
-import type { AccountResolveSource } from './workbenchMapping';
 import type { AssistantToastState, DraftBillEntry, WorkbenchStatus } from './workbenchTypes';
 
 /** 模型列表本地缓存 key：用于启动时秒开下拉列表。 */
@@ -826,46 +825,14 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
             ? item.sourceHint
             : inferSourceFromText(noteAndTagsText);
 
-        // 账户来源用于 ensureAccountId，可承载 bank/cash/unknown 细粒度语义。
-        let accountSource: AccountResolveSource =
-          item.sourceHint === 'wechat' ||
-          item.sourceHint === 'alipay' ||
-          item.sourceHint === 'bank' ||
-          item.sourceHint === 'cash' ||
-          item.sourceHint === 'unknown'
-            ? item.sourceHint
-            : inferSourceFromText(noteAndTagsText);
-
-        if (accountSource === 'unknown' || accountSource === 'ai') {
-          if (/(现金|cash|现付|纸币|硬币)/i.test(noteAndTagsText)) {
-            accountSource = 'cash';
-          } else if (/(银行|银行卡|储蓄卡|借记卡|bank)/i.test(noteAndTagsText)) {
-            accountSource = 'bank';
-          }
-        }
-
-        const accountHintForInference =
-          accountSource === 'wechat' ||
-          accountSource === 'alipay' ||
-          accountSource === 'bank' ||
-          accountSource === 'cash' ||
-          accountSource === 'unknown'
-            ? accountSource
-            : undefined;
-
-        // 账户决策优先级：
-        // 1) 优先采用模型明确给出的具体账户名（模型主导是否新建）；
-        // 2) 若模型未给或仅给泛化名，再用本地规则兜底推断；
-        // 3) 仍无法确定时只复用，不触发新建。
-        const trimmedAccount = String(item.account || '').trim();
-        const hasGenericAccountName =
-          /^(银行卡|银行账户|储蓄卡|借记卡|bank|bank\s*card|account)$/i.test(trimmedAccount);
-        const llmAccountName = trimmedAccount && !hasGenericAccountName ? trimmedAccount : '';
-        const fallbackAccountName = llmAccountName
-          ? ''
-          : inferAccountNameFromText(noteAndTagsText, accountHintForInference, {
-              type
-            });
+        // 账户决策与账单预览共用同一份规则，避免“预览未指定账户、保存后落到微信钱包”的不一致。
+        const accountTarget = resolveDraftAccountTarget({
+          account: item.account,
+          sourceHint: item.sourceHint,
+          type,
+          note: item.note,
+          tags: item.tags
+        });
 
         const categoryId = ensureCategoryId(category, categoryCache, (nextName) => {
           const createdId = input.addCategory(nextName);
@@ -875,10 +842,10 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
           return createdId;
         });
 
-        const accountOptions = { source: accountSource, type };
-        const accountId = llmAccountName
+        const accountOptions = { source: accountTarget.source, type: accountTarget.type };
+        const accountId = accountTarget.name
           ? ensureAccountId(
-              llmAccountName,
+              accountTarget.name,
               accountCache,
               (nextName, nextType) => {
                 const createdId = input.addAccount(nextName, nextType, 0);
@@ -889,20 +856,7 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
               },
               accountOptions
             )
-          : fallbackAccountName
-            ? ensureAccountId(
-                fallbackAccountName,
-                accountCache,
-                (nextName, nextType) => {
-                  const createdId = input.addAccount(nextName, nextType, 0);
-                  if (createdId && !accountCache.some((entry) => entry.id === createdId)) {
-                    accountCache.push({ id: createdId, name: nextName.trim(), type: nextType });
-                  }
-                  return createdId;
-                },
-                accountOptions
-              )
-            : resolveAccountId(undefined, accountCache, accountOptions);
+          : resolveAccountId(undefined, accountCache, accountOptions);
 
         const payload = {
           type,

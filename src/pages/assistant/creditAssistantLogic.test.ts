@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   annualizeCreditInterest,
   enrichCreditItemsForConfirmation,
-  formatCreditAccountReference
+  formatCreditAccountReference,
+  parseCreditRepaymentDay
 } from './creditAssistantLogic';
 import type { CreditExtractedItem } from '../../features/assistant/creditAssistant/types';
 
@@ -99,5 +100,24 @@ describe('annualizeCreditInterest', () => {
     expect(annualizeCreditInterest('服务费 300 元', 'APR')).toBeUndefined();
     expect(annualizeCreditInterest('¥300', '年利率')).toBeUndefined();
     expect(annualizeCreditInterest('15.2')).toBeUndefined();
+  });
+});
+
+describe('parseCreditRepaymentDay', () => {
+  it('prefers the day digit over the month digit', () => {
+    expect(parseCreditRepaymentDay('11月20日')).toBe('20');
+    expect(parseCreditRepaymentDay('11月20号还款')).toBe('20');
+  });
+
+  it('parses plain day expressions', () => {
+    expect(parseCreditRepaymentDay('每月 25 日')).toBe('25');
+    expect(parseCreditRepaymentDay('每月25号')).toBe('25');
+    expect(parseCreditRepaymentDay('15')).toBe('15');
+  });
+
+  it('returns an empty string for missing or out-of-range values', () => {
+    expect(parseCreditRepaymentDay(undefined)).toBe('');
+    expect(parseCreditRepaymentDay('待补充')).toBe('');
+    expect(parseCreditRepaymentDay('40日')).toBe('');
   });
 });

@@ -82,6 +82,7 @@ describe('RepaymentManagementPage', () => {
                 name: '招商银行信用卡分期',
                 type: 'credit-card',
                 balance: '8000',
+                annualRate: '18.25',
                 repaymentDay: '12',
                 totalPeriods: '12',
                 remainingMonths: '12'
@@ -99,9 +100,19 @@ describe('RepaymentManagementPage', () => {
     expect(screen.getByText(/已从 AI 信贷管家带入/)).toBeInTheDocument();
     expect(screen.getByDisplayValue('招商银行信用卡分期')).toBeInTheDocument();
     expect(screen.getByLabelText('负债类型')).toHaveValue('credit-card');
+    expect(screen.getByLabelText('年化利率')).toHaveValue(18.25);
 
     const repaymentDayInputs = screen.getAllByDisplayValue('12');
     expect(repaymentDayInputs.length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('button', { name: '+ 添加负债' }));
+    expect(appPreferencesMock.state.addDebt).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'credit-card',
+        annualRate: 18.25,
+        repaymentDay: 12
+      })
+    );
   });
 
   it('应展示负债状态选项', () => {

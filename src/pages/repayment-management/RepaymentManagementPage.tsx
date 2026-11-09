@@ -693,10 +693,7 @@ function parseDebtExtraction(content: string): { debts: ParsedDebtItem[] } {
 
           const preset = findDebtPreset(name);
           const type = preset?.type || normalizeDebtType(row.type);
-          const annualRate =
-            type !== 'credit-card'
-              ? normalizeOptionalParsedNumber(row.annualRate, 0)
-              : undefined;
+          const annualRate = normalizeOptionalParsedNumber(row.annualRate, 0);
           const monthValue = Math.floor(Number(row.remainingMonths || 0));
           const remainingMonths =
             type !== 'credit-card' && Number.isFinite(monthValue) && monthValue > 0
@@ -838,11 +835,11 @@ function getDebtAssumedAnnualRate(
   totalRepayment?: number,
   totalPeriods?: number
 ): number {
+  const explicit = Math.max(0, Number(annualRate || 0));
+  if (explicit > 0) {
+    return explicit;
+  }
   if (type === 'loan') {
-    const explicit = Math.max(0, Number(annualRate || 0));
-    if (explicit > 0) {
-      return explicit;
-    }
     const principal = Number(loanPrincipal || 0);
     const total = Number(totalRepayment || 0);
     const periods = Number(totalPeriods || 0);
@@ -2109,7 +2106,7 @@ export function RepaymentManagementPage() {
       status: debtStatus,
       balance: effectiveBalance,
       annualRate:
-        isLoanType && hasExplicitAnnualRate
+        hasExplicitAnnualRate
           ? annualRate
           : isLoanType && inferredAnnualRate && inferredAnnualRate > 0
             ? inferredAnnualRate
@@ -3659,6 +3656,7 @@ export function RepaymentManagementPage() {
                         aria-label="负债类型"
                       >
                         <option value="credit-card">信用类负债</option>
+                        <option value="consumer-loan">消费/信用分期</option>
                         <option value="loan">贷款</option>
                       </select>
                     </label>
@@ -3821,6 +3819,28 @@ export function RepaymentManagementPage() {
                       </label>
                       </div>
                     </details>
+                      {!isLoanType && debtPlanMode === 'structured' ? (
+                        <label className="debt-form-field">
+                          <span className="debt-form-field-label">年化利率</span>
+                          <span className="debt-form-money">
+                            <input
+                              className="debt-form-input debt-form-input-money"
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              inputMode="decimal"
+                              value={debtAnnualRate}
+                              onChange={(event) => {
+                                setDebtAnnualRate(event.target.value);
+                                setDebtFormError('');
+                              }}
+                              placeholder="可留空，如 18.25"
+                              aria-label="年化利率"
+                            />
+                            <span className="debt-form-money-unit">%</span>
+                          </span>
+                        </label>
+                      ) : null}
                       {isLoanType && debtPlanMode === 'structured' ? (
                         <>
                           <label className="debt-form-field">

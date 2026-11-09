@@ -3,7 +3,9 @@ import type { Account } from '../../../entities/account/types';
 import {
   ensureAccountId,
   inferAccountNameFromText,
-  mapAssistantErrorMessage
+  mapAssistantErrorMessage,
+  resolveDraftAccountLabel,
+  resolveDraftAccountTarget
 } from './workbenchMapping';
 import {
   buildAssistantSystemPrompt,
@@ -441,5 +443,54 @@ describe('workbenchUtils', () => {
     expect(snapshot.availableAccounts).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: 'acc-wx', name: '微信钱包' })])
     );
+  });
+});
+
+describe('账单草稿账户解析', () => {
+  it('预览与保存使用同一套规则推断微信账户', () => {
+    const target = resolveDraftAccountTarget({
+      account: '',
+      type: 'expense',
+      note: '今天午餐28元 微信支付'
+    });
+    expect(target.source).toBe('wechat');
+    expect(target.name).toBe('微信钱包');
+    expect(target.inferred).toBe(true);
+  });
+
+  it('优先信任模型给出的具体账户名', () => {
+    const target = resolveDraftAccountTarget({
+      account: '招商银行储蓄卡',
+      type: 'expense',
+      note: '午餐'
+    });
+    expect(target.name).toBe('招商银行储蓄卡');
+    expect(target.inferred).toBe(false);
+  });
+
+  it('把泛化账户名交给本地规则推断', () => {
+    const target = resolveDraftAccountTarget({
+      account: '银行卡',
+      type: 'income',
+      note: '平安银行入账10000'
+    });
+    expect(target.name).toBe('平安银行');
+    expect(target.inferred).toBe(true);
+  });
+
+  it('预览标签会命中已有账户名', () => {
+    const label = resolveDraftAccountLabel(
+      { account: '', type: 'expense', note: '微信支付 30' },
+      [{ id: 'acc-wx', name: '微信钱包' }]
+    );
+    expect(label).toEqual({ label: '微信钱包', inferred: true });
+  });
+
+  it('没有任何线索时保持未指定', () => {
+    const label = resolveDraftAccountLabel(
+      { account: '', type: 'expense', note: '东城万达 吃饭' },
+      []
+    );
+    expect(label.label).toBe('');
   });
 });

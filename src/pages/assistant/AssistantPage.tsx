@@ -45,7 +45,8 @@ import {
   buildCreditFollowUpPrompts,
   enrichCreditItemsForConfirmation,
   formatCreditAccountReference,
-  mergeCreditItemsWithHistory
+  mergeCreditItemsWithHistory,
+  parseCreditRepaymentDay
 } from './creditAssistantLogic';
 import { resolveCreditRepaymentDueDisplay } from './creditRepaymentHelpers';
 import {
@@ -603,26 +604,21 @@ function mapCreditItemToRepaymentPrefill(item: CreditExtractedItem) {
     return match ? match[0] : '';
   };
 
-  const extractDayText = (value?: string) => {
-    if (!value) return '';
-    const match = value.match(/(\d{1,2})(?:日|号)?/);
-    return match ? match[1] : '';
-  };
-
   const totalPeriodsNumber = extractNumberText(item.remainingPeriods);
+  const annualRate = annualizeCreditInterest(item.interest, item.rateType);
 
   return {
     name: item.title,
     type,
     balance: extractNumberText(item.totalDebt),
     dueAmount: extractNumberText(item.dueAmount),
-    repaymentDay: extractDayText(item.repaymentDate),
+    repaymentDay: parseCreditRepaymentDay(item.repaymentDate),
     totalPeriods: totalPeriodsNumber,
     paidPeriods: '',
     remainingMonths: totalPeriodsNumber,
     loanPrincipal: extractNumberText(item.totalDebt),
     totalRepayment: extractNumberText(item.totalDebt),
-    annualRate: extractNumberText(item.interest),
+    annualRate: annualRate !== undefined ? String(annualRate) : '',
     paymentAccount: '',
     source: 'assistant-credit'
   };
@@ -2861,6 +2857,7 @@ export function AssistantPage() {
                     <BillPreviewCard
                       entries={wb.entries}
                       duplicateCount={duplicateEntriesCount}
+                      accounts={accounts}
                       onCheckDuplicates={wb.checkDuplicates}
                       onSave={startDuplicateReview}
                       saving={wb.status === 'saving'}

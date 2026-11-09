@@ -219,4 +219,25 @@ describe('BillPreviewCard', () => {
       currency: 'USD'
     });
   });
+
+  it('保存前展示自动匹配的账户,避免预览与落库不一致', () => {
+    render(
+      <BillPreviewCard
+        entries={[
+          {
+            ...entry,
+            note: '今天午餐 28 元 微信支付',
+            account: ''
+          }
+        ]}
+        duplicateCount={0}
+        accounts={[{ id: 'acc-wx', name: '微信钱包' }]}
+        onCheckDuplicates={vi.fn()}
+        onSave={vi.fn(() => true)}
+      />
+    );
+
+    expect(screen.getByText(/微信钱包\(自动匹配\)/)).toBeInTheDocument();
+    expect(screen.queryByText(/未指定账户/)).not.toBeInTheDocument();
+  });
 });

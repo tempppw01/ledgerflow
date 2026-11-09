@@ -55,6 +55,23 @@ export function annualizeCreditInterest(
   return value;
 }
 
+/**
+ * 解析还款日为每月几号。
+ * 优先取“日/号”前的数字，避免把“11月20日”误读成 11 号。
+ */
+export function parseCreditRepaymentDay(value?: string): string {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  const dayWithSuffix = text.match(/(\d{1,2})\s*(?:日|号)/);
+  const monthDay = text.match(/(\d{1,2})\s*月\s*(\d{1,2})/);
+  const digits = text.match(/(\d{1,2})/);
+  const raw = dayWithSuffix?.[1] || (monthDay ? monthDay[2] : digits?.[1]);
+  if (!raw) return '';
+  const day = Number(raw);
+  if (!Number.isInteger(day) || day < 1 || day > 31) return '';
+  return String(day);
+}
+
 export function countCompletedCreditFields(item: CreditExtractedItem): number {
   return [
     item.title,
