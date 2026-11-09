@@ -203,6 +203,31 @@
   }
 }
 
+@media (max-width: 360px) {
+  .language-switcher-trigger {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .language-switcher-icon-shell {
+    width: 24px;
+    height: 24px;
+    flex-basis: 24px;
+  }
+
+  .language-switcher .language-switcher-copy,
+  .language-switcher .language-switcher-chevron {
+    display: none;
+  }
+
+  .language-switcher-menu {
+    width: min(188px, calc(100vw - 24px));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .language-switcher-trigger,
   .language-switcher-chevron,

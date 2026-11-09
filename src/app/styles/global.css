@@ -8218,6 +8218,22 @@ input[type='date']:focus {
   }
 }
 
+@media (max-width: 360px) {
+  .workspace-topbar {
+    gap: 6px;
+    padding-inline: 10px;
+  }
+
+  .topbar-left,
+  .topbar-right {
+    gap: 6px;
+  }
+
+  .workspace-topbar-title {
+    font-size: 13px;
+  }
+}
+
 /* ============================================================
    Exchange Rate Module
    ============================================================ */
