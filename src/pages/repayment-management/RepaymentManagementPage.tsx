@@ -31,6 +31,10 @@ import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { Toast } from '../../shared/ui/Toast';
 import { DatePicker } from '../../shared/ui/DatePicker';
 import { RepaymentDashboard } from '../../features/debt/components/RepaymentDashboard';
+import {
+  buildDebtPressureSchedule,
+  getManualScheduleStartPeriod
+} from '../../features/debt/model/debtPressureSchedule';
 import { resolveDebtRepaymentDueDisplay } from '../../features/debt/model/repaymentCycle';
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -264,90 +268,6 @@ function shiftMonthWithDay(base: Date, offset: number, day?: number): Date {
     targetMonth,
     clampDayInMonthValue(targetYear, targetMonth, targetDay)
   );
-}
-
-function getManualScheduleStartPeriod(
-  debt: Pick<DebtItem, 'paidPeriods' | 'totalPeriods' | 'remainingMonths'>
-): number {
-  const paidPeriods = Number(debt.paidPeriods);
-  if (Number.isFinite(paidPeriods) && paidPeriods >= 0) {
-    return Math.floor(paidPeriods) + 1;
-  }
-
-  const totalPeriods = Number(debt.totalPeriods);
-  const remainingMonths = Number(debt.remainingMonths);
-  if (
-    Number.isFinite(totalPeriods) &&
-    totalPeriods > 0 &&
-    Number.isFinite(remainingMonths) &&
-    remainingMonths >= 0
-  ) {
-    return Math.max(1, Math.floor(totalPeriods) - Math.floor(remainingMonths) + 1);
-  }
-
-  return 1;
-}
-
-function buildDebtPressureSchedule(
-  debt: DebtItem,
-  options?: { startOffsetMonths?: number }
-): Array<{ period: string; dueDate: string; amount: number; principal: number; interest: number; remaining: number }> {
-  const balance = Math.max(0, Number(debt.balance) || 0);
-  const manualRows = Array.isArray(debt.manualRepayments)
-    ? debt.manualRepayments
-        .map((item) => ({
-          ...item,
-          amount: Math.max(0, Number(item.amount) || 0)
-        }))
-        .filter((item) => item.amount > 0)
-        .sort((a, b) => {
-          const aTime = a.dueDate ? new Date(a.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
-          const bTime = b.dueDate ? new Date(b.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
-          return aTime - bTime;
-        })
-    : [];
-
-  let rows = manualRows;
-  if (rows.length === 0) {
-    const safeMonthCount =
-      typeof debt.remainingMonths === 'number' && debt.remainingMonths > 0
-        ? Math.min(36, Math.floor(debt.remainingMonths))
-        : debt.totalPeriods && debt.paidPeriods !== undefined
-          ? Math.max(1, Math.min(36, debt.totalPeriods - debt.paidPeriods))
-          : 12;
-    const monthlyPayment = calculateDebtMinimumPayment({
-      ...debt,
-      remainingMonths: safeMonthCount
-    });
-    if (monthlyPayment <= 0) return [];
-    const start = new Date();
-    const day = typeof debt.repaymentDay === 'number' ? debt.repaymentDay : start.getDate();
-    // Skip cycles that are already settled so the forecast starts at the next
-    // instalment the user actually still owes.
-    const startOffset = Math.max(0, Math.min(safeMonthCount - 1, Math.floor(options?.startOffsetMonths ?? 0)));
-    rows = Array.from({ length: Math.max(1, safeMonthCount - startOffset) }, (_, index) => ({
-      amount: monthlyPayment,
-      dueDate: toISODate(shiftMonthWithDay(start, index + startOffset, day))
-    }));
-  }
-
-  const manualScheduleStartPeriod = getManualScheduleStartPeriod(debt);
-  const monthlyRate = Math.max(0, Number(debt.annualRate) || 0) / 12 / 100;
-  let remaining = balance;
-  return rows.slice(0, 36).map((item, index) => {
-    const openingBalance = remaining;
-    const interest = Math.min(item.amount, Math.max(0, openingBalance * monthlyRate));
-    const principal = Math.min(openingBalance, Math.max(0, item.amount - interest));
-    remaining = Math.max(0, openingBalance - principal);
-    return {
-      period: item.label?.trim() || `第 ${manualScheduleStartPeriod + index} 期`,
-      dueDate: item.dueDate || '日期待填',
-      amount: Number(item.amount.toFixed(2)),
-      principal: Number(principal.toFixed(2)),
-      interest: Number(interest.toFixed(2)),
-      remaining: Number(remaining.toFixed(2))
-    };
-  });
 }
 
 function formatShortDate(dateValue: string): string {
