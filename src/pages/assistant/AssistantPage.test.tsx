@@ -96,10 +96,15 @@ const aiSettingsMocks = vi.hoisted(() => {
     embeddingModel: '',
     enableEmbeddingModel: false,
     webSearch: {
-      tavilyApiKey: '',
-      tavilyBaseUrl: '',
-      localEndpoint: '',
       provider: 'tavily',
+      credentials: {
+        tavily: { apiKey: '', baseUrl: 'https://api.tavily.com', engineId: '' },
+        brave: { apiKey: '', baseUrl: 'https://api.search.brave.com', engineId: '' },
+        serper: { apiKey: '', baseUrl: 'https://google.serper.dev', engineId: '' },
+        exa: { apiKey: '', baseUrl: 'https://api.exa.ai', engineId: '' },
+        google: { apiKey: '', baseUrl: 'https://www.googleapis.com', engineId: '' }
+      },
+      localEndpoint: '',
       maxResults: 5
     }
   };

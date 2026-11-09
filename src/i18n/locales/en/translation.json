@@ -174,7 +174,7 @@
     "intros": {
       "account": "Manage your display name, password, and signed-in devices.",
       "openai": "The same Base URL and API key can be used for chat, embedding, and reranking, powering transaction search and trend analysis.",
-      "tavily": "Web search needs a separate Tavily API key to give the AI live news and external references.",
+      "tavily": "Web search uses its own provider key, so you can switch between Tavily, Brave, Serper, Exa, and Google CSE.",
       "embedding": "Embedding models turn ledger text into vectors for semantic search and similar-transaction matching.",
       "advanced": "Tune default models, embedding/rerank toggles, and batch concurrency. The defaults are fine for most setups."
     },
@@ -186,7 +186,7 @@
     "workspaces": {
       "account": "Account & Security",
       "openai": "OpenAI",
-      "tavily": "Tavily",
+      "tavily": "Web search",
       "embedding": "Embedding Service",
       "advanced": "Advanced"
     },
@@ -243,16 +243,59 @@
     },
     "tavily": {
       "title": "Web search",
-      "desc": "Lets the AI reference the latest news, announcements, and policies when answering investment questions.",
+      "desc": "Pick a search provider so the AI can cite live news, filings, and policy updates. You can switch anytime.",
       "configured": "Configured",
-      "missingKey": "Key required",
-      "keyLabel": "Tavily key",
-      "keyHint": "Once configured, web-enabled answers will prioritize real-time results.",
-      "connectionOptions": "Connection options",
-      "connectionHint": "Defaults work out of the box; only change them for self-hosted proxies or special deployment needs.",
-      "baseUrlLabel": "Tavily endpoint",
-      "localEndpointLabel": "Fallback search endpoint",
-      "localEndpointHint": "Used automatically when Tavily is temporarily unavailable."
+      "missingKey": "Not configured",
+      "providerGroupLabel": "Search provider",
+      "keyLabel": "{{provider}} API Key",
+      "keyHint": "The key stays in this browser only; re-enter it on another device or after clearing browser data.",
+      "guideTitle": "Get a {{provider}} API Key",
+      "guideDesc": "Register in the provider console, create a key, then paste it into the field on the left.",
+      "openConsole": "Open signup page",
+      "viewDocs": "View official docs",
+      "createEngine": "Create search engine",
+      "engineIdLabel": "Search engine ID (CX)",
+      "engineIdPlaceholder": "e.g. 012345678901234567890:abc123def",
+      "engineIdHint": "Create a Programmable Search Engine, then copy its CX value.",
+      "tipsTitle": "Tips",
+      "tipLocalOnly": "Keys are written to this browser's local storage and are never uploaded to the server.",
+      "tipBilling": "Most providers bill per search; set a quota alert in their console.",
+      "tipTest": "After saving, ask a real-time question to confirm live results come back.",
+      "connectionOptions": "Advanced connection options",
+      "connectionHint": "Defaults work out of the box; change them only for a self-hosted proxy or special deployment.",
+      "endpointLabel": "{{provider}} endpoint",
+      "endpointHint": "Uses the official endpoint by default; replace it when you run your own proxy.",
+      "localEndpointLabel": "Local fallback endpoint",
+      "localEndpointHint": "Used automatically when the selected provider is unavailable.",
+      "maxResultsLabel": "Results per search",
+      "maxResultsHint": "Around 5 is usually enough; more results consume more quota.",
+      "providers": {
+        "tavily": {
+          "badge": "AI search",
+          "description": "A search API tuned for AI with built-in answers.",
+          "tip": "Best when you want the AI to summarize search results directly."
+        },
+        "brave": {
+          "badge": "Private index",
+          "description": "An independent index that does not track users.",
+          "tip": "Good when you value privacy and still want regular web results."
+        },
+        "serper": {
+          "badge": "Google results",
+          "description": "Calls Google search results with strong Chinese coverage.",
+          "tip": "Good when you need Google-level result coverage."
+        },
+        "exa": {
+          "badge": "Semantic",
+          "description": "Finds long-form docs, research notes, and reports by meaning.",
+          "tip": "Good for reports, long articles, and research material."
+        },
+        "google": {
+          "badge": "Customizable",
+          "description": "Official CSE that can be scoped to specific sites.",
+          "tip": "Good when you only want results from chosen sites."
+        }
+      }
     },
     "language": {
       "label": "Language / 语言",
@@ -929,7 +972,7 @@
       "sqliteLocationQuestion": "Where is SQLite data stored?",
       "sqliteLocationAnswer": "In a container deployment, SQLite writes to the app data directory. Mount that directory to the host or a persistent volume. If you rebuild the container without mounting the data directory, the database file may be lost with the container.",
       "aiQuestion": "Why is the AI assistant not answering or unable to browse the web?",
-      "aiAnswer": "Check the model URL, model name, and API key in Settings. Web search also requires a separate Tavily configuration. Without it, the AI can still analyze your local ledger.",
+      "aiAnswer": "Check the model URL, model name, and API key in Settings. Web search also needs one provider configured under Web search (Tavily, Brave, Serper, Exa, or Google CSE). Without it, the AI can still analyze your local ledger.",
       "shortcutsQuestion": "Do keyboard shortcuts fire inside input fields?",
       "shortcutsAnswer": "No. Shortcuts are disabled while the cursor is in an input, text area, or editable content. Use N to add a transaction, A to open the assistant, B to open Smart Budget, G to go home, H to open Help, D to open backup settings, and / to search transactions."
     }

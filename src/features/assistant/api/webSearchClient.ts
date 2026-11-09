@@ -1,7 +1,15 @@
 import { ENV } from '../../../shared/config/env';
-import type { WebSearchSettings } from '../../../shared/store/useAiSettings';
+import {
+  getWebSearchProviderDefinition,
+  isWebSearchProvider,
+  type WebSearchProvider
+} from '../../../shared/config/webSearchProviders';
+import type {
+  WebSearchProviderCredential,
+  WebSearchSettings
+} from '../../../shared/store/useAiSettings';
 
-type WebSearchProvider = 'tavily' | 'local';
+type WebSearchRuntimeProvider = WebSearchProvider | 'local';
 export type InvestmentNewsSource = '10jqka' | 'xueqiu';
 
 export interface WebSearchResultItem {
@@ -18,11 +26,11 @@ export interface WebSearchSourceStatus {
   label: string;
   status: 'success' | 'unavailable';
   resultCount: number;
-  provider?: WebSearchProvider;
+  provider?: WebSearchRuntimeProvider;
 }
 
 export interface WebSearchContext {
-  provider?: WebSearchProvider;
+  provider?: WebSearchRuntimeProvider;
   status: 'success' | 'unavailable';
   query: string;
   answer?: string;
@@ -39,17 +47,24 @@ export type WebSearchOptions = {
 type RawSearchResult = Partial<{
   title: unknown;
   url: unknown;
+  link: unknown;
   content: unknown;
   snippet: unknown;
   description: unknown;
+  text: unknown;
   published_date: unknown;
   publishedDate: unknown;
+  page_age: unknown;
+  date: unknown;
   score: unknown;
 }>;
 
 type RawSearchPayload = Partial<{
   answer: unknown;
   results: unknown;
+  organic: unknown;
+  items: unknown;
+  web: unknown;
 }>;
 
 type InvestmentSourceDefinition = {
@@ -71,8 +86,44 @@ const INVESTMENT_SOURCE_DEFINITIONS: Record<InvestmentNewsSource, InvestmentSour
   }
 };
 
-function normalizeBaseUrl(value: string) {
-  return (value || ENV.tavilyBaseUrl).trim().replace(/\/+$/, '') || ENV.tavilyBaseUrl;
+const WEB_SEARCH_PROVIDER_LABELS: Record<WebSearchRuntimeProvider, string> = {
+  tavily: 'Tavily',
+  brave: 'Brave Search',
+  serper: 'Serper',
+  exa: 'Exa',
+  google: 'Google CSE',
+  local: '本地联网接口'
+};
+
+function getRuntimeProviderLabel(provider: WebSearchRuntimeProvider | undefined) {
+  if (!provider) return '联网检索';
+  return WEB_SEARCH_PROVIDER_LABELS[provider] || '联网检索';
+}
+
+function clampMaxResults(value: number) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 5;
+  return Math.min(10, Math.max(1, Math.round(parsed)));
+}
+
+function resolveCredential(
+  settings: WebSearchSettings,
+  provider: WebSearchProvider
+): WebSearchProviderCredential {
+  const definition = getWebSearchProviderDefinition(provider);
+  const incoming = settings.credentials?.[provider];
+  const fallbackApiKey = provider === 'tavily' ? ENV.tavilyApiKey : '';
+  const rawBaseUrl = String(incoming?.baseUrl || definition.defaultBaseUrl).trim();
+  return {
+    apiKey: String(incoming?.apiKey || fallbackApiKey).trim(),
+    baseUrl: rawBaseUrl.replace(/\/+$/, '') || definition.defaultBaseUrl,
+    engineId: String(incoming?.engineId || '').trim()
+  };
+}
+
+function requireApiKey(credential: WebSearchProviderCredential, provider: WebSearchProvider) {
+  if (credential.apiKey) return credential.apiKey;
+  throw new Error(`未配置 ${WEB_SEARCH_PROVIDER_LABELS[provider]} API Key`);
 }
 
 function normalizeLocalEndpoint(value: string) {
@@ -101,8 +152,10 @@ function getResultSourceLabel(url: string) {
 
 function normalizeResult(item: RawSearchResult): WebSearchResultItem | null {
   const title = String(item.title || '').trim();
-  const url = String(item.url || '').trim();
-  const content = String(item.content || item.snippet || item.description || '').trim();
+  const url = String(item.url || item.link || '').trim();
+  const content = String(
+    item.content || item.snippet || item.description || item.text || ''
+  ).trim();
   if (!title && !content) return null;
 
   return {
@@ -110,19 +163,47 @@ function normalizeResult(item: RawSearchResult): WebSearchResultItem | null {
     url,
     content,
     sourceLabel: getResultSourceLabel(url),
-    publishedDate: String(item.published_date || item.publishedDate || '').trim() || undefined,
+    publishedDate:
+      String(item.published_date || item.publishedDate || item.page_age || item.date || '').trim() ||
+      undefined,
     score: typeof item.score === 'number' ? item.score : undefined
   };
 }
 
-function normalizePayload(payload: RawSearchPayload): Pick<WebSearchContext, 'answer' | 'results'> {
-  const rawResults = Array.isArray(payload.results) ? payload.results : [];
+function normalizeResultList(value: unknown): WebSearchResultItem[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => normalizeResult((item || {}) as RawSearchResult))
+    .filter(Boolean) as WebSearchResultItem[];
+}
+
+function pickResultList(provider: WebSearchProvider, payload: RawSearchPayload) {
+  if (provider === 'brave') {
+    const web = payload.web;
+    if (web && typeof web === 'object') {
+      return (web as RawSearchPayload).results;
+    }
+    return undefined;
+  }
+  if (provider === 'serper') return payload.organic;
+  if (provider === 'google') return payload.items;
+  return payload.results;
+}
+
+function normalizePayload(
+  provider: WebSearchProvider,
+  payload: RawSearchPayload
+): Pick<WebSearchContext, 'answer' | 'results'> {
+  const answer = typeof payload.answer === 'string' ? payload.answer.trim() : '';
   return {
-    answer: typeof payload.answer === 'string' ? payload.answer.trim() : undefined,
-    results: rawResults
-      .map((item) => normalizeResult((item || {}) as RawSearchResult))
-      .filter(Boolean) as WebSearchResultItem[]
+    answer: answer || undefined,
+    results: normalizeResultList(pickResultList(provider, payload))
   };
+}
+
+function buildSiteScopedQuery(query: string, includeDomains: string[]) {
+  if (includeDomains.length === 0) return query;
+  return `${query} ${includeDomains.map((domain) => `site:${domain}`).join(' ')}`;
 }
 
 async function requestJson(url: string, init: RequestInit) {
@@ -139,16 +220,14 @@ async function searchTavily(
   signal?: AbortSignal,
   includeDomains: string[] = []
 ): Promise<WebSearchContext> {
-  const apiKey = settings.tavilyApiKey || ENV.tavilyApiKey;
-  if (!apiKey.trim()) {
-    throw new Error('未配置 Tavily API Key');
-  }
-
-  const payload = await requestJson(`${normalizeBaseUrl(settings.tavilyBaseUrl)}/search`, {
+  const credential = resolveCredential(settings, 'tavily');
+  const apiKey = requireApiKey(credential, 'tavily');
+  const payload = await requestJson(`${credential.baseUrl}/search`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey.trim()}`
+      Accept: 'application/json',
+      Authorization: `Bearer ${apiKey}`
     },
     signal,
     body: JSON.stringify({
@@ -156,17 +235,161 @@ async function searchTavily(
       topic: 'finance',
       search_depth: 'basic',
       include_answer: true,
-      max_results: settings.maxResults,
+      max_results: clampMaxResults(settings.maxResults),
       ...(includeDomains.length > 0 ? { include_domains: includeDomains } : {})
     })
   });
-  const normalized = normalizePayload(payload);
   return {
     provider: 'tavily',
     status: 'success',
     query,
-    ...normalized
+    ...normalizePayload('tavily', payload)
   };
+}
+
+async function searchBrave(
+  query: string,
+  settings: WebSearchSettings,
+  signal?: AbortSignal,
+  includeDomains: string[] = []
+): Promise<WebSearchContext> {
+  const credential = resolveCredential(settings, 'brave');
+  const apiKey = requireApiKey(credential, 'brave');
+  const params = new URLSearchParams({
+    q: buildSiteScopedQuery(query, includeDomains),
+    count: String(clampMaxResults(settings.maxResults))
+  });
+  const payload = await requestJson(`${credential.baseUrl}/res/v1/web/search?${params}`, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      'X-Subscription-Token': apiKey
+    },
+    signal
+  });
+  return {
+    provider: 'brave',
+    status: 'success',
+    query,
+    ...normalizePayload('brave', payload)
+  };
+}
+
+async function searchSerper(
+  query: string,
+  settings: WebSearchSettings,
+  signal?: AbortSignal,
+  includeDomains: string[] = []
+): Promise<WebSearchContext> {
+  const credential = resolveCredential(settings, 'serper');
+  const apiKey = requireApiKey(credential, 'serper');
+  const payload = await requestJson(`${credential.baseUrl}/search`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'X-API-KEY': apiKey
+    },
+    signal,
+    body: JSON.stringify({
+      q: buildSiteScopedQuery(query, includeDomains),
+      num: clampMaxResults(settings.maxResults),
+      gl: 'cn',
+      hl: 'zh-cn'
+    })
+  });
+  return {
+    provider: 'serper',
+    status: 'success',
+    query,
+    ...normalizePayload('serper', payload)
+  };
+}
+
+async function searchExa(
+  query: string,
+  settings: WebSearchSettings,
+  signal?: AbortSignal,
+  includeDomains: string[] = []
+): Promise<WebSearchContext> {
+  const credential = resolveCredential(settings, 'exa');
+  const apiKey = requireApiKey(credential, 'exa');
+  const payload = await requestJson(`${credential.baseUrl}/search`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'x-api-key': apiKey
+    },
+    signal,
+    body: JSON.stringify({
+      query,
+      type: 'auto',
+      numResults: clampMaxResults(settings.maxResults),
+      ...(includeDomains.length > 0 ? { includeDomains } : {}),
+      contents: {
+        text: { maxCharacters: 1200 }
+      }
+    })
+  });
+  return {
+    provider: 'exa',
+    status: 'success',
+    query,
+    ...normalizePayload('exa', payload)
+  };
+}
+
+async function searchGoogle(
+  query: string,
+  settings: WebSearchSettings,
+  signal?: AbortSignal,
+  includeDomains: string[] = []
+): Promise<WebSearchContext> {
+  const credential = resolveCredential(settings, 'google');
+  const apiKey = requireApiKey(credential, 'google');
+  if (!credential.engineId) {
+    throw new Error('未配置 Google 搜索引擎 ID(CX)');
+  }
+  const params = new URLSearchParams({
+    key: apiKey,
+    cx: credential.engineId,
+    q: buildSiteScopedQuery(query, includeDomains),
+    num: String(clampMaxResults(settings.maxResults))
+  });
+  const payload = await requestJson(`${credential.baseUrl}/customsearch/v1?${params}`, {
+    method: 'GET',
+    headers: { Accept: 'application/json' },
+    signal
+  });
+  return {
+    provider: 'google',
+    status: 'success',
+    query,
+    ...normalizePayload('google', payload)
+  };
+}
+
+async function searchSelectedProvider(
+  provider: WebSearchProvider,
+  query: string,
+  settings: WebSearchSettings,
+  signal?: AbortSignal,
+  includeDomains: string[] = []
+): Promise<WebSearchContext> {
+  switch (provider) {
+    case 'brave':
+      return searchBrave(query, settings, signal, includeDomains);
+    case 'serper':
+      return searchSerper(query, settings, signal, includeDomains);
+    case 'exa':
+      return searchExa(query, settings, signal, includeDomains);
+    case 'google':
+      return searchGoogle(query, settings, signal, includeDomains);
+    case 'tavily':
+    default:
+      return searchTavily(query, settings, signal, includeDomains);
+  }
 }
 
 async function searchLocal(
@@ -176,20 +399,19 @@ async function searchLocal(
 ): Promise<WebSearchContext> {
   const payload = await requestJson(normalizeLocalEndpoint(settings.localEndpoint), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     signal,
     body: JSON.stringify({
       query,
-      maxResults: settings.maxResults,
+      maxResults: clampMaxResults(settings.maxResults),
       topic: 'finance'
     })
   });
-  const normalized = normalizePayload(payload);
   return {
     provider: 'local',
     status: 'success',
     query,
-    ...normalized
+    ...normalizePayload('tavily', payload)
   };
 }
 
@@ -221,21 +443,25 @@ async function fetchSingleWebSearchContext(
   signal?: AbortSignal,
   includeDomains: string[] = []
 ): Promise<WebSearchContext> {
+  const provider = isWebSearchProvider(settings.provider) ? settings.provider : 'tavily';
+
   try {
-    const tavily = await searchTavily(query, settings, signal, includeDomains);
-    if (hasUsableContext(tavily, includeDomains)) {
-      return normalizeRestrictedContext(tavily, includeDomains);
+    const context = await searchSelectedProvider(
+      provider,
+      query,
+      settings,
+      signal,
+      includeDomains
+    );
+    if (hasUsableContext(context, includeDomains)) {
+      return normalizeRestrictedContext(context, includeDomains);
     }
   } catch {
-    // Tavily 不可用时继续尝试本地同源检索。
+    // 所选搜索服务不可用时继续尝试本地同源检索。
   }
 
   try {
-    const localQuery =
-      includeDomains.length > 0
-        ? `${query} ${includeDomains.map((domain) => `site:${domain}`).join(' ')}`
-        : query;
-    const local = await searchLocal(localQuery, settings, signal);
+    const local = await searchLocal(buildSiteScopedQuery(query, includeDomains), settings, signal);
     if (hasUsableContext(local, includeDomains)) {
       return normalizeRestrictedContext(local, includeDomains);
     }
@@ -247,7 +473,7 @@ async function fetchSingleWebSearchContext(
     status: 'unavailable',
     query,
     results: [],
-    message: 'Tavily 和本地联网检索都暂时不可用。'
+    message: `${getRuntimeProviderLabel(provider)} 和本地联网检索都暂时不可用。`
   };
 }
 
@@ -334,7 +560,7 @@ export async function fetchWebSearchContext(
   if (availableSources.length > 0) {
     const results = mergeBalancedSearchResults(
       availableSources.map(({ context }) => context.results),
-      Math.max(5, settings.maxResults)
+      Math.max(5, clampMaxResults(settings.maxResults))
     );
     return {
       provider: availableSources[0].context.provider,
@@ -370,8 +596,9 @@ export async function fetchWebSearchContext(
 
 function getSourceStatusLine(status: WebSearchSourceStatus) {
   if (status.status === 'success') {
-    const provider = status.provider === 'tavily' ? 'Tavily' : '本地联网接口';
-    return `- ${status.label}：已采用 ${status.resultCount} 条（${provider}）`;
+    return `- ${status.label}：已采用 ${status.resultCount} 条（${getRuntimeProviderLabel(
+      status.provider
+    )}）`;
   }
   return `- ${status.label}：本次未取得可用内容`;
 }

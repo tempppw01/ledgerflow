@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { ENV } from '../config/env';
+import {
+  isWebSearchProvider,
+  WEB_SEARCH_PROVIDER_DEFINITIONS,
+  type WebSearchProvider
+} from '../config/webSearchProviders';
 
 const AI_SETTINGS_STORAGE_KEY = 'ledgerflow-ai-settings';
 const AI_SETTINGS_API_KEY_SESSION_KEY = 'ledgerflow-ai-settings-api-key';
@@ -121,12 +126,32 @@ export interface EmbeddingChannelSettings {
   model: string;
 }
 
+export interface WebSearchProviderCredential {
+  apiKey: string;
+  baseUrl: string;
+  engineId: string;
+}
+
+export type WebSearchProviderCredentials = Record<
+  WebSearchProvider,
+  WebSearchProviderCredential
+>;
+
 export interface WebSearchSettings {
-  provider: 'tavily';
-  tavilyApiKey: string;
-  tavilyBaseUrl: string;
+  provider: WebSearchProvider;
+  credentials: WebSearchProviderCredentials;
   localEndpoint: string;
   maxResults: number;
+}
+
+export interface WebSearchSettingsPatch {
+  provider?: WebSearchProvider;
+  localEndpoint?: string;
+  maxResults?: number;
+  credential?: {
+    provider: WebSearchProvider;
+    patch: Partial<WebSearchProviderCredential>;
+  };
 }
 
 interface AiSettingsState {
@@ -159,7 +184,7 @@ interface AiSettingsState {
   setShowEmbeddingSummary: (enabled: boolean) => void;
   setRememberApiKey: (enabled: boolean) => void;
   setEmbedding: (patch: Partial<EmbeddingChannelSettings>) => void;
-  setWebSearch: (patch: Partial<WebSearchSettings>) => void;
+  setWebSearch: (patch: WebSearchSettingsPatch) => void;
 }
 
 const DEFAULT_BULK_RECATEGORIZE_CONCURRENCY = 8;
@@ -173,13 +198,74 @@ const DEFAULT_EMBEDDING_CHANNEL_SETTINGS: EmbeddingChannelSettings = {
   model: ''
 };
 
-const DEFAULT_WEB_SEARCH_SETTINGS: WebSearchSettings = {
-  provider: 'tavily',
-  tavilyApiKey: ENV.tavilyApiKey,
-  tavilyBaseUrl: ENV.tavilyBaseUrl,
-  localEndpoint: ENV.localWebSearchEndpoint,
-  maxResults: 5
+function createDefaultWebSearchCredentials(): WebSearchProviderCredentials {
+  const credentials = {} as WebSearchProviderCredentials;
+  for (const provider of WEB_SEARCH_PROVIDER_DEFINITIONS) {
+    credentials[provider.id] = {
+      apiKey: '',
+      baseUrl: provider.defaultBaseUrl,
+      engineId: ''
+    };
+  }
+  credentials.tavily.apiKey = ENV.tavilyApiKey;
+  credentials.tavily.baseUrl = ENV.tavilyBaseUrl;
+  return credentials;
+}
+
+function createDefaultWebSearchSettings(): WebSearchSettings {
+  return {
+    provider: 'tavily',
+    credentials: createDefaultWebSearchCredentials(),
+    localEndpoint: ENV.localWebSearchEndpoint,
+    maxResults: 5
+  };
+}
+
+type WebSearchSettingsInput = Partial<WebSearchSettings> & {
+  credentials?: Partial<Record<WebSearchProvider, Partial<WebSearchProviderCredential>>>;
+  tavilyApiKey?: unknown;
+  tavilyBaseUrl?: unknown;
 };
+
+function normalizeWebSearchSettings(value: unknown): WebSearchSettings {
+  const raw =
+    value && typeof value === 'object' ? (value as WebSearchSettingsInput) : {};
+  const defaults = createDefaultWebSearchSettings();
+  const credentials = {} as WebSearchProviderCredentials;
+
+  for (const provider of WEB_SEARCH_PROVIDER_DEFINITIONS) {
+    const incoming = raw.credentials?.[provider.id];
+    const fallback = defaults.credentials[provider.id];
+    const legacyApiKey =
+      provider.id === 'tavily' && typeof raw.tavilyApiKey === 'string'
+        ? raw.tavilyApiKey
+        : '';
+    const legacyBaseUrl =
+      provider.id === 'tavily' && typeof raw.tavilyBaseUrl === 'string'
+        ? raw.tavilyBaseUrl
+        : '';
+
+    credentials[provider.id] = {
+      apiKey: String(incoming?.apiKey ?? legacyApiKey ?? fallback.apiKey).trim(),
+      baseUrl: String(
+        incoming?.baseUrl || legacyBaseUrl || fallback.baseUrl
+      ).trim(),
+      engineId: String(incoming?.engineId ?? fallback.engineId).trim()
+    };
+  }
+
+  return {
+    provider: isWebSearchProvider(raw.provider) ? raw.provider : 'tavily',
+    credentials,
+    localEndpoint: String(
+      raw.localEndpoint || defaults.localEndpoint || ENV.localWebSearchEndpoint
+    ).trim(),
+    maxResults: Math.min(
+      10,
+      Math.max(1, Math.round(Number(raw.maxResults || defaults.maxResults || 5)))
+    )
+  };
+}
 
 function normalizeBulkRecategorizeConcurrency(value: number): number {
   return Math.min(
@@ -213,7 +299,7 @@ export const useAiSettings = create<AiSettingsState>()(
       showEmbeddingSummary: true,
       rememberApiKey: Boolean(readLocalApiKey()),
       embedding: DEFAULT_EMBEDDING_CHANNEL_SETTINGS,
-      webSearch: DEFAULT_WEB_SEARCH_SETTINGS,
+      webSearch: createDefaultWebSearchSettings(),
       setBaseUrl: (baseUrl: string) => set({ baseUrl: baseUrl.trim() }),
       setApiKey: (apiKey: string) =>
         set((state) => {
@@ -262,30 +348,28 @@ export const useAiSettings = create<AiSettingsState>()(
             model: typeof patch.model === 'string' ? patch.model.trim() : state.embedding.model
           }
         })),
-      setWebSearch: (patch: Partial<WebSearchSettings>) =>
-        set((state) => ({
-          webSearch: {
-            ...state.webSearch,
-            ...patch,
-            provider: 'tavily',
-            tavilyApiKey:
-              typeof patch.tavilyApiKey === 'string'
-                ? patch.tavilyApiKey.trim()
-                : state.webSearch.tavilyApiKey,
-            tavilyBaseUrl:
-              typeof patch.tavilyBaseUrl === 'string'
-                ? patch.tavilyBaseUrl.trim()
-                : state.webSearch.tavilyBaseUrl,
-            localEndpoint:
-              typeof patch.localEndpoint === 'string'
-                ? patch.localEndpoint.trim()
-                : state.webSearch.localEndpoint,
-            maxResults:
-              typeof patch.maxResults === 'number'
-                ? Math.min(10, Math.max(1, Math.round(patch.maxResults || 5)))
-                : state.webSearch.maxResults
-          }
-        }))
+      setWebSearch: (patch: WebSearchSettingsPatch) =>
+        set((state) => {
+          const credentials = patch.credential
+            ? {
+                ...state.webSearch.credentials,
+                [patch.credential.provider]: {
+                  ...state.webSearch.credentials[patch.credential.provider],
+                  ...patch.credential.patch
+                }
+              }
+            : state.webSearch.credentials;
+
+          return {
+            webSearch: normalizeWebSearchSettings({
+              ...state.webSearch,
+              provider: patch.provider ?? state.webSearch.provider,
+              credentials,
+              localEndpoint: patch.localEndpoint ?? state.webSearch.localEndpoint,
+              maxResults: patch.maxResults ?? state.webSearch.maxResults
+            })
+          };
+        })
     }),
     {
       name: AI_SETTINGS_STORAGE_KEY,
@@ -346,22 +430,8 @@ export const useAiSettings = create<AiSettingsState>()(
         next.embedding.apiKey = String(next.embedding.apiKey || '').trim();
         next.embedding.model = String(next.embedding.model || '').trim();
 
-        const webSearch = (next as Partial<PersistedAiSettingsState>).webSearch;
-        next.webSearch = {
-          ...DEFAULT_WEB_SEARCH_SETTINGS,
-          ...(webSearch && typeof webSearch === 'object' ? webSearch : {})
-        };
-        next.webSearch.provider = 'tavily';
-        next.webSearch.tavilyApiKey = String(next.webSearch.tavilyApiKey || '').trim();
-        next.webSearch.tavilyBaseUrl = String(
-          next.webSearch.tavilyBaseUrl || ENV.tavilyBaseUrl
-        ).trim();
-        next.webSearch.localEndpoint = String(
-          next.webSearch.localEndpoint || ENV.localWebSearchEndpoint
-        ).trim();
-        next.webSearch.maxResults = Math.min(
-          10,
-          Math.max(1, Math.round(Number(next.webSearch.maxResults || 5)))
+        next.webSearch = normalizeWebSearchSettings(
+          (next as Partial<PersistedAiSettingsState>).webSearch
         );
 
         return next;

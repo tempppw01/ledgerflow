@@ -69,6 +69,57 @@ describe('useAiSettings', () => {
     expect(sessionStorage.getItem(AI_SETTINGS_API_KEY_SESSION_KEY)).toBeNull();
     nowSpy.mockRestore();
   });
+
+  it('switches web search provider and stores per-provider credentials', () => {
+    useAiSettings.getState().setWebSearch({
+      provider: 'exa',
+      credential: { provider: 'exa', patch: { apiKey: '  exa-key  ' } }
+    });
+
+    const { webSearch } = useAiSettings.getState();
+    expect(webSearch.provider).toBe('exa');
+    expect(webSearch.credentials.exa.apiKey).toBe('exa-key');
+    expect(webSearch.credentials.tavily.baseUrl).toBe('https://api.tavily.com');
+    expect(webSearch.credentials.brave.baseUrl).toBe('https://api.search.brave.com');
+
+    useAiSettings.getState().setWebSearch({
+      provider: 'google',
+      credential: { provider: 'google', patch: { apiKey: 'g-key', engineId: 'cx-1' } }
+    });
+    const google = useAiSettings.getState().webSearch.credentials.google;
+    expect(google.apiKey).toBe('g-key');
+    expect(google.engineId).toBe('cx-1');
+    // 切换服务不会丢失其它服务的密钥
+    expect(useAiSettings.getState().webSearch.credentials.exa.apiKey).toBe('exa-key');
+  });
+
+  it('migrates legacy flat Tavily settings into provider credentials', async () => {
+    localStorage.setItem(
+      AI_SETTINGS_KEY,
+      JSON.stringify({
+        state: {
+          webSearch: {
+            provider: 'tavily',
+            tavilyApiKey: 'tvly-legacy',
+            tavilyBaseUrl: 'https://proxy.example.com',
+            localEndpoint: '/api/search',
+            maxResults: 7
+          }
+        },
+        version: 0
+      })
+    );
+
+    await useAiSettings.persist.rehydrate();
+
+    const { webSearch } = useAiSettings.getState();
+    expect(webSearch.credentials.tavily.apiKey).toBe('tvly-legacy');
+    expect(webSearch.credentials.tavily.baseUrl).toBe('https://proxy.example.com');
+    expect(webSearch.credentials.exa.baseUrl).toBe('https://api.exa.ai');
+    expect(webSearch.localEndpoint).toBe('/api/search');
+    expect(webSearch.maxResults).toBe(7);
+    localStorage.removeItem(AI_SETTINGS_KEY);
+  });
 });
 
 

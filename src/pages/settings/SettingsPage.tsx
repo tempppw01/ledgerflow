@@ -20,6 +20,7 @@ import {
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { PasswordInput } from '../../shared/ui/PasswordInput';
 import { Toast } from '../../shared/ui/Toast';
+import { WebSearchSettingsPanel } from './WebSearchSettingsPanel';
 
 const AI_PROVIDER_PRESETS = [
   { value: 'https://ai.shuaihong.fun/v1', label: 'SH API' },
@@ -177,7 +178,6 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
   const embeddingModel = useAiSettings((s) => s.embeddingModel);
   const enableEmbeddingModel = useAiSettings((s) => s.enableEmbeddingModel);
   const embeddingChannel = useAiSettings((s) => s.embedding);
-  const webSearch = useAiSettings((s) => s.webSearch);
   const rerankModel = useAiSettings((s) => s.rerankModel);
   const enableRerankModel = useAiSettings((s) => s.enableRerankModel);
   const rememberApiKey = useAiSettings((s) => s.rememberApiKey);
@@ -188,7 +188,6 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
   const setEmbeddingModel = useAiSettings((s) => s.setEmbeddingModel);
   const setEnableEmbeddingModel = useAiSettings((s) => s.setEnableEmbeddingModel);
   const setEmbeddingChannel = useAiSettings((s) => s.setEmbedding);
-  const setWebSearch = useAiSettings((s) => s.setWebSearch);
   const setRerankModel = useAiSettings((s) => s.setRerankModel);
   const setEnableRerankModel = useAiSettings((s) => s.setEnableRerankModel);
   const memoryDays = useAiSettings((s) => s.memoryDays);
@@ -938,67 +937,7 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
 
         {activeWorkspace === 'tavily' ? (
           <div className="settings-tab-panel" role="tabpanel">
-            <div className="settings-subpanel settings-subpanel--tavily is-active">
-              <div className="settings-subpanel-toggle">
-                <div className="settings-subpanel-copy">
-                  <strong>{t('settings.tavily.title')}</strong>
-                  <small>{t('settings.tavily.desc')}</small>
-                </div>
-                <span
-                  className={`settings-subpanel-chip ${webSearch.tavilyApiKey.trim() ? 'is-active' : ''}`}
-                >
-                  {webSearch.tavilyApiKey.trim()
-                    ? t('settings.tavily.configured')
-                    : t('settings.tavily.missingKey')}
-                </span>
-              </div>
-              <div className="settings-subpanel-body">
-                <div className="field settings-tavily-key-field">
-                  <label>{t('settings.tavily.keyLabel')}</label>
-                  <PasswordInput
-                    value={webSearch.tavilyApiKey}
-                    placeholder="tvly-..."
-                    onChange={(e) => {
-                      setWebSearch({ tavilyApiKey: e.target.value });
-                      showSaveToast();
-                    }}
-                    showLabel={t('settings.show')}
-                    hideLabel={t('settings.hide')}
-                  />
-                  <small>{t('settings.tavily.keyHint')}</small>
-                </div>
-
-                <details className="settings-connection-options">
-                  <summary>{t('settings.tavily.connectionOptions')}</summary>
-                  <p>{t('settings.tavily.connectionHint')}</p>
-                  <div className="settings-inline-grid settings-inline-grid--double">
-                    <div className="field">
-                      <label>{t('settings.tavily.baseUrlLabel')}</label>
-                      <input
-                        value={webSearch.tavilyBaseUrl}
-                        placeholder="https://api.tavily.com"
-                        onChange={(e) => {
-                          setWebSearch({ tavilyBaseUrl: e.target.value });
-                          showSaveToast();
-                        }}
-                      />
-                    </div>
-                    <div className="field">
-                      <label>{t('settings.tavily.localEndpointLabel')}</label>
-                      <input
-                        value={webSearch.localEndpoint}
-                        placeholder="/api/web-search"
-                        onChange={(e) => {
-                          setWebSearch({ localEndpoint: e.target.value });
-                          showSaveToast();
-                        }}
-                      />
-                      <small>{t('settings.tavily.localEndpointHint')}</small>
-                    </div>
-                  </div>
-                </details>
-              </div>
-            </div>
+            <WebSearchSettingsPanel onSaved={showSaveToast} />
           </div>
         ) : null}
 

@@ -175,7 +175,7 @@
     "intros": {
       "account": "管理显示名称、登录密码与已登录设备。",
       "openai": "同一套 Base URL 和 API 密钥可用于对话、嵌入和重排序，统一支持交易检索与趋势分析。",
-      "tavily": "联网检索需要单独的 Tavily API Key，用于给 AI 补充实时资讯与外部资料。",
+      "tavily": "联网检索使用独立的搜索服务密钥,可在 Tavily、Brave、Serper、Exa、Google CSE 之间切换。",
       "embedding": "嵌入模型把账目文本转成向量，用于语义检索和相似交易匹配。",
       "advanced": "调整默认模型、嵌入/重排序开关与批量并发等进阶选项，不确定时保持默认即可。"
     },
@@ -186,7 +186,7 @@
     "workspaces": {
       "account": "账号与安全",
       "openai": "OpenAI",
-      "tavily": "Tavily",
+      "tavily": "联网",
       "embedding": "嵌入服务",
       "advanced": "高级设置"
     },
@@ -243,16 +243,59 @@
     },
     "tavily": {
       "title": "联网搜索",
-      "desc": "让 AI 在回答投资问题时参考最新资讯、公告和政策。",
+      "desc": "选择一家搜索服务,为 AI 补充实时资讯、公告与政策,随时可以切换。",
       "configured": "已配置",
-      "missingKey": "待填写密钥",
-      "keyLabel": "Tavily 密钥",
-      "keyHint": "填写后，联网回答会优先参考实时网页信息。",
-      "connectionOptions": "连接选项",
-      "connectionHint": "默认值可直接使用，仅在自建代理或部署环境有特殊要求时修改。",
-      "baseUrlLabel": "Tavily 服务地址",
-      "localEndpointLabel": "备用搜索地址",
-      "localEndpointHint": "Tavily 暂时不可用时，会自动切换到此地址。"
+      "missingKey": "待配置",
+      "providerGroupLabel": "搜索服务",
+      "keyLabel": "{{provider}} API Key",
+      "keyHint": "密钥只保存在当前浏览器,换设备或清理浏览器数据后需要重新填写。",
+      "guideTitle": "快速获取 {{provider}} API Key",
+      "guideDesc": "在对应控制台注册并创建密钥,粘贴到左侧输入框即可生效。",
+      "openConsole": "打开获取页面",
+      "viewDocs": "查看官方文档",
+      "createEngine": "创建搜索引擎",
+      "engineIdLabel": "搜索引擎 ID(CX)",
+      "engineIdPlaceholder": "例如 012345678901234567890:abc123def",
+      "engineIdHint": "在可编程搜索引擎控制台创建后,复制其中的 CX 值。",
+      "tipsTitle": "使用提示",
+      "tipLocalOnly": "密钥仅写入当前浏览器,不会上传到服务器。",
+      "tipBilling": "多数服务按搜索次数计费,建议在控制台设置额度提醒。",
+      "tipTest": "保存后先问一个实时性问题,确认识别到最新信息。",
+      "connectionOptions": "高级连接选项",
+      "connectionHint": "默认值可直接使用,仅在自建代理或特殊部署环境时修改。",
+      "endpointLabel": "{{provider}} 服务地址",
+      "endpointHint": "默认使用官方地址,自建代理时替换为你的地址。",
+      "localEndpointLabel": "本地备用搜索地址",
+      "localEndpointHint": "所选服务不可用时,自动回退到该地址。",
+      "maxResultsLabel": "每次返回条数",
+      "maxResultsHint": "建议 5 条左右,条数越多消耗的额度越高。",
+      "providers": {
+        "tavily": {
+          "badge": "AI 搜索",
+          "description": "为 AI 场景优化的搜索接口,自带摘要。",
+          "tip": "适合希望 AI 直接给出检索摘要的场景。"
+        },
+        "brave": {
+          "badge": "隐私索引",
+          "description": "独立索引,默认不追踪用户。",
+          "tip": "适合重视隐私、同时需要常规网页结果的场景。"
+        },
+        "serper": {
+          "badge": "Google 结果",
+          "description": "实时调用 Google 搜索结果,中文覆盖好。",
+          "tip": "适合需要 Google 结果覆盖度的查询。"
+        },
+        "exa": {
+          "badge": "语义搜索",
+          "description": "按语义检索长文、研报与深度资料。",
+          "tip": "适合查研报、长文和资料型内容。"
+        },
+        "google": {
+          "badge": "可自定义",
+          "description": "官方 CSE,可限定检索站点范围。",
+          "tip": "适合只需要检索指定网站的场景。"
+        }
+      }
     },
     "language": {
       "label": "语言 / Language",
@@ -929,7 +972,7 @@
       "sqliteLocationQuestion": "SQLite 数据保存在哪里？",
       "sqliteLocationAnswer": "容器部署时，SQLite 会写入应用的数据目录。请把该目录挂载到宿主机或持久化卷；只重建容器而未挂载数据目录，数据库文件可能随容器一同丢失。",
       "aiQuestion": "AI 助手为什么没有回答或无法联网？",
-      "aiAnswer": "请在设置中检查模型地址、模型名称和 API Key。联网检索还需要单独完成 Tavily 配置；未配置时，AI 仍可基于本地账本提供分析。",
+      "aiAnswer": "请在设置中检查模型地址、模型名称和 API Key。联网检索还需要在“联网”中选择并配置任一搜索服务(如 Tavily、Brave、Serper、Exa、Google CSE);未配置时,AI 仍可基于本地账本提供分析。",
       "shortcutsQuestion": "快捷键会在输入框里触发吗？",
       "shortcutsAnswer": "不会。光标在输入框、文本框或可编辑内容中时，快捷键会自动失效。可用 N 新增交易、A 打开助手、B 打开智能预算、G 回到首页、H 打开帮助、D 打开备份设置、/ 打开流水检索。"
     }
