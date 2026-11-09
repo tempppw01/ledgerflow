@@ -63,6 +63,7 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<'' | 'readFailed' | 'initFailed'>('');
   const [notice, setNotice] = useState<SyncNotice | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const syncingRef = useRef(false);
   const dirtyRef = useRef(false);
   const initializedRef = useRef(false);
@@ -168,7 +169,17 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
     return () => {
       cancelled = true;
     };
-  }, [financeHydrated]);
+  }, [financeHydrated, loadAttempt]);
+
+  const retryInitialLoad = () => {
+    initializedRef.current = false;
+    pausedRef.current = false;
+    dirtyRef.current = false;
+    retryAttemptRef.current = 0;
+    setError('');
+    setNotice(null);
+    setLoadAttempt((value) => value + 1);
+  };
 
   useEffect(() => {
     if (!ready) return;
@@ -229,22 +240,25 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
 
   if (!ready) {
     return (
-      <>
-        {children}
-        <div
-          className={`sql-sync-notice ${error ? 'is-error' : ''}`.trim()}
-          role="status"
-          aria-live="polite"
-        >
-          <span className="sql-sync-notice-dot" aria-hidden="true" />
-          <span>{error ? t(`dataSync.${error}`) : t('dataSync.syncing')}</span>
+      <section className="auth-gate" aria-busy={error ? undefined : true}>
+        <div className="auth-card" role="status" aria-live="polite">
+          <div className="auth-card-head">
+            <div>
+              <h1>{error ? t('dataSync.gateErrorTitle') : t('dataSync.gateLoadingTitle')}</h1>
+              <p>{error ? t(`dataSync.${error}`) : t('dataSync.loadingFromSql')}</p>
+            </div>
+          </div>
           {error ? (
-            <button type="button" onClick={() => window.location.reload()}>
-              {t('dataSync.reconnect')}
+            <button type="button" className="primary auth-submit" onClick={retryInitialLoad}>
+              {t('common.retry')}
             </button>
-          ) : null}
+          ) : (
+            <div className="sql-sync-progress" aria-hidden="true">
+              <span />
+            </div>
+          )}
         </div>
-      </>
+      </section>
     );
   }
 

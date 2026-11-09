@@ -1,33 +1,35 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ARCHIVE_ICON_URL, RESTORE_ICON_URL } from '../../shared/config/brandAssets';
 import { useGlobalMemoryStore } from '../../shared/store/useGlobalMemoryStore';
 import type { GlobalMemoryStatus, GlobalMemoryType } from '../../shared/store/globalMemory';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { Toast, ToastVariant } from '../../shared/ui/Toast';
 
-const MEMORY_TYPE_LABELS: Record<GlobalMemoryType, string> = {
-  user_preference: '使用偏好',
-  financial_habit: '记账习惯',
-  risk_preference: '风险偏好',
-  display_preference: '页面偏好'
+const MEMORY_TYPE_KEYS: Record<GlobalMemoryType, string> = {
+  user_preference: 'userPreference',
+  financial_habit: 'financialHabit',
+  risk_preference: 'riskPreference',
+  display_preference: 'displayPreference'
 };
 
-const MEMORY_SOURCE_LABELS: Record<string, string> = {
-  assistant_chat: '来自对话',
-  bookkeeping_action: '来自记账',
-  repayment_behavior: '来自还款',
-  budget_behavior: '来自预算',
-  settings_change: '来自设置',
-  manual: '手动添加'
+const MEMORY_SOURCE_KEYS: Record<string, string> = {
+  assistant_chat: 'assistantChat',
+  bookkeeping_action: 'bookkeepingAction',
+  repayment_behavior: 'repaymentBehavior',
+  budget_behavior: 'budgetBehavior',
+  settings_change: 'settingsChange',
+  manual: 'manual'
 };
 
-const MEMORY_ORIGIN_LABELS: Record<string, string> = {
-  manual: '手动添加',
-  extracted: '自动整理',
-  inferred: '根据使用整理'
+const MEMORY_ORIGIN_KEYS: Record<string, string> = {
+  manual: 'manual',
+  extracted: 'extracted',
+  inferred: 'inferred'
 };
 
 export function GlobalMemoryPage() {
+  const { t, i18n } = useTranslation();
   const memories = useGlobalMemoryStore((s) => s.memories);
   const archiveMemory = useGlobalMemoryStore((s) => s.archiveMemory);
   const restoreMemory = useGlobalMemoryStore((s) => s.restoreMemory);
@@ -36,6 +38,7 @@ export function GlobalMemoryPage() {
   const removeMemory = useGlobalMemoryStore((s) => s.removeMemory);
   const removeMemories = useGlobalMemoryStore((s) => s.removeMemories);
   const clearMemories = useGlobalMemoryStore((s) => s.clearMemories);
+  const dateLocale = i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'zh-CN';
 
   const [type, setType] = useState<GlobalMemoryType | 'all'>('all');
   const [status, setStatus] = useState<GlobalMemoryStatus | 'all'>('active');
@@ -99,9 +102,9 @@ export function GlobalMemoryPage() {
       <section className="global-memory-toolbar">
         <div className="global-memory-header">
           <div>
-            <p className="global-memory-eyebrow">陪你用得更顺手</p>
-            <h2>你的偏好</h2>
-            <p>我会记住这些小习惯，之后少问你几次。</p>
+            <p className="global-memory-eyebrow">{t('globalMemory.eyebrow')}</p>
+            <h2>{t('globalMemory.title')}</h2>
+            <p>{t('globalMemory.description')}</p>
           </div>
           <div className="global-memory-summary">
             <button
@@ -109,73 +112,73 @@ export function GlobalMemoryPage() {
               className={`global-memory-filter-pill ${type === 'all' ? 'is-active' : ''}`}
               onClick={() => setType('all')}
             >
-              全部 <span>{memories.length}</span>
+              {t('globalMemory.filters.all')} <span>{memories.length}</span>
             </button>
             <button
               type="button"
               className={`global-memory-filter-pill ${type === 'user_preference' ? 'is-active' : ''}`}
               onClick={() => setType('user_preference')}
             >
-              使用偏好 <span>{summary.user_preference}</span>
+              {t('globalMemory.types.userPreference')} <span>{summary.user_preference}</span>
             </button>
             <button
               type="button"
               className={`global-memory-filter-pill ${type === 'financial_habit' ? 'is-active' : ''}`}
               onClick={() => setType('financial_habit')}
             >
-              记账习惯 <span>{summary.financial_habit}</span>
+              {t('globalMemory.types.financialHabit')} <span>{summary.financial_habit}</span>
             </button>
             <button
               type="button"
               className={`global-memory-filter-pill ${type === 'risk_preference' ? 'is-active' : ''}`}
               onClick={() => setType('risk_preference')}
             >
-              风险偏好 <span>{summary.risk_preference}</span>
+              {t('globalMemory.types.riskPreference')} <span>{summary.risk_preference}</span>
             </button>
             <button
               type="button"
               className={`global-memory-filter-pill ${type === 'display_preference' ? 'is-active' : ''}`}
               onClick={() => setType('display_preference')}
             >
-              页面偏好 <span>{summary.display_preference}</span>
+              {t('globalMemory.types.displayPreference')} <span>{summary.display_preference}</span>
             </button>
           </div>
         </div>
 
         <div className="global-memory-filters">
           <label>
-            <span>按内容筛选</span>
+            <span>{t('globalMemory.filters.contentLabel')}</span>
             <select
               value={type}
               onChange={(e) => setType(e.target.value as GlobalMemoryType | 'all')}
             >
-              <option value="all">全部</option>
-              <option value="user_preference">使用偏好</option>
-              <option value="financial_habit">记账习惯</option>
-              <option value="risk_preference">风险偏好</option>
-              <option value="display_preference">页面偏好</option>
+              <option value="all">{t('globalMemory.filters.all')}</option>
+              <option value="user_preference">{t('globalMemory.types.userPreference')}</option>
+              <option value="financial_habit">{t('globalMemory.types.financialHabit')}</option>
+              <option value="risk_preference">{t('globalMemory.types.riskPreference')}</option>
+              <option value="display_preference">{t('globalMemory.types.displayPreference')}</option>
             </select>
           </label>
           <label>
-            <span>显示范围</span>
+            <span>{t('globalMemory.filters.rangeLabel')}</span>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as GlobalMemoryStatus | 'all')}
             >
-              <option value="active">启用中</option>
-              <option value="archived">已归档</option>
-              <option value="all">全部</option>
+              <option value="active">{t('globalMemory.filters.active')}</option>
+              <option value="archived">{t('globalMemory.filters.archived')}</option>
+              <option value="all">{t('globalMemory.filters.all')}</option>
             </select>
           </label>
         </div>
         {selectedIds.length > 0 ? (
           <div className="global-memory-bulkbar">
-            <span>已选择 {selectedIds.length} 条</span>
+            <span>{t('globalMemory.bulk.selected', { count: selectedIds.length })}</span>
             <button type="button" onClick={selectAllFiltered}>
-              选择当前结果
+              {t('globalMemory.bulk.selectCurrent')}
             </button>
             <button type="button" onClick={clearSelection}>
-              取消选择
+              {t('globalMemory.bulk.clearSelection')}
             </button>
             <button
               type="button"
@@ -183,11 +186,11 @@ export function GlobalMemoryPage() {
               disabled={selectedIds.length === 0}
               onClick={() => {
                 removeMemories(selectedIds);
-                showToast(`已删除 ${selectedIds.length} 条记忆`, 'warning');
+                showToast(t('globalMemory.bulk.deleted', { count: selectedIds.length }), 'warning');
                 clearSelection();
               }}
             >
-              批量删除
+              {t('globalMemory.bulk.delete')}
             </button>
             <button
               type="button"
@@ -195,11 +198,11 @@ export function GlobalMemoryPage() {
               disabled={memories.length === 0}
               onClick={() => {
                 clearMemories();
-                showToast('已清空全部记忆', 'warning');
+                showToast(t('globalMemory.bulk.cleared'), 'warning');
                 clearSelection();
               }}
             >
-              清空记忆
+              {t('globalMemory.bulk.clear')}
             </button>
           </div>
         ) : null}
@@ -210,16 +213,16 @@ export function GlobalMemoryPage() {
           <div className="empty-state-icon">
             <img src={ARCHIVE_ICON_URL} alt="" aria-hidden="true" />
           </div>
-          <h3>当前没有符合条件的记忆</h3>
-          <p>可以换个筛选条件看看。之后当你多次表达相同偏好时，助手会把它整理到这里。</p>
+          <h3>{t('globalMemory.empty.title')}</h3>
+          <p>{t('globalMemory.empty.description')}</p>
         </section>
       ) : (
         <section className="global-memory-list">
           {filtered.map((item) => {
             const updatedAt =
               item.updatedAt && !Number.isNaN(new Date(item.updatedAt).getTime())
-                ? new Date(item.updatedAt).toLocaleString()
-                : '未知时间';
+                ? new Date(item.updatedAt).toLocaleString(dateLocale)
+                : t('globalMemory.card.unknownTime');
             return (
               <article
                 key={item.id}
@@ -230,28 +233,48 @@ export function GlobalMemoryPage() {
                     type="checkbox"
                     checked={selectedIds.includes(item.id)}
                     onChange={() => toggleSelect(item.id)}
-                    aria-label={`选择记忆 ${item.title || '未命名记忆'}`}
+                    aria-label={t('globalMemory.card.selectAria', {
+                      title: item.title || t('globalMemory.card.unnamed')
+                    })}
                   />
                 </label>
                 <div className="global-memory-card-main">
                   <div className="global-memory-card-head">
                     <div className="global-memory-card-title-wrap">
-                      <h3>{item.title || '未命名记忆'}</h3>
+                      <h3>{item.title || t('globalMemory.card.unnamed')}</h3>
                       <div className="global-memory-meta-row">
                         <span className="global-memory-type">
-                          {MEMORY_TYPE_LABELS[item.type] || '使用偏好'}
+                          {t(`globalMemory.types.${MEMORY_TYPE_KEYS[item.type]}`)}
                         </span>
                         {item.disabled ? (
-                          <span className="global-memory-state is-muted">已暂停</span>
+                          <span className="global-memory-state is-muted">
+                            {t('globalMemory.card.disabled')}
+                          </span>
                         ) : null}
-                        {item.pinned ? <span className="global-memory-state">已置顶</span> : null}
+                        {item.pinned ? (
+                          <span className="global-memory-state">
+                            {t('globalMemory.card.pinned')}
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                   </div>
-                  <p className="global-memory-content">{item.content || '还没有补充内容'}</p>
+                  <p className="global-memory-content">
+                    {item.content || t('globalMemory.card.noContent')}
+                  </p>
                   <div className="global-memory-foot">
-                    <span>{MEMORY_SOURCE_LABELS[item.source] || '其他来源'}</span>
-                    <span>{MEMORY_ORIGIN_LABELS[item.origin || 'manual'] || '手动添加'}</span>
+                    <span>
+                      {t(
+                        `globalMemory.sources.${MEMORY_SOURCE_KEYS[item.source] || 'default'}`
+                      )}
+                    </span>
+                    <span>
+                      {t(
+                        `globalMemory.origins.${
+                          MEMORY_ORIGIN_KEYS[item.origin || 'manual'] || 'manual'
+                        }`
+                      )}
+                    </span>
                     <span>{updatedAt}</span>
                   </div>
                 </div>
@@ -260,22 +283,32 @@ export function GlobalMemoryPage() {
                     type="button"
                     onClick={() => {
                       pinMemory(item.id, !item.pinned);
-                      showToast(item.pinned ? '已取消置顶' : '已置顶记忆');
+                      showToast(
+                        item.pinned
+                          ? t('globalMemory.toast.unpinned')
+                          : t('globalMemory.toast.pinned')
+                      );
                     }}
                   >
-                    {item.pinned ? '取消置顶' : '置顶'}
+                    {item.pinned
+                      ? t('globalMemory.actions.unpin')
+                      : t('globalMemory.actions.pin')}
                   </button>
                   <button
                     type="button"
                     onClick={() => {
                       setMemoryDisabled(item.id, !item.disabled);
                       showToast(
-                        item.disabled ? '记忆已重新启用' : '记忆已停用',
+                        item.disabled
+                          ? t('globalMemory.toast.enabled')
+                          : t('globalMemory.toast.disabled'),
                         item.disabled ? 'success' : 'warning'
                       );
                     }}
                   >
-                    {item.disabled ? '启用' : '停用'}
+                    {item.disabled
+                      ? t('globalMemory.actions.enable')
+                      : t('globalMemory.actions.disable')}
                   </button>
                   {item.status === 'active' ? (
                     <button
@@ -283,11 +316,11 @@ export function GlobalMemoryPage() {
                       className="button-with-icon"
                       onClick={() => {
                         archiveMemory(item.id);
-                        showToast('记忆已归档');
+                        showToast(t('globalMemory.toast.archived'));
                       }}
                     >
                       <img src={ARCHIVE_ICON_URL} alt="" aria-hidden="true" />
-                      归档
+                      {t('globalMemory.actions.archive')}
                     </button>
                   ) : (
                     <button
@@ -295,11 +328,11 @@ export function GlobalMemoryPage() {
                       className="button-with-icon"
                       onClick={() => {
                         restoreMemory(item.id);
-                        showToast('记忆已恢复');
+                        showToast(t('globalMemory.toast.restored'));
                       }}
                     >
                       <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
-                      恢复
+                      {t('globalMemory.actions.restore')}
                     </button>
                   )}
                   <button
@@ -307,7 +340,7 @@ export function GlobalMemoryPage() {
                     className="danger"
                     onClick={() => setPendingDeleteId(item.id)}
                   >
-                    删除
+                    {t('globalMemory.actions.delete')}
                   </button>
                 </div>
               </article>
@@ -318,21 +351,23 @@ export function GlobalMemoryPage() {
 
       <ConfirmDialog
         open={Boolean(pendingDeleteItem)}
-        title="删除这条记忆？"
+        title={t('globalMemory.deleteDialog.title')}
         description={
           pendingDeleteItem
-            ? `删除后不会再用于后续建议：${pendingDeleteItem.title || '未命名记忆'}`
+            ? t('globalMemory.deleteDialog.description', {
+                title: pendingDeleteItem.title || t('globalMemory.card.unnamed')
+              })
             : ''
         }
-        confirmText="确认删除"
-        cancelText="取消"
+        confirmText={t('globalMemory.deleteDialog.confirm')}
+        cancelText={t('globalMemory.deleteDialog.cancel')}
         danger
         onCancel={() => setPendingDeleteId(null)}
         onConfirm={() => {
           if (!pendingDeleteItem) return;
           removeMemory(pendingDeleteItem.id);
           setPendingDeleteId(null);
-          showToast('已删除这条记忆');
+          showToast(t('globalMemory.toast.deleted'));
         }}
       />
 

@@ -18,16 +18,26 @@ const NEWS_CATEGORIES: Array<{ value: TonghuashunNewsCategory; labelKey: string 
   { value: 'commentary', labelKey: 'finance.category.commentary' }
 ];
 
-function readCachedNews(): TonghuashunNewsItem[] {
-  if (typeof window === 'undefined') return [];
-  const cachedRaw = window.localStorage.getItem(FINANCE_NEWS_CACHE_KEY);
-  if (!cachedRaw) return [];
+type CachedNews = {
+  savedAt: string;
+  items: TonghuashunNewsItem[];
+};
+
+function cacheKeyFor(category: TonghuashunNewsCategory) {
+  return `${FINANCE_NEWS_CACHE_KEY}.${category}`;
+}
+
+function readCachedNews(category: TonghuashunNewsCategory): CachedNews | null {
+  if (typeof window === 'undefined') return null;
+  const cachedRaw = window.localStorage.getItem(cacheKeyFor(category));
+  if (!cachedRaw) return null;
 
   try {
-    const parsed = JSON.parse(cachedRaw) as TonghuashunNewsItem[];
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : [];
+    const parsed = JSON.parse(cachedRaw) as CachedNews;
+    if (!Array.isArray(parsed.items) || parsed.items.length === 0) return null;
+    return { savedAt: String(parsed.savedAt || ''), items: parsed.items };
   } catch {
-    return [];
+    return null;
   }
 }
 
@@ -52,19 +62,46 @@ function formatPublishedAt(value: string, language: string): string {
   return parsed;
 }
 
+function formatCacheTime(value: string, language: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat(language === 'zh' ? 'zh-CN' : 'en-US', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(parsed);
+}
+
 export function FinancePage() {
   const { t, i18n } = useTranslation();
-  const [news, setNews] = useState<TonghuashunNewsItem[]>(readCachedNews);
+  const [category, setCategory] = useState<TonghuashunNewsCategory>('yaowen');
+  const [initialCache] = useState(() => readCachedNews(category));
+  const [news, setNews] = useState<TonghuashunNewsItem[]>(initialCache?.items ?? []);
+  const [cachedAt, setCachedAt] = useState(initialCache?.savedAt ?? '');
+  const [showingCache, setShowingCache] = useState(Boolean(initialCache));
   const [loading, setLoading] = useState(true);
   const [errorKey, setErrorKey] = useState('');
   const [activeNewsId, setActiveNewsId] = useState('');
-  const [category, setCategory] = useState<TonghuashunNewsCategory>('yaowen');
   const [refreshToken, setRefreshToken] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
 
     async function loadNews() {
+      const cached = readCachedNews(category);
+      if (cached) {
+        setNews(cached.items);
+        setCachedAt(cached.savedAt);
+        setShowingCache(true);
+        setActiveNewsId(cached.items[0]?.id ?? '');
+      } else {
+        setNews([]);
+        setCachedAt('');
+        setShowingCache(false);
+        setActiveNewsId('');
+      }
       setLoading(true);
       setErrorKey('');
 
@@ -73,8 +110,14 @@ export function FinancePage() {
         if (controller.signal.aborted) return;
 
         if (loaded.length > 0) {
+          const savedAt = new Date().toISOString();
           setNews(loaded);
-          window.localStorage.setItem(FINANCE_NEWS_CACHE_KEY, JSON.stringify(loaded));
+          setCachedAt(savedAt);
+          setShowingCache(false);
+          window.localStorage.setItem(
+            cacheKeyFor(category),
+            JSON.stringify({ savedAt, items: loaded })
+          );
           setActiveNewsId((current) => current || loaded[0].id);
         } else {
           setErrorKey('finance.ui.noNews');
@@ -152,7 +195,24 @@ export function FinancePage() {
         </div>
 
         {loading ? <p className="muted">{t('finance.ui.loading')}</p> : null}
-        {errorKey ? <p className="muted">{t(errorKey)}</p> : null}
+        {errorKey ? (
+          <div className="finance-news-status" role="status" aria-live="polite">
+            <span>{t(errorKey)}</span>
+            {showingCache && cachedAt ? (
+              <small>
+                {t('finance.ui.cachedNews', { time: formatCacheTime(cachedAt, i18n.language) })}
+              </small>
+            ) : null}
+            <button
+              type="button"
+              className="secondary"
+              disabled={loading}
+              onClick={() => setRefreshToken((value) => value + 1)}
+            >
+              {t('common.retry')}
+            </button>
+          </div>
+        ) : null}
 
         {news.length === 0 ? (
           <p className="muted">{t('finance.ui.noNews')}</p>

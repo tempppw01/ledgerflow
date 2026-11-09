@@ -542,6 +542,9 @@
 .finance-salary-metric.is-primary .finance-overview-number,.finance-salary-metric.is-primary-alt .finance-overview-number { font-size: clamp(28px, 3vw, 38px); font-variant-numeric: tabular-nums; }
 .finance-salary-metric.is-primary .finance-overview-label::before { content: '当前参考'; display: block; margin-bottom: 4px; color: var(--color-primary); font-size: var(--font-xs); font-weight: 700; }
 .finance-news-section { gap: var(--space-3); }
+.finance-news-status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--color-warning) 35%, var(--color-border)); border-radius: 8px; color: var(--color-text-secondary); background: color-mix(in srgb, var(--color-warning) 8%, var(--color-surface)); font-size: var(--font-sm); }
+.finance-news-status small { color: var(--color-text-tertiary); }
+.finance-news-status button { min-height: 28px; padding: 2px 10px; font-size: var(--font-xs); }
 .finance-news-editorial-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: var(--space-5); align-items: start; }
 .finance-news-lead { display: flex; flex-direction: column; justify-content: center; min-height: 250px; padding: var(--space-3) 0; }
 .finance-news-kicker { color: var(--color-primary); font-size: var(--font-xs); font-weight: 700; letter-spacing: .08em; }

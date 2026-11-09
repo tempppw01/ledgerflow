@@ -5,6 +5,24 @@ import type { Account } from '../../entities/account/types';
 import type { BalanceChangeEntry, TransactionItem } from '../../entities/transaction/types';
 import { BalanceChangesPage } from './BalanceChangesPage';
 
+const tMock = (key: string) => {
+  const map: Record<string, string> = {
+    'balanceChanges.title': '余额变动明细',
+    'balanceChanges.flowAria': '余额变化路径',
+    'balanceChanges.groups.income.title': '余额增加',
+    'balanceChanges.groups.expense.title': '余额减少',
+    'balanceChanges.groups.neutral.title': '其他变动'
+  };
+  return map[key] || key;
+};
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    i18n: { resolvedLanguage: 'zh' },
+    t: tMock
+  })
+}));
+
 type FinanceStoreState = {
   balanceChangeEntries: BalanceChangeEntry[];
   accounts: Account[];

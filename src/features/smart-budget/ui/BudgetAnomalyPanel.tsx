@@ -14,10 +14,6 @@ export type BudgetAnomalyPanelProps = {
 };
 
 export function BudgetAnomalyPanel({ anomalies, onSelectCategory }: BudgetAnomalyPanelProps) {
-  if (anomalies.length === 0) {
-    return null;
-  }
-
   return (
     <section className="sb-panel sb-anomaly-panel" aria-label="异常提醒">
       <div className="sb-panel-head">
@@ -30,28 +26,32 @@ export function BudgetAnomalyPanel({ anomalies, onSelectCategory }: BudgetAnomal
         </div>
       </div>
 
-      <ul className="sb-anomaly-list">
-        {anomalies.slice(0, 5).map((item) => (
-          <li key={item.category}>
-            <button
-              type="button"
-              className="sb-anomaly-row"
-              onClick={() => onSelectCategory(item.category)}
-            >
-              <div>
-                <strong>{item.category}</strong>
-                <span>
-                  预计月末支出 {formatCurrency(item.projectedSpent)}，约为预算的{' '}
-                  {(item.riskRatio * 100).toFixed(0)}%
+      {anomalies.length === 0 ? (
+        <p className="sb-empty">目前没有临近超支的分类,保持当前节奏即可。</p>
+      ) : (
+        <ul className="sb-anomaly-list">
+          {anomalies.slice(0, 5).map((item) => (
+            <li key={item.category}>
+              <button
+                type="button"
+                className="sb-anomaly-row"
+                onClick={() => onSelectCategory(item.category)}
+              >
+                <div>
+                  <strong>{item.category}</strong>
+                  <span>
+                    预计月末支出 {formatCurrency(item.projectedSpent)}，约为预算的{' '}
+                    {(item.riskRatio * 100).toFixed(0)}%
+                  </span>
+                </div>
+                <span className="sb-anomaly-tip">
+                  建议少花 {formatCurrency(item.suggestedSaving)}
                 </span>
-              </div>
-              <span className="sb-anomaly-tip">
-                建议少花 {formatCurrency(item.suggestedSaving)}
-              </span>
-            </button>
-          </li>
-        ))}
-      </ul>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

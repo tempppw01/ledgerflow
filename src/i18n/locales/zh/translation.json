@@ -710,7 +710,8 @@
       "todayFocus": "今日焦点 · {{source}}",
       "noSummary": "这条资讯没有摘要，请点击下方链接阅读原文。",
       "openOriginal": "打开原文",
-      "dailyIdeaTitle": "今日金融小建议"
+      "dailyIdeaTitle": "今日金融小建议",
+      "cachedNews": "当前显示 {{time}} 的缓存内容,可能不是最新。"
     },
     "category": {
       "yaowen": "财经要闻",
@@ -868,8 +869,263 @@
       "futureTransactionsHint": "需要补流水或核对数据时，直接回交易页继续操作。"
     }
   },
+  "help": {
+    "eyebrow": "LedgerFlow 使用指南",
+    "title": "从记清每一笔，到看懂自己的钱",
+    "description": "这里按实际使用顺序整理。先完成眼前的一步，其他信息随时可以再补。",
+    "jumpNavAria": "帮助章节",
+    "faqLink": "常见问题",
+    "startAria": "快速开始",
+    "startTitle": "刚开始使用？",
+    "startDescription": "先记一笔，再确认账户余额和分类是否符合习惯。",
+    "startAction": "开始记账",
+    "sections": {
+      "flow": {
+        "title": "从一笔流水开始",
+        "description": "先把真实发生的收支记下来，分类和账户不必一次填得完美。",
+        "action": "新增一笔交易",
+        "steps": {
+          "1": "点击「记一笔」，填写金额、分类、账户和日期。",
+          "2": "账单较多时，可从交易流水导入微信或支付宝账单。",
+          "3": "记错的流水可以编辑、删除或移入回收站。"
+        }
+      },
+      "accounts": {
+        "title": "让账户余额可信",
+        "description": "账户是现金、银行卡、支付账户的容器；分类则解释钱花在了哪里。",
+        "action": "管理账户与分类",
+        "steps": {
+          "1": "在「账户与分类」中建立常用账户和支出分类。",
+          "2": "转账请使用转账类型，避免把同一笔钱算成两次支出。",
+          "3": "余额出现差异时，先到余额明细检查最近的变动记录。"
+        }
+      },
+      "plan": {
+        "title": "把未来支出放进计划",
+        "description": "预算和还款不是事后统计，而是帮你提前看见压力。",
+        "action": "查看还款管理",
+        "steps": {
+          "1": "用智能预算设定月度总额或分类额度，再根据实际支出调整。",
+          "2": "负债可先用简单录入登记下一次还款日期、项目和金额。",
+          "3": "需要时再补充期数、利率或逐期计划，走势会展示未来还款。"
+        }
+      },
+      "backup": {
+        "title": "备份、迁移与恢复",
+        "description": "业务数据以已选数据库为准；备份用于迁移和意外恢复。",
+        "action": "打开备份设置",
+        "steps": {
+          "1": "首次初始化选择 SQLite 或 MySQL 后，配置会写入持久化数据目录。",
+          "2": "在备份设置中导出 JSON 或配置 WebDAV、对象存储等远端备份。",
+          "3": "恢复前先创建一份新备份；恢复会覆盖对应范围内的数据。"
+        }
+      }
+    },
+    "faq": {
+      "eyebrow": "常见问题",
+      "title": "遇到问题时，先从这里看",
+      "databaseStatusQuestion": "为什么会看到“数据库状态检查暂时失败”？",
+      "databaseStatusAnswer": "页面暂时无法连接本地 API 或数据库检查接口时，会沿用上次确认的配置继续展示。请确认服务已启动、数据目录可写，再到备份设置中重试检查。",
+      "sqliteLocationQuestion": "SQLite 数据保存在哪里？",
+      "sqliteLocationAnswer": "容器部署时，SQLite 会写入应用的数据目录。请把该目录挂载到宿主机或持久化卷；只重建容器而未挂载数据目录，数据库文件可能随容器一同丢失。",
+      "aiQuestion": "AI 助手为什么没有回答或无法联网？",
+      "aiAnswer": "请在设置中检查模型地址、模型名称和 API Key。联网检索还需要单独完成 Tavily 配置；未配置时，AI 仍可基于本地账本提供分析。",
+      "shortcutsQuestion": "快捷键会在输入框里触发吗？",
+      "shortcutsAnswer": "不会。光标在输入框、文本框或可编辑内容中时，快捷键会自动失效。可用 N 新增交易、A 打开助手、B 打开智能预算、G 回到首页、H 打开帮助、D 打开备份设置、/ 打开流水检索。"
+    }
+  },
+  "recycleBin": {
+    "title": "回收站",
+    "description": "删除的交易、分类、账户和订阅会先进入这里。回收站每页最多显示 10 条，可翻页查看。",
+    "count": "共 {{count}} 项",
+    "clear": "清空回收站",
+    "clearConfirm": "确认清空回收站吗？将永久删除其中的 {{count}} 项内容，且无法恢复。",
+    "emptyTitle": "回收站为空",
+    "emptyDescription": "删除的内容会先进入回收站，避免误删后无法找回。",
+    "summaryAria": "回收站统计",
+    "listAria": "回收站列表",
+    "restore": "恢复",
+    "deletePermanently": "彻底删除",
+    "paginationSummary": "显示第 {{start}}-{{end}} 条，共 {{total}} 条，每页 {{pageSize}} 条",
+    "firstPage": "第一页",
+    "previousPage": "上一页",
+    "page": "第 {{page}} / {{total}} 页",
+    "nextPage": "下一页",
+    "lastPage": "最后一页",
+    "kinds": {
+      "transaction": "交易",
+      "category": "分类",
+      "account": "账户",
+      "subscription": "订阅"
+    },
+    "transaction": {
+      "unnamed": "未命名交易",
+      "deletedAt": "删除于 {{date}}"
+    },
+    "transactionTypes": {
+      "expense": "支出",
+      "income": "收入",
+      "budget": "预算",
+      "repayment": "还款"
+    },
+    "category": {
+      "unsetKind": "未设置类型",
+      "deletedAt": "删除于 {{date}}"
+    },
+    "account": {
+      "deletedAt": "删除于 {{date}}"
+    },
+    "subscription": {
+      "unsetProvider": "未设置服务商",
+      "deletedAt": "删除于 {{date}}"
+    }
+  },
+  "globalMemory": {
+    "eyebrow": "陪你用得更顺手",
+    "title": "你的偏好",
+    "description": "我会记住这些小习惯，之后少问你几次。",
+    "filters": {
+      "all": "全部",
+      "contentLabel": "按内容筛选",
+      "rangeLabel": "显示范围",
+      "active": "启用中",
+      "archived": "已归档"
+    },
+    "types": {
+      "userPreference": "使用偏好",
+      "financialHabit": "记账习惯",
+      "riskPreference": "风险偏好",
+      "displayPreference": "页面偏好"
+    },
+    "bulk": {
+      "selected": "已选择 {{count}} 条",
+      "selectCurrent": "选择当前结果",
+      "clearSelection": "取消选择",
+      "deleted": "已删除 {{count}} 条记忆",
+      "delete": "批量删除",
+      "cleared": "已清空全部记忆",
+      "clear": "清空记忆"
+    },
+    "empty": {
+      "title": "当前没有符合条件的记忆",
+      "description": "可以换个筛选条件看看。之后当你多次表达相同偏好时，助手会把它整理到这里。"
+    },
+    "card": {
+      "unknownTime": "未知时间",
+      "selectAria": "选择记忆 {{title}}",
+      "unnamed": "未命名记忆",
+      "disabled": "已暂停",
+      "pinned": "已置顶",
+      "noContent": "还没有补充内容"
+    },
+    "sources": {
+      "assistantChat": "来自对话",
+      "bookkeepingAction": "来自记账",
+      "repaymentBehavior": "来自还款",
+      "budgetBehavior": "来自预算",
+      "settingsChange": "来自设置",
+      "manual": "手动添加",
+      "default": "其他来源"
+    },
+    "origins": {
+      "manual": "手动添加",
+      "extracted": "自动整理",
+      "inferred": "根据使用整理"
+    },
+    "toast": {
+      "unpinned": "已取消置顶",
+      "pinned": "已置顶记忆",
+      "enabled": "记忆已重新启用",
+      "disabled": "记忆已停用",
+      "archived": "记忆已归档",
+      "restored": "记忆已恢复",
+      "deleted": "已删除这条记忆"
+    },
+    "actions": {
+      "unpin": "取消置顶",
+      "pin": "置顶",
+      "enable": "启用",
+      "disable": "停用",
+      "archive": "归档",
+      "restore": "恢复",
+      "delete": "删除"
+    },
+    "deleteDialog": {
+      "title": "删除这条记忆？",
+      "description": "删除后不会再用于后续建议：{{title}}",
+      "confirm": "确认删除",
+      "cancel": "取消"
+    }
+  },
+  "balanceChanges": {
+    "title": "余额变动明细",
+    "description": "按余额增加和减少归类，展开可查看每笔变动前后的余额。",
+    "unknownAccount": "未知账户",
+    "boardAria": "按类型分组的余额变动记录",
+    "collapse": "收起",
+    "expand": "展开",
+    "groupListAria": "{{title}}列表",
+    "entryCount": "{{value}} 笔",
+    "total": "合计 {{amount}}",
+    "linkedOriginal": "关联原单：{{summary}}",
+    "flowAria": "余额变化路径",
+    "before": "变动前",
+    "after": "变动后",
+    "metrics": {
+      "entries": "明细",
+      "currentPage": "当前页"
+    },
+    "empty": {
+      "title": "暂无余额变动明细",
+      "description": "当你新增收入、支出、退款或手动调整账户余额后，这里会自动生成可追踪记录。"
+    },
+    "groups": {
+      "income": {
+        "title": "余额增加",
+        "subtitle": "收入、退款等入账"
+      },
+      "expense": {
+        "title": "余额减少",
+        "subtitle": "消费、还款等支出"
+      },
+      "neutral": {
+        "title": "其他变动",
+        "subtitle": "余额调整或无变化"
+      }
+    },
+    "typeLabels": {
+      "transactionIncome": "收入入账",
+      "transactionExpense": "支出扣减",
+      "transactionBudget": "预算变动",
+      "transactionRepayment": "还款扣减",
+      "transactionRefund": "退款回补",
+      "manualAdjustment": "手动调整"
+    },
+    "direction": {
+      "increase": "余额增加",
+      "decrease": "余额减少",
+      "same": "余额无变化"
+    },
+    "related": {
+      "refund": "退款回补，原单：{{summary}}",
+      "expense": "支出记录：{{summary}}",
+      "income": "收入记录：{{summary}}",
+      "manual": "手动调整：{{summary}}"
+    },
+    "pagination": {
+      "pageSize": "每页",
+      "size": "{{value}} 条",
+      "page": "第 {{page}} / {{total}} 页",
+      "first": "首页",
+      "previous": "上一页",
+      "next": "下一页",
+      "last": "末页"
+    }
+  },
   "dataSync": {
     "loadingFromSql": "正在从 SQL 数据库载入账本数据...",
+    "gateLoadingTitle": "正在载入账本",
+    "gateErrorTitle": "账本载入失败",
     "syncing": "正在同步账本数据...",
     "readFailed": "读取云端账本失败，已暂停自动同步以避免覆盖数据。请检查数据库连接后重试。",
     "initFailed": "初始化账本失败，已暂停自动同步。请检查数据库连接后重试。",

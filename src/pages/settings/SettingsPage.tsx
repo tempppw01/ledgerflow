@@ -754,9 +754,19 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
                 <div className="settings-account-session-list" aria-live="polite">
                   {sessionsLoading ? <small>{t('settings.account.loadingSessions')}</small> : null}
                   {sessionsError ? (
-                    <small className="settings-account-status">
-                      {resolveStatusMessage(sessionsError, t)}
-                    </small>
+                    <div className="settings-account-session-error">
+                      <small className="settings-account-status">
+                        {resolveStatusMessage(sessionsError, t)}
+                      </small>
+                      <button
+                        type="button"
+                        className="secondary"
+                        disabled={sessionsLoading}
+                        onClick={() => void loadAccountSessions()}
+                      >
+                        {t('common.retry')}
+                      </button>
+                    </div>
                   ) : null}
                   {!sessionsLoading && !sessionsError && sessions.length === 0 ? (
                     <small>{t('settings.account.noSessions')}</small>

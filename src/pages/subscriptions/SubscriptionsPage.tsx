@@ -296,9 +296,7 @@ function SubscriptionTemplateLogo({ kind }: { kind: SubscriptionTemplate['logoKi
 
 export function SubscriptionsPage() {
   const navigate = useNavigate();
-  const hasHydrated = useFinanceStore((s) => s.hasHydrated);
   const subscriptions = useFinanceStore((s) => s.subscriptions);
-  const trashedSubscriptions = useFinanceStore((s) => s.trashedSubscriptions);
   const accounts = useFinanceStore((s) => s.accounts);
   const addSubscription = useFinanceStore((s) => s.addSubscription);
   const updateSubscription = useFinanceStore((s) => s.updateSubscription);
@@ -309,27 +307,28 @@ export function SubscriptionsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [demoAvailable, setDemoAvailable] = useState(false);
 
   useEffect(() => {
-    if (!hasHydrated || subscriptions.length > 0 || trashedSubscriptions.length > 0) {
-      return;
-    }
-
     try {
-      if (window.localStorage.getItem(SUBSCRIPTIONS_DEMO_SEEDED_KEY) === '1') {
-        return;
-      }
+      setDemoAvailable(window.localStorage.getItem(SUBSCRIPTIONS_DEMO_SEEDED_KEY) !== '1');
+    } catch {
+      setDemoAvailable(true);
+    }
+  }, []);
 
-      const defaultAccountId =
-        accounts.find((item) => item.id === 'acc-card')?.id || accounts[0]?.id;
+  const loadDemoSubscriptions = () => {
+    const defaultAccountId = accounts.find((item) => item.id === 'acc-card')?.id || accounts[0]?.id;
+    createDemoSubscriptions(defaultAccountId).forEach((item) => {
+      addSubscription(item);
+    });
+    try {
       window.localStorage.setItem(SUBSCRIPTIONS_DEMO_SEEDED_KEY, '1');
-      createDemoSubscriptions(defaultAccountId).forEach((item) => {
-        addSubscription(item);
-      });
     } catch {
       // ignore localStorage failures and keep the page usable
     }
-  }, [accounts, addSubscription, hasHydrated, subscriptions.length, trashedSubscriptions.length]);
+    setDemoAvailable(false);
+  };
 
   const pendingDeleteItem = useMemo(
     () => subscriptions.find((item) => item.id === pendingDeleteId) ?? null,
@@ -816,6 +815,11 @@ export function SubscriptionsPage() {
               title="还没有订阅项目"
               description="先添加第一个数字订阅、话费套餐或会员卡，后面就能统一看费用和到期情况。"
               icon="🧾"
+              secondaryAction={
+                demoAvailable
+                  ? { label: '载入示例订阅', onClick: loadDemoSubscriptions }
+                  : undefined
+              }
             />
           ) : (
             <div className="subscriptions-card-list">

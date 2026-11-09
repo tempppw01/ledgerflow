@@ -710,7 +710,8 @@
       "todayFocus": "Today’s focus · {{source}}",
       "noSummary": "This article does not provide a summary. Open the original article below.",
       "openOriginal": "Open original",
-      "dailyIdeaTitle": "Daily Finance Tip"
+      "dailyIdeaTitle": "Daily Finance Tip",
+      "cachedNews": "Showing cached content from {{time}}. It may be out of date."
     },
     "category": {
       "yaowen": "Headlines",
@@ -868,8 +869,263 @@
       "futureTransactionsHint": "When you need to add entries or verify data, return to transactions and continue there."
     }
   },
+  "help": {
+    "eyebrow": "LedgerFlow guide",
+    "title": "From recording every entry to understanding your money",
+    "description": "Follow the order below as you use the app. Finish the step in front of you first; you can add the rest whenever you need.",
+    "jumpNavAria": "Help sections",
+    "faqLink": "FAQ",
+    "startAria": "Quick start",
+    "startTitle": "New to LedgerFlow?",
+    "startDescription": "Record one transaction, then check that the account balance and category match your habits.",
+    "startAction": "Start recording",
+    "sections": {
+      "flow": {
+        "title": "Start with one transaction",
+        "description": "Record income and expenses as they actually happen. You do not need to get the category and account perfect on the first try.",
+        "action": "Add a transaction",
+        "steps": {
+          "1": "Click “Add transaction” and enter the amount, category, account, and date.",
+          "2": "For a large batch, import WeChat Pay or Alipay statements from Transactions.",
+          "3": "You can edit or delete a mistaken entry, or move it to the recycle bin."
+        }
+      },
+      "accounts": {
+        "title": "Make account balances trustworthy",
+        "description": "Accounts hold cash, bank cards, and payment balances; categories explain where the money went.",
+        "action": "Manage accounts and categories",
+        "steps": {
+          "1": "Create your regular accounts and expense categories under Accounts & Categories.",
+          "2": "Use the transfer type for transfers so the same money is not counted as two expenses.",
+          "3": "If a balance looks wrong, check the latest changes in Balance Changes first."
+        }
+      },
+      "plan": {
+        "title": "Plan for future expenses",
+        "description": "Budgets and repayments are not just after-the-fact reports. They help you see pressure early.",
+        "action": "View repayment management",
+        "steps": {
+          "1": "Set a monthly total or category limit with Smart Budget, then adjust it as real spending comes in.",
+          "2": "For debt, start by recording the next repayment date, item, and amount.",
+          "3": "Add installments, interest rates, or a payment schedule when needed; the trend will show future repayments."
+        }
+      },
+      "backup": {
+        "title": "Back up, migrate, and restore",
+        "description": "Your chosen database is the source of truth; backups are for migration and recovery.",
+        "action": "Open backup settings",
+        "steps": {
+          "1": "After choosing SQLite or MySQL during setup, the configuration is stored in the persistent data directory.",
+          "2": "Export JSON from backup settings, or configure remote backups such as WebDAV or object storage.",
+          "3": "Create a fresh backup before restoring; restoring overwrites data in the selected scope."
+        }
+      }
+    },
+    "faq": {
+      "eyebrow": "FAQ",
+      "title": "Start here when something goes wrong",
+      "databaseStatusQuestion": "Why do I see “Database status check temporarily failed”?",
+      "databaseStatusAnswer": "When the page cannot reach the local API or database status endpoint, it keeps showing the last confirmed configuration. Make sure the service is running and the data directory is writable, then retry the check in backup settings.",
+      "sqliteLocationQuestion": "Where is SQLite data stored?",
+      "sqliteLocationAnswer": "In a container deployment, SQLite writes to the app data directory. Mount that directory to the host or a persistent volume. If you rebuild the container without mounting the data directory, the database file may be lost with the container.",
+      "aiQuestion": "Why is the AI assistant not answering or unable to browse the web?",
+      "aiAnswer": "Check the model URL, model name, and API key in Settings. Web search also requires a separate Tavily configuration. Without it, the AI can still analyze your local ledger.",
+      "shortcutsQuestion": "Do keyboard shortcuts fire inside input fields?",
+      "shortcutsAnswer": "No. Shortcuts are disabled while the cursor is in an input, text area, or editable content. Use N to add a transaction, A to open the assistant, B to open Smart Budget, G to go home, H to open Help, D to open backup settings, and / to search transactions."
+    }
+  },
+  "recycleBin": {
+    "title": "Recycle Bin",
+    "description": "Deleted transactions, categories, accounts, and subscriptions are moved here first. The recycle bin shows up to 10 items per page.",
+    "count": "{{count}} items",
+    "clear": "Empty recycle bin",
+    "clearConfirm": "Empty the recycle bin? This permanently deletes all {{count}} items and cannot be undone.",
+    "emptyTitle": "The recycle bin is empty",
+    "emptyDescription": "Deleted items are moved here first so you can recover them if you delete something by mistake.",
+    "summaryAria": "Recycle bin summary",
+    "listAria": "Recycle bin items",
+    "restore": "Restore",
+    "deletePermanently": "Delete permanently",
+    "paginationSummary": "Showing {{start}}-{{end}} of {{total}} items, {{pageSize}} per page",
+    "firstPage": "First page",
+    "previousPage": "Previous",
+    "page": "Page {{page}} of {{total}}",
+    "nextPage": "Next",
+    "lastPage": "Last page",
+    "kinds": {
+      "transaction": "Transaction",
+      "category": "Category",
+      "account": "Account",
+      "subscription": "Subscription"
+    },
+    "transaction": {
+      "unnamed": "Untitled transaction",
+      "deletedAt": "Deleted {{date}}"
+    },
+    "transactionTypes": {
+      "expense": "Expense",
+      "income": "Income",
+      "budget": "Budget",
+      "repayment": "Repayment"
+    },
+    "category": {
+      "unsetKind": "Type not set",
+      "deletedAt": "Deleted {{date}}"
+    },
+    "account": {
+      "deletedAt": "Deleted {{date}}"
+    },
+    "subscription": {
+      "unsetProvider": "Provider not set",
+      "deletedAt": "Deleted {{date}}"
+    }
+  },
+  "globalMemory": {
+    "eyebrow": "Less repetition, more flow",
+    "title": "Your preferences",
+    "description": "I remember these small habits so I do not have to ask as often.",
+    "filters": {
+      "all": "All",
+      "contentLabel": "Filter by content",
+      "rangeLabel": "Show",
+      "active": "Active",
+      "archived": "Archived"
+    },
+    "types": {
+      "userPreference": "Usage preferences",
+      "financialHabit": "Bookkeeping habits",
+      "riskPreference": "Risk preferences",
+      "displayPreference": "Display preferences"
+    },
+    "bulk": {
+      "selected": "{{count}} selected",
+      "selectCurrent": "Select current results",
+      "clearSelection": "Clear selection",
+      "deleted": "Deleted {{count}} memories",
+      "delete": "Delete selected",
+      "cleared": "Cleared all memories",
+      "clear": "Clear memories"
+    },
+    "empty": {
+      "title": "No memories match these filters",
+      "description": "Try different filters. As you express the same preferences repeatedly, the assistant will organize them here."
+    },
+    "card": {
+      "unknownTime": "Unknown time",
+      "selectAria": "Select memory {{title}}",
+      "unnamed": "Untitled memory",
+      "disabled": "Paused",
+      "pinned": "Pinned",
+      "noContent": "No details added yet"
+    },
+    "sources": {
+      "assistantChat": "From chat",
+      "bookkeepingAction": "From bookkeeping",
+      "repaymentBehavior": "From repayments",
+      "budgetBehavior": "From budgets",
+      "settingsChange": "From settings",
+      "manual": "Added manually",
+      "default": "Other source"
+    },
+    "origins": {
+      "manual": "Added manually",
+      "extracted": "Auto-organized",
+      "inferred": "Organized from usage"
+    },
+    "toast": {
+      "unpinned": "Unpinned",
+      "pinned": "Memory pinned",
+      "enabled": "Memory enabled again",
+      "disabled": "Memory disabled",
+      "archived": "Memory archived",
+      "restored": "Memory restored",
+      "deleted": "Memory deleted"
+    },
+    "actions": {
+      "unpin": "Unpin",
+      "pin": "Pin",
+      "enable": "Enable",
+      "disable": "Disable",
+      "archive": "Archive",
+      "restore": "Restore",
+      "delete": "Delete"
+    },
+    "deleteDialog": {
+      "title": "Delete this memory?",
+      "description": "It will no longer be used for future suggestions: {{title}}",
+      "confirm": "Delete",
+      "cancel": "Cancel"
+    }
+  },
+  "balanceChanges": {
+    "title": "Balance Changes",
+    "description": "Grouped by increases and decreases. Expand a group to see the balance before and after each change.",
+    "unknownAccount": "Unknown account",
+    "boardAria": "Balance changes grouped by type",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "groupListAria": "{{title}} list",
+    "entryCount": "{{value}} entries",
+    "total": "Total {{amount}}",
+    "linkedOriginal": "Linked original: {{summary}}",
+    "flowAria": "Balance change path",
+    "before": "Before",
+    "after": "After",
+    "metrics": {
+      "entries": "Entries",
+      "currentPage": "Current page"
+    },
+    "empty": {
+      "title": "No balance changes yet",
+      "description": "When you add income or expenses, issue refunds, or adjust an account balance, traceable records will appear here."
+    },
+    "groups": {
+      "income": {
+        "title": "Balance increases",
+        "subtitle": "Income, refunds, and other credits"
+      },
+      "expense": {
+        "title": "Balance decreases",
+        "subtitle": "Spending, repayments, and other outflows"
+      },
+      "neutral": {
+        "title": "Other changes",
+        "subtitle": "Balance adjustments or no change"
+      }
+    },
+    "typeLabels": {
+      "transactionIncome": "Income posted",
+      "transactionExpense": "Expense deducted",
+      "transactionBudget": "Budget change",
+      "transactionRepayment": "Repayment deducted",
+      "transactionRefund": "Refund restored",
+      "manualAdjustment": "Manual adjustment"
+    },
+    "direction": {
+      "increase": "Balance increased",
+      "decrease": "Balance decreased",
+      "same": "No balance change"
+    },
+    "related": {
+      "refund": "Refund restored; original: {{summary}}",
+      "expense": "Expense entry: {{summary}}",
+      "income": "Income entry: {{summary}}",
+      "manual": "Manual adjustment: {{summary}}"
+    },
+    "pagination": {
+      "pageSize": "Per page",
+      "size": "{{value}} items",
+      "page": "Page {{page}} of {{total}}",
+      "first": "First",
+      "previous": "Previous",
+      "next": "Next",
+      "last": "Last"
+    }
+  },
   "dataSync": {
     "loadingFromSql": "Loading ledger data from SQL…",
+    "gateLoadingTitle": "Loading your ledger",
+    "gateErrorTitle": "Could not load your ledger",
     "syncing": "Syncing ledger data…",
     "readFailed": "Could not read the cloud ledger. Automatic sync is paused to prevent overwriting data. Check the database connection and try again.",
     "initFailed": "Ledger initialization failed. Automatic sync is paused. Check the database connection and try again.",

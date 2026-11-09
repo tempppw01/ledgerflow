@@ -1,56 +1,43 @@
 import { CSSProperties, useEffect, useMemo, useState } from 'react';
+import type { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { formatCurrencyFixed2, formatDateTime } from '../../shared/lib/format';
 import { EmptyState } from '../../shared/ui/EmptyState';
 
-const TYPE_LABELS: Record<string, string> = {
-  'transaction-income': '收入入账',
-  'transaction-expense': '支出扣减',
-  'transaction-budget': '预算变动',
-  'transaction-repayment': '还款扣减',
-  'transaction-refund': '退款回补',
-  'manual-adjustment': '手动调整'
+const TYPE_LABEL_KEYS: Record<string, string> = {
+  'transaction-income': 'transactionIncome',
+  'transaction-expense': 'transactionExpense',
+  'transaction-budget': 'transactionBudget',
+  'transaction-repayment': 'transactionRepayment',
+  'transaction-refund': 'transactionRefund',
+  'manual-adjustment': 'manualAdjustment'
 };
 
 type BalanceChangeGroupKey = 'income' | 'expense' | 'neutral';
 
 const GROUP_META: Record<
   BalanceChangeGroupKey,
-  {
-    title: string;
-    subtitle: string;
-    icon: string;
-  }
+  { icon: string }
 > = {
-  income: {
-    title: '余额增加',
-    subtitle: '收入、退款等入账',
-    icon: '↗'
-  },
-  expense: {
-    title: '余额减少',
-    subtitle: '消费、还款等支出',
-    icon: '↘'
-  },
-  neutral: {
-    title: '其他变动',
-    subtitle: '余额调整或无变化',
-    icon: '•'
-  }
+  income: { icon: '↗' },
+  expense: { icon: '↘' },
+  neutral: { icon: '•' }
 };
 
-function getTypeLabel(type: string) {
-  return TYPE_LABELS[type] || type;
+function getTypeLabel(type: string, t: TFunction) {
+  const key = TYPE_LABEL_KEYS[type];
+  return key ? t(`balanceChanges.typeLabels.${key}`) : type;
 }
 
-function getDirectionText(beforeBalance: number, afterBalance: number) {
+function getDirectionText(beforeBalance: number, afterBalance: number, t: TFunction) {
   if (afterBalance > beforeBalance) {
-    return '余额增加';
+    return t('balanceChanges.direction.increase');
   }
   if (afterBalance < beforeBalance) {
-    return '余额减少';
+    return t('balanceChanges.direction.decrease');
   }
-  return '余额无变化';
+  return t('balanceChanges.direction.same');
 }
 
 function getChangeTone(beforeBalance: number, afterBalance: number) {
@@ -93,23 +80,24 @@ function getRelatedDescription(entry: {
   transactionSummary: string;
   relatedTransactionId?: string;
   relatedSummary: string;
-}) {
+}, t: TFunction) {
   if (entry.type === 'transaction-refund' && entry.relatedTransactionId) {
-    return `退款回补，原单：${entry.relatedSummary}`;
+    return t('balanceChanges.related.refund', { summary: entry.relatedSummary });
   }
   if (entry.type === 'transaction-expense') {
-    return `支出记录：${entry.transactionSummary}`;
+    return t('balanceChanges.related.expense', { summary: entry.transactionSummary });
   }
   if (entry.type === 'transaction-income') {
-    return `收入记录：${entry.transactionSummary}`;
+    return t('balanceChanges.related.income', { summary: entry.transactionSummary });
   }
   if (entry.type === 'manual-adjustment') {
-    return `手动调整：${entry.transactionSummary}`;
+    return t('balanceChanges.related.manual', { summary: entry.transactionSummary });
   }
   return entry.transactionSummary;
 }
 
 export function BalanceChangesPage() {
+  const { t } = useTranslation();
   const entries = useFinanceStore((s) => s.balanceChangeEntries);
   const accounts = useFinanceStore((s) => s.accounts);
   const transactions = useFinanceStore((s) => s.transactions);
@@ -136,12 +124,12 @@ export function BalanceChangesPage() {
 
           return {
             ...entry,
-            accountName: account?.name || '未知账户',
+            accountName: account?.name || t('balanceChanges.unknownAccount'),
             transactionSummary: transaction?.note || transaction?.id || '—',
             relatedSummary: relatedTransaction?.note || relatedTransaction?.id || '—'
           };
         }),
-    [accounts, entries, transactions]
+    [accounts, entries, t, transactions]
   );
 
   const pages = Math.max(1, Math.ceil(rows.length / pageSize));
@@ -169,32 +157,33 @@ export function BalanceChangesPage() {
     <section className="panel balance-change-page vi-page">
       <div className="balance-change-header">
         <div>
-          <h2>余额变动明细</h2>
-          <p className="muted">按余额增加和减少归类，展开可查看每笔变动前后的余额。</p>
+          <h2>{t('balanceChanges.title')}</h2>
+          <p className="muted">{t('balanceChanges.description')}</p>
         </div>
         <div className="balance-change-summary">
           <span className="metric-chip">
-            明细 <strong>{rows.length}</strong>
+            {t('balanceChanges.metrics.entries')} <strong>{rows.length}</strong>
           </span>
           <span className="metric-chip">
-            当前页 <strong>{pagedRows.length}</strong>
+            {t('balanceChanges.metrics.currentPage')} <strong>{pagedRows.length}</strong>
           </span>
         </div>
       </div>
 
       {rows.length === 0 ? (
         <EmptyState
-          title="暂无余额变动明细"
-          description="当你新增收入、支出、退款或手动调整账户余额后，这里会自动生成可追踪记录。"
+          title={t('balanceChanges.empty.title')}
+          description={t('balanceChanges.empty.description')}
           icon="📚"
         />
       ) : (
-        <div className="balance-change-domino-board" aria-label="按类型分组的余额变动记录">
+        <div className="balance-change-domino-board" aria-label={t('balanceChanges.boardAria')}>
           {(['income', 'expense', 'neutral'] as BalanceChangeGroupKey[]).map((groupKey) => {
             const groupRows = groupedRows[groupKey];
             if (groupRows.length === 0) return null;
 
             const meta = GROUP_META[groupKey];
+            const groupTitle = t(`balanceChanges.groups.${groupKey}.title`);
             const expanded = expandedGroups[groupKey];
             const groupTotal = groupRows.reduce((sum, entry) => sum + Math.abs(entry.amount), 0);
             const listId = `balance-change-group-${groupKey}`;
@@ -217,25 +206,33 @@ export function BalanceChangesPage() {
                     {meta.icon}
                   </span>
                   <span className="balance-change-group-copy">
-                    <strong>{meta.title}</strong>
-                    <small>{meta.subtitle}</small>
+                    <strong>{groupTitle}</strong>
+                    <small>{t(`balanceChanges.groups.${groupKey}.subtitle`)}</small>
                   </span>
                   <span className="balance-change-group-stat">
-                    <strong>{groupRows.length} 笔</strong>
-                    <small>合计 {formatCurrencyFixed2(groupTotal)}</small>
+                    <strong>
+                      {t('balanceChanges.entryCount', { value: groupRows.length })}
+                    </strong>
+                    <small>
+                      {t('balanceChanges.total', {
+                        amount: formatCurrencyFixed2(groupTotal)
+                      })}
+                    </small>
                   </span>
-                  <span className="balance-change-group-action">{expanded ? '收起' : '展开'}</span>
+                  <span className="balance-change-group-action">
+                    {expanded ? t('balanceChanges.collapse') : t('balanceChanges.expand')}
+                  </span>
                 </button>
 
                 <div
                   id={listId}
                   className="balance-change-card-list"
-                  aria-label={`${meta.title}列表`}
+                  aria-label={t('balanceChanges.groupListAria', { title: groupTitle })}
                 >
                   {groupRows.map((entry, index) => {
                     const tone = getChangeTone(entry.beforeBalance, entry.afterBalance);
-                    const direction = getDirectionText(entry.beforeBalance, entry.afterBalance);
-                    const relatedDescription = getRelatedDescription(entry);
+                    const direction = getDirectionText(entry.beforeBalance, entry.afterBalance, t);
+                    const relatedDescription = getRelatedDescription(entry, t);
                     const style = { '--domino-index': index } as CSSProperties;
                     const showExpandedDetails = expanded;
 
@@ -269,21 +266,28 @@ export function BalanceChangesPage() {
                           {showExpandedDetails ? (
                             <div className="balance-change-card-body">
                               <div className="balance-change-reason">
-                                <span>{getTypeLabel(entry.type)}</span>
+                                <span>{getTypeLabel(entry.type, t)}</span>
                                 <strong>{relatedDescription}</strong>
                                 {entry.relatedTransactionId ? (
-                                  <small>关联原单：{entry.relatedSummary}</small>
+                                  <small>
+                                    {t('balanceChanges.linkedOriginal', {
+                                      summary: entry.relatedSummary
+                                    })}
+                                  </small>
                                 ) : null}
                               </div>
 
-                              <div className="balance-change-flow" aria-label="余额变化路径">
+                              <div
+                                className="balance-change-flow"
+                                aria-label={t('balanceChanges.flowAria')}
+                              >
                                 <div>
-                                  <span>变动前</span>
+                                  <span>{t('balanceChanges.before')}</span>
                                   <strong>{formatCurrencyFixed2(entry.beforeBalance)}</strong>
                                 </div>
                                 <i aria-hidden="true">→</i>
                                 <div>
-                                  <span>变动后</span>
+                                  <span>{t('balanceChanges.after')}</span>
                                   <strong>{formatCurrencyFixed2(entry.afterBalance)}</strong>
                                 </div>
                               </div>
@@ -310,7 +314,7 @@ export function BalanceChangesPage() {
       {rows.length > 0 ? (
         <div className="balance-change-pagination">
           <label className="balance-change-page-size">
-            每页
+            {t('balanceChanges.pagination.pageSize')}
             <select
               value={pageSize}
               onChange={(event) => {
@@ -320,7 +324,7 @@ export function BalanceChangesPage() {
             >
               {[20, 50, 100, 200].map((size) => (
                 <option key={size} value={size}>
-                  {size} 条
+                  {t('balanceChanges.pagination.size', { value: size })}
                 </option>
               ))}
             </select>
@@ -328,27 +332,27 @@ export function BalanceChangesPage() {
 
           <div className="balance-change-pagination-actions">
             <span className="muted">
-              第 {page} / {pages} 页
+              {t('balanceChanges.pagination.page', { page, total: pages })}
             </span>
             <button type="button" onClick={() => setPage(1)} disabled={page === 1}>
-              首页
+              {t('balanceChanges.pagination.first')}
             </button>
             <button
               type="button"
               onClick={() => setPage(Math.max(1, page - 1))}
               disabled={page === 1}
             >
-              上一页
+              {t('balanceChanges.pagination.previous')}
             </button>
             <button
               type="button"
               onClick={() => setPage(Math.min(pages, page + 1))}
               disabled={page === pages}
             >
-              下一页
+              {t('balanceChanges.pagination.next')}
             </button>
             <button type="button" onClick={() => setPage(pages)} disabled={page === pages}>
-              末页
+              {t('balanceChanges.pagination.last')}
             </button>
           </div>
         </div>
