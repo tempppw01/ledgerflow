@@ -34,6 +34,7 @@ interface CreditRepaymentAnalysis {
   relatedRecords: RepaymentRecord[];
   cycleRecords: RepaymentRecord[];
   latestRecord?: RepaymentRecord;
+  historicalRecord?: RepaymentRecord;
   paymentAccounts: string[];
   anchorDay: number | null;
   plannedAmount: number;
@@ -100,12 +101,11 @@ function analyzeCreditRepayment(
     }
     return paidTime >= cycleWindow.start.getTime() && paidTime <= cycleWindow.end.getTime();
   });
-  const scopedRecords = cycleRecords.length > 0 ? cycleRecords : relatedRecords.slice(0, 3);
-
-  const latestRecord = scopedRecords[0];
+  const latestRecord = cycleRecords[0];
+  const historicalRecord = latestRecord ? undefined : relatedRecords[0];
   const paymentAccounts = Array.from(
     new Set(
-      scopedRecords.map((record) => String(record.paymentAccount || '').trim()).filter(Boolean)
+      cycleRecords.map((record) => String(record.paymentAccount || '').trim()).filter(Boolean)
     )
   );
   const plannedAmount =
@@ -145,6 +145,7 @@ function analyzeCreditRepayment(
     relatedRecords,
     cycleRecords,
     latestRecord,
+    historicalRecord,
     paymentAccounts,
     anchorDay,
     plannedAmount,
@@ -302,7 +303,14 @@ export function buildCreditRepaymentLookupSummary(
   repaymentRecords: RepaymentRecord[]
 ): CreditRepaymentLookupSummary | undefined {
   const analysis = analyzeCreditRepayment(item, debts, repaymentRecords);
-  const { matchedDebt, latestRecord, paymentAccounts, relatedRecords, status } = analysis;
+  const {
+    matchedDebt,
+    latestRecord,
+    historicalRecord,
+    paymentAccounts,
+    relatedRecords,
+    status
+  } = analysis;
 
   const plannedRepaymentText = matchedDebt
     ? [
@@ -328,7 +336,9 @@ export function buildCreditRepaymentLookupSummary(
 
   const actualRepaymentText = latestRecord
     ? `${formatGapMoney(Number(latestRecord.amount || 0))} · ${String(latestRecord.paidAt || '').slice(0, 10) || '日期待确认'}`
-    : undefined;
+    : historicalRecord
+      ? `本周期暂无 · 最近历史 ${formatGapMoney(Number(historicalRecord.amount || 0))} · ${String(historicalRecord.paidAt || '').slice(0, 10) || '日期待确认'}`
+      : undefined;
 
   if (!matchedDebt && relatedRecords.length === 0 && !plannedRepaymentText && !paymentAccountText) {
     return undefined;

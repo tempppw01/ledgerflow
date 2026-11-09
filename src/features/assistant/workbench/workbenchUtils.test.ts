@@ -27,6 +27,9 @@ describe('workbenchUtils', () => {
     expect(
       mapAssistantErrorMessage('AI 服务请求失败(错误码:AI_CHAT_HTTP_502)')
     ).toContain('服务暂时不可用');
+    expect(mapAssistantErrorMessage('provider internal trace abc-def')).toBe(
+      'AI 服务调用失败,请检查接口配置、模型名称或 API Key 后重试。'
+    );
   });
 
   it('应能从带解释文本的响应中提取 transactions JSON', () => {

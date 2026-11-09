@@ -90,4 +90,52 @@ describe('creditAssistant parser', () => {
     expect(stripCreditJsonBlock(answer)).not.toContain('creditItems');
     expect(buildCreditAssistantMessageText(answer)).toBe('第一段说明。\n\n第二段说明。');
   });
+
+  it('keeps the complete assistant response instead of truncating it', () => {
+    const longParagraph = '这是需要完整保留的信贷说明。'.repeat(40);
+    const answer = [
+      '第一段说明。',
+      '',
+      longParagraph,
+      '',
+      '第三段说明。',
+      '',
+      '第四段说明。',
+      '',
+      '```json',
+      '{"creditItems":[]}',
+      '```'
+    ].join('\n');
+    const message = buildCreditAssistantMessageText(answer);
+
+    expect(message).toContain(longParagraph);
+    expect(message).toContain('第三段说明。');
+    expect(message).toContain('第四段说明。');
+    expect(message).not.toContain('creditItems');
+  });
+
+  it('derives missing fields from actual values instead of trusting the model list', () => {
+    const answer = [
+      '```json',
+      JSON.stringify(
+        {
+          creditItems: [
+            {
+              title: '招商银行信用卡',
+              dueAmount: '待补充',
+              totalDebt: '¥12860.40',
+              repaymentDate: '每月 25 日',
+              pendingFields: []
+            }
+          ]
+        },
+        null,
+        2
+      ),
+      '```'
+    ].join('\n');
+
+    const [item] = extractCreditStructuredItems(answer);
+    expect(item.pendingFields).toEqual(['当前应还', '每期金额']);
+  });
 });

@@ -10,6 +10,7 @@ import type {
   CreditFieldSource,
   CreditFieldStatus
 } from '../../features/assistant/creditAssistant/types';
+import { deriveCreditPendingFields } from '../../features/assistant/creditAssistant/parser';
 
 export interface CreditHistoryLikeItem {
   role: 'user' | 'assistant';
@@ -359,9 +360,7 @@ export function enrichCreditItemsForConfirmation(
     const matchedDebt = findMatchingDebt(item, debts);
     const conflictFields = buildCreditConflictFields(item, matchedDebt);
 
-    const normalizedPendingFields = Array.from(
-      new Set((item.pendingFields || []).map((field) => String(field || '').trim()).filter(Boolean))
-    );
+    const normalizedPendingFields = deriveCreditPendingFields(item, item.pendingFields);
     const confirmedFields = [
       item.title ? '产品名称' : '',
       item.dueAmount ? '当前应还' : '',

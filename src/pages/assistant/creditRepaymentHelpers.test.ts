@@ -76,6 +76,38 @@ describe('creditRepaymentHelpers cycle scoping', () => {
     expect(gap?.gapAmount).toBe('¥1000');
   });
 
+  it('labels a prior settled payment as history instead of the current cycle', () => {
+    const lookup = buildCreditRepaymentLookupSummary(
+      ITEM,
+      [buildDebt({ paymentAccount: '招商银行储蓄卡' })],
+      [
+        buildRecord({
+          id: 'old',
+          amount: 1000,
+          paidAt: '2026-08-20',
+          paymentAccount: '工商银行储蓄卡'
+        })
+      ]
+    );
+    const gap = buildCreditRepaymentGapSummary(
+      ITEM,
+      [buildDebt({ paymentAccount: '招商银行储蓄卡' })],
+      [
+        buildRecord({
+          id: 'old',
+          amount: 1000,
+          paidAt: '2026-08-20',
+          paymentAccount: '工商银行储蓄卡'
+        })
+      ]
+    );
+
+    expect(lookup?.actualRepaymentText).toContain('本周期暂无');
+    expect(lookup?.actualRepaymentText).toContain('最近历史');
+    expect(gap?.paymentAccountSummary).toBe('招商银行储蓄卡');
+    expect(gap?.explanationItems?.join(' / ')).not.toContain('工商银行储蓄卡');
+  });
+
   it('keeps the just-passed cycle visible during the grace window', () => {
     vi.setSystemTime(new Date('2026-11-27T12:00:00'));
 

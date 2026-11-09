@@ -1,5 +1,33 @@
 import type { CreditExtractedItem } from './types';
 
+const CREDIT_PENDING_FIELD_ORDER = ['当前应还', '剩余待还', '还款日', '每期金额'] as const;
+const CREDIT_PLACEHOLDER_VALUES = new Set(['待补充', '待确认', '未知', '暂无', '识别中', '-', '--']);
+
+function hasCreditFieldValue(value?: string): boolean {
+  const text = String(value || '').trim();
+  return Boolean(text) && !CREDIT_PLACEHOLDER_VALUES.has(text);
+}
+
+export function deriveCreditPendingFields(
+  item: Pick<
+    CreditExtractedItem,
+    'dueAmount' | 'totalDebt' | 'repaymentDate' | 'monthlyAmount'
+  >,
+  modelPendingFields: string[] = []
+): string[] {
+  const derived = CREDIT_PENDING_FIELD_ORDER.filter((field) => {
+    if (field === '当前应还') return !hasCreditFieldValue(item.dueAmount);
+    if (field === '剩余待还') return !hasCreditFieldValue(item.totalDebt);
+    if (field === '还款日') return !hasCreditFieldValue(item.repaymentDate);
+    return !hasCreditFieldValue(item.monthlyAmount);
+  });
+  const knownFields = new Set(CREDIT_PENDING_FIELD_ORDER);
+  const extraPending = modelPendingFields
+    .map((field) => String(field || '').trim())
+    .filter((field) => field && !knownFields.has(field as (typeof CREDIT_PENDING_FIELD_ORDER)[number]));
+  return Array.from(new Set([...derived, ...extraPending]));
+}
+
 function splitCreditBlocks(answer: string) {
   const text = String(answer || '').trim();
   if (!text) return [];
@@ -79,12 +107,12 @@ export function extractStreamingCreditPreview(answer: string): CreditExtractedIt
             ? '信用卡'
             : '待识别';
 
-      const pendingFields = [
-        !dueAmount ? '当前应还' : '',
-        !totalDebt ? '剩余待还' : '',
-        !repaymentDate ? '还款日' : '',
-        !monthlyAmount ? '每期金额' : '',
-      ].filter(Boolean);
+      const pendingFields = deriveCreditPendingFields({
+        dueAmount,
+        totalDebt,
+        repaymentDate,
+        monthlyAmount
+      });
 
       if (!title && !dueAmount && !totalDebt && !repaymentDate && !monthlyAmount && !interest) {
         return null;
@@ -136,9 +164,13 @@ export function extractCreditStructuredItems(answer: string): CreditExtractedIte
             : undefined;
         const riskHint = String(item.riskHint || item.risk || '').trim();
         const actionSuggestion = String(item.actionSuggestion || item.nextStep || '').trim();
-        const pendingFields = Array.isArray(item.pendingFields)
+        const modelPendingFields = Array.isArray(item.pendingFields)
           ? item.pendingFields.map((field) => String(field).trim()).filter(Boolean)
           : [];
+        const pendingFields = deriveCreditPendingFields(
+          { dueAmount, totalDebt, repaymentDate, monthlyAmount },
+          modelPendingFields
+        );
         const confidence: CreditExtractedItem['confidence'] =
           item.confidence === 'high' || item.confidence === 'medium' || item.confidence === 'low'
             ? item.confidence
@@ -180,16 +212,5 @@ export function stripCreditJsonBlock(answer: string): string {
 export function buildCreditAssistantMessageText(answer: string): string {
   const plain = stripCreditJsonBlock(answer).trim();
   if (!plain) return answer.trim();
-
-  const paragraphs = plain
-    .split(/\n{2,}/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-  const joined = paragraphs.slice(0, 3).join('\n\n');
-  if (joined.length <= 280) {
-    return joined;
-  }
-
-  return `${joined.slice(0, 280).trimEnd()}…`;
+  return plain;
 }

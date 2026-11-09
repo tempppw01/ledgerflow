@@ -324,7 +324,7 @@ export function mapAssistantErrorMessage(raw: string): string {
     return '请求过于频繁：已触发限流，请稍后重试。';
   if (text.includes('http 5') || text.includes('http_5'))
     return '服务暂时不可用：供应商服务异常，请稍后重试。';
-  return raw;
+  return 'AI 服务调用失败,请检查接口配置、模型名称或 API Key 后重试。';
 }
 
 export function toPayloadRows(entries: DraftBillEntry[]) {
