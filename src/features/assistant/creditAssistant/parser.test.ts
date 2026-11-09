@@ -46,7 +46,88 @@ describe('creditAssistant parser', () => {
     ]);
   });
 
-  it('extracts top streaming preview cards from plain text', () => {
+  it('accepts plain JSON without a markdown fence', () => {
+    const answer = JSON.stringify({
+      creditItems: [
+        {
+          title: '招商银行信用卡',
+          productType: '信用卡',
+          dueAmount: '¥1200',
+          repaymentDate: '每月 20 日'
+        }
+      ]
+    });
+
+    expect(extractCreditStructuredItems(answer)).toEqual([
+      expect.objectContaining({
+        title: '招商银行信用卡',
+        productType: '信用卡',
+        dueAmount: '¥1200'
+      })
+    ]);
+  });
+
+  it('finds a balanced JSON object surrounded by explanatory text', () => {
+    const payload = JSON.stringify({
+      creditItems: [
+        {
+          title: '招行信用卡',
+          productType: '信用卡',
+          totalDebt: '¥6800',
+          note: '说明中允许出现 {花括号} 和 "引号"'
+        }
+      ]
+    });
+    const answer = `我先说明一下解析结果,示例数组 [1, 2]。\n${payload}\n以上信息请确认后再保存。`;
+
+    expect(extractCreditStructuredItems(answer)).toEqual([
+      expect.objectContaining({
+        title: '招行信用卡',
+        totalDebt: '¥6800'
+      })
+    ]);
+  });
+
+  it('strips plain balanced credit JSON from surrounding assistant copy', () => {
+    const answer = `解析结果如下。\n${JSON.stringify({
+      creditItems: [{ title: '招商银行信用卡', dueAmount: '¥3200' }]
+    })}\n请确认卡片信息。`;
+    const message = buildCreditAssistantMessageText(answer);
+
+    expect(message).toBe('解析结果如下。\n\n请确认卡片信息。');
+    expect(message).not.toContain('creditItems');
+  });
+
+  it('keeps all structured items when the model returns more than three', () => {
+    const answer = JSON.stringify({
+      creditItems: Array.from({ length: 5 }, (_, index) => ({
+        title: `信贷项目 ${index + 1}`,
+        productType: '信用卡',
+        dueAmount: `¥${index + 1}00`
+      }))
+    });
+
+    expect(extractCreditStructuredItems(answer)).toHaveLength(5);
+  });
+
+  it('drops empty rows and rows that only contain an inferred product category', () => {
+    const answer = JSON.stringify({
+      creditItems: [
+        {},
+        { productType: '信用卡', confidence: 'high' },
+        { title: '招商银行信用卡', dueAmount: '¥3200' }
+      ]
+    });
+
+    expect(extractCreditStructuredItems(answer)).toEqual([
+      expect.objectContaining({
+        title: '招商银行信用卡',
+        productType: '信用卡'
+      })
+    ]);
+  });
+
+  it('extracts every streaming preview card instead of hard-limiting to three', () => {
     const answer = [
       '产品：招行信用卡',
       '当前应还：¥1200',
@@ -64,7 +145,7 @@ describe('creditAssistant parser', () => {
     ].join('\n');
 
     const preview = extractStreamingCreditPreview(answer);
-    expect(preview).toHaveLength(3);
+    expect(preview).toHaveLength(4);
     expect(preview[0]).toEqual(
       expect.objectContaining({
         title: '招行信用卡',
@@ -73,6 +154,7 @@ describe('creditAssistant parser', () => {
       })
     );
     expect(preview[1].pendingFields).toContain('当前应还');
+    expect(preview[3].title).toBe('不应该出现在预览里的第四项');
   });
 
   it('prefers the explicit credit-card label over a generic installment label', () => {
