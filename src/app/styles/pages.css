@@ -1814,6 +1814,7 @@
 .transaction-detail-drawer .drawer-header {
   min-height: 52px;
   padding: 8px 18px 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .transaction-detail-drawer .drawer-header h3 {
