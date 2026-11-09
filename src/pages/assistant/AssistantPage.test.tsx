@@ -1017,6 +1017,41 @@ describe('AssistantPage', () => {
     sessionStorageGetItemSpy.mockRestore();
   });
 
+  it('旧缓存中带引号的追问应在读取时按新文案重新生成', () => {
+    useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
+
+    const sessionStorageGetItemSpy = vi
+      .spyOn(window.sessionStorage.__proto__, 'getItem')
+      .mockImplementation((key) => {
+        if (String(key).includes('chatHistory.assistant')) {
+          return JSON.stringify([
+            {
+              id: 'stale-user',
+              role: 'user',
+              text: '帮我总结一下这个月的收支情况,并指出最值得注意的一项支出'
+            },
+            {
+              id: 'stale-assistant',
+              role: 'assistant',
+              text: '本月收支基本平衡,餐饮支出最值得注意。',
+              followUpPrompts: ['“帮我总结一下这个月的收支情况,并指出”的判断依据具体来自哪里？']
+            }
+          ]);
+        }
+        return '[]';
+      });
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.queryAllByRole('button', { name: /[“”…]/ })).toHaveLength(0);
+    expect(screen.getAllByRole('button', { name: /这个月收支/ }).length).toBeGreaterThan(0);
+    sessionStorageGetItemSpy.mockRestore();
+  });
+
   it('输入工具条与消息操作栏的图标应使用内联 SVG 而不是外部图片', async () => {
     useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
 

@@ -241,13 +241,29 @@ function readWideLayoutPreference() {
   }
 }
 
+function isStaleFollowUpPrompt(prompt: string): boolean {
+  return /[“”…]/.test(prompt) || /(?:并|且|以及|然后|再|就|的|了)$/.test(prompt.trim());
+}
+
+// 旧版本缓存的追问可能带引号或被截断,这里按当前文案规则重新生成。
+function sanitizeCachedFollowUpPrompts(items: ChatHistoryItem[]): ChatHistoryItem[] {
+  return items.map((item, index) => {
+    if (item.role !== 'assistant' || !item.followUpPrompts?.length) return item;
+    if (!item.followUpPrompts.some(isStaleFollowUpPrompt)) return item;
+    return {
+      ...item,
+      followUpPrompts: buildFollowUpPrompts(item.text, items.slice(0, index))
+    };
+  });
+}
+
 function readChatHistory(mode: AssistantMode): ChatHistoryItem[] {
   try {
     const raw = window.sessionStorage.getItem(CHAT_HISTORY_CACHE_KEYS[mode]);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as ChatHistoryItem[];
     if (!Array.isArray(parsed)) return [];
-    return parsed
+    const normalized = parsed
       .filter(
         (item): item is ChatHistoryItem =>
           Boolean(item) &&
@@ -287,6 +303,7 @@ function readChatHistory(mode: AssistantMode): ChatHistoryItem[] {
             )
           : undefined
       }));
+    return sanitizeCachedFollowUpPrompts(normalized);
   } catch {
     return [];
   }
