@@ -1723,7 +1723,8 @@ export function AssistantPage() {
 
   // 非记账分析时，模型返回自由文本，解析 JSON 失败属于预期，不展示底部红条。
   const shouldShowError =
-    Boolean(wb.error) && !/unexpected token|invalid json|json/i.test(wb.error.toLowerCase());
+    Boolean(wb.error) &&
+    (mode === 'bookkeeping' || !/unexpected token|invalid json|json/i.test(wb.error.toLowerCase()));
 
   useEffect(() => {
     const responseMode = pendingRequestModeRef.current;

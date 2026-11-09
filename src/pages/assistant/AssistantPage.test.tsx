@@ -1238,6 +1238,41 @@ describe('AssistantPage', () => {
     expect(details?.querySelector('pre')?.textContent).toBe(detailedError);
   });
 
+  it('AI 记账遇到 JSON 解析失败时应显示可重试错误', () => {
+    window.sessionStorage.setItem('ledgerflow.assistant.activeMode', 'bookkeeping');
+    useAssistantWorkbenchMock.mockReturnValue({
+      ...createWorkbenchMock(),
+      status: 'error',
+      error: 'Unexpected token < in JSON at position 0'
+    });
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('请求失败')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '重试' })).toBeInTheDocument();
+  });
+
+  it('普通 AI 助手的自由文本回答不应显示 JSON 解析错误', () => {
+    window.sessionStorage.setItem('ledgerflow.assistant.activeMode', 'assistant');
+    useAssistantWorkbenchMock.mockReturnValue({
+      ...createWorkbenchMock(),
+      status: 'error',
+      error: 'Unexpected token < in JSON at position 0'
+    });
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByText('请求失败')).not.toBeInTheDocument();
+  });
+
   it('继续追问生成服务不可用时，回退建议仍应围绕当前对话动态生成', async () => {
     vi.mocked(sendAiChat).mockRejectedValueOnce(new Error('服务暂不可用'));
     useAssistantWorkbenchMock.mockReturnValue({
