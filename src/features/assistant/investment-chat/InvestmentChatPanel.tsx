@@ -162,6 +162,11 @@ export function InvestmentChatComposer({
   const [models, setModels] = useState<string[]>(() => [...AI_MODEL_PRESETS]);
   const [loadingModels, setLoadingModels] = useState(false);
   const [error, setError] = useState('');
+  const [failedTurn, setFailedTurn] = useState<{
+    messageId: string;
+    text: string;
+    images: string[];
+  } | null>(null);
   const [, setStreaming] = useState('');
   const [, setStreamingReasoning] = useState('');
   const [progress, setProgress] = useState<InvestmentChatProgress>('');
@@ -178,6 +183,7 @@ export function InvestmentChatComposer({
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const requestVersionRef = useRef(0);
+  const inFlightRef = useRef(false);
   const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({
     position: 'fixed',
     left: 0,
@@ -277,10 +283,12 @@ export function InvestmentChatComposer({
     requestVersionRef.current += 1;
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
+    inFlightRef.current = false;
     setLoading(false);
     setInput('');
     setImages([]);
     setError('');
+    setFailedTurn(null);
     setStreaming('');
     setStreamingReasoning('');
     setProgress('');
@@ -292,6 +300,7 @@ export function InvestmentChatComposer({
       requestVersionRef.current += 1;
       abortControllerRef.current?.abort();
       abortControllerRef.current = null;
+      inFlightRef.current = false;
     },
     []
   );
@@ -373,41 +382,61 @@ export function InvestmentChatComposer({
     requestVersionRef.current += 1;
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
+    inFlightRef.current = false;
     setLoading(false);
     setStreaming('');
     setStreamingReasoning('');
     setProgress('');
   }
 
-  const submitPrompt = async (prompt?: string) => {
+  const submitPrompt = async (prompt?: string, options?: { retryMessageId?: string }) => {
+    const retryMessage = options?.retryMessageId
+      ? messages.find((item) => item.id === options.retryMessageId)
+      : undefined;
     const cleanPrompt = (prompt ?? input).trim();
-    if (loading || (!cleanPrompt && images.length === 0)) return;
+    if (inFlightRef.current || loading || (!cleanPrompt && images.length === 0 && !retryMessage)) {
+      return;
+    }
     if (!apiKey.trim()) {
       setToast({ visible: true, message: '请先在设置中配置可用的 AI Key。', variant: 'warning' });
       return;
     }
 
-    const requestImages = [...images];
-    const requestText = cleanPrompt || '请基于这些基金或持仓截图做投资分析。';
+    const retrying = Boolean(retryMessage);
+    const requestImages = retryMessage
+      ? [...(retryMessage.attachmentImages || [])]
+      : [...images];
+    const requestText =
+      retryMessage?.text || cleanPrompt || '请基于这些基金或持仓截图做投资分析。';
     const abortController = new AbortController();
     const requestVersion = requestVersionRef.current + 1;
     requestVersionRef.current = requestVersion;
     abortControllerRef.current = abortController;
+    inFlightRef.current = true;
     setLoading(true);
     setError('');
+    setFailedTurn(null);
     setProgress('market');
-    const userMessage: Message = createInvestmentAiMessage({
-      id: `investment-user-${Date.now()}`,
-      role: 'user',
-      text: requestText,
-      createdAt: new Date().toISOString(),
-      attachmentCount: requestImages.length,
-      attachmentImages: requestImages
-    });
-    const nextMessages = trimInvestmentAiMessages([...messages, userMessage]);
+    const userMessage: Message =
+      retryMessage ||
+      createInvestmentAiMessage({
+        id: `investment-user-${Date.now()}`,
+        role: 'user',
+        text: requestText,
+        createdAt: new Date().toISOString(),
+        attachmentCount: requestImages.length,
+        attachmentImages: requestImages
+      });
+    const nextMessages = trimInvestmentAiMessages(
+      retrying
+        ? [...messages.filter((item) => item.id !== userMessage.id), userMessage]
+        : [...messages, userMessage]
+    );
     setMessages(nextMessages);
-    setInput('');
-    setImages([]);
+    if (!retrying) {
+      setInput('');
+      setImages([]);
+    }
     setStreaming('');
     setStreamingReasoning('');
     setComposerFocused(false);
@@ -523,10 +552,12 @@ export function InvestmentChatComposer({
       if (requestVersion !== requestVersionRef.current) return;
       if (err instanceof DOMException && err.name === 'AbortError') return;
       setError(err instanceof Error ? err.message : '投资分析失败');
+      setFailedTurn({ messageId: userMessage.id, text: requestText, images: requestImages });
       setToast({ visible: true, message: '投资分析失败', variant: 'error' });
     } finally {
       if (requestVersion === requestVersionRef.current) {
         abortControllerRef.current = null;
+        inFlightRef.current = false;
         setLoading(false);
         setProgress('');
       }
@@ -551,7 +582,21 @@ export function InvestmentChatComposer({
 
   return (
     <>
-      {error ? <p className="chat-inline-error">{error}</p> : null}
+      {error ? (
+        <div className="chat-inline-error" role="alert">
+          <span>{error}</span>
+          {failedTurn ? (
+            <button
+              type="button"
+              onClick={() =>
+                void submitPrompt(undefined, { retryMessageId: failedTurn.messageId })
+              }
+            >
+              重试本次
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       {images.length > 0 ? (
         <div className="investments-ai-image-strip" aria-label="待分析图片">
@@ -622,6 +667,9 @@ export function InvestmentChatComposer({
               type="file"
               accept="image/*"
               multiple
+              hidden
+              tabIndex={-1}
+              aria-hidden="true"
               className="chat-file-input-hidden"
               aria-label="上传基金截图"
               onChange={(event) => {

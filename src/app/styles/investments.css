@@ -671,6 +671,40 @@
   line-height: 1.35;
 }
 
+.investments-market-insight-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.investments-market-insight-footer .investments-market-insight-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.investments-market-insight-retry {
+  flex: 0 0 auto;
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 26%, var(--color-border));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-bg-elevated));
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.investments-market-insight-retry:hover {
+  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-bg-elevated));
+}
+
+.investments-market-insight-retry:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 .investments-plain-briefing-points {
   display: grid;
   gap: 8px;

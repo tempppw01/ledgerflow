@@ -368,6 +368,25 @@ describe('Investment assistant chat', () => {
     expect(screen.getByText('美国')).toBeInTheDocument();
   });
 
+  it('ignores a second submission while the first request is still in flight', async () => {
+    sendAiChatStreamMock.mockReturnValue(new Promise(() => undefined));
+
+    render(
+      <MemoryRouter>
+        <InvestmentChatPanel />
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByLabelText('基金分析输入框'), {
+      target: { value: '连续提交测试' }
+    });
+    const form = screen.getByLabelText('基金分析输入框').closest('form')!;
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+
+    await waitFor(() => expect(sendAiChatStreamMock).toHaveBeenCalledTimes(1));
+  });
+
   it('hides the investment welcome illustration after a conversation has started', () => {
     useAppPreferences.setState({
       investmentAiMessages: [
@@ -599,6 +618,75 @@ describe('Investment assistant chat', () => {
       writable: true,
       value: originalFileReader
     });
+  });
+
+  it('retries a failed turn with its original text and screenshots', async () => {
+    sendAiChatStreamMock
+      .mockRejectedValueOnce(new Error('network failed'))
+      .mockResolvedValueOnce({ content: '重试成功。', reasoning: '' });
+    const imageFile = new File(['fund-image'], 'fund.png', { type: 'image/png' });
+    const originalFileReader = window.FileReader;
+
+    class MockFileReader {
+      result: string | ArrayBuffer | null = 'data:image/png;base64,ZmFrZQ==';
+      onload: null | (() => void) = null;
+      onerror: null | (() => void) = null;
+
+      readAsDataURL() {
+        this.onload?.();
+      }
+    }
+
+    Object.defineProperty(window, 'FileReader', {
+      writable: true,
+      value: MockFileReader
+    });
+
+    try {
+      render(
+        <MemoryRouter>
+          <InvestmentChatPanel />
+        </MemoryRouter>
+      );
+
+      fireEvent.change(screen.getByLabelText('基金分析输入框'), {
+        target: { value: '分析这张持仓截图' }
+      });
+      fireEvent.change(screen.getAllByLabelText('上传基金截图')[0]!, {
+        target: { files: [imageFile] }
+      });
+      await screen.findByLabelText('待分析图片');
+      fireEvent.click(screen.getByRole('button', { name: '开始分析' }));
+
+      fireEvent.click(await screen.findByRole('button', { name: '重试本次' }));
+
+      await waitFor(() => expect(sendAiChatStreamMock).toHaveBeenCalledTimes(2));
+      const retryRequest = sendAiChatStreamMock.mock.calls[1]?.[0] as {
+        messages: Array<{ text: string; imageDataUrls?: string[] }>;
+      };
+      expect(retryRequest.messages.at(-1)?.text).toBe('分析这张持仓截图');
+      expect(retryRequest.messages.at(-1)?.imageDataUrls).toEqual([
+        'data:image/png;base64,ZmFrZQ=='
+      ]);
+    } finally {
+      Object.defineProperty(window, 'FileReader', {
+        writable: true,
+        value: originalFileReader
+      });
+    }
+  });
+
+  it('keeps the hidden screenshot input out of keyboard navigation', () => {
+    render(
+      <MemoryRouter>
+        <InvestmentChatPanel />
+      </MemoryRouter>
+    );
+
+    const fileInput = screen.getAllByLabelText('上传基金截图')[0]!;
+    expect(fileInput).toHaveAttribute('hidden');
+    expect(fileInput).toHaveAttribute('tabindex', '-1');
+    expect(fileInput).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('keeps attached screenshots when sending a follow-up prompt', async () => {

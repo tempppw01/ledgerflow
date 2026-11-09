@@ -3,6 +3,7 @@ import {
   FormEvent,
   KeyboardEvent as ReactKeyboardEvent,
   MouseEvent,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -550,7 +551,7 @@ type WatchHoldingSnapshot = {
   estimatedTodayProfit: number | null;
 };
 
-type MarketInsightStatus = 'disabled' | 'waiting' | 'loading' | 'ready' | 'error';
+type MarketInsightStatus = 'disabled' | 'model-missing' | 'waiting' | 'loading' | 'ready' | 'error';
 
 function parseStoredPercent(value?: string) {
   const match = String(value || '')
@@ -852,7 +853,8 @@ function PlainMarketBriefingPanel({
   news,
   insight,
   algorithmSignals,
-  insightStatus
+  insightStatus,
+  onRetryInsight
 }: {
   marketChange: number | null;
   themeBoards: EastmoneyMarketBoard[];
@@ -860,6 +862,7 @@ function PlainMarketBriefingPanel({
   insight: InvestmentMarketInsight | null;
   algorithmSignals: MarketAlgorithmSignals;
   insightStatus: MarketInsightStatus;
+  onRetryInsight?: () => void;
 }) {
   const strongestTheme = [...themeBoards].sort(
     (a, b) =>
@@ -923,15 +926,28 @@ function PlainMarketBriefingPanel({
               </p>
             ))}
       </div>
-      <small className="investments-market-insight-meta">
+      <div className="investments-market-insight-footer">
+        <small className="investments-market-insight-meta">
         {insightStatus === 'ready' && insight
           ? `结合行情、新闻和板块 · 每 15 分钟更新 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
           : insightStatus === 'disabled'
             ? `先用本地信号 · 配置 AI 后每 15 分钟更新 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
-            : insightStatus === 'error'
+            : insightStatus === 'model-missing'
+              ? `本地信号可用 · 请先选择 AI 模型再生成简报 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
+              : insightStatus === 'error'
               ? `本地信号可用，AI 暂不可用 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
               : `正在整理行情和新闻 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`}
-      </small>
+        </small>
+        {insightStatus === 'error' && onRetryInsight ? (
+          <button
+            type="button"
+            className="investments-market-insight-retry"
+            onClick={onRetryInsight}
+          >
+            重新生成
+          </button>
+        ) : null}
+      </div>
     </section>
   );
 }
@@ -3678,8 +3694,10 @@ export function InvestmentsPage() {
   >(() => new Map());
   const [marketInsight, setMarketInsight] = useState<InvestmentMarketInsight | null>(null);
   const [marketInsightStatus, setMarketInsightStatus] = useState<MarketInsightStatus>('disabled');
+  const [marketInsightRetryVersion, setMarketInsightRetryVersion] = useState(0);
   const marketInsightRequestAtRef = useRef(0);
   const marketInsightRequestInFlightRef = useRef(false);
+  const marketInsightForceRetryRef = useRef(false);
   const trackedMarketThemesKey = trackedMarketThemes
     .map((theme) => `${theme.code}:${theme.name}`)
     .join('|');
@@ -3930,10 +3948,22 @@ export function InvestmentsPage() {
     selectedNewsCategoryId
   ]);
 
+  const retryMarketInsight = useCallback(() => {
+    marketInsightForceRetryRef.current = true;
+    setMarketInsightRetryVersion((version) => version + 1);
+  }, []);
+
   useEffect(() => {
     const minimumIntervalMs = 15 * 60 * 1000;
+    const forceRetry = marketInsightForceRetryRef.current;
+    marketInsightForceRetryRef.current = false;
+
     if (!apiKey.trim() || !baseUrl.trim()) {
       setMarketInsightStatus('disabled');
+      return;
+    }
+    if (!model.trim()) {
+      setMarketInsightStatus('model-missing');
       return;
     }
     const hasAnyMarketContext = Boolean(
@@ -3950,35 +3980,39 @@ export function InvestmentsPage() {
     }
 
     const cacheKey = 'ledgerflow-investment-market-insight-v1';
-    try {
-      const cached = JSON.parse(sessionStorage.getItem(cacheKey) || 'null') as {
-        generatedAt?: string;
-        profileKey?: string;
-        insight?: InvestmentMarketInsight;
-      } | null;
-      const generatedAt = cached?.generatedAt ? Date.parse(cached.generatedAt) : 0;
-      if (
-        cached?.insight &&
-        cached.profileKey === marketInsightProfileKey &&
-        generatedAt > 0 &&
-        Date.now() - generatedAt < minimumIntervalMs
-      ) {
-        setMarketInsight({
-          ...cached.insight,
-          source: 'ai',
-          generatedAt: cached.generatedAt
-        });
-        setMarketInsightStatus('ready');
-        marketInsightRequestAtRef.current = generatedAt;
-        return;
+    if (!forceRetry) {
+      try {
+        const cached = JSON.parse(sessionStorage.getItem(cacheKey) || 'null') as {
+          generatedAt?: string;
+          profileKey?: string;
+          marketInsightFingerprint?: string;
+          insight?: InvestmentMarketInsight;
+        } | null;
+        const generatedAt = cached?.generatedAt ? Date.parse(cached.generatedAt) : 0;
+        if (
+          cached?.insight &&
+          cached.profileKey === marketInsightProfileKey &&
+          cached.marketInsightFingerprint === marketInsightFingerprint &&
+          generatedAt > 0 &&
+          Date.now() - generatedAt < minimumIntervalMs
+        ) {
+          setMarketInsight({
+            ...cached.insight,
+            source: 'ai',
+            generatedAt: cached.generatedAt
+          });
+          setMarketInsightStatus('ready');
+          marketInsightRequestAtRef.current = generatedAt;
+          return;
+        }
+      } catch {
+        // Ignore malformed session cache and continue with a fresh, rate-limited request.
       }
-    } catch {
-      // Ignore malformed session cache and continue with a fresh, rate-limited request.
     }
 
     if (
       marketInsightRequestInFlightRef.current ||
-      Date.now() - marketInsightRequestAtRef.current < minimumIntervalMs
+      (!forceRetry && Date.now() - marketInsightRequestAtRef.current < minimumIntervalMs)
     ) {
       setMarketInsightStatus((current) => {
         if (marketInsight) return 'ready';
@@ -4040,6 +4074,7 @@ export function InvestmentsPage() {
               JSON.stringify({
                 generatedAt,
                 profileKey: marketInsightProfileKey,
+                marketInsightFingerprint,
                 insight: nextInsight
               })
             );
@@ -4074,7 +4109,8 @@ export function InvestmentsPage() {
     model,
     monthlyInvestableCash,
     investmentWatchlist,
-    marketInsightFingerprint
+    marketInsightFingerprint,
+    marketInsightRetryVersion
   ]);
 
   useEffect(() => {
@@ -4725,6 +4761,7 @@ export function InvestmentsPage() {
                 insight={marketInsight}
                 algorithmSignals={marketAlgorithmSignals}
                 insightStatus={marketInsightStatus}
+                onRetryInsight={retryMarketInsight}
               />
             </section>
             <section className="investments-workspace-market" aria-label="大盘和市场监控">
