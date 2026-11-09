@@ -330,10 +330,8 @@ function normalizeAdjustmentKind(
 
 function normalizeTransactionSemantic(
   tx: TransactionItem,
-  categoryName: string,
-  fallbackCategoryId?: string
+  categoryName: string
 ): TransactionItem {
-  const nextCategoryId = tx.categoryId || fallbackCategoryId || tx.categoryId;
   const adjustmentKind = normalizeAdjustmentKind(tx, categoryName);
   // 退款/冲正行保留原始收支类型,方向由 getTransactionDirection 依类型取反计算,
   // 这样「收入退款」才会正确地表现为资金流出而不是又记一笔流入。
@@ -343,7 +341,7 @@ function normalizeTransactionSemantic(
     ...tx,
     amount: roundCurrency(tx.amount),
     type: nextType,
-    categoryId: nextCategoryId,
+    categoryId: tx.categoryId || '',
     adjustmentKind,
     updatedAt: tx.updatedAt || tx.date || new Date().toISOString()
   };
@@ -417,7 +415,6 @@ function sanitizeCategoriesAndTransactions(
     mergedCategories.push(normalizedRow);
   });
 
-  const fallbackCategoryId = mergedCategories[0]?.id;
   const categoryNameById = new Map(mergedCategories.map((item) => [item.id, item.name]));
   const normalizeTransactionList = (rows: TransactionItem[]) =>
     rows.map((tx) => {
@@ -426,14 +423,13 @@ function sanitizeCategoriesAndTransactions(
         remappedCategoryId ||
         (tx.categoryId && mergedCategories.some((category) => category.id === tx.categoryId)
           ? tx.categoryId
-          : fallbackCategoryId || tx.categoryId);
+          : '');
 
       const categoryName = categoryNameById.get(resolvedCategoryId) || '';
 
       return normalizeTransactionSemantic(
         { ...tx, categoryId: resolvedCategoryId },
-        categoryName,
-        fallbackCategoryId
+        categoryName
       );
     });
 
@@ -744,21 +740,34 @@ export const useFinanceStore = create<FinanceState>()(
         return id;
       },
       updateTransaction: (id, payload) => {
-        const row: TransactionItem = {
-          ...payload,
-          amount: roundCurrency(payload.amount),
-          adjustmentKind: payload.adjustmentKind || 'normal',
-          updatedAt: new Date().toISOString(),
-          id
-        };
+        let updatedRow: TransactionItem | null = null;
         set((s) => {
+          const existing = s.transactions.find((item) => item.id === id);
+          if (!existing) {
+            return s;
+          }
+          // 编辑表单只提交可编辑字段;退款关联、附件等仅在详情页维护的字段必须保留,
+          // 否则一次普通编辑就会把退款单改成普通流水,导致余额方向反掉。
+          const row: TransactionItem = {
+            ...existing,
+            ...payload,
+            amount: roundCurrency(payload.amount),
+            adjustmentKind: payload.adjustmentKind ?? existing.adjustmentKind ?? 'normal',
+            refundOfTransactionId: payload.refundOfTransactionId ?? existing.refundOfTransactionId,
+            attachments: payload.attachments ?? existing.attachments,
+            updatedAt: new Date().toISOString(),
+            id
+          };
+          updatedRow = row;
           const transactions = s.transactions.map((item) => (item.id === id ? row : item));
           return {
             transactions,
             ...rebuildStateSlices(s.accounts, transactions, s.balanceChangeEntries)
           };
         });
-        void syncChangeIfNeeded({ entity: 'transactions', action: 'update', row, id });
+        if (updatedRow) {
+          void syncChangeIfNeeded({ entity: 'transactions', action: 'update', row: updatedRow, id });
+        }
       },
       removeTransaction: (id) => {
         let trashedRow: TransactionItem | null = null;
@@ -814,6 +823,10 @@ export const useFinanceStore = create<FinanceState>()(
           }
           if (original.adjustmentKind === 'refund' || original.adjustmentKind === 'reversal') {
             thrownError = new Error('退款单或冲正单不能再次发起退款。');
+            return s;
+          }
+          if (original.status && original.status !== 'completed') {
+            thrownError = new Error('只有已完成的交易才能发起退款。');
             return s;
           }
           if (!Number.isFinite(refundAmount) || refundAmount <= 0) {
@@ -974,15 +987,30 @@ export const useFinanceStore = create<FinanceState>()(
         });
       },
       removeCategory: (id) => {
+        const affectedTransactions: TransactionItem[] = [];
         set((s) => {
           const target = s.categories.find((item) => item.id === id);
           if (!target) {
             return s;
           }
+          const updatedAt = new Date().toISOString();
+          const transactions = s.transactions.map((item) => {
+            if (item.categoryId !== id) {
+              return item;
+            }
+            const next = { ...item, categoryId: '', updatedAt };
+            affectedTransactions.push(next);
+            return next;
+          });
           return {
             categories: s.categories.filter((item) => item.id !== id),
-            trashedCategories: ensureUniqueById([...s.trashedCategories, markTrashedAt(target)])
+            transactions,
+            trashedCategories: ensureUniqueById([...s.trashedCategories, markTrashedAt(target)]),
+            ...rebuildStateSlices(s.accounts, transactions, s.balanceChangeEntries)
           };
+        });
+        affectedTransactions.forEach((row) => {
+          void syncChangeIfNeeded({ entity: 'transactions', action: 'update', row, id: row.id });
         });
         void syncChangeIfNeeded({ entity: 'categories', action: 'delete', id });
       },

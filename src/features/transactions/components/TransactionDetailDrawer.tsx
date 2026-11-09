@@ -728,7 +728,8 @@ export function TransactionDetailDrawer({
           {onRefund &&
           transaction &&
           transaction.adjustmentKind !== 'refund' &&
-          transaction.adjustmentKind !== 'reversal' ? (
+          transaction.adjustmentKind !== 'reversal' &&
+          (!transaction.status || transaction.status === 'completed') ? (
             <button
               type="button"
               className="drawer-refund-btn"
