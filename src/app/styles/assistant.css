@@ -2945,6 +2945,10 @@
   color: var(--color-danger);
 }
 
+.chat-token-usage.is-warning {
+  color: var(--color-warning);
+}
+
 /* ---------- Disclaimer ---------- */
 .chat-disclaimer {
   margin: 0;

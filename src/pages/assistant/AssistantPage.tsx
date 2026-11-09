@@ -2585,7 +2585,7 @@ export function AssistantPage() {
                     ) : null}
                     {item.role === 'assistant' && item.embeddingSummaryText ? (
                       <p
-                        className={`chat-token-usage${item.embeddingSummaryIsError ? ' is-error' : ''}`}
+                        className={`chat-token-usage${item.embeddingSummaryIsError ? ' is-warning' : ''}`}
                       >
                         {formatEmbeddingSummaryForDisplay(item.embeddingSummaryText)}
                       </p>
