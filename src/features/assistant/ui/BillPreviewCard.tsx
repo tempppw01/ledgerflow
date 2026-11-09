@@ -74,16 +74,26 @@ export function BillPreviewCard({
   onSaved
 }: BillPreviewCardProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
-  const formatAmount = (item: DraftBillEntry) => {
+  const [conversionInputs, setConversionInputs] = useState<Record<string, string>>({});
+
+  const formatAmount = (amount: number, currency: string) => {
     try {
       return new Intl.NumberFormat('zh-CN', {
         style: 'currency',
-        currency: 'CNY',
+        currency,
         minimumFractionDigits: 2
-      }).format(item.amount);
+      }).format(amount);
     } catch {
-      return `¥${item.amount.toFixed(2)}`;
+      return `${currency} ${amount.toFixed(2)}`;
     }
+  };
+
+  const normalizedCurrencyFor = (item: DraftBillEntry) =>
+    normalizeLedgerCurrency(item.currency || '');
+
+  const isForeignCurrency = (item: DraftBillEntry) => {
+    const currency = normalizedCurrencyFor(item);
+    return isSupportedLedgerCurrency(currency) && currency !== 'CNY';
   };
 
   const needsCurrencyConfirmation = (item: DraftBillEntry) => {
@@ -95,11 +105,23 @@ export function BillPreviewCard({
     );
   };
 
-  const currencyConfirmationLabel = (item: DraftBillEntry) => {
-    const currency = normalizeLedgerCurrency(item.currency);
-    return !currency || currency === 'CNY' || currency === 'UNKNOWN'
-      ? '确认币种为 CNY'
-      : '确认按人民币金额入账';
+  const currencyConfirmationLabel = (item: DraftBillEntry) =>
+    isForeignCurrency(item) ? '确认人民币金额' : '确认币种为 CNY';
+
+  const convertForeignCurrency = (item: DraftBillEntry) => {
+    const currency = normalizedCurrencyFor(item);
+    const amount = Number(conversionInputs[item.id]);
+    if (!isForeignCurrency(item) || !Number.isFinite(amount) || amount <= 0) return;
+    onUpdateEntry?.(item.id, {
+      amount: Math.round(amount * 100) / 100,
+      currencyConfirmed: true,
+      originalAmountText: item.originalAmountText?.trim() || formatAmount(item.amount, currency)
+    });
+    setConversionInputs((prev) => {
+      const next = { ...prev };
+      delete next[item.id];
+      return next;
+    });
   };
 
   const saveableCount = entries.filter((item) => item.selected && item.issues.length === 0).length;
@@ -140,7 +162,11 @@ export function BillPreviewCard({
           const accountLabel = resolveDraftAccountLabel(item, accounts);
           const normalizedCurrency = normalizeLedgerCurrency(item.currency);
           const currencyIsValid = isSupportedLedgerCurrency(normalizedCurrency);
+          const foreignCurrency = isForeignCurrency(item);
           const showCurrencyConfirmation = needsCurrencyConfirmation(item);
+          const conversionAmount = Number(conversionInputs[item.id]);
+          const canConvertCurrency =
+            foreignCurrency && Number.isFinite(conversionAmount) && conversionAmount > 0;
           return (
             <article
               key={item.id}
@@ -180,7 +206,17 @@ export function BillPreviewCard({
               </div>
 
               <div className="chat-bill-row-value">
-                <strong className={`is-${item.type}`}>{formatAmount(item)}</strong>
+                <strong className={`is-${item.type}`}>
+                  {formatAmount(
+                    item.amount,
+                    foreignCurrency && !item.currencyConfirmed ? normalizedCurrency : 'CNY'
+                  )}
+                </strong>
+                {foreignCurrency ? (
+                  <small className="chat-bill-row-currency">
+                    {item.currencyConfirmed ? '人民币入账' : '原币金额'}
+                  </small>
+                ) : null}
                 {item.duplicateTxId ? <span className="chat-dup-badge">可能重复</span> : null}
                 {item.duplicateReason === 'batch' ? (
                   <span className="chat-dup-badge">同批次重复</span>
@@ -208,7 +244,40 @@ export function BillPreviewCard({
               {item.issues.length > 0 || showCurrencyConfirmation ? (
                 <div className="chat-bill-issue">
                   <span>{item.issues.length > 0 ? issueText(item) : '需人工确认:币种'}</span>
-                  {showCurrencyConfirmation && onUpdateEntry ? (
+                  {showCurrencyConfirmation && foreignCurrency && onUpdateEntry ? (
+                    <div
+                      className="chat-bill-currency-convert"
+                      role="group"
+                      aria-label={`${normalizedCurrency} 折算为人民币`}
+                    >
+                      <label htmlFor={`conversion-${item.id}`}>人民币入账金额</label>
+                      <input
+                        id={`conversion-${item.id}`}
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        inputMode="decimal"
+                        value={conversionInputs[item.id] || ''}
+                        placeholder={`请输入 ${
+                          item.originalAmountText || formatAmount(item.amount, normalizedCurrency)
+                        } 折合多少元`}
+                        onChange={(event) =>
+                          setConversionInputs((prev) => ({
+                            ...prev,
+                            [item.id]: event.target.value
+                          }))
+                        }
+                      />
+                      <button
+                        type="button"
+                        className="chat-bill-confirm-currency"
+                        disabled={!canConvertCurrency}
+                        onClick={() => convertForeignCurrency(item)}
+                      >
+                        {currencyConfirmationLabel(item)}
+                      </button>
+                    </div>
+                  ) : showCurrencyConfirmation && onUpdateEntry ? (
                     <button
                       type="button"
                       className="chat-bill-confirm-currency"
@@ -240,7 +309,7 @@ export function BillPreviewCard({
                     </select>
                   </label>
                   <label>
-                    金额
+                    {foreignCurrency && !item.currencyConfirmed ? '原币金额' : '人民币金额'}
                     <input
                       type="number"
                       min="0"
@@ -264,11 +333,15 @@ export function BillPreviewCard({
                     <select
                       value={normalizedCurrency}
                       aria-invalid={!currencyIsValid}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        const nextCurrency = normalizeLedgerCurrency(event.target.value);
                         onUpdateEntry?.(item.id, {
-                          currency: normalizeLedgerCurrency(event.target.value)
-                        })
-                      }
+                          currency: nextCurrency,
+                          needsReview: Array.from(
+                            new Set([...(item.needsReview || []), 'amount', 'currency'])
+                          )
+                        });
+                      }}
                     >
                       {!currencyIsValid ? (
                         <option value={normalizedCurrency}>

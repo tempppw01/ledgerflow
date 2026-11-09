@@ -93,7 +93,7 @@ describe('BillPreviewCard', () => {
     expect(onSaved).toHaveBeenCalledOnce();
   });
 
-  it('外币账单提供确认原币保存入口', () => {
+  it('外币账单先显示原币,并要求填写人民币入账金额', () => {
     const onUpdateEntry = vi.fn();
     const usdEntry: DraftBillEntry = {
       ...entry,
@@ -101,6 +101,7 @@ describe('BillPreviewCard', () => {
       amount: 20.5,
       currency: 'USD',
       currencyConfirmed: false,
+      originalAmountText: '$20.50',
       issues: [
         {
           field: 'currency',
@@ -119,9 +120,46 @@ describe('BillPreviewCard', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '确认按人民币金额入账' }));
+    expect(screen.getByText('US$20.50')).toBeInTheDocument();
+    expect(screen.getByText('原币金额')).toBeInTheDocument();
+    const conversionInput = screen.getByRole('spinbutton', { name: '人民币入账金额' });
+    const confirmButton = screen.getByRole('button', { name: '确认人民币金额' });
+    expect(confirmButton).toBeDisabled();
 
-    expect(onUpdateEntry).toHaveBeenCalledWith('draft-usd', { currencyConfirmed: true });
+    fireEvent.change(conversionInput, { target: { value: '149.35' } });
+    fireEvent.click(confirmButton);
+
+    expect(onUpdateEntry).toHaveBeenCalledWith('draft-usd', {
+      amount: 149.35,
+      currencyConfirmed: true,
+      originalAmountText: '$20.50'
+    });
+  });
+
+  it('外币已确认后显示人民币入账金额和原币说明', () => {
+    const usdEntry: DraftBillEntry = {
+      ...entry,
+      id: 'draft-usd-confirmed',
+      amount: 149.35,
+      currency: 'USD',
+      currencyConfirmed: true,
+      originalAmountText: '$20.50',
+      issues: []
+    };
+
+    render(
+      <BillPreviewCard
+        entries={[usdEntry]}
+        duplicateCount={0}
+        onCheckDuplicates={vi.fn()}
+        onSave={vi.fn(() => true)}
+        onUpdateEntry={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('¥149.35')).toBeInTheDocument();
+    expect(screen.getByText('人民币入账')).toBeInTheDocument();
+    expect(screen.getByText(/\$20\.50/)).toBeInTheDocument();
   });
 
   it('needsReview 标记为 currency 时,即使 CNY 暂无校验文案也提供确认入口', () => {
@@ -216,7 +254,8 @@ describe('BillPreviewCard', () => {
     fireEvent.change(currencySelect, { target: { value: 'USD' } });
 
     expect(onUpdateEntry).toHaveBeenCalledWith('draft-invalid-currency', {
-      currency: 'USD'
+      currency: 'USD',
+      needsReview: ['amount', 'currency']
     });
   });
 

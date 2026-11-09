@@ -762,12 +762,15 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
     setEntries((prev) =>
       attachDuplicateMeta(
         prev.map((item) => {
+          const requestedReview = nextPatch.needsReview?.length
+            ? Array.from(new Set([...(item.needsReview || []), ...nextPatch.needsReview]))
+            : item.needsReview;
           const next: DraftBillEntry =
             item.id === id
               ? {
                   ...item,
                   ...nextPatch,
-                  needsReview: clearResolvedReviewFields(item.needsReview, nextPatch)
+                  needsReview: clearResolvedReviewFields(requestedReview, nextPatch)
                 }
               : item;
           return { ...next, issues: validateDraft(next) };

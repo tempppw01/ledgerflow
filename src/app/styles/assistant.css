@@ -3092,6 +3092,11 @@
   color: var(--color-success, #24a86a);
 }
 
+.chat-bill-row-currency {
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+}
+
 .chat-bill-row-extra {
   display: flex;
   flex-wrap: wrap;
@@ -3170,6 +3175,35 @@
 
 .chat-bill-confirm-currency:hover {
   background: var(--color-warning-bg);
+}
+
+.chat-bill-confirm-currency:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.chat-bill-currency-convert {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.chat-bill-currency-convert label {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.chat-bill-currency-convert input {
+  width: min(180px, 100%);
+  min-height: 34px;
+  padding: 5px 8px;
+  border: 1px solid var(--color-warning-border);
+  border-radius: 7px;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  font-size: var(--font-xs);
 }
 
 .chat-bill-edit-grid {
