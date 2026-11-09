@@ -4251,20 +4251,21 @@
     max-width: none;
   }
 
-  .chat-mode-switch-options button,
-  .chat-mode-switch-options button.active {
-    padding-inline: 9px;
-    font-size: 11px;
-  }
-
   .chat-mode-welcome {
     grid-template-columns: minmax(0, 1fr);
     min-height: 0;
     padding-block: 18px 26px;
   }
 
+  .chat-mode-welcome-copy {
+    max-width: 100%;
+    min-width: 0;
+  }
+
   .chat-mode-welcome h2 {
+    max-width: 100%;
     font-size: clamp(27px, 9vw, 38px);
+    overflow-wrap: anywhere;
   }
 
   .chat-mode-welcome-features {
@@ -4699,6 +4700,7 @@
     grid-column: 1 / -1;
     margin-left: 0;
     width: 100%;
+    min-width: 0;
   }
 
   .chat-topbar-no-title .chat-mode-switch {
@@ -4706,25 +4708,36 @@
     top: auto;
     left: auto;
     grid-column: 1 / -1;
-    width: auto;
-    justify-self: center;
+    width: 100%;
+    max-width: 100%;
+    justify-self: stretch;
     transform: none;
   }
 
-  .chat-mode-switch button {
-    flex: 1 1 0;
+  .chat-mode-switch-options {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .chat-mode-switch-options button,
+  .chat-mode-switch-options button.active {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 2px;
+    font-size: clamp(10px, 3.2vw, 11px);
+    line-height: 1.25;
+    overflow-wrap: anywhere;
     text-align: center;
+    white-space: normal;
   }
 
   .chat-mode-switch .chat-mode-switch-trigger {
     flex: 0 0 auto;
     min-width: 108px;
     padding-block: 6px;
-  }
-
-  .chat-mode-switch-options {
-    width: max-content;
-    max-width: calc(100vw - 20px);
   }
 
   .chat-model-selector {
@@ -4828,6 +4841,14 @@
     max-width: 42vw;
   }
 
+  .chat-topbar-no-title .chat-topbar-right {
+    position: static;
+    top: auto;
+    right: auto;
+    grid-column: 1 / -1;
+    transform: none;
+  }
+
   .chat-topbar-right {
     display: flex;
     grid-column: auto;
@@ -4836,6 +4857,10 @@
     justify-self: end;
     flex-wrap: nowrap;
     gap: 6px;
+  }
+
+  .chat-topbar-right:not(:has(> :not(.chat-wide-toggle))) {
+    display: none;
   }
 
   .chat-topbar-right > * {
