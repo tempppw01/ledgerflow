@@ -872,4 +872,43 @@ describe('RepaymentManagementPage', () => {
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
     expect(screen.getByText('2026/12')).toBeInTheDocument();
   });
+
+  it('本期还清后,负债卡片展示已还与下期倒计时', () => {
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const paidAt = `${today.getFullYear()}-${month}-${day}`;
+
+    appPreferencesMock.state.debts = [
+      {
+        id: 'debt-settled-cycle',
+        name: '招商信用卡',
+        type: 'credit-card',
+        status: 'active',
+        balance: 9600,
+        repaymentDay: 10,
+        remainingMonths: 12
+      }
+    ];
+    appPreferencesMock.state.repaymentRecords = [
+      {
+        id: 'record-settled-cycle',
+        debtId: 'debt-settled-cycle',
+        amount: 1200,
+        paidAt,
+        recordMode: 'manual',
+        createdAt: `${paidAt}T00:00:00.000Z`
+      }
+    ];
+
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getAllByText(/本期已还 · 下期 \d+ 天后/).length).toBeGreaterThan(0);
+  });
 });

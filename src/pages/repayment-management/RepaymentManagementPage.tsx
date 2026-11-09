@@ -1392,6 +1392,12 @@ export function RepaymentManagementPage() {
               : typeof item.repaymentDay === 'number'
                 ? (item.repaymentDay - today + 31) % 31
                 : Number.POSITIVE_INFINITY;
+        const dueDisplay =
+          !isSimpleReminder && typeof item.repaymentDay === 'number'
+            ? resolveDebtRepaymentDueDisplay(item, minimumPayment, repaymentRecords, now)
+            : null;
+        const isRepaidThisCycle = dueDisplay?.isPaid ?? false;
+        const nextCycleDueInDays = isRepaidThisCycle ? dueDisplay?.daysUntil ?? null : null;
         const statusTone: RepaymentDebtStatusTone =
           lifecycleStatus === 'settled'
             ? 'safe'
@@ -1399,6 +1405,8 @@ export function RepaymentManagementPage() {
               ? 'muted'
               : lifecycleStatus === 'paused'
                 ? 'warning'
+                : isRepaidThisCycle
+                  ? 'safe'
                 : !Number.isFinite(dueInDays) || (!isSimpleReminder && typeof item.repaymentDay !== 'number')
                   ? 'muted'
                   : dueInDays === 0
@@ -1413,6 +1421,10 @@ export function RepaymentManagementPage() {
               ? '已关闭'
               : lifecycleStatus === 'paused'
                 ? '暂缓处理'
+                : isRepaidThisCycle
+                  ? nextCycleDueInDays !== null && nextCycleDueInDays >= 0
+                    ? `本期已还 · 下期 ${nextCycleDueInDays} 天后`
+                    : '本期已还'
                 : !Number.isFinite(dueInDays) || (!isSimpleReminder && typeof item.repaymentDay !== 'number')
                   ? '待补日期'
                   : isSimpleReminder && dueInDays < 0
@@ -1454,6 +1466,7 @@ export function RepaymentManagementPage() {
           dueInDays,
           statusTone,
           statusLabel,
+          isRepaidThisCycle,
           remainingMonths: item.remainingMonths,
           paidPeriods: item.paidPeriods,
           totalPeriods: item.totalPeriods,
@@ -1468,7 +1481,7 @@ export function RepaymentManagementPage() {
         };
       })
       .sort((a, b) => a.dueInDays - b.dueInDays);
-  }, [debtsWithStatus]);
+  }, [debtsWithStatus, repaymentRecords]);
 
   const visibleRepaymentLedgerPreview = useMemo(() => {
     const filtered = repaymentLedgerPreview.filter((item) => {
