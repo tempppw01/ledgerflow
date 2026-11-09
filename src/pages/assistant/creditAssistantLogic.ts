@@ -242,9 +242,24 @@ function buildCreditConfirmationSummary(item: CreditExtractedItem): string[] {
     `剩余待还：${item.totalDebt || '待确认'}`,
     `还款日：${item.repaymentDate || '待确认'}`,
     `每期金额：${item.monthlyAmount || '待确认'}`,
-    `APR/年化：${item.rateType || item.interest || '待确认'}`,
+    `APR/年化：${formatCreditRateSummary(item)}`,
     `状态：${item.pendingFields.length === 0 ? '字段基本齐全，可确认保存' : `仍待补充 ${item.pendingFields.join('、')}`}`
   ];
+}
+
+/**
+ * 利率摘要优先展示真实费率/年化值，口径（APR/月利率等）只作为补充说明，
+ * 避免出现 “APR/年化：APR” 这类丢失数值的误导性摘要。
+ */
+function formatCreditRateSummary(item: CreditExtractedItem): string {
+  const interest = String(item.interest || '').trim();
+  const rateType = String(item.rateType || '').trim();
+
+  if (interest && rateType && !interest.includes(rateType)) {
+    return `${interest}（${rateType}）`;
+  }
+
+  return interest || rateType || '待确认';
 }
 
 function buildCreditFieldMeta(
