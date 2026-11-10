@@ -303,6 +303,46 @@ describe('AssistantPage', () => {
     expect(bookkeepingIllustration?.src).toContain('/ledgerflow/Illustrations/importing.svg');
   });
 
+  it('切换其他助手模式后不应继承记账待确认状态和预览卡片', async () => {
+    window.sessionStorage.setItem('ledgerflow.assistant.activeMode', 'bookkeeping');
+    useAssistantWorkbenchMock.mockReturnValue({
+      ...createWorkbenchMock(),
+      status: 'preview',
+      entries: [
+        {
+          id: 'preview-1',
+          selected: true,
+          type: 'expense',
+          amount: 32.5,
+          date: '2026-11-10',
+          note: '午餐',
+          category: '餐饮',
+          account: '',
+          tags: [],
+          currency: 'CNY',
+          issues: []
+        }
+      ]
+    });
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByLabelText('AI 记账输入')).toHaveAttribute('placeholder', '预览中');
+    expect(screen.getByLabelText('账单确认')).toBeInTheDocument();
+
+    await selectAssistantMode('AI 信贷管家');
+
+    expect(screen.getByLabelText('AI 信贷管家输入')).toHaveAttribute(
+      'placeholder',
+      '可以直接问我花呗、分期、贷款、账单和还款安排。'
+    );
+    expect(screen.queryByLabelText('账单确认')).not.toBeInTheDocument();
+  });
+
   it('同批次重复账单也应计入预览重复提示', async () => {
     useAssistantWorkbenchMock.mockReturnValue({
       ...createWorkbenchMock(),

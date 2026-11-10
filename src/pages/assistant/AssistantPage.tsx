@@ -96,8 +96,11 @@ function inputPlaceholder(
   const assistantHint = t('assistant.placeholders.assistantHint');
   const bookkeepingHint = t('assistant.placeholders.bookkeepingHint');
   const creditHint = '可以直接问我花呗、分期、贷款、账单和还款安排。';
+  // 记账待确认状态不应盖过其他模式自己的输入提示。
+  const effectiveStatus =
+    mode !== 'bookkeeping' && (status === 'preview' || status === 'saved') ? 'idle' : status;
 
-  switch (status) {
+  switch (effectiveStatus) {
     case 'idle':
       return mode === 'bookkeeping'
         ? t('assistant.placeholders.idleBookkeeping', { hint: bookkeepingHint })
@@ -3022,7 +3025,7 @@ export function AssistantPage() {
                 </article>
               ))}
 
-              {wb.entries.length > 0 ? (
+              {mode === 'bookkeeping' && wb.entries.length > 0 ? (
                 <article className="chat-msg">
                   {renderChatAvatar('success')}
                   <div className="chat-msg-body">
