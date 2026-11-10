@@ -663,39 +663,19 @@ function buildFollowUpPrompts(answer: string, history: ChatHistoryItem[]): strin
   const focus = intents[0];
   const prompts =
     focus === 'trend'
-      ? [
-          `${topic}接下来重点观察什么变化？`,
-          `这段变化里，哪个时间点最值得拿来对比？`,
-          `如果趋势反转，最早会出现什么信号？`
-        ]
+      ? [`${topic}接下来会怎么变?`, `这段时间哪天花得最多?`, `下个月要不要盯紧${topic}?`]
       : focus === 'risk'
-        ? [
-            `${topic}最大的实际风险会落在哪里？`,
-            `有哪些新信息会改变刚才的风险判断？`,
-            `现在先做哪一步能降低${topic}的影响？`
-          ]
+        ? [`${topic}最怕出什么问题?`, `现在先做哪一步最稳?`, `要不要先留点钱应急?`]
         : focus === 'planning'
-          ? [
-              `围绕${topic}，这周最先做哪件事？`,
-              `${topic}怎么拆成容易执行的两步？`,
-              `做到什么程度可以判断这套计划有效？`
-            ]
+          ? [`这周先做哪件事最有用?`, `${topic}从哪一步开始最好上手?`, `做到什么程度算有进步?`]
           : focus === 'decision'
-            ? [
-                `比较${topic}时，最该优先看哪个条件？`,
-                `换一个更保守的前提，这个结论会变吗？`,
-                `做决定前还缺哪条关键信息？`
-              ]
+            ? [`这件事最该先看哪一点?`, `换个想法,结论会变吗?`, `还差什么信息才能定下来?`]
             : focus === 'category'
-              ? [
-                  `${topic}主要由哪些具体项目拉动？`,
-                  `这部分里哪些支出可以调整、哪些不适合动？`,
-                  `拿哪个周期对比${topic}最有参考价值？`
-                ]
+              ? [`${topic}主要花在哪几项?`, `这些里哪些能省、哪些省不了?`, `跟哪段时间比更合适?`]
               : [
-                  `${topic}的判断依据具体来自哪里？`,
-                  `关于${topic}，还需要补充什么信息才能判断？`,
-                  `把${topic}落实的话，下一步可以怎么做？`
+                  `${topic}是怎么算出来的?`,
+                  `关于${topic},我还想知道什么?`,
+                  `接下来我可以做点什么?`
                 ];
 
   // 问题本身过长时，减少重复引用，保持按钮短而具体。
@@ -709,6 +689,10 @@ function normalizeFollowUpPrompt(prompt: string): string {
     .trim()
     .slice(0, 48);
 }
+
+/** 追问建议里不该出现的专业词,命中就放弃这条建议。 */
+const FOLLOW_UP_JARGON_PATTERN =
+  /(口径|维度|样本|归因|结构化|验证|依据|趋势反转|资金面|显著性|复现|颗粒度|执行路径|优先级|周期对比|风险评估|协同矩阵|漏斗)/;
 
 const FOLLOW_UP_PERIOD_PATTERN =
   /(本月|这个月|当月|上月|上个月|本周|这周|本季度|今年|去年|最近|近[一二三四五六七八九十\d]+(?:天|周|个月|年))/;
@@ -778,15 +762,19 @@ function parseAiFollowUpPrompts(raw: string): string[] {
   >;
   if (!Array.isArray(parsed)) return [];
 
-  return parsed
-    .map((item) => {
-      if (typeof item === 'string') return item;
-      if (!item || typeof item !== 'object') return '';
-      return String(item.prompt || item.question || item.label || '');
-    })
-    .map(normalizeFollowUpPrompt)
-    .filter((item, index, list) => item.length >= 6 && list.indexOf(item) === index)
-    .slice(0, 4);
+  return (
+    parsed
+      .map((item) => {
+        if (typeof item === 'string') return item;
+        if (!item || typeof item !== 'object') return '';
+        return String(item.prompt || item.question || item.label || '');
+      })
+      .map(normalizeFollowUpPrompt)
+      .filter((item, index, list) => item.length >= 6 && list.indexOf(item) === index)
+      // 模型偶尔会冒出「口径」「样本」这类专业词,这类建议直接丢弃,交给口语化兜底文案。
+      .filter((item) => !FOLLOW_UP_JARGON_PATTERN.test(item))
+      .slice(0, 4)
+  );
 }
 
 function renderFieldMetaTag(meta?: CreditFieldMeta) {
@@ -1436,7 +1424,7 @@ export function AssistantPage() {
           apiKey,
           model,
           systemPrompt:
-            '你是 AI 助手里的“继续追问建议生成器”。请基于最近对话、用户刚才的问题和助手本轮回答，生成 3 到 4 条自然、具体、像真人顺着聊下去会问的问题。只返回 JSON 数组，例如 ["问题1","问题2","问题3"]。要求：1) 每条都必须是中文问题句；2) 聚焦当前主题的下一步，不要泛泛地说“展开讲讲”“还有哪些数据”；3) 尽量引用当前回答里的具体对象、金额、时间、场景或判断；4) 每条角度不同，可以是原因、取舍、风险、下一步、验证；5) 单条尽量控制在 10 到 28 个汉字；6) 不要出现“如果你愿意”“我可以帮你”等助手口吻。',
+            '你是 AI 助手里的「继续追问建议生成器」。请基于最近对话、用户刚才的问题和助手本轮回答，生成 3 到 4 条像普通人随口追问的问题。只返回 JSON 数组，例如 ["问题1","问题2","问题3"]。要求：1) 全部用日常口语，像朋友聊天，不用书面词和专业词；2) 禁止出现这些词及其同类：口径、维度、样本、归因、结构化、验证、依据、趋势反转、资金面、显著性、复现、颗粒度、执行路径、优先级、周期对比、风险评估；3) 每条不超过 20 个字，越短越好；4) 尽量带上具体金额、日期、商家、分类这些真实信息；5) 都从「我」的角度问自己的事，例如“这 330 是微信付的吗？”；6) 三条角度不同，可以是确认一件事、下一步怎么做、会不会出问题；7) 不要出现「如果你愿意」「我可以帮你」这类助手口吻，也不要问「还有什么可以帮你」。',
           messages: [
             {
               role: 'user',

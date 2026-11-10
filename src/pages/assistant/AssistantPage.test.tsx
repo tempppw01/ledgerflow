@@ -1431,7 +1431,9 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByRole('button', { name: /餐饮和通勤/ })).toBeInTheDocument();
+    expect((await screen.findAllByRole('button', { name: /餐饮和通勤/ })).length).toBeGreaterThan(
+      0
+    );
     expect(
       screen.queryByText('把这个变化拆成几个阶段，我想看真正的拐点。')
     ).not.toBeInTheDocument();
@@ -1620,6 +1622,41 @@ describe('AssistantPage', () => {
 
     expect(screen.getByText('已删除:测试 ¥10.00')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '撤销' })).not.toBeInTheDocument();
+
+    sessionStorageGetItemSpy.mockRestore();
+  });
+  it('模型给出的专业术语追问应被过滤并回退到口语化建议', async () => {
+    vi.mocked(sendAiChat).mockResolvedValueOnce({
+      content: JSON.stringify(['账户口径要怎么修正?', '样本量是否足够?', '要不要看趋势反转信号?'])
+    });
+    useAssistantWorkbenchMock.mockReturnValue({
+      ...createWorkbenchMock(),
+      rawContent: '本月餐饮支出集中在工作日外卖。',
+      status: 'ready'
+    });
+
+    const sessionStorageGetItemSpy = vi
+      .spyOn(window.sessionStorage.__proto__, 'getItem')
+      .mockImplementation((key) => {
+        if (String(key).includes('chatHistory.assistant')) {
+          return JSON.stringify([
+            { id: 'jargon-user', role: 'user', text: '帮我看看最近餐饮支出' }
+          ]);
+        }
+        return '[]';
+      });
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(/你可以顺手继续问/)).toBeInTheDocument();
+    expect(screen.queryByText(/口径/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/样本/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/趋势反转/)).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /餐饮/ }).length).toBeGreaterThan(0);
 
     sessionStorageGetItemSpy.mockRestore();
   });
