@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -175,5 +175,57 @@ describe('CategoriesAccountsPage', () => {
       name: '外食',
       parentId: 'cat-transport'
     });
+  });
+
+  it('标签支持重命名并同步到交易', async () => {
+    const user = userEvent.setup();
+    financeStoreMock.state.categories = [] as never;
+    financeStoreMock.state.transactions = [
+      {
+        id: 'tx-coffee',
+        type: 'expense',
+        categoryId: '',
+        accountId: 'acc-alipay',
+        amount: 28,
+        date: '2026-11-10',
+        note: '咖啡',
+        tags: ['咖啡', '下午'],
+        source: 'manual',
+        status: 'completed'
+      },
+      {
+        id: 'tx-food',
+        type: 'expense',
+        categoryId: '',
+        accountId: 'acc-alipay',
+        amount: 30,
+        date: '2026-11-10',
+        note: '午饭',
+        tags: ['餐饮'],
+        source: 'manual',
+        status: 'completed'
+      }
+    ] as never;
+
+    render(
+      <MemoryRouter>
+        <CategoriesAccountsPage />
+      </MemoryRouter>
+    );
+
+    const coffeeLabel = await screen.findByText('#咖啡');
+    const coffeeRow = coffeeLabel.closest('li');
+    expect(coffeeRow).not.toBeNull();
+    await user.click(within(coffeeRow as HTMLElement).getByRole('button', { name: '重命名' }));
+
+    const input = screen.getByLabelText('重命名标签 咖啡');
+    await user.clear(input);
+    await user.type(input, '下午茶');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    expect(financeStoreMock.state.updateTransaction).toHaveBeenCalledWith(
+      'tx-coffee',
+      expect.objectContaining({ tags: ['下午茶', '下午'] })
+    );
   });
 });

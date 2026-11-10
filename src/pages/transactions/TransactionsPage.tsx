@@ -390,6 +390,17 @@ export function TransactionsPage() {
   const { user } = useAuth();
   const transactions = useFinanceStore((s) => s.transactions);
   const categories = useFinanceStore((s) => s.categories);
+  /** 一级分类筛选时,把子分类的交易一起算进来。 */
+  const childCategoryIdsByParent = useMemo(() => {
+    const map = new Map<string, string[]>();
+    categories.forEach((item) => {
+      if (!item.parentId) return;
+      const list = map.get(item.parentId) || [];
+      list.push(item.id);
+      map.set(item.parentId, list);
+    });
+    return map;
+  }, [categories]);
   const accounts = useFinanceStore((s) => s.accounts);
   const addTransaction = useFinanceStore((s) => s.addTransaction);
   const updateTransaction = useFinanceStore((s) => s.updateTransaction);
@@ -742,7 +753,11 @@ export function TransactionsPage() {
       const rowDay = String(row.item.date || '').slice(0, 10);
       const typePass = quickFilters.type === 'all' ? true : row.item.type === quickFilters.type;
       const statusPass = statusFilter === 'all' ? true : row.item.status === statusFilter;
-      const categoryPass = matchesCategoryQuickFilter(categoryFilter, row.item.categoryId);
+      const categoryPass = matchesCategoryQuickFilter(
+        categoryFilter,
+        row.item.categoryId,
+        childCategoryIdsByParent.get(categoryFilter) || []
+      );
       const accountPass = !accountFilter || row.item.accountId === accountFilter;
       const orderNoPass =
         !orderNoFilter || (row.item.orderNo || '').toLowerCase().includes(orderNoFilter);
@@ -780,7 +795,7 @@ export function TransactionsPage() {
         notePass
       );
     });
-  }, [mappedRows, quickFilters]);
+  }, [childCategoryIdsByParent, mappedRows, quickFilters]);
 
   const sortedRows = useMemo(() => {
     const rows = [...quickFilteredRows];

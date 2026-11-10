@@ -9550,6 +9550,18 @@ body.exchange-resizing {
   height: 30px;
 }
 
+.tag-rename-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.tag-rename-form input {
+  flex: 1 1 180px;
+}
+
 @media (max-width: 720px) {
   .category-create-form {
     grid-template-columns: minmax(0, 1fr);

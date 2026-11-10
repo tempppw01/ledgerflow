@@ -119,6 +119,8 @@ export function CategoriesAccountsPage() {
   const [categoryError, setCategoryError] = useState('');
   const [accountError, setAccountError] = useState('');
   const [mergeTargetByTag, setMergeTargetByTag] = useState<Record<string, string>>({});
+  const [editingTagKey, setEditingTagKey] = useState<string | null>(null);
+  const [editTagName, setEditTagName] = useState('');
   const [editingBalanceAccountId, setEditingBalanceAccountId] = useState<string | null>(null);
   const [workspace, setWorkspace] = useState<'categories' | 'accounts'>('categories');
 
@@ -468,6 +470,41 @@ export function CategoriesAccountsPage() {
     });
   };
 
+  const startEditTag = (tag: { key: string; label: string }) => {
+    setEditingTagKey(tag.key);
+    setEditTagName(tag.label);
+  };
+
+  /** 把一个标签改名到新名字,同名标签自动去重。 */
+  const renameTag = (fromLabel: string, toLabelRaw: string) => {
+    const target = normalizeNameInput(toLabelRaw);
+    const from = fromLabel.trim().toLowerCase();
+    if (!target || !from) return;
+    if (target.toLowerCase() === from) {
+      setEditingTagKey(null);
+      setEditTagName('');
+      return;
+    }
+    transactions.forEach((tx) => {
+      const hasTag = tx.tags.some((tag) => tag.trim().toLowerCase() === from);
+      if (!hasTag) return;
+      const seen = new Set<string>();
+      const nextTags: string[] = [];
+      tx.tags.forEach((tag) => {
+        const value = tag.trim();
+        if (!value) return;
+        const next = value.toLowerCase() === from ? target : value;
+        const key = next.toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        nextTags.push(next);
+      });
+      updateTransaction(tx.id, { ...tx, tags: nextTags });
+    });
+    setEditingTagKey(null);
+    setEditTagName('');
+  };
+
   const mergeTagIntoAnother = (fromLabel: string, toLabel: string) => {
     const from = fromLabel.trim().toLowerCase();
     const to = toLabel.trim();
@@ -797,54 +834,93 @@ export function CategoriesAccountsPage() {
               <ul className="tag-manage-list">
                 {tagGroups.map((tag) => (
                   <li key={tag.key} className="tag-manage-item">
-                    <span className="tag-manage-name">#{tag.label}</span>
-                    <button
-                      type="button"
-                      className="category-count-chip"
-                      onClick={() =>
-                        navigate(`/transactions?keyword=${encodeURIComponent(tag.label)}`)
-                      }
-                    >
-                      {tag.count} 条
-                    </button>
-                    <span className="tag-manage-actions">
-                      <select
-                        aria-label={`选择 ${tag.label} 的合并目标`}
-                        value={mergeTargetByTag[tag.key] || ''}
-                        onChange={(event) =>
-                          setMergeTargetByTag((prev) => ({
-                            ...prev,
-                            [tag.key]: event.target.value
-                          }))
-                        }
+                    {editingTagKey === tag.key ? (
+                      <form
+                        className="tag-rename-form"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          renameTag(tag.label, editTagName);
+                        }}
                       >
-                        <option value="">合并到…</option>
-                        {tagGroups
-                          .filter((item) => item.key !== tag.key)
-                          .map((item) => (
-                            <option key={item.key} value={item.label}>
-                              {item.label}
-                            </option>
-                          ))}
-                      </select>
-                      <button
-                        type="button"
-                        className="category-action"
-                        onClick={() =>
-                          mergeTagIntoAnother(tag.label, mergeTargetByTag[tag.key] || '')
-                        }
-                      >
-                        合并
-                      </button>
-                      <button
-                        type="button"
-                        className="category-icon-action is-danger"
-                        aria-label={`删除标签 ${tag.label}`}
-                        onClick={() => setPendingRemoveTagLabel(tag.label)}
-                      >
-                        删除
-                      </button>
-                    </span>
+                        <input
+                          value={editTagName}
+                          onChange={(event) => setEditTagName(event.target.value)}
+                          maxLength={24}
+                          aria-label={`重命名标签 ${tag.label}`}
+                          autoFocus
+                        />
+                        <button className="primary" type="submit">
+                          保存
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingTagKey(null);
+                            setEditTagName('');
+                          }}
+                        >
+                          取消
+                        </button>
+                      </form>
+                    ) : (
+                      <>
+                        <span className="tag-manage-name">#{tag.label}</span>
+                        <button
+                          type="button"
+                          className="category-count-chip"
+                          onClick={() =>
+                            navigate(`/transactions?keyword=${encodeURIComponent(tag.label)}`)
+                          }
+                        >
+                          {tag.count} 条
+                        </button>
+                        <span className="tag-manage-actions">
+                          <button
+                            type="button"
+                            className="category-action"
+                            onClick={() => startEditTag(tag)}
+                          >
+                            重命名
+                          </button>
+                          <select
+                            aria-label={`选择 ${tag.label} 的合并目标`}
+                            value={mergeTargetByTag[tag.key] || ''}
+                            onChange={(event) =>
+                              setMergeTargetByTag((prev) => ({
+                                ...prev,
+                                [tag.key]: event.target.value
+                              }))
+                            }
+                          >
+                            <option value="">合并到…</option>
+                            {tagGroups
+                              .filter((item) => item.key !== tag.key)
+                              .map((item) => (
+                                <option key={item.key} value={item.label}>
+                                  {item.label}
+                                </option>
+                              ))}
+                          </select>
+                          <button
+                            type="button"
+                            className="category-action"
+                            onClick={() =>
+                              mergeTagIntoAnother(tag.label, mergeTargetByTag[tag.key] || '')
+                            }
+                          >
+                            合并
+                          </button>
+                          <button
+                            type="button"
+                            className="category-icon-action is-danger"
+                            aria-label={`删除标签 ${tag.label}`}
+                            onClick={() => setPendingRemoveTagLabel(tag.label)}
+                          >
+                            删除
+                          </button>
+                        </span>
+                      </>
+                    )}
                   </li>
                 ))}
               </ul>
