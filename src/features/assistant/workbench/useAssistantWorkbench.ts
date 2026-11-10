@@ -117,8 +117,16 @@ interface UseAssistantWorkbenchInput {
     recordMode?: string;
     note?: string;
   }>;
-  sceneMode?: 'bookkeeping' | 'assistant' | 'credit' | 'investment';
+  sceneMode?: 'assistant' | 'credit' | 'investment';
   globalMemories?: GlobalMemoryItem[];
+}
+
+export interface AssistantRecognizeOptions {
+  /**
+   * bill:走账单识别 JSON 流程,产出待确认草稿;
+   * chat:走对话/分析流程(由 Agent 工具完成增删改)。
+   */
+  task?: 'bill' | 'chat';
 }
 
 /**
@@ -488,7 +496,8 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
    */
   const runRecognize = async (
     promptText: string,
-    payload?: { imageDataUrls?: string[]; pdfDataUrls?: string[] }
+    payload?: { imageDataUrls?: string[]; pdfDataUrls?: string[] },
+    options?: AssistantRecognizeOptions
   ) => {
     const cleanPrompt = promptText.trim();
     const effectiveImageDataUrls = payload?.imageDataUrls ?? imageDataUrls;
@@ -513,10 +522,8 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
     recognizeAbortRef.current = controller;
 
     try {
-      const isConversationalMode =
-        input.sceneMode === 'assistant' ||
-        input.sceneMode === 'credit' ||
-        input.sceneMode === 'investment';
+      // 只有显式声明为 bill 的任务才走 JSON 记账解析,其余都按对话/Agent 处理。
+      const isConversationalMode = options?.task !== 'bill';
       const basePrompt =
         input.sceneMode === 'investment'
           ? `${ANALYSIS_AGENT_PROMPT}\n\n你是用户的投资理财助手，重点讨论基金、股票、市场走势、资产配置、定投和风险管理。结合用户提供的持仓与市场信息给出有依据的分析，区分事实、估算与不确定性，不承诺收益、不把短期波动包装成确定预测，并提醒投资决策由用户自行承担。`
@@ -749,9 +756,10 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
 
   const handleRecognizeWithPrompt = async (
     promptText: string,
-    payload?: { imageDataUrls?: string[]; pdfDataUrls?: string[] }
+    payload?: { imageDataUrls?: string[]; pdfDataUrls?: string[] },
+    options?: AssistantRecognizeOptions
   ) => {
-    await runRecognize(promptText, payload);
+    await runRecognize(promptText, payload, options);
   };
 
   const updateEntry = (id: string, patch: Partial<DraftBillEntry>) => {

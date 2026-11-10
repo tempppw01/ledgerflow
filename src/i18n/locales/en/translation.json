@@ -420,10 +420,10 @@
   "assistant": {
     "placeholders": {
       "needApiKey": "Please configure the API key in Settings first",
-      "assistantHint": "Example: Did I spend too much this month?\nExample: What’s my food expense ratio?",
+      "assistantHint": "Example: Spent 15 yuan on lunch today via Alipay (category detected automatically)\nExample: How much did I spend on food this month?",
       "bookkeepingHint": "Example: Spent 15 yuan on lunch today via Alipay (category detected automatically)",
       "idleBookkeeping": "Waiting for input · {{hint}}",
-      "readyAssistant": "Natural language is supported · Press Enter to send, Shift+Enter for a new line\n{{hint}}",
+      "readyAssistant": "Bookkeeping, questions and edits are all supported · Press Enter to send, Shift+Enter for a new line\n{{hint}}",
       "readyBookkeeping": "Ready · Press Enter to send, Shift+Enter for a new line",
       "recognizing": "Model is recognizing, please wait…",
       "preview": "Recognition complete. You can refine details or save directly.",

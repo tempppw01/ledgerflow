@@ -94,25 +94,18 @@ function inputPlaceholder(
   if (!hasApiKey) return t('assistant.placeholders.needApiKey');
 
   const assistantHint = t('assistant.placeholders.assistantHint');
-  const bookkeepingHint = t('assistant.placeholders.bookkeepingHint');
   const creditHint = '可以直接问我花呗、分期、贷款、账单和还款安排。';
-  // 记账待确认状态不应盖过其他模式自己的输入提示。
+  // 只有合并后的 AI 助手会进入账单待确认态,其他模式不应被其状态覆盖提示。
   const effectiveStatus =
-    mode !== 'bookkeeping' && (status === 'preview' || status === 'saved') ? 'idle' : status;
+    mode !== 'assistant' && (status === 'preview' || status === 'saved') ? 'idle' : status;
 
   switch (effectiveStatus) {
     case 'idle':
-      return mode === 'bookkeeping'
-        ? t('assistant.placeholders.idleBookkeeping', { hint: bookkeepingHint })
-        : mode === 'credit'
-          ? creditHint
-          : assistantHint;
+      return mode === 'credit' ? creditHint : assistantHint;
     case 'ready':
-      return mode === 'bookkeeping'
-        ? t('assistant.placeholders.readyBookkeeping')
-        : mode === 'credit'
-          ? '把贷款、分期或账单截图贴给我，我先帮你梳理应还信息。'
-          : t('assistant.placeholders.readyAssistant', { hint: assistantHint });
+      return mode === 'credit'
+        ? '把贷款、分期或账单截图贴给我，我先帮你梳理应还信息。'
+        : t('assistant.placeholders.readyAssistant', { hint: assistantHint });
     case 'recognizing':
       return t('assistant.placeholders.recognizing');
     case 'preview':
@@ -124,11 +117,7 @@ function inputPlaceholder(
     case 'error':
       return t('assistant.placeholders.error');
     default:
-      return mode === 'bookkeeping'
-        ? bookkeepingHint
-        : mode === 'credit'
-          ? creditHint
-          : assistantHint;
+      return mode === 'credit' ? creditHint : assistantHint;
   }
 }
 
@@ -228,13 +217,15 @@ interface DuplicateReviewPair {
 }
 
 const CHAT_HISTORY_CACHE_KEYS: Record<AssistantMode, string> = {
-  bookkeeping: 'ledgerflow.assistant.chatHistory.bookkeeping',
   assistant: 'ledgerflow.assistant.chatHistory.assistant',
   credit: 'ledgerflow.assistant.chatHistory.credit',
   investment: 'ledgerflow.assistant.chatHistory.investment'
 };
 
-const ASSISTANT_MODE_ORDER: AssistantMode[] = ['bookkeeping', 'assistant', 'credit', 'investment'];
+/** 旧版「AI 记账」独立会话缓存;合并后仅用于迁移到 assistant。 */
+const LEGACY_BOOKKEEPING_HISTORY_KEY = 'ledgerflow.assistant.chatHistory.bookkeeping';
+
+const ASSISTANT_MODE_ORDER: AssistantMode[] = ['assistant', 'credit', 'investment'];
 
 const ASSISTANT_INTRO_ILLUSTRATION_URL =
   'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/Illustrations/importing.svg';
@@ -285,7 +276,15 @@ function sanitizeCachedFollowUpPrompts(items: ChatHistoryItem[]): ChatHistoryIte
 
 function readChatHistory(mode: AssistantMode): ChatHistoryItem[] {
   try {
-    const raw = window.sessionStorage.getItem(CHAT_HISTORY_CACHE_KEYS[mode]);
+    let raw = window.sessionStorage.getItem(CHAT_HISTORY_CACHE_KEYS[mode]);
+    // 合并初期把旧「AI 记账」会话迁移到 AI 助手,避免升级后上下文突然消失。
+    if (mode === 'assistant' && !raw) {
+      raw = window.sessionStorage.getItem(LEGACY_BOOKKEEPING_HISTORY_KEY);
+      if (raw) {
+        window.sessionStorage.setItem(CHAT_HISTORY_CACHE_KEYS.assistant, raw);
+        window.sessionStorage.removeItem(LEGACY_BOOKKEEPING_HISTORY_KEY);
+      }
+    }
     if (!raw) return [];
     const parsed = JSON.parse(raw) as ChatHistoryItem[];
     if (!Array.isArray(parsed)) return [];
@@ -884,13 +883,11 @@ export function AssistantPage() {
   const modelTriggerRef = useRef<HTMLButtonElement | null>(null);
   const modelMenuRef = useRef<HTMLDivElement | null>(null);
   const modeTabRefs = useRef<Record<AssistantMode, HTMLButtonElement | null>>({
-    bookkeeping: null,
     assistant: null,
     credit: null,
     investment: null
   });
   const memoryExtractionSignatureRef = useRef<Record<AssistantMode, string>>({
-    bookkeeping: '',
     assistant: '',
     credit: '',
     investment: ''
@@ -986,7 +983,6 @@ export function AssistantPage() {
     };
   }, [debts, repaymentRecords, thisMonthKey]);
   const lastAssistantRef = useRef<Record<AssistantMode, string>>({
-    bookkeeping: '',
     assistant: '',
     credit: '',
     investment: ''
@@ -1314,7 +1310,6 @@ export function AssistantPage() {
   useEffect(() => {
     if (!baseUrl || !apiKey || !model) return;
     if (!enableEmbeddingModel || !embeddingModel.trim()) return;
-    if (mode === 'bookkeeping') return;
 
     const recentConversation = chatHistory
       .filter((item) => item.role === 'user' || item.role === 'assistant')
@@ -1558,7 +1553,7 @@ export function AssistantPage() {
 
   const buildAssistantMessageText = useCallback(
     (responseMode: AssistantMode) => {
-      if (responseMode === 'bookkeeping' && wb.entries.length > 0) {
+      if (responseMode === 'assistant' && wb.entries.length > 0) {
         const entries = wb.entries;
         if (entries.length === 1) {
           const entry = entries[0];
@@ -1604,8 +1599,10 @@ export function AssistantPage() {
     }
 
     const requestQuestion = clean || '请根据我上传的附件完成识别与提炼。';
+    // 合并后的 AI 模式:带附件走账单识别;纯文本走 Agent 对话,可直接增删改账单。
+    const recognizeTask: 'bill' | 'chat' = mode === 'assistant' && hasAttachments ? 'bill' : 'chat';
     const requestPrompt =
-      mode === 'bookkeeping'
+      recognizeTask === 'bill'
         ? requestQuestion
         : mode === 'credit'
           ? buildCreditConversationPrompt(requestQuestion, chatHistory)
@@ -1631,10 +1628,14 @@ export function AssistantPage() {
     setComposerFocused(false);
     wb.textareaRef.current?.blur();
     void Promise.resolve(
-      wb.handleRecognizeWithPrompt(requestPrompt, {
-        imageDataUrls: imagePayload,
-        pdfDataUrls: pdfPayload
-      })
+      wb.handleRecognizeWithPrompt(
+        requestPrompt,
+        {
+          imageDataUrls: imagePayload,
+          pdfDataUrls: pdfPayload
+        },
+        { task: recognizeTask }
+      )
     ).finally(() => {
       submitInFlightRef.current = false;
     });
@@ -1817,9 +1818,7 @@ export function AssistantPage() {
   }, [focusModelOption, model, modelOpen, modelPickerSource, wb.models]);
 
   // 非记账分析时，模型返回自由文本，解析 JSON 失败属于预期，不展示底部红条。
-  const shouldShowError =
-    Boolean(wb.error) &&
-    (mode === 'bookkeeping' || !/unexpected token|invalid json|json/i.test(wb.error.toLowerCase()));
+  const shouldShowError = Boolean(wb.error);
 
   useEffect(() => {
     const responseMode = pendingRequestModeRef.current;
@@ -1858,7 +1857,7 @@ export function AssistantPage() {
       ? `Token 消耗：输入 ${wb.lastUsage.promptTokens} / 输出 ${wb.lastUsage.completionTokens} / 总计 ${wb.lastUsage.totalTokens}`
       : undefined;
     const embeddingSummaryText =
-      responseMode !== 'bookkeeping' && showEmbeddingSummary && wb.embeddingDebug.enabled
+      showEmbeddingSummary && wb.embeddingDebug.enabled
         ? wb.embeddingDebug.used
           ? `语义召回：命中 ${wb.embeddingDebug.hitCount} 条，最高相似度 ${wb.embeddingDebug.topScore.toFixed(2)}，平均相似度 ${wb.embeddingDebug.averageScore.toFixed(2)}，耗时 ${wb.embeddingDebug.latencyMs}ms，索引 ${wb.embeddingDebug.indexedDocs} 条。`
           : wb.embeddingDebug.downgraded
@@ -1867,7 +1866,7 @@ export function AssistantPage() {
         : undefined;
 
     const embeddingDebugText =
-      responseMode !== 'bookkeeping' && showEmbeddingDebug && wb.embeddingDebug.enabled
+      showEmbeddingDebug && wb.embeddingDebug.enabled
         ? [
             `模型：${wb.embeddingDebug.model || '-'} | 启用：${wb.embeddingDebug.enabled ? '是' : '否'} | 使用召回：${wb.embeddingDebug.used ? '是' : '否'} | 降级：${wb.embeddingDebug.downgraded ? '是' : '否'}`,
             `命中：${wb.embeddingDebug.hitCount} | 最高：${wb.embeddingDebug.topScore.toFixed(4)} | 平均：${wb.embeddingDebug.averageScore.toFixed(4)} | 索引：${wb.embeddingDebug.indexedDocs} | 耗时：${wb.embeddingDebug.latencyMs}ms`,
@@ -1900,10 +1899,7 @@ export function AssistantPage() {
       reasoningText: wb.rawReasoning || undefined,
       embeddingSummaryText,
       embeddingSummaryIsError: Boolean(
-        responseMode !== 'bookkeeping' &&
-        showEmbeddingSummary &&
-        wb.embeddingDebug.enabled &&
-        wb.embeddingDebug.downgraded
+        showEmbeddingSummary && wb.embeddingDebug.enabled && wb.embeddingDebug.downgraded
       ),
       embeddingDebugText,
       followUpPrompts:
@@ -2097,20 +2093,6 @@ export function AssistantPage() {
           <div className="chat-mode-switch-options" role="tablist" aria-label="AI 助手模式">
             <button
               ref={(node) => {
-                modeTabRefs.current.bookkeeping = node;
-              }}
-              type="button"
-              role="tab"
-              aria-selected={mode === 'bookkeeping'}
-              tabIndex={mode === 'bookkeeping' ? 0 : -1}
-              className={mode === 'bookkeeping' ? 'active' : ''}
-              onClick={() => selectAssistantMode('bookkeeping')}
-              onKeyDown={(event) => onModeTabKeyDown(event, 'bookkeeping')}
-            >
-              {t('assistant.ui.bookkeepingMode')}
-            </button>
-            <button
-              ref={(node) => {
                 modeTabRefs.current.assistant = node;
               }}
               type="button"
@@ -2155,7 +2137,7 @@ export function AssistantPage() {
         </div>
 
         <div className="chat-topbar-right">
-          {mode !== 'bookkeeping' && wb.semanticRecallCacheMeta.exists ? (
+          {wb.semanticRecallCacheMeta.exists ? (
             <button
               type="button"
               className="chat-icon-topbar-btn"
@@ -2201,50 +2183,7 @@ export function AssistantPage() {
                 </section>
               ) : null}
 
-              {mode === 'bookkeeping' ? (
-                <section
-                  className="chat-mode-welcome chat-bookkeeping-welcome"
-                  aria-label="AI 记账"
-                >
-                  <div className="chat-mode-welcome-copy">
-                    <div className="chat-mode-welcome-eyebrow">
-                      AI 记账 <span>·</span> 今天 {todayLabel}
-                    </div>
-                    <h2>
-                      把今天的每一笔，<em>轻松记下来</em>
-                    </h2>
-                    <p>说一句“午饭 28 元”，或直接放一张账单截图；其余的分类、金额和日期交给我。</p>
-                    <div className="chat-mode-welcome-features">
-                      <div>
-                        <b>01</b>
-                        <span>
-                          一句话记账<small>自然语言也能识别</small>
-                        </span>
-                      </div>
-                      <div>
-                        <b>02</b>
-                        <span>
-                          账单截图<small>自动提取待确认信息</small>
-                        </span>
-                      </div>
-                      <div>
-                        <b>03</b>
-                        <span>
-                          保存前核对<small>每笔账都由你确认</small>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  {shouldShowIntroIllustration ? (
-                    <img
-                      className="chat-mode-welcome-illustration chat-bookkeeping-illustration"
-                      src={ASSISTANT_INTRO_ILLUSTRATION_URL}
-                      alt=""
-                      aria-hidden="true"
-                    />
-                  ) : null}
-                </section>
-              ) : mode === 'credit' ? (
+              {mode === 'credit' ? (
                 <section className="chat-mode-welcome chat-credit-welcome" aria-label="AI 信贷管家">
                   <div className="chat-mode-welcome-copy">
                     <div className="chat-mode-welcome-eyebrow">
@@ -2290,21 +2229,41 @@ export function AssistantPage() {
                 <section className="chat-mode-welcome chat-general-welcome" aria-label="AI 助手">
                   <div className="chat-mode-welcome-copy">
                     <div className="chat-mode-welcome-eyebrow">
-                      AI 助手 <span>·</span> 把数据讲明白
+                      AI 助手 <span>·</span> 记账、问答、改账
                     </div>
                     <h2>
-                      账本里的事情，<em>一起理一理</em>
+                      记一笔、查一笔，<em>直接说就行</em>
                     </h2>
-                    <p>问账本、看趋势、做取舍。我会先给你结论，再把值得关注的地方讲清楚。</p>
+                    <p>
+                      说“午饭 28
+                      元”直接记账，贴账单截图自动识别；也可以问账本、看趋势，或者让我修改、删除某一笔账单。
+                    </p>
                     <div className="chat-mode-welcome-features">
-                      {assistantOverview.monthlyBriefs.slice(0, 3).map((item, index) => (
-                        <div key={item.label}>
-                          <b>0{index + 1}</b>
-                          <span>
-                            {item.label}
-                            <small>{item.value}</small>
-                          </span>
-                        </div>
+                      <div>
+                        <b>01</b>
+                        <span>
+                          一句话记账<small>自然语言直接入账</small>
+                        </span>
+                      </div>
+                      <div>
+                        <b>02</b>
+                        <span>
+                          截图识别<small>保存前逐笔核对</small>
+                        </span>
+                      </div>
+                      <div>
+                        <b>03</b>
+                        <span>
+                          查账改账<small>增删改都能交给它</small>
+                        </span>
+                      </div>
+                    </div>
+                    <div className="chat-mode-welcome-briefs">
+                      {assistantOverview.monthlyBriefs.slice(0, 3).map((item) => (
+                        <span key={item.label}>
+                          <small>本月{item.label}</small>
+                          <b>{item.value}</b>
+                        </span>
                       ))}
                     </div>
                   </div>
@@ -2323,19 +2282,13 @@ export function AssistantPage() {
                 {renderChatAvatar('assistant')}
                 <div className="chat-msg-body">
                   <div className="chat-msg-header">
-                    {mode === 'bookkeeping'
-                      ? t('assistant.ui.bookkeepingAssistant')
-                      : mode === 'credit'
-                        ? 'AI 信贷管家'
-                        : t('assistant.ui.qaAssistant')}
+                    {mode === 'credit' ? 'AI 信贷管家' : t('assistant.ui.qaAssistant')}
                   </div>
                   <div className="chat-msg-content">
                     <p>
                       {mode === 'assistant'
-                        ? `今天 ${todayLabel}，直接问账本、预算或趋势，我先给重点。`
-                        : mode === 'credit'
-                          ? '把花呗、分期、贷款或信用账单交给我，我先帮你拆出应还金额、时间点和待补信息。'
-                          : '输入一句话或贴截图，我会帮你快速生成可保存账单。能省几步就省几步。'}
+                        ? `今天 ${todayLabel}，记账、查账、改账都可以直接说，我先给结论。`
+                        : `把花呗、分期、贷款或信用账单交给我，我先帮你拆出应还金额、时间点和待补信息。`}
                     </p>
                   </div>
                 </div>
@@ -3025,7 +2978,7 @@ export function AssistantPage() {
                 </article>
               ))}
 
-              {mode === 'bookkeeping' && wb.entries.length > 0 ? (
+              {mode === 'assistant' && wb.entries.length > 0 ? (
                 <article className="chat-msg">
                   {renderChatAvatar('success')}
                   <div className="chat-msg-body">
@@ -3372,13 +3325,7 @@ export function AssistantPage() {
                   <textarea
                     ref={wb.textareaRef}
                     className="chat-input-textarea"
-                    aria-label={
-                      mode === 'bookkeeping'
-                        ? 'AI 记账输入'
-                        : mode === 'credit'
-                          ? 'AI 信贷管家输入'
-                          : 'AI 对话输入'
-                    }
+                    aria-label={mode === 'credit' ? 'AI 信贷管家输入' : 'AI 助手输入'}
                     rows={1}
                     placeholder={inputPlaceholder(wb.status, wb.hasApiKey, mode, t)}
                     value={wb.textInput}

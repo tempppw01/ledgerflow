@@ -111,7 +111,9 @@ vi.mock('../../shared/store/useFinanceStore', () => ({
 }));
 
 vi.mock('../../shared/store/useGlobalMemoryStore', () => ({
-  useGlobalMemoryStore: (selector: (state: { memories: never[]; addMemory: ReturnType<typeof vi.fn> }) => unknown) =>
+  useGlobalMemoryStore: (
+    selector: (state: { memories: never[]; addMemory: ReturnType<typeof vi.fn> }) => unknown
+  ) =>
     selector({
       memories: [],
       addMemory: vi.fn()
@@ -214,7 +216,7 @@ describe('AssistantPage input layout', () => {
     expect(form?.contains(context as Node)).toBe(false);
   });
 
-  it('uses the compact composer for the three regular assistant modes', async () => {
+  it('uses the compact composer for the assistant and credit modes', async () => {
     useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
 
     const { container } = render(
@@ -225,9 +227,9 @@ describe('AssistantPage input layout', () => {
 
     const regularModeButtons = Array.from(
       container.querySelectorAll<HTMLButtonElement>('.chat-mode-switch button')
-    ).slice(0, 3);
+    ).slice(0, 2);
 
-    expect(regularModeButtons).toHaveLength(3);
+    expect(regularModeButtons).toHaveLength(2);
 
     for (const modeButton of regularModeButtons) {
       await act(async () => {

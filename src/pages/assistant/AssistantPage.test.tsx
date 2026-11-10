@@ -278,14 +278,14 @@ function createWorkbenchMock() {
   };
 }
 
-async function selectAssistantMode(mode: 'AI 记账' | 'AI 信贷管家') {
+async function selectAssistantMode(mode: 'AI 助手' | 'AI 信贷管家') {
   await act(async () => {
     fireEvent.click(screen.getByRole('tab', { name: mode }));
   });
 }
 
 describe('AssistantPage', () => {
-  it('AI 记账首屏应展示导入插画', async () => {
+  it('合并后的 AI 助手首屏应展示导入插画与记账能力', async () => {
     useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
 
     const { container } = render(
@@ -294,16 +294,18 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    await selectAssistantMode('AI 记账');
+    await selectAssistantMode('AI 助手');
 
-    expect(screen.getByText(/把今天的每一笔/)).toBeInTheDocument();
-    const bookkeepingIllustration = container.querySelector<HTMLImageElement>(
-      '.chat-bookkeeping-illustration'
+    expect(screen.getByText(/记一笔、查一笔/)).toBeInTheDocument();
+    expect(screen.getByText('一句话记账')).toBeInTheDocument();
+    expect(screen.getByText('查账改账')).toBeInTheDocument();
+    const mergedIllustration = container.querySelector<HTMLImageElement>(
+      '.chat-general-welcome .chat-mode-welcome-illustration'
     );
-    expect(bookkeepingIllustration?.src).toContain('/ledgerflow/Illustrations/importing.svg');
+    expect(mergedIllustration?.src).toContain('/ledgerflow/Illustrations/importing.svg');
   });
 
-  it('切换其他助手模式后不应继承记账待确认状态和预览卡片', async () => {
+  it('旧记账模式缓存应迁移到 AI 助手,切换其他模式后不继承待确认状态', async () => {
     window.sessionStorage.setItem('ledgerflow.assistant.activeMode', 'bookkeeping');
     useAssistantWorkbenchMock.mockReturnValue({
       ...createWorkbenchMock(),
@@ -331,7 +333,7 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByLabelText('AI 记账输入')).toHaveAttribute('placeholder', '预览中');
+    expect(screen.getByLabelText('AI 助手输入')).toHaveAttribute('placeholder', '预览中');
     expect(screen.getByLabelText('账单确认')).toBeInTheDocument();
 
     await selectAssistantMode('AI 信贷管家');
@@ -375,12 +377,12 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    await selectAssistantMode('AI 记账');
+    await selectAssistantMode('AI 助手');
 
     expect(screen.getByText(/有 1 笔可能已记过/)).toBeInTheDocument();
   });
 
-  it('AI 记账保存中应传入保存状态并阻止重复保存', async () => {
+  it('合并后的 AI 助手保存中应传入保存状态并阻止重复保存', async () => {
     const workbench = {
       ...createWorkbenchMock(),
       status: 'saving',
@@ -408,7 +410,7 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    await selectAssistantMode('AI 记账');
+    await selectAssistantMode('AI 助手');
 
     const saveButton = screen.getByRole('button', { name: '保存中' });
     expect(saveButton).toBeDisabled();
@@ -416,7 +418,7 @@ describe('AssistantPage', () => {
     expect(workbench.saveSelected).not.toHaveBeenCalled();
   });
 
-  it('AI 记账回复遇到无效币种时应回退人民币格式化而不中断', async () => {
+  it('合并后的 AI 助手回复遇到无效币种时应回退人民币格式化而不中断', async () => {
     window.sessionStorage.setItem('ledgerflow.assistant.activeMode', 'bookkeeping');
     const workbench = {
       ...createWorkbenchMock(),
@@ -488,7 +490,7 @@ describe('AssistantPage', () => {
     expect(screen.queryByText('📌 这个模式适合什么')).not.toBeInTheDocument();
   });
 
-  it('模式切换包含账务、通用、信贷和投资四类助手', async () => {
+  it('模式切换收敛为 AI 助手、信贷管家和投资助手三类', async () => {
     useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
 
     const { container } = render(
@@ -498,8 +500,9 @@ describe('AssistantPage', () => {
     );
 
     const options = container.querySelector('.chat-mode-switch-options');
-    expect(options?.querySelectorAll('button')).toHaveLength(4);
+    expect(options?.querySelectorAll('button')).toHaveLength(3);
     expect(options).toHaveAttribute('role', 'tablist');
+    expect(screen.getByRole('tab', { name: 'AI 助手' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'AI 投资助手' })).toBeInTheDocument();
 
     await act(async () => {
@@ -649,7 +652,7 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('textbox', { name: 'AI 对话输入' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'AI 助手输入' })).toBeInTheDocument();
     const fileInput = container.querySelector<HTMLInputElement>('input[type="file"]');
     expect(fileInput).not.toBeNull();
     expect(fileInput).toHaveAttribute('hidden');
@@ -1159,7 +1162,7 @@ describe('AssistantPage', () => {
       fireEvent.click(screen.getByTitle('发送'));
     });
 
-    const [prompt, payload] = workbench.handleRecognizeWithPrompt.mock.calls[0] || [];
+    const [prompt, payload, options] = workbench.handleRecognizeWithPrompt.mock.calls[0] || [];
     expect(typeof prompt).toBe('string');
     expect(String(prompt)).toContain('当前问题：帮我看看最近支出趋势');
     expect(String(prompt)).toContain('回答偏好：');
@@ -1173,6 +1176,7 @@ describe('AssistantPage', () => {
         pdfDataUrls: []
       })
     );
+    expect(options).toEqual({ task: 'chat' });
   });
 
   it('提交进行中时应忽略重复发送', async () => {
@@ -1279,7 +1283,8 @@ describe('AssistantPage', () => {
       {
         imageDataUrls: ['data:image/png;base64,retry'],
         pdfDataUrls: ['data:application/pdf;base64,retry']
-      }
+      },
+      { task: 'bill' }
     );
     expect(screen.getAllByText('帮我识别附件')).toHaveLength(1);
   });
@@ -1362,7 +1367,7 @@ describe('AssistantPage', () => {
     expect(details?.querySelector('pre')?.textContent).toBe(detailedError);
   });
 
-  it('AI 记账遇到 JSON 解析失败时应显示可重试错误', () => {
+  it('账单识别遇到 JSON 解析失败时应显示可重试错误', () => {
     window.sessionStorage.setItem('ledgerflow.assistant.activeMode', 'bookkeeping');
     useAssistantWorkbenchMock.mockReturnValue({
       ...createWorkbenchMock(),
@@ -1380,7 +1385,7 @@ describe('AssistantPage', () => {
     expect(screen.getByRole('button', { name: '重试' })).toBeInTheDocument();
   });
 
-  it('普通 AI 助手的自由文本回答不应显示 JSON 解析错误', () => {
+  it('合并后的 AI 助手在工作流报错时应展示可重试错误', () => {
     window.sessionStorage.setItem('ledgerflow.assistant.activeMode', 'assistant');
     useAssistantWorkbenchMock.mockReturnValue({
       ...createWorkbenchMock(),
@@ -1394,7 +1399,8 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.queryByText('请求失败')).not.toBeInTheDocument();
+    expect(screen.getByText('请求失败')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '重试' })).toBeInTheDocument();
   });
 
   it('继续追问生成服务不可用时，回退建议仍应围绕当前对话动态生成', async () => {

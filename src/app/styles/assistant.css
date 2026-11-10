@@ -4238,6 +4238,29 @@
   border-top: 1px solid var(--color-divider);
 }
 
+.chat-mode-welcome-briefs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 26px;
+  margin-top: 20px;
+}
+
+.chat-mode-welcome-briefs span {
+  display: grid;
+  gap: 2px;
+}
+
+.chat-mode-welcome-briefs small {
+  font-size: var(--font-xs);
+  color: var(--color-text-tertiary);
+}
+
+.chat-mode-welcome-briefs b {
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
 .chat-mode-welcome-features > div {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
