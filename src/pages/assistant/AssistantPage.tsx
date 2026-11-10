@@ -262,7 +262,11 @@ function readWideLayoutPreference() {
 }
 
 function isStaleFollowUpPrompt(prompt: string): boolean {
-  return /[“”…]/.test(prompt) || /(?:并|且|以及|然后|再|就|的|了)$/.test(prompt.trim());
+  return (
+    FOLLOW_UP_JARGON_PATTERN.test(prompt) ||
+    /[\u201C\u201D...]/.test(prompt) ||
+    /(?:并|且|以及|然后|再|就|的|了)$/.test(prompt.trim())
+  );
 }
 
 // 旧版本缓存的追问可能带引号或被截断,这里按当前文案规则重新生成。

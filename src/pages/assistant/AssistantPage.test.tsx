@@ -1660,4 +1660,36 @@ describe('AssistantPage', () => {
 
     sessionStorageGetItemSpy.mockRestore();
   });
+  it('旧缓存里带专业术语的追问应在读取时换成口语版', () => {
+    useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
+
+    const sessionStorageGetItemSpy = vi
+      .spyOn(window.sessionStorage.__proto__, 'getItem')
+      .mockImplementation((key) => {
+        if (String(key).includes('chatHistory.assistant')) {
+          return JSON.stringify([
+            { id: 'legacy-jargon-user', role: 'user', text: '帮我看看最近餐饮支出' },
+            {
+              id: 'legacy-jargon-assistant',
+              role: 'assistant',
+              text: '本月餐饮支出集中在工作日外卖。',
+              followUpPrompts: ['账户口径要怎么修正?', '样本量是否足够?']
+            }
+          ]);
+        }
+        return '[]';
+      });
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByRole('button', { name: /口径/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /样本/ })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /餐饮/ }).length).toBeGreaterThan(0);
+
+    sessionStorageGetItemSpy.mockRestore();
+  });
 });
