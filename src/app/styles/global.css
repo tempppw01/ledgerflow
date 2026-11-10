@@ -6054,6 +6054,7 @@ small.mono {
     margin-left: 0;
     width: 100%;
     padding: 1px;
+    justify-content: center;
     overflow-x: auto;
     scrollbar-width: none;
   }
@@ -6063,9 +6064,9 @@ small.mono {
   }
 
   .chat-mode-switch button {
-    flex: 1 0 auto;
+    flex: 0 0 auto;
     min-width: max-content;
-    padding: 5px 8px;
+    padding: 6px 14px;
   }
 
   .chat-model-selector {

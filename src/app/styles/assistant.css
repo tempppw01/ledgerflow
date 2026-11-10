@@ -4853,6 +4853,7 @@
     margin-left: 0;
     width: 100%;
     min-width: 0;
+    justify-content: center;
   }
 
   .chat-topbar-no-title .chat-mode-switch {
@@ -4867,24 +4868,30 @@
   }
 
   .chat-mode-switch-options {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    width: 100%;
+    display: inline-flex;
+    width: auto;
     max-width: 100%;
     min-width: 0;
+    justify-content: center;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .chat-mode-switch-options::-webkit-scrollbar {
+    display: none;
   }
 
   .chat-mode-switch-options button,
   .chat-mode-switch-options button.active {
-    width: 100%;
-    min-width: 0;
-    min-height: 44px;
-    padding-inline: 2px;
-    font-size: clamp(10px, 3.2vw, 11px);
+    flex: 0 0 auto;
+    width: auto;
+    min-width: max-content;
+    min-height: 40px;
+    padding-inline: 14px;
+    font-size: 12px;
     line-height: 1.25;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
     text-align: center;
-    white-space: normal;
   }
 
   .chat-mode-switch .chat-mode-switch-trigger {
