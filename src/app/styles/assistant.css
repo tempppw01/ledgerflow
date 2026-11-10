@@ -242,7 +242,7 @@
   animation: chat-mode-spark 2.8s ease-in-out infinite;
 }
 
-.workspace-topbar .workspace-title-spark {
+.workspace-title-spark {
   display: inline-grid;
   width: 20px;
   height: 20px;

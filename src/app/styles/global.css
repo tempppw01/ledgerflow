@@ -1391,12 +1391,6 @@ body {
   letter-spacing: -0.2px;
 }
 
-.workspace-topbar span {
-  display: block;
-  font-size: var(--font-xs);
-  color: var(--color-text-tertiary);
-}
-
 .topbar-brand-copy {
   display: inline-flex;
   align-items: center;
