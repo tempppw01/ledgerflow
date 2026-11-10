@@ -36,6 +36,7 @@ const financeStoreMock = {
     ],
     transactions: [],
     addCategory: vi.fn(),
+    updateCategory: vi.fn(),
     reorderCategories: vi.fn(),
     removeCategory: vi.fn(),
     addAccount: vi.fn(),
@@ -109,5 +110,70 @@ describe('CategoriesAccountsPage', () => {
 
     expect(screen.getByRole('heading', { name: '账户管理' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: '分类与标签管理' })).not.toBeInTheDocument();
+  });
+
+  it('分类按收支分组,并支持给一级分类添加子分类', async () => {
+    const user = userEvent.setup();
+    financeStoreMock.state.categories = [
+      { id: 'cat-food', name: '餐饮', kind: 'expense', icon: '🍜' },
+      { id: 'cat-food-takeout', name: '外卖', kind: 'expense', parentId: 'cat-food' },
+      { id: 'cat-salary', name: '工资', kind: 'income', icon: '💰' }
+    ] as never;
+
+    render(
+      <MemoryRouter>
+        <CategoriesAccountsPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('餐饮')).toBeInTheDocument();
+    expect(screen.getByText('外卖')).toBeInTheDocument();
+    expect(screen.queryByText('工资')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: '收入分类' }));
+    expect(screen.getByText('工资')).toBeInTheDocument();
+    expect(screen.queryByText('餐饮')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: '支出分类' }));
+    await user.click(screen.getByRole('button', { name: '＋子分类' }));
+    expect(screen.getByLabelText('上级分类')).toHaveValue('cat-food');
+
+    await user.type(screen.getByLabelText('新增分类名称'), '咖啡奶茶');
+    await user.click(screen.getByRole('button', { name: '添加' }));
+
+    expect(financeStoreMock.state.addCategory).toHaveBeenCalledWith(
+      '咖啡奶茶',
+      expect.objectContaining({ parentId: 'cat-food', kind: 'expense' })
+    );
+  });
+
+  it('分类支持行内改名并调整上级', async () => {
+    const user = userEvent.setup();
+    financeStoreMock.state.categories = [
+      { id: 'cat-food', name: '餐饮', kind: 'expense', icon: '🍜' },
+      { id: 'cat-transport', name: '交通', kind: 'expense', icon: '🚇' },
+      { id: 'cat-food-takeout', name: '外卖', kind: 'expense', parentId: 'cat-food' }
+    ] as never;
+
+    render(
+      <MemoryRouter>
+        <CategoriesAccountsPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('外卖');
+    await user.click(screen.getAllByRole('button', { name: '编辑' })[1]);
+    const nameInput = screen.getByLabelText('重命名分类 外卖');
+    expect(nameInput).toHaveValue('外卖');
+
+    await user.clear(nameInput);
+    await user.type(nameInput, '外食');
+    await user.selectOptions(screen.getByLabelText('设置分类 外卖 的上级'), 'cat-transport');
+    await user.click(screen.getByRole('button', { name: '保存' }));
+
+    expect(financeStoreMock.state.updateCategory).toHaveBeenCalledWith('cat-food-takeout', {
+      name: '外食',
+      parentId: 'cat-transport'
+    });
   });
 });
