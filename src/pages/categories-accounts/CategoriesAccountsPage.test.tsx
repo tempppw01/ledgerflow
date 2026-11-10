@@ -119,6 +119,20 @@ describe('CategoriesAccountsPage', () => {
       { id: 'cat-food-takeout', name: '外卖', kind: 'expense', parentId: 'cat-food' },
       { id: 'cat-salary', name: '工资', kind: 'income', icon: '💰' }
     ] as never;
+    financeStoreMock.state.transactions = [
+      {
+        id: 'tx-takeout',
+        type: 'expense',
+        categoryId: 'cat-food-takeout',
+        accountId: 'acc-alipay',
+        amount: 36,
+        date: '2026-11-10',
+        note: '外卖',
+        tags: [],
+        source: 'manual',
+        status: 'completed'
+      }
+    ] as never;
 
     render(
       <MemoryRouter>
@@ -128,6 +142,10 @@ describe('CategoriesAccountsPage', () => {
 
     expect(await screen.findByText('餐饮')).toBeInTheDocument();
     expect(screen.getByText('外卖')).toBeInTheDocument();
+    // 一级分类显示子分类的合计,并和点击后的筛选结果一致。
+    expect(
+      screen.getByRole('button', { name: '查看分类 餐饮 的 1 条交易' })
+    ).toBeInTheDocument();
     expect(screen.queryByText('工资')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: '收入分类' }));

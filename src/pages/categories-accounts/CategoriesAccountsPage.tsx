@@ -553,9 +553,10 @@ export function CategoriesAccountsPage() {
 
   const renderCategoryNode = (
     item: Category,
-    options: { isChild: boolean; siblingIds: string[] }
+    options: { isChild: boolean; siblingIds: string[]; usage?: number }
   ) => {
-    const usage = categoryUsageMap.get(item.id) || 0;
+    // 一级分类显示「自己 + 子分类」的合计,和点击后的筛选结果保持一致。
+    const usage = options.usage ?? categoryUsageMap.get(item.id) ?? 0;
 
     if (editingCategoryId === item.id) {
       return (
@@ -799,12 +800,13 @@ export function CategoriesAccountsPage() {
                 </small>
               </div>
               <ul className="category-tree">
-                {categoryTree.map(({ root, children }) => (
+                {categoryTree.map(({ root, children, totalCount }) => (
                   <li key={root.id} className="category-group">
                     <ul className="category-group-list">
                       {renderCategoryNode(root, {
                         isChild: false,
-                        siblingIds: categoryTree.map((group) => group.root.id)
+                        siblingIds: categoryTree.map((group) => group.root.id),
+                        usage: totalCount
                       })}
                       {children.map((child) =>
                         renderCategoryNode(child, {
