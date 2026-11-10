@@ -8,8 +8,8 @@ import {
   useRef,
   useState
 } from 'react';
-import { fetchAiModels, sendAiChatStream } from '../api/openaiCompatibleClient';
-import type { ChatToolCall } from '../api/openaiCompatibleClient';
+import { fetchAiModels, sendAiChat, sendAiChatStream } from '../api/openaiCompatibleClient';
+import type { ChatToolCall, SendAiChatResult } from '../api/openaiCompatibleClient';
 import {
   ASSISTANT_AGENT_INSTRUCTIONS,
   ASSISTANT_AGENT_TOOLS,
@@ -621,7 +621,7 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
           handlers
         );
 
-      let reply;
+      let reply: SendAiChatResult;
       try {
         reply = await requestRound(toolsAvailable);
       } catch (error) {
@@ -638,6 +638,30 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
         } else {
           throw error;
         }
+      }
+
+      // 个别服务商的流式接口不回传 tool_calls(只返回空内容),补一次非流式请求。
+      if (
+        toolsAvailable &&
+        !streamedText.trim() &&
+        !reply.content?.trim() &&
+        (reply.toolCalls?.length ?? 0) === 0
+      ) {
+        const fallback = await sendAiChat({
+          baseUrl: input.baseUrl,
+          apiKey: input.apiKey,
+          model: input.model,
+          systemPrompt: options.systemPrompt,
+          messages,
+          signal: options.signal,
+          tools: ASSISTANT_AGENT_TOOLS
+        });
+        reply = {
+          content: fallback.content,
+          reasoning: fallback.reasoning,
+          toolCalls: fallback.toolCalls
+        };
+        if (fallback.content) setRawContent(fallback.content);
       }
 
       reasoning += streamedReasoning;

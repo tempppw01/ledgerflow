@@ -348,4 +348,74 @@ describe('useAssistantWorkbench Agent 工具', () => {
 
     fetchMock.mockRestore();
   });
+
+  it('流式接口不返回 tool_calls 时回退到非流式请求继续执行工具', async () => {
+    mockAiSettings();
+    const { fetchMock, state } = mockAgentChatFetch([
+      createSseResponse([
+        'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}',
+        '',
+        'data: [DONE]',
+        ''
+      ]),
+      () =>
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: null,
+                  tool_calls: [
+                    {
+                      id: 'call_2',
+                      type: 'function',
+                      function: { name: 'query_transactions', arguments: '{"keyword":"午餐"}' }
+                    }
+                  ]
+                }
+              }
+            ]
+          }),
+          { status: 200 }
+        ),
+      createSseResponse([
+        'data: {"choices":[{"delta":{"content":"本月午餐只有 1 笔。"}}]}',
+        '',
+        'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}',
+        '',
+        'data: [DONE]',
+        ''
+      ])
+    ]);
+
+    const { result } = renderHook(() =>
+      useAssistantWorkbench({
+        baseUrl: 'https://api.example.com/v1',
+        apiKey: 'test-key',
+        model: 'test-model',
+        categories,
+        accounts,
+        transactions: [],
+        addCategory: vi.fn(),
+        addAccount: vi.fn(),
+        addTransaction: vi.fn() as unknown as AddTransactionAction,
+        updateTransaction: vi.fn(),
+        removeTransaction: vi.fn(),
+        restoreTransaction: vi.fn()
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleRecognizeWithPrompt(
+        '这个月午餐花了多少?',
+        { imageDataUrls: [], pdfDataUrls: [] },
+        { task: 'chat', agent: true }
+      );
+    });
+
+    expect(state.chatCalls).toBe(3);
+    expect(result.current.rawContent).toContain('本月午餐只有 1 笔');
+
+    fetchMock.mockRestore();
+  });
 });
