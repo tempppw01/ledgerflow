@@ -540,9 +540,11 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
    * 3) 尝试提取 JSON 账单；若失败则按“纯分析文本”处理
    */
   const buildAgentToolContext = (): AgentToolContext => ({
-    categories: input.categories,
-    accounts: input.accounts,
-    transactions: input.transactions,
+    // 复制一份工作副本:同一轮对话内的多次工具调用能互相看到结果,
+    // 又不会直接改动 store 的数组引用。
+    categories: [...input.categories],
+    accounts: [...input.accounts],
+    transactions: [...input.transactions],
     addCategory: input.addCategory,
     addAccount: input.addAccount,
     addTransaction: input.addTransaction,

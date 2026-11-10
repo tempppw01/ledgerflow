@@ -307,8 +307,9 @@ function serializeTransaction(row: TransactionItem, ctx: AgentToolContext) {
 
 function executeCreate(args: Record<string, unknown>, ctx: AgentToolContext): AgentToolExecution {
   const rawItems = Array.isArray(args.transactions) ? args.transactions : [];
-  const categoryCache = [...ctx.categories];
-  const accountCache = [...ctx.accounts];
+  // 直接复用上下文里的数组,保证同一轮对话内后续工具能看到刚创建的分类/账户。
+  const categoryCache = ctx.categories;
+  const accountCache = ctx.accounts;
   const created: string[] = [];
   const views: AgentActionView[] = [];
   const undo: AgentUndoEntry[] = [];
@@ -360,6 +361,7 @@ function executeCreate(args: Record<string, unknown>, ctx: AgentToolContext): Ag
     };
     const id = ctx.addTransaction(payload);
     created.push(id);
+    ctx.transactions.push({ id, ...payload });
     const viewId = toViewId('agent-create', index);
     views.push({
       id: viewId,
@@ -369,7 +371,14 @@ function executeCreate(args: Record<string, unknown>, ctx: AgentToolContext): Ag
       }¥${payload.amount.toFixed(2)}`,
       undoable: true
     });
-    undo.push({ id: viewId, run: () => ctx.removeTransaction(id) });
+    undo.push({
+      id: viewId,
+      run: () => {
+        ctx.removeTransaction(id);
+        const index = ctx.transactions.findIndex((row) => row.id === id);
+        if (index >= 0) ctx.transactions.splice(index, 1);
+      }
+    });
   });
 
   return {
@@ -395,8 +404,8 @@ function executeUpdate(args: Record<string, unknown>, ctx: AgentToolContext): Ag
     };
   }
 
-  const categoryCache = [...ctx.categories];
-  const accountCache = [...ctx.accounts];
+  const categoryCache = ctx.categories;
+  const accountCache = ctx.accounts;
   const previous = toWritablePayload(target);
 
   const nextType =
@@ -427,6 +436,10 @@ function executeUpdate(args: Record<string, unknown>, ctx: AgentToolContext): Ag
   };
 
   ctx.updateTransaction(id, payload);
+  const rowIndex = ctx.transactions.findIndex((item) => item.id === id);
+  if (rowIndex >= 0) {
+    ctx.transactions[rowIndex] = { id, ...payload };
+  }
   const viewId = toViewId('agent-update', 0);
   return {
     content: JSON.stringify({ ok: true, updatedId: id }),
@@ -438,7 +451,16 @@ function executeUpdate(args: Record<string, unknown>, ctx: AgentToolContext): Ag
         undoable: true
       }
     ],
-    undo: [{ id: viewId, run: () => ctx.updateTransaction(id, previous) }]
+    undo: [
+      {
+        id: viewId,
+        run: () => {
+          ctx.updateTransaction(id, previous);
+          const index = ctx.transactions.findIndex((item) => item.id === id);
+          if (index >= 0) ctx.transactions[index] = { id, ...previous };
+        }
+      }
+    ]
   };
 }
 
@@ -454,6 +476,8 @@ function executeDelete(args: Record<string, unknown>, ctx: AgentToolContext): Ag
   }
 
   ctx.removeTransaction(id);
+  const rowIndex = ctx.transactions.findIndex((item) => item.id === id);
+  if (rowIndex >= 0) ctx.transactions.splice(rowIndex, 1);
   const viewId = toViewId('agent-delete', 0);
   return {
     content: JSON.stringify({ ok: true, deletedId: id }),
@@ -465,7 +489,17 @@ function executeDelete(args: Record<string, unknown>, ctx: AgentToolContext): Ag
         undoable: true
       }
     ],
-    undo: [{ id: viewId, run: () => ctx.restoreTransaction(id) }]
+    undo: [
+      {
+        id: viewId,
+        run: () => {
+          ctx.restoreTransaction(id);
+          if (!ctx.transactions.some((item) => item.id === id)) {
+            ctx.transactions.push(target);
+          }
+        }
+      }
+    ]
   };
 }
 

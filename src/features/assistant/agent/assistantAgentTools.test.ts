@@ -37,9 +37,10 @@ function createContext() {
   const trashed: TransactionItem[] = [];
 
   const ctx: AgentToolContext = {
-    categories,
-    accounts,
-    transactions,
+    // 工作副本:与 store 数组分离,由工具执行时同步更新。
+    categories: [...categories],
+    accounts: [...accounts],
+    transactions: [...transactions],
     addCategory: vi.fn((name: string) => {
       const id = `cat-${categories.length + 1}`;
       categories.push({ id, name });
@@ -203,5 +204,31 @@ describe('assistantAgentTools', () => {
       incomeTotal: 0,
       count: 1
     });
+  });
+
+  it('同一轮对话内新增的账单能被后续查询与汇总看到', () => {
+    const { ctx } = createContext();
+    executeAssistantToolCall(
+      createCall('create_transactions', {
+        transactions: [{ type: 'expense', amount: 56, date: '2026-11-10', note: '买菜' }]
+      }),
+      ctx
+    );
+
+    const queried = executeAssistantToolCall(
+      createCall('query_transactions', { keyword: '买菜' }),
+      ctx
+    );
+    expect(JSON.parse(queried.content).transactions).toHaveLength(1);
+
+    const summary = executeAssistantToolCall(
+      createCall('summarize_transactions', {
+        startDate: '2026-11-10',
+        endDate: '2026-11-10',
+        groupBy: 'category'
+      }),
+      ctx
+    );
+    expect(JSON.parse(summary.content)).toMatchObject({ expenseTotal: 56, count: 1 });
   });
 });

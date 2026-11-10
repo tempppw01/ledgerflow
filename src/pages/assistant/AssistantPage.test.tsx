@@ -1540,4 +1540,48 @@ describe('AssistantPage', () => {
 
     sessionStorageGetItemSpy.mockRestore();
   });
-});
+  it('Agent 操作记录应展示并支持一键撤销', async () => {
+    const undoAgentAction = vi.fn(() => true);
+    const workbench = {
+      ...createWorkbenchMock(),
+      rawContent: '已经帮你记下这笔午饭。',
+      status: 'ready',
+      agentActions: [
+        {
+          id: 'agent-create-1',
+          kind: 'create' as const,
+          label: '已记账:午饭 -¥30.00',
+          undoable: true
+        }
+      ],
+      undoAgentAction
+    };
+    useAssistantWorkbenchMock.mockReturnValue(workbench);
+
+    const sessionStorageGetItemSpy = vi
+      .spyOn(window.sessionStorage.__proto__, 'getItem')
+      .mockImplementation((key) => {
+        if (String(key).includes('chatHistory.assistant')) {
+          return JSON.stringify([{ id: 'agent-user', role: 'user', text: '午饭 30 元' }]);
+        }
+        return '[]';
+      });
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('账本已更新')).toBeInTheDocument();
+    expect(screen.getByText('已记账:午饭 -¥30.00')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '撤销' }));
+    });
+
+    expect(undoAgentAction).toHaveBeenCalledWith('agent-create-1');
+    expect(screen.queryByText('已记账:午饭 -¥30.00')).not.toBeInTheDocument();
+
+    sessionStorageGetItemSpy.mockRestore();
+  });});
