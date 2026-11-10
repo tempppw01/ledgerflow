@@ -427,3 +427,159 @@ describe('openaiCompatibleClient baseUrl validation', () => {
     expect(onError).toHaveBeenCalledTimes(1);
   });
 });
+describe('openaiCompatibleClient tool calling', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('sends tool definitions and parses streamed tool calls', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        createStreamResponse([
+          'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":"create_transactions","arguments":"{\\"transactions\\":"}}]}}]}',
+          '',
+          'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"[{\\"type\\":\\"expense\\",\\"amount\\":15}]}"}}]}}]}',
+          '',
+          'data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}]}',
+          '',
+          'data: [DONE]',
+          ''
+        ])
+      );
+
+    const tools = [
+      {
+        type: 'function' as const,
+        function: {
+          name: 'create_transactions',
+          description: '新增账单',
+          parameters: { type: 'object', properties: {} }
+        }
+      }
+    ];
+
+    const result = await sendAiChatStream(
+      {
+        baseUrl: 'https://api.example.com/v1',
+        model: 'test-model',
+        messages: [{ role: 'user', text: '午饭 15 元' }],
+        tools
+      },
+      { onDelta: () => undefined }
+    );
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect(JSON.parse(String(init?.body))).toMatchObject({
+      tools,
+      tool_choice: 'auto'
+    });
+    expect(result.toolCalls).toEqual([
+      {
+        id: 'call_1',
+        name: 'create_transactions',
+        arguments: '{"transactions":[{"type":"expense","amount":15}]}'
+      }
+    ]);
+
+    fetchMock.mockRestore();
+  });
+
+  it('serializes assistant tool calls and tool results in follow-up requests', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        createStreamResponse([
+          'data: {"choices":[{"delta":{"content":"已经记好了。"}}]}',
+          '',
+          'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}',
+          '',
+          'data: [DONE]',
+          ''
+        ])
+      );
+
+    await sendAiChatStream(
+      {
+        baseUrl: 'https://api.example.com/v1',
+        model: 'test-model',
+        messages: [
+          { role: 'user', text: '午饭 15 元' },
+          {
+            role: 'assistant',
+            text: '',
+            toolCalls: [
+              {
+                id: 'call_1',
+                type: 'function',
+                function: { name: 'create_transactions', arguments: '{}' }
+              }
+            ]
+          },
+          { role: 'tool', text: '{"ok":true}', toolCallId: 'call_1' }
+        ]
+      },
+      { onDelta: () => undefined }
+    );
+
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(String(init?.body));
+    expect(body.messages[1]).toMatchObject({
+      role: 'assistant',
+      tool_calls: [
+        {
+          id: 'call_1',
+          type: 'function',
+          function: { name: 'create_transactions', arguments: '{}' }
+        }
+      ]
+    });
+    expect(body.messages[2]).toEqual({
+      role: 'tool',
+      tool_call_id: 'call_1',
+      content: '{"ok":true}'
+    });
+
+    fetchMock.mockRestore();
+  });
+
+  it('parses non-streaming tool calls', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                content: null,
+                tool_calls: [
+                  {
+                    id: 'call_9',
+                    type: 'function',
+                    function: { name: 'query_transactions', arguments: '{"keyword":"餐"}' }
+                  }
+                ]
+              }
+            }
+          ]
+        }),
+        { status: 200 }
+      )
+    );
+
+    const result = await sendAiChat({
+      baseUrl: 'https://api.example.com/v1',
+      model: 'test-model',
+      messages: [{ role: 'user', text: '查一下餐饮' }]
+    });
+
+    expect(result.content).toBe('');
+    expect(result.toolCalls).toEqual([
+      { id: 'call_9', name: 'query_transactions', arguments: '{"keyword":"餐"}' }
+    ]);
+  });
+});

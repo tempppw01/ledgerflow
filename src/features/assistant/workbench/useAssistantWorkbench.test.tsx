@@ -4,6 +4,7 @@ import type { Account } from '../../../entities/account/types';
 import type { Category } from '../../../entities/category/types';
 import type { TransactionItem } from '../../../entities/transaction/types';
 import type { AddTransactionAction } from '../../../shared/store/useFinanceStore';
+import { useAiSettings } from '../../../shared/store/useAiSettings';
 import type { DraftBillEntry } from './workbenchTypes';
 import { useAssistantWorkbench } from './useAssistantWorkbench';
 
@@ -65,7 +66,9 @@ describe('useAssistantWorkbench 批量保存', () => {
         addCategory: vi.fn(),
         addAccount: vi.fn(),
         addTransaction: addTransaction as unknown as AddTransactionAction,
-        updateTransaction
+        updateTransaction,
+        removeTransaction: vi.fn(),
+        restoreTransaction: vi.fn()
       })
     );
 
@@ -136,7 +139,9 @@ describe('useAssistantWorkbench 批量保存', () => {
         addCategory: vi.fn(),
         addAccount: vi.fn(),
         addTransaction: addTransaction as unknown as AddTransactionAction,
-        updateTransaction
+        updateTransaction,
+        removeTransaction: vi.fn(),
+        restoreTransaction: vi.fn()
       })
     );
 
@@ -172,5 +177,175 @@ describe('useAssistantWorkbench 批量保存', () => {
       message: '模拟批量写入失败'
     });
     expect(result.current.toast.message).not.toContain('已保存');
+  });
+});
+
+function sse(payload: unknown) {
+  return `data: ${JSON.stringify(payload)}`;
+}
+
+function sseToolCallChunk(id: string, name: string, args: unknown) {
+  return sse({
+    choices: [
+      {
+        delta: {
+          tool_calls: [
+            {
+              index: 0,
+              id,
+              type: 'function',
+              function: { name, arguments: JSON.stringify(args) }
+            }
+          ]
+        }
+      }
+    ]
+  });
+}
+
+function createSseResponse(lines: string[]) {
+  return new Response(lines.join('\n'), {
+    status: 200,
+    headers: { 'Content-Type': 'text/event-stream' }
+  });
+}
+
+/** 只拦截对话请求,模型列表请求返回空列表,避免影响断言。 */
+function mockAgentChatFetch(chatResponses: Array<Response | (() => Response)>) {
+  const state = { chatCalls: 0 };
+  const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+    const url = String(input);
+    if (url.includes('/chat/completions')) {
+      const next = chatResponses[Math.min(state.chatCalls, chatResponses.length - 1)];
+      state.chatCalls += 1;
+      return Promise.resolve(typeof next === 'function' ? next() : next);
+    }
+    // 模型列表、时间戳等旁路请求返回空 JSON,不参与对话断言。
+    return Promise.resolve(new Response(JSON.stringify({}), { status: 200 }));
+  });
+  return { fetchMock, state };
+}
+
+function mockAiSettings() {
+  useAiSettings.setState({
+    baseUrl: 'https://api.example.com/v1',
+    apiKey: 'test-key',
+    model: 'test-model',
+    enableEmbeddingModel: false,
+    enableRerankModel: false
+  });
+}
+
+describe('useAssistantWorkbench Agent 工具', () => {
+  it('模型调用 create_transactions 时落账并支持撤销', async () => {
+    mockAiSettings();
+    const addTransaction = vi.fn(() => 'tx-agent-1');
+    const removeTransaction = vi.fn();
+    const { fetchMock, state } = mockAgentChatFetch([
+      createSseResponse([
+        sseToolCallChunk('call_1', 'create_transactions', {
+          transactions: [{ type: 'expense', amount: 30, note: '午饭' }]
+        }),
+        '',
+        'data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}]}',
+        '',
+        'data: [DONE]',
+        ''
+      ]),
+      createSseResponse([
+        'data: {"choices":[{"delta":{"content":"已经帮你记下这笔午饭。"}}]}',
+        '',
+        'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}',
+        '',
+        'data: [DONE]',
+        ''
+      ])
+    ]);
+
+    const { result } = renderHook(() =>
+      useAssistantWorkbench({
+        baseUrl: 'https://api.example.com/v1',
+        apiKey: 'test-key',
+        model: 'test-model',
+        categories,
+        accounts,
+        transactions: [],
+        addCategory: vi.fn(),
+        addAccount: vi.fn(),
+        addTransaction: addTransaction as unknown as AddTransactionAction,
+        updateTransaction: vi.fn(),
+        removeTransaction,
+        restoreTransaction: vi.fn()
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleRecognizeWithPrompt(
+        '午饭 30 元',
+        { imageDataUrls: [], pdfDataUrls: [] },
+        { task: 'chat', agent: true }
+      );
+    });
+
+    expect(state.chatCalls).toBe(2);
+    expect(addTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'expense', amount: 30, note: '午饭' })
+    );
+    expect(result.current.agentActions).toHaveLength(1);
+    expect(result.current.rawContent).toContain('午饭');
+
+    const actionId = result.current.agentActions[0].id;
+    act(() => {
+      result.current.undoAgentAction(actionId);
+    });
+    expect(removeTransaction).toHaveBeenCalledWith('tx-agent-1');
+    expect(result.current.agentActions).toHaveLength(0);
+
+    fetchMock.mockRestore();
+  });
+
+  it('模型不支持工具时降级为普通对话', async () => {
+    mockAiSettings();
+    const { fetchMock, state } = mockAgentChatFetch([
+      () => new Response('unsupported tools', { status: 400 }),
+      createSseResponse([
+        'data: {"choices":[{"delta":{"content":"这个模型暂时不能改账本。"}}]}',
+        '',
+        'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}',
+        '',
+        'data: [DONE]',
+        ''
+      ])
+    ]);
+
+    const { result } = renderHook(() =>
+      useAssistantWorkbench({
+        baseUrl: 'https://api.example.com/v1',
+        apiKey: 'test-key',
+        model: 'test-model',
+        categories,
+        accounts,
+        transactions: [],
+        addCategory: vi.fn(),
+        addAccount: vi.fn(),
+        addTransaction: vi.fn() as unknown as AddTransactionAction,
+        updateTransaction: vi.fn(),
+        removeTransaction: vi.fn(),
+        restoreTransaction: vi.fn()
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleRecognizeWithPrompt(
+        '记一笔午饭',
+        { imageDataUrls: [], pdfDataUrls: [] },
+        { task: 'chat', agent: true }
+      );
+    });
+
+    expect(state.chatCalls).toBe(2);
+    expect(result.current.rawContent).toContain('暂时不能改账本');
+
+    fetchMock.mockRestore();
   });
 });

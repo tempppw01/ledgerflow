@@ -57,6 +57,7 @@ import {
   type AssistantMode
 } from '../../features/assistant/shared/assistantMode';
 import { InvestmentChatPanel } from '../../features/assistant/investment-chat/InvestmentChatPanel';
+import type { AgentActionView } from '../../features/assistant/agent/assistantAgentTools';
 import {
   ChatClearIcon,
   ChatCopyIcon,
@@ -180,6 +181,8 @@ interface ChatHistoryItem {
   embeddingDebugText?: string;
   followUpPrompts?: string[];
   creditItems?: CreditExtractedItem[];
+  /** Agent 在本轮执行的账本操作(可撤销)。 */
+  agentActions?: AgentActionView[];
 }
 
 interface SubmitPromptOptions {
@@ -325,6 +328,15 @@ function readChatHistory(mode: AssistantMode): ChatHistoryItem[] {
                 (creditItem.confidence === 'high' ||
                   creditItem.confidence === 'medium' ||
                   creditItem.confidence === 'low')
+            )
+          : undefined,
+        agentActions: Array.isArray(item.agentActions)
+          ? item.agentActions.filter(
+              (action): action is AgentActionView =>
+                Boolean(action) &&
+                typeof action.id === 'string' &&
+                typeof action.label === 'string' &&
+                (action.kind === 'create' || action.kind === 'update' || action.kind === 'delete')
             )
           : undefined
       }));
@@ -839,6 +851,8 @@ export function AssistantPage() {
   const addAccount = useFinanceStore((s) => s.addAccount);
   const addTransaction = useFinanceStore((s) => s.addTransaction);
   const updateTransaction = useFinanceStore((s) => s.updateTransaction);
+  const removeTransaction = useFinanceStore((s) => s.removeTransaction);
+  const restoreTransaction = useFinanceStore((s) => s.restoreTransaction);
   const addSubscription = useFinanceStore((s) => s.addSubscription);
   const addDebt = useAppPreferences((s) => s.addDebt);
 
@@ -853,6 +867,8 @@ export function AssistantPage() {
     addAccount,
     addTransaction,
     updateTransaction,
+    removeTransaction,
+    restoreTransaction,
     debts,
     repaymentRecords,
     sceneMode: mode,
@@ -1601,6 +1617,8 @@ export function AssistantPage() {
     const requestQuestion = clean || '请根据我上传的附件完成识别与提炼。';
     // 合并后的 AI 模式:带附件走账单识别;纯文本走 Agent 对话,可直接增删改账单。
     const recognizeTask: 'bill' | 'chat' = mode === 'assistant' && hasAttachments ? 'bill' : 'chat';
+    // 合并后的 AI 模式在纯文本对话里启用账本工具(查账 / 记账 / 改账 / 删账)。
+    const agentEnabled = mode === 'assistant' && recognizeTask === 'chat';
     const requestPrompt =
       recognizeTask === 'bill'
         ? requestQuestion
@@ -1608,6 +1626,7 @@ export function AssistantPage() {
           ? buildCreditConversationPrompt(requestQuestion, chatHistory)
           : buildAssistantConversationPrompt(requestQuestion, chatHistory);
     submitInFlightRef.current = true;
+    if (agentEnabled) wb.resetAgentActions();
     const recognitionTurn = recognitionTurnRef.current + 1;
     recognitionTurnRef.current = recognitionTurn;
     pendingRequestModeRef.current = mode;
@@ -1634,7 +1653,7 @@ export function AssistantPage() {
           imageDataUrls: imagePayload,
           pdfDataUrls: pdfPayload
         },
-        { task: recognizeTask }
+        { task: recognizeTask, agent: agentEnabled }
       )
     ).finally(() => {
       submitInFlightRef.current = false;
@@ -1904,7 +1923,8 @@ export function AssistantPage() {
       embeddingDebugText,
       followUpPrompts:
         responseMode === 'credit' ? buildCreditFollowUpPrompts(creditItems || []) : undefined,
-      creditItems
+      creditItems,
+      agentActions: wb.agentActions.length > 0 ? wb.agentActions : undefined
     });
 
     if (responseMode === 'assistant') {
@@ -1935,6 +1955,7 @@ export function AssistantPage() {
     showEmbeddingSummary,
     updateMessageInMode,
     wb.embeddingDebug,
+    wb.agentActions,
     wb.lastUsage,
     wb.rawContent,
     wb.rawReasoning,
@@ -1953,6 +1974,19 @@ export function AssistantPage() {
       });
     },
     [chatHistory, mode, updateMessageInMode]
+  );
+
+  /** 撤销 Agent 刚执行的记账/改账/删账,并从消息里移除该条操作记录。 */
+  const undoAgentActionItem = useCallback(
+    (messageId: string, actionId: string) => {
+      const current = chatHistory.find((item) => item.id === messageId);
+      if (!current?.agentActions?.length) return;
+      if (!wb.undoAgentAction(actionId)) return;
+      updateMessageInMode(mode, messageId, {
+        agentActions: current.agentActions.filter((action) => action.id !== actionId)
+      });
+    },
+    [chatHistory, mode, updateMessageInMode, wb]
   );
 
   const retryMessage = (index: number) => {
@@ -2422,6 +2456,27 @@ export function AssistantPage() {
                             </div>
                           ))}
                         </div>
+                      </div>
+                    ) : null}
+                    {item.role === 'assistant' &&
+                    item.agentActions &&
+                    item.agentActions.length > 0 ? (
+                      <div className="chat-agent-actions">
+                        <div className="chat-agent-actions-head">账本已更新</div>
+                        {item.agentActions.map((action) => (
+                          <div key={action.id} className={`chat-agent-action is-${action.kind}`}>
+                            <span>{action.label}</span>
+                            {action.undoable ? (
+                              <button
+                                type="button"
+                                className="chat-agent-action-undo"
+                                onClick={() => undoAgentActionItem(item.id, action.id)}
+                              >
+                                撤销
+                              </button>
+                            ) : null}
+                          </div>
+                        ))}
                       </div>
                     ) : null}
                     {item.role === 'assistant' &&

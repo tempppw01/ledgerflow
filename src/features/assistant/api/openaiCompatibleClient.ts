@@ -20,12 +20,37 @@ interface ModelsResponse {
 }
 
 interface ChatMessageInput {
-  role: 'system' | 'user' | 'assistant';
+  role: 'system' | 'user' | 'assistant' | 'tool';
   text: string;
   imageDataUrl?: string;
   imageDataUrls?: string[];
   pdfDataUrl?: string;
   pdfDataUrls?: string[];
+  /** assistant 回合里模型请求调用的工具。 */
+  toolCalls?: ChatToolCallPayload[];
+  /** role=tool 时回传对应的调用 id。 */
+  toolCallId?: string;
+}
+
+export interface ChatToolCall {
+  id: string;
+  name: string;
+  arguments: string;
+}
+
+export interface ChatToolDefinition {
+  type: 'function';
+  function: {
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+  };
+}
+
+interface ChatToolCallPayload {
+  id: string;
+  type: 'function';
+  function: { name: string; arguments: string };
 }
 
 interface ChatCompletionResponse {
@@ -34,6 +59,11 @@ interface ChatCompletionResponse {
       content?: string | Array<{ type: 'text'; text: string }>;
       reasoning_content?: string;
       reasoning?: string;
+      tool_calls?: Array<{
+        id?: string;
+        type?: string;
+        function?: { name?: string; arguments?: string };
+      }>;
     };
   }>;
   usage?: ChatUsage;
@@ -52,6 +82,12 @@ interface ChatCompletionStreamChunk {
       reasoning_content?: string;
       reasoning?: string;
       reasoningContent?: string;
+      tool_calls?: Array<{
+        index?: number;
+        id?: string;
+        type?: string;
+        function?: { name?: string; arguments?: string };
+      }>;
     };
     message?: {
       content?: string | Array<{ type: 'text'; text: string }>;
@@ -65,6 +101,7 @@ interface ChatCompletionStreamChunk {
 export interface SendAiChatResult {
   content: string;
   reasoning?: string;
+  toolCalls?: ChatToolCall[];
   usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
 }
 
@@ -179,6 +216,22 @@ function normalizeUrls(primary?: string[], fallback?: string): string[] {
 }
 
 function toOutboundMessage(message: ChatMessageInput) {
+  if (message.role === 'tool') {
+    return {
+      role: 'tool',
+      tool_call_id: message.toolCallId,
+      content: message.text
+    };
+  }
+
+  if (message.role === 'assistant' && message.toolCalls?.length) {
+    return {
+      role: 'assistant',
+      content: message.text || null,
+      tool_calls: message.toolCalls
+    };
+  }
+
   const imageUrls = normalizeUrls(message.imageDataUrls, message.imageDataUrl);
   const pdfUrls = normalizeUrls(message.pdfDataUrls, message.pdfDataUrl);
 
@@ -244,7 +297,10 @@ async function readAiStream(
     body: JSON.stringify({
       model: input.model,
       stream: true,
-      messages: outboundMessages.map((message) => toOutboundMessage(message))
+      messages: outboundMessages.map((message) => toOutboundMessage(message)),
+      ...(input.tools?.length
+        ? { tools: input.tools, tool_choice: input.toolChoice ?? 'auto' }
+        : {})
     })
   });
 
@@ -265,11 +321,20 @@ async function readAiStream(
   let validChunkCount = 0;
   let malformedChunkCount = 0;
   let completed = false;
+  const toolCallAccumulator = new Map<number, ChatToolCall>();
 
   const finish = () => {
     const reasoning = fullReasoning.trim();
     handlers.onDone?.(fullText, reasoning || undefined);
-    return { content: fullText, reasoning: reasoning || undefined };
+    const toolCalls = Array.from(toolCallAccumulator.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([, call]) => call)
+      .filter((call) => Boolean(call.name));
+    return {
+      content: fullText,
+      reasoning: reasoning || undefined,
+      toolCalls: toolCalls.length > 0 ? toolCalls : undefined
+    };
   };
 
   const warnMalformedChunks = (tolerated: boolean) => {
@@ -326,6 +391,17 @@ async function readAiStream(
     if (reasoningPart) {
       fullReasoning += reasoningPart;
       handlers.onReasoningDelta?.(reasoningPart);
+    }
+
+    if (Array.isArray(delta?.tool_calls)) {
+      delta.tool_calls.forEach((part) => {
+        const index = typeof part.index === 'number' ? part.index : toolCallAccumulator.size;
+        const current = toolCallAccumulator.get(index) || { id: '', name: '', arguments: '' };
+        if (part.id) current.id = part.id;
+        if (part.function?.name) current.name += part.function.name;
+        if (part.function?.arguments) current.arguments += part.function.arguments;
+        toolCallAccumulator.set(index, current);
+      });
     }
 
     if (textPart) {
@@ -423,6 +499,8 @@ interface ChatRequestInput {
   messages: ChatMessageInput[];
   systemPrompt?: string;
   signal?: AbortSignal;
+  tools?: ChatToolDefinition[];
+  toolChoice?: 'auto' | 'none' | 'required';
 }
 
 function normalizeBaseUrl(baseUrl?: string) {
@@ -501,7 +579,10 @@ export async function sendAiChat(input: ChatRequestInput): Promise<SendAiChatRes
       signal,
       body: JSON.stringify({
         model: input.model,
-        messages: outboundMessages.map((message) => toOutboundMessage(message))
+        messages: outboundMessages.map((message) => toOutboundMessage(message)),
+        ...(input.tools?.length
+          ? { tools: input.tools, tool_choice: input.toolChoice ?? 'auto' }
+          : {})
       })
     });
 
@@ -513,10 +594,18 @@ export async function sendAiChat(input: ChatRequestInput): Promise<SendAiChatRes
     const first = payload.choices?.[0]?.message;
     const content = normalizeMessageContent(first?.content);
     const reasoning = String(first?.reasoning_content || first?.reasoning || '').trim();
+    const toolCalls = (first?.tool_calls || [])
+      .map((call) => ({
+        id: call.id || '',
+        name: call.function?.name || '',
+        arguments: call.function?.arguments || ''
+      }))
+      .filter((call) => Boolean(call.name));
 
     return {
-      content: content || '模型未返回可解析内容',
+      content: content || (toolCalls.length > 0 ? '' : '模型未返回可解析内容'),
       reasoning: reasoning || undefined,
+      toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
       usage: payload.usage
         ? {
             promptTokens: Number(payload.usage.prompt_tokens || 0),

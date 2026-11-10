@@ -4261,6 +4261,47 @@
   color: var(--color-text);
 }
 
+.chat-agent-actions {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-divider);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-primary) 6%, transparent);
+}
+
+.chat-agent-actions-head {
+  font-size: var(--font-xs);
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.chat-agent-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+}
+
+.chat-agent-action-undo {
+  flex: 0 0 auto;
+  padding: 2px 10px;
+  border: 1px solid var(--color-divider);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-xs);
+  cursor: pointer;
+}
+
+.chat-agent-action-undo:hover {
+  color: var(--color-primary);
+  border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+
 .chat-mode-welcome-features > div {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);

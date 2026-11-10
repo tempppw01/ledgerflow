@@ -260,6 +260,9 @@ function createWorkbenchMock() {
     clearSemanticRecallIndex: vi.fn(() => true),
     setToastState: vi.fn(),
     entries: [],
+    agentActions: [] as Array<{ id: string; kind: string; label: string; undoable: boolean }>,
+    undoAgentAction: vi.fn(() => false),
+    resetAgentActions: vi.fn(),
     saveSelected: vi.fn(() => true),
     setImageDataUrls: vi.fn(),
     setPdfDataUrls: vi.fn(),
@@ -1176,7 +1179,7 @@ describe('AssistantPage', () => {
         pdfDataUrls: []
       })
     );
-    expect(options).toEqual({ task: 'chat' });
+    expect(options).toEqual({ task: 'chat', agent: true });
   });
 
   it('提交进行中时应忽略重复发送', async () => {
@@ -1284,7 +1287,7 @@ describe('AssistantPage', () => {
         imageDataUrls: ['data:image/png;base64,retry'],
         pdfDataUrls: ['data:application/pdf;base64,retry']
       },
-      { task: 'bill' }
+      { task: 'bill', agent: false }
     );
     expect(screen.getAllByText('帮我识别附件')).toHaveLength(1);
   });

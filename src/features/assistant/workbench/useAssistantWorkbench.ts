@@ -9,6 +9,14 @@ import {
   useState
 } from 'react';
 import { fetchAiModels, sendAiChatStream } from '../api/openaiCompatibleClient';
+import type { ChatToolCall } from '../api/openaiCompatibleClient';
+import {
+  ASSISTANT_AGENT_INSTRUCTIONS,
+  ASSISTANT_AGENT_TOOLS,
+  executeAssistantToolCall,
+  type AgentActionView,
+  type AgentToolContext
+} from '../agent/assistantAgentTools';
 import type { Account } from '../../../entities/account/types';
 import type { Category } from '../../../entities/category/types';
 import type { TransactionItem } from '../../../entities/transaction/types';
@@ -72,6 +80,8 @@ const PDF_SPLIT_PAGES_PER_CHUNK = 8;
 const PDF_SPLIT_MAX_CHUNKS = 12;
 const EMBEDDING_COOLDOWN_MS = 10 * 60 * 1000;
 const EMBEDDING_COOLDOWN_NOTICE_MS = 30 * 1000;
+/** Agent 单次提问内最多允许的「模型 → 工具 → 模型」轮次。 */
+const MAX_AGENT_ROUNDS = 4;
 
 function normalizeEntryDate(inputDate?: string) {
   const fallback = new Date().toISOString();
@@ -95,6 +105,8 @@ interface UseAssistantWorkbenchInput {
   addAccount: (name: string, type?: Account['type'], initialBalance?: number) => string;
   addTransaction: AddTransactionAction;
   updateTransaction: (id: string, payload: Omit<TransactionItem, 'id'>) => void;
+  removeTransaction: (id: string) => void;
+  restoreTransaction: (id: string) => void;
   debts?: Array<{
     id: string;
     name: string;
@@ -127,6 +139,8 @@ export interface AssistantRecognizeOptions {
    * chat:走对话/分析流程(由 Agent 工具完成增删改)。
    */
   task?: 'bill' | 'chat';
+  /** chat 任务是否启用账本工具(增删改)。 */
+  agent?: boolean;
 }
 
 /**
@@ -177,6 +191,37 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
     variant: 'success',
     visible: false
   });
+  const [agentActions, setAgentActions] = useState<AgentActionView[]>([]);
+  const agentUndoRef = useRef(new Map<string, () => void>());
+
+  /** 清空上一轮 Agent 操作记录(每次提交新问题前调用)。 */
+  const resetAgentActions = useCallback(() => {
+    agentUndoRef.current.clear();
+    setAgentActions([]);
+  }, []);
+
+  const undoAgentAction = useCallback(
+    (actionId: string) => {
+      const run = agentUndoRef.current.get(actionId);
+      if (!run) return false;
+      try {
+        run();
+        agentUndoRef.current.delete(actionId);
+        setAgentActions((prev) => prev.filter((item) => item.id !== actionId));
+        setToast({ visible: true, variant: 'success', message: '已撤销这一步操作' });
+        addLog({ action: 'assistant.agent', status: 'success', message: '撤销 Agent 操作' });
+        return true;
+      } catch (error) {
+        setToast({
+          visible: true,
+          variant: 'error',
+          message: error instanceof Error ? error.message : '撤销失败,请手动检查账单'
+        });
+        return false;
+      }
+    },
+    [addLog]
+  );
 
   useEffect(() => {
     entriesRef.current = entries;
@@ -494,6 +539,148 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
    * 2) 请求模型并回写原始内容
    * 3) 尝试提取 JSON 账单；若失败则按“纯分析文本”处理
    */
+  const buildAgentToolContext = (): AgentToolContext => ({
+    categories: input.categories,
+    accounts: input.accounts,
+    transactions: input.transactions,
+    addCategory: input.addCategory,
+    addAccount: input.addAccount,
+    addTransaction: input.addTransaction,
+    updateTransaction: input.updateTransaction,
+    removeTransaction: input.removeTransaction,
+    restoreTransaction: input.restoreTransaction
+  });
+
+  /**
+   * Agent 多轮循环:模型可以先查账户/分类/账单,再增删改,最后用自然语言总结。
+   * 每轮都支持流式输出;个别服务商不支持 tools 时自动降级为普通对话。
+   */
+  const runAgentConversation = async (options: {
+    systemPrompt: string;
+    text: string;
+    imageDataUrls: string[];
+    pdfDataUrls: string[];
+    signal: AbortSignal;
+  }): Promise<{ content: string; reasoning: string }> => {
+    const ctx = buildAgentToolContext();
+    type AgentMessage = {
+      role: 'user' | 'assistant' | 'tool';
+      text: string;
+      imageDataUrls?: string[];
+      pdfDataUrls?: string[];
+      toolCalls?: Array<{
+        id: string;
+        type: 'function';
+        function: { name: string; arguments: string };
+      }>;
+      toolCallId?: string;
+    };
+    const messages: AgentMessage[] = [
+      {
+        role: 'user',
+        text: options.text,
+        imageDataUrls: options.imageDataUrls,
+        pdfDataUrls: options.pdfDataUrls
+      }
+    ];
+
+    let content = '';
+    let reasoning = '';
+    let toolsAvailable = true;
+    let lastActionSummary = '';
+
+    for (let round = 0; round < MAX_AGENT_ROUNDS; round += 1) {
+      let streamedText = '';
+      let streamedReasoning = '';
+      const handlers = {
+        onDelta: (delta: string) => {
+          streamedText += delta;
+          setRawContent(content + streamedText);
+        },
+        onReasoningDelta: (delta: string) => {
+          streamedReasoning += delta;
+          setRawReasoning(reasoning + streamedReasoning);
+        },
+        onDone: (done: string) => {
+          streamedText = done || streamedText;
+        }
+      };
+      const requestRound = (useTools: boolean) =>
+        sendAiChatStream(
+          {
+            baseUrl: input.baseUrl,
+            apiKey: input.apiKey,
+            model: input.model,
+            systemPrompt: options.systemPrompt,
+            messages,
+            signal: options.signal,
+            tools: useTools ? ASSISTANT_AGENT_TOOLS : undefined
+          },
+          handlers
+        );
+
+      let reply;
+      try {
+        reply = await requestRound(toolsAvailable);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : '';
+        if (toolsAvailable && /HTTP_(400|404|422)/.test(message)) {
+          // 服务商不支持 function calling:保留对话能力,只是不能再改账本。
+          toolsAvailable = false;
+          addLog({
+            action: 'assistant.agent',
+            status: 'info',
+            message: '当前模型不支持工具调用,已降级为普通对话'
+          });
+          reply = await requestRound(false);
+        } else {
+          throw error;
+        }
+      }
+
+      reasoning += streamedReasoning;
+      const calls: ChatToolCall[] = reply.toolCalls || [];
+      content = reply.content || streamedText || content;
+      setRawContent(content);
+
+      if (calls.length === 0) break;
+
+      messages.push({
+        role: 'assistant',
+        text: reply.content || '',
+        toolCalls: calls.map((call) => ({
+          id: call.id,
+          type: 'function' as const,
+          function: { name: call.name, arguments: call.arguments }
+        }))
+      });
+
+      const roundViews: AgentActionView[] = [];
+      calls.forEach((call) => {
+        const execution = executeAssistantToolCall(call, ctx);
+        execution.undo.forEach((entry) => agentUndoRef.current.set(entry.id, entry.run));
+        roundViews.push(...execution.views);
+        messages.push({ role: 'tool', text: execution.content, toolCallId: call.id });
+        addLog({
+          action: 'assistant.agent',
+          status: 'success',
+          message: `工具 ${call.name} 执行完成`
+        });
+      });
+
+      if (roundViews.length > 0) {
+        lastActionSummary = roundViews.map((view) => view.label).join(';');
+        setAgentActions((prev) => [...prev, ...roundViews]);
+      }
+    }
+
+    if (!content.trim()) {
+      content = lastActionSummary ? `已按你的要求处理:${lastActionSummary}` : '';
+    }
+
+    return { content, reasoning };
+  };
+
   const runRecognize = async (
     promptText: string,
     payload?: { imageDataUrls?: string[]; pdfDataUrls?: string[] },
@@ -524,6 +711,7 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
     try {
       // 只有显式声明为 bill 的任务才走 JSON 记账解析,其余都按对话/Agent 处理。
       const isConversationalMode = options?.task !== 'bill';
+      const agentEnabled = options?.agent === true;
       const basePrompt =
         input.sceneMode === 'investment'
           ? `${ANALYSIS_AGENT_PROMPT}\n\n你是用户的投资理财助手，重点讨论基金、股票、市场走势、资产配置、定投和风险管理。结合用户提供的持仓与市场信息给出有依据的分析，区分事实、估算与不确定性，不承诺收益、不把短期波动包装成确定预测，并提醒投资决策由用户自行承担。`
@@ -531,7 +719,9 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
             ? JSON_AGENT_PROMPT
             : input.sceneMode === 'credit'
               ? CREDIT_ANALYSIS_AGENT_PROMPT
-              : ANALYSIS_AGENT_PROMPT;
+              : agentEnabled
+                ? `${ANALYSIS_AGENT_PROMPT}\n\n${ASSISTANT_AGENT_INSTRUCTIONS}`
+                : ANALYSIS_AGENT_PROMPT;
 
       const now = Date.now();
       const embeddingCooldownActive = now > 0 && now < embeddingCooldownUntilRef.current;
@@ -636,41 +826,56 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
       });
       let streamedContent = '';
       let streamedReasoning = '';
-      const streamedReply = await sendAiChatStream(
-        {
-          baseUrl: input.baseUrl,
-          apiKey: input.apiKey,
-          model: input.model,
+      let reply: { content: string; reasoning?: string };
+
+      if (agentEnabled) {
+        const agentReply = await runAgentConversation({
           systemPrompt: prompt,
-          messages: [
-            {
-              role: 'user',
-              text: cleanPrompt,
-              imageDataUrls: effectiveImageDataUrls,
-              pdfDataUrls: effectivePdfDataUrls
-            }
-          ],
+          text: cleanPrompt,
+          imageDataUrls: effectiveImageDataUrls,
+          pdfDataUrls: effectivePdfDataUrls,
           signal: controller.signal
-        },
-        {
-          onDelta: (delta) => {
-            streamedContent += delta;
-            setRawContent(streamedContent);
+        });
+        streamedContent = agentReply.content;
+        streamedReasoning = agentReply.reasoning;
+        reply = { content: agentReply.content, reasoning: agentReply.reasoning };
+      } else {
+        const streamedReply = await sendAiChatStream(
+          {
+            baseUrl: input.baseUrl,
+            apiKey: input.apiKey,
+            model: input.model,
+            systemPrompt: prompt,
+            messages: [
+              {
+                role: 'user',
+                text: cleanPrompt,
+                imageDataUrls: effectiveImageDataUrls,
+                pdfDataUrls: effectivePdfDataUrls
+              }
+            ],
+            signal: controller.signal
           },
-          onReasoningDelta: (delta) => {
-            streamedReasoning += delta;
-            setRawReasoning(streamedReasoning);
-          },
-          onDone: (content, reasoning) => {
-            streamedContent = content || streamedContent;
-            streamedReasoning = reasoning || streamedReasoning;
+          {
+            onDelta: (delta) => {
+              streamedContent += delta;
+              setRawContent(streamedContent);
+            },
+            onReasoningDelta: (delta) => {
+              streamedReasoning += delta;
+              setRawReasoning(streamedReasoning);
+            },
+            onDone: (content, reasoning) => {
+              streamedContent = content || streamedContent;
+              streamedReasoning = reasoning || streamedReasoning;
+            }
           }
-        }
-      );
-      const reply = {
-        content: streamedReply.content || streamedContent,
-        reasoning: streamedReply.reasoning || streamedReasoning
-      };
+        );
+        reply = {
+          content: streamedReply.content || streamedContent,
+          reasoning: streamedReply.reasoning || streamedReasoning
+        };
+      }
       setRawContent(reply.content);
       setRawReasoning(reply.reasoning || '');
       setLastUsage(null);
@@ -957,6 +1162,7 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
     setEmbeddingDebug(createIdleEmbeddingDebug());
     setError('');
     setStatus('idle');
+    resetAgentActions();
   };
 
   const stopRecognize = () => {
@@ -987,6 +1193,9 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
     embeddingDebug,
     semanticRecallCacheMeta,
     toast,
+    agentActions,
+    undoAgentAction,
+    resetAgentActions,
     hasApiKey,
     canRecognize,
     handleSetImage,
