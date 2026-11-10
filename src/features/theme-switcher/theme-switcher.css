@@ -82,15 +82,16 @@
 @media (max-width: 768px) {
   .theme-switcher {
     width: auto;
-    height: 34px;
-    min-height: 34px;
-    max-height: 34px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
     flex: 0 0 auto;
     align-items: center;
     gap: 0;
     padding: 0;
     border-radius: var(--radius-full);
     background: transparent;
+    overflow: visible;
   }
 
   .theme-switcher:hover,
@@ -101,13 +102,14 @@
   }
 
   .theme-icon-btn {
-    width: 26px;
-    min-width: 26px;
-    max-width: 26px;
-    height: 26px;
-    min-height: 26px;
-    max-height: 26px;
-    flex: 0 0 26px;
+    position: relative;
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    flex: 0 0 44px;
     padding: 0;
     border-radius: 999px;
   }
@@ -126,23 +128,19 @@
   .theme-switcher[data-expanded='true'] .theme-icon-btn:not(.active),
   .theme-switcher[data-expanded='true']:not(:hover):not(:has(.theme-icon-btn:focus-visible))
     .theme-icon-btn:not(.active) {
-    width: 26px;
-    min-width: 26px;
-    max-width: 26px;
-    flex-basis: 26px;
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    flex-basis: 44px;
     border-width: 1px;
     opacity: 1;
     transform: none;
     pointer-events: auto;
   }
 
-  .theme-icon-btn::after {
-    display: none;
-  }
-
   .theme-icon {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
   }
 
   .theme-icon-btn.active {

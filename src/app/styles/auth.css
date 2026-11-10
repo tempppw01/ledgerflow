@@ -389,12 +389,17 @@
   }
 
   .topbar-account-trigger {
+    width: 44px;
+    min-width: 44px;
     max-width: 44px;
-    padding-right: 6px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0;
+    justify-content: center;
   }
 
-  .topbar-account-name,
-  .topbar-account-chevron {
+  .topbar-account-trigger .topbar-account-name,
+  .topbar-account-trigger .topbar-account-chevron {
     display: none;
   }
 

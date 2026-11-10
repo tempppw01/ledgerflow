@@ -4,6 +4,10 @@
 .lf-date-trigger:focus-visible, .lf-date-nav:focus-visible, .lf-date-day:focus-visible, .lf-date-actions button:focus-visible { outline: none; box-shadow: var(--vi-focus-ring); }
 .lf-date-trigger.is-empty { color: var(--color-text-secondary); }
 .lf-date-trigger:disabled { cursor: not-allowed; opacity: .62; }
+
+@media (max-width: 768px) {
+  .lf-date-trigger { min-height: 44px; }
+}
 .lf-date-icon { color: var(--color-text-secondary); font-size: 15px; line-height: 1; }
 .lf-date-popover { position: fixed; z-index: 13000; width: min(300px, calc(100vw - 32px)); max-height: calc(100dvh - 24px); overflow-y: auto; padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md, 12px); background: var(--color-bg-elevated); box-shadow: var(--shadow-dropdown, 0 16px 36px rgba(15,23,42,.16)); }
 .lf-date-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3); color: var(--color-text); }

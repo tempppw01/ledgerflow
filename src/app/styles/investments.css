@@ -1037,7 +1037,7 @@
 .investments-global-quote-card::before {
   content: '';
   position: absolute;
-  inset: auto -12% 4px 26%;
+  inset: auto 0 4px 26%;
   height: 24px;
   opacity: 0.12;
   background: linear-gradient(
@@ -7887,5 +7887,86 @@
   .investments-global-timeline-summary > span {
     font-size: 8px;
     padding: 3px 4px;
+  }
+}
+
+/* Mobile touch targets: keep the dense console compact on desktop while giving
+   phone-sized controls a finger-friendly hit box. */
+@media (max-width: 640px) {
+  .investments-global-clock-actions button {
+    min-height: 44px;
+    padding-inline: 12px;
+    font-size: 11px;
+  }
+
+  .investments-market-history-target select {
+    min-height: 44px;
+  }
+
+  .investments-market-history-range-tabs button {
+    min-height: 44px;
+    padding-inline: 12px;
+  }
+
+  .investments-simulation-fields input,
+  .investments-simulation-fields select {
+    min-height: 44px;
+  }
+
+  .investments-simulation-submit {
+    min-height: 44px;
+    padding-inline: 18px;
+  }
+
+  .investments-market-news-head button {
+    min-height: 44px;
+    padding-inline: 14px;
+  }
+
+  /* Wrap the news categories so the tail is not hidden behind an unmarked scroll rail. */
+  .investments-market-news-tabs {
+    flex-wrap: wrap;
+    row-gap: 2px;
+    overflow: visible;
+  }
+
+  .investments-market-news-tabs button {
+    min-height: 44px;
+  }
+
+  /* Fade the trailing edge so the wide sector rail reads as horizontally scrollable. */
+  .investments-market-sector-strip {
+    -webkit-overflow-scrolling: touch;
+    padding-right: 20px;
+    mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  }
+
+  .investments-ai-composer.is-compact .investments-ai-input-main {
+    grid-template-columns: minmax(0, 1fr) 44px 44px;
+  }
+
+  .investments-ai-composer.is-compact .investments-ai-submit-btn {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  .investments-ai-input-toolbar .investments-ai-model-trigger {
+    height: 44px;
+    min-height: 44px;
+  }
+
+  .investments-ai-scroll-top-btn {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+  }
+
+  .investment-chat-floating-pin,
+  .investment-chat-floating-close {
+    width: 44px;
+    height: 44px;
   }
 }
