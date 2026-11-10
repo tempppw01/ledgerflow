@@ -331,13 +331,16 @@ function readChatHistory(mode: AssistantMode): ChatHistoryItem[] {
             )
           : undefined,
         agentActions: Array.isArray(item.agentActions)
-          ? item.agentActions.filter(
-              (action): action is AgentActionView =>
-                Boolean(action) &&
-                typeof action.id === 'string' &&
-                typeof action.label === 'string' &&
-                (action.kind === 'create' || action.kind === 'update' || action.kind === 'delete')
-            )
+          ? item.agentActions
+              .filter(
+                (action): action is AgentActionView =>
+                  Boolean(action) &&
+                  typeof action.id === 'string' &&
+                  typeof action.label === 'string' &&
+                  (action.kind === 'create' || action.kind === 'update' || action.kind === 'delete')
+              )
+              // 页面重载后撤销回调已丢失,历史记录里不再展示不可用的撤销按钮。
+              .map((action) => ({ ...action, undoable: false }))
           : undefined
       }));
     return sanitizeCachedFollowUpPrompts(normalized);

@@ -227,7 +227,8 @@ function toOutboundMessage(message: ChatMessageInput) {
   if (message.role === 'assistant' && message.toolCalls?.length) {
     return {
       role: 'assistant',
-      content: message.text || null,
+      // 部分 OpenAI 兼容服务要求 assistant 的 content 是字符串而不是 null。
+      content: message.text || '',
       tool_calls: message.toolCalls
     };
   }

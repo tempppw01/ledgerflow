@@ -1584,4 +1584,43 @@ describe('AssistantPage', () => {
     expect(screen.queryByText('已记账:午饭 -¥30.00')).not.toBeInTheDocument();
 
     sessionStorageGetItemSpy.mockRestore();
-  });});
+  });
+  it('历史记录中的 Agent 操作在重载后不再提供不可用的撤销按钮', () => {
+    useAssistantWorkbenchMock.mockReturnValue(createWorkbenchMock());
+
+    const sessionStorageGetItemSpy = vi
+      .spyOn(window.sessionStorage.__proto__, 'getItem')
+      .mockImplementation((key) => {
+        if (String(key).includes('chatHistory.assistant')) {
+          return JSON.stringify([
+            { id: 'history-user', role: 'user', text: '删掉那笔测试账单' },
+            {
+              id: 'history-assistant',
+              role: 'assistant',
+              text: '已经删掉了。',
+              agentActions: [
+                {
+                  id: 'history-action',
+                  kind: 'delete',
+                  label: '已删除:测试 ¥10.00',
+                  undoable: true
+                }
+              ]
+            }
+          ]);
+        }
+        return '[]';
+      });
+
+    render(
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('已删除:测试 ¥10.00')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '撤销' })).not.toBeInTheDocument();
+
+    sessionStorageGetItemSpy.mockRestore();
+  });
+});

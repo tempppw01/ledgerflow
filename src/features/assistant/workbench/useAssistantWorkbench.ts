@@ -621,24 +621,60 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
           handlers
         );
 
-      let reply: SendAiChatResult;
+      let reply: SendAiChatResult | null = null;
       try {
         reply = await requestRound(toolsAvailable);
       } catch (error) {
         const message = error instanceof Error ? error.message : '';
-        if (toolsAvailable && /HTTP_(400|404|422)/.test(message)) {
-          // 服务商不支持 function calling:保留对话能力,只是不能再改账本。
-          toolsAvailable = false;
+        const partialText = streamedText.trim();
+        const hasProgress =
+          lastActionSummary.length > 0 || content.trim().length > 0 || partialText.length >= 40;
+        if (hasProgress) {
+          // 账本操作或回答已经产出,后续轮次失败不应把整轮判为失败。
+          if (!content.trim() && partialText) {
+            content = streamedText;
+            setRawContent(content);
+          }
           addLog({
             action: 'assistant.agent',
             status: 'info',
-            message: '当前模型不支持工具调用,已降级为普通对话'
+            message: `后续轮次请求失败,保留已完成结果:${message}`
           });
-          reply = await requestRound(false);
+          break;
+        }
+        if (toolsAvailable && /HTTP_(400|404|422)/.test(message)) {
+          try {
+            // 先尝试非流式 + tools:部分服务商只支持非流式函数调用。
+            const fallback = await sendAiChat({
+              baseUrl: input.baseUrl,
+              apiKey: input.apiKey,
+              model: input.model,
+              systemPrompt: options.systemPrompt,
+              messages,
+              signal: options.signal,
+              tools: ASSISTANT_AGENT_TOOLS
+            });
+            reply = {
+              content: fallback.content,
+              reasoning: fallback.reasoning,
+              toolCalls: fallback.toolCalls
+            };
+          } catch {
+            // 服务商完全不支持 function calling:保留对话能力,只是不能再改账本。
+            toolsAvailable = false;
+            addLog({
+              action: 'assistant.agent',
+              status: 'info',
+              message: '当前模型不支持工具调用,已降级为普通对话'
+            });
+            reply = await requestRound(false);
+          }
         } else {
           throw error;
         }
       }
+
+      if (!reply) break;
 
       // 个别服务商的流式接口不回传 tool_calls(只返回空内容),补一次非流式请求。
       if (
@@ -647,21 +683,26 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
         !reply.content?.trim() &&
         (reply.toolCalls?.length ?? 0) === 0
       ) {
-        const fallback = await sendAiChat({
-          baseUrl: input.baseUrl,
-          apiKey: input.apiKey,
-          model: input.model,
-          systemPrompt: options.systemPrompt,
-          messages,
-          signal: options.signal,
-          tools: ASSISTANT_AGENT_TOOLS
-        });
-        reply = {
-          content: fallback.content,
-          reasoning: fallback.reasoning,
-          toolCalls: fallback.toolCalls
-        };
-        if (fallback.content) setRawContent(fallback.content);
+        try {
+          const fallback = await sendAiChat({
+            baseUrl: input.baseUrl,
+            apiKey: input.apiKey,
+            model: input.model,
+            systemPrompt: options.systemPrompt,
+            messages,
+            signal: options.signal,
+            tools: ASSISTANT_AGENT_TOOLS
+          });
+          reply = {
+            content: fallback.content,
+            reasoning: fallback.reasoning,
+            toolCalls: fallback.toolCalls
+          };
+          if (fallback.content) setRawContent(fallback.content);
+        } catch (error) {
+          if (lastActionSummary.length > 0 || content.trim().length > 0) break;
+          throw error;
+        }
       }
 
       reasoning += streamedReasoning;

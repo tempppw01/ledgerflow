@@ -308,6 +308,7 @@ describe('useAssistantWorkbench Agent 工具', () => {
     mockAiSettings();
     const { fetchMock, state } = mockAgentChatFetch([
       () => new Response('unsupported tools', { status: 400 }),
+      () => new Response('unsupported tools', { status: 400 }),
       createSseResponse([
         'data: {"choices":[{"delta":{"content":"这个模型暂时不能改账本。"}}]}',
         '',
@@ -343,7 +344,7 @@ describe('useAssistantWorkbench Agent 工具', () => {
       );
     });
 
-    expect(state.chatCalls).toBe(2);
+    expect(state.chatCalls).toBe(3);
     expect(result.current.rawContent).toContain('暂时不能改账本');
 
     fetchMock.mockRestore();
@@ -415,6 +416,129 @@ describe('useAssistantWorkbench Agent 工具', () => {
 
     expect(state.chatCalls).toBe(3);
     expect(result.current.rawContent).toContain('本月午餐只有 1 笔');
+
+    fetchMock.mockRestore();
+  });
+
+  it('工具执行成功后后续轮次失败不应把整轮判为失败', async () => {
+    mockAiSettings();
+    const addTransaction = vi.fn(() => 'tx-agent-9');
+    const { fetchMock, state } = mockAgentChatFetch([
+      createSseResponse([
+        sseToolCallChunk('call_9', 'create_transactions', {
+          transactions: [{ type: 'expense', amount: 18, note: '奶茶' }]
+        }),
+        '',
+        'data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}]}',
+        '',
+        'data: [DONE]',
+        ''
+      ]),
+      () => new Response('upstream boom', { status: 500 })
+    ]);
+
+    const { result } = renderHook(() =>
+      useAssistantWorkbench({
+        baseUrl: 'https://api.example.com/v1',
+        apiKey: 'test-key',
+        model: 'test-model',
+        categories,
+        accounts,
+        transactions: [],
+        addCategory: vi.fn(),
+        addAccount: vi.fn(),
+        addTransaction: addTransaction as unknown as AddTransactionAction,
+        updateTransaction: vi.fn(),
+        removeTransaction: vi.fn(),
+        restoreTransaction: vi.fn()
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleRecognizeWithPrompt(
+        '奶茶 18 元',
+        { imageDataUrls: [], pdfDataUrls: [] },
+        { task: 'chat', agent: true }
+      );
+    });
+
+    expect(state.chatCalls).toBe(2);
+    expect(addTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'expense', amount: 18, note: '奶茶' })
+    );
+    expect(result.current.agentActions).toHaveLength(1);
+    expect(result.current.error).toBe('');
+    expect(result.current.status).not.toBe('error');
+    expect(result.current.rawContent).toContain('奶茶');
+
+    fetchMock.mockRestore();
+  });
+
+  it('同一轮已输出说明并执行工具时,后续失败仍应保留回答', async () => {
+    mockAiSettings();
+    const removeTransaction = vi.fn();
+    const { fetchMock, state } = mockAgentChatFetch([
+      createSseResponse([
+        sse({
+          choices: [
+            {
+              delta: {
+                content: '这笔支出其实是借出,我先帮你删掉。',
+                tool_calls: [
+                  {
+                    index: 0,
+                    id: 'call_del',
+                    type: 'function',
+                    function: {
+                      name: 'delete_transaction',
+                      arguments: JSON.stringify({ id: 'tx-existing' })
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }),
+        '',
+        'data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}]}',
+        '',
+        'data: [DONE]',
+        ''
+      ]),
+      () => new Response('upstream boom', { status: 500 })
+    ]);
+
+    const { result } = renderHook(() =>
+      useAssistantWorkbench({
+        baseUrl: 'https://api.example.com/v1',
+        apiKey: 'test-key',
+        model: 'test-model',
+        categories,
+        accounts,
+        transactions: [existingTransaction],
+        addCategory: vi.fn(),
+        addAccount: vi.fn(),
+        addTransaction: vi.fn() as unknown as AddTransactionAction,
+        updateTransaction: vi.fn(),
+        removeTransaction,
+        restoreTransaction: vi.fn()
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleRecognizeWithPrompt(
+        '昨天那笔 100 其实是借给朋友的',
+        { imageDataUrls: [], pdfDataUrls: [] },
+        { task: 'chat', agent: true }
+      );
+    });
+
+    expect(state.chatCalls).toBe(2);
+    expect(removeTransaction).toHaveBeenCalledWith('tx-existing');
+    expect(result.current.agentActions).toHaveLength(1);
+    expect(result.current.rawContent).toContain('这笔支出其实是借出');
+    expect(result.current.error).toBe('');
+    expect(result.current.status).not.toBe('error');
 
     fetchMock.mockRestore();
   });
