@@ -138,3 +138,66 @@ describe('useFinanceStore replaceAllData', () => {
     expect(state.balanceChangeEntries.some((item) => item.id === 'balchg-tx-tx-1')).toBe(true);
   });
 });
+
+describe('useFinanceStore 分类分层', () => {
+  beforeEach(() => {
+    localStorage.removeItem(FINANCE_STORAGE_KEY);
+    useFinanceStore.setState({
+      hasHydrated: true,
+      transactions: [],
+      categories: [],
+      accounts: [],
+      trashedTransactions: [],
+      trashedCategories: [],
+      trashedAccounts: [],
+      balanceChangeEntries: [],
+      subscriptions: [],
+      trashedSubscriptions: [],
+      categoryLearningRules: [],
+      categoryLearningEvents: []
+    });
+  });
+
+  it('新增子分类时记录上级,且同名子分类可归属不同父分类', () => {
+    const food = useFinanceStore.getState().addCategory('餐饮', { kind: 'expense' });
+    const transport = useFinanceStore.getState().addCategory('交通', { kind: 'expense' });
+    const foodOther = useFinanceStore
+      .getState()
+      .addCategory('其他', { kind: 'expense', parentId: food });
+    const transportOther = useFinanceStore
+      .getState()
+      .addCategory('其他', { kind: 'expense', parentId: transport });
+
+    expect(foodOther).not.toBe(transportOther);
+    const rows = useFinanceStore.getState().categories;
+    expect(rows.find((item) => item.id === foodOther)?.parentId).toBe(food);
+    expect(rows.find((item) => item.id === transportOther)?.parentId).toBe(transport);
+  });
+
+  it('删除父分类时子分类提升为一级分类而不是一起消失', () => {
+    const food = useFinanceStore.getState().addCategory('餐饮', { kind: 'expense' });
+    const child = useFinanceStore
+      .getState()
+      .addCategory('外卖', { kind: 'expense', parentId: food });
+
+    useFinanceStore.getState().removeCategory(food);
+
+    const rows = useFinanceStore.getState().categories;
+    expect(rows.some((item) => item.id === food)).toBe(false);
+    expect(rows.find((item) => item.id === child)?.parentId).toBeUndefined();
+  });
+
+  it('updateCategory 可调整上级分类', () => {
+    const food = useFinanceStore.getState().addCategory('餐饮', { kind: 'expense' });
+    const transport = useFinanceStore.getState().addCategory('交通', { kind: 'expense' });
+    const child = useFinanceStore
+      .getState()
+      .addCategory('外卖', { kind: 'expense', parentId: food });
+
+    useFinanceStore.getState().updateCategory(child, { parentId: transport });
+
+    expect(useFinanceStore.getState().categories.find((item) => item.id === child)?.parentId).toBe(
+      transport
+    );
+  });
+});

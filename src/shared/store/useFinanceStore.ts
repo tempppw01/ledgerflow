@@ -109,7 +109,13 @@ interface FinanceState {
   refundTransaction: (input: RefundTransactionInput) => RefundTransactionResult;
   addCategory: (
     name: string,
-    options?: { kind?: Category['kind']; color?: string; icon?: string }
+    options?: {
+      kind?: Category['kind'];
+      color?: string;
+      icon?: string;
+      /** 上级分类 id;留空表示一级分类。 */
+      parentId?: string;
+    }
   ) => string;
   updateCategory: (id: string, payload: Partial<Omit<Category, 'id'>>) => void;
   reorderCategories: (orderedIds: string[]) => void;
@@ -417,7 +423,8 @@ function sanitizeCategoriesAndTransactions(
     if (!normalizedName) {
       return;
     }
-    const key = categoryNameKey(normalizedName);
+    // 同名分类只要上级不同就允许共存,例如「餐饮 / 其他」与「交通 / 其他」。
+    const key = `${categoryNameKey(normalizedName)}::${item.parentId || ''}`;
     const found = canonicalByKey.get(key);
     if (found) {
       categoryIdAlias.set(item.id, found.id);
@@ -428,15 +435,23 @@ function sanitizeCategoriesAndTransactions(
     mergedCategories.push(normalizedRow);
   });
 
-  const categoryNameById = new Map(mergedCategories.map((item) => [item.id, item.name]));
+  // 父分类若被合并或已删除,子分类要跟到规范化后的父 id,或退回一级分类。
+  const categoryIdSet = new Set(mergedCategories.map((item) => item.id));
+  const normalizedCategories = mergedCategories.map((item) => {
+    if (!item.parentId) return item;
+    const resolvedParentId = categoryIdAlias.get(item.parentId) || item.parentId;
+    return categoryIdSet.has(resolvedParentId)
+      ? { ...item, parentId: resolvedParentId }
+      : { ...item, parentId: undefined };
+  });
+
+  const categoryNameById = new Map(normalizedCategories.map((item) => [item.id, item.name]));
   const normalizeTransactionList = (rows: TransactionItem[]) =>
     rows.map((tx) => {
       const remappedCategoryId = categoryIdAlias.get(tx.categoryId);
       const resolvedCategoryId =
         remappedCategoryId ||
-        (tx.categoryId && mergedCategories.some((category) => category.id === tx.categoryId)
-          ? tx.categoryId
-          : '');
+        (tx.categoryId && categoryIdSet.has(tx.categoryId) ? tx.categoryId : '');
 
       const categoryName = categoryNameById.get(resolvedCategoryId) || '';
 
@@ -447,7 +462,7 @@ function sanitizeCategoriesAndTransactions(
   const nextExtraTransactions = normalizeTransactionList(extraTransactions);
 
   return {
-    categories: mergedCategories,
+    categories: normalizedCategories,
     transactions: nextTransactions,
     extraTransactions: nextExtraTransactions
   };
@@ -1017,7 +1032,10 @@ export const useFinanceStore = create<FinanceState>()(
 
         set((s) => {
           const key = categoryNameKey(normalizedName);
-          const existing = s.categories.find((item) => categoryNameKey(item.name) === key);
+          const targetParentId = options?.parentId || '';
+          const existing = s.categories.find(
+            (item) => categoryNameKey(item.name) === key && (item.parentId || '') === targetParentId
+          );
           if (existing) {
             resolvedId = existing.id;
             return s;
@@ -1029,6 +1047,7 @@ export const useFinanceStore = create<FinanceState>()(
             kind: options?.kind,
             color: options?.color,
             icon: options?.icon,
+            parentId: options?.parentId,
             sortOrder: s.categories.length + 1
           };
           resolvedId = insertedRow.id;
@@ -1077,6 +1096,7 @@ export const useFinanceStore = create<FinanceState>()(
       },
       removeCategory: (id) => {
         const affectedTransactions: TransactionItem[] = [];
+        const reparentedCategories: Category[] = [];
         set((s) => {
           const target = s.categories.find((item) => item.id === id);
           if (!target) {
@@ -1091,12 +1111,24 @@ export const useFinanceStore = create<FinanceState>()(
             affectedTransactions.push(next);
             return next;
           });
+          // 子分类不跟着父分类一起消失,直接提升为一级分类。
+          const categories = s.categories
+            .filter((item) => item.id !== id)
+            .map((item) => {
+              if (item.parentId !== id) return item;
+              const next: Category = { ...item, parentId: undefined };
+              reparentedCategories.push(next);
+              return next;
+            });
           return {
-            categories: s.categories.filter((item) => item.id !== id),
+            categories,
             transactions,
             trashedCategories: ensureUniqueById([...s.trashedCategories, markTrashedAt(target)]),
             ...rebuildStateSlices(s.accounts, transactions, s.balanceChangeEntries)
           };
+        });
+        reparentedCategories.forEach((row) => {
+          void syncChangeIfNeeded({ entity: 'categories', action: 'update', row, id: row.id });
         });
         affectedTransactions.forEach((row) => {
           void syncChangeIfNeeded({ entity: 'transactions', action: 'update', row, id: row.id });
