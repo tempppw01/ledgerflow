@@ -37,7 +37,6 @@ import {
   ChatChevronsUpDownIcon,
   ChatGlobeIcon,
   ChatGlobeOffIcon,
-  ChatModelIcon,
   ChatSendIcon,
   ChatStopIcon,
   ChatUploadIcon
@@ -52,6 +51,8 @@ import { useAppPreferences } from '../../../shared/store/useAppPreferences';
 import { useFinanceStore } from '../../../shared/store/useFinanceStore';
 import { AI_MODEL_PRESETS, mergeAiModelOptions } from '../../../shared/config/aiModels';
 import { ConfirmDialog } from '../../../shared/ui/ConfirmDialog';
+import { AiModelFamilyIcon } from '../../../shared/ui/brandIcons';
+import { resolveAiModelFamily } from '../../../shared/ui/brandIconResolvers';
 import { Toast } from '../../../shared/ui/Toast';
 import type { ToastVariant } from '../../../shared/ui/Toast';
 import { buildTimeContext } from '../workbench/workbenchUtils';
@@ -89,6 +90,11 @@ const FLOATING_CHAT_VIEWPORT_GUTTER = 16;
 
 const MAX_INVESTMENT_AI_IMAGES = 4;
 const MAX_INVESTMENT_AI_IMAGE_SIZE_MB = 6;
+const INVESTMENT_STARTER_PROMPTS = [
+  '帮我看当前持仓的主要风险',
+  '这只基金现在适合继续定投吗?',
+  '结合我今天的情况,给一个配置思路'
+];
 const INVESTMENT_CHAT_PROGRESS_LABELS: Record<Exclude<InvestmentChatProgress, ''>, string> = {
   market: '正在读取页面持仓、自选和账本数据',
   web: '正在查询公开联网资讯',
@@ -134,6 +140,7 @@ type InvestmentChatComposerProps = {
   contextNote?: string;
   onPromptSubmitted?: (messageId: string) => void;
   clearContextVersion?: number;
+  starterPrompt?: { text: string; token: number } | null;
 };
 
 export function InvestmentChatComposer({
@@ -141,7 +148,8 @@ export function InvestmentChatComposer({
   defaultWebEnabled = false,
   contextNote = '',
   onPromptSubmitted,
-  clearContextVersion = 0
+  clearContextVersion = 0,
+  starterPrompt = null
 }: InvestmentChatComposerProps) {
   const { baseUrl, apiKey, model, webSearch } = useAiSettings();
   const setModel = useAiSettings((s) => s.setModel);
@@ -403,11 +411,8 @@ export function InvestmentChatComposer({
     }
 
     const retrying = Boolean(retryMessage);
-    const requestImages = retryMessage
-      ? [...(retryMessage.attachmentImages || [])]
-      : [...images];
-    const requestText =
-      retryMessage?.text || cleanPrompt || '请基于这些基金或持仓截图做投资分析。';
+    const requestImages = retryMessage ? [...(retryMessage.attachmentImages || [])] : [...images];
+    const requestText = retryMessage?.text || cleanPrompt || '请基于这些基金或持仓截图做投资分析。';
     const abortController = new AbortController();
     const requestVersion = requestVersionRef.current + 1;
     requestVersionRef.current = requestVersion;
@@ -564,6 +569,14 @@ export function InvestmentChatComposer({
     }
   };
 
+  const submitPromptRef = useRef(submitPrompt);
+  submitPromptRef.current = submitPrompt;
+
+  useEffect(() => {
+    if (!starterPrompt) return;
+    void submitPromptRef.current(starterPrompt.text);
+  }, [starterPrompt]);
+
   const composerExpanded =
     composerFocused || Boolean(input.trim()) || images.length > 0 || modelOpen;
 
@@ -588,9 +601,7 @@ export function InvestmentChatComposer({
           {failedTurn ? (
             <button
               type="button"
-              onClick={() =>
-                void submitPrompt(undefined, { retryMessageId: failedTurn.messageId })
-              }
+              onClick={() => void submitPrompt(undefined, { retryMessageId: failedTurn.messageId })}
             >
               重试本次
             </button>
@@ -759,7 +770,10 @@ export function InvestmentChatComposer({
                     ref={modelTriggerRef}
                   >
                     <span className="chat-model-trigger-icon">
-                      <ChatModelIcon className="chat-svg-icon chat-model-trigger-glyph" />
+                      <AiModelFamilyIcon
+                        family={resolveAiModelFamily(model)}
+                        className="chat-svg-icon chat-model-trigger-glyph"
+                      />
                     </span>
                     <span className="chat-model-inline-label">
                       {getModelDisplayLabel(model || '选择模型')}
@@ -788,7 +802,13 @@ export function InvestmentChatComposer({
                                   className={`chat-model-option ${item === model ? 'active' : ''}`}
                                   onClick={() => selectModel(item)}
                                 >
-                                  {getModelDisplayLabel(item)}
+                                  <AiModelFamilyIcon
+                                    family={resolveAiModelFamily(item)}
+                                    className="chat-model-option-glyph"
+                                  />
+                                  <span className="chat-model-option-label">
+                                    {getModelDisplayLabel(item)}
+                                  </span>
                                 </button>
                               ))
                             )}
@@ -885,6 +905,8 @@ export function InvestmentChatPanel({
   const [activeTurnMessageId, setActiveTurnMessageId] = useState<string | null>(null);
   const [selectedHistoryMessageId, setSelectedHistoryMessageId] = useState('');
   const [clearContextVersion, setClearContextVersion] = useState(0);
+  const [starterPrompt, setStarterPrompt] = useState<{ text: string; token: number } | null>(null);
+  const starterPromptTokenRef = useRef(0);
   const [clearContextConfirmOpen, setClearContextConfirmOpen] = useState(false);
   const [floatingOpen, setFloatingOpen] = useState(false);
   const [floatingPinned, setFloatingPinned] = useState(false);
@@ -1042,6 +1064,11 @@ export function InvestmentChatPanel({
   const handlePromptSubmitted = useCallback((messageId: string) => {
     setActiveTurnMessageId(messageId);
     setPendingScrollMessageId(messageId);
+  }, []);
+
+  const handleStarterPrompt = useCallback((text: string) => {
+    starterPromptTokenRef.current += 1;
+    setStarterPrompt({ text, token: starterPromptTokenRef.current });
   }, []);
 
   const clearContext = useCallback(() => {
@@ -1337,6 +1364,18 @@ export function InvestmentChatPanel({
               <div className="chat-msg-header">投资助手</div>
               <div className="chat-msg-content">
                 <p>可以从你的持仓、基金定投或今天的市场开始问。我会把结论和判断依据说清楚。</p>
+                <div className="chat-investment-starter-prompts" aria-label="快捷问题">
+                  {INVESTMENT_STARTER_PROMPTS.map((prompt) => (
+                    <button
+                      key={prompt}
+                      type="button"
+                      onClick={() => handleStarterPrompt(prompt)}
+                      disabled={Boolean(activeTurnMessageId)}
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </article>
@@ -1349,6 +1388,7 @@ export function InvestmentChatPanel({
             contextNote={contextNote}
             onPromptSubmitted={handlePromptSubmitted}
             clearContextVersion={clearContextVersion}
+            starterPrompt={starterPrompt}
           />
         ) : null}
 

@@ -4586,9 +4586,10 @@
 .investments-ai-input-toolbar .investments-ai-model-trigger .chat-model-trigger-icon {
   width: 24px;
   height: 24px;
-  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--color-bg-elevated) 88%, var(--color-primary-bg));
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  overflow: hidden;
 }
 
 .investments-ai-input-toolbar .chat-upload-btn .chat-svg-icon {
@@ -4596,8 +4597,9 @@
 }
 
 .investments-ai-input-toolbar .chat-model-trigger-glyph {
-  width: 14px;
-  height: 14px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
 }
 
 .investments-ai-input-toolbar .investments-ai-model-trigger .chat-model-inline-label {

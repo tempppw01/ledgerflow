@@ -230,6 +230,25 @@
   }
 }
 
+@media (max-width: 430px) {
+  .language-switcher-trigger {
+    padding: 0 8px 0 5px;
+    gap: 5px;
+  }
+
+  .language-switcher .language-switcher-label {
+    display: none;
+  }
+
+  .language-switcher-copy {
+    gap: 0;
+  }
+
+  .language-switcher-current {
+    font-size: 12px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .language-switcher-trigger,
   .language-switcher-chevron,

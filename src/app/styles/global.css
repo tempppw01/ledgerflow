@@ -9745,6 +9745,39 @@ body.categories-accounts-resizing {
   width: 100%;
 }
 
+.settings-provider-select-shell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.settings-provider-select-shell .settings-provider-select {
+  padding-left: 38px;
+}
+
+.settings-provider-select-icon {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--color-text-tertiary);
+}
+
+.settings-provider-glyph {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  flex: 0 0 auto;
+}
+
 .settings-provider-select.active {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 2px var(--color-primary-bg);
@@ -10131,11 +10164,17 @@ body.categories-accounts-resizing {
   flex: 0 0 24px;
   width: 24px;
   height: 24px;
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-bg-subtle));
+  border-radius: 6px;
+  background: transparent;
   color: var(--color-primary);
-  font-size: var(--font-xs);
-  font-weight: 800;
+  overflow: hidden;
+}
+
+.settings-websearch-provider-glyph {
+  display: block;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
 }
 
 .settings-websearch-provider-name {
@@ -13165,6 +13204,40 @@ body.categories-accounts-resizing {
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-2);
   align-items: center;
+}
+
+.settings-model-input-shell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.settings-model-input-shell input {
+  width: 100%;
+  padding-left: 38px;
+}
+
+.settings-model-input-icon {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--color-text-tertiary);
+}
+
+.settings-model-glyph {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  flex: 0 0 auto;
 }
 
 .settings-model-field label,

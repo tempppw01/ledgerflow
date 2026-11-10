@@ -302,14 +302,49 @@
 .chat-investment-panel.is-empty > .chat-investment-starter {
   align-self: center;
   width: min(100%, 900px);
-  margin-block: auto;
+  margin: clamp(16px, 2.6vh, 28px) auto 0;
+}
+
+.chat-investment-starter-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.chat-investment-starter-prompts button {
+  min-height: 44px;
+  padding: 8px 13px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 92%, var(--color-primary-bg));
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.chat-investment-starter-prompts button:hover,
+.chat-investment-starter-prompts button:focus-visible {
+  border-color: color-mix(in srgb, var(--color-primary) 48%, var(--color-border-light));
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+.chat-investment-starter-prompts button:disabled {
+  cursor: default;
+  opacity: 0.55;
 }
 
 .chat-investment-mode-content .investments-ai-links {
   display: flex;
   flex: 0 0 auto;
   width: min(100%, 780px);
-  margin: 0 auto 8px;
+  margin: auto auto 8px;
   justify-content: flex-start;
 }
 
@@ -672,7 +707,9 @@
 }
 
 .chat-model-option {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 9px;
   width: 100%;
   min-height: 44px;
   padding: 10px;
@@ -695,6 +732,21 @@
 .chat-model-option.active {
   background: var(--color-primary-bg);
   color: var(--color-primary);
+}
+
+.chat-model-option-glyph {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  flex: 0 0 auto;
+}
+
+.chat-model-option-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chat-model-empty {

@@ -60,7 +60,6 @@ import { InvestmentChatPanel } from '../../features/assistant/investment-chat/In
 import {
   ChatClearIcon,
   ChatCopyIcon,
-  ChatModelIcon,
   ChatRotateCcwIcon,
   ChatSendIcon,
   ChatStopIcon,
@@ -69,6 +68,8 @@ import {
   ChatUploadIcon
 } from '../../features/assistant/ui/chatIcons';
 import { BOT_ICON_URL, USER_ICON_URL } from '../../shared/config/brandAssets';
+import { AiModelFamilyIcon } from '../../shared/ui/brandIcons';
+import { resolveAiModelFamily } from '../../shared/ui/brandIconResolvers';
 
 function getModelDisplayLabel(modelId: string): string {
   const value = modelId.trim();
@@ -3414,7 +3415,10 @@ export function AssistantPage() {
                           title={getModelDisplayLabel(model || t('assistant.ui.selectModel'))}
                         >
                           <span className="chat-model-trigger-icon">
-                            <ChatModelIcon className="chat-svg-icon chat-model-trigger-glyph" />
+                            <AiModelFamilyIcon
+                              family={resolveAiModelFamily(model)}
+                              className="chat-svg-icon chat-model-trigger-glyph"
+                            />
                           </span>
                           <span className="chat-model-inline-label">
                             {getModelDisplayLabel(model || t('assistant.ui.selectModel'))}
@@ -3447,7 +3451,13 @@ export function AssistantPage() {
                                     className={`chat-model-option ${item === model ? 'active' : ''}`}
                                     onClick={() => handleSelectModel(item)}
                                   >
-                                    {getModelDisplayLabel(item)}
+                                    <AiModelFamilyIcon
+                                      family={resolveAiModelFamily(item)}
+                                      className="chat-model-option-glyph"
+                                    />
+                                    <span className="chat-model-option-label">
+                                      {getModelDisplayLabel(item)}
+                                    </span>
                                   </button>
                                 ))
                               )}

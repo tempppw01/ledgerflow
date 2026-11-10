@@ -1,12 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-  type FormEvent
-} from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { fetchEmbeddings } from '../../features/assistant/api/openaiEmbeddingClient';
@@ -28,16 +20,31 @@ import {
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { PasswordInput } from '../../shared/ui/PasswordInput';
 import { Toast } from '../../shared/ui/Toast';
+import { AiModelFamilyIcon, AiProviderIcon, GenericModelIcon } from '../../shared/ui/brandIcons';
+import { resolveAiModelFamily, type AiProviderKey } from '../../shared/ui/brandIconResolvers';
 import { WebSearchSettingsPanel } from './WebSearchSettingsPanel';
 
-const AI_PROVIDER_PRESETS = [
-  { value: 'https://ai.shuaihong.fun/v1', label: 'SH API' },
-  { value: 'https://api.openai.com/v1', label: 'OpenAI' },
-  { value: 'https://generativelanguage.googleapis.com/v1beta/openai', label: 'Gemini' },
-  { value: 'https://api.deepseek.com/v1', label: 'DeepSeek' },
-  { value: 'https://openrouter.ai/api/v1', label: 'OpenRouter' },
-  { value: 'https://api.siliconflow.cn/v1', labelKey: 'settings.providerPreset.siliconflow' }
-] as const;
+const AI_PROVIDER_PRESETS: Array<{
+  value: string;
+  label?: string;
+  labelKey?: string;
+  provider: AiProviderKey;
+}> = [
+  { value: 'https://ai.shuaihong.fun/v1', label: 'SH API', provider: 'sh' },
+  { value: 'https://api.openai.com/v1', label: 'OpenAI', provider: 'openai' },
+  {
+    value: 'https://generativelanguage.googleapis.com/v1beta/openai',
+    label: 'Gemini',
+    provider: 'gemini'
+  },
+  { value: 'https://api.deepseek.com/v1', label: 'DeepSeek', provider: 'deepseek' },
+  { value: 'https://openrouter.ai/api/v1', label: 'OpenRouter', provider: 'openrouter' },
+  {
+    value: 'https://api.siliconflow.cn/v1',
+    labelKey: 'settings.providerPreset.siliconflow',
+    provider: 'siliconflow'
+  }
+];
 
 const EMBEDDING_MODEL_PRESETS = [
   'jina-embeddings-v3',
@@ -164,13 +171,21 @@ function ModelSelector({ label, hint, value, presets, onChange }: ModelSelectorP
       <label>{label}</label>
       <small>{hint}</small>
       <div className="settings-model-select-row">
-        <input
-          type="text"
-          list={listId}
-          value={value}
-          placeholder={getAiModelDisplayLabel(presets[0] ?? '')}
-          onChange={(e) => onChange(e.target.value)}
-        />
+        <span className="settings-model-input-shell">
+          <span className="settings-model-input-icon" aria-hidden="true">
+            <AiModelFamilyIcon
+              family={resolveAiModelFamily(value)}
+              className="settings-model-glyph"
+            />
+          </span>
+          <input
+            type="text"
+            list={listId}
+            value={value}
+            placeholder={getAiModelDisplayLabel(presets[0] ?? '')}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        </span>
         <datalist id={listId}>
           {options.map((item) => (
             <option key={item} value={item} label={getAiModelDisplayLabel(item)} />
@@ -835,30 +850,42 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
             <div className="field">
               <label>{t('settings.baseUrl')}</label>
               <div className="settings-baseurl-row">
-                <select
-                  className={
-                    selectedProviderPreset
-                      ? 'settings-provider-select active'
-                      : 'settings-provider-select'
-                  }
-                  value={providerPresetValue}
-                  onChange={(e) => {
-                    const next = e.target.value;
-                    if (!next || next === '__custom__') return;
-                    setBaseUrl(next);
-                    showSaveToast();
-                  }}
-                >
-                  <option value="">{t('settings.provider.choosePlaceholder')}</option>
-                  {AI_PROVIDER_PRESETS.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {getProviderPresetLabel(item, t)}
-                    </option>
-                  ))}
-                  {baseUrl.trim() && !selectedProviderPreset ? (
-                    <option value="__custom__">{t('settings.provider.customOption')}</option>
-                  ) : null}
-                </select>
+                <span className="settings-provider-select-shell">
+                  <span className="settings-provider-select-icon" aria-hidden="true">
+                    {selectedProviderPreset ? (
+                      <AiProviderIcon
+                        provider={selectedProviderPreset.provider}
+                        className="settings-provider-glyph"
+                      />
+                    ) : (
+                      <GenericModelIcon className="settings-provider-glyph" />
+                    )}
+                  </span>
+                  <select
+                    className={
+                      selectedProviderPreset
+                        ? 'settings-provider-select active'
+                        : 'settings-provider-select'
+                    }
+                    value={providerPresetValue}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      if (!next || next === '__custom__') return;
+                      setBaseUrl(next);
+                      showSaveToast();
+                    }}
+                  >
+                    <option value="">{t('settings.provider.choosePlaceholder')}</option>
+                    {AI_PROVIDER_PRESETS.map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {getProviderPresetLabel(item, t)}
+                      </option>
+                    ))}
+                    {baseUrl.trim() && !selectedProviderPreset ? (
+                      <option value="__custom__">{t('settings.provider.customOption')}</option>
+                    ) : null}
+                  </select>
+                </span>
                 <input
                   value={baseUrl}
                   onChange={(e) => {

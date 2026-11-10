@@ -1,23 +1,15 @@
 import { useTranslation } from 'react-i18next';
 import {
   WEB_SEARCH_PROVIDER_DEFINITIONS,
-  getWebSearchProviderDefinition,
-  type WebSearchProvider
+  getWebSearchProviderDefinition
 } from '../../shared/config/webSearchProviders';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { PasswordInput } from '../../shared/ui/PasswordInput';
+import { WebSearchServiceIcon } from '../../shared/ui/brandIcons';
 
 interface WebSearchSettingsPanelProps {
   onSaved?: () => void;
 }
-
-const PROVIDER_MONOGRAMS: Record<WebSearchProvider, string> = {
-  tavily: 'T',
-  brave: 'B',
-  serper: 'S',
-  exa: 'E',
-  google: 'G'
-};
 
 export function WebSearchSettingsPanel({ onSaved }: WebSearchSettingsPanelProps) {
   const { t } = useTranslation();
@@ -31,11 +23,7 @@ export function WebSearchSettingsPanel({ onSaved }: WebSearchSettingsPanelProps)
     Boolean(credential?.apiKey.trim()) &&
     (!definition.requiresEngineId || Boolean(credential?.engineId.trim()));
 
-  const updateCredential = (patch: {
-    apiKey?: string;
-    baseUrl?: string;
-    engineId?: string;
-  }) => {
+  const updateCredential = (patch: { apiKey?: string; baseUrl?: string; engineId?: string }) => {
     setWebSearch({ credential: { provider: activeProvider, patch } });
     onSaved?.();
   };
@@ -80,11 +68,11 @@ export function WebSearchSettingsPanel({ onSaved }: WebSearchSettingsPanelProps)
                   }}
                 >
                   <span className="settings-websearch-provider-head">
-                    <span
-                      className="settings-websearch-provider-mark"
-                      aria-hidden="true"
-                    >
-                      {PROVIDER_MONOGRAMS[provider.id]}
+                    <span className="settings-websearch-provider-mark" aria-hidden="true">
+                      <WebSearchServiceIcon
+                        service={provider.id}
+                        className="settings-websearch-provider-glyph"
+                      />
                     </span>
                     <span className="settings-websearch-provider-name">{provider.name}</span>
                     {saved ? (
@@ -148,7 +136,7 @@ export function WebSearchSettingsPanel({ onSaved }: WebSearchSettingsPanelProps)
                 rel="noreferrer"
               >
                 {t('settings.tavily.openConsole')}
-                <span aria-hidden="true">{"\u2197"}</span>
+                <span aria-hidden="true">{'\u2197'}</span>
               </a>
               <a
                 className="settings-websearch-guide-link"
@@ -157,7 +145,7 @@ export function WebSearchSettingsPanel({ onSaved }: WebSearchSettingsPanelProps)
                 rel="noreferrer"
               >
                 {t('settings.tavily.viewDocs')}
-                <span aria-hidden="true">{"\u2197"}</span>
+                <span aria-hidden="true">{'\u2197'}</span>
               </a>
               {definition.engineSignupUrl ? (
                 <a
@@ -167,7 +155,7 @@ export function WebSearchSettingsPanel({ onSaved }: WebSearchSettingsPanelProps)
                   rel="noreferrer"
                 >
                   {t('settings.tavily.createEngine')}
-                  <span aria-hidden="true">{"\u2197"}</span>
+                  <span aria-hidden="true">{'\u2197'}</span>
                 </a>
               ) : null}
             </div>
