@@ -249,6 +249,30 @@
   }
 }
 
+/* The generic `.workspace-topbar span` rule would otherwise turn these slots into blocks. */
+.workspace-topbar .language-switcher .language-switcher-icon-shell {
+  display: inline-flex;
+}
+
+.workspace-topbar .language-switcher .language-switcher-copy {
+  display: grid;
+}
+
+.workspace-topbar .language-switcher .language-switcher-label {
+  font-size: 9px;
+}
+
+.workspace-topbar .language-switcher .language-switcher-current {
+  color: currentColor;
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .workspace-topbar .language-switcher .language-switcher-label {
+    font-size: 8.5px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .language-switcher-trigger,
   .language-switcher-chevron,
