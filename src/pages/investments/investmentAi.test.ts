@@ -5,9 +5,12 @@ import type {
   InvestmentWatchItem
 } from '../../entities/investment/types';
 import {
+  buildInvestmentAssistantPrompt,
   buildInvestmentAssistantAuxiliaryInfo,
   buildInvestmentFundAnalysisPrompt,
+  buildInvestmentHoldingAskPrompt,
   buildInvestmentMarketInsightPrompt,
+  buildInvestmentMarketAskPrompt,
   buildInvestmentWatchlistReviewPrompt,
   extractInvestmentAnalysis,
   extractInvestmentMarketInsight,
@@ -259,5 +262,85 @@ describe('investment prompt builders', () => {
     });
     expect(insight?.points).toHaveLength(2);
     expect(insight?.suggestions[0]).toMatchObject({ tone: 'warning', title: '不追盘中急涨' });
+  });
+
+  it('summarizes portfolio totals and follow-ups in the assistant prompt', () => {
+    const prompt = buildInvestmentAssistantPrompt({
+      positions,
+      goals: [
+        {
+          id: 'goal-1',
+          name: '应急金',
+          kind: 'emergency',
+          targetAmount: 60000,
+          currentAmount: 5000,
+          priority: 'high',
+          createdAt: '2026-05-01T00:00:00.000Z',
+          updatedAt: '2026-05-20T00:00:00.000Z'
+        }
+      ],
+      watchlist: [watchItem],
+      monthlyInvestableCash: 4000,
+      focus: { type: 'watch', label: '科技成长混合', detail: '基金代码 123456' }
+    });
+
+    expect(prompt).toContain('"totalCurrentValue"');
+    expect(prompt).toContain('"allocationShare"');
+    expect(prompt).toContain('"followUps"');
+    expect(prompt).toContain('科技成长混合');
+    expect(prompt).toContain('优先调用投资工具');
+  });
+
+  it('builds a scoped holding question with concrete numbers', () => {
+    const prompt = buildInvestmentHoldingAskPrompt({
+      name: '沪深 300 ETF',
+      profitRate: 8.8,
+      allocationShare: 52.5,
+      currentValue: 10880,
+      riskLevel: '中风险',
+      monthlyContribution: 1200
+    });
+
+    expect(prompt).toContain('沪深 300 ETF');
+    expect(prompt).toContain('+8.8%');
+    expect(prompt).toContain('52.5%');
+    expect(prompt).toContain('每月定投 ¥1200');
+  });
+
+  it('builds a market review question from themes and news', () => {
+    const prompt = buildInvestmentMarketAskPrompt({
+      marketChange: -0.42,
+      themes: ['创新药', 'CPO概念'],
+      news: '创新药审批提速'
+    });
+
+    expect(prompt).toContain('-0.42%');
+    expect(prompt).toContain('创新药');
+    expect(prompt).toContain('创新药审批提速');
+  });
+
+  it('keeps followUps from the structured analysis block', () => {
+    const raw = [
+      '先观察,不要一次性买入。',
+      '```json',
+      JSON.stringify({
+        fundName: '科技成长混合',
+        verdict: '继续观察',
+        summary: '等待政策催化。',
+        riskLevel: 'medium',
+        highlights: [],
+        risks: [],
+        actions: [],
+        followUps: ['这个基金重仓什么行业?', '回调多少再考虑?', '适合定投吗?']
+      }),
+      '```'
+    ].join('\n');
+    const extracted = extractInvestmentAnalysis(raw);
+
+    expect(extracted.analysis?.followUps).toEqual([
+      '这个基金重仓什么行业?',
+      '回调多少再考虑?',
+      '适合定投吗?'
+    ]);
   });
 });

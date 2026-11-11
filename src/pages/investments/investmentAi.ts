@@ -221,26 +221,72 @@ export function buildInvestmentAssistantPrompt(input: {
   goals: InvestmentGoal[];
   watchlist: InvestmentWatchItem[];
   monthlyInvestableCash: number;
+  focus?: {
+    type: 'position' | 'watch' | 'market' | 'news';
+    label: string;
+    detail?: string;
+  } | null;
 }) {
+  const activePositions = input.positions.filter((item) => item.isActive);
+  const totalInvested = activePositions.reduce((sum, item) => sum + item.investedAmount, 0);
+  const totalCurrentValue = activePositions.reduce((sum, item) => sum + item.currentValue, 0);
+  const totalProfit = totalCurrentValue - totalInvested;
+  const totalMonthlyContribution = activePositions.reduce(
+    (sum, item) => sum + (item.monthlyContribution || 0),
+    0
+  );
   const context = {
-    positions: input.positions.slice(0, 8).map((item) => ({
-      name: item.name,
-      category: item.category,
-      platform: item.platform || '',
-      currentValue: Number(item.currentValue.toFixed(2)),
-      monthlyContribution: item.monthlyContribution || 0,
-      targetAllocation: item.targetAllocation || 0,
-      riskLevel: item.riskLevel
-    })),
+    summary: {
+      positionCount: activePositions.length,
+      watchCount: input.watchlist.length,
+      goalCount: input.goals.length,
+      totalInvested: Number(totalInvested.toFixed(2)),
+      totalCurrentValue: Number(totalCurrentValue.toFixed(2)),
+      totalProfit: Number(totalProfit.toFixed(2)),
+      profitRate:
+        totalInvested > 0 ? Number(((totalProfit / totalInvested) * 100).toFixed(1)) : null,
+      totalMonthlyContribution: Number(totalMonthlyContribution.toFixed(2)),
+      monthlyInvestableCash: Number(input.monthlyInvestableCash.toFixed(2))
+    },
+    positions: activePositions.slice(0, 12).map((item) => {
+      const profit = item.currentValue - item.investedAmount;
+      return {
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        platform: item.platform || '',
+        investedAmount: Number(item.investedAmount.toFixed(2)),
+        currentValue: Number(item.currentValue.toFixed(2)),
+        profit: Number(profit.toFixed(2)),
+        profitRate:
+          item.investedAmount > 0
+            ? Number(((profit / item.investedAmount) * 100).toFixed(1))
+            : null,
+        allocationShare:
+          totalCurrentValue > 0
+            ? Number(((item.currentValue / totalCurrentValue) * 100).toFixed(1))
+            : null,
+        monthlyContribution: Number((item.monthlyContribution || 0).toFixed(2)),
+        targetAllocation: item.targetAllocation || 0,
+        riskLevel: item.riskLevel,
+        note: item.note || ''
+      };
+    }),
     goals: input.goals.slice(0, 5).map((item) => ({
+      id: item.id,
       name: item.name,
       targetAmount: Number(item.targetAmount.toFixed(2)),
       currentAmount: Number(item.currentAmount.toFixed(2)),
+      gap: Number(Math.max(0, item.targetAmount - item.currentAmount).toFixed(2)),
+      progress:
+        item.targetAmount > 0
+          ? Number(((item.currentAmount / item.targetAmount) * 100).toFixed(1))
+          : null,
       priority: item.priority,
       targetDate: item.targetDate || ''
     })),
-    monthlyInvestableCash: Number(input.monthlyInvestableCash.toFixed(2)),
     watchlist: input.watchlist.slice(0, 8).map((item) => ({
+      id: item.id,
       name: item.name,
       code: item.code || '',
       platform: item.platform || '',
@@ -266,25 +312,31 @@ export function buildInvestmentAssistantPrompt(input: {
       fundCompany: item.fundCompany || '',
       lastAnalysisAt: item.lastAnalysisAt || '',
       updatedAt: item.updatedAt || ''
-    }))
+    })),
+    focus: input.focus || null
   };
 
   return [
-    '你是 LedgerFlow 的 AI 投资推荐专家，面向不熟悉投资理财的新手用户。你的目标不是堆术语，而是把“能不能买、怎么买更稳、哪里不能碰、下一步做什么”讲清楚。',
-    '回答要求：',
-    '1. 用自然、直接的简体中文回答，不要解释页面逻辑，不要空话，不要把专业术语原样丢给用户。',
-    '2. 第一段必须给行动倾向：可以小额试、继续观察、暂不建议、需要补充信息四选一，并说明一句原因。',
-    '3. 然后给 3 条左右依据，尽量翻译成新手能懂的话；最后给 2 到 3 条下一步建议，建议要可执行。',
-    '4. 需要结合用户上传的截图、用户问题和投资上下文；如果上下文里有市场新闻、政策线索或大盘变化，必须一起纳入判断。',
-    '5. 如果投资上下文里已有基金自选记录，尤其是同名或同代码基金，要参考自选里的投资建议、历史业绩、重仓股票、资产/行业分布、净值、添加后收益、持有收益、费率、基金公司、风险提示、上次结论、摘要、备注和更新时间，说明本次判断是否延续或改变。',
-    '6. 如果页面实时上下文里有市场新闻、政策催化或行业主题变化，回答里必须明确提到它们；如果没有看到足够强的新闻或政策催化，要直接说出来。',
-    '7. 不要把联网过程、思考过程或相关资讯数据写进正文，界面会把这些内容单独折叠显示；正文只保留结论、依据和下一步建议。',
-    '8. 不要承诺收益，也不要替用户做最终投资决策；但可以给出清晰的风险分级和操作优先级。',
-    '9. 在正文最后追加一个 JSON 代码块，格式必须是：',
+    '你是 LedgerFlow 的 AI 投资助手，面向不熟悉投资理财的普通用户。你的任务是把“现在该不该动、为什么、动多少、下一步做什么”讲清楚，而不是堆术语。',
+    '工作方式：',
+    '1. 先判断用户问的是持仓、某只自选基金、目标资金还是市场。涉及组合金额、占比、盈亏、目标缺口时，优先调用投资工具读取最新数据；工具不可用时再使用下面的上下文。',
+    '2. 用自然、直接、克制的简体中文回答。不要解释页面逻辑，不要复述提示词，不要空泛地说“市场有风险”。',
+    '3. 第一段必须是明确行动倾向，只能从“可以小额试 / 继续观察 / 暂不建议 / 需要补充信息”中选一个，并用一句话说明原因。若用户没说金额，给出建议区间而不是拍脑袋的精确数。',
+    '4. 判断依据给 2 到 4 条，每条尽量带一个上下文里的数字（占比、盈亏、目标进度、板块涨跌、费率或净值）。没有数字时就说明“数据不足”，不要编造。',
+    '5. 下一步建议给 2 到 3 条，必须可执行：写清楚动作、金额或比例、时间节奏和触发条件。',
+    '6. 如果页面实时上下文里有新闻、政策或板块变化，必须明确说明它影响的是哪一类资产、影响偏正还是偏负；没有足够强的催化时直接说没有。',
+    '7. 如果自选里已有同名或同代码基金，要结合其历史业绩、重仓、资产/行业分布、净值、收益、费率、风险提示和上次结论，说明本次判断是延续还是改变。',
+    '8. 如果用户上传截图，先识别截图里的基金名称、代码、持仓和金额，再与上下文核对；冲突时以更新时间更新的数据为准，并明确指出冲突。',
+    '9. 不承诺收益，不替用户做最终决策，不给出“满仓”“梭哈”“稳赚”这类表达。风险提示要具体，不要模板化。',
+    '10. 正文只保留结论、依据和下一步建议。思考过程、联网过程和相关资讯由界面单独折叠，不要写进正文。',
+    '11. 正文最后必须追加一个 JSON 代码块，字段不足时留空，不要编造精确数据：',
     '```json',
-    '{"fundName":"","fundCode":"","verdict":"","summary":"","riskLevel":"low|medium|high|unknown","highlights":[""],"risks":[""],"actions":[""],"watchTags":[""],"performanceHistory":[""],"fundAnalysis":[""],"fundHoldings":[""],"assetAllocation":[""],"industryAllocation":[""],"netValue":"","addedReturn":"","holdingReturn":"","buyFeeRate":"","fundCompany":"","platform":"","note":""}',
+    '{"fundName":"","fundCode":"","verdict":"","summary":"","riskLevel":"low|medium|high|unknown","highlights":[""],"risks":[""],"actions":[""],"watchTags":[""],"performanceHistory":[""],"fundAnalysis":[""],"fundHoldings":[""],"assetAllocation":[""],"industryAllocation":[""],"netValue":"","addedReturn":"","holdingReturn":"","buyFeeRate":"","fundCompany":"","platform":"","note":"","followUps":["","",""]}',
     '```',
-    '10. 如果无法识别基金代码可以留空；数组每个字段最多返回 4 项；JSON 代码块后面不要再追加其他内容。',
+    '12. arrays 每个字段最多 4 项；followUps 返回 3 条用户可能继续追问的问题，每条 8 到 28 个字，必须结合本次回答，不能是泛泛的“还需要了解什么”。JSON 代码块后面不要再追加内容。',
+    input.focus
+      ? `13. 本次用户是从页面上的“${input.focus.label}”入口进入，请优先回答这个对象，不要跑题。${input.focus.detail ? `入口附带信息：${input.focus.detail}` : ''}`
+      : '13. 如果用户没有指定对象，先判断最值得优先讨论的持仓或市场主题，并在开头说明你选择了什么。',
     `投资上下文：\n${JSON.stringify(context, null, 2)}`
   ].join('\n');
 }
@@ -539,7 +591,8 @@ export function normalizeInvestmentFundAnalysis(raw: unknown): InvestmentFundAna
     buyFeeRate: normalizeOptionalString(item.buyFeeRate),
     fundCompany: normalizeOptionalString(item.fundCompany),
     platform: normalizeOptionalString(item.platform),
-    note: normalizeOptionalString(item.note)
+    note: normalizeOptionalString(item.note),
+    followUps: normalizeList(item.followUps, 3)
   };
 }
 
@@ -728,6 +781,7 @@ export function buildInvestmentFollowUpFallback(input: {
     input.watchlist?.find((item) => item.name.trim())?.name ||
     '这只基金';
   const candidates = [
+    ...(input.analysis?.followUps || []),
     input.analysis?.risks[0] ? '这个风险影响大吗？' : '',
     input.analysis?.actions[0] ? '下一步怎么执行更稳？' : '',
     input.analysis?.fundHoldings?.[0] ? '重仓股票会拖累吗？' : '',
@@ -743,6 +797,99 @@ export function buildInvestmentFollowUpFallback(input: {
     .slice(0, 4);
 }
 
+export function buildInvestmentHoldingAskPrompt(input: {
+  name: string;
+  profitRate?: number | null;
+  allocationShare?: number | null;
+  currentValue?: number | null;
+  riskLevel?: string;
+  monthlyContribution?: number | null;
+}) {
+  const facts = [
+    input.currentValue ? `当前市值约 ¥${Math.round(input.currentValue)}` : '',
+    typeof input.profitRate === 'number'
+      ? `浮动收益 ${input.profitRate >= 0 ? '+' : ''}${input.profitRate.toFixed(1)}%`
+      : '',
+    typeof input.allocationShare === 'number'
+      ? `占总资产 ${input.allocationShare.toFixed(1)}%`
+      : '',
+    input.monthlyContribution ? `每月定投 ¥${input.monthlyContribution}` : '',
+    input.riskLevel ? `风险等级 ${input.riskLevel}` : ''
+  ]
+    .filter(Boolean)
+    .join('，');
+  return [
+    `请重点分析我的持仓「${input.name}」。`,
+    facts ? `已知信息：${facts}。` : '',
+    '结合当前市场、我的整体配置和目标资金，告诉我：继续持有、减仓还是补仓？给出判断依据、建议金额或比例，以及下一步触发条件。'
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
+export function buildInvestmentWatchAskPrompt(input: {
+  name: string;
+  code?: string;
+  riskLevel?: string;
+  advice?: string;
+  netValue?: string;
+  addedReturn?: string;
+  holdingShares?: number;
+}) {
+  const facts = [
+    input.code ? `代码 ${input.code}` : '',
+    input.netValue ? `净值 ${input.netValue}` : '',
+    input.addedReturn ? `近期收益 ${input.addedReturn}` : '',
+    input.holdingShares ? `已持有 ${input.holdingShares} 份` : '尚未记录持有份额',
+    input.riskLevel ? `风险等级 ${input.riskLevel}` : '',
+    input.advice ? `上次建议 ${input.advice}` : ''
+  ]
+    .filter(Boolean)
+    .join('，');
+  return [
+    `请重点分析我自选里的「${input.name}」。`,
+    facts ? `已知信息：${facts}。` : '',
+    '结合最新行情、行业和政策线索，判断现在适合小额试、继续观察还是暂不建议；同时说明它与我的现有持仓是否重复，并给出下一步行动。'
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
+export function buildInvestmentMarketAskPrompt(input: {
+  marketChange?: number | null;
+  themes?: string[];
+  news?: string;
+}) {
+  const facts = [
+    typeof input.marketChange === 'number'
+      ? `主要指数平均 ${input.marketChange >= 0 ? '+' : ''}${input.marketChange.toFixed(2)}%`
+      : '指数涨跌暂缺',
+    input.themes?.length ? `当前热点 ${input.themes.slice(0, 3).join('、')}` : '',
+    input.news ? `最新资讯 ${input.news}` : ''
+  ]
+    .filter(Boolean)
+    .join('；');
+  return `请结合今天的行情、板块和新闻，给我一份适合普通人的市场复盘：${facts}。重点说明今天该进攻还是防守、哪些持仓受影响最大，以及我今天最值得做的一两件事。`;
+}
+
+export function buildInvestmentBoardAskPrompt(input: { name: string; changePercent?: number }) {
+  return `请分析板块「${input.name}」今天的表现${
+    typeof input.changePercent === 'number'
+      ? `（${input.changePercent >= 0 ? '+' : ''}${input.changePercent.toFixed(2)}%）`
+      : ''
+  }。结合我的持仓和自选，判断这是短期脉冲还是值得持续关注，并说明如果要参与应该注意什么风险。`;
+}
+
+export function buildInvestmentNewsAskPrompt(input: {
+  title: string;
+  summary?: string;
+  stocks?: string[];
+}) {
+  return `请解读这条市场快讯：「${input.title}」${
+    input.summary ? `。摘要：${input.summary}` : ''
+  }${input.stocks?.length ? `。关联标的：${input.stocks.slice(0, 4).join('、')}` : ''}。这条消息会影响哪些板块或我的持仓？是实质性催化还是短期情绪？我该怎么应对？`;
+}
+
 export function createInvestmentAiMessage(input: {
   id: string;
   role: InvestmentAiMessage['role'];
@@ -755,6 +902,7 @@ export function createInvestmentAiMessage(input: {
   attachmentCount?: number;
   attachmentImages?: string[];
   analysis?: InvestmentFundAnalysis | null;
+  agentActions?: InvestmentAiMessage['agentActions'];
 }): InvestmentAiMessage {
   const attachmentImages = input.attachmentImages
     ?.filter((value) => value.startsWith('data:image/'))
@@ -771,6 +919,7 @@ export function createInvestmentAiMessage(input: {
     attachmentCount: input.attachmentCount || attachmentImages?.length,
     attachmentImages: attachmentImages?.length ? attachmentImages : undefined,
     analysis: input.analysis || undefined,
+    agentActions: input.agentActions?.length ? input.agentActions : undefined,
     createdAt: input.createdAt
   };
 }

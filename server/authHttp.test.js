@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
-import { DatabaseSync } from 'node:sqlite';
+import { execFileSync } from 'node:child_process';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { requestPasswordReset } from './authService.js';
 import { createLedgerFlowServer, resolveApiPort } from './mysqlSnapshotServer.js';
 
 test('internal API port overrides a platform-provided public port', () => {
@@ -12,7 +13,9 @@ test('internal API port overrides a platform-provided public port', () => {
 });
 
 async function closeServer(server) {
-  await new Promise((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
+  await new Promise((resolve, reject) =>
+    server.close((error) => (error ? reject(error) : resolve()))
+  );
 }
 
 async function json(response) {
@@ -77,6 +80,11 @@ test('HTTP auth protects relational data and scopes it to the session user', asy
     assert.equal(setupBody.initialized, true);
     assert.equal(setupBody.provider, 'sqlite');
     assert.equal(setupBody.created, true);
+
+    const unavailablePasswordReset = await post('/api/auth/forgot-password', {
+      email: 'owner@example.com'
+    });
+    assert.equal(unavailablePasswordReset.status, 503);
 
     const unauthorized = await request('/api/data/bootstrap');
     assert.equal(unauthorized.status, 401);
@@ -171,11 +179,85 @@ test('HTTP auth protects relational data and scopes it to the session user', asy
     const exportedDatabasePath = path.join(dataDirectory, 'exported.sqlite');
     const exportedBytes = Buffer.from(await sqlExport.arrayBuffer());
     await writeFile(exportedDatabasePath, exportedBytes);
-    const exportedDatabase = new DatabaseSync(exportedDatabasePath);
-    assert.equal(exportedDatabase.prepare("SELECT COUNT(*) AS count FROM ledger_transactions").get().count, 1);
-    assert.equal(exportedDatabase.prepare('SELECT COUNT(*) AS count FROM auth_users').get().count, 1);
-    assert.equal(exportedDatabase.prepare('SELECT id FROM ledger_transactions').get().id, 'owner-transaction');
-    exportedDatabase.close();
+    const exportedSummary = JSON.parse(
+      execFileSync(
+        process.execPath,
+        [
+          '--input-type=module',
+          '-e',
+          `
+            import { DatabaseSync } from 'node:sqlite';
+            const database = new DatabaseSync(process.argv.at(-1), { readOnly: true });
+            const summary = {
+              transactions: database.prepare('SELECT COUNT(*) AS count FROM ledger_transactions').get().count,
+              users: database.prepare('SELECT COUNT(*) AS count FROM auth_users').get().count,
+              transactionId: database.prepare('SELECT id FROM ledger_transactions').get().id
+            };
+            database.close();
+            process.stdout.write(JSON.stringify(summary));
+          `,
+          exportedDatabasePath
+        ],
+        { encoding: 'utf8' }
+      )
+    );
+    assert.equal(exportedSummary.transactions, 1);
+    assert.equal(exportedSummary.users, 1);
+    assert.match(exportedSummary.transactionId, /owner-transaction$/);
+
+    const unauthorizedReset = await post('/api/data/reset', {});
+    assert.equal(unauthorizedReset.status, 401);
+
+    const reset = await post('/api/data/reset', {}, ownerCookie);
+    assert.equal(reset.status, 200);
+    const resetBody = await json(reset);
+    assert.equal(resetBody.hasData, false);
+    assert.equal(resetBody.counts.transactions, 0);
+
+    const ownerAfterReset = await json(
+      await request('/api/data/bootstrap', { headers: { Cookie: ownerCookie } })
+    );
+    assert.equal(ownerAfterReset.hasData, false);
+    assert.equal(ownerAfterReset.counts.transactions, 0);
+
+    const secondAfterReset = await json(
+      await request('/api/data/bootstrap', { headers: { Cookie: secondCookie } })
+    );
+    assert.equal(secondAfterReset.counts.transactions, 1);
+
+    const passwordResetRequest = await requestPasswordReset(
+      'sqlite',
+      { email: 'owner@example.com' },
+      process.env
+    );
+    assert.ok(passwordResetRequest?.token);
+    const resetPassword = await post('/api/auth/reset-password', {
+      token: passwordResetRequest.token,
+      newPassword: 'reset-owner-password'
+    });
+    assert.equal(resetPassword.status, 200);
+
+    const revokedOwnerSession = await request('/api/data/bootstrap', {
+      headers: { Cookie: ownerCookie }
+    });
+    assert.equal(revokedOwnerSession.status, 401);
+
+    const oldPasswordLogin = await post('/api/auth/login', {
+      email: 'owner@example.com',
+      password: 'updated-owner-password'
+    });
+    assert.equal(oldPasswordLogin.status, 401);
+    const newPasswordLogin = await post('/api/auth/login', {
+      email: 'owner@example.com',
+      password: 'reset-owner-password'
+    });
+    assert.equal(newPasswordLogin.status, 200);
+
+    const reusedResetToken = await post('/api/auth/reset-password', {
+      token: passwordResetRequest.token,
+      newPassword: 'another-owner-password'
+    });
+    assert.equal(reusedResetToken.status, 400);
 
     const logout = await post('/api/auth/logout', {}, ownerCookie);
     assert.equal(logout.status, 200);
@@ -193,6 +275,12 @@ test('HTTP auth protects relational data and scopes it to the session user', asy
     else process.env.LEDGERFLOW_COOKIE_SECURE = previous.secure;
     if (previous.cors === undefined) delete process.env.LEDGERFLOW_CORS_ORIGIN;
     else process.env.LEDGERFLOW_CORS_ORIGIN = previous.cors;
-    await rm(dataDirectory, { recursive: true, force: true });
+    // Windows can briefly keep the exported SQLite file locked after the handle is closed.
+    await rm(dataDirectory, {
+      recursive: true,
+      force: true,
+      maxRetries: 10,
+      retryDelay: 100
+    });
   }
 });

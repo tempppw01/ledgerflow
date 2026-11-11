@@ -23,6 +23,7 @@ const financeStoreMock = vi.hoisted(() => ({
 
 const navigateMock = vi.hoisted(() => vi.fn());
 const sendAiChatStreamMock = vi.hoisted(() => vi.fn());
+const sendAiChatMock = vi.hoisted(() => vi.fn());
 const fetchAiModelsMock = vi.hoisted(() => vi.fn());
 
 vi.mock('react-router-dom', async () => {
@@ -40,6 +41,7 @@ vi.mock('../../shared/store/useFinanceStore', () => ({
 
 vi.mock('../../features/assistant/api/openaiCompatibleClient', () => ({
   fetchAiModels: (...args: unknown[]) => fetchAiModelsMock(...args),
+  sendAiChat: (...args: unknown[]) => sendAiChatMock(...args),
   sendAiChatStream: (...args: unknown[]) => sendAiChatStreamMock(...args)
 }));
 
@@ -270,44 +272,120 @@ describe('Investment assistant chat', () => {
     );
   });
 
-  it('collapses the floating investment chat into a question mark launcher', () => {
+  it('collapses the floating investment chat into an AI launcher', () => {
     const { container } = render(
       <MemoryRouter>
         <InvestmentChatPanel showHero={false} floating />
       </MemoryRouter>
     );
 
-    const launcher = screen.getByRole('button', { name: '打开快捷问答' });
+    const launcher = screen.getByRole('button', { name: '打开 AI 投资助手' });
     expect(launcher).toBeInTheDocument();
     expect(container.querySelector('.chat-investment-panel')).toHaveClass('is-floating-hidden');
 
     fireEvent.click(launcher);
 
-    expect(screen.getByText('快捷问答')).toBeInTheDocument();
+    expect(screen.getByText('已同步持仓、自选与今日行情')).toBeInTheDocument();
     expect(screen.getByLabelText('基金分析输入框')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '打开快捷问答' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '打开 AI 投资助手' })).not.toBeInTheDocument();
 
     fireEvent.pointerDown(document.body);
 
-    expect(screen.getByRole('button', { name: '打开快捷问答' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '打开 AI 投资助手' })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: '打开快捷问答' }));
-    const pinButton = screen.getByRole('button', { name: '置顶快捷问答' });
+    fireEvent.click(screen.getByRole('button', { name: '打开 AI 投资助手' }));
+    const pinButton = screen.getByRole('button', { name: '置顶 AI 投资助手' });
     fireEvent.click(pinButton);
     expect(pinButton).toHaveAttribute('aria-pressed', 'true');
 
     fireEvent.pointerDown(document.body);
 
-    expect(screen.getByText('快捷问答')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '打开快捷问答' })).not.toBeInTheDocument();
+    expect(screen.getByText('已同步持仓、自选与今日行情')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '打开 AI 投资助手' })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: '收起快捷问答' }));
+    fireEvent.click(screen.getByRole('button', { name: '收起 AI 投资助手' }));
 
-    expect(screen.getByRole('button', { name: '打开快捷问答' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '打开 AI 投资助手' })).toBeInTheDocument();
     expect(container.querySelector('.chat-investment-panel')).toHaveClass('is-floating-hidden');
   });
 
-  it('浮动快捷问答滚动时不会带动背后的投资页面', () => {
+  it('opens the floating assistant and sends a prompt requested by the investment page', async () => {
+    sendAiChatStreamMock.mockResolvedValue({ content: '已收到你的自选问题。', reasoning: '' });
+
+    render(
+      <MemoryRouter>
+        <InvestmentChatPanel
+          showHero={false}
+          floating
+          requestedPrompt={{ text: '请重点分析我自选里的沪深 300 ETF', token: 1 }}
+        />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(sendAiChatStreamMock).toHaveBeenCalled());
+    const request = sendAiChatStreamMock.mock.calls[0]?.[0] as {
+      messages: Array<{ text: string }>;
+    };
+    expect(request.messages.at(-1)?.text).toBe('请重点分析我自选里的沪深 300 ETF');
+    expect(screen.getByLabelText('基金分析输入框')).toBeInTheDocument();
+  });
+
+  it('runs investment agent tools and shows the executed action', async () => {
+    sendAiChatStreamMock
+      .mockResolvedValueOnce({
+        content: '',
+        reasoning: '',
+        toolCalls: [{ id: 'call-1', name: 'get_portfolio_snapshot', arguments: '{}' }]
+      })
+      .mockResolvedValueOnce({ content: '你的组合我已经核对过了。', reasoning: '' });
+
+    render(
+      <MemoryRouter>
+        <InvestmentChatPanel />
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByLabelText('基金分析输入框'), {
+      target: { value: '帮我核对一下持仓' }
+    });
+    fireEvent.click(screen.getByRole('button', { name: '开始分析' }));
+
+    await waitFor(() => expect(sendAiChatStreamMock).toHaveBeenCalledTimes(2));
+    const secondRequest = sendAiChatStreamMock.mock.calls[1]?.[0] as {
+      messages: Array<{ role: string; text: string; toolCallId?: string }>;
+      tools?: unknown[];
+    };
+    expect(secondRequest.messages.some((message) => message.role === 'tool')).toBe(true);
+    expect(secondRequest.tools).toBeTruthy();
+    expect(await screen.findByText('已读取 1 笔持仓、0 个目标')).toBeInTheDocument();
+  });
+
+  it('retries without tools when the model rejects tool calling', async () => {
+    sendAiChatStreamMock
+      .mockRejectedValueOnce(new Error('AI 服务请求失败(错误码:AI_CHAT_STREAM_HTTP_400)'))
+      .mockResolvedValueOnce({ content: '已切换到普通回答模式。', reasoning: '' });
+    sendAiChatMock.mockRejectedValueOnce(new Error('AI 服务请求失败(错误码:AI_CHAT_HTTP_400)'));
+
+    render(
+      <MemoryRouter>
+        <InvestmentChatPanel />
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByLabelText('基金分析输入框'), {
+      target: { value: '帮我看看当前持仓' }
+    });
+    fireEvent.click(screen.getByRole('button', { name: '开始分析' }));
+
+    expect(await screen.findByText('已切换到普通回答模式。')).toBeInTheDocument();
+    await waitFor(() => expect(sendAiChatStreamMock).toHaveBeenCalledTimes(2));
+    expect(sendAiChatMock).toHaveBeenCalledTimes(1);
+    expect(
+      (sendAiChatStreamMock.mock.calls[1]?.[0] as { tools?: unknown } | undefined)?.tools
+    ).toBeUndefined();
+  });
+
+  it('浮动 AI 投资助手滚动时不会带动背后的投资页面', () => {
     useAppPreferences.setState({
       investmentAiMessages: [
         {
@@ -327,11 +405,11 @@ describe('Investment assistant chat', () => {
       </MemoryRouter>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '打开快捷问答' }));
+    fireEvent.click(screen.getByRole('button', { name: '打开 AI 投资助手' }));
     const messageArea = container.querySelector<HTMLElement>('.investments-ai-messages-area');
     const supportColumn = container.querySelector<HTMLElement>('.investments-support-column');
     if (!messageArea || !supportColumn) {
-      throw new Error('未找到快捷问答或投资页面滚动容器');
+      throw new Error('未找到 AI 投资助手或投资页面滚动容器');
     }
     Object.defineProperties(messageArea, {
       scrollHeight: { configurable: true, value: 1200 },
@@ -738,9 +816,7 @@ describe('Investment assistant chat', () => {
         messages: Array<{ text: string; imageDataUrls?: string[] }>;
       };
       expect(request.messages.at(-1)?.text).toBe('这只基金的行业集中度怎么样?');
-      expect(request.messages.at(-1)?.imageDataUrls).toEqual([
-        'data:image/png;base64,ZmFrZQ=='
-      ]);
+      expect(request.messages.at(-1)?.imageDataUrls).toEqual(['data:image/png;base64,ZmFrZQ==']);
     } finally {
       Object.defineProperty(window, 'FileReader', {
         writable: true,
@@ -859,7 +935,9 @@ describe('Investment assistant chat', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /当前模型/ }));
 
-    expect(await screen.findByRole('button', { name: 'remote-investment-model' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: 'remote-investment-model' })
+    ).toBeInTheDocument();
     expect(fetchAiModelsMock).toHaveBeenCalledWith('https://api.example.com/v1', 'sk-test');
   });
 
@@ -911,7 +989,76 @@ describe('Investment assistant chat', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: '开始分析' }));
 
-    expect(await screen.findByText('请先在设置中配置可用的 AI Key。')).toBeInTheDocument();
+    expect(
+      await screen.findByText('请先在设置中配置可用的 AI Key，问题已保留在输入框。')
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('基金分析输入框')).toHaveValue('看看这个基金');
+    expect(screen.getByRole('link', { name: '去设置' })).toHaveAttribute('href', '/settings');
     expect(sendAiChatStreamMock).not.toHaveBeenCalled();
+  });
+
+  it('marks the agent as offline until an AI key is configured', () => {
+    useAiSettings.setState({ apiKey: '' });
+
+    render(
+      <MemoryRouter>
+        <InvestmentChatPanel />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('待配置 AI Key')).toBeInTheDocument();
+    expect(screen.queryByText('Agent 已连接')).not.toBeInTheDocument();
+  });
+
+  it('lets the user undo an agent update to watchlist holdings', async () => {
+    useAppPreferences.setState({
+      investmentWatchlist: [
+        {
+          id: 'watch-1',
+          name: '沪深 300 ETF',
+          code: '510300',
+          tags: [],
+          holdingShares: 0,
+          createdAt: '2026-05-28T01:47:00.000Z',
+          updatedAt: '2026-05-28T01:47:00.000Z'
+        }
+      ]
+    });
+
+    sendAiChatStreamMock
+      .mockResolvedValueOnce({
+        content: '',
+        reasoning: '',
+        toolCalls: [
+          {
+            id: 'call-1',
+            name: 'update_watch_holding_shares',
+            arguments: JSON.stringify({ id: 'watch-1', shares: 1500 })
+          }
+        ]
+      })
+      .mockResolvedValueOnce({ content: '已经帮你记录 1500 份。', reasoning: '' });
+
+    render(
+      <MemoryRouter>
+        <InvestmentChatPanel />
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByLabelText('基金分析输入框'), {
+      target: { value: '把沪深 300 ETF 的持有份额记成 1500' }
+    });
+    fireEvent.click(screen.getByRole('button', { name: '开始分析' }));
+
+    await waitFor(() =>
+      expect(useAppPreferences.getState().investmentWatchlist[0]?.holdingShares).toBe(1500)
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: '撤销' }));
+
+    await waitFor(() =>
+      expect(useAppPreferences.getState().investmentWatchlist[0]?.holdingShares).toBe(0)
+    );
+    expect(screen.queryByRole('button', { name: '撤销' })).not.toBeInTheDocument();
   });
 });

@@ -173,6 +173,7 @@
     "back": "← Back",
     "intros": {
       "account": "Manage your display name, password, and signed-in devices.",
+      "data": "Check how much data this account stores, and reset the ledger back to empty when you need to.",
       "openai": "The same Base URL and API key can be used for chat, embedding, and reranking, powering transaction search and trend analysis.",
       "tavily": "Web search uses its own provider key, so you can switch between Tavily, Brave, Serper, Exa, and Google CSE.",
       "embedding": "Embedding models turn ledger text into vectors for semantic search and similar-transaction matching.",
@@ -185,10 +186,34 @@
     "hide": "🙈 Hide",
     "workspaces": {
       "account": "Account & Security",
+      "data": "Data",
       "openai": "OpenAI",
       "tavily": "Web search",
       "embedding": "Embedding Service",
       "advanced": "Advanced"
+    },
+    "data": {
+      "title": "Database",
+      "desc": "See how much this account stores in the database, and reset the ledger back to empty when you need to.",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing…",
+      "loading": "Reading database status…",
+      "counts": {
+        "accounts": "Accounts",
+        "categories": "Categories",
+        "transactions": "Transactions",
+        "subscriptions": "Subscriptions",
+        "debts": "Debts",
+        "investment_positions": "Positions",
+        "investment_watchlists": "Watchlist"
+      },
+      "resetTitle": "Reset database",
+      "resetDesc": "Deletes every ledger record for this account: transactions, accounts, categories, subscriptions, debts, investments, and AI memories. Your account and database configuration stay. This can't be undone, so export a backup first.",
+      "resetButton": "Reset database",
+      "resetting": "Resetting…",
+      "resetConfirmTitle": "Reset the database?",
+      "resetConfirmDesc": "This permanently deletes the ledger data for this account and keeps only the account itself. Export a JSON backup from Data & backup first if you might need it.",
+      "resetConfirmButton": "Reset now"
     },
     "tabsAria": "Settings sections",
     "rememberApiKey": "Remember API key (no need to re-enter it after updates)",

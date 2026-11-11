@@ -219,6 +219,29 @@ async function clearUserData(database, userId) {
   }
 }
 
+/**
+ * 清空当前登录用户的账本数据,但保留账号、登录会话和数据库 provider 锁定。
+ * 用于「设置 → 重置数据库」:重置后账本回到刚注册时的空状态。
+ */
+export async function resetRelationalData(provider, env = process.env, authenticatedLedgerUserId) {
+  const userId = authenticatedUserId(authenticatedLedgerUserId);
+  await withDatabase(
+    provider,
+    async (database) => {
+      await database.begin();
+      try {
+        await clearUserData(database, userId);
+        await database.commit();
+      } catch (error) {
+        await database.rollback();
+        throw error;
+      }
+    },
+    env
+  );
+  return getRelationalDataStatus(provider, env, userId);
+}
+
 export async function replaceRelationalData(
   provider,
   payload,

@@ -17,6 +17,7 @@ import type {
 } from '../../entities/investment/types';
 import { sendAiChatStream } from '../../features/assistant/api/openaiCompatibleClient';
 import { InvestmentChatPanel } from '../../features/assistant/investment-chat/InvestmentChatPanel';
+import { ChatSparklesIcon } from '../../features/assistant/ui/chatIcons';
 import { DatePicker } from '../../shared/ui/DatePicker';
 import {
   fetchEastmoneyFundSnapshot,
@@ -66,11 +67,16 @@ import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { Toast, type ToastVariant } from '../../shared/ui/Toast';
 import {
+  buildInvestmentHoldingAskPrompt,
   buildInvestmentMarketInsightPrompt,
+  buildInvestmentMarketAskPrompt,
+  buildInvestmentNewsAskPrompt,
+  buildInvestmentWatchAskPrompt,
   extractInvestmentMarketInsight,
   type InvestmentMarketInsight
 } from './investmentAi';
 import { buildTimeContext } from '../../features/assistant/workbench/workbenchUtils';
+import { writeCachedMarketContext } from '../../features/investments/model/investmentMarketContext';
 
 const POSITION_CATEGORY_LABELS: Record<InvestmentCategory, string> = {
   cash: '现金理财',
@@ -482,6 +488,14 @@ function formatMarketNewsTime(value?: string) {
   return value;
 }
 
+/** 行情快照的刷新时刻,例如「14:31」;没有可用时间时返回空串。 */
+function formatMarketClock(value?: string) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
 function isPolicySignalText(value: string) {
   return /政策|监管|国务院|证监|央行|财政|税务|发改|工信|降准|降息|印花税|利率|补贴|新规|支持|刺激|稳增长|房地产|地产|集采|国产替代/.test(
     value
@@ -704,7 +718,8 @@ function HoldingsTodayPanel({
   totalCurrentValue,
   totalProfit,
   profitRate,
-  marketChange
+  marketChange,
+  onAskAi
 }: {
   positions: InvestmentPosition[];
   watchlist: InvestmentWatchItem[];
@@ -712,6 +727,10 @@ function HoldingsTodayPanel({
   totalProfit: number;
   profitRate: number;
   marketChange: number | null;
+  onAskAi?: (
+    prompt: string,
+    focus?: { type: 'position' | 'watch' | 'market' | 'news'; label: string; detail?: string }
+  ) => void;
 }) {
   const watchHoldings = watchlist
     .map(getWatchHoldingSnapshot)
@@ -748,7 +767,22 @@ function HoldingsTodayPanel({
           <h2>今日持仓</h2>
           <p>先看自己的持仓，别让大盘替你做决定。</p>
         </div>
-        <span className="badge">{holdingCount} 笔</span>
+        <div className="investments-panel-head-actions">
+          <button
+            type="button"
+            className="investments-ai-inline-btn"
+            onClick={() =>
+              onAskAi?.(
+                '请帮我做一次持仓体检：看整体盈亏、仓位集中度、风险暴露和目标缺口，告诉我最优先要调整的一到两项，并给出具体金额或比例。'
+              )
+            }
+            aria-label="让 AI 体检我的持仓"
+          >
+            <ChatSparklesIcon className="chat-svg-icon" />
+            AI 体检
+          </button>
+          <span className="badge">{holdingCount} 笔</span>
+        </div>
       </div>
 
       <div className="investments-today-summary">
@@ -782,13 +816,38 @@ function HoldingsTodayPanel({
           const profit = position.currentValue - position.investedAmount;
           const positionProfitRate =
             position.investedAmount > 0 ? profit / position.investedAmount : 0;
+          const allocationShare =
+            totalCurrentValue > 0 ? (position.currentValue / totalCurrentValue) * 100 : null;
           return (
             <article key={position.id} className="investments-position-glance-row">
               <span className="investments-position-glance-emoji" aria-hidden="true">
                 {getMovementEmoji(positionProfitRate * 100)}
               </span>
               <div className="investments-position-glance-name">
-                <strong title={position.name}>{position.name}</strong>
+                <div className="investments-position-name-line">
+                  <strong title={position.name}>{position.name}</strong>
+                  <button
+                    type="button"
+                    className="investments-position-ai-btn"
+                    aria-label={`让 AI 分析 ${position.name}`}
+                    title="让 AI 分析这只持仓"
+                    onClick={() =>
+                      onAskAi?.(
+                        buildInvestmentHoldingAskPrompt({
+                          name: position.name,
+                          profitRate: positionProfitRate * 100,
+                          allocationShare,
+                          currentValue: position.currentValue,
+                          riskLevel: getAnalysisRiskLabel(position.riskLevel) || undefined,
+                          monthlyContribution: position.monthlyContribution
+                        }),
+                        { type: 'position', label: position.name }
+                      )
+                    }
+                  >
+                    <ChatSparklesIcon className="chat-svg-icon" />
+                  </button>
+                </div>
                 <span>{POSITION_CATEGORY_LABELS[position.category]}</span>
               </div>
               <div>
@@ -854,7 +913,8 @@ function PlainMarketBriefingPanel({
   insight,
   algorithmSignals,
   insightStatus,
-  onRetryInsight
+  onRetryInsight,
+  onAskAi
 }: {
   marketChange: number | null;
   themeBoards: EastmoneyMarketBoard[];
@@ -863,6 +923,7 @@ function PlainMarketBriefingPanel({
   algorithmSignals: MarketAlgorithmSignals;
   insightStatus: MarketInsightStatus;
   onRetryInsight?: () => void;
+  onAskAi?: (prompt: string) => void;
 }) {
   const strongestTheme = [...themeBoards].sort(
     (a, b) =>
@@ -882,7 +943,30 @@ function PlainMarketBriefingPanel({
           <h2>今天的市场，说人话</h2>
           <p>把涨跌、板块和新闻拎成几句，够用就好。</p>
         </div>
-        <span aria-hidden="true">🗣️</span>
+        <div className="investments-panel-head-actions">
+          <button
+            type="button"
+            className="investments-ai-inline-btn"
+            onClick={() =>
+              onAskAi?.(
+                buildInvestmentMarketAskPrompt({
+                  marketChange,
+                  themes: themeBoards
+                    .slice()
+                    .sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0))
+                    .slice(0, 3)
+                    .map((item) => item.name),
+                  news: news[0]?.title
+                })
+              )
+            }
+            aria-label="让 AI 复盘今日市场"
+          >
+            <ChatSparklesIcon className="chat-svg-icon" />
+            AI 复盘
+          </button>
+          <span aria-hidden="true">🗣️</span>
+        </div>
       </div>
       <strong className="investments-plain-briefing-lead">
         {insight?.headline ||
@@ -928,15 +1012,15 @@ function PlainMarketBriefingPanel({
       </div>
       <div className="investments-market-insight-footer">
         <small className="investments-market-insight-meta">
-        {insightStatus === 'ready' && insight
-          ? `结合行情、新闻和板块 · 每 15 分钟更新 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
-          : insightStatus === 'disabled'
-            ? `先用本地信号 · 配置 AI 后每 15 分钟更新 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
-            : insightStatus === 'model-missing'
-              ? `本地信号可用 · 请先选择 AI 模型再生成简报 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
-              : insightStatus === 'error'
-              ? `本地信号可用，AI 暂不可用 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
-              : `正在整理行情和新闻 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`}
+          {insightStatus === 'ready' && insight
+            ? `结合行情、新闻和板块 · 每 15 分钟更新 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
+            : insightStatus === 'disabled'
+              ? `先用本地信号 · 配置 AI 后每 15 分钟更新 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
+              : insightStatus === 'model-missing'
+                ? `本地信号可用 · 请先选择 AI 模型再生成简报 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
+                : insightStatus === 'error'
+                  ? `本地信号可用，AI 暂不可用 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
+                  : `正在整理行情和新闻 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`}
         </small>
         {insightStatus === 'error' && onRetryInsight ? (
           <button
@@ -3095,7 +3179,8 @@ function MarketBoardsPanel({
   onRenameTheme,
   onRemoveTheme,
   onRefresh,
-  onLoadConstituents
+  onLoadConstituents,
+  onAskAi
 }: {
   industryBoards: EastmoneyMarketBoard[];
   globalSectorBoards: EastmoneyMarketBoard[];
@@ -3115,6 +3200,7 @@ function MarketBoardsPanel({
   onRemoveTheme: (code: string) => void;
   onRefresh: () => void;
   onLoadConstituents: (code: string, force?: boolean) => void;
+  onAskAi?: (prompt: string) => void;
 }) {
   const [newThemeCode, setNewThemeCode] = useState('');
   const [editingThemeCode, setEditingThemeCode] = useState('');
@@ -3154,9 +3240,26 @@ function MarketBoardsPanel({
           <h3>A 股行业涨跌</h3>
           <p>行业强弱一眼看清，点击行业可查看领涨公司。</p>
         </div>
-        <button type="button" onClick={onRefresh} disabled={status === 'loading'}>
-          {status === 'loading' ? '刷新中' : '刷新'}
-        </button>
+        <div className="investments-panel-head-actions">
+          <button
+            type="button"
+            className="investments-ai-inline-btn"
+            onClick={() =>
+              onAskAi?.(
+                buildInvestmentMarketAskPrompt({
+                  themes: boardUniverse.slice(0, 3).map((board) => board.name)
+                })
+              )
+            }
+            aria-label="让 AI 分析板块强弱"
+          >
+            <ChatSparklesIcon className="chat-svg-icon" />
+            AI 看板块
+          </button>
+          <button type="button" onClick={onRefresh} disabled={status === 'loading'}>
+            {status === 'loading' ? '刷新中' : '刷新'}
+          </button>
+        </div>
       </div>
 
       {view === 'industry' ? (
@@ -3485,7 +3588,8 @@ function MarketNewsPanel({
   status,
   error,
   onSelectCategory,
-  onRefresh
+  onRefresh,
+  onAskAi
 }: {
   news: EastmoneyMarketNewsItem[];
   selectedCategoryId: string;
@@ -3493,6 +3597,7 @@ function MarketNewsPanel({
   error: string;
   onSelectCategory: (categoryId: string) => void;
   onRefresh: () => void;
+  onAskAi?: (prompt: string) => void;
 }) {
   return (
     <section
@@ -3505,9 +3610,28 @@ function MarketNewsPanel({
             快讯 <span>7x24</span>
           </h3>
         </div>
-        <button type="button" onClick={onRefresh} disabled={status === 'loading'}>
-          {status === 'loading' ? '刷新中' : '刷新'}
-        </button>
+        <div className="investments-panel-head-actions">
+          <button
+            type="button"
+            className="investments-ai-inline-btn"
+            onClick={() =>
+              onAskAi?.(
+                buildInvestmentNewsAskPrompt({
+                  title: news[0]?.title || '今天最重要的市场消息',
+                  summary: news[0]?.summary,
+                  stocks: news[0]?.stocks
+                })
+              )
+            }
+            aria-label="让 AI 解读最新快讯"
+          >
+            <ChatSparklesIcon className="chat-svg-icon" />
+            AI 解读
+          </button>
+          <button type="button" onClick={onRefresh} disabled={status === 'loading'}>
+            {status === 'loading' ? '刷新中' : '刷新'}
+          </button>
+        </div>
       </div>
 
       <div className="investments-market-news-tabs" role="tablist" aria-label="快讯分类">
@@ -3647,6 +3771,16 @@ export function InvestmentsPage() {
     message: '',
     variant: 'success'
   });
+  const [aiPromptRequest, setAiPromptRequest] = useState<{
+    text: string;
+    token: number;
+  } | null>(null);
+  const [aiFocus, setAiFocus] = useState<{
+    type: 'position' | 'watch' | 'market' | 'news';
+    label: string;
+    detail?: string;
+  } | null>(null);
+  const aiPromptTokenRef = useRef(0);
   const [expandedWatchItemId, setExpandedWatchItemId] = useState<string | null>(null);
   const [selectedMarketSecId, setSelectedMarketSecId] = useState(EASTMONEY_MARKET_INDEXES[0].secId);
   const [marketOverview, setMarketOverview] = useState<EastmoneyMarketOverview | null>(null);
@@ -3952,6 +4086,12 @@ export function InvestmentsPage() {
     marketInsightForceRetryRef.current = true;
     setMarketInsightRetryVersion((version) => version + 1);
   }, []);
+
+  // 把最新行情快照共享给独立打开的 AI 投资助手,让两个入口看到同一份数据。
+  useEffect(() => {
+    if (!marketContextSummary) return;
+    writeCachedMarketContext(marketContextSummary);
+  }, [marketContextSummary]);
 
   useEffect(() => {
     const minimumIntervalMs = 15 * 60 * 1000;
@@ -4312,6 +4452,19 @@ export function InvestmentsPage() {
 
   function setToastState(message: string, variant: ToastVariant = 'success') {
     setToast({ visible: true, message, variant });
+  }
+
+  function askInvestmentAi(
+    prompt: string,
+    focus?: {
+      type: 'position' | 'watch' | 'market' | 'news';
+      label: string;
+      detail?: string;
+    }
+  ) {
+    aiPromptTokenRef.current += 1;
+    setAiFocus(focus || null);
+    setAiPromptRequest({ text: prompt, token: aiPromptTokenRef.current });
   }
 
   async function refreshMarketNews() {
@@ -4709,12 +4862,58 @@ export function InvestmentsPage() {
           <span>
             {investmentWatchlist.length} 只自选 · 今日 {formatMarketPercent(averageMarketChange)}
           </span>
-          <small>
-            数据更新 ·{' '}
-            {new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
-          </small>
+          <small>数据更新 · {formatMarketClock(marketOverview?.updatedAt) || '待刷新'}</small>
         </div>
       </header>
+
+      <section className="investments-ai-context-bar" aria-label="AI 投资助手入口">
+        <span className="investments-ai-context-orb" aria-hidden="true">
+          <ChatSparklesIcon className="chat-svg-icon" />
+        </span>
+        <div className="investments-ai-context-copy">
+          <strong>
+            AI 投资助手已接入这页数据
+            <em className="investment-chat-agent-badge">Agent</em>
+          </strong>
+          <span>
+            {activePositions.length} 笔持仓 · {investmentWatchlist.length} 只自选 · 今日{' '}
+            {formatMarketPercent(averageMarketChange)} · 行情{' '}
+            {formatMarketClock(marketOverview?.updatedAt) || '待刷新'}
+          </span>
+        </div>
+        <div className="investments-ai-context-actions">
+          <button
+            type="button"
+            onClick={() =>
+              askInvestmentAi(
+                '请帮我做一次持仓体检：看整体盈亏、仓位集中度、风险暴露和目标缺口，告诉我最优先要调整的一到两项，并给出具体金额或比例。',
+                { type: 'position', label: '持仓体检' }
+              )
+            }
+          >
+            持仓体检
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              askInvestmentAi(
+                buildInvestmentMarketAskPrompt({
+                  marketChange: averageMarketChange,
+                  themes: marketThemeBoards
+                    .slice()
+                    .sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0))
+                    .slice(0, 3)
+                    .map((item) => item.name),
+                  news: marketNews[0]?.title
+                }),
+                { type: 'market', label: '今日行情复盘' }
+              )
+            }
+          >
+            今日复盘
+          </button>
+        </div>
+      </section>
 
       <nav className="investments-console-tabs" aria-label="投资理财板块">
         {(
@@ -4753,6 +4952,7 @@ export function InvestmentsPage() {
                 totalProfit={positionSummary.totalProfit}
                 profitRate={positionSummary.profitRate}
                 marketChange={averageMarketChange}
+                onAskAi={askInvestmentAi}
               />
               <PlainMarketBriefingPanel
                 marketChange={averageMarketChange}
@@ -4762,6 +4962,7 @@ export function InvestmentsPage() {
                 algorithmSignals={marketAlgorithmSignals}
                 insightStatus={marketInsightStatus}
                 onRetryInsight={retryMarketInsight}
+                onAskAi={askInvestmentAi}
               />
             </section>
             <section className="investments-workspace-market" aria-label="大盘和市场监控">
@@ -4800,6 +5001,7 @@ export function InvestmentsPage() {
               onRemoveTheme={handleRemoveMarketTheme}
               onRefresh={refreshMarketBoards}
               onLoadConstituents={loadMarketBoardConstituents}
+              onAskAi={askInvestmentAi}
             />
           </section>
         ) : null}
@@ -4813,6 +5015,7 @@ export function InvestmentsPage() {
               error={marketNewsError}
               onSelectCategory={setSelectedNewsCategoryId}
               onRefresh={refreshMarketNews}
+              onAskAi={askInvestmentAi}
             />
           </section>
         ) : null}
@@ -5140,6 +5343,34 @@ export function InvestmentsPage() {
                               </span>
                             </div>
                             <div className="investments-watch-card-ai-actions">
+                              <button
+                                type="button"
+                                className="investments-watch-analyze-btn"
+                                aria-label={`让 AI 分析 ${item.name}`}
+                                title="让 AI 分析这只自选"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  askInvestmentAi(
+                                    buildInvestmentWatchAskPrompt({
+                                      name: item.name,
+                                      code: item.code,
+                                      riskLevel:
+                                        getAnalysisRiskLabel(item.lastRiskLevel) || undefined,
+                                      advice: item.investmentAdvice,
+                                      netValue: item.netValue,
+                                      addedReturn: item.addedReturn,
+                                      holdingShares: item.holdingShares
+                                    }),
+                                    {
+                                      type: 'watch',
+                                      label: item.name,
+                                      detail: item.code ? `基金代码 ${item.code}` : undefined
+                                    }
+                                  );
+                                }}
+                              >
+                                <ChatSparklesIcon className="chat-svg-icon" />
+                              </button>
                               {!isFollowing ? (
                                 <button
                                   type="button"
@@ -5300,6 +5531,8 @@ export function InvestmentsPage() {
           floatingPosition="bottom-right"
           defaultWebEnabled
           contextNote={marketContextSummary}
+          focus={aiFocus}
+          requestedPrompt={aiPromptRequest}
         />
       </main>
 

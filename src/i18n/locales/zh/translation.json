@@ -174,6 +174,7 @@
     "intro": "同一套 Base URL 和 API 密钥可用于对话、嵌入和重排序，统一支持交易检索与趋势分析。",
     "intros": {
       "account": "管理显示名称、登录密码与已登录设备。",
+      "data": "查看当前账号的数据库状态，必要时可以把账本重置回空状态。",
       "openai": "同一套 Base URL 和 API 密钥可用于对话、嵌入和重排序，统一支持交易检索与趋势分析。",
       "tavily": "联网检索使用独立的搜索服务密钥,可在 Tavily、Brave、Serper、Exa、Google CSE 之间切换。",
       "embedding": "嵌入模型把账目文本转成向量，用于语义检索和相似交易匹配。",
@@ -185,10 +186,34 @@
     "hide": "隐藏",
     "workspaces": {
       "account": "账号与安全",
+      "data": "数据",
       "openai": "OpenAI",
       "tavily": "联网",
       "embedding": "嵌入服务",
       "advanced": "高级设置"
+    },
+    "data": {
+      "title": "数据库",
+      "desc": "这里能看到当前账号在数据库里存了多少数据，也可以把账本重置回空状态。",
+      "refresh": "刷新",
+      "refreshing": "刷新中…",
+      "loading": "正在读取数据库状态…",
+      "counts": {
+        "accounts": "账户",
+        "categories": "分类",
+        "transactions": "流水",
+        "subscriptions": "订阅",
+        "debts": "负债",
+        "investment_positions": "持仓",
+        "investment_watchlists": "自选"
+      },
+      "resetTitle": "重置数据库",
+      "resetDesc": "清空当前账号的所有账本数据：流水、账户、分类、订阅、负债、投资和 AI 记忆都会删除，账号本身和数据库配置会保留。重置后无法撤销，建议先导出备份。",
+      "resetButton": "重置数据库",
+      "resetting": "正在重置…",
+      "resetConfirmTitle": "确定重置数据库？",
+      "resetConfirmDesc": "这会永久删除当前账号的账本数据，只保留账号本身。建议先在「数据与备份」里导出一份 JSON 备份。",
+      "resetConfirmButton": "确认重置"
     },
     "tabsAria": "设置分类",
     "rememberApiKey": "记住 API 密钥（更新版本后无需重填）",

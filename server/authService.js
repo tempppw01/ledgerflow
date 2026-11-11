@@ -1,15 +1,10 @@
-import {
-  createHash,
-  randomBytes,
-  randomUUID,
-  scrypt,
-  timingSafeEqual
-} from 'node:crypto';
+import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from 'node:crypto';
 import { withMysqlConnection } from './databaseConnection.js';
 import { openSqliteDatabase } from './sqliteDatabase.js';
 
 const DEFAULT_LEDGER_USER_ID = 'default';
 const SESSION_LAST_SEEN_WRITE_INTERVAL_MS = 15 * 60 * 1000;
+const DEFAULT_PASSWORD_RESET_MINUTES = 30;
 const SCRYPT_KEY_LENGTH = 64;
 const SCRYPT_OPTIONS = { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
 const DUMMY_PASSWORD_HASH =
@@ -41,7 +36,9 @@ function scryptAsync(password, salt) {
 }
 
 export function normalizeEmail(value) {
-  const email = String(value || '').trim().toLowerCase();
+  const email = String(value || '')
+    .trim()
+    .toLowerCase();
   if (email.length < 3 || email.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     throw new Error('请输入有效的邮箱地址。');
   }
@@ -49,7 +46,9 @@ export function normalizeEmail(value) {
 }
 
 function normalizeDisplayName(value, email) {
-  const displayName = String(value || '').trim().slice(0, 80);
+  const displayName = String(value || '')
+    .trim()
+    .slice(0, 80);
   return displayName || email.split('@')[0] || 'LedgerFlow 用户';
 }
 
@@ -108,8 +107,23 @@ function sessionDurationMs(env) {
   return safeDays * 24 * 60 * 60 * 1000;
 }
 
+function passwordResetDurationMs(env) {
+  const configuredMinutes = Number(
+    env.LEDGERFLOW_PASSWORD_RESET_MINUTES || DEFAULT_PASSWORD_RESET_MINUTES
+  );
+  const minutes = Number.isFinite(configuredMinutes)
+    ? Math.min(Math.max(Math.round(configuredMinutes), 10), 120)
+    : DEFAULT_PASSWORD_RESET_MINUTES;
+  return {
+    minutes,
+    milliseconds: minutes * 60 * 1000
+  };
+}
+
 function registrationMode(env) {
-  const mode = String(env.LEDGERFLOW_REGISTRATION_MODE || 'first-user').trim().toLowerCase();
+  const mode = String(env.LEDGERFLOW_REGISTRATION_MODE || 'first-user')
+    .trim()
+    .toLowerCase();
   return ['open', 'closed', 'first-user'].includes(mode) ? mode : 'first-user';
 }
 
@@ -133,26 +147,29 @@ async function withAuthDatabase(provider, handler, env = process.env) {
   }
 
   if (provider !== 'mysql') throw new Error(`Unsupported authentication provider: ${provider}.`);
-  return withMysqlConnection(async (connection) =>
-    handler({
-      dialect: 'mysql',
-      query: async (sql, params = []) => {
-        const [rows] = await connection.execute(sql, params);
-        return rows;
-      },
-      get: async (sql, params = []) => {
-        const [rows] = await connection.execute(sql, params);
-        return Array.isArray(rows) ? rows[0] : undefined;
-      },
-      run: async (sql, params = []) => {
-        const [result] = await connection.execute(sql, params);
-        return result;
-      },
-      begin: async () => connection.beginTransaction(),
-      commit: async () => connection.commit(),
-      rollback: async () => connection.rollback(),
-      date: toMysqlDate
-    }), env);
+  return withMysqlConnection(
+    async (connection) =>
+      handler({
+        dialect: 'mysql',
+        query: async (sql, params = []) => {
+          const [rows] = await connection.execute(sql, params);
+          return rows;
+        },
+        get: async (sql, params = []) => {
+          const [rows] = await connection.execute(sql, params);
+          return Array.isArray(rows) ? rows[0] : undefined;
+        },
+        run: async (sql, params = []) => {
+          const [result] = await connection.execute(sql, params);
+          return result;
+        },
+        begin: async () => connection.beginTransaction(),
+        commit: async () => connection.commit(),
+        rollback: async () => connection.rollback(),
+        date: toMysqlDate
+      }),
+    env
+  );
 }
 
 function publicUser(row) {
@@ -168,7 +185,17 @@ function publicUser(row) {
 }
 
 function hashSessionToken(token) {
-  return createHash('sha256').update(String(token || '')).digest('hex');
+  return createHash('sha256')
+    .update(String(token || ''))
+    .digest('hex');
+}
+
+function normalizePasswordResetToken(token) {
+  const value = String(token || '').trim();
+  if (!/^[A-Za-z0-9_-]{32,128}$/.test(value)) {
+    throw new Error('密码重置链接无效或已过期。');
+  }
+  return value;
 }
 
 function deviceNameFromUserAgent(value) {
@@ -226,10 +253,14 @@ async function createSession(database, userId, env, clientInfo) {
 
 export async function getAuthStatus(provider, token = '', env = process.env, clientInfo) {
   const session = token ? await authenticateSession(provider, token, env, clientInfo) : null;
-  const accountCount = await withAuthDatabase(provider, async (database) => {
-    const row = await database.get('SELECT COUNT(*) AS count FROM auth_users');
-    return Number(row?.count || 0);
-  }, env);
+  const accountCount = await withAuthDatabase(
+    provider,
+    async (database) => {
+      const row = await database.get('SELECT COUNT(*) AS count FROM auth_users');
+      return Number(row?.count || 0);
+    },
+    env
+  );
   const mode = registrationMode(env);
   return {
     authenticated: Boolean(session),
@@ -243,253 +274,412 @@ export async function registerUser(provider, input, env = process.env, clientInf
   const passwordHash = await hashPassword(input?.password);
   const displayName = normalizeDisplayName(input?.displayName, email);
 
-  return withAuthDatabase(provider, async (database) => {
-    await database.begin();
-    try {
-      const countRow = await database.get('SELECT COUNT(*) AS count FROM auth_users');
-      const accountCount = Number(countRow?.count || 0);
-      const mode = registrationMode(env);
-      if (mode === 'closed' || (mode === 'first-user' && accountCount > 0)) {
-        throw new Error('当前部署未开放新账号注册。');
-      }
-      const existing = await database.get('SELECT id FROM auth_users WHERE email = ?', [email]);
-      if (existing) throw new Error('该邮箱无法注册。');
+  return withAuthDatabase(
+    provider,
+    async (database) => {
+      await database.begin();
+      try {
+        const countRow = await database.get('SELECT COUNT(*) AS count FROM auth_users');
+        const accountCount = Number(countRow?.count || 0);
+        const mode = registrationMode(env);
+        if (mode === 'closed' || (mode === 'first-user' && accountCount > 0)) {
+          throw new Error('当前部署未开放新账号注册。');
+        }
+        const existing = await database.get('SELECT id FROM auth_users WHERE email = ?', [email]);
+        if (existing) throw new Error('该邮箱无法注册。');
 
-      const timestamp = now();
-      let ledgerUserId = accountCount === 0 ? DEFAULT_LEDGER_USER_ID : randomUUID();
-      const ledgerUser = await database.get('SELECT id FROM ledger_users WHERE id = ?', [ledgerUserId]);
-      if (!ledgerUser) {
-        await database.run(
-          'INSERT INTO ledger_users (id, display_name, created_at, updated_at) VALUES (?, ?, ?, ?)',
-          [ledgerUserId, displayName, database.date(timestamp), database.date(timestamp)]
-        );
-      } else {
-        await database.run(
-          'UPDATE ledger_users SET display_name = ?, updated_at = ? WHERE id = ?',
-          [displayName, database.date(timestamp), ledgerUserId]
-        );
-      }
+        const timestamp = now();
+        let ledgerUserId = accountCount === 0 ? DEFAULT_LEDGER_USER_ID : randomUUID();
+        const ledgerUser = await database.get('SELECT id FROM ledger_users WHERE id = ?', [
+          ledgerUserId
+        ]);
+        if (!ledgerUser) {
+          await database.run(
+            'INSERT INTO ledger_users (id, display_name, created_at, updated_at) VALUES (?, ?, ?, ?)',
+            [ledgerUserId, displayName, database.date(timestamp), database.date(timestamp)]
+          );
+        } else {
+          await database.run(
+            'UPDATE ledger_users SET display_name = ?, updated_at = ? WHERE id = ?',
+            [displayName, database.date(timestamp), ledgerUserId]
+          );
+        }
 
-      const authUserId = randomUUID();
-      await database.run(
-        `INSERT INTO auth_users
+        const authUserId = randomUUID();
+        await database.run(
+          `INSERT INTO auth_users
            (id, ledger_user_id, email, password_hash, display_name, status, password_updated_at, last_login_at, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          authUserId,
-          ledgerUserId,
-          email,
-          passwordHash,
-          displayName,
-          'active',
-          database.date(timestamp),
-          database.date(timestamp),
-          database.date(timestamp),
-          database.date(timestamp)
-        ]
-      );
-      const session = await createSession(database, authUserId, env, clientInfo);
-      await database.commit();
-      return {
-        user: {
-          id: authUserId,
-          ledgerUserId,
-          email,
-          displayName,
-          status: 'active',
-          createdAt: timestamp,
-          lastLoginAt: timestamp
-        },
-        session,
-        claimedLegacyData: ledgerUserId === DEFAULT_LEDGER_USER_ID
-      };
-    } catch (error) {
-      await database.rollback();
-      throw error;
-    }
-  }, env);
+          [
+            authUserId,
+            ledgerUserId,
+            email,
+            passwordHash,
+            displayName,
+            'active',
+            database.date(timestamp),
+            database.date(timestamp),
+            database.date(timestamp),
+            database.date(timestamp)
+          ]
+        );
+        const session = await createSession(database, authUserId, env, clientInfo);
+        await database.commit();
+        return {
+          user: {
+            id: authUserId,
+            ledgerUserId,
+            email,
+            displayName,
+            status: 'active',
+            createdAt: timestamp,
+            lastLoginAt: timestamp
+          },
+          session,
+          claimedLegacyData: ledgerUserId === DEFAULT_LEDGER_USER_ID
+        };
+      } catch (error) {
+        await database.rollback();
+        throw error;
+      }
+    },
+    env
+  );
 }
 
 export async function loginUser(provider, input, env = process.env, clientInfo) {
   const email = normalizeEmail(input?.email);
   const password = String(input?.password || '');
-  return withAuthDatabase(provider, async (database) => {
-    const row = await database.get('SELECT * FROM auth_users WHERE email = ?', [email]);
-    const valid = await verifyPassword(password, row?.password_hash || DUMMY_PASSWORD_HASH);
-    if (!row || !valid || row.status !== 'active') {
-      throw new Error('邮箱或密码不正确。');
-    }
+  return withAuthDatabase(
+    provider,
+    async (database) => {
+      const row = await database.get('SELECT * FROM auth_users WHERE email = ?', [email]);
+      const valid = await verifyPassword(password, row?.password_hash || DUMMY_PASSWORD_HASH);
+      if (!row || !valid || row.status !== 'active') {
+        throw new Error('邮箱或密码不正确。');
+      }
 
-    const timestamp = now();
-    await database.begin();
-    try {
-      await database.run('UPDATE auth_users SET last_login_at = ?, updated_at = ? WHERE id = ?', [
-        database.date(timestamp),
-        database.date(timestamp),
-        row.id
-      ]);
-      const session = await createSession(database, row.id, env, clientInfo);
-      await database.commit();
-      return { user: { ...publicUser(row), lastLoginAt: timestamp }, session };
-    } catch (error) {
-      await database.rollback();
-      throw error;
-    }
-  }, env);
+      const timestamp = now();
+      await database.begin();
+      try {
+        await database.run('UPDATE auth_users SET last_login_at = ?, updated_at = ? WHERE id = ?', [
+          database.date(timestamp),
+          database.date(timestamp),
+          row.id
+        ]);
+        const session = await createSession(database, row.id, env, clientInfo);
+        await database.commit();
+        return { user: { ...publicUser(row), lastLoginAt: timestamp }, session };
+      } catch (error) {
+        await database.rollback();
+        throw error;
+      }
+    },
+    env
+  );
 }
 
 export async function authenticateSession(provider, token, env = process.env, clientInfo) {
   const tokenHash = hashSessionToken(token);
   if (!token || tokenHash.length !== 64) return null;
-  return withAuthDatabase(provider, async (database) => {
-    const current = now();
-    const row = await database.get(
-      `SELECT u.*, s.id AS session_id, s.expires_at, s.last_seen_at, s.device_name
+  return withAuthDatabase(
+    provider,
+    async (database) => {
+      const current = now();
+      const row = await database.get(
+        `SELECT u.*, s.id AS session_id, s.expires_at, s.last_seen_at, s.device_name
        FROM auth_sessions s
        JOIN auth_users u ON u.id = s.user_id
        WHERE s.token_hash = ? AND s.revoked_at IS NULL AND s.expires_at > ? AND u.status = 'active'`,
-      [tokenHash, database.date(current)]
-    );
-    if (!row) return null;
+        [tokenHash, database.date(current)]
+      );
+      if (!row) return null;
 
-    const lastSeen = fromDbDate(row.last_seen_at);
-    const deviceName = row.device_name || sessionDeviceName(clientInfo);
-    if (!row.device_name && deviceName) {
-      await database.run('UPDATE auth_sessions SET device_name = ? WHERE id = ?', [
+      const lastSeen = fromDbDate(row.last_seen_at);
+      const deviceName = row.device_name || sessionDeviceName(clientInfo);
+      if (!row.device_name && deviceName) {
+        await database.run('UPDATE auth_sessions SET device_name = ? WHERE id = ?', [
+          deviceName,
+          row.session_id
+        ]);
+      }
+      if (
+        !lastSeen ||
+        Date.now() - new Date(lastSeen).getTime() >= SESSION_LAST_SEEN_WRITE_INTERVAL_MS
+      ) {
+        await database.run('UPDATE auth_sessions SET last_seen_at = ? WHERE id = ?', [
+          database.date(current),
+          row.session_id
+        ]);
+      }
+      return {
+        sessionId: row.session_id,
+        expiresAt: fromDbDate(row.expires_at),
         deviceName,
-        row.session_id
-      ]);
-    }
-    if (!lastSeen || Date.now() - new Date(lastSeen).getTime() >= SESSION_LAST_SEEN_WRITE_INTERVAL_MS) {
-      await database.run('UPDATE auth_sessions SET last_seen_at = ? WHERE id = ?', [
-        database.date(current),
-        row.session_id
-      ]);
-    }
-    return {
-      sessionId: row.session_id,
-      expiresAt: fromDbDate(row.expires_at),
-      deviceName,
-      user: publicUser(row)
-    };
-  }, env);
+        user: publicUser(row)
+      };
+    },
+    env
+  );
 }
 
 export async function logoutSession(provider, token, env = process.env) {
   if (!token) return;
-  await withAuthDatabase(provider, async (database) => {
-    await database.run('UPDATE auth_sessions SET revoked_at = ? WHERE token_hash = ?', [
-      database.date(now()),
-      hashSessionToken(token)
-    ]);
-  }, env);
+  await withAuthDatabase(
+    provider,
+    async (database) => {
+      await database.run('UPDATE auth_sessions SET revoked_at = ? WHERE token_hash = ?', [
+        database.date(now()),
+        hashSessionToken(token)
+      ]);
+    },
+    env
+  );
+}
+
+export async function requestPasswordReset(provider, input, env = process.env) {
+  const email = normalizeEmail(input?.email);
+  const token = randomBytes(32).toString('base64url');
+  const resetDuration = passwordResetDurationMs(env);
+
+  return withAuthDatabase(
+    provider,
+    async (database) => {
+      const user = await database.get('SELECT id, email, status FROM auth_users WHERE email = ?', [
+        email
+      ]);
+      if (!user || user.status !== 'active') return null;
+
+      const timestamp = now();
+      const expiresAt = new Date(Date.now() + resetDuration.milliseconds).toISOString();
+      await database.begin();
+      try {
+        await database.run(
+          'UPDATE auth_password_reset_tokens SET used_at = ? WHERE user_id = ? AND used_at IS NULL',
+          [database.date(timestamp), user.id]
+        );
+        await database.run(
+          `INSERT INTO auth_password_reset_tokens
+           (id, user_id, token_hash, expires_at, used_at, created_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            randomUUID(),
+            user.id,
+            hashSessionToken(token),
+            database.date(expiresAt),
+            null,
+            database.date(timestamp)
+          ]
+        );
+        await database.commit();
+      } catch (error) {
+        await database.rollback();
+        throw error;
+      }
+
+      return {
+        token,
+        email: user.email,
+        expiresAt,
+        expiresMinutes: resetDuration.minutes
+      };
+    },
+    env
+  );
+}
+
+export async function discardPasswordResetToken(provider, token, env = process.env) {
+  let tokenHash;
+  try {
+    tokenHash = hashSessionToken(normalizePasswordResetToken(token));
+  } catch {
+    return;
+  }
+  await withAuthDatabase(
+    provider,
+    async (database) => {
+      await database.run('DELETE FROM auth_password_reset_tokens WHERE token_hash = ?', [
+        tokenHash
+      ]);
+    },
+    env
+  );
+}
+
+export async function resetPasswordWithToken(provider, input, env = process.env) {
+  const token = normalizePasswordResetToken(input?.token);
+  const passwordHash = await hashPassword(input?.newPassword);
+  const tokenHash = hashSessionToken(token);
+
+  return withAuthDatabase(
+    provider,
+    async (database) => {
+      const timestamp = now();
+      await database.begin();
+      try {
+        const resetToken = await database.get(
+          `SELECT t.id AS token_id, t.user_id, u.email
+         FROM auth_password_reset_tokens t
+         JOIN auth_users u ON u.id = t.user_id
+         WHERE t.token_hash = ?
+           AND t.used_at IS NULL
+           AND t.expires_at > ?
+           AND u.status = 'active'`,
+          [tokenHash, database.date(timestamp)]
+        );
+        if (!resetToken) throw new Error('密码重置链接无效或已过期。');
+
+        await database.run(
+          'UPDATE auth_users SET password_hash = ?, password_updated_at = ?, updated_at = ? WHERE id = ?',
+          [passwordHash, database.date(timestamp), database.date(timestamp), resetToken.user_id]
+        );
+        await database.run(
+          'UPDATE auth_password_reset_tokens SET used_at = ? WHERE user_id = ? AND used_at IS NULL',
+          [database.date(timestamp), resetToken.user_id]
+        );
+        await database.run(
+          'UPDATE auth_sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL',
+          [database.date(timestamp), resetToken.user_id]
+        );
+        await database.commit();
+        return { ok: true, email: resetToken.email };
+      } catch (error) {
+        await database.rollback();
+        throw error;
+      }
+    },
+    env
+  );
 }
 
 export async function changePassword(provider, auth, input, env = process.env) {
   const nextPasswordHash = await hashPassword(input?.newPassword);
-  return withAuthDatabase(provider, async (database) => {
-    const user = await database.get('SELECT password_hash FROM auth_users WHERE id = ?', [auth.user.id]);
-    if (!user || !(await verifyPassword(input?.currentPassword, user.password_hash))) {
-      throw new Error('当前密码不正确。');
-    }
-    const timestamp = now();
-    await database.begin();
-    try {
-      await database.run(
-        'UPDATE auth_users SET password_hash = ?, password_updated_at = ?, updated_at = ? WHERE id = ?',
-        [nextPasswordHash, database.date(timestamp), database.date(timestamp), auth.user.id]
-      );
-      await database.run(
-        'UPDATE auth_sessions SET revoked_at = ? WHERE user_id = ? AND id <> ?',
-        [database.date(timestamp), auth.user.id, auth.sessionId]
-      );
-      await database.commit();
-      return { ok: true };
-    } catch (error) {
-      await database.rollback();
-      throw error;
-    }
-  }, env);
+  return withAuthDatabase(
+    provider,
+    async (database) => {
+      const user = await database.get('SELECT password_hash FROM auth_users WHERE id = ?', [
+        auth.user.id
+      ]);
+      if (!user || !(await verifyPassword(input?.currentPassword, user.password_hash))) {
+        throw new Error('当前密码不正确。');
+      }
+      const timestamp = now();
+      await database.begin();
+      try {
+        await database.run(
+          'UPDATE auth_users SET password_hash = ?, password_updated_at = ?, updated_at = ? WHERE id = ?',
+          [nextPasswordHash, database.date(timestamp), database.date(timestamp), auth.user.id]
+        );
+        await database.run(
+          'UPDATE auth_sessions SET revoked_at = ? WHERE user_id = ? AND id <> ?',
+          [database.date(timestamp), auth.user.id, auth.sessionId]
+        );
+        await database.commit();
+        return { ok: true };
+      } catch (error) {
+        await database.rollback();
+        throw error;
+      }
+    },
+    env
+  );
 }
 
 export async function verifyCurrentPassword(provider, auth, input, env = process.env) {
-  return withAuthDatabase(provider, async (database) => {
-    const user = await database.get('SELECT password_hash FROM auth_users WHERE id = ?', [auth.user.id]);
-    if (!user || !(await verifyPassword(input?.currentPassword, user.password_hash))) {
-      throw new Error('当前密码不正确。');
-    }
-    return { ok: true };
-  }, env);
+  return withAuthDatabase(
+    provider,
+    async (database) => {
+      const user = await database.get('SELECT password_hash FROM auth_users WHERE id = ?', [
+        auth.user.id
+      ]);
+      if (!user || !(await verifyPassword(input?.currentPassword, user.password_hash))) {
+        throw new Error('当前密码不正确。');
+      }
+      return { ok: true };
+    },
+    env
+  );
 }
 
 export async function updateUserProfile(provider, auth, input, env = process.env) {
-  return withAuthDatabase(provider, async (database) => {
-    const currentUser = await database.get(
-      'SELECT * FROM auth_users WHERE id = ? AND status = ?',
-      [auth.user.id, 'active']
-    );
-    if (!currentUser) throw new Error('当前账号不可用，请重新登录。');
+  return withAuthDatabase(
+    provider,
+    async (database) => {
+      const currentUser = await database.get(
+        'SELECT * FROM auth_users WHERE id = ? AND status = ?',
+        [auth.user.id, 'active']
+      );
+      if (!currentUser) throw new Error('当前账号不可用，请重新登录。');
 
-    const displayName = normalizeDisplayName(input?.displayName, currentUser.email);
-    const timestamp = now();
-    await database.begin();
-    try {
-      await database.run('UPDATE auth_users SET display_name = ?, updated_at = ? WHERE id = ?', [
-        displayName,
-        database.date(timestamp),
-        auth.user.id
-      ]);
-      await database.run('UPDATE ledger_users SET display_name = ?, updated_at = ? WHERE id = ?', [
-        displayName,
-        database.date(timestamp),
-        currentUser.ledger_user_id
-      ]);
-      await database.commit();
-      return {
-        ok: true,
-        user: {
-          ...publicUser(currentUser),
-          displayName
-        }
-      };
-    } catch (error) {
-      await database.rollback();
-      throw error;
-    }
-  }, env);
+      const displayName = normalizeDisplayName(input?.displayName, currentUser.email);
+      const timestamp = now();
+      await database.begin();
+      try {
+        await database.run('UPDATE auth_users SET display_name = ?, updated_at = ? WHERE id = ?', [
+          displayName,
+          database.date(timestamp),
+          auth.user.id
+        ]);
+        await database.run(
+          'UPDATE ledger_users SET display_name = ?, updated_at = ? WHERE id = ?',
+          [displayName, database.date(timestamp), currentUser.ledger_user_id]
+        );
+        await database.commit();
+        return {
+          ok: true,
+          user: {
+            ...publicUser(currentUser),
+            displayName
+          }
+        };
+      } catch (error) {
+        await database.rollback();
+        throw error;
+      }
+    },
+    env
+  );
 }
 
 export async function revokeOtherSessions(provider, auth, env = process.env) {
-  await withAuthDatabase(provider, async (database) => {
-    await database.run(
-      'UPDATE auth_sessions SET revoked_at = ? WHERE user_id = ? AND id <> ? AND revoked_at IS NULL',
-      [database.date(now()), auth.user.id, auth.sessionId]
-    );
-  }, env);
+  await withAuthDatabase(
+    provider,
+    async (database) => {
+      await database.run(
+        'UPDATE auth_sessions SET revoked_at = ? WHERE user_id = ? AND id <> ? AND revoked_at IS NULL',
+        [database.date(now()), auth.user.id, auth.sessionId]
+      );
+    },
+    env
+  );
   return { ok: true };
 }
 
 export async function getUserSessions(provider, auth, env = process.env) {
-  return withAuthDatabase(provider, async (database) => {
-    const rows = await database.query(
-      `SELECT id, device_name, expires_at, last_seen_at, created_at
+  return withAuthDatabase(
+    provider,
+    async (database) => {
+      const rows = await database.query(
+        `SELECT id, device_name, expires_at, last_seen_at, created_at
        FROM auth_sessions
        WHERE user_id = ? AND revoked_at IS NULL AND expires_at > ?
        ORDER BY last_seen_at DESC, created_at DESC`,
-      [auth.user.id, database.date(now())]
-    );
-    return {
-      ok: true,
-      sessions: rows.map((row) => ({
-        id: row.id,
-        deviceName: row.device_name || 'Web 浏览器',
-        createdAt: fromDbDate(row.created_at),
-        lastSeenAt: fromDbDate(row.last_seen_at),
-        expiresAt: fromDbDate(row.expires_at),
-        current: row.id === auth.sessionId
-      }))
-    };
-  }, env);
+        [auth.user.id, database.date(now())]
+      );
+      return {
+        ok: true,
+        sessions: rows.map((row) => ({
+          id: row.id,
+          deviceName: row.device_name || 'Web 浏览器',
+          createdAt: fromDbDate(row.created_at),
+          lastSeenAt: fromDbDate(row.last_seen_at),
+          expiresAt: fromDbDate(row.expires_at),
+          current: row.id === auth.sessionId
+        }))
+      };
+    },
+    env
+  );
 }
 
 export async function revokeUserSession(provider, auth, sessionId, env = process.env) {
@@ -497,23 +687,31 @@ export async function revokeUserSession(provider, auth, sessionId, env = process
   if (!targetSessionId || targetSessionId === auth.sessionId) {
     throw new Error('当前设备不能从此处退出。');
   }
-  return withAuthDatabase(provider, async (database) => {
-    const result = await database.run(
-      `UPDATE auth_sessions
+  return withAuthDatabase(
+    provider,
+    async (database) => {
+      const result = await database.run(
+        `UPDATE auth_sessions
        SET revoked_at = ?
        WHERE id = ? AND user_id = ? AND revoked_at IS NULL`,
-      [database.date(now()), targetSessionId, auth.user.id]
-    );
-    if (!Number(result?.changes || result?.affectedRows || 0)) {
-      throw new Error('该登录设备不存在或已退出。');
-    }
-    return { ok: true };
-  }, env);
+        [database.date(now()), targetSessionId, auth.user.id]
+      );
+      if (!Number(result?.changes || result?.affectedRows || 0)) {
+        throw new Error('该登录设备不存在或已退出。');
+      }
+      return { ok: true };
+    },
+    env
+  );
 }
 
 export async function deleteExpiredSessions(provider, env = process.env) {
-  return withAuthDatabase(provider, async (database) =>
-    database.run('DELETE FROM auth_sessions WHERE expires_at <= ? OR revoked_at IS NOT NULL', [
-      database.date(now())
-    ]), env);
+  return withAuthDatabase(
+    provider,
+    async (database) =>
+      database.run('DELETE FROM auth_sessions WHERE expires_at <= ? OR revoked_at IS NOT NULL', [
+        database.date(now())
+      ]),
+    env
+  );
 }

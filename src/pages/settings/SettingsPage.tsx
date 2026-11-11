@@ -11,6 +11,11 @@ import {
   revokeOtherAccountSessions,
   type AuthSession
 } from '../../shared/api/authClient';
+import {
+  getRelationalDataStatus,
+  resetRelationalData,
+  type RelationalDataStatus
+} from '../../shared/api/relationalDataClient';
 import { CIRCLE_USER_ICON_URL, MONITOR_ICON_URL } from '../../shared/config/brandAssets';
 import {
   AI_MODEL_PRESETS,
@@ -18,6 +23,11 @@ import {
   mergeAiModelOptions
 } from '../../shared/config/aiModels';
 import { useAiSettings } from '../../shared/store/useAiSettings';
+import { useAppPreferences } from '../../shared/store/useAppPreferences';
+import { useFinanceStore } from '../../shared/store/useFinanceStore';
+import { useGlobalMemoryStore } from '../../shared/store/useGlobalMemoryStore';
+import { useSmartBudgetStore } from '../../shared/store/useSmartBudgetStore';
+import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { PasswordInput } from '../../shared/ui/PasswordInput';
 import { Toast } from '../../shared/ui/Toast';
 import { AiModelFamilyIcon, AiProviderIcon, GenericModelIcon } from '../../shared/ui/brandIcons';
@@ -142,17 +152,29 @@ interface ModelSelectorProps {
 interface SettingsPageProps {
   variant?: 'page' | 'overlay';
   onClose?: () => void;
+  reloadPage?: () => void;
 }
 
-type SettingsWorkspace = 'account' | 'openai' | 'tavily' | 'embedding' | 'advanced';
+type SettingsWorkspace = 'account' | 'data' | 'openai' | 'tavily' | 'embedding' | 'advanced';
 
 const SETTINGS_WORKSPACES: Array<{ value: SettingsWorkspace; labelKey: string }> = [
   { value: 'account', labelKey: 'settings.workspaces.account' },
+  { value: 'data', labelKey: 'settings.workspaces.data' },
   { value: 'openai', labelKey: 'settings.workspaces.openai' },
   { value: 'tavily', labelKey: 'settings.workspaces.tavily' },
   { value: 'embedding', labelKey: 'settings.workspaces.embedding' },
   { value: 'advanced', labelKey: 'settings.workspaces.advanced' }
 ];
+
+const DATA_COUNT_KEYS = [
+  'accounts',
+  'categories',
+  'transactions',
+  'subscriptions',
+  'debts',
+  'investment_positions',
+  'investment_watchlists'
+] as const;
 
 function getProviderPresetLabel(
   preset: { label?: string; labelKey?: string },
@@ -196,7 +218,11 @@ function ModelSelector({ label, hint, value, presets, onChange }: ModelSelectorP
   );
 }
 
-export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
+export function SettingsPage({
+  variant = 'page',
+  onClose,
+  reloadPage = () => window.location.reload()
+}: SettingsPageProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user, updateProfile } = useAuth();
@@ -249,6 +275,12 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
   const [sessions, setSessions] = useState<AuthSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [sessionsError, setSessionsError] = useState<StatusMessage>(null);
+  const [dataStatus, setDataStatus] = useState<RelationalDataStatus | null>(null);
+  const [dataStatusLoading, setDataStatusLoading] = useState(false);
+  const [dataStatusError, setDataStatusError] = useState('');
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState('');
   const [embeddingTestStatus, setEmbeddingTestStatus] = useState<{
     loading: boolean;
     ok: boolean;
@@ -347,6 +379,45 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
   useEffect(() => {
     void loadAccountSessions();
   }, [loadAccountSessions, user.id]);
+
+  const loadDataStatus = useCallback(async () => {
+    try {
+      setDataStatusLoading(true);
+      setDataStatusError('');
+      setDataStatus(await getRelationalDataStatus());
+    } catch (error) {
+      setDataStatusError(
+        error instanceof Error ? error.message : '读取数据库状态失败,请稍后重试。'
+      );
+    } finally {
+      setDataStatusLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeWorkspace !== 'data') return;
+    void loadDataStatus();
+  }, [activeWorkspace, loadDataStatus]);
+
+  const handleResetDatabase = async () => {
+    if (resetting) return;
+    try {
+      setResetting(true);
+      setResetError('');
+      await resetRelationalData();
+      setResetConfirmOpen(false);
+      // 服务端已清空后,把本地缓存也一起清掉,否则刷新时本地旧账本会被重新同步回去。
+      useFinanceStore.persist.clearStorage();
+      useAppPreferences.persist.clearStorage();
+      useGlobalMemoryStore.persist.clearStorage();
+      useSmartBudgetStore.persist.clearStorage();
+      reloadPage();
+    } catch (error) {
+      setResetConfirmOpen(false);
+      setResetError(error instanceof Error ? error.message : '重置数据库失败,请稍后重试。');
+      setResetting(false);
+    }
+  };
 
   const handleSaveProfile = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -614,6 +685,69 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
             </button>
           ))}
         </nav>
+
+        {activeWorkspace === 'data' ? (
+          <section
+            className="settings-tab-panel"
+            role="tabpanel"
+            aria-labelledby="data-settings-title"
+          >
+            <div className="settings-data-panel">
+              <div className="settings-data-head">
+                <div>
+                  <p className="settings-data-eyebrow">DATABASE</p>
+                  <h3 id="data-settings-title">{t('settings.data.title')}</h3>
+                  <p>{t('settings.data.desc')}</p>
+                </div>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => void loadDataStatus()}
+                  disabled={dataStatusLoading}
+                >
+                  {dataStatusLoading ? t('settings.data.refreshing') : t('settings.data.refresh')}
+                </button>
+              </div>
+
+              {dataStatusError ? (
+                <p className="settings-data-error" role="alert">
+                  {dataStatusError}
+                </p>
+              ) : dataStatus ? (
+                <div className="settings-data-grid">
+                  {DATA_COUNT_KEYS.map((key) => (
+                    <div className="settings-data-stat" key={key}>
+                      <span>{t(`settings.data.counts.${key}`)}</span>
+                      <strong>{dataStatus.counts[key] ?? 0}</strong>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="settings-data-muted">{t('settings.data.loading')}</p>
+              )}
+
+              <div className="settings-data-danger">
+                <div>
+                  <strong>{t('settings.data.resetTitle')}</strong>
+                  <p>{t('settings.data.resetDesc')}</p>
+                </div>
+                <button
+                  type="button"
+                  className="settings-data-danger-btn"
+                  onClick={() => setResetConfirmOpen(true)}
+                  disabled={resetting}
+                >
+                  {resetting ? t('settings.data.resetting') : t('settings.data.resetButton')}
+                </button>
+              </div>
+              {resetError ? (
+                <p className="settings-data-error" role="alert">
+                  {resetError}
+                </p>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
 
         {activeWorkspace === 'account' ? (
           <section
@@ -1275,6 +1409,20 @@ export function SettingsPage({ variant = 'page', onClose }: SettingsPageProps) {
           </div>
         ) : null}
       </section>
+
+      <ConfirmDialog
+        open={resetConfirmOpen}
+        title={t('settings.data.resetConfirmTitle')}
+        description={t('settings.data.resetConfirmDesc')}
+        confirmText={t('settings.data.resetConfirmButton')}
+        danger
+        confirmDisabled={resetting}
+        onConfirm={() => void handleResetDatabase()}
+        onCancel={() => {
+          if (resetting) return;
+          setResetConfirmOpen(false);
+        }}
+      />
 
       <Toast
         visible={toastVisible}

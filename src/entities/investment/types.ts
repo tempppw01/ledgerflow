@@ -98,6 +98,7 @@ export interface InvestmentFundAnalysis {
   fundCompany?: string;
   platform?: string;
   note?: string;
+  followUps?: string[];
 }
 
 export interface InvestmentWatchlistReviewItem {
@@ -167,5 +168,14 @@ export interface InvestmentAiMessage {
   attachmentCount?: number;
   attachmentImages?: string[];
   analysis?: InvestmentFundAnalysis;
+  agentActions?: InvestmentAiAgentAction[];
   createdAt: string;
+}
+
+export interface InvestmentAiAgentAction {
+  id: string;
+  kind: 'read' | 'update';
+  label: string;
+  undoable: boolean;
+  undone?: boolean;
 }

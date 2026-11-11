@@ -13,6 +13,7 @@ import {
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
+import type { InvestmentAiAgentAction } from '../../../entities/investment/types';
 import {
   buildInvestmentAssistantPrompt,
   buildInvestmentAssistantAuxiliaryInfo,
@@ -24,7 +25,14 @@ import {
   readImageAsDataUrl,
   trimInvestmentAiMessages
 } from '../../../pages/investments/investmentAi';
-import { fetchAiModels, sendAiChatStream } from '../api/openaiCompatibleClient';
+import { fetchAiModels, sendAiChat, sendAiChatStream } from '../api/openaiCompatibleClient';
+import type { ChatToolCall } from '../api/openaiCompatibleClient';
+import {
+  executeInvestmentToolCall,
+  INVESTMENT_AGENT_INSTRUCTIONS,
+  INVESTMENT_AGENT_TOOLS,
+  type InvestmentAgentContext
+} from '../agent/investmentAgentTools';
 import {
   buildWebSearchPrompt,
   fetchWebSearchContext,
@@ -38,6 +46,7 @@ import {
   ChatGlobeIcon,
   ChatGlobeOffIcon,
   ChatSendIcon,
+  ChatSparklesIcon,
   ChatStopIcon,
   ChatUploadIcon
 } from '../ui/chatIcons';
@@ -48,6 +57,10 @@ import {
 } from '../../../shared/config/brandAssets';
 import { useAiSettings } from '../../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../../shared/store/useAppPreferences';
+import {
+  formatMarketContextTime,
+  readCachedMarketContext
+} from '../../investments/model/investmentMarketContext';
 import { useFinanceStore } from '../../../shared/store/useFinanceStore';
 import { AI_MODEL_PRESETS, mergeAiModelOptions } from '../../../shared/config/aiModels';
 import { ConfirmDialog } from '../../../shared/ui/ConfirmDialog';
@@ -59,7 +72,7 @@ import { buildTimeContext } from '../workbench/workbenchUtils';
 import { InvestmentAiMessageDetails } from './InvestmentAiMessageDetails';
 
 type Message = ReturnType<typeof createInvestmentAiMessage>;
-type InvestmentChatProgress = 'market' | 'web' | 'thinking' | 'answering' | '';
+type InvestmentChatProgress = 'market' | 'web' | 'tools' | 'thinking' | 'answering' | '';
 type FloatingResizeEdge =
   | 'top'
   | 'right'
@@ -90,14 +103,17 @@ const FLOATING_CHAT_VIEWPORT_GUTTER = 16;
 
 const MAX_INVESTMENT_AI_IMAGES = 4;
 const MAX_INVESTMENT_AI_IMAGE_SIZE_MB = 6;
+const MAX_INVESTMENT_AGENT_ROUNDS = 4;
 const INVESTMENT_STARTER_PROMPTS = [
   '帮我看当前持仓的主要风险',
-  '这只基金现在适合继续定投吗?',
-  '结合我今天的情况,给一个配置思路'
+  '今天市场该进攻还是防守?',
+  '帮我检查目标资金缺口',
+  '结合我的情况给一个配置思路'
 ];
 const INVESTMENT_CHAT_PROGRESS_LABELS: Record<Exclude<InvestmentChatProgress, ''>, string> = {
   market: '正在读取页面持仓、自选和账本数据',
   web: '正在查询公开联网资讯',
+  tools: '正在核对你自己的持仓与目标数据',
   thinking: '正在思考投资结论',
   answering: '正在组织回答'
 };
@@ -138,18 +154,26 @@ type InvestmentChatComposerProps = {
   showLinks?: boolean;
   defaultWebEnabled?: boolean;
   contextNote?: string;
+  focus?: {
+    type: 'position' | 'watch' | 'market' | 'news';
+    label: string;
+    detail?: string;
+  } | null;
   onPromptSubmitted?: (messageId: string) => void;
   clearContextVersion?: number;
   starterPrompt?: { text: string; token: number } | null;
+  onRegisterAgentUndo?: (id: string, run: () => void) => void;
 };
 
 export function InvestmentChatComposer({
   showLinks = true,
   defaultWebEnabled = false,
   contextNote = '',
+  focus = null,
   onPromptSubmitted,
   clearContextVersion = 0,
-  starterPrompt = null
+  starterPrompt = null,
+  onRegisterAgentUndo
 }: InvestmentChatComposerProps) {
   const { baseUrl, apiKey, model, webSearch } = useAiSettings();
   const setModel = useAiSettings((s) => s.setModel);
@@ -158,6 +182,8 @@ export function InvestmentChatComposer({
   const positions = useAppPreferences((s) => s.investmentPositions);
   const goals = useAppPreferences((s) => s.investmentGoals);
   const watchlist = useAppPreferences((s) => s.investmentWatchlist);
+  const upsertInvestmentWatchItem = useAppPreferences((s) => s.upsertInvestmentWatchItem);
+  const updateInvestmentGoal = useAppPreferences((s) => s.updateInvestmentGoal);
   const transactions = useFinanceStore((s) => s.transactions);
   const monthlyIncome = useAppPreferences((s) => s.monthlyIncome);
 
@@ -207,15 +233,33 @@ export function InvestmentChatComposer({
     return Math.max(0, (monthlyIncome || 0) - expense);
   }, [monthlyIncome, transactions]);
 
+  /**
+   * 独立打开 AI 投资助手(例如 /assistant 的投资模式)时,没有父页面传入的行情上下文,
+   * 这里复用投资理财页写入的同一份快照,保证两个入口看到同一份数据。
+   */
+  const cachedMarketContext = useMemo(
+    () => (contextNote.trim() ? null : readCachedMarketContext()),
+    [contextNote]
+  );
+
+  const effectiveContextNote = useMemo(() => {
+    if (contextNote.trim()) return contextNote;
+    if (!cachedMarketContext) return '';
+    return `${cachedMarketContext.summary}\n\n上下文来源:投资理财页行情快照(${formatMarketContextTime(
+      cachedMarketContext.updatedAt
+    )})`;
+  }, [cachedMarketContext, contextNote]);
+
   const assistantPrompt = useMemo(
     () =>
       buildInvestmentAssistantPrompt({
         positions: positions.filter((item) => item.isActive),
         goals,
         watchlist,
-        monthlyInvestableCash
-      }) + (contextNote ? `\n\n页面实时上下文：\n${contextNote}` : ''),
-    [contextNote, goals, monthlyInvestableCash, positions, watchlist]
+        monthlyInvestableCash,
+        focus
+      }) + (effectiveContextNote ? `\n\n页面实时上下文:\n${effectiveContextNote}` : ''),
+    [effectiveContextNote, focus, goals, monthlyInvestableCash, positions, watchlist]
   );
 
   const followUps = useMemo(
@@ -405,14 +449,20 @@ export function InvestmentChatComposer({
     if (inFlightRef.current || loading || (!cleanPrompt && images.length === 0 && !retryMessage)) {
       return;
     }
-    if (!apiKey.trim()) {
-      setToast({ visible: true, message: '请先在设置中配置可用的 AI Key。', variant: 'warning' });
-      return;
-    }
-
     const retrying = Boolean(retryMessage);
     const requestImages = retryMessage ? [...(retryMessage.attachmentImages || [])] : [...images];
     const requestText = retryMessage?.text || cleanPrompt || '请基于这些基金或持仓截图做投资分析。';
+    if (!apiKey.trim()) {
+      if (!retrying && requestText) {
+        setInput(requestText);
+      }
+      setToast({
+        visible: true,
+        message: '请先在设置中配置可用的 AI Key，问题已保留在输入框。',
+        variant: 'warning'
+      });
+      return;
+    }
     const abortController = new AbortController();
     const requestVersion = requestVersionRef.current + 1;
     requestVersionRef.current = requestVersion;
@@ -478,7 +528,7 @@ export function InvestmentChatComposer({
         webEnabled,
         webQuery: cleanPrompt || requestText,
         timeContext,
-        contextNote,
+        contextNote: effectiveContextNote,
         webSearchPrompt,
         webSearchStatus,
         webSearchMessage,
@@ -489,14 +539,162 @@ export function InvestmentChatComposer({
         : webSearchStatus === 'unavailable'
           ? '\n\n联网模式：用户已开启联网核验，但本次检索未返回可用结果。请如实说明当前无法实时核验，不要编造最新行情或净值。'
           : '\n\n联网模式：用户已开启联网核验。请优先使用以下联网检索上下文核验基金净值、费率、持仓、基金公司和近期表现等最新信息。';
-      const result = await sendAiChatStream(
+      const baseSystemPrompt = webEnabled
+        ? `${timeContext}\n\n${assistantPrompt}${webModeInstruction}\n\n${webSearchPrompt}`
+        : `${timeContext}\n\n${assistantPrompt}`;
+      const collectedAgentActions: InvestmentAiAgentAction[] = [];
+      const toolContext: InvestmentAgentContext = {
+        positions: positions.filter((item) => item.isActive),
+        goals: [...goals],
+        watchlist: [...watchlist],
+        monthlyInvestableCash,
+        upsertWatchItem: upsertInvestmentWatchItem,
+        updateGoal: updateInvestmentGoal
+      };
+      type AgentTurn = {
+        role: 'user' | 'assistant' | 'tool';
+        text: string;
+        imageDataUrls?: string[];
+        toolCalls?: Array<{
+          id: string;
+          type: 'function';
+          function: { name: string; arguments: string };
+        }>;
+        toolCallId?: string;
+      };
+      type AgentHandlers = {
+        onDelta?: (delta: string) => void;
+        onReasoningDelta?: (delta: string) => void;
+        onDone?: (content: string, reasoning?: string) => void;
+      };
+      const runInvestmentAgentConversation = async (
+        input: {
+          baseUrl: string;
+          apiKey: string;
+          model: string;
+          systemPrompt: string;
+          messages: Array<{
+            role: 'user' | 'assistant';
+            text: string;
+            imageDataUrls?: string[];
+          }>;
+          signal: AbortSignal;
+        },
+        handlers: AgentHandlers
+      ) => {
+        const turns: AgentTurn[] = input.messages.map((message) => ({
+          role: message.role,
+          text: message.text,
+          imageDataUrls: message.imageDataUrls
+        }));
+        let toolsAvailable = true;
+        let finalContent = '';
+        let finalReasoning = '';
+
+        for (let round = 0; round < MAX_INVESTMENT_AGENT_ROUNDS; round += 1) {
+          let streamedText = '';
+          let streamedReasoning = '';
+          const requestHandlers = {
+            onDelta: (delta: string) => {
+              streamedText += delta;
+              handlers.onDelta?.(delta);
+            },
+            onReasoningDelta: (delta: string) => {
+              streamedReasoning += delta;
+              handlers.onReasoningDelta?.(delta);
+            },
+            onDone: (content: string, reasoning?: string) => {
+              if (content) streamedText = content;
+              if (reasoning) streamedReasoning = reasoning;
+            }
+          };
+          const requestRound = (useTools: boolean) =>
+            sendAiChatStream(
+              {
+                baseUrl: input.baseUrl,
+                apiKey: input.apiKey,
+                model: input.model,
+                systemPrompt: useTools
+                  ? `${input.systemPrompt}\n\n${INVESTMENT_AGENT_INSTRUCTIONS}`
+                  : input.systemPrompt,
+                messages: turns,
+                signal: input.signal,
+                tools: useTools ? INVESTMENT_AGENT_TOOLS : undefined
+              },
+              requestHandlers
+            );
+
+          let reply: {
+            content: string;
+            reasoning?: string;
+            toolCalls?: ChatToolCall[];
+          } | null = null;
+          try {
+            reply = await requestRound(toolsAvailable);
+          } catch (error) {
+            const message = error instanceof Error ? error.message : '';
+            if (toolsAvailable && /HTTP_(400|404|422)/.test(message)) {
+              try {
+                const fallback = await sendAiChat({
+                  baseUrl: input.baseUrl,
+                  apiKey: input.apiKey,
+                  model: input.model,
+                  systemPrompt: `${input.systemPrompt}\n\n${INVESTMENT_AGENT_INSTRUCTIONS}`,
+                  messages: turns,
+                  signal: input.signal,
+                  tools: INVESTMENT_AGENT_TOOLS
+                });
+                reply = {
+                  content: fallback.content,
+                  reasoning: fallback.reasoning,
+                  toolCalls: fallback.toolCalls
+                };
+              } catch {
+                toolsAvailable = false;
+                reply = await requestRound(false);
+              }
+            } else {
+              throw error;
+            }
+          }
+
+          if (!reply) break;
+          finalReasoning += streamedReasoning || reply.reasoning || '';
+          finalContent = reply.content || streamedText || finalContent;
+          const calls = reply.toolCalls || [];
+          if (calls.length === 0) break;
+
+          turns.push({
+            role: 'assistant',
+            text: reply.content || '',
+            toolCalls: calls.map((call) => ({
+              id: call.id,
+              type: 'function' as const,
+              function: { name: call.name, arguments: call.arguments }
+            }))
+          });
+          setProgress('tools');
+          calls.forEach((call) => {
+            const execution = executeInvestmentToolCall(call, toolContext);
+            execution.undo.forEach((entry) => onRegisterAgentUndo?.(entry.id, entry.run));
+            collectedAgentActions.push(...execution.views);
+            turns.push({
+              role: 'tool',
+              text: execution.content,
+              toolCallId: call.id
+            });
+          });
+        }
+
+        handlers.onDone?.(finalContent, finalReasoning);
+        return { content: finalContent, reasoning: finalReasoning };
+      };
+      const result = await runInvestmentAgentConversation(
         {
           baseUrl,
           apiKey,
           model,
-          systemPrompt: webEnabled
-            ? `${timeContext}\n\n${assistantPrompt}${webModeInstruction}\n\n${webSearchPrompt}`
-            : `${timeContext}\n\n${assistantPrompt}`,
+          systemPrompt: baseSystemPrompt,
           messages: nextMessages.map((item) => ({
             role: item.role,
             text: item.text,
@@ -528,8 +726,11 @@ export function InvestmentChatComposer({
               reasoning,
               webTrace: auxiliaryInfo.webTrace,
               auxiliaryInfo: auxiliaryInfo.relatedData,
-              followUpPrompts: parseInvestmentFollowUpPrompts(content),
-              analysis
+              followUpPrompts: analysis?.followUps?.length
+                ? analysis.followUps
+                : parseInvestmentFollowUpPrompts(content),
+              analysis,
+              agentActions: collectedAgentActions
             });
             setMessages(trimInvestmentAiMessages([...nextMessages, assistantMessage]));
             setStreaming('');
@@ -544,12 +745,17 @@ export function InvestmentChatComposer({
           question: requestText,
           watchlist
         });
+        const actionSummary = collectedAgentActions
+          .filter((action) => action.kind === 'update')
+          .map((action) => action.label)
+          .join(';');
         const fallback: Message = createInvestmentAiMessage({
           id: `investment-assistant-${Date.now()}`,
           role: 'assistant',
-          text: fallbackPrompts.join(' / '),
+          text: actionSummary || fallbackPrompts.join(' / '),
           createdAt: new Date().toISOString(),
-          followUpPrompts: fallbackPrompts
+          followUpPrompts: fallbackPrompts,
+          agentActions: collectedAgentActions
         });
         setMessages(trimInvestmentAiMessages([...nextMessages, fallback]));
       }
@@ -638,6 +844,13 @@ export function InvestmentChatComposer({
             <ChatUploadIcon className="chat-svg-icon" />
             投资资料与管理
           </Link>
+        </div>
+      ) : null}
+
+      {!apiKey.trim() ? (
+        <div className="investments-ai-settings-hint" role="status">
+          <span>尚未配置 AI 模型 Key，配置后才能生成投资分析。</span>
+          <Link to="/settings">去设置</Link>
         </div>
       ) : null}
 
@@ -884,6 +1097,12 @@ type InvestmentChatPanelProps = {
   showHero?: boolean;
   defaultWebEnabled?: boolean;
   contextNote?: string;
+  focus?: {
+    type: 'position' | 'watch' | 'market' | 'news';
+    label: string;
+    detail?: string;
+  } | null;
+  requestedPrompt?: { text: string; token: number } | null;
   floating?: boolean;
   floatingPosition?: 'bottom-right' | 'bottom-left';
 };
@@ -893,13 +1112,24 @@ export function InvestmentChatPanel({
   showHero = true,
   defaultWebEnabled = false,
   contextNote = '',
+  focus = null,
+  requestedPrompt = null,
   floating = false,
   floatingPosition = 'bottom-right'
 }: InvestmentChatPanelProps) {
   const messages = useAppPreferences((s) => s.investmentAiMessages);
+  const setInvestmentAiMessages = useAppPreferences((s) => s.setInvestmentAiMessages);
   const clearInvestmentAiMessages = useAppPreferences((s) => s.clearInvestmentAiMessages);
+  const positions = useAppPreferences((s) => s.investmentPositions);
+  const goals = useAppPreferences((s) => s.investmentGoals);
+  const watchlist = useAppPreferences((s) => s.investmentWatchlist);
+  const aiApiKey = useAiSettings((s) => s.apiKey);
+  const aiModel = useAiSettings((s) => s.model);
+  const agentReady = Boolean(aiApiKey.trim() && aiModel.trim());
   const isCompact = !showHero;
   const messageRefs = useRef(new Map<string, HTMLElement>());
+  const agentUndoRef = useRef(new Map<string, () => void>());
+  const [undoableActionIds, setUndoableActionIds] = useState<Set<string>>(() => new Set());
   const floatingPanelRef = useRef<HTMLElement | null>(null);
   const [pendingScrollMessageId, setPendingScrollMessageId] = useState<string | null>(null);
   const [activeTurnMessageId, setActiveTurnMessageId] = useState<string | null>(null);
@@ -914,6 +1144,52 @@ export function InvestmentChatPanel({
   const floatingResizeRef = useRef<FloatingResizeState | null>(null);
   const historyTurns = useMemo(() => messages.filter((item) => item.role === 'user'), [messages]);
   const latestMessageId = messages[messages.length - 1]?.id || '';
+  const contextStats = useMemo(
+    () => ({
+      positions: positions.filter((item) => item.isActive).length,
+      goals: goals.length,
+      watchlist: watchlist.length
+    }),
+    [goals.length, positions, watchlist.length]
+  );
+
+  const registerAgentUndo = useCallback((id: string, run: () => void) => {
+    agentUndoRef.current.set(id, run);
+    setUndoableActionIds((current) => {
+      if (current.has(id)) return current;
+      const next = new Set(current);
+      next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleUndoAgentAction = useCallback(
+    (messageId: string, actionId: string) => {
+      const run = agentUndoRef.current.get(actionId);
+      if (!run) return;
+      run();
+      agentUndoRef.current.delete(actionId);
+      setUndoableActionIds((current) => {
+        if (!current.has(actionId)) return current;
+        const next = new Set(current);
+        next.delete(actionId);
+        return next;
+      });
+      setInvestmentAiMessages(
+        messages.map((message) =>
+          message.id === messageId
+            ? {
+                ...message,
+                agentActions: message.agentActions?.map((entry) =>
+                  entry.id === actionId ? { ...entry, undone: true } : entry
+                )
+              }
+            : message
+        )
+      );
+    },
+    [messages, setInvestmentAiMessages]
+  );
 
   const minimizeFloatingPanel = useCallback(() => {
     setFloatingOpen(false);
@@ -1071,6 +1347,12 @@ export function InvestmentChatPanel({
     setStarterPrompt({ text, token: starterPromptTokenRef.current });
   }, []);
 
+  useEffect(() => {
+    if (!requestedPrompt) return;
+    setFloatingOpen(true);
+    setStarterPrompt({ text: requestedPrompt.text, token: requestedPrompt.token });
+  }, [requestedPrompt]);
+
   const clearContext = useCallback(() => {
     clearInvestmentAiMessages();
     messageRefs.current.clear();
@@ -1126,11 +1408,17 @@ export function InvestmentChatPanel({
         <button
           type="button"
           className="investment-chat-floating-launcher"
-          aria-label="打开快捷问答"
+          aria-label="打开 AI 投资助手"
           aria-expanded={false}
           onClick={() => setFloatingOpen(true)}
         >
-          <span aria-hidden="true">?</span>
+          <span className="investment-chat-floating-launcher-icon" aria-hidden="true">
+            <ChatSparklesIcon className="chat-svg-icon" />
+          </span>
+          <span className="investment-chat-floating-launcher-copy" aria-hidden="true">
+            <strong>AI 投资助手</strong>
+            <small>持仓 · 行情 · 目标</small>
+          </span>
           {messages.length > 0 ? <i aria-label={`${messages.length} 条对话`} /> : null}
         </button>
       ) : null}
@@ -1183,18 +1471,33 @@ export function InvestmentChatPanel({
           <header className="investment-chat-floating-head">
             <div className="investment-chat-floating-title">
               <span className="investment-chat-floating-title-icon" aria-hidden="true">
-                ?
+                <ChatSparklesIcon className="chat-svg-icon" />
               </span>
               <div>
-                <strong>快捷问答</strong>
-                <small>结合大盘与持仓，随时问一句</small>
+                <strong>
+                  AI 投资助手
+                  <em className="investment-chat-agent-badge">Agent</em>
+                </strong>
+                <small>已同步持仓、自选与今日行情</small>
               </div>
             </div>
             <div className="investment-chat-floating-head-actions">
+              <Link
+                to="/assistant"
+                className="investment-chat-floating-expand"
+                aria-label="打开完整 AI 投资助手"
+                title="打开完整 AI 投资助手"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M14 4h6v6" />
+                  <path d="M20 4 10 14" />
+                  <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+                </svg>
+              </Link>
               <button
                 type="button"
                 className={`investment-chat-floating-pin ${floatingPinned ? 'is-active' : ''}`}
-                aria-label={floatingPinned ? '取消置顶快捷问答' : '置顶快捷问答'}
+                aria-label={floatingPinned ? '取消置顶 AI 投资助手' : '置顶 AI 投资助手'}
                 title={floatingPinned ? '取消置顶，点击外围可自动收起' : '置顶，点击外围不收起'}
                 aria-pressed={floatingPinned}
                 onClick={() => setFloatingPinned((current) => !current)}
@@ -1207,8 +1510,8 @@ export function InvestmentChatPanel({
               <button
                 type="button"
                 className="investment-chat-floating-close"
-                aria-label="收起快捷问答"
-                title="收起快捷问答"
+                aria-label="收起 AI 投资助手"
+                title="收起 AI 投资助手"
                 onClick={minimizeFloatingPanel}
               >
                 ×
@@ -1216,6 +1519,30 @@ export function InvestmentChatPanel({
             </div>
           </header>
         ) : null}
+
+        <div className="investment-chat-context-strip" aria-label="AI 已同步的投资上下文">
+          <span>
+            <b>{contextStats.positions}</b> 笔持仓
+          </span>
+          <span>
+            <b>{contextStats.watchlist}</b> 只自选
+          </span>
+          <span>
+            <b>{contextStats.goals}</b> 个目标
+          </span>
+          <span
+            className={agentReady ? 'is-agent-ready' : 'is-agent-offline'}
+            title={
+              agentReady
+                ? '已配置 AI 模型,可直接读取持仓、自选与今日行情'
+                : '尚未配置 AI 模型 Key,配置后助手才能生成分析'
+            }
+          >
+            <i aria-hidden="true" />
+            {agentReady ? 'Agent 已连接' : '待配置 AI Key'}
+          </span>
+          {focus ? <strong title={focus.label}>正在看：{focus.label}</strong> : null}
+        </div>
 
         {showHero && messages.length === 0 ? (
           <section className="chat-mode-welcome chat-investment-welcome" aria-label="AI 投资助手">
@@ -1320,6 +1647,33 @@ export function InvestmentChatPanel({
                           : item.text
                       )}
                     </div>
+                    {item.role === 'assistant' && item.agentActions?.length ? (
+                      <div className="investment-ai-agent-actions" aria-label="AI 已执行的操作">
+                        {item.agentActions.map((action) => (
+                          <span
+                            key={action.id}
+                            className={`investment-ai-agent-action is-${action.kind} ${
+                              action.undone ? 'is-undone' : ''
+                            }`}
+                          >
+                            <b>{action.kind === 'update' ? '已更新' : '已读取'}</b>
+                            <span className="investment-ai-agent-action-label">{action.label}</span>
+                            {action.kind === 'update' &&
+                            action.undoable &&
+                            !action.undone &&
+                            undoableActionIds.has(action.id) ? (
+                              <button
+                                type="button"
+                                className="investment-ai-agent-action-undo"
+                                onClick={() => handleUndoAgentAction(item.id, action.id)}
+                              >
+                                撤销
+                              </button>
+                            ) : null}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
                     {item.role === 'assistant' ? (
                       <InvestmentAiMessageDetails
                         reasoning={item.reasoning}
@@ -1386,9 +1740,11 @@ export function InvestmentChatPanel({
             showLinks={!isCompact}
             defaultWebEnabled={defaultWebEnabled}
             contextNote={contextNote}
+            focus={focus}
             onPromptSubmitted={handlePromptSubmitted}
             clearContextVersion={clearContextVersion}
             starterPrompt={starterPrompt}
+            onRegisterAgentUndo={registerAgentUndo}
           />
         ) : null}
 

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { DebtItem, RepaymentRecord } from '../../features/debt/model/debtMetrics';
 import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
@@ -56,6 +56,10 @@ vi.mock('../../shared/store/useAppPreferences', () => ({
 }));
 
 describe('RepaymentManagementPage', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   beforeEach(() => {
     window.localStorage.removeItem('ledgerflow-repayment-collapse-state-v1');
     appPreferencesMock.state.debts = [];
@@ -487,6 +491,8 @@ describe('RepaymentManagementPage', () => {
   });
 
   it('应显示当前负债在进行中项目里的年化利率排名', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 8, 9, 12));
     appPreferencesMock.state.debts = [
       {
         id: 'debt-high-rate',
@@ -885,6 +891,8 @@ describe('RepaymentManagementPage', () => {
   });
 
   it('本期还清后,负债卡片展示已还与下期倒计时', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 8, 5, 12));
     const today = new Date();
     const day = String(today.getDate()).padStart(2, '0');
     const month = String(today.getMonth() + 1).padStart(2, '0');

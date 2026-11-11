@@ -11,6 +11,7 @@ import { createMysqlSqlExport, createSqliteDatabaseExport } from './sqlDatabaseE
 import {
   getRelationalBootstrap,
   getRelationalDataStatus,
+  resetRelationalData,
   replaceRelationalData
 } from './relationalDataRepository.js';
 import {
@@ -21,16 +22,20 @@ import {
 import {
   authenticateSession,
   changePassword,
-  verifyCurrentPassword,
+  discardPasswordResetToken,
   getAuthStatus,
   getUserSessions,
   loginUser,
   logoutSession,
   registerUser,
+  requestPasswordReset,
+  resetPasswordWithToken,
   revokeOtherSessions,
   revokeUserSession,
-  updateUserProfile
+  updateUserProfile,
+  verifyCurrentPassword
 } from './authService.js';
+import { isPasswordResetEmailConfigured, sendPasswordResetEmail } from './emailService.js';
 
 const DEFAULT_PORT = 8787;
 const DEFAULT_HOST = '127.0.0.1';
@@ -109,6 +114,8 @@ async function getActiveDatabaseProvider() {
 
 const SESSION_COOKIE_NAME = 'ledgerflow_session';
 const loginFailures = new Map();
+const passwordResetRequestLimits = new Map();
+const passwordResetSubmitLimits = new Map();
 
 function corsHeaders(req) {
   const requestOrigin = String(req.headers.origin || '').trim();
@@ -278,6 +285,35 @@ function recordLoginFailure(key) {
     failures: current && current.resetAt > nowMs ? current.failures + 1 : 1,
     resetAt: current && current.resetAt > nowMs ? current.resetAt : nowMs + 15 * 60 * 1000
   });
+}
+
+function consumeFixedWindowLimit(store, key, limit, windowMs) {
+  const nowMs = Date.now();
+  const entry = store.get(key);
+  if (!entry || entry.resetAt <= nowMs) {
+    if (store.size >= 10_000 && !store.has(key)) {
+      for (const [storedKey, stored] of store) {
+        if (stored.resetAt <= nowMs) store.delete(storedKey);
+      }
+      while (store.size >= 10_000) {
+        const oldestKey = store.keys().next().value;
+        if (!oldestKey) break;
+        store.delete(oldestKey);
+      }
+    }
+    store.set(key, { attempts: 1, resetAt: nowMs + windowMs });
+    return { blocked: false, retryAfter: 0 };
+  }
+
+  if (entry.attempts >= limit) {
+    return {
+      blocked: true,
+      retryAfter: Math.max(1, Math.ceil((entry.resetAt - nowMs) / 1000))
+    };
+  }
+
+  entry.attempts += 1;
+  return { blocked: false, retryAfter: 0 };
 }
 
 async function requireUserSession(req, res, provider) {
@@ -1684,11 +1720,14 @@ async function proxyWebdavRequest(req, res, url, pathname) {
 
 function statusForError(error) {
   const message = error instanceof Error ? error.message : '';
+  if (Number.isInteger(error?.statusCode) && error.statusCode >= 400 && error.statusCode <= 599) {
+    return error.statusCode;
+  }
   if (/SQLITE_BUSY|SQLITE_LOCKED|database is locked/i.test(message)) return 503;
   if (/邮箱或密码不正确|当前密码不正确/.test(message)) return 401;
   if (/未开放新账号注册/.test(message)) return 403;
   if (/该邮箱无法注册/.test(message)) return 409;
-  if (/请输入有效|至少需要|不能超过/.test(message)) return 400;
+  if (/密码重置链接无效|请输入有效|至少需要|不能超过/.test(message)) return 400;
   return 500;
 }
 
@@ -2097,6 +2136,8 @@ export async function handleRequest(req, res) {
       pathname === '/auth/register' ||
       pathname === '/auth/login' ||
       pathname === '/auth/logout' ||
+      pathname === '/auth/forgot-password' ||
+      pathname === '/auth/reset-password' ||
       pathname === '/auth/profile' ||
       pathname === '/auth/change-password' ||
       pathname === '/auth/verify-password' ||
@@ -2182,6 +2223,73 @@ export async function handleRequest(req, res) {
         return;
       }
 
+      if (req.method === 'POST' && pathname === '/auth/forgot-password') {
+        const body = await readJsonBody(req);
+        const limit = consumeFixedWindowLimit(
+          passwordResetRequestLimits,
+          loginRateLimitKey(req, body?.email),
+          5,
+          60 * 60 * 1000
+        );
+        if (limit.blocked) {
+          jsonResponse(
+            res,
+            429,
+            { ok: false, message: '密码重置请求过于频繁,请稍后再试。' },
+            { 'Retry-After': String(limit.retryAfter) }
+          );
+          return;
+        }
+        if (!isPasswordResetEmailConfigured(process.env)) {
+          jsonResponse(res, 503, {
+            ok: false,
+            message: '密码重置邮件服务尚未配置,请联系管理员。'
+          });
+          return;
+        }
+
+        const resetRequest = await requestPasswordReset(provider, body);
+        if (resetRequest) {
+          try {
+            await sendPasswordResetEmail({
+              to: resetRequest.email,
+              token: resetRequest.token,
+              expiresMinutes: resetRequest.expiresMinutes
+            });
+          } catch (error) {
+            await discardPasswordResetToken(provider, resetRequest.token);
+            throw error;
+          }
+        }
+        jsonResponse(res, 200, {
+          ok: true,
+          message: '如果该邮箱已注册,密码重置邮件将在几分钟内送达。'
+        });
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/auth/reset-password') {
+        const body = await readJsonBody(req);
+        const limit = consumeFixedWindowLimit(
+          passwordResetSubmitLimits,
+          loginRateLimitKey(req, body?.token),
+          10,
+          15 * 60 * 1000
+        );
+        if (limit.blocked) {
+          jsonResponse(
+            res,
+            429,
+            { ok: false, message: '密码重置尝试过于频繁,请稍后再试。' },
+            { 'Retry-After': String(limit.retryAfter) }
+          );
+          return;
+        }
+        await resetPasswordWithToken(provider, body);
+        jsonResponse(res, 200, { ok: true }, { 'Set-Cookie': clearedSessionCookie(req) });
+        return;
+      }
+
       const session = await requireUserSession(req, res, provider);
       if (!session) return;
 
@@ -2263,6 +2371,35 @@ export async function handleRequest(req, res) {
         200,
         await getRelationalDataStatus(setup.provider, process.env, session.user.ledgerUserId)
       );
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/data/reset') {
+      const setup = await getDatabaseSetupStatus();
+      if (!setup.initialized || setup.configurationMismatch) {
+        jsonResponse(res, 409, {
+          ok: false,
+          message: 'Database provider has not been initialized.'
+        });
+        return;
+      }
+      await migrateRelationalDatabase(setup.provider);
+      const session = await requireUserSession(req, res, setup.provider);
+      if (!session) return;
+      try {
+        const result = await resetRelationalData(
+          setup.provider,
+          process.env,
+          session.user.ledgerUserId
+        );
+        jsonResponse(res, 200, result);
+      } catch (error) {
+        console.error('[/api/data/reset] Error during database reset:', error);
+        jsonResponse(res, 500, {
+          ok: false,
+          message: '重置数据库失败,请稍后重试。'
+        });
+      }
       return;
     }
 

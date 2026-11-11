@@ -12,6 +12,13 @@ export interface RelationalBootstrapResponse {
   };
 }
 
+export interface RelationalDataStatus {
+  ok: boolean;
+  hasData: boolean;
+  counts: Record<string, number>;
+  updatedAt: string | null;
+}
+
 function getUrl(path: string) {
   const base = ENV.apiBaseUrl.endsWith('/') ? ENV.apiBaseUrl.slice(0, -1) : ENV.apiBaseUrl;
   return `${base}${path}`;
@@ -37,12 +44,7 @@ export async function getRelationalBootstrap(): Promise<RelationalBootstrapRespo
   );
 }
 
-export async function importRelationalData(payload: unknown): Promise<{
-  ok: boolean;
-  hasData: boolean;
-  counts: Record<string, number>;
-  updatedAt: string | null;
-}> {
+export async function importRelationalData(payload: unknown): Promise<RelationalDataStatus> {
   return readResponse(
     await fetch(getUrl('/data/import'), {
       method: 'PUT',
@@ -51,6 +53,22 @@ export async function importRelationalData(payload: unknown): Promise<{
       body: JSON.stringify(payload)
     })
   );
+}
+
+/** 清空当前账号的账本数据,保留账号与数据库配置。 */
+export async function resetRelationalData(): Promise<RelationalDataStatus> {
+  return readResponse(
+    await fetch(getUrl('/data/reset'), {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}'
+    })
+  );
+}
+
+export async function getRelationalDataStatus(): Promise<RelationalDataStatus> {
+  return readResponse(await fetch(getUrl('/data/status'), { credentials: 'same-origin' }));
 }
 
 export async function downloadSqlDatabaseExport(): Promise<{ filename: string; provider: string }> {

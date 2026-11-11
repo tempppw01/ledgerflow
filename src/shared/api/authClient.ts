@@ -54,11 +54,7 @@ export function getAuthStatus() {
   return request<AuthStatusResponse>('/auth/status');
 }
 
-export function registerAccount(input: {
-  email: string;
-  password: string;
-  displayName: string;
-}) {
+export function registerAccount(input: { email: string; password: string; displayName: string }) {
   return request<{ ok: boolean; user: AuthUser; claimedLegacyData: boolean }>('/auth/register', {
     method: 'POST',
     body: JSON.stringify(input)
@@ -74,6 +70,20 @@ export function loginAccount(input: { email: string; password: string }) {
 
 export function logoutAccount() {
   return request<{ ok: boolean }>('/auth/logout', { method: 'POST' });
+}
+
+export function requestAccountPasswordReset(input: { email: string }) {
+  return request<{ ok: boolean; message: string }>('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify(input)
+  });
+}
+
+export function resetAccountPassword(input: { token: string; newPassword: string }) {
+  return request<{ ok: boolean }>('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify(input)
+  });
 }
 
 export function updateAccountProfile(input: { displayName: string }) {

@@ -8,6 +8,7 @@ import { migrateRelationalDatabase } from './relationalDatabase.js';
 import {
   getRelationalBootstrap,
   getRelationalDataStatus,
+  resetRelationalData,
   replaceRelationalData
 } from './relationalDataRepository.js';
 
@@ -231,6 +232,73 @@ test('relational repository isolates users that import identical seed ids', asyn
     assert.equal(secondBootstrap.data.finance.transactions[0].categoryId, 'cat-food');
     assert.deepEqual(secondBootstrap.data.finance.transactions[0].tags, ['daily']);
     assert.equal(secondBootstrap.data.globalMemories[0].id, 'memory-1');
+  } finally {
+    await rm(dataDirectory, { recursive: true, force: true });
+  }
+});
+
+test('relational repository resets one ledger and leaves other accounts intact', async () => {
+  const dataDirectory = await mkdtemp(path.join(os.tmpdir(), 'ledgerflow-relational-reset-'));
+  const env = {
+    LEDGERFLOW_DATA_DIR: dataDirectory,
+    SQLITE_PATH: '',
+    LEDGERFLOW_REGISTRATION_MODE: 'open'
+  };
+  const payload = (suffix) => ({
+    finance: {
+      accounts: [
+        { id: `acc-${suffix}`, name: 'Cash', type: 'cash', initialBalance: 0, balance: 120 }
+      ],
+      categories: [{ id: `cat-${suffix}`, name: 'Food', kind: 'expense' }],
+      transactions: [
+        {
+          id: `txn-${suffix}`,
+          type: 'expense',
+          accountId: `acc-${suffix}`,
+          categoryId: `cat-${suffix}`,
+          amount: 25,
+          date: '2026-09-01T00:00:00.000Z',
+          note: 'Lunch',
+          tags: ['daily']
+        }
+      ]
+    },
+    preferences: {},
+    globalMemories: [{ id: `memory-${suffix}`, title: 'Seed', content: 'Seed memory' }]
+  });
+
+  try {
+    await migrateRelationalDatabase('sqlite', env);
+    const owner = await registerUser(
+      'sqlite',
+      { email: 'reset-owner@example.com', password: 'reset-owner-password' },
+      env
+    );
+    const other = await registerUser(
+      'sqlite',
+      { email: 'reset-other@example.com', password: 'reset-other-password' },
+      env
+    );
+
+    await replaceRelationalData('sqlite', payload('owner'), env, owner.user.ledgerUserId);
+    await replaceRelationalData('sqlite', payload('other'), env, other.user.ledgerUserId);
+
+    const status = await resetRelationalData('sqlite', env, owner.user.ledgerUserId);
+    assert.equal(status.hasData, false);
+    assert.equal(status.counts.transactions, 0);
+    assert.equal(status.counts.accounts, 0);
+    assert.equal(status.counts.categories, 0);
+
+    const ownerBootstrap = await getRelationalBootstrap('sqlite', env, owner.user.ledgerUserId);
+    assert.equal(ownerBootstrap.hasData, false);
+    assert.equal(ownerBootstrap.data.finance.transactions.length, 0);
+    assert.equal(ownerBootstrap.data.finance.accounts.length, 0);
+    assert.equal(ownerBootstrap.data.globalMemories.length, 0);
+
+    const otherBootstrap = await getRelationalBootstrap('sqlite', env, other.user.ledgerUserId);
+    assert.equal(otherBootstrap.counts.transactions, 1);
+    assert.equal(otherBootstrap.counts.accounts, 1);
+    assert.equal(otherBootstrap.data.globalMemories.length, 1);
   } finally {
     await rm(dataDirectory, { recursive: true, force: true });
   }

@@ -11,6 +11,8 @@ import {
   loginUser,
   logoutSession,
   registerUser,
+  requestPasswordReset,
+  resetPasswordWithToken,
   revokeUserSession,
   verifyPassword
 } from './authService.js';
@@ -104,6 +106,58 @@ test('login rejects invalid credentials and issues a fresh session for valid cre
   });
 });
 
+test('password reset tokens are single-use and revoke every existing session', async () => {
+  await withDatabase(async (env) => {
+    const registered = await registerUser(
+      'sqlite',
+      { email: 'owner@example.com', password: 'a-secure-password', displayName: 'Owner' },
+      env
+    );
+    const firstRequest = await requestPasswordReset('sqlite', { email: 'OWNER@EXAMPLE.COM' }, env);
+    const secondRequest = await requestPasswordReset('sqlite', { email: 'owner@example.com' }, env);
+
+    assert.ok(firstRequest?.token);
+    assert.ok(secondRequest?.token);
+    assert.notEqual(firstRequest.token, secondRequest.token);
+    await assert.rejects(
+      resetPasswordWithToken(
+        'sqlite',
+        { token: firstRequest.token, newPassword: 'updated-secure-password' },
+        env
+      ),
+      /密码重置链接无效或已过期/
+    );
+
+    await resetPasswordWithToken(
+      'sqlite',
+      { token: secondRequest.token, newPassword: 'updated-secure-password' },
+      env
+    );
+    assert.equal(await authenticateSession('sqlite', registered.session.token, env), null);
+    await assert.rejects(
+      loginUser('sqlite', { email: 'owner@example.com', password: 'a-secure-password' }, env),
+      /邮箱或密码不正确/
+    );
+
+    const loggedIn = await loginUser(
+      'sqlite',
+      { email: 'owner@example.com', password: 'updated-secure-password' },
+      env
+    );
+    assert.equal(loggedIn.user.email, 'owner@example.com');
+    await assert.rejects(
+      resetPasswordWithToken(
+        'sqlite',
+        { token: secondRequest.token, newPassword: 'another-secure-password' },
+        env
+      ),
+      /密码重置链接无效或已过期/
+    );
+
+    assert.equal(await requestPasswordReset('sqlite', { email: 'missing@example.com' }, env), null);
+  });
+});
+
 test('account sessions keep device names and allow revoking another device', async () => {
   await withDatabase(async (env) => {
     const registered = await registerUser(
@@ -134,18 +188,21 @@ test('account sessions keep device names and allow revoking another device', asy
 });
 
 test('open registration gives later accounts independent ledger user ids', async () => {
-  await withDatabase(async (env) => {
-    const first = await registerUser(
-      'sqlite',
-      { email: 'one@example.com', password: 'first-secure-password' },
-      env
-    );
-    const second = await registerUser(
-      'sqlite',
-      { email: 'two@example.com', password: 'second-secure-password' },
-      env
-    );
-    assert.equal(first.user.ledgerUserId, 'default');
-    assert.notEqual(second.user.ledgerUserId, first.user.ledgerUserId);
-  }, { LEDGERFLOW_REGISTRATION_MODE: 'open' });
+  await withDatabase(
+    async (env) => {
+      const first = await registerUser(
+        'sqlite',
+        { email: 'one@example.com', password: 'first-secure-password' },
+        env
+      );
+      const second = await registerUser(
+        'sqlite',
+        { email: 'two@example.com', password: 'second-secure-password' },
+        env
+      );
+      assert.equal(first.user.ledgerUserId, 'default');
+      assert.notEqual(second.user.ledgerUserId, first.user.ledgerUserId);
+    },
+    { LEDGERFLOW_REGISTRATION_MODE: 'open' }
+  );
 });

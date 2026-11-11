@@ -69,6 +69,13 @@
   gap: 8px;
 }
 
+.auth-field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .auth-form input {
   width: 100%;
 }
@@ -84,6 +91,35 @@
   border-radius: 10px;
   color: var(--color-danger);
   background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+}
+
+.auth-notice {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-primary) 9%, transparent);
+  line-height: 1.55;
+}
+
+.auth-forgot-button {
+  min-height: 28px;
+  padding: 2px 0;
+  border: 0;
+  color: var(--color-primary);
+  background: transparent;
+  font-size: var(--font-sm);
+  font-weight: 600;
+}
+
+.auth-forgot-button:hover {
+  text-decoration: underline;
+}
+
+.auth-forgot-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 .auth-mode-button,

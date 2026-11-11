@@ -6,10 +6,10 @@ and AI workflow history. JSON backups remain an import/export and disaster-recov
 
 ## Supported providers
 
-| Deployment | Provider | Intended use |
-| --- | --- | --- |
-| Single machine or private container | SQLite | Low-maintenance, single-instance deployment with a persistent volume |
-| Production, multiple devices, or managed cloud | MySQL 5.7.8+ | Aliyun RDS and other managed MySQL services |
+| Deployment                                     | Provider     | Intended use                                                         |
+| ---------------------------------------------- | ------------ | -------------------------------------------------------------------- |
+| Single machine or private container            | SQLite       | Low-maintenance, single-instance deployment with a persistent volume |
+| Production, multiple devices, or managed cloud | MySQL 5.7.8+ | Aliyun RDS and other managed MySQL services                          |
 
 The first initialization writes `database-provider.json` to `LEDGERFLOW_DATA_DIR`. The provider
 is immutable for that deployment. Changing it requires export, a new deployment, and import.
@@ -18,7 +18,7 @@ is immutable for that deployment. Changing it requires export, a new deployment,
 
 `server/relationalDatabase.js` owns schema migrations. Each migration has a monotonic numeric
 version stored in `ledger_schema_migrations`. V1 creates the ledger tables; V2 adds the account,
-session, password-reset placeholder, audit-log placeholder and performance indexes. Existing V1
+session, one-time password-reset token and performance indexes. Existing V1
 deployments run V2 only. SQLite serializes migration work with `BEGIN IMMEDIATE`; MySQL uses a
 named `GET_LOCK` before applying pending migrations.
 

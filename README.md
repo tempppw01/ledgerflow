@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/tempppw01/ledgerflow/releases"><img src="https://img.shields.io/github/v/release/tempppw01/ledgerflow?display_name=tag&style=flat-square&color=f59e0b" alt="Release" /></a>
-  <img src="https://img.shields.io/badge/version-0.7.0-0f766e?style=flat-square" alt="Version 0.7.0" />
+  <img src="https://img.shields.io/badge/version-0.7.1-0f766e?style=flat-square" alt="Version 0.7.1" />
   <img src="https://img.shields.io/badge/Node.js-20%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js 20+" />
   <img src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker ready" />
   <a href="https://ledgerflow.shuaihong.fun"><img src="https://img.shields.io/badge/Live%20demo-open-f59e0b?style=flat-square" alt="Live demo" /></a>
@@ -16,7 +16,7 @@
 <p align="center"><a href="#快速部署">快速部署</a> · <a href="#主要能力">主要能力</a> · <a href="#备份与同步">数据与备份</a> · <a href="https://github.com/tempppw01/ledgerflow/releases">版本发布</a></p>
 
 > [!NOTE]
-> 当前版本：`0.7.0`。项目仍在快速迭代，重要数据请保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
+> 当前版本：`0.7.1`。项目仍在快速迭代，重要数据请保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
 
 > 说明：项目仍处于快速迭代阶段，功能、界面和数据结构会持续调整。重要数据请务必保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
 
@@ -57,6 +57,14 @@
 </table>
 
 </details>
+
+### 0.7.1 功能亮点
+
+- 投资理财页接入可调用工具的 AI 投资 Agent: 可读取持仓、自选和目标进度,记录持有份额或更新目标金额,并支持一键撤销。
+- 新增投资 AI 上下文栏与持仓、自选、行情、快讯快捷入口;投资页行情快照会同步给完整 AI 投资助手。
+- 设置页新增"数据"工作区,可查看当前账号的账目数量并二次确认后重置账本;重置按账号隔离,不影响其他用户或登录状态。
+- 重置账本时会同步清理本地财务数据、应用偏好、AI 记忆和智能预算缓存,避免刷新后旧数据被重新同步回来。
+- 新增忘记密码流程: 一次性重置令牌只保存哈希值,支持 SMTP 邮件、申请限流和重置后撤销全部会话。
 
 ### 0.7.0 功能亮点
 

@@ -29,17 +29,45 @@ LedgerFlow 的账号身份与财务资料分开保存：`auth_users` 管理登�
 - 同一来源和邮箱组合在 15 分钟内失败 8 次后暂时限流。该限流是单实例内存策略，多实例部署应
   在后续接入共享限流存储或网关限流。
 
+## 忘记密码
+
+- 重置令牌使用随机字节生成,数据库只保存令牌的 SHA-256 哈希。
+- 令牌默认 30 分钟过期,只能使用一次;再次申请会作废旧令牌。
+- 重置成功后撤销该账号的全部会话,并要求使用新密码重新登录。
+- 申请接口不会透露邮箱是否已注册;同一来源和邮箱组合每小时最多申请 5 次。
+
 ## API
 
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| GET | `/api/auth/status` | 返回注册状态和当前会话用户，可未登录访问 |
-| GET | `/api/auth/me` | 返回当前登录用户，未登录返回 401 |
-| POST | `/api/auth/register` | 创建账号并建立会话 |
-| POST | `/api/auth/login` | 登录并建立新会话 |
-| POST | `/api/auth/logout` | 撤销当前会话 |
-| POST | `/api/auth/change-password` | 修改密码并撤销其他会话 |
-| POST | `/api/auth/revoke-sessions` | 撤销当前账号的其他会话 |
+| 方法 | 路径                        | 说明                                     |
+| ---- | --------------------------- | ---------------------------------------- |
+| GET  | `/api/auth/status`          | 返回注册状态和当前会话用户，可未登录访问 |
+| GET  | `/api/auth/me`              | 返回当前登录用户，未登录返回 401         |
+| POST | `/api/auth/register`        | 创建账号并建立会话                       |
+| POST | `/api/auth/login`           | 登录并建立新会话                         |
+| POST | `/api/auth/logout`          | 撤销当前会话                             |
+| POST | `/api/auth/forgot-password` | 发送密码重置邮件,不暴露邮箱是否存在      |
+| POST | `/api/auth/reset-password`  | 使用一次性令牌设置新密码并撤销全部会话   |
+| POST | `/api/auth/change-password` | 修改密码并撤销其他会话                   |
+| POST | `/api/auth/revoke-sessions` | 撤销当前账号的其他会话                   |
+
+## 忘记密码配置
+
+忘记密码需要同时配置公开访问地址和 SMTP:
+
+```dotenv
+LEDGERFLOW_APP_URL=https://ledger.example.com
+LEDGERFLOW_PASSWORD_RESET_MINUTES=30
+LEDGERFLOW_SMTP_HOST=smtp.example.com
+LEDGERFLOW_SMTP_PORT=587
+LEDGERFLOW_SMTP_SECURE=false
+LEDGERFLOW_SMTP_USER=no-reply@example.com
+LEDGERFLOW_SMTP_PASSWORD=your-smtp-password
+LEDGERFLOW_SMTP_FROM=LedgerFlow <no-reply@example.com>
+```
+
+`LEDGERFLOW_APP_URL` 用于生成邮件里的重置链接,必须是用户可访问的完整 HTTP(S) 地址。
+SMTP 端口 `465` 通常搭配 `LEDGERFLOW_SMTP_SECURE=true`,端口 `587` 通常使用
+STARTTLS 并保持 `false`。未配置 SMTP 时,登录页仍显示入口,服务端返回 503 并提示管理员配置。
 
 `LEDGERFLOW_API_TOKEN` 仍然只用于服务级初始化、连接检查和 WebDAV 等管理/基础设施接口，
 不作为用户登录凭证，也不应下发到前端。

@@ -2,6 +2,7 @@
 import { persist } from 'zustand/middleware';
 import { AppAccentTheme, AppTheme } from '../types/app';
 import {
+  InvestmentAiAgentAction,
   InvestmentAiMessage,
   InvestmentGoal,
   InvestmentFundAnalysis,
@@ -223,7 +224,10 @@ function normalizeDebtItem(item: DebtItem): DebtItem {
         ? Number(Number(item.simpleAmount).toFixed(2))
         : undefined,
     manualRepayments: normalizeManualRepayments(item.manualRepayments),
-    status: entryMode === 'simple' ? item.status || 'active' : normalizeDebtStatus(item.status, item.balance)
+    status:
+      entryMode === 'simple'
+        ? item.status || 'active'
+        : normalizeDebtStatus(item.status, item.balance)
   };
 }
 
@@ -490,6 +494,21 @@ function normalizeInvestmentAiMessage(item: InvestmentAiMessage): InvestmentAiMe
   const analysis = normalizeInvestmentFundAnalysis(item.analysis);
   const attachmentImages = normalizeInvestmentAttachmentImages(item.attachmentImages);
   const followUpPrompts = normalizeStringList(item.followUpPrompts, 4);
+  const agentActions: InvestmentAiAgentAction[] = Array.isArray(item.agentActions)
+    ? item.agentActions.reduce<InvestmentAiAgentAction[]>((acc, action) => {
+        if (!action || typeof action !== 'object') return acc;
+        const label = String(action.label || '').trim();
+        if (!label) return acc;
+        acc.push({
+          id: String(action.id || '').trim() || `investment-agent-action-${Date.now()}`,
+          kind: action.kind === 'update' ? 'update' : 'read',
+          label: label.slice(0, 120),
+          undoable: action.undoable === true,
+          undone: action.undone === true ? true : undefined
+        });
+        return acc;
+      }, [])
+    : [];
   if (!text && !analysis) {
     return null;
   }
@@ -509,6 +528,7 @@ function normalizeInvestmentAiMessage(item: InvestmentAiMessage): InvestmentAiMe
       undefined,
     attachmentImages: attachmentImages.length ? attachmentImages : undefined,
     analysis,
+    agentActions: agentActions.length ? agentActions : undefined,
     createdAt: normalizeOptionalString(item.createdAt) || new Date().toISOString()
   };
 }

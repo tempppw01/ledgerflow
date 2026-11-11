@@ -17,6 +17,9 @@ playwright-report/
 test-results/
 /playwright.config.ts
 
+# Local Codex preview/runtime state
+.codex-run/
+
 # One-off local maintenance output
 /output/
 /*.py

@@ -18,6 +18,18 @@ export function ChatUploadIcon(props: ChatIconProps) {
   );
 }
 
+export function ChatSparklesIcon(props: ChatIconProps) {
+  return (
+    <svg {...shared} data-icon="chat-sparkles" {...props}>
+      <path d="M12 3.5 13.6 9l5.4 1.6-5.4 1.6L12 17.5l-1.6-5.3L5 10.6 10.4 9 12 3.5Z" />
+      <path d="M19 4v4" />
+      <path d="M17 6h4" />
+      <path d="M5.5 17.5v3" />
+      <path d="M4 19h3" />
+    </svg>
+  );
+}
+
 export function ChatModelIcon(props: ChatIconProps) {
   return (
     <svg {...shared} {...props}>

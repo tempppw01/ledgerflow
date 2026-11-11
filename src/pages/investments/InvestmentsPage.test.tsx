@@ -447,7 +447,7 @@ describe('InvestmentsPage', () => {
     await openInvestmentWorkspace('基金自选');
     expect(screen.queryByText('6 个月应急金')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '基金自选' })).toBeInTheDocument();
-    const quickChatLauncher = screen.getByRole('button', { name: '打开快捷问答' });
+    const quickChatLauncher = screen.getByRole('button', { name: '打开 AI 投资助手' });
     expect(quickChatLauncher).toBeInTheDocument();
     fireEvent.click(quickChatLauncher);
     expect(screen.getByLabelText('基金分析输入框')).toBeInTheDocument();

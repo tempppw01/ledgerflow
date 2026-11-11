@@ -8,6 +8,8 @@ const mocks = vi.hoisted(() => ({
   loginAccount: vi.fn(),
   logoutAccount: vi.fn(),
   registerAccount: vi.fn(),
+  requestAccountPasswordReset: vi.fn(),
+  resetAccountPassword: vi.fn(),
   updateAccountProfile: vi.fn()
 }));
 
@@ -28,6 +30,7 @@ describe('AuthGate', () => {
     vi.clearAllMocks();
     localStorage.clear();
     sessionStorage.clear();
+    window.history.replaceState({}, '', '/');
   });
 
   it('shows first-account registration when no account exists', async () => {
@@ -119,5 +122,69 @@ describe('AuthGate', () => {
       email: 'owner@example.com',
       password: 'a-secure-password'
     });
+  });
+
+  it('requests a password reset email from the login form', async () => {
+    mocks.getAuthStatus.mockResolvedValue({
+      ok: true,
+      authenticated: false,
+      registrationOpen: false,
+      user: null
+    });
+    mocks.requestAccountPasswordReset.mockResolvedValue({
+      ok: true,
+      message: '如果该邮箱已注册,密码重置邮件将在几分钟内送达。'
+    });
+    const actor = userEvent.setup();
+
+    render(
+      <AuthGate>
+        <div>账本内容</div>
+      </AuthGate>
+    );
+    await screen.findByRole('heading', { name: '登录 LedgerFlow' });
+    await actor.click(screen.getByRole('button', { name: '忘记密码?' }));
+    expect(await screen.findByRole('heading', { name: '找回密码' })).toBeInTheDocument();
+
+    await actor.type(screen.getByLabelText('邮箱'), 'owner@example.com');
+    await actor.click(screen.getByRole('button', { name: '发送重置邮件' }));
+
+    expect(mocks.requestAccountPasswordReset).toHaveBeenCalledWith({
+      email: 'owner@example.com'
+    });
+    expect(
+      await screen.findByText('如果该邮箱已注册,密码重置邮件将在几分钟内送达。')
+    ).toBeInTheDocument();
+  });
+
+  it('sets a new password from a reset link and returns to login', async () => {
+    window.history.replaceState({}, '', '/?resetToken=reset-token-from-email');
+    mocks.getAuthStatus.mockResolvedValue({
+      ok: true,
+      authenticated: false,
+      registrationOpen: false,
+      user: null
+    });
+    mocks.resetAccountPassword.mockResolvedValue({ ok: true });
+    const actor = userEvent.setup();
+
+    render(
+      <AuthGate>
+        <div>账本内容</div>
+      </AuthGate>
+    );
+    expect(await screen.findByRole('heading', { name: '设置新密码' })).toBeInTheDocument();
+
+    await actor.type(screen.getByLabelText('新密码'), 'new-secure-password');
+    await actor.type(screen.getByLabelText('确认新密码'), 'new-secure-password');
+    await actor.click(screen.getByRole('button', { name: '保存新密码' }));
+
+    expect(mocks.resetAccountPassword).toHaveBeenCalledWith({
+      token: 'reset-token-from-email',
+      newPassword: 'new-secure-password'
+    });
+    expect(await screen.findByRole('heading', { name: '登录 LedgerFlow' })).toBeInTheDocument();
+    expect(screen.getByText('密码已重置,请使用新密码登录。')).toBeInTheDocument();
+    expect(window.location.search).toBe('');
   });
 });
