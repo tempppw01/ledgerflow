@@ -840,10 +840,15 @@ export function AssistantPage() {
 
   const categories = useFinanceStore((s) => s.categories);
   const accounts = useFinanceStore((s) => s.accounts);
+  const trashedAccounts = useFinanceStore((s) => s.trashedAccounts);
   const transactions = useFinanceStore((s) => s.transactions);
   const subscriptions = useFinanceStore((s) => s.subscriptions);
   const addCategory = useFinanceStore((s) => s.addCategory);
   const addAccount = useFinanceStore((s) => s.addAccount);
+  const updateAccount = useFinanceStore((s) => s.updateAccount);
+  const updateAccountBalance = useFinanceStore((s) => s.updateAccountBalance);
+  const removeAccount = useFinanceStore((s) => s.removeAccount);
+  const restoreAccount = useFinanceStore((s) => s.restoreAccount);
   const addTransaction = useFinanceStore((s) => s.addTransaction);
   const updateTransaction = useFinanceStore((s) => s.updateTransaction);
   const removeTransaction = useFinanceStore((s) => s.removeTransaction);
@@ -857,9 +862,14 @@ export function AssistantPage() {
     model,
     categories,
     accounts,
+    trashedAccounts,
     transactions,
     addCategory,
     addAccount,
+    updateAccount,
+    updateAccountBalance,
+    removeAccount,
+    restoreAccount,
     addTransaction,
     updateTransaction,
     removeTransaction,
@@ -1612,7 +1622,7 @@ export function AssistantPage() {
     const requestQuestion = clean || '请根据我上传的附件完成识别与提炼。';
     // 合并后的 AI 模式:带附件走账单识别;纯文本走 Agent 对话,可直接增删改账单。
     const recognizeTask: 'bill' | 'chat' = mode === 'assistant' && hasAttachments ? 'bill' : 'chat';
-    // 合并后的 AI 模式在纯文本对话里启用账本工具(查账 / 记账 / 改账 / 删账)。
+    // 合并后的 AI 模式在纯文本对话里启用 Agent 工具(账单与资金账户管理)。
     const agentEnabled = mode === 'assistant' && recognizeTask === 'chat';
     const requestPrompt =
       recognizeTask === 'bill'

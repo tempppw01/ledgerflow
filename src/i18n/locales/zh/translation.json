@@ -445,7 +445,7 @@
   "assistant": {
     "placeholders": {
       "needApiKey": "请先在设置中配置 API 密钥",
-      "assistantHint": "例如：今天午饭15元，用支付宝（自动识别分类）\n例如：这个月餐饮花了多少？",
+      "assistantHint": "例如:今天午饭15元,用支付宝(自动识别分类)\n例如:新建一张招商银行储蓄卡,初始余额5000元\n例如:把微信钱包改名为微信零钱",
       "bookkeepingHint": "比如：今天午饭15元，用支付宝（会自动识别分类）",
       "idleBookkeeping": "等待输入内容 · {{hint}}",
       "readyAssistant": "支持记账、查账和改账 · 按 Enter 发送，Shift + Enter 换行\n{{hint}}",

@@ -212,10 +212,17 @@ function createSseResponse(lines: string[]) {
 
 /** 只拦截对话请求,模型列表请求返回空列表,避免影响断言。 */
 function mockAgentChatFetch(chatResponses: Array<Response | (() => Response)>) {
-  const state = { chatCalls: 0 };
-  const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+  const state = { chatCalls: 0, requestBodies: [] as unknown[] };
+  const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
     const url = String(input);
     if (url.includes('/chat/completions')) {
+      if (typeof init?.body === 'string') {
+        try {
+          state.requestBodies.push(JSON.parse(init.body));
+        } catch {
+          state.requestBodies.push(init.body);
+        }
+      }
       const next = chatResponses[Math.min(state.chatCalls, chatResponses.length - 1)];
       state.chatCalls += 1;
       return Promise.resolve(typeof next === 'function' ? next() : next);
@@ -300,6 +307,67 @@ describe('useAssistantWorkbench Agent 工具', () => {
     });
     expect(removeTransaction).toHaveBeenCalledWith('tx-agent-1');
     expect(result.current.agentActions).toHaveLength(0);
+
+    fetchMock.mockRestore();
+  });
+
+  it('账户提示词能驱动 Agent 创建资金账户并回传结果', async () => {
+    mockAiSettings();
+    const addAccount = vi.fn(() => 'acc-agent-card');
+    const { fetchMock, state } = mockAgentChatFetch([
+      createSseResponse([
+        sseToolCallChunk('call_account_1', 'create_account', {
+          name: '招商银行储蓄卡',
+          type: 'savings',
+          initialBalance: 5000
+        }),
+        '',
+        'data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}]}',
+        '',
+        'data: [DONE]',
+        ''
+      ]),
+      createSseResponse([
+        'data: {"choices":[{"delta":{"content":"已经为你新建招商银行储蓄卡,初始余额 5000 元。"}}]}',
+        '',
+        'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}',
+        '',
+        'data: [DONE]',
+        ''
+      ])
+    ]);
+
+    const { result } = renderHook(() =>
+      useAssistantWorkbench({
+        baseUrl: 'https://api.example.com/v1',
+        apiKey: 'test-key',
+        model: 'test-model',
+        categories,
+        accounts,
+        transactions: [],
+        addCategory: vi.fn(),
+        addAccount,
+        addTransaction: vi.fn() as unknown as AddTransactionAction,
+        updateTransaction: vi.fn(),
+        removeTransaction: vi.fn(),
+        restoreTransaction: vi.fn()
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleRecognizeWithPrompt(
+        '我新办了一张招商银行储蓄卡,初始余额 5000 元,帮我加到账户里。',
+        { imageDataUrls: [], pdfDataUrls: [] },
+        { task: 'chat', agent: true }
+      );
+    });
+
+    expect(state.chatCalls).toBe(2);
+    expect(addAccount).toHaveBeenCalledWith('招商银行储蓄卡', 'savings', 5000);
+    expect(result.current.agentActions[0]).toMatchObject({ kind: 'create', undoable: true });
+    expect(result.current.rawContent).toContain('招商银行储蓄卡');
+    expect(JSON.stringify(state.requestBodies[0])).toContain('create_account');
+    expect(JSON.stringify(state.requestBodies[0])).toContain('confirmLinkedTransactions');
 
     fetchMock.mockRestore();
   });

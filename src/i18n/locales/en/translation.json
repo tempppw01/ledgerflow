@@ -445,7 +445,7 @@
   "assistant": {
     "placeholders": {
       "needApiKey": "Please configure the API key in Settings first",
-      "assistantHint": "Example: Spent 15 yuan on lunch today via Alipay (category detected automatically)\nExample: How much did I spend on food this month?",
+      "assistantHint": "Example: Spent 15 yuan on lunch today via Alipay (category detected automatically)\nExample: Create a savings account with an initial balance of 5,000 yuan\nExample: Rename WeChat Wallet to WeChat Balance",
       "bookkeepingHint": "Example: Spent 15 yuan on lunch today via Alipay (category detected automatically)",
       "idleBookkeeping": "Waiting for input · {{hint}}",
       "readyAssistant": "Bookkeeping, questions and edits are all supported · Press Enter to send, Shift+Enter for a new line\n{{hint}}",

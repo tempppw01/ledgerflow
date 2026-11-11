@@ -4,6 +4,7 @@ import type { Category } from '../../../entities/category/types';
 import type { TransactionItem } from '../../../entities/transaction/types';
 import type { ChatToolCall } from '../api/openaiCompatibleClient';
 import {
+  ASSISTANT_AGENT_INSTRUCTIONS,
   ASSISTANT_AGENT_TOOLS,
   executeAssistantToolCall,
   type AgentToolContext
@@ -19,8 +20,11 @@ function createContext() {
     { id: 'cat-salary', name: '工资' }
   ];
   const accounts: Account[] = [
-    { id: 'acc-wechat', name: '微信钱包', type: 'virtual' },
-    { id: 'acc-card', name: '招商银行卡', type: 'debit' }
+    { id: 'acc-wechat', name: '微信钱包', type: 'virtual', balance: 200 },
+    { id: 'acc-card', name: '招商银行卡', type: 'debit', balance: 5000 }
+  ];
+  const trashedAccounts: Account[] = [
+    { id: 'acc-old', name: '旧钱包', type: 'virtual', trashedAt: '2026-11-01T00:00:00.000Z' }
   ];
   const transactions: TransactionItem[] = [
     {
@@ -40,6 +44,7 @@ function createContext() {
     // 工作副本:与 store 数组分离,由工具执行时同步更新。
     categories: [...categories],
     accounts: [...accounts],
+    trashedAccounts: [...trashedAccounts],
     transactions: [...transactions],
     addCategory: vi.fn((name: string) => {
       const id = `cat-${categories.length + 1}`;
@@ -50,6 +55,28 @@ function createContext() {
       const id = `acc-${accounts.length + 1}`;
       accounts.push({ id, name, type });
       return id;
+    }),
+    updateAccount: vi.fn((id, payload) => {
+      const index = accounts.findIndex((item) => item.id === id);
+      if (index >= 0) accounts[index] = { ...accounts[index], ...payload };
+    }),
+    updateAccountBalance: vi.fn((id, balance) => {
+      const index = accounts.findIndex((item) => item.id === id);
+      if (index >= 0) accounts[index] = { ...accounts[index], balance };
+    }),
+    removeAccount: vi.fn((id) => {
+      const index = accounts.findIndex((item) => item.id === id);
+      if (index >= 0) {
+        trashedAccounts.push({ ...accounts[index], trashedAt: new Date().toISOString() });
+        accounts.splice(index, 1);
+      }
+    }),
+    restoreAccount: vi.fn((id) => {
+      const index = trashedAccounts.findIndex((item) => item.id === id);
+      if (index >= 0) {
+        accounts.push({ ...trashedAccounts[index], trashedAt: undefined });
+        trashedAccounts.splice(index, 1);
+      }
     }),
     addTransaction: vi.fn((payload) => {
       const id = `tx-${transactions.length + 1}`;
@@ -70,7 +97,7 @@ function createContext() {
     })
   };
 
-  return { ctx, categories, accounts, transactions, trashed };
+  return { ctx, categories, accounts, trashedAccounts, transactions, trashed };
 }
 
 describe('assistantAgentTools', () => {
@@ -79,6 +106,11 @@ describe('assistantAgentTools', () => {
     expect(names).toEqual(
       expect.arrayContaining([
         'list_accounts',
+        'create_account',
+        'update_account',
+        'adjust_account_balance',
+        'delete_account',
+        'restore_account',
         'list_categories',
         'query_transactions',
         'summarize_transactions',
@@ -91,6 +123,153 @@ describe('assistantAgentTools', () => {
     ASSISTANT_AGENT_TOOLS.forEach((tool) => {
       expect(tool.function.parameters).toMatchObject({ type: 'object' });
     });
+  });
+
+  it('账户场景提示词覆盖查询、开户、修改、校准、删除确认和恢复', () => {
+    expect(ASSISTANT_AGENT_INSTRUCTIONS).toContain('list_accounts');
+    expect(ASSISTANT_AGENT_INSTRUCTIONS).toContain('create_account');
+    expect(ASSISTANT_AGENT_INSTRUCTIONS).toContain('update_account');
+    expect(ASSISTANT_AGENT_INSTRUCTIONS).toContain('adjust_account_balance');
+    expect(ASSISTANT_AGENT_INSTRUCTIONS).toContain('delete_account');
+    expect(ASSISTANT_AGENT_INSTRUCTIONS).toContain('restore_account');
+    expect(ASSISTANT_AGENT_INSTRUCTIONS).toContain('修改或删除账单前');
+    expect(ASSISTANT_AGENT_INSTRUCTIONS).toContain('linkedTransactionCount');
+    expect(ASSISTANT_AGENT_INSTRUCTIONS).toContain('confirmLinkedTransactions=true');
+    expect(ASSISTANT_AGENT_INSTRUCTIONS).toContain('校准实际余额');
+    expect(ASSISTANT_AGENT_INSTRUCTIONS).toContain('负债模式');
+  });
+
+  it('list_accounts 返回账户余额、关联流水和汇总,并可查看回收站', () => {
+    const { ctx } = createContext();
+    const result = executeAssistantToolCall(
+      createCall('list_accounts', { includeTrashed: true }),
+      ctx
+    );
+    const payload = JSON.parse(result.content) as {
+      summary: { accountCount: number; trashedCount: number; netTotal: number };
+      accounts: Array<{ name: string; transactionCount: number }>;
+      trashedAccounts: Array<{ name: string }>;
+    };
+
+    expect(payload.summary).toMatchObject({ accountCount: 2, trashedCount: 1, netTotal: 5200 });
+    expect(payload.accounts.find((item) => item.name === '微信钱包')?.transactionCount).toBe(1);
+    expect(payload.trashedAccounts[0].name).toBe('旧钱包');
+  });
+
+  it('create_account 新建资金账户并可撤销', () => {
+    const { ctx, accounts } = createContext();
+    const result = executeAssistantToolCall(
+      createCall('create_account', {
+        name: '日常储蓄卡',
+        type: 'savings',
+        initialBalance: 3200
+      }),
+      ctx
+    );
+    const payload = JSON.parse(result.content) as { ok: boolean; createdId: string };
+
+    expect(payload.ok).toBe(true);
+    expect(ctx.accounts.find((item) => item.name === '日常储蓄卡')).toMatchObject({
+      type: 'savings',
+      balance: 3200
+    });
+    expect(result.views[0]).toMatchObject({ kind: 'create', undoable: true });
+
+    result.undo[0].run();
+    expect(ctx.accounts.some((item) => item.name === '日常储蓄卡')).toBe(false);
+    expect(accounts.some((item) => item.name === '日常储蓄卡')).toBe(false);
+  });
+
+  it('update_account 支持按名称改名和改类型,并可撤销', () => {
+    const { ctx } = createContext();
+    const result = executeAssistantToolCall(
+      createCall('update_account', {
+        name: '微信钱包',
+        newName: '微信零钱',
+        type: 'virtual'
+      }),
+      ctx
+    );
+
+    expect(JSON.parse(result.content)).toMatchObject({ ok: true, updatedId: 'acc-wechat' });
+    expect(ctx.accounts[0]).toMatchObject({ name: '微信零钱', type: 'virtual' });
+    result.undo[0].run();
+    expect(ctx.accounts[0]).toMatchObject({ name: '微信钱包', type: 'virtual' });
+  });
+
+  it('adjust_account_balance 校准账户余额并可撤销', () => {
+    const { ctx } = createContext();
+    const result = executeAssistantToolCall(
+      createCall('adjust_account_balance', { name: '招商银行卡', balance: 880.5 }),
+      ctx
+    );
+    const payload = JSON.parse(result.content) as { ok: boolean; balance: number };
+
+    expect(payload).toMatchObject({ ok: true, balance: 880.5 });
+    expect(ctx.accounts.find((item) => item.id === 'acc-card')?.balance).toBe(880.5);
+    result.undo[0].run();
+    expect(ctx.accounts.find((item) => item.id === 'acc-card')?.balance).toBe(5000);
+  });
+
+  it('delete_account 对有关联流水的账户先要求确认', () => {
+    const { ctx } = createContext();
+    const result = executeAssistantToolCall(
+      createCall('delete_account', { name: '微信钱包' }),
+      ctx
+    );
+    const payload = JSON.parse(result.content) as {
+      ok: boolean;
+      requiresConfirmation: boolean;
+      linkedTransactionCount: number;
+    };
+
+    expect(payload).toMatchObject({
+      ok: false,
+      requiresConfirmation: true,
+      linkedTransactionCount: 1
+    });
+    expect(ctx.accounts.some((item) => item.id === 'acc-wechat')).toBe(true);
+    expect(result.views).toHaveLength(0);
+  });
+
+  it('用户确认后 delete_account 可删除有关联流水的账户并撤销', () => {
+    const { ctx } = createContext();
+    const result = executeAssistantToolCall(
+      createCall('delete_account', {
+        name: '微信钱包',
+        confirmLinkedTransactions: true
+      }),
+      ctx
+    );
+
+    expect(JSON.parse(result.content)).toMatchObject({
+      ok: true,
+      linkedTransactionCount: 1,
+      movedToTrash: true
+    });
+    expect(ctx.accounts.some((item) => item.id === 'acc-wechat')).toBe(false);
+    result.undo[0].run();
+    expect(ctx.accounts.some((item) => item.id === 'acc-wechat')).toBe(true);
+  });
+
+  it('delete_account 删除空账户后可撤销,restore_account 可恢复回收站账户', () => {
+    const { ctx } = createContext();
+    const deleted = executeAssistantToolCall(
+      createCall('delete_account', { name: '招商银行卡' }),
+      ctx
+    );
+    expect(JSON.parse(deleted.content)).toMatchObject({ ok: true, linkedTransactionCount: 0 });
+    expect(ctx.accounts.some((item) => item.id === 'acc-card')).toBe(false);
+    deleted.undo[0].run();
+    expect(ctx.accounts.some((item) => item.id === 'acc-card')).toBe(true);
+
+    const restored = executeAssistantToolCall(
+      createCall('restore_account', { id: 'acc-old' }),
+      ctx
+    );
+    expect(JSON.parse(restored.content)).toMatchObject({ ok: true, restoredId: 'acc-old' });
+    expect(ctx.accounts.some((item) => item.id === 'acc-old')).toBe(true);
+    expect(ctx.trashedAccounts.some((item) => item.id === 'acc-old')).toBe(false);
   });
 
   it('create_transactions 按备注推断分类与账户,并可撤销', () => {

@@ -23,6 +23,7 @@ import type { TransactionItem } from '../../../entities/transaction/types';
 import { useDebugLogStore } from '../../../shared/store/useDebugLogStore';
 import { useAiSettings } from '../../../shared/store/useAiSettings';
 import type {
+  AccountUpdatePayload,
   AddTransactionAction,
   TransactionBatchOperation
 } from '../../../shared/store/useFinanceStore';
@@ -100,9 +101,14 @@ interface UseAssistantWorkbenchInput {
   model: string;
   categories: Category[];
   accounts: Account[];
+  trashedAccounts?: Account[];
   transactions: TransactionItem[];
   addCategory: (name: string) => string;
   addAccount: (name: string, type?: Account['type'], initialBalance?: number) => string;
+  updateAccount?: (id: string, payload: AccountUpdatePayload) => void;
+  updateAccountBalance?: (id: string, balance: number) => void;
+  removeAccount?: (id: string) => void;
+  restoreAccount?: (id: string) => void;
   addTransaction: AddTransactionAction;
   updateTransaction: (id: string, payload: Omit<TransactionItem, 'id'>) => void;
   removeTransaction: (id: string) => void;
@@ -544,9 +550,30 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
     // 又不会直接改动 store 的数组引用。
     categories: [...input.categories],
     accounts: [...input.accounts],
+    trashedAccounts: [...(input.trashedAccounts || [])],
     transactions: [...input.transactions],
     addCategory: input.addCategory,
     addAccount: input.addAccount,
+    updateAccount:
+      input.updateAccount ||
+      (() => {
+        throw new Error('账户更新能力尚未连接,请刷新页面后重试。');
+      }),
+    updateAccountBalance:
+      input.updateAccountBalance ||
+      (() => {
+        throw new Error('账户余额校准能力尚未连接,请刷新页面后重试。');
+      }),
+    removeAccount:
+      input.removeAccount ||
+      (() => {
+        throw new Error('账户删除能力尚未连接,请刷新页面后重试。');
+      }),
+    restoreAccount:
+      input.restoreAccount ||
+      (() => {
+        throw new Error('账户恢复能力尚未连接,请刷新页面后重试。');
+      }),
     addTransaction: input.addTransaction,
     updateTransaction: input.updateTransaction,
     removeTransaction: input.removeTransaction,

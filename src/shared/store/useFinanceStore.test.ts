@@ -201,3 +201,40 @@ describe('useFinanceStore 分类分层', () => {
     );
   });
 });
+
+describe('useFinanceStore 账户编辑', () => {
+  beforeEach(() => {
+    localStorage.removeItem(FINANCE_STORAGE_KEY);
+    useFinanceStore.setState({
+      hasHydrated: true,
+      transactions: [],
+      categories: [],
+      accounts: [],
+      trashedTransactions: [],
+      trashedCategories: [],
+      trashedAccounts: [],
+      balanceChangeEntries: [],
+      subscriptions: [],
+      trashedSubscriptions: [],
+      categoryLearningRules: [],
+      categoryLearningEvents: []
+    });
+  });
+
+  it('updateAccount 可改名、改类型并重新计算余额', () => {
+    const id = useFinanceStore.getState().addAccount('招行卡', 'debit', 1000);
+    useFinanceStore.getState().updateAccount(id, {
+      name: '招商银行储蓄卡',
+      type: 'savings',
+      initialBalance: 1800
+    });
+
+    expect(useFinanceStore.getState().accounts[0]).toMatchObject({
+      id,
+      name: '招商银行储蓄卡',
+      type: 'savings',
+      initialBalance: 1800,
+      balance: 1800
+    });
+  });
+});

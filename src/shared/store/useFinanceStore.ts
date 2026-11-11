@@ -73,6 +73,9 @@ export interface FinanceDataSnapshot {
 }
 
 export type TransactionWritePayload = Omit<TransactionItem, 'id'>;
+export type AccountUpdatePayload = Partial<
+  Pick<Account, 'name' | 'type' | 'initialBalance' | 'sortOrder'>
+>;
 
 export type TransactionBatchOperation =
   | { operation: 'add'; payload: TransactionWritePayload }
@@ -123,6 +126,7 @@ interface FinanceState {
   restoreCategory: (id: string) => void;
   permanentlyDeleteCategory: (id: string) => void;
   addAccount: (name: string, type?: Account['type'], initialBalance?: number) => string;
+  updateAccount: (id: string, payload: AccountUpdatePayload) => void;
   updateAccountBalance: (id: string, balance: number) => void;
   reorderAccounts: (orderedIds: string[]) => void;
   removeAccount: (id: string) => void;
@@ -1169,6 +1173,33 @@ export const useFinanceStore = create<FinanceState>()(
         });
         void syncChangeIfNeeded({ entity: 'accounts', action: 'insert', row });
         return row.id;
+      },
+      updateAccount: (id, payload) => {
+        let updatedRow: Account | null = null;
+        set((s) => {
+          const target = s.accounts.find((item) => item.id === id);
+          if (!target) return s;
+
+          const nextName =
+            payload.name !== undefined ? payload.name.trim().slice(0, 24) : target.name;
+          const accounts = s.accounts.map((item) => {
+            if (item.id !== id) return item;
+            updatedRow = {
+              ...item,
+              ...payload,
+              name: nextName || item.name
+            };
+            return updatedRow;
+          });
+          const rebuilt = rebuildStateSlices(accounts, s.transactions, s.balanceChangeEntries);
+          return {
+            accounts: rebuilt.accounts,
+            balanceChangeEntries: rebuilt.balanceChangeEntries
+          };
+        });
+        if (updatedRow) {
+          void syncChangeIfNeeded({ entity: 'accounts', action: 'update', row: updatedRow, id });
+        }
       },
       updateAccountBalance: (id, balance) => {
         let updatedRow: Account | null = null;
