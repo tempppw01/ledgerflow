@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { sqlOnlyStorage } from './sqlOnlyStorage';
 import {
   GlobalMemoryDraft,
   GlobalMemoryFilter,
@@ -380,6 +381,7 @@ export const useGlobalMemoryStore = create<GlobalMemoryState>()(
     }),
     {
       name: GLOBAL_MEMORY_STORAGE_KEY,
+      storage: sqlOnlyStorage,
       merge: (persistedState, currentState) => {
         const incoming = (persistedState as Partial<GlobalMemoryState> | undefined)?.memories;
         const safeMemories = Array.isArray(incoming)

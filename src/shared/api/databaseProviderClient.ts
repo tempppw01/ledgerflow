@@ -10,6 +10,7 @@ export interface DatabaseProviderAvailability {
 export interface DatabaseSetupStatus {
   initialized: boolean;
   provider: DatabaseProvider | null;
+  deploymentId: string | null;
   initializedAt: string | null;
   allowedProviders: DatabaseProvider[];
   configuredProvider: DatabaseProvider | null;
@@ -56,6 +57,7 @@ function isDatabaseSetupStatus(
   return (
     typeof value.initialized === 'boolean' &&
     (value.provider === null || isDatabaseProvider(value.provider)) &&
+    (value.deploymentId === null || typeof value.deploymentId === 'string') &&
     (value.initializedAt === null || typeof value.initializedAt === 'string') &&
     Array.isArray(value.allowedProviders) &&
     value.allowedProviders.every(isDatabaseProvider) &&

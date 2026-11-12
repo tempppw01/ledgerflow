@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { sqlOnlyStorage } from './sqlOnlyStorage';
 import { Account } from '../../entities/account/types';
 import { Category } from '../../entities/category/types';
 import {
@@ -769,7 +770,7 @@ function mergeTransactionRow(
 export const useFinanceStore = create<FinanceState>()(
   persist(
     (set, get) => ({
-      hasHydrated: false,
+      hasHydrated: true,
       transactions: defaultTransactions,
       categories: defaultCategories,
       accounts: defaultAccounts,
@@ -1521,6 +1522,7 @@ export const useFinanceStore = create<FinanceState>()(
     {
       name: 'ledgerflow-finance',
       version: 5,
+      storage: sqlOnlyStorage,
       onRehydrateStorage: () => () => {
         useFinanceStore.setState({ hasHydrated: true });
       },

@@ -1,4 +1,5 @@
 import { mkdir, open, readFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
 export const DATABASE_PROVIDERS = ['sqlite', 'mysql'];
@@ -67,7 +68,8 @@ async function readSetupFile(env = process.env) {
     return {
       version: Number(parsed.version || 1),
       provider,
-      initializedAt: String(parsed.initializedAt || '')
+      initializedAt: String(parsed.initializedAt || ''),
+      instanceId: String(parsed.instanceId || `${provider}:${String(parsed.initializedAt || '')}`)
     };
   } catch (error) {
     if (error && typeof error === 'object' && error.code === 'ENOENT') return null;
@@ -82,6 +84,7 @@ export async function getDatabaseSetupStatus(env = process.env) {
   return {
     initialized: Boolean(setup),
     provider: setup?.provider || null,
+    deploymentId: setup?.instanceId || null,
     initializedAt: setup?.initializedAt || null,
     allowedProviders: getAvailableDatabaseProviders(env),
     providerAvailability: getDatabaseProviderAvailability(env),
@@ -129,7 +132,8 @@ export async function initializeDatabaseProvider({
   const setup = {
     version: 1,
     provider: normalizedProvider,
-    initializedAt: new Date().toISOString()
+    initializedAt: new Date().toISOString(),
+    instanceId: randomUUID()
   };
 
   await mkdir(dataDirectory, { recursive: true });

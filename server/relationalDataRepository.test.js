@@ -51,6 +51,15 @@ test('relational repository imports and rebuilds core business data from SQLite 
           investmentGoals: [],
           investmentWatchlist: [],
           investmentAiMessages: [],
+          creditDrafts: [
+            { id: 'draft-jd', name: '京东白条', balance: 2000, sourceTurns: 1 }
+          ],
+          smartBudgetPlan: {
+            answers: { style: 'balanced' },
+            recommendation: { version: 1 },
+            confirmedAt: '2026-08-01T00:00:00.000Z'
+          },
+          smartBudgetHistory: [],
           rssSubscriptions: [],
           monthlyIncome: 9000
         },
@@ -69,6 +78,8 @@ test('relational repository imports and rebuilds core business data from SQLite 
     assert.equal(bootstrap.data.finance.transactions[0].note, 'Lunch');
     assert.deepEqual(bootstrap.data.finance.transactions[0].tags, ['daily']);
     assert.equal(bootstrap.data.preferences.debts[0].balance, 50);
+    assert.equal(bootstrap.data.preferences.creditDrafts[0].name, '京东白条');
+    assert.equal(bootstrap.data.preferences.smartBudgetPlan.confirmedAt, '2026-08-01T00:00:00.000Z');
 
     await replaceRelationalData(
       'sqlite',

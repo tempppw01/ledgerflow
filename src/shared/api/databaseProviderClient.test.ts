@@ -5,6 +5,7 @@ const databaseStatus = {
   ok: true,
   initialized: true,
   provider: 'sqlite',
+  deploymentId: 'deployment-test',
   initializedAt: '2026-07-17T00:00:00.000Z',
   allowedProviders: ['sqlite'],
   configuredProvider: 'sqlite',

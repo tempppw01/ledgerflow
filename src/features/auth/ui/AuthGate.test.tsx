@@ -68,7 +68,7 @@ describe('AuthGate', () => {
     expect(await screen.findByText('账本内容')).toBeInTheDocument();
   });
 
-  it('keeps protected content visible while a cached session is revalidated', () => {
+  it('does not render protected content while the server session is being checked', () => {
     localStorage.setItem('ledgerflow-auth-user-cache', JSON.stringify(user));
     mocks.getAuthStatus.mockReturnValue(new Promise(() => undefined));
 
@@ -78,11 +78,11 @@ describe('AuthGate', () => {
       </AuthGate>
     );
 
-    expect(screen.getByText('账本内容')).toBeInTheDocument();
-    expect(screen.queryByText('正在检查账号状态...')).not.toBeInTheDocument();
+    expect(screen.queryByText('账本内容')).not.toBeInTheDocument();
+    expect(screen.getByText('正在检查账号状态...')).toBeInTheDocument();
   });
 
-  it('keeps protected content visible when cached account revalidation fails', async () => {
+  it('does not render protected content when session revalidation fails', async () => {
     localStorage.setItem('ledgerflow-auth-user-cache', JSON.stringify(user));
     mocks.getAuthStatus.mockRejectedValue(new Error('network unavailable'));
 
@@ -92,9 +92,9 @@ describe('AuthGate', () => {
       </AuthGate>
     );
 
-    expect(screen.getByText('账本内容')).toBeInTheDocument();
-    expect(screen.queryByText('正在检查账号状态...')).not.toBeInTheDocument();
+    expect(screen.queryByText('账本内容')).not.toBeInTheDocument();
     await waitFor(() => expect(mocks.getAuthStatus).toHaveBeenCalledTimes(1));
+    expect(await screen.findByRole('heading', { name: '登录 LedgerFlow' })).toBeInTheDocument();
   });
 
   it('logs in and then renders protected content', async () => {

@@ -18,6 +18,7 @@ describe('DatabaseProviderSetupPanel', () => {
     getDatabaseSetupStatusMock.mockResolvedValue({
       initialized: false,
       provider: null,
+      deploymentId: null,
       initializedAt: null,
       allowedProviders: ['sqlite', 'mysql'],
       providerAvailability: {

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { sqlOnlyStorage } from './sqlOnlyStorage';
 import {
   BudgetAnswers,
   BudgetRecommendation,
@@ -31,6 +32,10 @@ interface SmartBudgetState {
   updatePlan: (recommendation: BudgetRecommendation) => void;
   restorePlan: (plan: SmartBudgetPlanHistoryItem) => void;
   clearPlan: () => void;
+  replaceAllData: (payload: {
+    confirmedPlan: ConfirmedSmartBudgetPlan | null;
+    history: SmartBudgetPlanHistoryItem[];
+  }) => void;
 }
 
 function normalizePlan(raw: unknown): ConfirmedSmartBudgetPlan | null {
@@ -94,10 +99,23 @@ export const useSmartBudgetStore = create<SmartBudgetState>()(
       clearPlan: () => {
         clearWizardDraft();
         set({ confirmedPlan: null });
+      },
+      replaceAllData: ({ confirmedPlan, history }) => {
+        clearWizardDraft();
+        set({
+          confirmedPlan: normalizePlan(confirmedPlan),
+          history: Array.isArray(history)
+            ? history
+                .map((item) => normalizePlan(item))
+                .filter((item): item is ConfirmedSmartBudgetPlan => Boolean(item))
+                .slice(0, 12)
+            : []
+        });
       }
     }),
     {
       name: 'ledgerflow-smart-budget',
+      storage: sqlOnlyStorage,
       partialize: (state) => ({ confirmedPlan: state.confirmedPlan, history: state.history }),
       merge: (persisted, current) => {
         const source = (persisted || {}) as Partial<SmartBudgetState>;

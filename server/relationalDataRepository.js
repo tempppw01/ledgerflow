@@ -7,6 +7,9 @@ const SETTING_KEYS = {
   rssSubscriptions: 'rss-subscriptions',
   investmentAiMessages: 'investment-ai-messages',
   investmentWatchlistExtras: 'investment-watchlist-extras',
+  creditDrafts: 'credit-drafts',
+  smartBudgetPlan: 'smart-budget-plan',
+  smartBudgetHistory: 'smart-budget-history',
   monthlyIncome: 'monthly-income',
   categoryLearningRules: 'category-learning-rules',
   categoryLearningEvents: 'category-learning-events'
@@ -628,6 +631,24 @@ export async function replaceRelationalData(
         await setSetting(
           database,
           userId,
+          SETTING_KEYS.creditDrafts,
+          list(preferences.creditDrafts)
+        );
+        await setSetting(
+          database,
+          userId,
+          SETTING_KEYS.smartBudgetPlan,
+          preferences.smartBudgetPlan || null
+        );
+        await setSetting(
+          database,
+          userId,
+          SETTING_KEYS.smartBudgetHistory,
+          list(preferences.smartBudgetHistory)
+        );
+        await setSetting(
+          database,
+          userId,
           SETTING_KEYS.categoryLearningRules,
           list(finance.categoryLearningRules)
         );
@@ -901,6 +922,9 @@ export async function getRelationalBootstrap(
             preferences: {
               rssSubscriptions: list(settings[SETTING_KEYS.rssSubscriptions]),
               monthlyIncome: number(settings[SETTING_KEYS.monthlyIncome]),
+              creditDrafts: list(settings[SETTING_KEYS.creditDrafts]),
+              smartBudgetPlan: settings[SETTING_KEYS.smartBudgetPlan] || null,
+              smartBudgetHistory: list(settings[SETTING_KEYS.smartBudgetHistory]),
               investmentPositions: positions.map((row) => ({
                 id: row.id,
                 name: row.name,

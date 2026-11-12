@@ -917,6 +917,20 @@ export const useAppPreferences = create<AppPreferencesState>()(
         }));
       }
     }),
-    { name: 'ledgerflow-preferences' }
+    {
+      name: 'ledgerflow-preferences',
+      partialize: (state) => ({
+        theme: state.theme,
+        accentTheme: state.accentTheme
+      }),
+      merge: (persisted, current) => {
+        const source = (persisted || {}) as Partial<Pick<AppPreferencesState, 'theme' | 'accentTheme'>>;
+        return {
+          ...current,
+          theme: source.theme === 'dark' || source.theme === 'light' ? source.theme : current.theme,
+          accentTheme: source.accentTheme || current.accentTheme
+        };
+      }
+    }
   )
 );

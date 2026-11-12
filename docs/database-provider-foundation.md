@@ -33,7 +33,8 @@ claims the existing `ledger_users.id = 'default'` row so a deployment can add au
 rewriting legacy business IDs. Later accounts receive independent ledger user IDs, and all business
 data routes resolve the user from the HttpOnly session cookie.
 
-The browser cache remains useful for offline recovery and legacy import/export, but it is no longer
-an authority for an initialized relational deployment. The provider lock and SQLite database file
-must live in persistent storage; otherwise a replacement container will require initialization again
-and a new SQLite database will be empty.
+The browser is no longer an authority for an initialized relational deployment. Ledger and
+preference stores are memory-only and load through `/api/data/bootstrap`; changes are synchronized
+back through the relational repository. LocalStorage is limited to UI preferences. The provider
+lock and SQLite database file must live in persistent storage; otherwise a replacement container
+will require initialization again and a new SQLite database will be empty.

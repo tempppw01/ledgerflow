@@ -7,6 +7,8 @@ import {
 import { useAppPreferences } from '../../../shared/store/useAppPreferences';
 import { type FinanceDataSnapshot, useFinanceStore } from '../../../shared/store/useFinanceStore';
 import { useGlobalMemoryStore } from '../../../shared/store/useGlobalMemoryStore';
+import { useSmartBudgetStore } from '../../../shared/store/useSmartBudgetStore';
+import { clearScopedBrowserData } from '../model/deploymentScope';
 
 interface SqlDataSyncGateProps {
   children: ReactNode;
@@ -28,6 +30,7 @@ function isLedgerIdConflict(message: string) {
 function getPayload() {
   const finance = useFinanceStore.getState();
   const preferences = useAppPreferences.getState();
+  const smartBudget = useSmartBudgetStore.getState();
   return {
     finance: {
       transactions: finance.transactions,
@@ -52,15 +55,40 @@ function getPayload() {
       investmentAiMessages: preferences.investmentAiMessages,
       debts: preferences.debts,
       repaymentRecords: preferences.repaymentRecords,
-      monthlyIncome: preferences.monthlyIncome
+      monthlyIncome: preferences.monthlyIncome,
+      creditDrafts: preferences.creditDrafts,
+      smartBudgetPlan: smartBudget.confirmedPlan,
+      smartBudgetHistory: smartBudget.history
     }
   };
+}
+
+function hasMeaningfulLocalLedgerData() {
+  const finance = useFinanceStore.getState();
+  const preferences = useAppPreferences.getState();
+  const memories = useGlobalMemoryStore.getState().memories;
+  return (
+    finance.transactions.length > 0 ||
+    finance.trashedTransactions.length > 0 ||
+    finance.balanceChangeEntries.length > 0 ||
+    finance.subscriptions.length > 0 ||
+    preferences.debts.length > 0 ||
+    preferences.repaymentRecords.length > 0 ||
+    preferences.investmentPositions.length > 0 ||
+    preferences.investmentGoals.length > 0 ||
+    preferences.investmentWatchlist.length > 0 ||
+    preferences.creditDrafts.length > 0 ||
+    useSmartBudgetStore.getState().confirmedPlan !== null ||
+    memories.length > 0
+  );
 }
 
 export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
   const { t } = useTranslation();
   const financeHydrated = useFinanceStore((state) => state.hasHydrated);
   const [ready, setReady] = useState(false);
+  const [pendingEmptyCloudImport, setPendingEmptyCloudImport] = useState(false);
+  const [importingLocalData, setImportingLocalData] = useState(false);
   const [error, setError] = useState<'' | 'readFailed' | 'initFailed'>('');
   const [notice, setNotice] = useState<SyncNotice | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -128,9 +156,26 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
             repaymentRecords: Array.isArray(preferences.repaymentRecords)
               ? (preferences.repaymentRecords as never)
               : [],
-            monthlyIncome: Number(preferences.monthlyIncome) || 0
+            monthlyIncome: Number(preferences.monthlyIncome) || 0,
+            creditDrafts: Array.isArray(preferences.creditDrafts)
+              ? (preferences.creditDrafts as never)
+              : []
           }));
+          useSmartBudgetStore.getState().replaceAllData({
+            confirmedPlan:
+              preferences.smartBudgetPlan &&
+              typeof preferences.smartBudgetPlan === 'object'
+                ? (preferences.smartBudgetPlan as never)
+                : null,
+            history: Array.isArray(preferences.smartBudgetHistory)
+              ? (preferences.smartBudgetHistory as never[])
+              : []
+          });
         } else {
+          if (hasMeaningfulLocalLedgerData()) {
+            setPendingEmptyCloudImport(true);
+            return;
+          }
           // 云端确实为空(例如新用户注册),把本地账号数据写入作为初始数据。
           // 写入失败不应阻塞应用,稍后自动同步会重试。
           try {
@@ -178,7 +223,33 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
     retryAttemptRef.current = 0;
     setError('');
     setNotice(null);
+    setPendingEmptyCloudImport(false);
     setLoadAttempt((value) => value + 1);
+  };
+
+  const importLocalLedgerData = async () => {
+    try {
+      setImportingLocalData(true);
+      await importRelationalData(getPayload());
+      setPendingEmptyCloudImport(false);
+      initializedRef.current = true;
+      setReady(true);
+      setNotice(null);
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : 'SQL 数据库写入失败。';
+      setNotice(
+        isLedgerIdConflict(message)
+          ? { kind: 'initialConflict' }
+          : { kind: 'initialFailure', detail: message }
+      );
+    } finally {
+      setImportingLocalData(false);
+    }
+  };
+
+  const useBlankCloudLedger = () => {
+    clearScopedBrowserData();
+    window.location.reload();
   };
 
   useEffect(() => {
@@ -225,11 +296,13 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
     const unsubscribeFinance = useFinanceStore.subscribe(handleStoreChange);
     const unsubscribePreferences = useAppPreferences.subscribe(handleStoreChange);
     const unsubscribeMemories = useGlobalMemoryStore.subscribe(handleStoreChange);
+    const unsubscribeSmartBudget = useSmartBudgetStore.subscribe(handleStoreChange);
     if (dirtyRef.current) scheduleSync();
     return () => {
       unsubscribeFinance();
       unsubscribePreferences();
       unsubscribeMemories();
+      unsubscribeSmartBudget();
       if (timerRef.current !== null) window.clearTimeout(timerRef.current);
     };
   }, [ready]);
@@ -237,6 +310,39 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
   const noticeText = notice
     ? t(`dataSync.${notice.kind}`, 'detail' in notice ? { detail: notice.detail } : undefined)
     : '';
+
+  if (pendingEmptyCloudImport) {
+    return (
+      <section className="auth-gate">
+        <div className="auth-card">
+          <div className="auth-card-head">
+            <div>
+              <h1>当前部署的云端账本为空</h1>
+              <p>
+                浏览器里还有一份本机账本。只有确认它属于当前部署时才导入,否则请使用空白账本。
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="primary auth-submit"
+            disabled={importingLocalData}
+            onClick={() => void importLocalLedgerData()}
+          >
+            {importingLocalData ? '正在导入...' : '导入本机账本到当前账号'}
+          </button>
+          <button
+            type="button"
+            className="auth-mode-button"
+            disabled={importingLocalData}
+            onClick={useBlankCloudLedger}
+          >
+            使用空白账本
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   if (!ready) {
     return (

@@ -40,10 +40,13 @@ test('initializes and locks the selected database provider', async () => {
     const created = await initializeDatabaseProvider({ provider: 'sqlite', env });
     assert.equal(created.created, true);
     assert.equal(created.provider, 'sqlite');
+    assert.equal(typeof created.instanceId, 'string');
+    assert.ok(created.instanceId.length > 0);
 
     const after = await getDatabaseSetupStatus(env);
     assert.equal(after.initialized, true);
     assert.equal(after.provider, 'sqlite');
+    assert.equal(after.deploymentId, created.instanceId);
 
     await assert.rejects(
       initializeDatabaseProvider({ provider: 'mysql', env }),

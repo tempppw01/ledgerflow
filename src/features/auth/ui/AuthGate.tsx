@@ -13,7 +13,6 @@ import { APP_LOGO_URL } from '../../../shared/config/app';
 import { PasswordInput } from '../../../shared/ui/PasswordInput';
 import { AuthContext } from './authContext';
 
-const AUTH_USER_CACHE_KEY = 'ledgerflow-auth-user-cache';
 type AuthMode = 'login' | 'register' | 'forgot' | 'reset';
 
 function readPasswordResetToken() {
@@ -35,38 +34,8 @@ function clearPasswordResetTokenFromUrl() {
   }
 }
 
-function readCachedAuthUser(): AuthUser | null {
-  try {
-    const raw =
-      window.localStorage.getItem(AUTH_USER_CACHE_KEY) ||
-      window.sessionStorage.getItem(AUTH_USER_CACHE_KEY);
-    if (!raw) return null;
-    const user = JSON.parse(raw) as Partial<AuthUser>;
-    if (!user.id || !user.email || !user.displayName || !user.ledgerUserId) return null;
-    window.localStorage.setItem(AUTH_USER_CACHE_KEY, JSON.stringify(user));
-    window.sessionStorage.removeItem(AUTH_USER_CACHE_KEY);
-    return user as AuthUser;
-  } catch {
-    return null;
-  }
-}
-
-function writeCachedAuthUser(user: AuthUser | null) {
-  try {
-    if (user) {
-      window.localStorage.setItem(AUTH_USER_CACHE_KEY, JSON.stringify(user));
-      window.sessionStorage.removeItem(AUTH_USER_CACHE_KEY);
-    } else {
-      window.localStorage.removeItem(AUTH_USER_CACHE_KEY);
-      window.sessionStorage.removeItem(AUTH_USER_CACHE_KEY);
-    }
-  } catch {
-    // The server session remains authoritative when browser storage is unavailable.
-  }
-}
-
 export function AuthGate({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => readCachedAuthUser());
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [registrationOpen, setRegistrationOpen] = useState(false);
   const [resetToken, setResetToken] = useState(readPasswordResetToken);
   const [mode, setMode] = useState<AuthMode>(resetToken ? 'reset' : 'login');
@@ -74,18 +43,17 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
-  const [loading, setLoading] = useState(() => !readCachedAuthUser());
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
   const loadStatus = useCallback(async () => {
     try {
-      setLoading(!readCachedAuthUser());
+      setLoading(true);
       setError('');
       const status = await getAuthStatus();
       setUser(status.user);
-      writeCachedAuthUser(status.user);
       setRegistrationOpen(status.registrationOpen);
       setMode((current) =>
         current === 'forgot' || current === 'reset'
@@ -127,7 +95,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
       if (mode === 'reset') {
         await resetAccountPassword({ token: resetToken, newPassword: password });
         clearPasswordResetTokenFromUrl();
-        writeCachedAuthUser(null);
         setUser(null);
         setResetToken('');
         setPassword('');
@@ -142,7 +109,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
           ? await registerAccount({ email, password, displayName })
           : await loginAccount({ email, password });
       setUser(result.user);
-      writeCachedAuthUser(result.user);
       setPassword('');
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : '账号操作失败。');
@@ -155,7 +121,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
     try {
       await logoutAccount();
     } finally {
-      writeCachedAuthUser(null);
       setUser(null);
       setMode('login');
       setResetToken('');
@@ -167,7 +132,6 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const updateProfile = useCallback(async (input: { displayName: string }) => {
     const result = await updateAccountProfile(input);
     setUser(result.user);
-    writeCachedAuthUser(result.user);
     return result.user;
   }, []);
 

@@ -29,6 +29,7 @@ describe('DatabaseInitializationGate', () => {
     getDatabaseSetupStatusMock.mockResolvedValue({
       initialized: false,
       provider: null,
+      deploymentId: null,
       initializedAt: null,
       allowedProviders: ['sqlite'],
       configuredProvider: 'sqlite',
@@ -49,6 +50,7 @@ describe('DatabaseInitializationGate', () => {
     getDatabaseSetupStatusMock.mockResolvedValue({
       initialized: true,
       provider: 'sqlite',
+      deploymentId: 'deployment-cached',
       initializedAt: '2026-07-17T00:00:00.000Z',
       allowedProviders: ['sqlite'],
       configuredProvider: 'sqlite',
@@ -69,6 +71,7 @@ describe('DatabaseInitializationGate', () => {
     const cachedStatus = {
       initialized: true,
       provider: 'sqlite',
+      deploymentId: 'deployment-cached',
       initializedAt: '2026-07-17T00:00:00.000Z',
       allowedProviders: ['sqlite'],
       configuredProvider: 'sqlite',
@@ -91,6 +94,7 @@ describe('DatabaseInitializationGate', () => {
     const cachedStatus = {
       initialized: true,
       provider: 'sqlite',
+      deploymentId: 'deployment-cached',
       initializedAt: '2026-07-17T00:00:00.000Z',
       allowedProviders: ['sqlite'],
       configuredProvider: 'sqlite',
@@ -119,6 +123,7 @@ describe('DatabaseInitializationGate', () => {
     const cachedStatus = {
       initialized: true,
       provider: 'sqlite',
+      deploymentId: 'deployment-cached',
       initializedAt: '2026-07-17T00:00:00.000Z',
       allowedProviders: ['sqlite'],
       configuredProvider: 'sqlite',
@@ -146,6 +151,7 @@ describe('DatabaseInitializationGate', () => {
     getDatabaseSetupStatusMock.mockResolvedValue({
       initialized: true,
       provider: 'sqlite',
+      deploymentId: 'deployment-cached',
       initializedAt: '2026-07-17T00:00:00.000Z',
       allowedProviders: ['sqlite'],
       configuredProvider: 'sqlite',

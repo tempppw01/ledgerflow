@@ -6,6 +6,7 @@ import {
 import { DatabaseProviderSetupPanel } from './DatabaseProviderSetupPanel';
 import { SqlDataSyncGate } from './SqlDataSyncGate';
 import { AuthGate } from '../../auth/ui/AuthGate';
+import { ensureDeploymentScope } from '../model/deploymentScope';
 
 interface DatabaseInitializationGateProps {
   children: ReactNode;
@@ -50,6 +51,14 @@ function writeCachedStatus(status: DatabaseSetupStatus) {
   }
 }
 
+function cachedStatusIdentity(status: DatabaseSetupStatus | null) {
+  if (!status) return null;
+  if (status.deploymentId) return status.deploymentId;
+  return status.provider && status.initializedAt
+    ? `${status.provider}:${status.initializedAt}`
+    : null;
+}
+
 export function DatabaseInitializationGate({ children }: DatabaseInitializationGateProps) {
   const [status, setStatus] = useState<DatabaseSetupStatus | null>(() => readCachedStatus());
   const [error, setError] = useState('');
@@ -71,6 +80,15 @@ export function DatabaseInitializationGate({ children }: DatabaseInitializationG
       try {
         const nextStatus = await getDatabaseSetupStatus();
         if (requestId !== requestIdRef.current) return;
+        if (
+          ensureDeploymentScope(
+            nextStatus.deploymentId,
+            cachedStatusIdentity(readCachedStatus())
+          )
+        ) {
+          window.location.reload();
+          return;
+        }
         writeCachedStatus(nextStatus);
         setStatus(nextStatus);
         setError('');
@@ -95,6 +113,10 @@ export function DatabaseInitializationGate({ children }: DatabaseInitializationG
   }, [loadStatus]);
 
   const handleInitialized = (nextStatus: DatabaseSetupStatus) => {
+    if (ensureDeploymentScope(nextStatus.deploymentId)) {
+      window.location.reload();
+      return;
+    }
     writeCachedStatus(nextStatus);
     setStatus(nextStatus);
   };

@@ -104,10 +104,14 @@ write and count operation.
   a deployment contains real relational data rather than only a snapshot.
 
 The application blocks normal pages until it has completed this bootstrap. On a fresh initialized
-database it imports the existing browser cache once; afterward SQL is authoritative. LocalStorage
-remains a fast startup/offline recovery cache only. Every business-state change is debounced and
-written back through the repository. Clearing local browser storage must therefore not delete a
-user's ledger.
+database it asks the user before importing existing browser data; it never silently imports stale
+browser state into a new deployment. SQL is authoritative at runtime, and clearing browser storage
+must not delete a user's ledger.
+
+Business stores keep their state in memory only. Finance accounts, transactions, categories,
+subscriptions, debts, repayment records, investment data, global memories, credit drafts, and smart
+budget plans are all reconstructed from SQL and written back through the repository. LocalStorage
+is limited to non-business UI preferences such as theme and accent color.
 
 Legacy JSON, WebDAV, OSS, and snapshot restores are converted server-side through the same
 transaction before the browser state is replaced. A failed SQL write leaves both the previous SQL
@@ -117,10 +121,11 @@ data and the displayed data unchanged.
 
 `ledger_user_settings` is intentionally not a replacement for business tables. It currently holds
 only flexible settings with no stable query contract: RSS subscriptions, AI chat transcript UI
-payloads, global memories, category-learning hints, and the variable detail arrays on a fund
-watchlist. The watchlist's searchable identity, current recommendation, risk, timestamps, tags,
-and holding amount remain normalized columns. New queryable domain fields must get a migration and
-a column/table rather than being appended to a settings JSON document.
+payloads, global memories, credit drafts, smart-budget plans, category-learning hints, and the
+variable detail arrays on a fund watchlist. The watchlist's searchable identity, current
+recommendation, risk, timestamps, tags, and holding amount remain normalized columns. New queryable
+domain fields must get a migration and a column/table rather than being appended to a settings JSON
+document.
 
 AI workflow definitions, runs, messages, market quotes, news, and summaries already have their own
 schema tables. Their producer services should write those tables directly as the workflows and
