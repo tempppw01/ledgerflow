@@ -837,7 +837,8 @@ describe('InvestmentsPage', () => {
     expect(screen.queryByRole('button', { name: /A 股 上证50/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '查看上一组指数' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '查看下一组指数' })).not.toBeInTheDocument();
-    expect(screen.getByText('纳斯达克 100')).toBeInTheDocument();
+    expect(screen.getByText('纳斯达克 100')).toHaveClass('investments-index-name-full');
+    expect(screen.getByText('纳指100')).toHaveClass('investments-index-name-short');
 
     await userEvent.click(indexTab);
 

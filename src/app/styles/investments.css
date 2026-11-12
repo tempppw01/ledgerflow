@@ -1163,6 +1163,22 @@
   white-space: nowrap;
 }
 
+.investments-global-quote-name strong .investments-index-name-full,
+.investments-global-trend-head strong .investments-index-name-full {
+  display: inline;
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.investments-global-quote-name strong .investments-index-name-short,
+.investments-global-trend-head strong .investments-index-name-short {
+  display: none;
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
 .investments-global-quote-card > b {
   color: var(--color-text-primary);
   font-size: 14px;
@@ -7854,6 +7870,16 @@
 
   .investments-global-quote-card:last-child {
     border-bottom: 0;
+  }
+
+  .investments-global-quote-name strong .investments-index-name-full,
+  .investments-global-trend-head strong .investments-index-name-full {
+    display: none;
+  }
+
+  .investments-global-quote-name strong .investments-index-name-short,
+  .investments-global-trend-head strong .investments-index-name-short {
+    display: inline;
   }
 }
 

@@ -462,6 +462,10 @@ function formatMarketIndexValue(value?: number | null) {
   return typeof value === 'number' ? value.toFixed(2) : '--';
 }
 
+function compactMarketIndexName(name: string) {
+  return name === '纳斯达克 100' ? '纳指100' : name;
+}
+
 function formatMarketPercent(value?: number | null) {
   if (typeof value !== 'number') return '--';
   return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
@@ -2446,7 +2450,12 @@ function MarketOverviewPanel({
                     <span>
                       <i aria-hidden="true">🇨🇳</i>A 股
                     </span>
-                    <strong>{index.name}</strong>
+                    <strong>
+                      <span className="investments-index-name-full">{index.name}</span>
+                      <span className="investments-index-name-short">
+                        {compactMarketIndexName(index.name)}
+                      </span>
+                    </strong>
                   </div>
                   <b>{formatMarketIndexValue(quote?.value)}</b>
                   <span className={tone}>{formatMarketPercent(quote?.changePercent ?? null)}</span>
@@ -2477,7 +2486,12 @@ function MarketOverviewPanel({
                     <i aria-hidden="true">{index.flag}</i>
                     {index.market}
                   </span>
-                  <strong>{index.name}</strong>
+                  <strong>
+                    <span className="investments-index-name-full">{index.name}</span>
+                    <span className="investments-index-name-short">
+                      {compactMarketIndexName(index.name)}
+                    </span>
+                  </strong>
                 </div>
                 <b>{quote ? formatMarketIndexValue(quote.value) : '--'}</b>
                 <span className={tone}>{formatMarketPercent(quote?.changePercent ?? null)}</span>
@@ -2492,7 +2506,11 @@ function MarketOverviewPanel({
           <div className="investments-global-trend-head">
             <div>
               <strong>
-                {selectedGlobalIndex.flag} {selectedGlobalIndex.market} · {selectedGlobalIndex.name}
+                {selectedGlobalIndex.flag} {selectedGlobalIndex.market} ·{' '}
+                <span className="investments-index-name-full">{selectedGlobalIndex.name}</span>
+                <span className="investments-index-name-short">
+                  {compactMarketIndexName(selectedGlobalIndex.name)}
+                </span>
               </strong>
               <span>
                 {selectedGlobalQuote
