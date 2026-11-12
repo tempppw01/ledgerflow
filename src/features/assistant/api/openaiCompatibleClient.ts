@@ -126,13 +126,19 @@ function getAiRequestTimeoutMs() {
   return Number.isFinite(configured) && configured > 0 ? configured : 8000;
 }
 
+function getAiGenerationTimeoutMs() {
+  const configured = Number(ENV.aiGenerationTimeoutMs);
+  return Number.isFinite(configured) && configured > 0 ? configured : 120000;
+}
+
 function abortError() {
   return new DOMException('AI request aborted', 'AbortError');
 }
 
 async function withAiRequestTimeout<T>(
   externalSignal: AbortSignal | undefined,
-  operation: (signal: AbortSignal) => Promise<T>
+  operation: (signal: AbortSignal) => Promise<T>,
+  timeoutMs = getAiRequestTimeoutMs()
 ): Promise<T> {
   const controller = new AbortController();
   let timedOut = false;
@@ -154,7 +160,7 @@ async function withAiRequestTimeout<T>(
     if (!controller.signal.aborted) {
       controller.abort(abortError());
     }
-  }, getAiRequestTimeoutMs());
+  }, timeoutMs);
 
   try {
     if (controller.signal.aborted) {
@@ -467,8 +473,10 @@ export async function sendAiChatStream(
   }
 ): Promise<SendAiChatResult> {
   try {
-    return await withAiRequestTimeout(input.signal, (signal) =>
-      readAiStream(input, signal, handlers)
+    return await withAiRequestTimeout(
+      input.signal,
+      (signal) => readAiStream(input, signal, handlers),
+      getAiGenerationTimeoutMs()
     );
   } catch (error) {
     const normalized =
@@ -615,5 +623,5 @@ export async function sendAiChat(input: ChatRequestInput): Promise<SendAiChatRes
           }
         : undefined
     };
-  });
+  }, getAiGenerationTimeoutMs());
 }

@@ -1,6 +1,7 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
+import { RepaymentAgentBar } from '../../features/debt/components/RepaymentAgentBar';
 import {
   calculateDebtDerivedMetrics,
   calculateDebtHealthScore,
@@ -1035,7 +1036,10 @@ export function RepaymentManagementPage() {
     replaceDebts,
     removeDebt,
     removeRepaymentRecord,
-    updateDebt
+    updateDebt,
+    creditDrafts,
+    upsertCreditDraft,
+    removeCreditDraft
   } = useAppPreferences();
   const { baseUrl, apiKey, model } = useAiSettings();
   const [error, setError] = useState('');
@@ -2527,6 +2531,23 @@ export function RepaymentManagementPage() {
             <span>笔负债</span>
           </div>
         </header>
+
+        <RepaymentAgentBar
+          baseUrl={baseUrl}
+          apiKey={apiKey}
+          model={model}
+          debts={debts}
+          repaymentRecords={repaymentRecords}
+          monthlyIncome={monthlyIncome}
+          addDebt={addDebt}
+          updateDebt={updateDebt}
+          removeDebt={removeDebt}
+          addRepaymentRecord={addRepaymentRecord}
+          removeRepaymentRecord={removeRepaymentRecord}
+          creditDrafts={creditDrafts}
+          upsertCreditDraft={upsertCreditDraft}
+          removeCreditDraft={removeCreditDraft}
+        />
 
         <RepaymentDashboard
           debts={debtsWithStatus}

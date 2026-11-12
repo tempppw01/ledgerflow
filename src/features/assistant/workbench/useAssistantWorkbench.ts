@@ -15,8 +15,23 @@ import {
   ASSISTANT_AGENT_TOOLS,
   executeAssistantToolCall,
   type AgentActionView,
-  type AgentToolContext
+  type AgentToolContext,
+  type AgentToolExecution
 } from '../agent/assistantAgentTools';
+import {
+  CREDIT_AGENT_INSTRUCTIONS,
+  CREDIT_AGENT_TOOLS,
+  executeCreditToolCall,
+  type CreditAgentContext
+} from '../agent/creditAgentTools';
+import type { DebtItem, RepaymentRecord } from '../../debt/model/debtMetrics';
+import type { CreditDraft } from '../../debt/model/creditDrafts';
+import {
+  buildCreditDraftPromptContext,
+  parseCreditDraftFragment,
+  upsertCreditDraft as mergeCreditDraftList
+} from '../../debt/model/creditDrafts';
+import type { ChatToolDefinition } from '../api/openaiCompatibleClient';
 import type { Account } from '../../../entities/account/types';
 import type { Category } from '../../../entities/category/types';
 import type { TransactionItem } from '../../../entities/transaction/types';
@@ -82,7 +97,7 @@ const PDF_SPLIT_MAX_CHUNKS = 12;
 const EMBEDDING_COOLDOWN_MS = 10 * 60 * 1000;
 const EMBEDDING_COOLDOWN_NOTICE_MS = 30 * 1000;
 /** Agent 单次提问内最多允许的「模型 → 工具 → 模型」轮次。 */
-const MAX_AGENT_ROUNDS = 4;
+const MAX_AGENT_ROUNDS = 6;
 
 function normalizeEntryDate(inputDate?: string) {
   const fallback = new Date().toISOString();
@@ -113,28 +128,19 @@ interface UseAssistantWorkbenchInput {
   updateTransaction: (id: string, payload: Omit<TransactionItem, 'id'>) => void;
   removeTransaction: (id: string) => void;
   restoreTransaction: (id: string) => void;
-  debts?: Array<{
-    id: string;
-    name: string;
-    type: string;
-    balance: number;
-    annualRate?: number;
-    repaymentDay?: number;
-    paymentAccount?: string;
-    repaymentMethod?: string;
-    repaymentRecordMode?: string;
-    totalPeriods?: number;
-    paidPeriods?: number;
-    remainingMonths?: number;
-  }>;
-  repaymentRecords?: Array<{
-    debtId: string;
-    amount: number;
-    paidAt: string;
-    paymentAccount?: string;
-    recordMode?: string;
-    note?: string;
-  }>;
+  debts?: DebtItem[];
+  repaymentRecords?: RepaymentRecord[];
+  monthlyIncome?: number;
+  addDebt?: (payload: Omit<DebtItem, 'id'> & { id?: string }) => string;
+  updateDebt?: (id: string, payload: Omit<DebtItem, 'id'>) => void;
+  removeDebt?: (id: string) => void;
+  addRepaymentRecord?: (
+    payload: Omit<RepaymentRecord, 'id' | 'createdAt'> & { id?: string; createdAt?: string }
+  ) => string;
+  removeRepaymentRecord?: (id: string) => void;
+  creditDrafts?: CreditDraft[];
+  upsertCreditDraft?: (payload: Partial<CreditDraft>) => string;
+  removeCreditDraft?: (id: string) => void;
   sceneMode?: 'assistant' | 'credit' | 'investment';
   globalMemories?: GlobalMemoryItem[];
 }
@@ -581,7 +587,54 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
   });
 
   /**
-   * Agent 多轮循环:模型可以先查账户/分类/账单,再增删改,最后用自然语言总结。
+   * 信贷管家工具上下文工作副本:与 store 数组分离,同一轮内多次工具调用互相可见。
+   */
+  const buildCreditToolContext = (
+    creditDrafts = input.creditDrafts || []
+  ): CreditAgentContext => ({
+    debts: [...(input.debts || [])],
+    repaymentRecords: [...(input.repaymentRecords || [])],
+    creditDrafts: [...creditDrafts],
+    monthlyIncome: Number(input.monthlyIncome) || 0,
+    addDebt:
+      input.addDebt ||
+      (() => {
+        throw new Error('负债新增能力尚未连接,请刷新页面后重试。');
+      }),
+    updateDebt:
+      input.updateDebt ||
+      (() => {
+        throw new Error('负债更新能力尚未连接,请刷新页面后重试。');
+      }),
+    removeDebt:
+      input.removeDebt ||
+      (() => {
+        throw new Error('负债删除能力尚未连接,请刷新页面后重试。');
+      }),
+    addRepaymentRecord:
+      input.addRepaymentRecord ||
+      (() => {
+        throw new Error('还款登记能力尚未连接,请刷新页面后重试。');
+      }),
+    removeRepaymentRecord:
+      input.removeRepaymentRecord ||
+      (() => {
+        throw new Error('还款记录删除能力尚未连接,请刷新页面后重试。');
+      }),
+    upsertCreditDraft:
+      input.upsertCreditDraft ||
+      (() => {
+        throw new Error('信贷草稿保存能力尚未连接,请刷新页面后重试。');
+      }),
+    removeCreditDraft:
+      input.removeCreditDraft ||
+      (() => {
+        throw new Error('信贷草稿删除能力尚未连接,请刷新页面后重试。');
+      })
+  });
+
+  /**
+   * Agent 多轮循环:模型可以先查账户/分类/账单或负债/还款流水,再增删改,最后用自然语言总结。
    * 每轮都支持流式输出;个别服务商不支持 tools 时自动降级为普通对话。
    */
   const runAgentConversation = async (options: {
@@ -590,8 +643,9 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
     imageDataUrls: string[];
     pdfDataUrls: string[];
     signal: AbortSignal;
+    tools: ChatToolDefinition[];
+    executeTool: (call: ChatToolCall) => AgentToolExecution;
   }): Promise<{ content: string; reasoning: string }> => {
-    const ctx = buildAgentToolContext();
     type AgentMessage = {
       role: 'user' | 'assistant' | 'tool';
       text: string;
@@ -643,7 +697,7 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
             systemPrompt: options.systemPrompt,
             messages,
             signal: options.signal,
-            tools: useTools ? ASSISTANT_AGENT_TOOLS : undefined
+            tools: useTools ? options.tools : undefined
           },
           handlers
         );
@@ -669,6 +723,33 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
           });
           break;
         }
+        if (
+          !options.signal?.aborted &&
+          !lastActionSummary &&
+          !content.trim() &&
+          /AI_REQUEST_TIMEOUT|超时/i.test(message)
+        ) {
+          try {
+            // 流式响应超时后尝试一次普通请求；不重放已执行过的账本操作。
+            const fallback = await sendAiChat({
+              baseUrl: input.baseUrl,
+              apiKey: input.apiKey,
+              model: input.model,
+              systemPrompt: options.systemPrompt,
+              messages,
+              signal: options.signal,
+              tools: toolsAvailable ? options.tools : undefined
+            });
+            reply = {
+              content: fallback.content,
+              reasoning: fallback.reasoning,
+              toolCalls: fallback.toolCalls
+            };
+            if (fallback.content) setRawContent(fallback.content);
+          } catch {
+            throw error;
+          }
+        } else
         if (toolsAvailable && /HTTP_(400|404|422)/.test(message)) {
           try {
             // 先尝试非流式 + tools:部分服务商只支持非流式函数调用。
@@ -679,7 +760,7 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
               systemPrompt: options.systemPrompt,
               messages,
               signal: options.signal,
-              tools: ASSISTANT_AGENT_TOOLS
+              tools: options.tools
             });
             reply = {
               content: fallback.content,
@@ -718,7 +799,7 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
             systemPrompt: options.systemPrompt,
             messages,
             signal: options.signal,
-            tools: ASSISTANT_AGENT_TOOLS
+            tools: options.tools
           });
           reply = {
             content: fallback.content,
@@ -751,7 +832,7 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
 
       const roundViews: AgentActionView[] = [];
       calls.forEach((call) => {
-        const execution = executeAssistantToolCall(call, ctx);
+        const execution = options.executeTool(call);
         execution.undo.forEach((entry) => agentUndoRef.current.set(entry.id, entry.run));
         roundViews.push(...execution.views);
         messages.push({ role: 'tool', text: execution.content, toolCallId: call.id });
@@ -806,13 +887,27 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
       // 只有显式声明为 bill 的任务才走 JSON 记账解析,其余都按对话/Agent 处理。
       const isConversationalMode = options?.task !== 'bill';
       const agentEnabled = options?.agent === true;
+      let activeCreditDrafts = input.creditDrafts || [];
+      const currentCreditFragment =
+        agentEnabled && input.sceneMode === 'credit'
+          ? parseCreditDraftFragment(cleanPrompt)
+          : null;
+      if (agentEnabled && input.sceneMode === 'credit') {
+        if (currentCreditFragment) {
+          const merged = mergeCreditDraftList(activeCreditDrafts, currentCreditFragment);
+          activeCreditDrafts = merged.drafts;
+          input.upsertCreditDraft?.(merged.draft);
+        }
+      }
       const basePrompt =
         input.sceneMode === 'investment'
           ? `${ANALYSIS_AGENT_PROMPT}\n\n你是用户的投资理财助手，重点讨论基金、股票、市场走势、资产配置、定投和风险管理。结合用户提供的持仓与市场信息给出有依据的分析，区分事实、估算与不确定性，不承诺收益、不把短期波动包装成确定预测，并提醒投资决策由用户自行承担。`
           : !isConversationalMode
             ? JSON_AGENT_PROMPT
             : input.sceneMode === 'credit'
-              ? CREDIT_ANALYSIS_AGENT_PROMPT
+              ? agentEnabled
+                ? `${CREDIT_ANALYSIS_AGENT_PROMPT}\n\n${CREDIT_AGENT_INSTRUCTIONS}`
+                : CREDIT_ANALYSIS_AGENT_PROMPT
               : agentEnabled
                 ? `${ANALYSIS_AGENT_PROMPT}\n\n${ASSISTANT_AGENT_INSTRUCTIONS}`
                 : ANALYSIS_AGENT_PROMPT;
@@ -914,7 +1009,12 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
         basePrompt,
         timeContext: await buildTimeContext(),
         transactionContext,
-        repaymentContext: input.sceneMode === 'credit' ? repaymentContext : '',
+        repaymentContext:
+          input.sceneMode === 'credit'
+            ? [repaymentContext, buildCreditDraftPromptContext(activeCreditDrafts)]
+                .filter(Boolean)
+                .join('\n\n')
+            : '',
         semanticRecallContext: semanticRecallResult.semanticContext,
         globalMemoryContext: semanticRecallResult.globalMemoryContext
       });
@@ -923,13 +1023,36 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
       let reply: { content: string; reasoning?: string };
 
       if (agentEnabled) {
+        // 信贷模式走负债/还款台账工具,其余场景走账本/账户工具。
+        const runtime =
+          input.sceneMode === 'credit'
+            ? (() => {
+                const ctx = buildCreditToolContext(activeCreditDrafts);
+                return {
+                  tools: CREDIT_AGENT_TOOLS,
+                  executeTool: (call: ChatToolCall) => executeCreditToolCall(call, ctx)
+                };
+              })()
+            : (() => {
+                const ctx = buildAgentToolContext();
+                return {
+                  tools: ASSISTANT_AGENT_TOOLS,
+                  executeTool: (call: ChatToolCall) => executeAssistantToolCall(call, ctx)
+                };
+              })();
         const agentReply = await runAgentConversation({
           systemPrompt: prompt,
           text: cleanPrompt,
           imageDataUrls: effectiveImageDataUrls,
           pdfDataUrls: effectivePdfDataUrls,
-          signal: controller.signal
+          signal: controller.signal,
+          tools: runtime.tools,
+          executeTool: runtime.executeTool
         });
+        // 模型可能被历史对话带偏;当前用户原文是这一轮字段的最终事实来源。
+        if (currentCreditFragment) {
+          input.upsertCreditDraft?.(currentCreditFragment);
+        }
         streamedContent = agentReply.content;
         streamedReasoning = agentReply.reasoning;
         reply = { content: agentReply.content, reasoning: agentReply.reasoning };

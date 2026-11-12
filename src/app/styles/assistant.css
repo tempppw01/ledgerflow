@@ -2008,6 +2008,101 @@
   margin-bottom: var(--space-3);
 }
 
+.chat-credit-drafts {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.chat-credit-draft-card {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-elevated);
+}
+
+.chat-credit-draft-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.chat-credit-draft-head strong {
+  display: block;
+  color: var(--color-text);
+  font-size: var(--font-sm);
+}
+
+.chat-credit-draft-head span {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-xs);
+}
+
+.chat-credit-draft-head em {
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  border: 1px solid var(--color-warning-border);
+  border-radius: 999px;
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.chat-credit-draft-head em.is-ready {
+  border-color: var(--color-success-border);
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.chat-credit-draft-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-xs);
+}
+
+.chat-credit-draft-fields strong {
+  color: var(--color-text);
+}
+
+.chat-credit-draft-pending {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-xs);
+}
+
+.chat-credit-draft-pending b {
+  padding: 2px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.chat-credit-draft-card .chat-credit-actions {
+  margin-top: 0;
+}
+
+.chat-secondary-action-btn.is-danger {
+  border-color: var(--color-danger-border);
+  color: var(--color-danger);
+}
+
+.chat-secondary-action-btn.is-danger:hover {
+  background: var(--color-danger-bg);
+}
+
 .chat-credit-card {
   display: grid;
   gap: var(--space-2);
@@ -2041,6 +2136,128 @@
   display: block;
   font-size: var(--font-xs);
   color: var(--color-text-secondary);
+}
+
+.chat-credit-state {
+  flex: 0 0 auto;
+  padding: 3px 8px;
+  border: 1px solid var(--color-warning-border);
+  border-radius: 999px;
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.chat-credit-state.is-ready {
+  border-color: var(--color-success-border);
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.chat-credit-card-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.chat-credit-card-summary span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+}
+
+.chat-credit-card-summary strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--font-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-credit-card-next {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-xs);
+  line-height: 1.5;
+}
+
+.chat-credit-history-note {
+  align-self: start;
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+}
+
+.chat-credit-card-next.is-ready {
+  color: var(--color-success);
+}
+
+.chat-credit-card-primary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chat-primary-action-btn {
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: var(--font-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chat-primary-action-btn:hover {
+  filter: brightness(0.96);
+}
+
+.chat-credit-card-details,
+.chat-credit-more-actions {
+  border-top: 1px solid var(--color-border);
+  padding-top: 8px;
+}
+
+.chat-credit-card-details > summary,
+.chat-credit-more-actions > summary {
+  color: var(--color-text-secondary);
+  font-size: var(--font-xs);
+  cursor: pointer;
+  list-style: none;
+}
+
+.chat-credit-card-details > summary::-webkit-details-marker,
+.chat-credit-more-actions > summary::-webkit-details-marker {
+  display: none;
+}
+
+.chat-credit-card-details > summary::after,
+.chat-credit-more-actions > summary::after {
+  content: '⌄';
+  display: inline-block;
+  margin-left: 6px;
+  transition: transform 150ms ease;
+}
+
+.chat-credit-card-details[open] > summary::after,
+.chat-credit-more-actions[open] > summary::after {
+  transform: rotate(180deg);
+}
+
+.chat-credit-card-details > .chat-credit-progress {
+  margin-top: 12px;
+}
+
+.chat-credit-more-actions > .chat-credit-actions {
+  margin-top: 8px;
 }
 
 .chat-credit-confidence {
@@ -3516,6 +3733,17 @@
   display: none;
 }
 
+/* 信贷管家快捷指令:不沿用工作台的条状底纹,避免输入区出现矩形色块。 */
+.chat-credit-quick-commands {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-2) var(--space-2);
+  border: 0;
+  background: transparent;
+}
+
 .chat-smart-command-chip {
   flex-shrink: 0;
   padding: 4px 8px;
@@ -3597,6 +3825,23 @@
 
 .chat-error-details[open] .chat-error-summary-text {
   display: none;
+}
+
+/* 错误信息本身就短时不再提供“详情”展开,避免同一句话显示两遍。 */
+.chat-error-details.is-plain summary {
+  pointer-events: none;
+  cursor: default;
+}
+
+.chat-error-details.is-plain .chat-error-expand,
+.chat-error-details.is-plain .chat-error-detail-text {
+  display: none;
+}
+
+.chat-error-details.is-plain .chat-error-summary-text {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .chat-error-detail-text {
@@ -3751,8 +3996,9 @@
 
 .chat-input-toolbar .chat-model-trigger:hover,
 .chat-input-toolbar .chat-model-trigger.is-open {
-  border-color: var(--color-primary-border);
-  background: var(--color-primary-bg);
+  border-color: color-mix(in srgb, var(--color-primary) 26%, var(--color-border));
+  background: var(--color-bg-hover);
+  color: var(--color-text-secondary);
   box-shadow: none;
 }
 

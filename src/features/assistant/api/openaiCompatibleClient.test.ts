@@ -328,7 +328,7 @@ describe('openaiCompatibleClient baseUrl validation', () => {
       messages: [{ role: 'user', text: 'hello' }]
     }).catch((error: unknown) => error);
 
-    await vi.advanceTimersByTimeAsync(ENV.requestTimeoutMs);
+    await vi.advanceTimersByTimeAsync(ENV.aiGenerationTimeoutMs);
 
     await expect(request).resolves.toMatchObject({
       code: 'AI_REQUEST_TIMEOUT',
@@ -369,13 +369,23 @@ describe('openaiCompatibleClient baseUrl validation', () => {
       { onDelta: vi.fn(), onError }
     ).catch((error: unknown) => error);
 
-    await vi.advanceTimersByTimeAsync(ENV.requestTimeoutMs);
+    await vi.advanceTimersByTimeAsync(ENV.aiGenerationTimeoutMs);
 
     await expect(request).resolves.toMatchObject({
       code: 'AI_REQUEST_TIMEOUT',
       retryable: true
     });
     expect(onError).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps model discovery on the short request timeout', async () => {
+    vi.useFakeTimers();
+    mockAbortableFetch();
+
+    const request = fetchAiModels('https://api.example.com/v1').catch((error: unknown) => error);
+    await vi.advanceTimersByTimeAsync(ENV.requestTimeoutMs);
+
+    await expect(request).resolves.toMatchObject({ code: 'AI_REQUEST_TIMEOUT', retryable: true });
   });
 
   it('merges caller aborts into a retryable cancellation error', async () => {

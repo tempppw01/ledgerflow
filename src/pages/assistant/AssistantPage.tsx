@@ -34,6 +34,11 @@ import { Toast } from '../../shared/ui/Toast';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import type { DebtItem } from '../../features/debt/model/debtMetrics';
 import {
+  creditDraftToDebt,
+  getCreditDraftPendingFields,
+  isCreditDraftReady
+} from '../../features/debt/model/creditDrafts';
+import {
   calculateDebtDerivedMetrics,
   calculateDebtMinimumPayment,
   calculateDebtSummary
@@ -56,6 +61,9 @@ import {
   readAssistantModeFromSessionStorage,
   type AssistantMode
 } from '../../features/assistant/shared/assistantMode';
+import {
+  rankAssistantIntents as rankAssistantIntentsVocabulary
+} from '../../features/assistant/shared/assistantIntentVocabulary';
 import { InvestmentChatPanel } from '../../features/assistant/investment-chat/InvestmentChatPanel';
 import type { AgentActionView } from '../../features/assistant/agent/assistantAgentTools';
 import {
@@ -69,14 +77,20 @@ import {
   ChatUploadIcon
 } from '../../features/assistant/ui/chatIcons';
 import { BOT_ICON_URL, USER_ICON_URL } from '../../shared/config/brandAssets';
+import { getAiModelDisplayLabel } from '../../shared/config/aiModels';
 import { AiModelFamilyIcon } from '../../shared/ui/brandIcons';
 import { resolveAiModelFamily } from '../../shared/ui/brandIconResolvers';
 
 function getModelDisplayLabel(modelId: string): string {
-  const value = modelId.trim();
-  if (!value) return value;
-  return value === 'gpt-5.4-mini' ? `${value}（推荐）` : value;
+  return getAiModelDisplayLabel(modelId);
 }
+
+/** 信贷管家输入框上方的一键指令,覆盖最常见的查询与登记场景。 */
+const CREDIT_QUICK_COMMANDS = [
+  '本月总应还、已还、还差多少?',
+  '哪几笔最该先还?',
+  '帮我梳理未来 3 个月的还款安排'
+] as const;
 
 function getDraftTypeLabel(type: string): string {
   if (type === 'expense') return '支出';
@@ -95,7 +109,7 @@ function inputPlaceholder(
   if (!hasApiKey) return t('assistant.placeholders.needApiKey');
 
   const assistantHint = t('assistant.placeholders.assistantHint');
-  const creditHint = '可以直接问我花呗、分期、贷款、账单和还款安排。';
+  const creditHint = '直接说“花呗这个月还了 2000”,也可以问我账单和还款安排。';
   // 只有合并后的 AI 助手会进入账单待确认态,其他模式不应被其状态覆盖提示。
   const effectiveStatus =
     mode !== 'assistant' && (status === 'preview' || status === 'saved') ? 'idle' : status;
@@ -363,48 +377,46 @@ const ASSISTANT_INTENT_PATTERNS: Array<{
 }> = [
   {
     intent: 'trend',
-    regex: /趋势|变化|波动|上升|下降|最近|本月|上月|环比|同比|拐点/,
+    regex:
+      /趋势|变化|波动|上升|下降|增长|减少|最近|近[一二三四五六七八九十\d]+(?:天|周|个月|年)|本月|这月|上月|上个月|环比|同比|对比|拐点/,
     label: '趋势变化',
     priority: 6
   },
   {
     intent: 'review',
-    regex: /复盘|回顾|总结|问题在哪|哪里失控|拆解|原因/,
+    regex: /复盘|回顾|总结|问题在哪|哪里出问题|哪里失控|拆解|原因|为啥|为什么|怎么回事/,
     label: '复盘拆解',
     priority: 5
   },
   {
     intent: 'planning',
-    regex: /预算|计划|安排|怎么做|下一步|清单|执行|优先级/,
+    regex: /预算|计划|安排|怎么做|怎么省|下一步|清单|执行|优先级|先还|先买|先花|攒钱/,
     label: '行动规划',
     priority: 4
   },
   {
     intent: 'decision',
-    regex: /怎么看|判断|值不值|要不要|是否|应该|该不该|合适吗/,
+    regex: /怎么看|判断|值不值|划算吗|要不要|是否|应该|该不该|合适吗|能不能|该选|选哪个/,
     label: '判断取舍',
     priority: 5
   },
-  { intent: 'risk', regex: /风险|压力|危险|失控|隐患|吃紧|透支/, label: '风险提醒', priority: 4 },
+  {
+    intent: 'risk',
+    regex: /风险|压力|危险|失控|隐患|吃紧|透支|超支|还不上了?|逾期|爆仓|扛不住/,
+    label: '风险提醒',
+    priority: 4
+  },
   {
     intent: 'category',
-    regex: /分类|餐饮|交通|住房|娱乐|日用|订阅|买菜|通勤/,
+    regex:
+      /分类|餐饮|吃饭|外卖|交通|通勤|住房|居住|娱乐|日用|订阅|买菜|出行|购物|医疗|教育|旅行|宠物|保险/,
     label: '分类聚焦',
     priority: 3
   }
 ];
 
 function rankAssistantIntents(text: string): AssistantIntent[] {
-  const scored = ASSISTANT_INTENT_PATTERNS.map((item) => ({
-    intent: item.intent,
-    label: item.label,
-    priority: item.priority,
-    hits: (text.match(new RegExp(item.regex.source, 'g')) || []).length
-  }))
-    .filter((item) => item.hits > 0)
-    .sort((a, b) => b.hits * 10 + b.priority - (a.hits * 10 + a.priority));
-
-  return scored.slice(0, 3).map((item) => item.intent);
+  return rankAssistantIntentsVocabulary(text);
 }
 
 function buildAssistantIntentLabels(intents: AssistantIntent[]): string[] {
@@ -831,7 +843,13 @@ export function AssistantPage() {
   const updateDebt = useAppPreferences((s) => s.updateDebt);
   const removeDebt = useAppPreferences((s) => s.removeDebt);
   const addRepaymentRecord = useAppPreferences((s) => s.addRepaymentRecord);
+  const removeRepaymentRecord = useAppPreferences((s) => s.removeRepaymentRecord);
+  const monthlyIncome = useAppPreferences((s) => s.monthlyIncome);
   const repaymentRecords = useAppPreferences((s) => s.repaymentRecords);
+  const storedCreditDrafts = useAppPreferences((s) => s.creditDrafts);
+  const creditDrafts = useMemo(() => storedCreditDrafts || [], [storedCreditDrafts]);
+  const upsertCreditDraft = useAppPreferences((s) => s.upsertCreditDraft);
+  const removeCreditDraft = useAppPreferences((s) => s.removeCreditDraft);
   const showEmbeddingDebug = useAiSettings((s) => s.showEmbeddingDebug);
   const embeddingModel = useAiSettings((s) => s.embeddingModel);
   const enableEmbeddingModel = useAiSettings((s) => s.enableEmbeddingModel);
@@ -876,6 +894,15 @@ export function AssistantPage() {
     restoreTransaction,
     debts,
     repaymentRecords,
+    monthlyIncome,
+    addDebt,
+    updateDebt,
+    removeDebt,
+    addRepaymentRecord,
+    removeRepaymentRecord,
+    creditDrafts,
+    upsertCreditDraft,
+    removeCreditDraft,
     sceneMode: mode,
     globalMemories
   });
@@ -1496,6 +1523,21 @@ export function AssistantPage() {
     [addDebt, debts, navigate, updateDebt, wb]
   );
 
+  const focusCreditComposer = useCallback(
+    (title: string) => {
+      const prompt = `补充${title || '这笔信贷'}:`;
+      wb.setTextInput(prompt);
+      window.setTimeout(() => {
+        const composer = document.querySelector<HTMLTextAreaElement>(
+          'textarea[aria-label="AI 信贷管家输入"]'
+        );
+        composer?.focus();
+        composer?.setSelectionRange(prompt.length, prompt.length);
+      }, 0);
+    },
+    [wb]
+  );
+
   const handleDeleteMatchedDebt = useCallback(
     (creditItem: CreditExtractedItem) => {
       if (!creditItem.matchedDebtId) return;
@@ -1506,6 +1548,37 @@ export function AssistantPage() {
       );
     },
     [removeDebt, wb]
+  );
+
+  const handlePromoteCreditDraft = useCallback(
+    (draftId: string) => {
+      const draft = creditDrafts.find((item) => item.id === draftId);
+      if (!draft) {
+        wb.setToastState('这条草稿已经不存在,请刷新后重试。', 'warning');
+        return;
+      }
+      if (!isCreditDraftReady(draft)) {
+        wb.setToastState(
+          `还缺${getCreditDraftPendingFields(draft).join('、') || '必要字段'},补齐后才能转为正式负债。`,
+          'warning'
+        );
+        return;
+      }
+      addDebt(creditDraftToDebt(draft));
+      removeCreditDraft(draft.id);
+      wb.setToastState(`已将“${draft.name || '信贷草稿'}”转为正式负债`, 'success');
+    },
+    [addDebt, creditDrafts, removeCreditDraft, wb]
+  );
+
+  const handleDeleteCreditDraft = useCallback(
+    (draftId: string) => {
+      const draft = creditDrafts.find((item) => item.id === draftId);
+      if (!draft) return;
+      removeCreditDraft(draftId);
+      wb.setToastState(`已删除草稿“${draft.name || '待确认项目'}”`, 'warning');
+    },
+    [creditDrafts, removeCreditDraft, wb]
   );
 
   const handleQuickRepaymentRecord = useCallback(
@@ -1594,10 +1667,15 @@ export function AssistantPage() {
       const fallbackFromReasoning = wb.rawReasoning
         ? '模型已返回思考过程，但还没有输出正式回复。'
         : '';
+      // 模型只回思考、没有正文时,给一句能指导下一步的提示,而不是内部口吻的占位。
+      const reasoningOnlyNotice =
+        wb.rawReasoning && !wb.rawContent.trim()
+          ? '模型这次只输出了思考过程,还没有给出结论。点「重试」可重新生成,或换个模型再问一次。'
+          : fallbackFromReasoning;
       if (responseMode === 'credit') {
-        return buildCreditAssistantMessageText(wb.rawContent) || fallbackFromReasoning;
+        return buildCreditAssistantMessageText(wb.rawContent) || reasoningOnlyNotice;
       }
-      return wb.rawContent || fallbackFromReasoning;
+      return wb.rawContent || reasoningOnlyNotice;
     },
     [wb.entries, wb.rawContent, wb.rawReasoning]
   );
@@ -1622,8 +1700,8 @@ export function AssistantPage() {
     const requestQuestion = clean || '请根据我上传的附件完成识别与提炼。';
     // 合并后的 AI 模式:带附件走账单识别;纯文本走 Agent 对话,可直接增删改账单。
     const recognizeTask: 'bill' | 'chat' = mode === 'assistant' && hasAttachments ? 'bill' : 'chat';
-    // 合并后的 AI 模式在纯文本对话里启用 Agent 工具(账单与资金账户管理)。
-    const agentEnabled = mode === 'assistant' && recognizeTask === 'chat';
+    // AI 助手在纯文本对话里启用账本/账户 Agent;信贷管家启用负债与还款台账 Agent。
+    const agentEnabled = mode === 'credit' || (mode === 'assistant' && recognizeTask === 'chat');
     const requestPrompt =
       recognizeTask === 'bill'
         ? requestQuestion
@@ -1843,6 +1921,9 @@ export function AssistantPage() {
 
   // 非记账分析时，模型返回自由文本，解析 JSON 失败属于预期，不展示底部红条。
   const shouldShowError = Boolean(wb.error);
+  // 只有当错误里确实有比摘要更多的内容时才值得展开“详情”,避免同文重复展示。
+  const hasErrorDetail =
+    shouldShowError && (wb.error.includes('\n') || wb.error.trim().length > 60);
 
   useEffect(() => {
     const responseMode = pendingRequestModeRef.current;
@@ -2232,7 +2313,7 @@ export function AssistantPage() {
                       每一笔该还什么，<em>心里都有数</em>
                     </h2>
                     <p>
-                      贷款、花呗、分期和信用账单都可以交给我。我会先理清本期应还、还款日和还缺哪些资料。
+                      贷款、花呗、分期和信用账单都可以交给我。我会先理清本期应还、还款日和还缺哪些资料,也能直接帮你记一笔还款。
                     </p>
                     <div className="chat-mode-welcome-features">
                       <div>
@@ -2250,7 +2331,7 @@ export function AssistantPage() {
                       <div>
                         <b>03</b>
                         <span>
-                          整理还款计划<small>保存前始终由你确认</small>
+                          登记与核对<small>说一句就能记还款</small>
                         </span>
                       </div>
                     </div>
@@ -2426,6 +2507,105 @@ export function AssistantPage() {
                 </article>
               ) : null}
 
+              {mode === 'credit' && creditDrafts.length > 0 ? (
+                <article className="chat-msg chat-credit-draft-msg">
+                  {renderChatAvatar('assistant')}
+                  <div className="chat-msg-body">
+                    <div className="chat-msg-header">待继续补充</div>
+                    <div className="chat-credit-drafts">
+                      {creditDrafts.map((draft) => {
+                        const pendingFields = getCreditDraftPendingFields(draft);
+                        const ready = isCreditDraftReady(draft);
+                        return (
+                          <section key={draft.id} className="chat-credit-draft-card">
+                            <div className="chat-credit-draft-head">
+                              <div>
+                                <strong>{draft.name || '待确认信贷项目'}</strong>
+                                <span>
+                                  {draft.type === 'loan'
+                                    ? '贷款'
+                                    : draft.type === 'consumer-loan'
+                                      ? '消费贷'
+                                      : '信用账单'}
+                                </span>
+                              </div>
+                              <em className={ready ? 'is-ready' : ''}>
+                                {ready ? '可转正' : '待补充'}
+                              </em>
+                            </div>
+                            <div className="chat-credit-draft-fields">
+                              {draft.balance !== undefined ? (
+                                <span>
+                                  总待还 <strong>¥{draft.balance.toFixed(2)}</strong>
+                                </span>
+                              ) : null}
+                              {draft.remainingMonths !== undefined ? (
+                                <span>
+                                  剩余 <strong>{draft.remainingMonths} 期</strong>
+                                </span>
+                              ) : null}
+                              {draft.repaymentDay !== undefined ? (
+                                <span>
+                                  还款日 <strong>{draft.repaymentDay} 号</strong>
+                                </span>
+                              ) : null}
+                              {draft.monthlyAmount !== undefined ? (
+                                <span>
+                                  每期 <strong>¥{draft.monthlyAmount.toFixed(2)}</strong>
+                                </span>
+                              ) : null}
+                              {draft.dueAmount !== undefined ? (
+                                <span>
+                                  本期应还 <strong>¥{draft.dueAmount.toFixed(2)}</strong>
+                                </span>
+                              ) : null}
+                            </div>
+                            {pendingFields.length > 0 ? (
+                              <div className="chat-credit-draft-pending">
+                                <span>还缺</span>
+                                {pendingFields.map((field) => (
+                                  <b key={`${draft.id}-${field}`}>{field}</b>
+                                ))}
+                              </div>
+                            ) : null}
+                            <div className="chat-credit-actions">
+                              {ready ? (
+                                <button
+                                  type="button"
+                                  className="chat-secondary-action-btn"
+                                  onClick={() => handlePromoteCreditDraft(draft.id)}
+                                >
+                                  转为正式负债
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="chat-secondary-action-btn"
+                                  onClick={() =>
+                                    wb.setTextInput(
+                                      `补充${draft.name || '这笔信贷'}：例如总共12期`
+                                    )
+                                  }
+                                >
+                                  继续补充
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                className="chat-secondary-action-btn is-danger"
+                                onClick={() => handleDeleteCreditDraft(draft.id)}
+                              >
+                                移除
+                              </button>
+                            </div>
+                          </section>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </article>
+              ) : null}
+
               {chatHistory.map((item, index) => (
                 <article
                   key={item.id}
@@ -2467,7 +2647,11 @@ export function AssistantPage() {
                     item.agentActions &&
                     item.agentActions.length > 0 ? (
                       <div className="chat-agent-actions">
-                        <div className="chat-agent-actions-head">账本已更新</div>
+                        <div className="chat-agent-actions-head">
+                          {item.agentActions.some((action) => action.kind !== 'read')
+                            ? '本次操作结果'
+                            : '本次查询结果'}
+                        </div>
                         {item.agentActions.map((action) => (
                           <div key={action.id} className={`chat-agent-action is-${action.kind}`}>
                             <span>{action.label}</span>
@@ -2500,21 +2684,79 @@ export function AssistantPage() {
                                 <strong>{creditItem.title}</strong>
                                 <span>{creditItem.productType}</span>
                               </div>
-                              <div className="chat-credit-card-head-meta">
-                                {creditItem.mergedFromHistory ? (
-                                  <span className="chat-credit-progress-tag">已承接上轮补充</span>
-                                ) : null}
-                                <em
-                                  className={`chat-credit-confidence is-${creditItem.confidence}`}
-                                >
-                                  {creditItem.confidence === 'high'
-                                    ? '高置信'
-                                    : creditItem.confidence === 'low'
-                                      ? '低置信'
-                                      : '中置信'}
-                                </em>
-                              </div>
+                              <em
+                                className={`chat-credit-state ${
+                                  creditItem.confirmationState === 'ready'
+                                    ? 'is-ready'
+                                    : 'is-pending'
+                                }`}
+                              >
+                                {creditItem.confirmationState === 'ready'
+                                  ? '可确认'
+                                  : '待补充'}
+                              </em>
                             </div>
+                            <div className="chat-credit-card-summary">
+                              <span>
+                                总待还
+                                <strong>{creditItem.totalDebt || '待补充'}</strong>
+                              </span>
+                              <span>
+                                本期应还
+                                <strong>{creditItem.dueAmount || '待补充'}</strong>
+                              </span>
+                              <span>
+                                还款日
+                                <strong>{creditItem.repaymentDate || '待补充'}</strong>
+                              </span>
+                            </div>
+                            {creditItem.mergedFromHistory ? (
+                              <span className="chat-credit-history-note">已承接上轮补充</span>
+                            ) : null}
+                            {creditItem.pendingFields.length > 0 ? (
+                              <p className="chat-credit-card-next">
+                                已自动保留,下一步:补
+                                {creditItem.pendingFields.slice(0, 3).join('、')}
+                                {creditItem.pendingFields.length > 3 ? ' 等' : ''}
+                              </p>
+                            ) : (
+                              <p className="chat-credit-card-next is-ready">
+                                信息已齐,可以核对后保存。
+                              </p>
+                            )}
+                            <div className="chat-credit-card-primary-actions">
+                              <button
+                                type="button"
+                                className="chat-primary-action-btn"
+                                onClick={() => {
+                                  if (creditItem.confirmationState === 'ready') {
+                                    setConfirmingCreditId(creditItem.id);
+                                    return;
+                                  }
+                                  focusCreditComposer(creditItem.title);
+                                }}
+                              >
+                                {creditItem.confirmationState === 'ready'
+                                  ? '核对并保存'
+                                  : '继续补充'}
+                              </button>
+                              <button
+                                type="button"
+                                className="chat-secondary-action-btn is-compact"
+                                onClick={() =>
+                                  navigate('/repayment-management', {
+                                    state: {
+                                      prefillDebt: mapCreditItemToRepaymentPrefill(creditItem),
+                                      editingDebtId: creditItem.matchedDebtId
+                                    }
+                                  })
+                                }
+                              >
+                                去还款管理
+                              </button>
+                            </div>
+                            <details className="chat-credit-card-details">
+                              <summary>查看识别明细</summary>
                             <div className="chat-credit-progress" aria-label="字段补全进度">
                               <div className="chat-credit-progress-head">
                                 <span>{creditItem.completionLabel || '0/7 项字段已补齐'}</span>
@@ -2720,8 +2962,8 @@ export function AssistantPage() {
                                 ) : null}
                               </div>
                             ) : null}
-                            {creditItem.confirmationState === 'ready' ||
-                            confirmingCreditId === creditItem.id ? (
+                            </details>
+                            {confirmingCreditId === creditItem.id ? (
                               <div className="chat-credit-confirmation">
                                 <div className="chat-credit-confirmation-head">
                                   <strong>保存前确认</strong>
@@ -2837,6 +3079,11 @@ export function AssistantPage() {
                                 </div>
                               </div>
                             ) : null}
+                              <details
+                                className="chat-credit-more-actions"
+                                hidden={!creditItem.matchedDebtId}
+                              >
+                              <summary>更多操作</summary>
                             <div className="chat-credit-actions">
                               <button
                                 type="button"
@@ -2849,11 +3096,7 @@ export function AssistantPage() {
                                   handleSaveCreditItem(creditItem);
                                 }}
                               >
-                                {creditItem.confirmationState === 'ready'
-                                  ? '进入保存前确认'
-                                  : creditItem.pendingFields.length > 0
-                                    ? '补充信息后保存'
-                                    : '保存到还款管理'}
+                                按当前识别保存
                               </button>
                               <button
                                 type="button"
@@ -2867,11 +3110,7 @@ export function AssistantPage() {
                                   })
                                 }
                               >
-                                {creditItem.matchedDebtId
-                                  ? '编辑这笔负债'
-                                  : creditItem.pendingFields.length > 0
-                                    ? '去补充后保存'
-                                    : '带去还款管理'}
+                                {creditItem.matchedDebtId ? '编辑这笔负债' : '带去还款管理'}
                               </button>
                               {creditItem.matchedDebtId ? (
                                 <>
@@ -2930,6 +3169,7 @@ export function AssistantPage() {
                                 </>
                               ) : null}
                             </div>
+                            </details>
                           </section>
                         ))}
                       </div>
@@ -3064,10 +3304,7 @@ export function AssistantPage() {
                   <div className="chat-msg-body">
                     <div className="chat-msg-header">助手（正在生成）</div>
                     {streamingPreviewReasoning ? (
-                      <details
-                        className="chat-reasoning-collapse chat-reasoning-collapse-stream"
-                        open={!streamingPreviewMessage}
-                      >
+                      <details className="chat-reasoning-collapse chat-reasoning-collapse-stream">
                         <summary>模型思考过程（流式输出中）</summary>
                         <pre>{streamingPreviewReasoning}</pre>
                       </details>
@@ -3279,7 +3516,7 @@ export function AssistantPage() {
           >
             {shouldShowError ? (
               <div className="chat-error-strip" role="alert">
-                <details className="chat-error-details">
+                <details className={`chat-error-details${hasErrorDetail ? '' : ' is-plain'}`}>
                   <summary>
                     <span className="chat-error-summary-label">请求失败</span>
                     <span className="chat-error-summary-text">{wb.error}</span>
@@ -3344,6 +3581,22 @@ export function AssistantPage() {
             ) : null}
 
             <p className="chat-disclaimer">AI 生成内容仅供参考，请结合原始账单核对后再保存。</p>
+
+            {mode === 'credit' && wb.hasApiKey && !wb.textInput.trim() ? (
+              <div className="chat-credit-quick-commands" aria-label="信贷管家快捷指令">
+                {CREDIT_QUICK_COMMANDS.map((command) => (
+                  <button
+                    key={command}
+                    type="button"
+                    className="chat-smart-command-chip"
+                    onClick={() => submitPrompt(command)}
+                    disabled={wb.status === 'recognizing'}
+                  >
+                    {command}
+                  </button>
+                ))}
+              </div>
+            ) : null}
 
             {latestTransaction ? (
               <div className="chat-input-meta">

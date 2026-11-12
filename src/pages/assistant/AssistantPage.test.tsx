@@ -73,6 +73,7 @@ vi.mock('react-i18next', () => ({
 beforeEach(() => {
   navigateMock.mockReset();
   useAssistantWorkbenchMock.mockReset();
+  appPreferencesMocks.removeCreditDraftMock.mockClear();
   window.sessionStorage.clear();
   vi.mocked(sendAiChat).mockReset();
   vi.mocked(sendAiChat).mockResolvedValue({
@@ -122,11 +123,15 @@ const appPreferencesMocks = vi.hoisted(() => {
   const updateDebtMock = vi.fn();
   const removeDebtMock = vi.fn();
   const addRepaymentRecordMock = vi.fn();
+  const removeCreditDraftMock = vi.fn();
   const state = {
     addDebt: addDebtMock,
     updateDebt: updateDebtMock,
     removeDebt: removeDebtMock,
     addRepaymentRecord: addRepaymentRecordMock,
+    creditDrafts: [] as Array<Record<string, unknown>>,
+    upsertCreditDraft: vi.fn(() => 'draft-credit'),
+    removeCreditDraft: removeCreditDraftMock,
     monthlyIncome: 0,
     investmentPositions: [],
     investmentGoals: [],
@@ -165,6 +170,7 @@ const appPreferencesMocks = vi.hoisted(() => {
     updateDebtMock,
     removeDebtMock,
     addRepaymentRecordMock,
+    removeCreditDraftMock,
     state,
     useAppPreferences
   };
@@ -343,7 +349,7 @@ describe('AssistantPage', () => {
 
     expect(screen.getByLabelText('AI 信贷管家输入')).toHaveAttribute(
       'placeholder',
-      '可以直接问我花呗、分期、贷款、账单和还款安排。'
+      '直接说“花呗这个月还了 2000”,也可以问我账单和还款安排。'
     );
     expect(screen.queryByLabelText('账单确认')).not.toBeInTheDocument();
   });
@@ -742,7 +748,7 @@ describe('AssistantPage', () => {
     await selectAssistantMode('AI 信贷管家');
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: '进入保存前确认' }));
+      fireEvent.click(screen.getByRole('button', { name: '核对并保存' }));
     });
 
     await act(async () => {
@@ -806,14 +812,11 @@ describe('AssistantPage', () => {
 
     await selectAssistantMode('AI 信贷管家');
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: '补充信息后保存' }));
+      fireEvent.click(screen.getByRole('button', { name: '继续补充' }));
     });
 
     expect(addDebtMock).not.toHaveBeenCalled();
-    expect(workbench.setToastState).toHaveBeenCalledWith(
-      expect.stringContaining('剩余待还'),
-      'warning'
-    );
+    expect(workbench.setTextInput).toHaveBeenCalledWith(expect.stringContaining('招商信用卡'));
 
     sessionStorageGetItemSpy.mockRestore();
   });
@@ -874,7 +877,7 @@ describe('AssistantPage', () => {
     sessionStorageGetItemSpy.mockRestore();
   });
 
-  it('字段较完整的信贷结果应先进入保存前确认态', async () => {
+  it('字段较完整的信贷结果应先进入核对保存态', async () => {
     useAssistantWorkbenchMock.mockReturnValue({
       ...createWorkbenchMock(),
       rawContent: '已识别完成',
@@ -923,7 +926,7 @@ describe('AssistantPage', () => {
     await selectAssistantMode('AI 信贷管家');
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: '进入保存前确认' }));
+      fireEvent.click(screen.getByRole('button', { name: '核对并保存' }));
     });
 
     expect(await screen.findByText('保存前确认')).toBeInTheDocument();
@@ -1057,7 +1060,7 @@ describe('AssistantPage', () => {
     await selectAssistantMode('AI 信贷管家');
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: '进入保存前确认' }));
+      fireEvent.click(screen.getByRole('button', { name: '核对并保存' }));
     });
 
     expect(await screen.findByText('与已保存负债的差异')).toBeInTheDocument();
@@ -1129,7 +1132,7 @@ describe('AssistantPage', () => {
     await selectAssistantMode('AI 信贷管家');
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: '去补充后保存' }));
+      fireEvent.click(screen.getByRole('button', { name: '去还款管理' }));
     });
 
     await waitFor(() => {
@@ -1575,7 +1578,7 @@ describe('AssistantPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('账本已更新')).toBeInTheDocument();
+    expect(screen.getByText('本次操作结果')).toBeInTheDocument();
     expect(screen.getByText('已记账:午饭 -¥30.00')).toBeInTheDocument();
 
     await act(async () => {

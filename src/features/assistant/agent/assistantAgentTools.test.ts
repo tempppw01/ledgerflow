@@ -410,4 +410,46 @@ describe('assistantAgentTools', () => {
     );
     expect(JSON.parse(summary.content)).toMatchObject({ expenseTotal: 56, count: 1 });
   });
+
+  it('同一轮新增、修改和删除流水后账户余额始终同步', () => {
+    const { ctx } = createContext();
+    const created = executeAssistantToolCall(
+      createCall('create_transactions', {
+        transactions: [
+          {
+            type: 'expense',
+            amount: 25,
+            account: '微信钱包',
+            category: '餐饮',
+            note: '余额同步测试'
+          }
+        ]
+      }),
+      ctx
+    );
+    const createdId = (JSON.parse(created.content) as { createdIds: string[] }).createdIds[0];
+
+    const afterCreate = executeAssistantToolCall(createCall('list_accounts', {}), ctx);
+    expect(
+      (JSON.parse(afterCreate.content) as { accounts: Array<{ id: string; balance: number }> })
+        .accounts.find((item) => item.id === 'acc-wechat')?.balance
+    ).toBe(175);
+
+    executeAssistantToolCall(
+      createCall('update_transaction', { id: createdId, amount: 40 }),
+      ctx
+    );
+    const afterUpdate = executeAssistantToolCall(createCall('list_accounts', {}), ctx);
+    expect(
+      (JSON.parse(afterUpdate.content) as { accounts: Array<{ id: string; balance: number }> })
+        .accounts.find((item) => item.id === 'acc-wechat')?.balance
+    ).toBe(160);
+
+    executeAssistantToolCall(createCall('delete_transaction', { id: createdId }), ctx);
+    const afterDelete = executeAssistantToolCall(createCall('list_accounts', {}), ctx);
+    expect(
+      (JSON.parse(afterDelete.content) as { accounts: Array<{ id: string; balance: number }> })
+        .accounts.find((item) => item.id === 'acc-wechat')?.balance
+    ).toBe(200);
+  });
 });

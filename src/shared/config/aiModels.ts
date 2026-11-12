@@ -1,4 +1,4 @@
-export const DEFAULT_AI_MODEL = 'gpt-6-luna';
+export const DEFAULT_AI_MODEL = 'deepseek-v4.1-flash';
 
 export const AI_MODEL_PRESETS: string[] = [
   DEFAULT_AI_MODEL,
@@ -6,7 +6,6 @@ export const AI_MODEL_PRESETS: string[] = [
   'gemini-3.8-flash',
   'glm-5.3',
   'grok-4.7',
-  'deepseek-v4.1-flash',
   'gpt-5.5',
   'gpt-5.4-mini'
 ];

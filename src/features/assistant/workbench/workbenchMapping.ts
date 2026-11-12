@@ -15,30 +15,66 @@ export function normalizeMoney(value: number): number {
  */
 export function inferSourceFromText(text: string): TransactionSource {
   const normalized = text.toLowerCase();
-  if (/微信|wechat|wxpay/.test(normalized)) return 'wechat';
-  if (/支付宝|alipay|蚂蚁/.test(normalized)) return 'alipay';
+  if (/微信|微信支付|零钱通|零钱|wechat|weixin|wxpay|\bwx\b/.test(normalized)) return 'wechat';
+  if (/支付宝|alipay|蚂蚁|余额宝|zfb|zhifubao/.test(normalized)) return 'alipay';
   return 'ai';
 }
 
 export function inferCategoryFromText(type: TransactionType, text: string): string {
   const normalized = text.toLowerCase();
   if (type === 'income') {
-    if (/工资|salary|payroll|奖金|bonus/.test(normalized)) return '工资';
-    if (/兼职|副业|part[-\s]?time|freelance/.test(normalized)) return '兼职';
+    if (/工资|薪资|薪水|月薪|底薪|发薪|salary|payroll/.test(normalized)) return '工资';
+    if (/奖金|年终奖|绩效|提成|bonus/.test(normalized)) return '奖金';
+    if (/兼职|副业|外快|稿费|咨询费|part[-\s]?time|freelance/.test(normalized)) return '兼职';
+    if (/分红|股息|利息|理财收益|基金收益/.test(normalized)) return '投资收益';
+    if (/报销|退款|返现/.test(normalized)) return '报销';
     return '收入';
   }
   if (
     type === 'repayment' ||
-    /还款|贷款|房贷|车贷|按揭|月供|花呗|白条|信用卡还款/.test(normalized)
+    /还款|还清|还了|贷款|房贷|车贷|按揭|月供|花呗|白条|信用卡|借呗|分期|最低还款/.test(
+      normalized
+    )
   ) {
     return '还款';
   }
-  if (/餐|外卖|奶茶|咖啡|food|meal|restaurant/.test(normalized)) return '餐饮';
-  if (/地铁|公交|打车|出租|滴滴|交通|taxi|metro|bus/.test(normalized)) return '交通';
-  if (/京东|淘宝|拼多多|购物|网购|shop|mall/.test(normalized)) return '购物';
-  if (/房租|租金|水电|燃气|物业|居住|rent/.test(normalized)) return '居住';
-  if (/医院|药店|体检|医疗|medical|doctor/.test(normalized)) return '医疗';
-  if (/电影|演出|游戏|娱乐|music|movie/.test(normalized)) return '娱乐';
+  if (
+    /餐|饭|早餐|午饭|午餐|晚饭|晚餐|夜宵|宵夜|外卖|食堂|快餐|火锅|烧烤|奶茶|咖啡|饮料|星巴克|瑞幸|蜜雪|霸王茶姬|food|meal|restaurant/.test(
+      normalized
+    )
+  ) {
+    return '餐饮';
+  }
+  if (
+    /地铁|公交|打车|网约车|出租|滴滴|顺风车|拼车|加油|停车|高速|过路费|单车|火车|高铁|机票|飞机|交通|taxi|metro|bus|fuel|parking/.test(
+      normalized
+    )
+  ) {
+    return '交通';
+  }
+  if (
+    /京东|淘宝|天猫|猫超|拼多多|抖音|超市|便利店|盒马|山姆|沃尔玛|购物|网购|日用品|shop|mall|market/.test(
+      normalized
+    )
+  ) {
+    return '购物';
+  }
+  if (/房租|租金|水费|电费|水电|燃气|物业|取暖|家政|装修|居住|rent|utility/.test(normalized)) {
+    return '居住';
+  }
+  if (/医院|药店|买药|挂号|看病|诊所|牙科|体检|医疗|医保|medical|doctor/.test(normalized)) {
+    return '医疗';
+  }
+  if (/电影|演出|演唱会|游戏|KTV|娱乐|music|movie|game/.test(normalized)) return '娱乐';
+  if (/学费|课程|培训|培训班|书籍|买书|考试|报名费|education|course/.test(normalized)) {
+    return '教育';
+  }
+  if (/话费|充话费|冲话费|流量|宽带|手机费|电话费|通讯/.test(normalized)) return '通讯';
+  if (/旅行|旅游|酒店|民宿|门票|景区|trip|hotel/.test(normalized)) return '旅行';
+  if (/宠物|猫粮|狗粮|猫砂/.test(normalized)) return '宠物';
+  if (/保险|保费|insurance/.test(normalized)) return '保险';
+  if (/会员|订阅|续费|subscription/.test(normalized)) return '订阅';
+  if (/人情|礼物|随礼|红包|请客/.test(normalized)) return '人情';
   return '支出';
 }
 
@@ -56,21 +92,29 @@ export function inferTags(
   const pushTag = (tag: string) => {
     if (!tags.includes(tag) && tags.length < 6) tags.push(tag);
   };
+  const repaymentLike =
+    type === 'repayment' || /还款|还清|还了|贷款|房贷|车贷|按揭|月供|花呗|白条|借呗|分期/.test(normalized);
   if (type === 'income') pushTag('收入');
   else if (type === 'budget') pushTag('预算');
-  else if (type === 'repayment') pushTag('还款');
+  else if (repaymentLike) pushTag('还款');
   else pushTag('支出');
   if (/早餐|早饭|morning/.test(normalized)) pushTag('早餐');
-  if (/午餐|中餐|noon/.test(normalized)) pushTag('午餐');
-  if (/晚餐|宵夜|dinner/.test(normalized)) pushTag('晚餐');
-  if (/滴滴|打车|出租|taxi/.test(normalized)) pushTag('打车');
-  if (/地铁|公交|metro|bus/.test(normalized)) pushTag('公共交通');
-  if (/支付宝|alipay/.test(normalized)) pushTag('支付宝');
-  if (/微信|wechat/.test(normalized)) pushTag('微信');
-  if (/京东|淘宝|拼多多|shop/.test(normalized)) pushTag('网购');
-  if (/工资|salary|payroll/.test(normalized)) pushTag('工资');
+  if (/午餐|午饭|中餐|noon/.test(normalized)) pushTag('午餐');
+  if (/晚餐|晚饭|宵夜|夜宵|dinner/.test(normalized)) pushTag('晚餐');
+  if (/外卖|食堂|快餐/.test(normalized)) pushTag('外卖');
+  if (/滴滴|打车|网约车|出租|taxi/.test(normalized)) pushTag('打车');
+  if (/地铁|公交|单车|metro|bus/.test(normalized)) pushTag('公共交通');
+  if (/加油|停车|高速|过路费/.test(normalized)) pushTag('用车');
+  if (/支付宝|alipay|余额宝/.test(normalized)) pushTag('支付宝');
+  if (/微信|wechat|weixin|零钱/.test(normalized)) pushTag('微信');
+  if (/京东|淘宝|天猫|拼多多|shop/.test(normalized)) pushTag('网购');
+  if (/工资|薪资|薪水|salary|payroll/.test(normalized)) pushTag('工资');
+  if (/奖金|年终奖|绩效|提成|bonus/.test(normalized)) pushTag('奖金');
   if (/贷款|房贷|车贷|按揭|月供/.test(normalized)) pushTag('贷款');
-  if (/信用卡|花呗|白条/.test(normalized)) pushTag('信用账户');
+  if (/信用卡|花呗|白条|借呗/.test(normalized)) pushTag('信用账户');
+  if (/课程|培训|学费|书籍|买书/.test(normalized)) pushTag('学习');
+  if (/话费|流量|宽带/.test(normalized)) pushTag('通讯');
+  if (/会员|订阅|续费/.test(normalized)) pushTag('订阅');
   return tags;
 }
 
@@ -392,11 +436,14 @@ export function mapAssistantErrorMessage(raw: string): string {
     return '权限不足：当前 API Key 无模型访问权限。';
   if (text.includes('http 404') || text.includes('http_404'))
     return '接口地址或模型不存在：请检查 Base URL 与模型名称。';
+  if (text.includes('超时') || text.includes('timeout'))
+    return '模型响应超时:这次生成太久已自动结束。点「重试」可重新提交,或换一个响应更快的模型。';
+  if (text.includes('aborted')) return '请求已中止:可以点「重试」重新提交。';
   if (text.includes('http 429') || text.includes('http_429') || text.includes('rate limit'))
     return '请求过于频繁：已触发限流，请稍后重试。';
   if (text.includes('http 5') || text.includes('http_5'))
     return '服务暂时不可用：供应商服务异常，请稍后重试。';
-  return 'AI 服务调用失败,请检查接口配置、模型名称或 API Key 后重试。';
+  return 'AI 服务调用失败:可能是网络波动或服务暂时异常,请稍后重试;若持续失败,再检查接口地址、模型与 API Key。';
 }
 
 export function toPayloadRows(entries: DraftBillEntry[]) {

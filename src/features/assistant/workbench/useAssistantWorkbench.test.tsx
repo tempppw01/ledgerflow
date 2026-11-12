@@ -311,6 +311,165 @@ describe('useAssistantWorkbench Agent 工具', () => {
     fetchMock.mockRestore();
   });
 
+  it('信贷模式改用台账工具,可登记还款并撤销', async () => {
+    mockAiSettings();
+    const debts = [
+      {
+        id: 'debt-card',
+        name: '招商银行信用卡',
+        type: 'credit-card' as const,
+        balance: 4200,
+        status: 'active' as const,
+        entryMode: 'standard' as const
+      }
+    ];
+    const addRepaymentRecord = vi.fn(() => 'rec-agent-1');
+    const updateDebt = vi.fn();
+    const removeRepaymentRecord = vi.fn();
+    const { fetchMock, state } = mockAgentChatFetch([
+      createSseResponse([
+        sseToolCallChunk('call_credit_1', 'record_repayment', {
+          id: 'debt-card',
+          amount: 300,
+          paidAt: '2026-11-11'
+        }),
+        '',
+        'data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}]}',
+        '',
+        'data: [DONE]',
+        ''
+      ]),
+      createSseResponse([
+        'data: {"choices":[{"delta":{"content":"已登记招商银行信用卡还款 300 元。"}}]}',
+        '',
+        'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}',
+        '',
+        'data: [DONE]',
+        ''
+      ])
+    ]);
+
+    const { result } = renderHook(() =>
+      useAssistantWorkbench({
+        baseUrl: 'https://api.example.com/v1',
+        apiKey: 'test-key',
+        model: 'test-model',
+        categories,
+        accounts,
+        transactions: [],
+        addCategory: vi.fn(),
+        addAccount: vi.fn(),
+        addTransaction: vi.fn() as unknown as AddTransactionAction,
+        updateTransaction: vi.fn(),
+        removeTransaction: vi.fn(),
+        restoreTransaction: vi.fn(),
+        sceneMode: 'credit',
+        debts,
+        repaymentRecords: [],
+        monthlyIncome: 12000,
+        addDebt: vi.fn(() => 'debt-new'),
+        updateDebt,
+        removeDebt: vi.fn(),
+        addRepaymentRecord,
+        removeRepaymentRecord
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleRecognizeWithPrompt(
+        '招行信用卡今天还了 300',
+        { imageDataUrls: [], pdfDataUrls: [] },
+        { task: 'chat', agent: true }
+      );
+    });
+
+    const firstBody = state.requestBodies[0] as { tools?: Array<{ function: { name: string } }> };
+    const toolNames = (firstBody.tools || []).map((tool) => tool.function.name);
+    expect(toolNames).toContain('record_repayment');
+    expect(toolNames).not.toContain('create_transactions');
+
+    expect(addRepaymentRecord).toHaveBeenCalledWith(
+      expect.objectContaining({ debtId: 'debt-card', amount: 300 })
+    );
+    expect(result.current.agentActions).toHaveLength(1);
+    expect(result.current.agentActions[0].kind).toBe('create');
+
+    const actionId = result.current.agentActions[0].id;
+    act(() => {
+      result.current.undoAgentAction(actionId);
+    });
+    expect(removeRepaymentRecord).toHaveBeenCalledWith('rec-agent-1');
+    expect(result.current.agentActions).toHaveLength(0);
+
+    fetchMock.mockRestore();
+  });
+
+  it('只有片段信息时先自动保存草稿,并把草稿上下文带入模型', async () => {
+    mockAiSettings();
+    const upsertCreditDraft = vi.fn((payload: { id?: string }) => payload.id || 'draft-auto-1');
+    const { fetchMock, state } = mockAgentChatFetch([
+      createSseResponse([
+        'data: {"choices":[{"delta":{"content":"已先记下京东白条总欠款 2000 元,还缺期数。"}}]}',
+        '',
+        'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}',
+        '',
+        'data: [DONE]',
+        ''
+      ])
+    ]);
+
+    const { result } = renderHook(() =>
+      useAssistantWorkbench({
+        baseUrl: 'https://api.example.com/v1',
+        apiKey: 'test-key',
+        model: 'test-model',
+        categories,
+        accounts,
+        transactions: [],
+        addCategory: vi.fn(),
+        addAccount: vi.fn(),
+        addTransaction: vi.fn() as unknown as AddTransactionAction,
+        updateTransaction: vi.fn(),
+        removeTransaction: vi.fn(),
+        restoreTransaction: vi.fn(),
+        sceneMode: 'credit',
+        debts: [],
+        repaymentRecords: [],
+        creditDrafts: [],
+        monthlyIncome: 12000,
+        addDebt: vi.fn(() => 'debt-new'),
+        updateDebt: vi.fn(),
+        removeDebt: vi.fn(),
+        addRepaymentRecord: vi.fn(() => 'rec-new'),
+        removeRepaymentRecord: vi.fn(),
+        upsertCreditDraft,
+        removeCreditDraft: vi.fn()
+      })
+    );
+
+    await act(async () => {
+      await result.current.handleRecognizeWithPrompt(
+        '京东白条总欠款2000',
+        { imageDataUrls: [], pdfDataUrls: [] },
+        { task: 'chat', agent: true }
+      );
+    });
+
+    expect(upsertCreditDraft).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: '京东白条',
+        balance: 2000,
+        sourceTurns: 1
+      })
+    );
+    const firstBody = JSON.stringify(state.requestBodies[0]);
+    expect(firstBody).toContain('信贷草稿上下文');
+    expect(firstBody).toContain('京东白条');
+    expect(result.current.rawContent).toContain('还缺期数');
+
+    fetchMock.mockRestore();
+  });
+
   it('账户提示词能驱动 Agent 创建资金账户并回传结果', async () => {
     mockAiSettings();
     const addAccount = vi.fn(() => 'acc-agent-card');

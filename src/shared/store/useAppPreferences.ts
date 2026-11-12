@@ -18,6 +18,12 @@ import {
   ManualRepaymentItem,
   RepaymentRecord
 } from '../../features/debt/model/debtMetrics';
+import type { CreditDraft } from '../../features/debt/model/creditDrafts';
+import {
+  createCreditDraft,
+  findCreditDraftForFragment,
+  mergeCreditDraft
+} from '../../features/debt/model/creditDrafts';
 
 export type RssSubscription = {
   id: string;
@@ -52,6 +58,7 @@ interface AppPreferencesState {
   investmentAiMessages: InvestmentAiMessage[];
   debts: DebtItem[];
   repaymentRecords: RepaymentRecord[];
+  creditDrafts: CreditDraft[];
   monthlyIncome: number;
   setTheme: (theme: AppTheme) => void;
   setAccentTheme: (accentTheme: AppAccentTheme) => void;
@@ -93,12 +100,16 @@ interface AppPreferencesState {
   }) => void;
   setMonthlyIncome: (income: number) => void;
   setRepaymentState: (payload: { debts: DebtItem[]; monthlyIncome: number }) => void;
-  addDebt: (payload: Omit<DebtItem, 'id'>) => void;
+  addDebt: (payload: Omit<DebtItem, 'id'> & { id?: string }) => string;
   replaceDebts: (payload: Omit<DebtItem, 'id'>[]) => void;
   updateDebt: (id: string, payload: Omit<DebtItem, 'id'>) => void;
   removeDebt: (id: string) => void;
-  addRepaymentRecord: (payload: Omit<RepaymentRecord, 'id' | 'createdAt'>) => void;
+  addRepaymentRecord: (
+    payload: Omit<RepaymentRecord, 'id' | 'createdAt'> & { id?: string; createdAt?: string }
+  ) => string;
   removeRepaymentRecord: (id: string) => void;
+  upsertCreditDraft: (payload: Partial<CreditDraft>) => string;
+  removeCreditDraft: (id: string) => void;
 }
 
 function createDebtId(type: DebtType): string {
@@ -590,7 +601,7 @@ function createSubscriptionId(url: string): string {
 
 export const useAppPreferences = create<AppPreferencesState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       theme: 'system',
       accentTheme: 'amber',
       rssSubscriptions: DEFAULT_RSS_SUBSCRIPTIONS,
@@ -601,6 +612,7 @@ export const useAppPreferences = create<AppPreferencesState>()(
       investmentAiMessages: [],
       debts: [],
       repaymentRecords: [],
+      creditDrafts: [],
       monthlyIncome: 0,
       setTheme: (theme) => set({ theme }),
       setAccentTheme: (accentTheme) => set({ accentTheme }),
@@ -833,9 +845,11 @@ export const useAppPreferences = create<AppPreferencesState>()(
         });
       },
       addDebt: (payload) => {
+        const id = payload.id || createDebtId(payload.type);
         set((state) => ({
-          debts: [normalizeDebtItem({ ...payload, id: createDebtId(payload.type) }), ...state.debts]
+          debts: [normalizeDebtItem({ ...payload, id }), ...state.debts]
         }));
+        return id;
       },
       replaceDebts: (payload) => {
         set({
@@ -860,20 +874,46 @@ export const useAppPreferences = create<AppPreferencesState>()(
         }));
       },
       addRepaymentRecord: (payload) => {
+        const id = payload.id || createRepaymentRecordId();
+        const createdAt = payload.createdAt || new Date().toISOString();
         set((state) => ({
           repaymentRecords: [
             {
               ...payload,
-              id: createRepaymentRecordId(),
-              createdAt: new Date().toISOString()
+              id,
+              createdAt
             },
             ...state.repaymentRecords
           ]
         }));
+        return id;
       },
       removeRepaymentRecord: (id) => {
         set((state) => ({
           repaymentRecords: state.repaymentRecords.filter((item) => item.id !== id)
+        }));
+      },
+      upsertCreditDraft: (payload) => {
+        const state = get();
+        const target = payload.id
+          ? state.creditDrafts.find((item) => item.id === payload.id)
+          : findCreditDraftForFragment(state.creditDrafts, payload);
+        if (target) {
+          const merged = mergeCreditDraft(target, payload);
+          set({
+            creditDrafts: state.creditDrafts.map((item) => (item.id === target.id ? merged : item))
+          });
+          return target.id;
+        }
+
+        if (!payload.name && payload.balance === undefined) return '';
+        const draft = createCreditDraft(payload);
+        set({ creditDrafts: [draft, ...state.creditDrafts] });
+        return draft.id;
+      },
+      removeCreditDraft: (id) => {
+        set((state) => ({
+          creditDrafts: state.creditDrafts.filter((item) => item.id !== id)
         }));
       }
     }),

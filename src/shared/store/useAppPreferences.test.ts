@@ -267,3 +267,32 @@ describe('useAppPreferences RSS subscriptions', () => {
     );
   });
 });
+
+describe('useAppPreferences credit drafts', () => {
+  beforeEach(() => {
+    localStorage.removeItem('ledgerflow-preferences');
+    useAppPreferences.setState({ creditDrafts: [] });
+  });
+
+  it('同名草稿会用当前消息的新金额更新,而不是保留旧值', () => {
+    const draftId = useAppPreferences.getState().upsertCreditDraft({
+      id: 'draft-jd',
+      name: '京东白条',
+      type: 'consumer-loan',
+      balance: 5900
+    });
+    useAppPreferences.getState().upsertCreditDraft({
+      id: draftId,
+      name: '京东白条',
+      balance: 2000
+    });
+
+    const drafts = useAppPreferences.getState().creditDrafts;
+    expect(drafts).toHaveLength(1);
+    expect(drafts[0]).toMatchObject({
+      id: draftId,
+      name: '京东白条',
+      balance: 2000
+    });
+  });
+});

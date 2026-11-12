@@ -16,6 +16,7 @@ export const ENV = {
    */
   apiBaseUrl: resolvedApiBaseUrl,
   requestTimeoutMs: Number(import.meta.env.VITE_REQUEST_TIMEOUT_MS || 8000),
+  aiGenerationTimeoutMs: Number(import.meta.env.VITE_AI_GENERATION_TIMEOUT_MS || 120000),
   logLevel: import.meta.env.VITE_LOG_LEVEL || 'info',
   aiBaseUrl: import.meta.env.VITE_AI_BASE_URL || 'https://ai.shuaihong.fun/v1',
   aiApiKey: import.meta.env.VITE_AI_API_KEY || '',

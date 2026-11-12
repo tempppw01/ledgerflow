@@ -6,6 +6,8 @@ import type {
   AccountUpdatePayload,
   AddTransactionAction
 } from '../../../shared/store/useFinanceStore';
+import { isBalanceAffectingStatus } from '../../../shared/lib/localDate';
+import { getSignedAmount } from '../../../shared/lib/transactionMetrics';
 import type { ChatToolCall, ChatToolDefinition } from '../api/openaiCompatibleClient';
 import {
   type AccountResolveSource,
@@ -34,7 +36,7 @@ export interface AgentToolContext {
   restoreTransaction: (id: string) => void;
 }
 
-export type AgentActionKind = 'create' | 'update' | 'delete';
+export type AgentActionKind = 'read' | 'create' | 'update' | 'delete';
 
 /** 可持久化到会话记录里的操作摘要。 */
 export interface AgentActionView {
@@ -305,20 +307,34 @@ export const ASSISTANT_AGENT_TOOLS: ChatToolDefinition[] = [
   }
 ];
 
+export const ASSISTANT_COMMAND_VOCABULARY = {
+  accountQuery: ['有多少钱', '余额', '卡里', '卡内', '钱包', '零钱', '总资产', '净资产', '额度'],
+  createTransaction: ['花了', '买了', '付了', '扣了', '刷了', '支出', '消费', '转账', '付的'],
+  createIncome: ['收到', '到账', '发了', '入账', '报销', '退款', '返现'],
+  update: ['改成', '改一下', '不是', '应该是', '换成', '调整', '纠正', '记错了', '错了', '重新记'],
+  delete: ['删掉', '去掉', '不要了', '取消这笔', '撤销', '移除', '清理', '撤掉', '清掉'],
+  confirm: ['确认', '对', '没错', '可以', '是的', '删吧', '继续', '嗯', '行', '好的'],
+  cancel: ['不对', '先别', '不要', '取消', '算了', '暂停', '不用了', '别记了', '先这样'],
+  time: ['今天', '昨天', '前天', '这周', '上周', '本月', '上月', '月初', '月底', '号', '日', '昨晚', '上礼拜'],
+  amount: ['块', '元', '毛', '角', '半', '万', '千', '两百', '三百五十', '一百二', '50大洋', '五百整']
+} as const;
+
 export const ASSISTANT_AGENT_INSTRUCTIONS = [
   '你是可以直接操作账本的记账助手,支持查账、记账、改账、删账,以及管理现金/银行卡/虚拟支付等资金账户。',
   '规则:',
-  '1. 需要账本事实(余额、金额、账户、分类、历史账单)时先调用工具,不要凭记忆编造数据。',
+  '1. 需要账本事实(余额、金额、账户、分类、历史账单)时先调用工具,不要凭记忆或历史对话编造数据。账户余额和流水数每次回答前都要重新读取当前状态。',
   '2. 用户明确要求开户时调用 create_account;账户类型只使用现金、借记卡、储蓄卡或虚拟账户。信用卡、借款等负债请在负债模式处理。',
-  '3. 用户要求给账户改名或改类型时调用 update_account;校准实际余额时调用 adjust_account_balance。操作前先调用 list_accounts 确认唯一账户。',
+  '3. 用户要求给账户改名或改类型时调用 update_account;校准实际余额时调用 adjust_account_balance。操作前先调用 list_accounts 确认唯一账户;同一轮拿到明确 id 后直接复用,不要为每个后续动作重复查询同一账户。',
   '4. 用户说了明确的账目内容就调用 create_transactions 落账;信息不足时先问一句再动手。',
   '5. 修改或删除账单前必须先 query_transactions 找到目标账单 id,拿到明确 id 后再调用工具;',
   '   如果匹配到多笔且无法确定,先列出候选让用户选择,不要批量删除。',
   '6. 删除账户前检查关联流水数。只要 linkedTransactionCount 大于 0,必须先向用户说明影响并等待明确确认,之后才能再次调用 delete_account 并传 confirmLinkedTransactions=true。',
   '7. 用户要找回已删除账户时,先调用 list_accounts(includeTrashed=true),再调用 restore_account。',
   '8. 金额一律为正数,收入/支出由 type 区分;日期缺省用今天。账户余额校准可以输入用户给出的实际余额数值。',
-  '9. 工具执行完成后,用一两句中文说明做了什么(账户、余额、金额、分类、时间),不要输出 JSON。',
-  '10. 涉及投资、信贷的深度分析仍交给对应模式,这里只做账本与资金账户操作和解释。'
+  '9. 始终使用简体中文回答。工具执行完成后,用一两句说明实际结果(账户、余额、金额、分类、时间),不要输出 JSON;禁止只回复“I will”“马上处理”等预告性空话。',
+  '10. 涉及投资、信贷的深度分析仍交给对应模式,这里只做账本与资金账户操作和解释。',
+  '【常见用户词汇】',
+  ...Object.entries(ASSISTANT_COMMAND_VOCABULARY).map(([intent, words]) => `${intent}:${words.join('、')}`)
 ].join('\n');
 
 function parseArgs(raw: string): Record<string, unknown> {
@@ -359,6 +375,37 @@ function accountTypeLabel(type?: Account['type']): string {
 function accountBalance(account: Account): number {
   const value = Number(account.balance ?? account.initialBalance ?? 0);
   return Number.isFinite(value) ? normalizeMoney(value) : 0;
+}
+
+function accountTransactionDelta(accountId: string, ctx: AgentToolContext): number {
+  return ctx.transactions
+    .filter(
+      (row) =>
+        row.accountId === accountId && !row.trashedAt && isBalanceAffectingStatus(row.status)
+    )
+    .reduce((sum, row) => sum + getSignedAmount(row), 0);
+}
+
+function ensureContextAccountBaselines(ctx: AgentToolContext) {
+  ctx.accounts = ctx.accounts.map((account) =>
+    account.initialBalance !== undefined
+      ? account
+      : {
+          ...account,
+          initialBalance: normalizeMoney(
+            accountBalance(account) - accountTransactionDelta(account.id, ctx)
+          )
+        }
+  );
+}
+
+function recalculateContextAccountBalances(ctx: AgentToolContext) {
+  ctx.accounts = ctx.accounts.map((account) => ({
+    ...account,
+    balance: normalizeMoney(
+      Number(account.initialBalance ?? 0) + accountTransactionDelta(account.id, ctx)
+    )
+  }));
 }
 
 function accountTransactionStats(accountId: string, ctx: AgentToolContext) {
@@ -546,6 +593,7 @@ function executeListAccounts(
     .filter((item) => item.type === 'credit' || item.type === 'liability')
     .reduce((sum, item) => sum + Math.abs(accountBalance(item)), 0);
 
+  const viewId = toViewId('agent-account-read', 0);
   return {
     content: JSON.stringify({
       ok: true,
@@ -559,7 +607,14 @@ function executeListAccounts(
       accounts: active.slice(0, limit).map((account) => serializeAccount(account, ctx)),
       trashedAccounts: trashed.slice(0, limit).map((account) => serializeAccount(account, ctx))
     }),
-    views: [],
+    views: [
+      {
+        id: viewId,
+        kind: 'read',
+        label: `已读取 ${active.length} 个账户,净额 ¥${normalizeMoney(assetsTotal - liabilitiesTotal).toFixed(2)}`,
+        undoable: false
+      }
+    ],
     undo: []
   };
 }
@@ -688,7 +743,11 @@ function executeAdjustAccountBalance(
   }
 
   ctx.updateAccountBalance(previous.id, normalizedBalance);
-  const updated: Account = { ...previous, balance: normalizedBalance };
+  const updated: Account = {
+    ...previous,
+    initialBalance: normalizeMoney(normalizedBalance - accountTransactionDelta(previous.id, ctx)),
+    balance: normalizedBalance
+  };
   const index = ctx.accounts.findIndex((item) => item.id === previous.id);
   if (index >= 0) ctx.accounts[index] = updated;
   const viewId = toViewId('agent-account-balance', 0);
@@ -857,6 +916,7 @@ function serializeTransaction(row: TransactionItem, ctx: AgentToolContext) {
 }
 
 function executeCreate(args: Record<string, unknown>, ctx: AgentToolContext): AgentToolExecution {
+  ensureContextAccountBaselines(ctx);
   const rawItems = Array.isArray(args.transactions) ? args.transactions : [];
   // 直接复用上下文里的数组,保证同一轮对话内后续工具能看到刚创建的分类/账户。
   const categoryCache = ctx.categories;
@@ -913,6 +973,7 @@ function executeCreate(args: Record<string, unknown>, ctx: AgentToolContext): Ag
     const id = ctx.addTransaction(payload);
     created.push(id);
     ctx.transactions.push({ id, ...payload });
+    recalculateContextAccountBalances(ctx);
     const viewId = toViewId('agent-create', index);
     views.push({
       id: viewId,
@@ -928,6 +989,7 @@ function executeCreate(args: Record<string, unknown>, ctx: AgentToolContext): Ag
         ctx.removeTransaction(id);
         const index = ctx.transactions.findIndex((row) => row.id === id);
         if (index >= 0) ctx.transactions.splice(index, 1);
+          recalculateContextAccountBalances(ctx);
       }
     });
   });
@@ -945,6 +1007,7 @@ function executeCreate(args: Record<string, unknown>, ctx: AgentToolContext): Ag
 }
 
 function executeUpdate(args: Record<string, unknown>, ctx: AgentToolContext): AgentToolExecution {
+  ensureContextAccountBaselines(ctx);
   const id = toText(args.id);
   const target = ctx.transactions.find((item) => item.id === id);
   if (!target) {
@@ -991,6 +1054,7 @@ function executeUpdate(args: Record<string, unknown>, ctx: AgentToolContext): Ag
   if (rowIndex >= 0) {
     ctx.transactions[rowIndex] = { id, ...payload };
   }
+  recalculateContextAccountBalances(ctx);
   const viewId = toViewId('agent-update', 0);
   return {
     content: JSON.stringify({ ok: true, updatedId: id }),
@@ -1009,6 +1073,7 @@ function executeUpdate(args: Record<string, unknown>, ctx: AgentToolContext): Ag
           ctx.updateTransaction(id, previous);
           const index = ctx.transactions.findIndex((item) => item.id === id);
           if (index >= 0) ctx.transactions[index] = { id, ...previous };
+          recalculateContextAccountBalances(ctx);
         }
       }
     ]
@@ -1016,6 +1081,7 @@ function executeUpdate(args: Record<string, unknown>, ctx: AgentToolContext): Ag
 }
 
 function executeDelete(args: Record<string, unknown>, ctx: AgentToolContext): AgentToolExecution {
+  ensureContextAccountBaselines(ctx);
   const id = toText(args.id);
   const target = ctx.transactions.find((item) => item.id === id);
   if (!target) {
@@ -1029,6 +1095,7 @@ function executeDelete(args: Record<string, unknown>, ctx: AgentToolContext): Ag
   ctx.removeTransaction(id);
   const rowIndex = ctx.transactions.findIndex((item) => item.id === id);
   if (rowIndex >= 0) ctx.transactions.splice(rowIndex, 1);
+  recalculateContextAccountBalances(ctx);
   const viewId = toViewId('agent-delete', 0);
   return {
     content: JSON.stringify({ ok: true, deletedId: id }),
@@ -1048,6 +1115,7 @@ function executeDelete(args: Record<string, unknown>, ctx: AgentToolContext): Ag
           if (!ctx.transactions.some((item) => item.id === id)) {
             ctx.transactions.push(target);
           }
+          recalculateContextAccountBalances(ctx);
         }
       }
     ]
@@ -1076,9 +1144,17 @@ function executeQuery(args: Record<string, unknown>, ctx: AgentToolContext): Age
     .slice(0, limit)
     .map((row) => serializeTransaction(row, ctx));
 
+  const viewId = toViewId('agent-transaction-read', 0);
   return {
     content: JSON.stringify({ ok: true, count: rows.length, transactions: rows }),
-    views: [],
+    views: [
+      {
+        id: viewId,
+        kind: 'read',
+        label: `已检索到 ${rows.length} 笔流水`,
+        undoable: false
+      }
+    ],
     undo: []
   };
 }
@@ -1118,6 +1194,7 @@ function executeSummary(args: Record<string, unknown>, ctx: AgentToolContext): A
     .filter((row) => row.type === 'expense')
     .reduce((sum, row) => sum + row.amount, 0);
 
+  const viewId = toViewId('agent-transaction-summary', 0);
   return {
     content: JSON.stringify({
       ok: true,
@@ -1131,7 +1208,14 @@ function executeSummary(args: Record<string, unknown>, ctx: AgentToolContext): A
         .sort((a, b) => b.expense + b.income - (a.expense + a.income))
         .slice(0, 20)
     }),
-    views: [],
+    views: [
+      {
+        id: viewId,
+        kind: 'read',
+        label: `已汇总 ${rows.length} 笔收支,支出 ¥${normalizeMoney(expenseTotal).toFixed(2)}`,
+        undoable: false
+      }
+    ],
     undo: []
   };
 }
@@ -1155,7 +1239,21 @@ function executeList(call: ChatToolCall, ctx: AgentToolContext): AgentToolExecut
           }))
         };
 
-  return { content: JSON.stringify({ ok: true, ...payload }), views: [], undo: [] };
+  const categoryCount =
+    'categories' in payload && Array.isArray(payload.categories) ? payload.categories.length : 0;
+  const viewId = toViewId('agent-category-read', 0);
+  return {
+    content: JSON.stringify({ ok: true, ...payload }),
+    views: [
+      {
+        id: viewId,
+        kind: 'read',
+        label: `已读取 ${categoryCount} 个分类`,
+        undoable: false
+      }
+    ],
+    undo: []
+  };
 }
 
 /** 执行一次模型工具调用,返回给模型的文本结果与可撤销的 UI 操作记录。 */

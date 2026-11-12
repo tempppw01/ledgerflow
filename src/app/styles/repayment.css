@@ -1119,3 +1119,141 @@
     padding-left: 34px;
   }
 }
+
+/* 还款管理页内嵌的 AI 台账助手 */
+.repayment-agent-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-elevated);
+}
+.repayment-agent-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.repayment-agent-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+.repayment-agent-input-row {
+  display: flex;
+  gap: 8px;
+}
+.repayment-agent-input-row input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 14px;
+}
+.repayment-agent-input-row input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+.repayment-agent-input-row button {
+  height: 38px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.repayment-agent-input-row button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.repayment-agent-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.repayment-agent-quick button {
+  padding: 5px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+.repayment-agent-quick button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--color-primary) 26%, var(--color-border));
+  background: var(--color-bg-hover);
+  color: var(--color-text);
+}
+.repayment-agent-error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: 13px;
+}
+.repayment-agent-result {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.repayment-agent-answer {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+.repayment-agent-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.repayment-agent-actions-head {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.repayment-agent-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--color-bg-hover);
+  font-size: 13px;
+}
+.repayment-agent-action b {
+  flex: none;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+.repayment-agent-action span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.repayment-agent-action button {
+  flex: none;
+  padding: 3px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .repayment-agent-input-row {
+    flex-direction: column;
+  }
+  .repayment-agent-input-row button {
+    width: 100%;
+  }
+}
