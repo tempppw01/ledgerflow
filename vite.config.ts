@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 const appLogoUrl =
-  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/public/logo.png?v=2';
+  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/public/logo.png?v=2';
 
 const apiProxyTarget = process.env.LEDGERFLOW_API_PROXY_TARGET || 'http://127.0.0.1:8787';
 
@@ -113,10 +113,10 @@ export default defineConfig({
         runtimeCaching: [
           {
             urlPattern:
-              /^https:\/\/cloudreve-bei\.oss-cn-guangzhou\.aliyuncs\.com\/ledgerflow\/fonts\/.*\.(?:woff2?|ttf)$/i,
+              /^https:\/\/pub-7c333d8dd649422b8c267f82f1a9b4c4\.r2\.dev\/fonts\/.*\.(?:woff2?|ttf)$/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'ledgerflow-oss-fonts',
+              cacheName: 'ledgerflow-r2-fonts',
               expiration: {
                 maxEntries: 16,
                 maxAgeSeconds: 60 * 60 * 24 * 365
@@ -128,10 +128,10 @@ export default defineConfig({
           },
           {
             urlPattern:
-              /^https:\/\/cloudreve-bei\.oss-cn-guangzhou\.aliyuncs\.com\/ledgerflow\/(?:ui|Illustrations)\/.*\.(?:gif|png|svg|webp)$/i,
+              /^https:\/\/pub-7c333d8dd649422b8c267f82f1a9b4c4\.r2\.dev\/(?:ui|Illustrations|public)\/.*\.(?:gif|png|svg|webp)$/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'ledgerflow-oss-assets',
+              cacheName: 'ledgerflow-r2-assets',
               expiration: {
                 maxEntries: 96,
                 maxAgeSeconds: 60 * 60 * 24 * 90

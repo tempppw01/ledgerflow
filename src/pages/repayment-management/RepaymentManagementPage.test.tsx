@@ -206,7 +206,7 @@ describe('RepaymentManagementPage', () => {
     expect(screen.getByText(/微粒贷模板已带入/)).toBeInTheDocument();
     expect(
       document.querySelector(
-        'img[src="https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/public/webank.png"]'
+        'img[src="https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/public/webank.png"]'
       )
     ).toBeInTheDocument();
   });
@@ -228,7 +228,7 @@ describe('RepaymentManagementPage', () => {
     expect(screen.getByText(/抖音放心借模板已带入/)).toBeInTheDocument();
     expect(
       document.querySelector(
-        'img[src="https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/public/fangxinjie.png"]'
+        'img[src="https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/public/fangxinjie.png"]'
       )
     ).toBeInTheDocument();
   });
@@ -270,7 +270,7 @@ describe('RepaymentManagementPage', () => {
     expect(appPreferencesMock.state.addDebt).toHaveBeenCalledWith(
       expect.objectContaining({
         name: '微粒贷',
-        iconUrl: 'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/public/webank.png'
+        iconUrl: 'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/public/webank.png'
       })
     );
   });

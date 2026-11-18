@@ -1772,14 +1772,14 @@ select {
   appearance: none;
   -webkit-appearance: none;
   padding-right: 34px;
-  background-image: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/chevron-down.svg');
+  background-image: url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/chevron-down.svg');
   background-repeat: no-repeat;
   background-position: right 10px center;
   background-size: 14px 14px;
 }
 
 select:open {
-  background-image: url('https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/chevron-up.svg');
+  background-image: url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/chevron-up.svg');
 }
 
 input::placeholder,

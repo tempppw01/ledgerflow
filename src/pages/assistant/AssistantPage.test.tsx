@@ -311,7 +311,7 @@ describe('AssistantPage', () => {
     const mergedIllustration = container.querySelector<HTMLImageElement>(
       '.chat-general-welcome .chat-mode-welcome-illustration'
     );
-    expect(mergedIllustration?.src).toContain('/ledgerflow/Illustrations/importing.svg');
+    expect(mergedIllustration?.src).toContain('/Illustrations/importing.svg');
   });
 
   it('旧记账模式缓存应迁移到 AI 助手,切换其他模式后不继承待确认状态', async () => {
@@ -492,7 +492,7 @@ describe('AssistantPage', () => {
     const creditIllustration = container.querySelector<HTMLImageElement>(
       '.chat-credit-illustration'
     );
-    expect(creditIllustration?.src).toContain('/ledgerflow/Illustrations/importing.svg');
+    expect(creditIllustration?.src).toContain('/Illustrations/importing.svg');
     expect(screen.queryByText('梳理本月应还')).not.toBeInTheDocument();
     expect(screen.queryByText('识别花呗与分期')).not.toBeInTheDocument();
     expect(screen.queryByText('🧭 优先处理')).not.toBeInTheDocument();

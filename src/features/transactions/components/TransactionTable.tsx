@@ -25,7 +25,7 @@ const WECHAT_ACCOUNT_PATTERN = /(微信|wechat|weixin)/i;
 const BANK_ACCOUNT_PATTERN =
   /(银行|bank|信用卡|储蓄卡|借记卡|icbc|abc|ccb|boc|cmb|psbc|交通银行|招商银行|建设银行|工商银行|农业银行|中国银行)/i;
 const TRANSACTION_SORT_ICON_BASE_URL =
-  'https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui';
+  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui';
 
 type AccountBrand = 'alipay' | 'wechat' | 'bank';
 

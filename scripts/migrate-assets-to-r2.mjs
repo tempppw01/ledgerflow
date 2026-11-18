@@ -15,6 +15,8 @@ const EXTRA_ASSET_PATHS = [
 ];
 const LEGACY_ASSET_PATTERN =
   /https:\/\/cloudreve-bei\.oss-cn-guangzhou\.aliyuncs\.com\/ledgerflow\/([A-Za-z0-9._/-]+)/g;
+const R2_ASSET_PATTERN =
+  /https:\/\/pub-[A-Za-z0-9]+\.r2\.dev\/([A-Za-z0-9._/-]+)/g;
 const SOURCE_SCAN_ROOTS = ['src'];
 const SOURCE_SCAN_FILES = ['index.html', 'vite.config.ts'];
 const SKIPPED_SCAN_DIRECTORIES = new Set(['node_modules', 'dist', 'coverage', '.git']);
@@ -45,7 +47,7 @@ Required for upload:
   R2_SECRET_ACCESS_KEY
 
 Optional:
-  R2_PREFIX              Object key prefix (default: ledgerflow)
+  R2_PREFIX              Object key prefix (default: empty, bucket root)
   R2_PUBLIC_BASE_URL     Public R2 domain used for post-upload verification
   LEGACY_ASSET_BASE_URL  Source asset base (default: current Aliyun OSS base)
   ASSET_CONCURRENCY      Parallel transfers (default: 6)
@@ -126,9 +128,12 @@ async function discoverAssets() {
 
   for (const filePath of files) {
     const source = await readFile(filePath, 'utf8');
-    for (const match of source.matchAll(LEGACY_ASSET_PATTERN)) {
-      const assetPath = normalizeRelativeAssetPath(match[1]);
-      if (assetPath) assets.add(assetPath);
+    for (const pattern of [LEGACY_ASSET_PATTERN, R2_ASSET_PATTERN]) {
+      pattern.lastIndex = 0;
+      for (const match of source.matchAll(pattern)) {
+        const assetPath = normalizeRelativeAssetPath(match[1]);
+        if (assetPath) assets.add(assetPath);
+      }
     }
   }
 
@@ -313,7 +318,7 @@ function readR2Config({ requireCredentials }) {
   const config = {
     endpoint,
     bucket: String(process.env.R2_BUCKET || '').trim(),
-    prefix: String(process.env.R2_PREFIX || 'ledgerflow')
+    prefix: String(process.env.R2_PREFIX ?? '')
       .trim()
       .replace(/^\/+|\/+$/g, ''),
     publicBaseUrl: trimUrl(process.env.R2_PUBLIC_BASE_URL),

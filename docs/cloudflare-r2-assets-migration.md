@@ -1,8 +1,9 @@
 # 阿里云 OSS 资源迁移到 Cloudflare R2
 
-当前应用使用 `cloudreve-bei.oss-cn-guangzhou.aliyuncs.com` 的 `ledgerflow/`
-前缀存放公开字体、图标和插画。迁移工具只处理应用实际引用的公开对象,不会列举或迁移
-Bucket 中的其他私有对象。
+应用原先使用 `cloudreve-bei.oss-cn-guangzhou.aliyuncs.com` 的 `ledgerflow/`
+前缀存放公开字体、图标和插画。当前迁移目标为 R2 的 `ledgerflow-public` Bucket,
+资源直接存放在 Bucket 根目录。迁移工具只处理应用实际引用的公开对象,不会列举或迁移
+私有备份对象。
 
 ## 迁移范围
 
@@ -17,12 +18,12 @@ Bucket 中的其他私有对象。
 
 ```text
 旧:https://cloudreve-bei.oss-cn-guangzhou.aliyuncs.com/ledgerflow/ui/chat.svg
-新:https://<R2_PUBLIC_BASE_URL>/ledgerflow/ui/chat.svg
+新:https://<R2_PUBLIC_BASE_URL>/ui/chat.svg
 ```
 
 ## 1. 准备 R2
 
-1. 创建 R2 Bucket。
+1. 创建独立的公开 R2 Bucket,不要把财务备份 Bucket 直接设为公开。
 2. 创建具备 Object Read & Write 权限的 R2 API Token。
 3. 为 Bucket 配置公开访问域名,可以使用 R2 自定义域名或 `r2.dev` 开发域名。
 4. 记住账号 ID、Bucket 名称、Access Key ID 和 Secret Access Key。
@@ -36,7 +37,7 @@ PowerShell 示例:
 ```powershell
 $env:R2_ACCOUNT_ID="<account-id>"
 $env:R2_BUCKET="<bucket-name>"
-$env:R2_PREFIX="ledgerflow"
+$env:R2_PREFIX=""
 $env:R2_PUBLIC_BASE_URL="https://assets.example.com"
 $env:R2_ACCESS_KEY_ID="<access-key-id>"
 $env:R2_SECRET_ACCESS_KEY="<secret-access-key>"
@@ -46,7 +47,8 @@ $env:R2_SECRET_ACCESS_KEY="<secret-access-key>"
 
 - `VITE_` 前缀只用于浏览器构建变量,不要把 R2 Secret 写成 `VITE_` 变量。
 - 迁移凭据只应在部署机器或本地临时终端中使用。
-- `R2_PUBLIC_BASE_URL` 应填写域名根地址,不要带 `/ledgerflow`。
+- 当前部署使用 Bucket 根目录,R2 对象键不再带 `ledgerflow/` 前缀。
+- `R2_PUBLIC_BASE_URL` 应填写域名根地址,不要附加资源目录。
 
 ## 3. 检查对象清单
 
@@ -65,7 +67,7 @@ npm run assets:migrate:r2
 脚本会执行以下步骤:
 
 1. 从旧 OSS 公开地址下载对象。
-2. 按相同路径上传到 R2 的 `R2_PREFIX` 下。
+2. 按相同路径上传到 R2 的 `R2_PREFIX` 下;当前部署的 `R2_PREFIX` 为空。
 3. 设置正确的 `Content-Type` 和长期缓存头。
 4. 通过 `R2_PUBLIC_BASE_URL` 执行 HEAD 校验并比对文件大小。
 
