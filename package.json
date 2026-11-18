@@ -9,6 +9,7 @@
     "server:local": "node server/localSqliteServer.js",
     "server:mysql": "node server/mysqlSnapshotServer.js",
     "benchmark:database": "node server/relationalPerformanceBaseline.js",
+    "assets:migrate:r2": "node scripts/migrate-assets-to-r2.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "lint": "eslint . --max-warnings=0",
