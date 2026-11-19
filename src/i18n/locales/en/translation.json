@@ -1402,5 +1402,110 @@
     "syncConflict": "Cloud sync is paused because some default account and category IDs in this ledger match another ledger in the cloud. To prevent the two ledgers from overwriting each other, uploads have been stopped. Your local data is safe. Refresh the page to retry; if the problem persists, ask your administrator to resolve the ID conflict before cloud sync can resume.",
     "syncFailure": "Cloud sync failed: {{detail}}",
     "syncRetry": "Cloud sync failed. Data will be retried automatically later."
+  },
+  "subscriptions": {
+    "kicker": "Recurring spend overview",
+    "title": "Subscriptions",
+    "subtitle": "Manage digital subscriptions, mobile plans and memberships in one place, with multi-currency, renewal and expiry tracking.",
+    "summaryAria": "Subscription overview",
+    "summary": {
+      "total": "Total",
+      "active": "Active",
+      "dueSoon": "Due soon",
+      "expired": "Expired"
+    },
+    "overviewAria": "Subscription quick overview",
+    "overview": {
+      "monthlyCost": "Estimated monthly fixed cost",
+      "groupedByCurrency": "Grouped by currency",
+      "normalizedMonthly": "Normalized per month",
+      "reminders": "Pending reminders",
+      "remindersHint": "Handle expired items first"
+    },
+    "card": {
+      "noDate": "No date set",
+      "summaryAria": "Subscription summary",
+      "generateExpense": "Generate expense",
+      "viewExpense": "View expense",
+      "edit": "Edit",
+      "delete": "Delete",
+      "moveToTrash": "Move to recycle bin",
+      "autoBadge": "Auto",
+      "everyDays": "Every {days} days",
+      "expirePrefix": "Expires {date}",
+      "expireTag": "Expires {date}",
+      "perMonth": "/mo",
+      "renewPrefix": "Renews {date}",
+      "renewTag": "Renews",
+      "remindTag": "Reminder"
+    },
+    "form": {
+      "editTitle": "Edit subscription",
+      "createTitle": "New subscription",
+      "subtitle": "Start with the basics, then add account, renewal and notes so generating expenses is easier later.",
+      "monthlyAverage": "Monthly average",
+      "customCycleHint": "Prorated by your custom cycle",
+      "templatesAria": "Subscription templates",
+      "templatesTitle": "Start from a template",
+      "templatesHint": "One tap fills in a common service; amounts and dates stay editable.",
+      "basicTitle": "Basics",
+      "basicHint": "Define what it is, how much it costs, and how often it bills",
+      "name": "Name",
+      "namePlaceholder": "e.g. Netflix / mobile plan",
+      "kind": "Type",
+      "amount": "Amount",
+      "currency": "Currency",
+      "cycle": "Billing cycle",
+      "customDays": "Custom days",
+      "billingTitle": "Billing & dates",
+      "billingHint": "Fill in account, platform and renewal time for easier tracking",
+      "account": "Billing account",
+      "accountNone": "Not specified",
+      "provider": "Platform / merchant",
+      "providerPlaceholder": "e.g. Apple, Netflix, your carrier",
+      "renewalDate": "Renewal date",
+      "expireDate": "Expiry date",
+      "status": "Status",
+      "autoRenew": "Auto-renew",
+      "note": "Notes",
+      "notePlaceholder": "Plan details, member benefits, last digits of the card…",
+      "saveEdit": "Save changes",
+      "cancelEdit": "Cancel editing"
+    },
+    "kind": {
+      "digital": "Digital",
+      "mobile": "Mobile",
+      "membership": "Membership",
+      "other": "Other"
+    },
+    "cycle": {
+      "monthly": "Monthly",
+      "quarterly": "Quarterly",
+      "semiannual": "Semi-annual",
+      "yearly": "Yearly",
+      "custom": "Custom"
+    },
+    "status": {
+      "active": "Active",
+      "paused": "Paused",
+      "dueSoon": "Due soon",
+      "expired": "Expired"
+    },
+    "list": {
+      "title": "Subscriptions",
+      "subtitle": "Sorted by expiry, with items that need attention first.",
+      "count": "Recorded",
+      "emptyTitle": "No subscriptions yet",
+      "emptyDesc": "Add your first digital subscription, mobile plan or membership; costs and expiry will be tracked together.",
+      "loadDemo": "Load sample subscriptions"
+    },
+    "confirm": {
+      "cancel": "Cancel"
+    },
+    "error": {
+      "nameRequired": "Please enter a subscription name.",
+      "amountRequired": "The amount must be greater than 0.",
+      "generateFailed": "Failed to generate the expense. Please try again later."
+    }
   }
 }

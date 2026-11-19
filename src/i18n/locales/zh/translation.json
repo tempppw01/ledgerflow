@@ -1402,5 +1402,110 @@
     "syncConflict": "云端同步已暂停：本机账本中的默认账户、分类等数据编号与云端另一个账本重复。为避免两个账本互相覆盖，系统已暂停上传。本地数据不受影响。请刷新页面重试；如果仍然出现，请联系管理员处理冲突后再恢复云端同步。",
     "syncFailure": "云端同步失败：{{detail}}",
     "syncRetry": "云端同步失败，数据会在稍后自动重试。"
+  },
+  "subscriptions": {
+    "kicker": "周期支出总览",
+    "title": "订阅管理",
+    "subtitle": "统一管理数字订阅、话费、会员卡等周期性项目,支持多币种、续费日和到期状态追踪。",
+    "summaryAria": "订阅概览",
+    "summary": {
+      "total": "总数",
+      "active": "活跃中",
+      "dueSoon": "即将到期",
+      "expired": "已到期"
+    },
+    "overviewAria": "订阅快速概览",
+    "overview": {
+      "monthlyCost": "预计月度固定成本",
+      "groupedByCurrency": "按币种分组",
+      "normalizedMonthly": "折算到每月",
+      "reminders": "待处理提醒",
+      "remindersHint": "优先处理到期项"
+    },
+    "card": {
+      "noDate": "日期未设置",
+      "summaryAria": "订阅摘要",
+      "generateExpense": "生成支出",
+      "viewExpense": "查看支出",
+      "edit": "编辑",
+      "delete": "删除",
+      "moveToTrash": "移入回收站",
+      "autoBadge": "自动",
+      "everyDays": "每 {days} 天",
+      "expirePrefix": "到期:{date}",
+      "expireTag": "到期 {date}",
+      "perMonth": "/月",
+      "renewPrefix": "续费:{date}",
+      "renewTag": "续费",
+      "remindTag": "提醒"
+    },
+    "form": {
+      "editTitle": "编辑订阅",
+      "createTitle": "新增订阅 ",
+      "subtitle": "先录入基础信息,再补充账户、续费和备注,后续生成支出会更顺手。",
+      "monthlyAverage": "折算月均",
+      "customCycleHint": "按自定义周期折算",
+      "templatesAria": "订阅预设模板",
+      "templatesTitle": "从常用模板开始",
+      "templatesHint": "点一下能把常见服务自动填好,金额和日期还可继续调整。",
+      "basicTitle": "基础信息",
+      "basicHint": "先定义是什么、多少钱、多久扣一次",
+      "name": "名称",
+      "namePlaceholder": "例如:Spotify / 中国移动 / 健身月卡",
+      "kind": "类型",
+      "amount": "金额",
+      "currency": "币种",
+      "cycle": "计费周期",
+      "customDays": "自定义天数",
+      "billingTitle": "扣费与日期",
+      "billingHint": "把账户、平台和续费时间补完整,后面更好追踪",
+      "account": "扣费账户",
+      "accountNone": "未指定",
+      "provider": "所属平台 / 商户",
+      "providerPlaceholder": "例如 Apple、腾讯视频、中国移动",
+      "renewalDate": "续费日",
+      "expireDate": "到期日",
+      "status": "状态",
+      "autoRenew": "自动续费",
+      "note": "备注",
+      "notePlaceholder": "可记录套餐说明、会员权益、卡号尾号等",
+      "saveEdit": "保存修改",
+      "cancelEdit": "取消编辑"
+    },
+    "kind": {
+      "digital": "数字订阅",
+      "mobile": "话费/通信",
+      "membership": "会员卡",
+      "other": "其他"
+    },
+    "cycle": {
+      "monthly": "每月",
+      "quarterly": "每季度",
+      "semiannual": "每半年",
+      "yearly": "每年",
+      "custom": "自定义"
+    },
+    "status": {
+      "active": "正常",
+      "paused": "已暂停",
+      "dueSoon": "即将到期",
+      "expired": "已到期"
+    },
+    "list": {
+      "title": "订阅清单",
+      "subtitle": "按到期时间排序,优先把需要处理的项目放到前面。",
+      "count": "已录入",
+      "emptyTitle": "还没有订阅项目",
+      "emptyDesc": "先添加第一个数字订阅、话费套餐或会员卡,后面就能统一看费用和到期情况。",
+      "loadDemo": "载入示例订阅"
+    },
+    "confirm": {
+      "cancel": "取消"
+    },
+    "error": {
+      "nameRequired": "请输入订阅名称。",
+      "amountRequired": "订阅金额必须大于 0。",
+      "generateFailed": "生成订阅支出失败,请稍后重试。"
+    }
   }
 }

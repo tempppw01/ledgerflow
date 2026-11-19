@@ -11,29 +11,39 @@ import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { EmptyState } from '../../shared/ui/EmptyState';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { DatePicker } from '../../shared/ui/DatePicker';
+import { useTFallback, type TfFallback } from '../../shared/lib/useTFallback';
 
-const KIND_LABELS: Record<SubscriptionKind, string> = {
-  digital: '数字订阅',
-  mobile: '话费/通信',
-  membership: '会员卡',
-  other: '其他'
+const KIND_LABEL_ENTRIES: Record<SubscriptionKind, { key: string; fallback: string }> = {
+  digital: { key: 'subscriptions.kind.digital', fallback: '数字订阅' },
+  mobile: { key: 'subscriptions.kind.mobile', fallback: '话费/通信' },
+  membership: { key: 'subscriptions.kind.membership', fallback: '会员卡' },
+  other: { key: 'subscriptions.kind.other', fallback: '其他' }
 };
 
-const CYCLE_LABELS: Record<SubscriptionBillingCycle, string> = {
-  monthly: '每月',
-  quarterly: '每季度',
-  semiannual: '每半年',
-  yearly: '每年',
-  custom: '自定义'
+const CYCLE_LABEL_ENTRIES: Record<SubscriptionBillingCycle, { key: string; fallback: string }> = {
+  monthly: { key: 'subscriptions.cycle.monthly', fallback: '每月' },
+  quarterly: { key: 'subscriptions.cycle.quarterly', fallback: '每季度' },
+  semiannual: { key: 'subscriptions.cycle.semiannual', fallback: '每半年' },
+  yearly: { key: 'subscriptions.cycle.yearly', fallback: '每年' },
+  custom: { key: 'subscriptions.cycle.custom', fallback: '自定义' }
 };
 
-const STATUS_LABELS: Record<SubscriptionStatus, string> = {
-  active: '正常',
-  'due-soon': '即将到期',
-  expired: '已到期',
-  paused: '已暂停'
+const STATUS_LABEL_ENTRIES: Record<SubscriptionStatus, { key: string; fallback: string }> = {
+  active: { key: 'subscriptions.status.active', fallback: '正常' },
+  'due-soon': { key: 'subscriptions.status.dueSoon', fallback: '即将到期' },
+  expired: { key: 'subscriptions.status.expired', fallback: '已到期' },
+  paused: { key: 'subscriptions.status.paused', fallback: '已暂停' }
 };
 
+function labelOf(
+  entries: Record<string, { key: string; fallback: string }>,
+  tf: TfFallback,
+  value: string | undefined,
+  fallbackText = ''
+): string {
+  const entry = value ? entries[value] : undefined;
+  return entry ? tf(entry.key, entry.fallback) : fallbackText;
+}
 const STATUS_CLASS: Record<SubscriptionStatus, string> = {
   active: 'badge',
   'due-soon': 'badge badge-warning',
@@ -295,6 +305,7 @@ function SubscriptionTemplateLogo({ kind }: { kind: SubscriptionTemplate['logoKi
 }
 
 export function SubscriptionsPage() {
+  const tf = useTFallback();
   const navigate = useNavigate();
   const subscriptions = useFinanceStore((s) => s.subscriptions);
   const accounts = useFinanceStore((s) => s.accounts);
@@ -421,11 +432,11 @@ export function SubscriptionsPage() {
     const name = form.name.trim();
     const amount = Number(form.amount || '0');
     if (!name) {
-      setError('请输入订阅名称。');
+      setError(tf('subscriptions.error.nameRequired', '请输入订阅名称。'));
       return;
     }
     if (!Number.isFinite(amount) || amount <= 0) {
-      setError('订阅金额必须大于 0。');
+      setError(tf('subscriptions.error.amountRequired', '订阅金额必须大于 0。'));
       return;
     }
 
@@ -482,7 +493,11 @@ export function SubscriptionsPage() {
       const result = generateSubscriptionTransaction(item.id);
       navigate(`/transactions/${result.transactionId}`);
     } catch (error) {
-      setError(error instanceof Error ? error.message : '生成订阅支出失败，请稍后重试。');
+      setError(
+        error instanceof Error
+          ? error.message
+          : tf('subscriptions.error.generateFailed', '生成订阅支出失败，请稍后重试。')
+      );
     }
   };
 
@@ -491,27 +506,33 @@ export function SubscriptionsPage() {
       <section className="subscriptions-hero vi-hero">
         <div className="subscriptions-header">
           <div className="subscriptions-hero-copy vi-hero-copy">
-            <span className="vi-page-kicker">周期支出总览</span>
-            <h2>订阅管理</h2>
+            <span className="vi-page-kicker">{tf('subscriptions.kicker', '周期支出总览')}</span>
+            <h2>{tf('subscriptions.title', '订阅管理')}</h2>
             <p className="muted">
-              统一管理数字订阅、话费、会员卡等周期性项目，支持多币种、续费日和到期状态追踪。
+              {tf(
+                'subscriptions.subtitle',
+                '统一管理数字订阅、话费、会员卡等周期性项目，支持多币种、续费日和到期状态追踪。'
+              )}
             </p>
-            <div className="subscriptions-summary-strip" aria-label="订阅概览">
+            <div
+              className="subscriptions-summary-strip"
+              aria-label={tf('subscriptions.summaryAria', '订阅概览')}
+            >
               <article className="subscriptions-summary-pill">
-                <span>总数</span>
+                <span>{tf('subscriptions.summary.total', '总数')}</span>
                 <strong>{summary.total}</strong>
               </article>
               <article className="subscriptions-summary-pill">
-                <span>活跃中</span>
+                <span>{tf('subscriptions.summary.active', '活跃中')}</span>
                 <strong>{summary.active}</strong>
               </article>
               <article className="subscriptions-summary-pill is-warning">
-                <span>即将到期</span>
+                <span>{tf('subscriptions.summary.dueSoon', '即将到期')}</span>
                 <strong>{summary.dueSoon}</strong>
               </article>
               {summary.expired > 0 ? (
                 <article className="subscriptions-summary-pill is-danger">
-                  <span>已到期</span>
+                  <span>{tf('subscriptions.summary.expired', '已到期')}</span>
                   <strong>{summary.expired}</strong>
                 </article>
               ) : null}
@@ -519,12 +540,15 @@ export function SubscriptionsPage() {
           </div>
 
           {monthlySummaryByCurrency.length > 0 || attentionItems.length > 0 ? (
-            <div className="subscriptions-overview-stack" aria-label="订阅快速概览">
+            <div
+              className="subscriptions-overview-stack"
+              aria-label={tf('subscriptions.overviewAria', '订阅快速概览')}
+            >
               {monthlySummaryByCurrency.length > 0 ? (
                 <div className="subscriptions-compact-group">
                   <div className="dashboard-section-header">
-                    <h4>预计月度固定成本</h4>
-                    <span>按币种分组</span>
+                    <h4>{tf('subscriptions.overview.monthlyCost', '预计月度固定成本')}</h4>
+                    <span>{tf('subscriptions.overview.groupedByCurrency', '按币种分组')}</span>
                   </div>
                   <div className="subscriptions-monthly-summary-list">
                     {monthlySummaryByCurrency.map((item) => (
@@ -533,7 +557,7 @@ export function SubscriptionsPage() {
                           {item.currency}
                         </span>
                         <strong>{formatMoneyByCurrency(item.amount, item.currency)}</strong>
-                        <em>折算到每月</em>
+                        <em>{tf('subscriptions.overview.normalizedMonthly', '折算到每月')}</em>
                       </article>
                     ))}
                   </div>
@@ -543,8 +567,8 @@ export function SubscriptionsPage() {
               {attentionItems.length > 0 ? (
                 <div className="subscriptions-compact-group subscriptions-attention-compact">
                   <div className="dashboard-section-header">
-                    <h4>待处理提醒</h4>
-                    <span>优先处理到期项</span>
+                    <h4>{tf('subscriptions.overview.reminders', '待处理提醒')}</h4>
+                    <span>{tf('subscriptions.overview.remindersHint', '优先处理到期项')}</span>
                   </div>
                   <div className="subscriptions-alert-list">
                     {attentionItems.map((item) => (
@@ -552,13 +576,19 @@ export function SubscriptionsPage() {
                         <strong>{item.name}</strong>
                         <span>
                           {item.expireDate
-                            ? `到期：${formatDate(item.expireDate)}`
+                            ? tf('subscriptions.card.expirePrefix', '到期:{date}').replace(
+                                '{date}',
+                                formatDate(item.expireDate)
+                              )
                             : item.renewalDate
-                              ? `续费：${formatDate(item.renewalDate)}`
-                              : '日期未设置'}
+                              ? tf('subscriptions.card.renewPrefix', '续费:{date}').replace(
+                                  '{date}',
+                                  formatDate(item.renewalDate)
+                                )
+                              : tf('subscriptions.card.noDate', '日期未设置')}
                         </span>
                         <em>
-                          {STATUS_LABELS[item.status]} ·{' '}
+                          {labelOf(STATUS_LABEL_ENTRIES, tf, item.status)} ·{' '}
                           {formatMoneyByCurrency(item.amount, item.currency)}
                         </em>
                       </article>
@@ -575,26 +605,41 @@ export function SubscriptionsPage() {
         <section className="subscriptions-form-panel vi-section">
           <div className="subscriptions-panel-head vi-section-head">
             <div className="vi-section-title">
-              <h3>{editingId ? '编辑订阅' : '新增订阅'}</h3>
+              <h3>
+                {editingId
+                  ? tf('subscriptions.form.editTitle', '编辑订阅')
+                  : tf('subscriptions.form.createTitle', '新增订阅')}
+              </h3>
               <p className="muted">
-                先录入基础信息，再补充账户、续费和备注，后续生成支出会更顺手。
+                {tf(
+                  'subscriptions.form.subtitle',
+                  '先录入基础信息，再补充账户、续费和备注，后续生成支出会更顺手。'
+                )}
               </p>
             </div>
             <div className="subscriptions-form-preview">
-              <span>折算月均</span>
+              <span>{tf('subscriptions.form.monthlyAverage', '折算月均')}</span>
               <strong>{formatMoneyByCurrency(formMonthlyPreview, form.currency || 'CNY')}</strong>
               <em>
                 {form.billingCycle === 'custom'
-                  ? '按自定义周期折算'
-                  : CYCLE_LABELS[form.billingCycle]}
+                  ? tf('subscriptions.form.customCycleHint', '按自定义周期折算')
+                  : labelOf(CYCLE_LABEL_ENTRIES, tf, form.billingCycle)}
               </em>
             </div>
           </div>
 
-          <div className="subscriptions-template-panel" aria-label="订阅预设模板">
+          <div
+            className="subscriptions-template-panel"
+            aria-label={tf('subscriptions.form.templatesAria', '订阅预设模板')}
+          >
             <div className="subscriptions-template-copy">
-              <h4>从常用模板开始</h4>
-              <p>点一下能把常见服务自动填好，金额和日期还可继续调整。</p>
+              <h4>{tf('subscriptions.form.templatesTitle', '从常用模板开始')}</h4>
+              <p>
+                {tf(
+                  'subscriptions.form.templatesHint',
+                  '点一下能把常见服务自动填好，金额和日期还可继续调整。'
+                )}
+              </p>
             </div>
             <div className="subscriptions-template-list">
               {SUBSCRIPTION_TEMPLATES.map((template) => (
@@ -613,7 +658,7 @@ export function SubscriptionsPage() {
                   </span>
                   <span className="subscriptions-template-price">
                     {formatMoneyByCurrency(template.amount, template.currency)}
-                    <small>/月</small>
+                    <small>{tf('subscriptions.card.perMonth', '/月')}</small>
                   </span>
                 </button>
               ))}
@@ -623,34 +668,41 @@ export function SubscriptionsPage() {
           <form className="subscriptions-form" onSubmit={handleSubmit}>
             <div className="subscriptions-form-section subscriptions-form-full">
               <div className="subscriptions-form-section-head">
-                <h4>基础信息</h4>
-                <span>先定义是什么、多少钱、多久扣一次</span>
+                <h4>{tf('subscriptions.form.basicTitle', '基础信息')}</h4>
+                <span>
+                  {tf('subscriptions.form.basicHint', '先定义是什么、多少钱、多久扣一次')}
+                </span>
               </div>
               <div className="subscriptions-form-grid subscriptions-form-grid-primary">
                 <label className="subscriptions-field subscriptions-field-wide">
-                  <span>名称</span>
+                  <span>{tf('subscriptions.form.name', '名称')}</span>
                   <input
                     value={form.name}
                     onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                    placeholder="例如：Spotify / 中国移动 / 健身月卡"
+                    placeholder={tf(
+                      'subscriptions.form.namePlaceholder',
+                      '例如：Spotify / 中国移动 / 健身月卡'
+                    )}
                   />
                 </label>
                 <label className="subscriptions-field">
-                  <span>类型</span>
+                  <span>{tf('subscriptions.form.kind', '类型')}</span>
                   <select
                     value={form.kind}
                     onChange={(e) =>
                       setForm((prev) => ({ ...prev, kind: e.target.value as SubscriptionKind }))
                     }
                   >
-                    <option value="digital">数字订阅</option>
-                    <option value="mobile">话费/通信</option>
-                    <option value="membership">会员卡</option>
-                    <option value="other">其他</option>
+                    <option value="digital">{tf('subscriptions.kind.digital', '数字订阅')}</option>
+                    <option value="mobile">{tf('subscriptions.kind.mobile', '话费/通信')}</option>
+                    <option value="membership">
+                      {tf('subscriptions.kind.membership', '会员卡')}
+                    </option>
+                    <option value="other">{tf('subscriptions.kind.other', '其他')}</option>
                   </select>
                 </label>
                 <label className="subscriptions-field">
-                  <span>金额</span>
+                  <span>{tf('subscriptions.form.amount', '金额')}</span>
                   <input
                     type="number"
                     min="0"
@@ -660,7 +712,7 @@ export function SubscriptionsPage() {
                   />
                 </label>
                 <label className="subscriptions-field">
-                  <span>币种</span>
+                  <span>{tf('subscriptions.form.currency', '币种')}</span>
                   <input
                     value={form.currency}
                     onChange={(e) =>
@@ -670,7 +722,7 @@ export function SubscriptionsPage() {
                   />
                 </label>
                 <label className="subscriptions-field">
-                  <span>计费周期</span>
+                  <span>{tf('subscriptions.form.cycle', '计费周期')}</span>
                   <select
                     value={form.billingCycle}
                     onChange={(e) =>
@@ -680,16 +732,20 @@ export function SubscriptionsPage() {
                       }))
                     }
                   >
-                    <option value="monthly">每月</option>
-                    <option value="quarterly">每季度</option>
-                    <option value="semiannual">每半年</option>
-                    <option value="yearly">每年</option>
-                    <option value="custom">自定义</option>
+                    <option value="monthly">{tf('subscriptions.cycle.monthly', '每月')}</option>
+                    <option value="quarterly">
+                      {tf('subscriptions.cycle.quarterly', '每季度')}
+                    </option>
+                    <option value="semiannual">
+                      {tf('subscriptions.cycle.semiannual', '每半年')}
+                    </option>
+                    <option value="yearly">{tf('subscriptions.cycle.yearly', '每年')}</option>
+                    <option value="custom">{tf('subscriptions.cycle.custom', '自定义')}</option>
                   </select>
                 </label>
                 {form.billingCycle === 'custom' ? (
                   <label className="subscriptions-field">
-                    <span>自定义天数</span>
+                    <span>{tf('subscriptions.form.customDays', '自定义天数')}</span>
                     <input
                       type="number"
                       min="1"
@@ -706,17 +762,22 @@ export function SubscriptionsPage() {
 
             <div className="subscriptions-form-section subscriptions-form-full">
               <div className="subscriptions-form-section-head">
-                <h4>扣费与日期</h4>
-                <span>把账户、平台和续费时间补完整，后面更好追踪</span>
+                <h4>{tf('subscriptions.form.billingTitle', '扣费与日期')}</h4>
+                <span>
+                  {tf(
+                    'subscriptions.form.billingHint',
+                    '把账户、平台和续费时间补完整，后面更好追踪'
+                  )}
+                </span>
               </div>
               <div className="subscriptions-form-grid">
                 <label className="subscriptions-field">
-                  <span>扣费账户</span>
+                  <span>{tf('subscriptions.form.account', '扣费账户')}</span>
                   <select
                     value={form.accountId}
                     onChange={(e) => setForm((prev) => ({ ...prev, accountId: e.target.value }))}
                   >
-                    <option value="">未指定</option>
+                    <option value="">{tf('subscriptions.form.accountNone', '未指定')}</option>
                     {accounts.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.name}
@@ -725,39 +786,42 @@ export function SubscriptionsPage() {
                   </select>
                 </label>
                 <label className="subscriptions-field subscriptions-field-wide">
-                  <span>所属平台 / 商户</span>
+                  <span>{tf('subscriptions.form.provider', '所属平台 / 商户')}</span>
                   <input
                     value={form.provider}
                     onChange={(e) => setForm((prev) => ({ ...prev, provider: e.target.value }))}
-                    placeholder="例如 Apple、腾讯视频、中国移动"
+                    placeholder={tf(
+                      'subscriptions.form.providerPlaceholder',
+                      '例如 Apple、腾讯视频、中国移动'
+                    )}
                   />
                 </label>
                 <label className="subscriptions-field">
-                  <span>续费日</span>
+                  <span>{tf('subscriptions.form.renewalDate', '续费日')}</span>
                   <DatePicker
                     value={form.renewalDate}
                     onChange={(value) => handleDateFieldChange('renewalDate', value)}
-                    ariaLabel="续费日"
+                    ariaLabel={tf('subscriptions.form.renewalDate', '续费日')}
                   />
                 </label>
                 <label className="subscriptions-field">
-                  <span>到期日</span>
+                  <span>{tf('subscriptions.form.expireDate', '到期日')}</span>
                   <DatePicker
                     value={form.expireDate}
                     onChange={(value) => handleDateFieldChange('expireDate', value)}
-                    ariaLabel="到期日"
+                    ariaLabel={tf('subscriptions.form.expireDate', '到期日')}
                   />
                 </label>
                 <label className="subscriptions-field">
-                  <span>状态</span>
+                  <span>{tf('subscriptions.form.status', '状态')}</span>
                   <select
                     value={form.status}
                     onChange={(e) =>
                       setForm((prev) => ({ ...prev, status: e.target.value as SubscriptionStatus }))
                     }
                   >
-                    <option value="active">正常</option>
-                    <option value="paused">已暂停</option>
+                    <option value="active">{tf('subscriptions.status.active', '正常')}</option>
+                    <option value="paused">{tf('subscriptions.status.paused', '已暂停')}</option>
                   </select>
                 </label>
                 <label className="subscriptions-checkbox subscriptions-field">
@@ -766,18 +830,21 @@ export function SubscriptionsPage() {
                     checked={form.autoRenew}
                     onChange={(e) => setForm((prev) => ({ ...prev, autoRenew: e.target.checked }))}
                   />
-                  <span>自动续费</span>
+                  <span>{tf('subscriptions.form.autoRenew', '自动续费')}</span>
                 </label>
               </div>
             </div>
 
             <label className="subscriptions-field subscriptions-form-full">
-              <span>备注</span>
+              <span>{tf('subscriptions.form.note', '备注')}</span>
               <textarea
                 value={form.note}
                 onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
                 rows={4}
-                placeholder="可记录套餐说明、会员权益、卡号尾号等"
+                placeholder={tf(
+                  'subscriptions.form.notePlaceholder',
+                  '可记录套餐说明、会员权益、卡号尾号等'
+                )}
               />
             </label>
             {error ? (
@@ -785,11 +852,13 @@ export function SubscriptionsPage() {
             ) : null}
             <div className="subscriptions-actions subscriptions-form-full">
               <button type="submit" className="primary">
-                {editingId ? '保存修改' : '新增订阅'}
+                {editingId
+                  ? tf('subscriptions.form.saveEdit', '保存修改')
+                  : tf('subscriptions.form.createTitle', '新增订阅')}
               </button>
               {editingId ? (
                 <button type="button" onClick={resetForm}>
-                  取消编辑
+                  {tf('subscriptions.form.cancelEdit', '取消编辑')}
                 </button>
               ) : null}
             </div>
@@ -799,12 +868,17 @@ export function SubscriptionsPage() {
         <section className="subscriptions-list-panel vi-section">
           <div className="subscriptions-panel-head vi-section-head">
             <div className="vi-section-title">
-              <h3>订阅清单</h3>
-              <p className="muted">按到期时间排序，优先把需要处理的项目放到前面。</p>
+              <h3>{tf('subscriptions.list.title', '订阅清单')}</h3>
+              <p className="muted">
+                {tf(
+                  'subscriptions.list.subtitle',
+                  '按到期时间排序，优先把需要处理的项目放到前面。'
+                )}
+              </p>
             </div>
             {summary.total > 0 ? (
               <span className="metric-chip metric-chip-highlight">
-                已录入
+                {tf('subscriptions.list.count', '已录入')}
                 <strong>{summary.total}</strong>
               </span>
             ) : null}
@@ -812,12 +886,18 @@ export function SubscriptionsPage() {
 
           {rows.length === 0 ? (
             <EmptyState
-              title="还没有订阅项目"
-              description="先添加第一个数字订阅、话费套餐或会员卡，后面就能统一看费用和到期情况。"
+              title={tf('subscriptions.list.emptyTitle', '还没有订阅项目')}
+              description={tf(
+                'subscriptions.list.emptyDesc',
+                '先添加第一个数字订阅、话费套餐或会员卡，后面就能统一看费用和到期情况。'
+              )}
               icon="🧾"
               secondaryAction={
                 demoAvailable
-                  ? { label: '载入示例订阅', onClick: loadDemoSubscriptions }
+                  ? {
+                      label: tf('subscriptions.list.loadDemo', '载入示例订阅'),
+                      onClick: loadDemoSubscriptions
+                    }
                   : undefined
               }
             />
@@ -829,12 +909,18 @@ export function SubscriptionsPage() {
                   : null;
                 const billingCycleText =
                   item.billingCycle === 'custom'
-                    ? `每 ${item.customCycleDays || '—'} 天`
-                    : CYCLE_LABELS[item.billingCycle];
+                    ? tf('subscriptions.card.everyDays', '每 {days} 天').replace(
+                        '{days}',
+                        String(item.customCycleDays || '—')
+                      )
+                    : labelOf(CYCLE_LABEL_ENTRIES, tf, item.billingCycle);
                 const nextDateText = item.renewalDate
-                  ? `${item.autoRenew ? '续费' : '提醒'} ${formatDate(item.renewalDate)}`
+                  ? `${tf(item.autoRenew ? 'subscriptions.card.renewTag' : 'subscriptions.card.remindTag', item.autoRenew ? '续费' : '提醒')} ${formatDate(item.renewalDate)}`
                   : item.expireDate
-                    ? `到期 ${formatDate(item.expireDate)}`
+                    ? tf('subscriptions.card.expireTag', '到期 {date}').replace(
+                        '{date}',
+                        formatDate(item.expireDate)
+                      )
                     : '';
 
                 return (
@@ -844,19 +930,26 @@ export function SubscriptionsPage() {
                         <h4>{item.name}</h4>
                         <p>
                           {item.provider
-                            ? `${item.provider} · ${KIND_LABELS[item.kind]}`
-                            : KIND_LABELS[item.kind]}
+                            ? `${item.provider} · ${labelOf(KIND_LABEL_ENTRIES, tf, item.kind)}`
+                            : labelOf(KIND_LABEL_ENTRIES, tf, item.kind)}
                         </p>
                       </div>
                       <div className="subscriptions-card-badges">
                         <span className={STATUS_CLASS[item.status]}>
-                          {STATUS_LABELS[item.status]}
+                          {labelOf(STATUS_LABEL_ENTRIES, tf, item.status)}
                         </span>
-                        {item.autoRenew ? <span className="badge">自动</span> : null}
+                        {item.autoRenew ? (
+                          <span className="badge">
+                            {tf('subscriptions.card.autoBadge', '自动')}
+                          </span>
+                        ) : null}
                       </div>
                     </div>
 
-                    <div className="subscriptions-card-summary" aria-label="订阅摘要">
+                    <div
+                      className="subscriptions-card-summary"
+                      aria-label={tf('subscriptions.card.summaryAria', '订阅摘要')}
+                    >
                       <span className="subscriptions-card-amount">
                         {formatMoneyByCurrency(item.amount, item.currency)}
                         <small>/ {billingCycleText}</small>
@@ -871,7 +964,7 @@ export function SubscriptionsPage() {
                         className="primary"
                         onClick={() => handleGenerateTransaction(item)}
                       >
-                        生成支出
+                        {tf('subscriptions.card.generateExpense', '生成支出')}
                       </button>
                       <button
                         type="button"
@@ -881,17 +974,17 @@ export function SubscriptionsPage() {
                           )
                         }
                       >
-                        查看支出
+                        {tf('subscriptions.card.viewExpense', '查看支出')}
                       </button>
                       <button type="button" onClick={() => startEdit(item)}>
-                        编辑
+                        {tf('subscriptions.card.edit', '编辑')}
                       </button>
                       <button
                         type="button"
                         className="danger"
                         onClick={() => setPendingDeleteId(item.id)}
                       >
-                        删除
+                        {tf('subscriptions.card.delete', '删除')}
                       </button>
                     </div>
                   </article>
@@ -904,14 +997,14 @@ export function SubscriptionsPage() {
 
       <ConfirmDialog
         open={Boolean(pendingDeleteItem)}
-        title="移入回收站"
+        title={tf('subscriptions.card.moveToTrash', '移入回收站')}
         description={
           pendingDeleteItem
             ? `确认将“${pendingDeleteItem.name}”移入回收站吗？后续仍可在回收站恢复或彻底删除。`
             : ''
         }
-        confirmText="移入回收站"
-        cancelText="取消"
+        confirmText={tf('subscriptions.card.moveToTrash', '移入回收站')}
+        cancelText={tf('subscriptions.confirm.cancel', '取消')}
         onCancel={() => setPendingDeleteId(null)}
         onConfirm={() => {
           if (pendingDeleteId) removeSubscription(pendingDeleteId);
