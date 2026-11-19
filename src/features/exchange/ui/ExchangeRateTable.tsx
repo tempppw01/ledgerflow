@@ -150,7 +150,12 @@ export function ExchangeRateTable({
           disabled={loading}
           title="刷新汇率"
         >
-          <img className="exchange-inline-icon" src={CLOUD_SYNC_ICON_URL} alt="" aria-hidden="true" />
+          <img
+            className="exchange-inline-icon"
+            src={CLOUD_SYNC_ICON_URL}
+            alt=""
+            aria-hidden="true"
+          />
           {loading ? '加载中…' : '刷新'}
         </button>
       </div>
@@ -182,14 +187,19 @@ export function ExchangeRateTable({
               >
                 {loading
                   ? '加载中…'
-                  : showAll
-                    ? '无匹配货币'
-                    : '当前仅展示常见货币（含收藏），可点击“展开全部货币”查看全部'}
+                  : keyword
+                    ? '没有匹配的货币,换个代码或名称试试'
+                    : showAll
+                      ? '无匹配货币'
+                      : '当前仅展示常见货币（含收藏），可点击“展开全部货币”查看全部'}
               </td>
             </tr>
           ) : (
             pageRows.map((rate) => (
-              <tr key={rate.code} className={favorites.includes(rate.code) ? 'exchange-row-fav' : ''}>
+              <tr
+                key={rate.code}
+                className={favorites.includes(rate.code) ? 'exchange-row-fav' : ''}
+              >
                 <td>
                   <button
                     type="button"
@@ -231,7 +241,11 @@ export function ExchangeRateTable({
           <span>
             {safePage} / {totalPages}
           </span>
-          <button type="button" disabled={safePage >= totalPages} onClick={() => setPage(safePage + 1)}>
+          <button
+            type="button"
+            disabled={safePage >= totalPages}
+            onClick={() => setPage(safePage + 1)}
+          >
             下一页
           </button>
         </div>

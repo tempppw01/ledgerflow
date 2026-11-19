@@ -234,7 +234,13 @@ export function ExchangeConverter({ rates, base }: ExchangeConverterProps) {
         <label>
           金额（{getCurrencyFlag(fromCode)} {fromCode}）
         </label>
-        <div className="exchange-calculator-screen mono-inline" aria-live="polite">
+        <div
+          className="exchange-calculator-screen mono-inline"
+          role="textbox"
+          aria-readonly="true"
+          aria-label={`金额(${fromCode}),可用下方计算器键盘输入`}
+          aria-live="polite"
+        >
           {expression}
         </div>
         {error ? <p className="exchange-calculator-error">{error}</p> : null}
