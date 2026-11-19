@@ -484,11 +484,11 @@ export function DashboardPage() {
               const { from, to } = monthBounds();
               navigate(`/transactions?datePreset=custom&dateFrom=${from}&dateTo=${to}`);
             }}
-            title="点击追溯本月交易"
+            title={tFallback('dashboard.ui.traceMonth', '点击追溯本月交易')}
           >
             <span className="stat-icon">🧭</span>
             <div>
-              <h3>净资产</h3>
+              <h3>{tFallback('dashboard.ui.netWorth', '净资产')}</h3>
               <strong className="stat-value">{formatCurrencyAuto(netAssets)}</strong>
             </div>
             <DashboardNetWorthSummary
@@ -505,11 +505,11 @@ export function DashboardPage() {
               const { from, to } = monthBounds();
               navigate(`/transactions?datePreset=custom&dateFrom=${from}&dateTo=${to}`);
             }}
-            title="点击追溯本月交易"
+            title={tFallback('dashboard.ui.traceMonth', '点击追溯本月交易')}
           >
             <span className="stat-icon">💎</span>
             <div>
-              <h3>本月结余</h3>
+              <h3>{tFallback('dashboard.ui.monthBalance', '本月结余')}</h3>
               <strong className="stat-value">{formatCurrencyAuto(monthlyBalance)}</strong>
             </div>
           </button>
@@ -527,21 +527,25 @@ export function DashboardPage() {
           horizonMonths={simulationMonths}
           onHorizonChange={setSimulationMonths}
         />
-        <div className="dashboard-density-control" role="group" aria-label="首页信息密度">
-          <span>首页显示</span>
+        <div
+          className="dashboard-density-control"
+          role="group"
+          aria-label={tFallback('dashboard.ui.densityLabel', '首页信息密度')}
+        >
+          <span>{tFallback('dashboard.ui.densityTitle', '首页显示')}</span>
           <button
             type="button"
             className={dashboardDensity === 'core' ? 'is-active' : ''}
             onClick={() => setDashboardDensity('core')}
           >
-            核心信息
+            {tFallback('dashboard.ui.densityCore', '核心信息')}
           </button>
           <button
             type="button"
             className={dashboardDensity === 'full' ? 'is-active' : ''}
             onClick={() => setDashboardDensity('full')}
           >
-            完整分析
+            {tFallback('dashboard.ui.densityFull', '完整分析')}
           </button>
         </div>
         {dashboardDensity === 'full' ? (
@@ -576,17 +580,27 @@ export function DashboardPage() {
             </section>
           ) : (
             <div className="dashboard-chart-empty" role="status">
-              <strong>记下一笔，趋势就会开始出现</strong>
-              <span>有了真实收支后，这里会展示花钱节奏和分类结构。</span>
+              <strong>
+                {tFallback('dashboard.ui.chartEmptyTitle', '记下一笔，趋势就会开始出现')}
+              </strong>
+              <span>
+                {tFallback(
+                  'dashboard.ui.chartEmptyDesc',
+                  '有了真实收支后，这里会展示花钱节奏和分类结构。'
+                )}
+              </span>
               <button type="button" onClick={() => navigate('/transactions/new?quick=1')}>
-                记第一笔
+                {tFallback('dashboard.ui.chartEmptyCta', '记第一笔')}
               </button>
             </div>
           )
         ) : null}
         {dashboardDensity === 'full' ? (
           <p className="dashboard-density-hint">
-            已显示完整趋势与分类分析；切换到“核心信息”可收起次要图表。
+            {tFallback(
+              'dashboard.ui.densityHint',
+              '已显示完整趋势与分类分析；切换到“核心信息”可收起次要图表。'
+            )}
           </p>
         ) : null}
       </section>

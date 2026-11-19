@@ -9,6 +9,7 @@ import {
   summarizeTransactions
 } from '../../../shared/lib/transactionMetrics';
 import { EmptyState } from '../../../shared/ui/EmptyState';
+import { useTFallback, type TfFallback } from '../../../shared/lib/useTFallback';
 import { TableSkeleton } from '../../../shared/ui/TableSkeleton';
 import { DatePicker } from '../../../shared/ui/DatePicker';
 import {
@@ -24,8 +25,7 @@ const ALIPAY_ACCOUNT_PATTERN = /(支付宝|alipay)/i;
 const WECHAT_ACCOUNT_PATTERN = /(微信|wechat|weixin)/i;
 const BANK_ACCOUNT_PATTERN =
   /(银行|bank|信用卡|储蓄卡|借记卡|icbc|abc|ccb|boc|cmb|psbc|交通银行|招商银行|建设银行|工商银行|农业银行|中国银行)/i;
-const TRANSACTION_SORT_ICON_BASE_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui';
+const TRANSACTION_SORT_ICON_BASE_URL = 'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui';
 
 type AccountBrand = 'alipay' | 'wechat' | 'bank';
 
@@ -95,10 +95,16 @@ function renderAccountLabel(accountName: string) {
   );
 }
 
-function renderAttachmentIndicator(count?: number, compact = false) {
+function renderAttachmentIndicator(count: number | undefined, tf: TfFallback, compact = false) {
   const safeCount = Math.max(0, Number(count) || 0);
   if (safeCount <= 0) return null;
-  const label = safeCount > 1 ? `有 ${safeCount} 个附件` : '有附件';
+  const label =
+    safeCount > 1
+      ? tf('transactions.table.attachment.count', '有 {count} 个附件').replace(
+          '{count}',
+          String(safeCount)
+        )
+      : tf('transactions.table.attachment.has', '有附件');
   return (
     <span
       className={`transaction-attachment-indicator ${compact ? 'is-compact' : ''}`.trim()}
@@ -168,8 +174,10 @@ function getRepeatGroupKey(item: Pick<TransactionItem, 'type' | 'note'>): string
   return `${item.type}::${normalizedNote}`;
 }
 
-function getRepeatLabel(type: TransactionItem['type']): string {
-  return type === 'income' ? '收入' : '消费';
+function getRepeatLabel(type: TransactionItem['type'], tf: TfFallback): string {
+  return type === 'income'
+    ? tf('transactions.table.type.income', '收入')
+    : tf('transactions.table.type.spending', '消费');
 }
 
 function truncateOrderNo(value: string): string {
@@ -207,17 +215,18 @@ export interface TransactionRowView {
   accountName: string;
 }
 
-const STATUS_LABELS: Record<TransactionStatus, string> = {
-  pending: '待处理',
-  completed: '已完成',
-  refunded: '已退款',
-  closed: '已关闭',
-  failed: '失败'
+const STATUS_LABEL_ENTRIES: Record<TransactionStatus, { key: string; fallback: string }> = {
+  pending: { key: 'transactions.table.status.pending', fallback: '待处理' },
+  completed: { key: 'transactions.table.status.completed', fallback: '已完成' },
+  refunded: { key: 'transactions.table.status.refunded', fallback: '已退款' },
+  closed: { key: 'transactions.table.status.closed', fallback: '已关闭' },
+  failed: { key: 'transactions.table.status.failed', fallback: '失败' }
 };
 
-function formatStatus(status?: TransactionStatus): string {
+function formatStatus(status: TransactionStatus | undefined, tf: TfFallback): string {
   if (!status) return '-';
-  return STATUS_LABELS[status] || status;
+  const entry = STATUS_LABEL_ENTRIES[status];
+  return entry ? tf(entry.key, entry.fallback) : status;
 }
 
 export type TransactionColumnKey =
@@ -384,6 +393,7 @@ export function TransactionTable({
   minAvailableDate,
   maxAvailableDate
 }: TransactionTableProps) {
+  const tf = useTFallback();
   const [swipedId, setSwipedId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; id: string } | null>(null);
   const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(
@@ -399,15 +409,15 @@ export function TransactionTable({
   } | null>(null);
 
   const columnOptions: Array<{ key: TransactionColumnKey; label: string }> = [
-    { key: 'date', label: '日期' },
-    { key: 'type', label: '类型' },
-    { key: 'status', label: '交易状态' },
-    { key: 'category', label: '分类' },
-    { key: 'account', label: '账户' },
-    { key: 'amount', label: '金额' },
-    { key: 'orderNo', label: '交易订单号' },
-    { key: 'merchantOrderNo', label: '商家订单号' },
-    { key: 'note', label: '备注' }
+    { key: 'date', label: tf('transactions.table.col.date', '日期') },
+    { key: 'type', label: tf('transactions.table.col.type', '类型') },
+    { key: 'status', label: tf('transactions.table.col.status', '交易状态') },
+    { key: 'category', label: tf('transactions.table.col.category', '分类') },
+    { key: 'account', label: tf('transactions.table.col.account', '账户') },
+    { key: 'amount', label: tf('transactions.table.col.amount', '金额') },
+    { key: 'orderNo', label: tf('transactions.table.col.orderNo', '交易订单号') },
+    { key: 'merchantOrderNo', label: tf('transactions.table.col.merchantOrderNo', '商家订单号') },
+    { key: 'note', label: tf('transactions.table.col.note', '备注') }
   ];
 
   const orderedColumns = columnOrder
@@ -424,19 +434,21 @@ export function TransactionTable({
         return formatDate(item.date);
       case 'type':
         if (isTransactionRefundLike(item)) {
-          return item.adjustmentKind === 'refund' ? '退款' : '冲正';
+          return item.adjustmentKind === 'refund'
+            ? tf('transactions.table.type.refund', '退款')
+            : tf('transactions.table.type.reversal', '冲正');
         }
         return item.type === 'income'
-          ? '收入'
+          ? tf('transactions.table.type.income', '收入')
           : item.type === 'budget'
-            ? '预算'
+            ? tf('transactions.table.type.budget', '预算')
             : item.type === 'repayment'
-              ? '还款'
-              : '支出';
+              ? tf('transactions.table.type.repayment', '还款')
+              : tf('transactions.table.type.expense', '支出');
       case 'category':
         return categoryName;
       case 'status':
-        return formatStatus(item.status);
+        return formatStatus(item.status, tf);
       case 'account':
         return renderAccountLabel(accountName);
       case 'amount':
@@ -638,22 +650,47 @@ export function TransactionTable({
       ) : errorMessage ? (
         <EmptyState
           icon="⚠️"
-          title="交易数据加载失败"
+          title={tf(
+            'transactions.table.empty.loadError',
+            tf('transactions.table.empty.loadError', '交易数据加载失败')
+          )}
           description={errorMessage}
-          secondaryAction={{ label: '清空筛选', onClick: onClearFilters }}
-          primaryAction={{ label: '重试', onClick: onRetry, variant: 'primary' }}
+          secondaryAction={{
+            label: tf('transactions.table.empty.clearFilters', '清空筛选'),
+            onClick: onClearFilters
+          }}
+          primaryAction={{
+            label: tf('transactions.table.empty.retry', '重试'),
+            onClick: onRetry,
+            variant: 'primary'
+          }}
         />
       ) : rows.length === 0 && !hasFilters ? (
         <EmptyState
           icon="📋"
-          title={hasFilters ? '没有符合条件的交易' : '暂无交易记录'}
-          description={hasFilters ? '调整筛选条件后重试。' : '添加第一笔交易，或导入账单数据。'}
-          secondaryAction={hasFilters ? { label: '清空筛选', onClick: onClearFilters } : undefined}
+          title={
+            hasFilters
+              ? tf('transactions.table.empty.filteredTitle', '没有符合条件的交易')
+              : tf('transactions.table.empty.noneTitle', '暂无交易记录')
+          }
+          description={
+            hasFilters
+              ? tf('transactions.table.empty.filteredDesc', '调整筛选条件后重试。')
+              : tf('transactions.table.empty.noneDesc', '添加第一笔交易，或导入账单数据。')
+          }
+          secondaryAction={
+            hasFilters
+              ? {
+                  label: tf('transactions.table.empty.clearFilters', '清空筛选'),
+                  onClick: onClearFilters
+                }
+              : undefined
+          }
           primaryAction={
             hasFilters
               ? undefined
               : {
-                  label: '新增账目',
+                  label: tf('transactions.table.empty.add', '新增账目'),
                   onClick: onCreate,
                   variant: 'primary'
                 }
@@ -683,25 +720,28 @@ export function TransactionTable({
           ) : null}
 
           {rows.length > 0 && showTaskSummary ? (
-            <section className="transaction-task-strip" aria-label="交易任务概览">
+            <section
+              className="transaction-task-strip"
+              aria-label={tf('transactions.table.task.aria', '交易任务概览')}
+            >
               <article className="transaction-task-item is-pending">
                 <strong>{taskSummary.pending.count}</strong>
-                <span>待处理</span>
+                <span>{tf('transactions.table.status.pending', '待处理')}</span>
                 <small>{formatCurrencyAuto(taskSummary.pending.amount)}</small>
               </article>
               <article className="transaction-task-item is-refund">
                 <strong>{taskSummary.refund.count}</strong>
-                <span>退款 / 冲正</span>
+                <span>{tf('transactions.table.task.adjustments', '退款 / 冲正')}</span>
                 <small>{formatCurrencyAuto(taskSummary.refund.amount)}</small>
               </article>
               <article className="transaction-task-item is-failed">
                 <strong>{taskSummary.failed.count}</strong>
-                <span>失败单</span>
+                <span>{tf('transactions.table.task.failed', '失败单')}</span>
                 <small>{formatCurrencyAuto(taskSummary.failed.amount)}</small>
               </article>
               <article className="transaction-task-item is-done">
                 <strong>{taskSummary.done.count}</strong>
-                <span>已完成</span>
+                <span>{tf('transactions.table.status.completed', '已完成')}</span>
                 <small>{formatCurrencyAuto(taskSummary.done.amount)}</small>
               </article>
             </section>
@@ -726,7 +766,7 @@ export function TransactionTable({
                         checked={allPageSelected}
                         onChange={(event) => onToggleSelectPage(event.target.checked)}
                         disabled={!canSelectAllOnPage}
-                        aria-label="全选当前页"
+                        aria-label={tf('transactions.table.selectPage', '全选当前页')}
                       />
                     </th>
                   ) : null}
@@ -769,7 +809,10 @@ export function TransactionTable({
                         <span
                           className="transaction-col-resizer"
                           role="separator"
-                          aria-label={`${column.label}列宽拖拽调节`}
+                          aria-label={tf(
+                            'transactions.table.columnResizeAria',
+                            '{label}:列宽拖拽调节'
+                          ).replace('{label}', column.label)}
                           onMouseDown={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
@@ -805,7 +848,11 @@ export function TransactionTable({
                           className={`transaction-col-${column.key}`}
                         >
                           <select
-                            aria-label={column.key === 'type' ? '按类型筛选' : '按交易状态筛选'}
+                            aria-label={
+                              column.key === 'type'
+                                ? tf('transactions.table.filterAria.type', '按类型筛选')
+                                : tf('transactions.table.filterAria.status', '按交易状态筛选')
+                            }
                             value={column.key === 'type' ? quickFilters.type : quickFilters.status}
                             onChange={(event) =>
                               column.key === 'type'
@@ -821,20 +868,42 @@ export function TransactionTable({
                           >
                             {column.key === 'type' ? (
                               <>
-                                <option value="all">全部</option>
-                                <option value="income">收入</option>
-                                <option value="expense">支出</option>
-                                <option value="budget">预算</option>
-                                <option value="repayment">还款</option>
+                                <option value="all">
+                                  {tf('transactions.table.filter.all', '全部')}
+                                </option>
+                                <option value="income">
+                                  {tf('transactions.table.type.income', '收入')}
+                                </option>
+                                <option value="expense">
+                                  {tf('transactions.table.type.expense', '支出')}
+                                </option>
+                                <option value="budget">
+                                  {tf('transactions.table.type.budget', '预算')}
+                                </option>
+                                <option value="repayment">
+                                  {tf('transactions.table.type.repayment', '还款')}
+                                </option>
                               </>
                             ) : (
                               <>
-                                <option value="all">全部</option>
-                                <option value="pending">待处理</option>
-                                <option value="completed">已完成</option>
-                                <option value="refunded">已退款</option>
-                                <option value="closed">已关闭</option>
-                                <option value="failed">失败</option>
+                                <option value="all">
+                                  {tf('transactions.table.filter.all', '全部')}
+                                </option>
+                                <option value="pending">
+                                  {tf('transactions.table.status.pending', '待处理')}
+                                </option>
+                                <option value="completed">
+                                  {tf('transactions.table.status.completed', '已完成')}
+                                </option>
+                                <option value="refunded">
+                                  {tf('transactions.table.status.refunded', '已退款')}
+                                </option>
+                                <option value="closed">
+                                  {tf('transactions.table.status.closed', '已关闭')}
+                                </option>
+                                <option value="failed">
+                                  {tf('transactions.table.status.failed', '失败')}
+                                </option>
                               </>
                             )}
                           </select>
@@ -850,18 +919,28 @@ export function TransactionTable({
                             max={maxAvailableDate}
                             value={quickFilters.date}
                             onChange={(value) => onQuickFilterChange('date', value)}
-                            placeholder="筛选日期"
+                            placeholder={tf(
+                              'transactions.table.filterAria.date',
+                              tf('transactions.table.filterAria.date', '筛选日期')
+                            )}
                           />
                         ) : column.key === 'category' ? (
                           <select
-                            aria-label="按分类筛选"
+                            aria-label={tf(
+                              'transactions.table.filterAria.category',
+                              tf('transactions.table.filterAria.category', '按分类筛选')
+                            )}
                             value={quickFilters.category}
                             onChange={(event) =>
                               onQuickFilterChange('category', event.target.value)
                             }
                           >
-                            <option value="">全部分类</option>
-                            <option value={EMPTY_CATEGORY_FILTER_VALUE}>未分类</option>
+                            <option value="">
+                              {tf('transactions.table.filter.allCategories', '全部分类')}
+                            </option>
+                            <option value={EMPTY_CATEGORY_FILTER_VALUE}>
+                              {tf('transactions.table.filter.uncategorized', '未分类')}
+                            </option>
                             {categoryOptions.map((option) => (
                               <option key={option.id} value={option.id}>
                                 {option.name}
@@ -870,11 +949,16 @@ export function TransactionTable({
                           </select>
                         ) : column.key === 'account' ? (
                           <select
-                            aria-label="按账户筛选"
+                            aria-label={tf(
+                              'transactions.table.filterAria.account',
+                              tf('transactions.table.filterAria.account', '按账户筛选')
+                            )}
                             value={quickFilters.account}
                             onChange={(event) => onQuickFilterChange('account', event.target.value)}
                           >
-                            <option value="">全部账户</option>
+                            <option value="">
+                              {tf('transactions.table.filter.allAccounts', '全部账户')}
+                            </option>
                             {accountOptions.map((option) => (
                               <option key={option.id} value={option.id}>
                                 {option.name}
@@ -888,7 +972,10 @@ export function TransactionTable({
                             onChange={(event) => {
                               onQuickFilterChange('amountMin', event.target.value);
                             }}
-                            placeholder="最小金额"
+                            placeholder={tf(
+                              'transactions.table.filterAria.minAmount',
+                              tf('transactions.table.filterAria.minAmount', '最小金额')
+                            )}
                           />
                         ) : (
                           <input
@@ -906,7 +993,10 @@ export function TransactionTable({
                                 ];
                               onQuickFilterChange(filterKey, event.target.value);
                             }}
-                            placeholder={`筛选${column.label}`}
+                            placeholder={tf(
+                              'transactions.table.filterColumnPlaceholder',
+                              '筛选{label}'
+                            ).replace('{label}', column.label)}
                           />
                         )}
                       </th>
@@ -919,9 +1009,14 @@ export function TransactionTable({
                   <tr>
                     <td colSpan={visibleColumnCount} className="transaction-empty-cell">
                       <div className="transaction-empty-inline">
-                        <span>没有符合条件的交易，调整筛选条件后重试。</span>
+                        <span>
+                          {tf(
+                            'transactions.table.filter.empty',
+                            '没有符合条件的交易，调整筛选条件后重试。'
+                          )}
+                        </span>
                         <button type="button" onClick={onClearFilters}>
-                          清空筛选
+                          {tf('transactions.table.empty.clearFilters', '清空筛选')}
                         </button>
                       </div>
                     </td>
@@ -932,9 +1027,12 @@ export function TransactionTable({
                     const checked = selectedIds.includes(item.id);
                     const repeatKey = getRepeatGroupKey(item);
                     const repeatInfo = repeatKey ? repeatedMonthlyMap.get(repeatKey) : undefined;
-                    const repeatLabel = repeatInfo ? getRepeatLabel(repeatInfo.type) : '';
+                    const repeatLabel = repeatInfo ? getRepeatLabel(repeatInfo.type, tf) : '';
                     const repeatTitle = repeatInfo
-                      ? `${repeatInfo.note}本月${repeatLabel}${repeatInfo.count}次`
+                      ? tf('transactions.table.repeatHint', '{note}本月{label}{count}次')
+                          .replace('{note}', repeatInfo.note)
+                          .replace('{label}', repeatLabel)
+                          .replace('{count}', String(repeatInfo.count))
                       : '';
                     return (
                       <tr
@@ -962,7 +1060,12 @@ export function TransactionTable({
                               type="checkbox"
                               checked={checked}
                               onChange={(event) => onToggleSelect(item.id, event.target.checked)}
-                              aria-label={`选择交易 ${formatDate(item.date)} ${item.note || ''}`}
+                              aria-label={tf(
+                                'transactions.table.selectRowAria',
+                                '选择交易 {date} {note}'
+                              )
+                                .replace('{date}', formatDate(item.date))
+                                .replace('{note}', item.note || '')}
                             />
                           </td>
                         ) : null}
@@ -978,17 +1081,35 @@ export function TransactionTable({
                               TransactionItem['type'],
                               { short: string; label: string }
                             > = {
-                              income: { short: '收', label: '收入' },
-                              expense: { short: '支', label: '支出' },
-                              budget: { short: '预', label: '预算' },
-                              repayment: { short: '还', label: '还款' }
+                              income: {
+                                short: tf('transactions.table.badge.income', '收'),
+                                label: tf('transactions.table.type.income', '收入')
+                              },
+                              expense: {
+                                short: tf('transactions.table.badge.expense', '支'),
+                                label: tf('transactions.table.type.expense', '支出')
+                              },
+                              budget: {
+                                short: tf('transactions.table.badge.budget', '预'),
+                                label: tf('transactions.table.type.budget', '预算')
+                              },
+                              repayment: {
+                                short: tf('transactions.table.badge.repayment', '还'),
+                                label: tf('transactions.table.type.repayment', '还款')
+                              }
                             };
                             const isAdjustment = isTransactionRefundLike(item);
                             const badge =
                               isAdjustment && item.adjustmentKind
                                 ? {
-                                    short: item.adjustmentKind === 'refund' ? '退' : '冲',
-                                    label: item.adjustmentKind === 'refund' ? '退款' : '冲正'
+                                    short:
+                                      item.adjustmentKind === 'refund'
+                                        ? tf('transactions.table.badge.refund', '退')
+                                        : tf('transactions.table.badge.reversal', '冲'),
+                                    label:
+                                      item.adjustmentKind === 'refund'
+                                        ? tf('transactions.table.type.refund', '退款')
+                                        : tf('transactions.table.type.reversal', '冲正')
                                   }
                                 : typeBadgeMap[item.type];
                             const badgeTone = isAdjustment
@@ -1024,7 +1145,12 @@ export function TransactionTable({
                                     ) : null}
                                     {repeatInfo ? (
                                       <span className="transaction-inline-tag" title={repeatTitle}>
-                                        本月{repeatLabel} {repeatInfo.count} 次
+                                        {tf(
+                                          'transactions.table.repeat.label',
+                                          '本月{label} {count} 次'
+                                        )
+                                          .replace('{label}', repeatLabel)
+                                          .replace('{count}', String(repeatInfo.count))}
                                       </span>
                                     ) : null}
                                     {shouldShowAnomaly ? (
@@ -1032,7 +1158,11 @@ export function TransactionTable({
                                         className="transaction-inline-alert"
                                         onClick={(e) => e.stopPropagation()}
                                       >
-                                        <summary title="高于平均">!</summary>
+                                        <summary
+                                          title={tf('transactions.table.anomaly.label', '高于平均')}
+                                        >
+                                          !
+                                        </summary>
                                         <div>
                                           <p>{anomalyHint}</p>
                                         </div>
@@ -1073,7 +1203,7 @@ export function TransactionTable({
                                       accountName
                                     })}
                                   </span>
-                                  {renderAttachmentIndicator(item.attachments?.length)}
+                                  {renderAttachmentIndicator(item.attachments?.length, tf)}
                                 </span>
                               </td>
                             );
@@ -1110,13 +1240,17 @@ export function TransactionTable({
                 <tfoot>
                   <tr className="transaction-summary-row">
                     <td colSpan={visibleColumnCount} className="transaction-summary-amount">
-                      汇总（当前页 {rows.length} 条）｜ 金额合计{' '}
-                      {privacyMode ? maskAmount() : formatCurrencyAuto(pageSummary.overallTotal)} ｜
-                      收入{' '}
-                      {privacyMode ? maskAmount() : formatCurrencyAuto(pageSummary.incomeTotal)} ｜
-                      支出{' '}
-                      {privacyMode ? maskAmount() : formatCurrencyAuto(pageSummary.expenseTotal)} ｜
-                      净额 {privacyMode ? maskAmount() : formatCurrencyAuto(pageSummary.netTotal)}
+                      {tf(
+                        'transactions.table.summary.label',
+                        '汇总（当前页 {count} 条）/ 金额合计'
+                      ).replace('{count}', String(rows.length))}{' '}
+                      {privacyMode ? maskAmount() : formatCurrencyAuto(pageSummary.overallTotal)} /{' '}
+                      {tf('transactions.table.summary.income', '收入')}{' '}
+                      {privacyMode ? maskAmount() : formatCurrencyAuto(pageSummary.incomeTotal)} /{' '}
+                      {tf('transactions.table.summary.expense', '支出')}{' '}
+                      {privacyMode ? maskAmount() : formatCurrencyAuto(pageSummary.expenseTotal)} /{' '}
+                      {tf('transactions.table.summary.net', '净额')}{' '}
+                      {privacyMode ? maskAmount() : formatCurrencyAuto(pageSummary.netTotal)}
                     </td>
                   </tr>
                 </tfoot>
@@ -1124,7 +1258,10 @@ export function TransactionTable({
             </table>
           </div>
 
-          <div className="transaction-mobile-list" aria-label="移动端交易列表">
+          <div
+            className="transaction-mobile-list"
+            aria-label={tf('transactions.table.mobile.aria', '移动端交易列表')}
+          >
             {bulkSelectionEnabled && rows.length > 0 ? (
               <div className="transaction-mobile-selection-bar">
                 <label>
@@ -1134,20 +1271,28 @@ export function TransactionTable({
                     disabled={!canSelectAllOnPage}
                     onChange={(event) => onToggleSelectPage(event.target.checked)}
                   />
-                  <span>全选当前页</span>
+                  <span>{tf('transactions.table.selectPage', '全选当前页')}</span>
                 </label>
-                <span>已选 {selectedIds.length} 条</span>
+                <span>
+                  {tf('transactions.table.selected', '已选 {count} 条').replace(
+                    '{count}',
+                    String(selectedIds.length)
+                  )}
+                </span>
               </div>
             ) : null}
             {rows.map(({ item, categoryName, accountName }) => {
-              const note = item.note || '（无备注）';
+              const note = item.note || tf('transactions.table.mobile.noNote', '（无备注）');
               const isSwiped = swipedId === item.id;
               const checked = selectedIds.includes(item.id);
               const repeatKey = getRepeatGroupKey(item);
               const repeatInfo = repeatKey ? repeatedMonthlyMap.get(repeatKey) : undefined;
-              const repeatLabel = repeatInfo ? getRepeatLabel(repeatInfo.type) : '';
+              const repeatLabel = repeatInfo ? getRepeatLabel(repeatInfo.type, tf) : '';
               const repeatTitle = repeatInfo
-                ? `${repeatInfo.note}本月${repeatLabel}${repeatInfo.count}次`
+                ? tf('transactions.table.repeatHint', '{note}本月{label}{count}次')
+                    .replace('{note}', repeatInfo.note)
+                    .replace('{label}', repeatLabel)
+                    .replace('{count}', String(repeatInfo.count))
                 : '';
               return (
                 <article
@@ -1204,7 +1349,12 @@ export function TransactionTable({
                               checked={checked}
                               onClick={(event) => event.stopPropagation()}
                               onChange={(event) => onToggleSelect(item.id, event.target.checked)}
-                              aria-label={`选择交易 ${formatDate(item.date)} ${item.note || ''}`}
+                              aria-label={tf(
+                                'transactions.table.selectRowAria',
+                                '选择交易 {date} {note}'
+                              )
+                                .replace('{date}', formatDate(item.date))
+                                .replace('{note}', item.note || '')}
                             />
                           ) : null}
                           <strong
@@ -1225,7 +1375,9 @@ export function TransactionTable({
                           ) : null}
                           {repeatInfo ? (
                             <span className="transaction-inline-tag" title={repeatTitle}>
-                              本月{repeatLabel} {repeatInfo.count} 次
+                              {tf('transactions.table.repeat.label', '本月{label} {count} 次')
+                                .replace('{label}', repeatLabel)
+                                .replace('{count}', String(repeatInfo.count))}
                             </span>
                           ) : null}
                           {item.type === 'expense' &&
@@ -1233,7 +1385,10 @@ export function TransactionTable({
                           Number(item.amount) >= highExpenseThreshold ? (
                             <span
                               className="transaction-inline-tag transaction-inline-tag-warn"
-                              title="高于平均，建议检查是否重复记账。"
+                              title={tf(
+                                'transactions.table.anomaly.title',
+                                '高于平均，建议检查是否重复记账。'
+                              )}
                             >
                               ! 高于平均
                             </span>
@@ -1246,7 +1401,7 @@ export function TransactionTable({
                             aria-haspopup="menu"
                             aria-expanded={contextMenu?.id === item.id}
                             aria-label={`更多操作 ${item.note || formatDate(item.date)}`}
-                            title="更多操作"
+                            title={tf('transactions.table.moreActions.label', '更多操作')}
                             onClick={(event) => {
                               event.stopPropagation();
                               setSwipedId(null);
@@ -1264,7 +1419,7 @@ export function TransactionTable({
                       </header>
                       <p>
                         {note}
-                        {renderAttachmentIndicator(item.attachments?.length, true)}
+                        {renderAttachmentIndicator(item.attachments?.length, tf, true)}
                       </p>
                       {item.orderNo || item.merchantOrderNo ? (
                         <small>
@@ -1318,19 +1473,24 @@ export function TransactionTable({
               className="transaction-pagination-summary"
               style={{ color: 'var(--color-text-secondary)' }}
             >
-              当前 {filteredTotal} 条 / 全部 {total} 条
+              {tf('transactions.table.pager.summary', '当前 {filtered} 条 / 全部 {total} 条')
+                .replace('{filtered}', String(filteredTotal))
+                .replace('{total}', String(total))}
             </small>
             <div className="transaction-pagination-controls">
               <label className="transaction-page-size">
-                每页
+                {tf('transactions.table.pager.every', '每页')}
                 <select
-                  aria-label="每页显示条数"
+                  aria-label={tf('transactions.table.pager.size', '每页显示条数')}
                   value={pageSize}
                   onChange={(event) => onPageSizeChange(Number(event.target.value))}
                 >
                   {pageSizeOptions.map((size) => (
                     <option key={`page-size-${size}`} value={size}>
-                      {size} 条
+                      {tf('transactions.table.pager.rowsOption', '{count} 条').replace(
+                        '{count}',
+                        String(size)
+                      )}
                     </option>
                   ))}
                 </select>
@@ -1339,40 +1499,42 @@ export function TransactionTable({
                 className="transaction-page-indicator"
                 style={{ color: 'var(--color-text-secondary)' }}
               >
-                第 {page} / {pages} 页
+                {tf('transactions.table.pager.indicator', '第 {page} / {pages} 页')
+                  .replace('{page}', String(page))
+                  .replace('{pages}', String(pages))}
               </small>
               <div className="transaction-page-nav">
                 <button
                   type="button"
                   disabled={page === 1}
                   onClick={onFirstPage}
-                  aria-label="第一页"
+                  aria-label={tf('transactions.table.pager.first', '第一页')}
                 >
-                  首页
+                  {tf('transactions.table.pager.shortFirst', '首页')}
                 </button>
                 <button
                   type="button"
                   disabled={page === 1}
                   onClick={onPrevPage}
-                  aria-label="上一页"
+                  aria-label={tf('transactions.table.pager.prev', '上一页')}
                 >
-                  上页
+                  {tf('transactions.table.pager.shortPrev', '上页')}
                 </button>
                 <button
                   type="button"
                   disabled={page === pages}
                   onClick={onNextPage}
-                  aria-label="下一页"
+                  aria-label={tf('transactions.table.pager.next', '下一页')}
                 >
-                  下页
+                  {tf('transactions.table.pager.shortNext', '下页')}
                 </button>
                 <button
                   type="button"
                   disabled={page === pages}
                   onClick={onLastPage}
-                  aria-label="最后一页"
+                  aria-label={tf('transactions.table.pager.last', '最后一页')}
                 >
-                  末页
+                  {tf('transactions.table.pager.shortLast', '末页')}
                 </button>
               </div>
             </div>
@@ -1383,7 +1545,7 @@ export function TransactionTable({
                   ref={contextMenuRef}
                   className="transaction-context-menu"
                   role="menu"
-                  aria-label="交易操作"
+                  aria-label={tf('transactions.table.rowActions.label', '交易操作')}
                   style={{
                     left: contextMenuPosition?.x ?? contextMenu.x,
                     top: contextMenuPosition?.y ?? contextMenu.y

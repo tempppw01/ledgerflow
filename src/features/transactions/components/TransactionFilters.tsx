@@ -17,6 +17,7 @@ import {
   SETTINGS_ICON_URL
 } from '../../../shared/config/brandAssets';
 import { DatePicker } from '../../../shared/ui/DatePicker';
+import { useTFallback } from '../../../shared/lib/useTFallback';
 
 interface TransactionFiltersProps {
   filters: TransactionFilterState;
@@ -75,6 +76,7 @@ export function TransactionFilters({
   sidePanelVisible,
   onToggleSidePanel
 }: TransactionFiltersProps) {
+  const tf = useTFallback();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const hiddenColumnCount = columnOptions.reduce(
@@ -130,9 +132,12 @@ export function TransactionFilters({
     <section className="panel transaction-filters-panel">
       <div className="transaction-filters-header">
         <div>
-          <h2>交易记录</h2>
+          <h2>{tf('transactions.filters.title', '交易记录')}</h2>
           <p className="surface-caption transaction-filters-caption">
-            把首屏注意力放在流水本身，筛选与操作保持就近、克制、可展开。
+            {tf(
+              'transactions.filters.caption',
+              '把首屏注意力放在流水本身，筛选与操作保持就近、克制、可展开。'
+            )}
           </p>
         </div>
       </div>
@@ -142,50 +147,65 @@ export function TransactionFilters({
           className="field transaction-filter-field transaction-filter-field-keyword"
           style={{ marginBottom: 0 }}
         >
-          <label>关键词</label>
+          <label>{tf('transactions.filters.keyword', '关键词')}</label>
           <input
-            placeholder="搜索备注或标签"
+            placeholder={tf(
+              'transactions.filters.keywordPlaceholder',
+              tf('transactions.filters.keywordPlaceholder', '搜索备注或标签')
+            )}
             value={filters.keyword}
             onChange={(event) => onKeywordChange(event.target.value)}
           />
         </div>
 
         <div className="field transaction-filter-field" style={{ marginBottom: 0 }}>
-          <label htmlFor="tx-filter-type">类型</label>
+          <label htmlFor="tx-filter-type">{tf('transactions.filters.type', '类型')}</label>
           <select
             id="tx-filter-type"
-            aria-label="按交易类型筛选"
+            aria-label={tf(
+              'transactions.filters.typeAria',
+              tf('transactions.filters.typeAria', '按交易类型筛选')
+            )}
             value={filters.type}
             onChange={(event) => onTypeChange(event.target.value as TransactionTypeFilter)}
           >
-            <option value="all">全部</option>
-            <option value="income">收入</option>
-            <option value="expense">支出</option>
-            <option value="budget">预算</option>
-            <option value="repayment">还款</option>
+            <option value="all">{tf('transactions.filters.optionAll', '全部')}</option>
+            <option value="income">{tf('transactions.filters.optionIncome', '收入')}</option>
+            <option value="expense">{tf('transactions.filters.optionExpense', '支出')}</option>
+            <option value="budget">{tf('transactions.filters.optionBudget', '预算')}</option>
+            <option value="repayment">{tf('transactions.filters.optionRepayment', '还款')}</option>
           </select>
         </div>
 
         <div className="field transaction-filter-field" style={{ marginBottom: 0 }}>
-          <label htmlFor="tx-filter-date-preset">日期</label>
+          <label htmlFor="tx-filter-date-preset">{tf('transactions.filters.date', '日期')}</label>
           <select
             id="tx-filter-date-preset"
-            aria-label="按日期范围筛选"
+            aria-label={tf(
+              'transactions.filters.dateAria',
+              tf('transactions.filters.dateAria', '按日期范围筛选')
+            )}
             value={filters.datePreset}
             onChange={(event) => onDatePresetChange(event.target.value as TransactionDatePreset)}
           >
-            <option value="all">全部时间</option>
-            <option value="thisMonth">本月</option>
-            <option value="last3Months">最近三个月</option>
-            <option value="last30">最近 30 天</option>
-            <option value="custom">自定义</option>
+            <option value="all">{tf('transactions.filters.dateAll', '全部时间')}</option>
+            <option value="thisMonth">{tf('transactions.filters.dateThisMonth', '本月')}</option>
+            <option value="last3Months">
+              {tf('transactions.filters.dateLast3Months', '最近三个月')}
+            </option>
+            <option value="last30">
+              {tf('transactions.filters.dateLast30Days', '最近 30 天')}
+            </option>
+            <option value="custom">{tf('transactions.filters.dateCustom', '自定义')}</option>
           </select>
         </div>
 
         <div className="transaction-filters-primary-cta">
-          <label className="transaction-filters-mobile-only-label">操作</label>
+          <label className="transaction-filters-mobile-only-label">
+            {tf('transactions.filters.actions', '操作')}
+          </label>
           <button type="button" className="primary" onClick={onQuickAdd}>
-            记一笔
+            {tf('transactions.filters.quickAdd', '记一笔')}
           </button>
         </div>
       </div>
@@ -193,10 +213,15 @@ export function TransactionFilters({
       {filters.datePreset === 'custom' ? (
         <div className="transaction-filters-custom-date-row">
           <div className="field" style={{ marginBottom: 0 }}>
-            <label htmlFor="tx-filter-date-from">筛选开始日期</label>
+            <label htmlFor="tx-filter-date-from">
+              {tf('transactions.filters.dateFrom', '筛选开始日期')}
+            </label>
             <DatePicker
               id="tx-filter-date-from"
-              ariaLabel="筛选开始日期"
+              ariaLabel={tf(
+                'transactions.filters.dateFrom',
+                tf('transactions.filters.dateFrom', '筛选开始日期')
+              )}
               min={minAvailableDate}
               max={maxAvailableDate}
               value={filters.dateFrom}
@@ -219,14 +244,19 @@ export function TransactionFilters({
                 alt=""
                 aria-hidden="true"
               />
-              设为月初
+              {tf('transactions.filters.setMonthStart', '设为月初')}
             </button>
           </div>
           <div className="field" style={{ marginBottom: 0 }}>
-            <label htmlFor="tx-filter-date-to">筛选结束日期</label>
+            <label htmlFor="tx-filter-date-to">
+              {tf('transactions.filters.dateTo', '筛选结束日期')}
+            </label>
             <DatePicker
               id="tx-filter-date-to"
-              ariaLabel="筛选结束日期"
+              ariaLabel={tf(
+                'transactions.filters.dateTo',
+                tf('transactions.filters.dateTo', '筛选结束日期')
+              )}
               min={minAvailableDate}
               max={maxAvailableDate}
               value={filters.dateTo}
@@ -249,7 +279,7 @@ export function TransactionFilters({
                 alt=""
                 aria-hidden="true"
               />
-              设为月末
+              {tf('transactions.filters.setMonthEnd', '设为月末')}
             </button>
           </div>
         </div>
@@ -260,8 +290,16 @@ export function TransactionFilters({
           type="button"
           className={`transaction-filter-trigger ${sidePanelVisible ? 'active' : ''}`}
           onClick={onToggleSidePanel}
-          aria-label={sidePanelVisible ? '收起洞察' : '查看洞察'}
-          title={sidePanelVisible ? '收起洞察' : '查看洞察'}
+          aria-label={
+            sidePanelVisible
+              ? tf('transactions.filters.hideInsights', '收起洞察')
+              : tf('transactions.filters.viewInsights', '查看洞察')
+          }
+          title={
+            sidePanelVisible
+              ? tf('transactions.filters.hideInsights', '收起洞察')
+              : tf('transactions.filters.viewInsights', '查看洞察')
+          }
         >
           <img
             className="transaction-filter-trigger-icon"
@@ -271,21 +309,39 @@ export function TransactionFilters({
           />
           <span className="transaction-filter-trigger-label">
             <span className="transaction-filter-trigger-label-full">
-              {sidePanelVisible ? '收起洞察' : '查看洞察'}
+              {sidePanelVisible
+                ? tf('transactions.filters.hideInsights', '收起洞察')
+                : tf('transactions.filters.viewInsights', '查看洞察')}
             </span>
             <span className="transaction-filter-trigger-label-short" aria-hidden="true">
-              洞察
+              {tf('transactions.filters.shortInsights', '洞察')}
             </span>
           </span>
         </button>
 
-        <div className="transaction-filters-quick-tools" role="group" aria-label="快捷开关">
+        <div
+          className="transaction-filters-quick-tools"
+          role="group"
+          aria-label={tf(
+            'transactions.filters.quickToggles',
+            tf('transactions.filters.quickToggles', '快捷开关')
+          )}
+        >
           <button
             type="button"
             className={`transaction-filter-trigger transaction-filter-trigger-compact ${bulkSelectionEnabled ? 'active' : ''}`}
             onClick={onToggleBulkSelection}
-            aria-label={bulkSelectionEnabled ? '批量已开' : '批量操作'}
-            title={bulkSelectionEnabled ? '批量已开' : '批量操作'}
+            aria-label={
+              bulkSelectionEnabled
+                ? tf('transactions.filters.bulkOn', '批量已开')
+                : tf('transactions.filters.bulk', '批量操作')
+            }
+            aria-pressed={bulkSelectionEnabled}
+            title={
+              bulkSelectionEnabled
+                ? tf('transactions.filters.bulkOn', '批量已开')
+                : tf('transactions.filters.bulk', '批量操作')
+            }
           >
             <img
               className="transaction-filter-trigger-icon"
@@ -295,10 +351,12 @@ export function TransactionFilters({
             />
             <span className="transaction-filter-trigger-label">
               <span className="transaction-filter-trigger-label-full">
-                {bulkSelectionEnabled ? '批量已开' : '批量操作'}
+                {bulkSelectionEnabled
+                  ? tf('transactions.filters.bulkOn', '批量已开')
+                  : tf('transactions.filters.bulk', '批量操作')}
               </span>
               <span className="transaction-filter-trigger-label-short" aria-hidden="true">
-                批量
+                {tf('transactions.filters.shortBulk', '批量')}
               </span>
             </span>
           </button>
@@ -306,8 +364,17 @@ export function TransactionFilters({
             type="button"
             className={`transaction-filter-trigger transaction-filter-trigger-compact ${privacyMode ? 'active' : ''}`}
             onClick={onTogglePrivacy}
-            aria-label={privacyMode ? '隐私已开' : '隐私模式'}
-            title={privacyMode ? '隐私已开' : '隐私模式'}
+            aria-label={
+              privacyMode
+                ? tf('transactions.filters.privacyOn', '隐私已开')
+                : tf('transactions.filters.privacy', '隐私模式')
+            }
+            aria-pressed={privacyMode}
+            title={
+              privacyMode
+                ? tf('transactions.filters.privacyOn', '隐私已开')
+                : tf('transactions.filters.privacy', '隐私模式')
+            }
           >
             <img
               className="transaction-filter-trigger-icon"
@@ -317,10 +384,12 @@ export function TransactionFilters({
             />
             <span className="transaction-filter-trigger-label">
               <span className="transaction-filter-trigger-label-full">
-                {privacyMode ? '隐私已开' : '隐私模式'}
+                {privacyMode
+                  ? tf('transactions.filters.privacyOn', '隐私已开')
+                  : tf('transactions.filters.privacy', '隐私模式')}
               </span>
               <span className="transaction-filter-trigger-label-short" aria-hidden="true">
-                隐私
+                {tf('transactions.filters.shortPrivacy', '隐私')}
               </span>
             </span>
           </button>
@@ -333,8 +402,14 @@ export function TransactionFilters({
             onClick={() => setMenuOpen((prev) => !prev)}
             aria-haspopup="true"
             aria-expanded={menuOpen}
-            aria-label="筛选设置"
-            title="筛选设置"
+            aria-label={tf(
+              'transactions.filters.settings',
+              tf('transactions.filters.settings', '筛选设置')
+            )}
+            title={tf(
+              'transactions.filters.settings',
+              tf('transactions.filters.settings', '筛选设置')
+            )}
           >
             <img
               className="transaction-filter-trigger-icon"
@@ -343,15 +418,20 @@ export function TransactionFilters({
               aria-hidden="true"
             />
             <span className="transaction-filter-trigger-label">
-              <span className="transaction-filter-trigger-label-full">筛选设置</span>
+              <span className="transaction-filter-trigger-label-full">
+                {tf('transactions.filters.settings', '筛选设置')}
+              </span>
               <span className="transaction-filter-trigger-label-short" aria-hidden="true">
-                筛选
+                {tf('transactions.filters.shortFilter', '筛选')}
               </span>
             </span>
             {advancedChangeCount > 0 ? (
               <span
                 className="transaction-filter-trigger-badge"
-                aria-label={`已调整 ${advancedChangeCount} 项`}
+                aria-label={tf('transactions.filters.adjusted', '已调整 {count} 项').replace(
+                  '{count}',
+                  String(advancedChangeCount)
+                )}
               >
                 {advancedChangeCount}
               </span>
@@ -373,14 +453,26 @@ export function TransactionFilters({
                   >
                     <div className="transaction-filter-dialog-header">
                       <div className="transaction-filter-popover-head">
-                        <span className="transaction-filter-dialog-eyebrow">交易记录 · 个性化</span>
-                        <strong id="tx-filter-dialog-title">筛选与显示设置</strong>
-                        <span>按来源整理流水，并自定义表格信息。</span>
+                        <span className="transaction-filter-dialog-eyebrow">
+                          {tf('transactions.filters.dialogEyebrow', '交易记录 · 个性化')}
+                        </span>
+                        <strong id="tx-filter-dialog-title">
+                          {tf('transactions.filters.dialogTitle', '筛选与显示设置')}
+                        </strong>
+                        <span>
+                          {tf(
+                            'transactions.filters.dialogDesc',
+                            '按来源整理流水，并自定义表格信息。'
+                          )}
+                        </span>
                       </div>
                       <button
                         type="button"
                         className="transaction-filter-dialog-close"
-                        aria-label="关闭筛选设置"
+                        aria-label={tf(
+                          'transactions.filters.dialogClose',
+                          tf('transactions.filters.dialogClose', '关闭筛选设置')
+                        )}
                         onClick={() => setMenuOpen(false)}
                       >
                         ×
@@ -392,25 +484,42 @@ export function TransactionFilters({
                         <div className="transaction-filter-dialog-section-heading">
                           <span className="transaction-filter-dialog-index">01</span>
                           <div>
-                            <h3>来源筛选</h3>
-                            <p>只查看来自特定渠道的记录</p>
+                            <h3>{tf('transactions.filters.sourceTitle', '来源筛选')}</h3>
+                            <p>
+                              {tf('transactions.filters.sourceDesc', '只查看来自特定渠道的记录')}
+                            </p>
                           </div>
                         </div>
                         <div className="field" style={{ marginBottom: 0 }}>
-                          <label htmlFor="tx-filter-source">交易来源</label>
+                          <label htmlFor="tx-filter-source">
+                            {tf('transactions.filters.source', '交易来源')}
+                          </label>
                           <select
                             id="tx-filter-source"
-                            aria-label="按来源筛选"
+                            aria-label={tf(
+                              'transactions.filters.sourceAria',
+                              tf('transactions.filters.sourceAria', '按来源筛选')
+                            )}
                             value={filters.source}
                             onChange={(event) =>
                               onSourceChange(event.target.value as TransactionSourceFilter)
                             }
                           >
-                            <option value="all">全部来源</option>
-                            <option value="manual">手工录入</option>
-                            <option value="wechat">微信导入</option>
-                            <option value="alipay">支付宝</option>
-                            <option value="ai">AI 记账</option>
+                            <option value="all">
+                              {tf('transactions.filters.sourceAll', '全部来源')}
+                            </option>
+                            <option value="manual">
+                              {tf('transactions.filters.sourceManual', '手工录入')}
+                            </option>
+                            <option value="wechat">
+                              {tf('transactions.filters.sourceWechat', '微信导入')}
+                            </option>
+                            <option value="alipay">
+                              {tf('transactions.filters.sourceAlipay', '支付宝')}
+                            </option>
+                            <option value="ai">
+                              {tf('transactions.filters.sourceAi', 'AI 记账')}
+                            </option>
                           </select>
                         </div>
                       </section>
@@ -419,10 +528,15 @@ export function TransactionFilters({
                         <div className="transaction-filter-dialog-section-heading">
                           <span className="transaction-filter-dialog-index">02</span>
                           <div>
-                            <h3>表格显示</h3>
+                            <h3>{tf('transactions.filters.columnsTitle', '表格显示')}</h3>
                             <p>
-                              选择需要展示的信息
-                              {hiddenColumnCount > 0 ? ` · 已收起 ${hiddenColumnCount} 项` : ''}
+                              {tf('transactions.filters.chooseFields', '选择需要展示的信息')}
+                              {hiddenColumnCount > 0
+                                ? tf(
+                                    'transactions.filters.hiddenCount',
+                                    '· 已收起 {count} 项'
+                                  ).replace('{count}', String(hiddenColumnCount))
+                                : ''}
                             </p>
                           </div>
                         </div>
@@ -444,38 +558,51 @@ export function TransactionFilters({
                         <div className="transaction-filter-dialog-section-heading">
                           <span className="transaction-filter-dialog-index">03</span>
                           <div>
-                            <h3>导入与整理</h3>
-                            <p>管理账单导入方式及重复记录</p>
+                            <h3>{tf('transactions.filters.importTitle', '导入与整理')}</h3>
+                            <p>
+                              {tf('transactions.filters.importDesc', '管理账单导入方式及重复记录')}
+                            </p>
                           </div>
                         </div>
                         <div className="transaction-filter-dialog-import-controls">
                           <div className="field" style={{ marginBottom: 0 }}>
-                            <label htmlFor="tx-import-mode">账单导入模式</label>
+                            <label htmlFor="tx-import-mode">
+                              {tf('transactions.filters.importMode', '账单导入模式')}
+                            </label>
                             <select
                               id="tx-import-mode"
-                              aria-label="账单导入模式"
+                              aria-label={tf(
+                                'transactions.filters.importMode',
+                                tf('transactions.filters.importMode', '账单导入模式')
+                              )}
                               value={importMode}
                               onChange={(event) =>
                                 onImportModeChange(event.target.value as BillImportMode)
                               }
                             >
-                              <option value="incremental">增量（跳过重复）</option>
-                              <option value="merge">合并（覆盖重复）</option>
-                              <option value="overwrite">覆盖（清空后导入）</option>
+                              <option value="incremental">
+                                {tf('transactions.filters.importIncremental', '增量（跳过重复）')}
+                              </option>
+                              <option value="merge">
+                                {tf('transactions.filters.importMerge', '合并（覆盖重复）')}
+                              </option>
+                              <option value="overwrite">
+                                {tf('transactions.filters.importOverwrite', '覆盖（清空后导入）')}
+                              </option>
                             </select>
                           </div>
                           <div className="transaction-filter-actions-grid transaction-filter-actions-grid-inline transaction-filter-actions-grid-compact">
                             <button type="button" onClick={onExport}>
-                              导出 CSV
+                              {tf('transactions.filters.exportCsv', '导出 CSV')}
                             </button>
                             <button type="button" onClick={onCheckDuplicates}>
-                              检测重复
+                              {tf('transactions.filters.checkDuplicates', '检测重复')}
                             </button>
                             <button type="button" onClick={onImportWechat}>
-                              导入微信
+                              {tf('transactions.filters.importWechat', '导入微信')}
                             </button>
                             <button type="button" onClick={onImportAlipay}>
-                              导入支付宝
+                              {tf('transactions.filters.importAlipay', '导入支付宝')}
                             </button>
                           </div>
                         </div>
@@ -484,14 +611,14 @@ export function TransactionFilters({
 
                     <div className="transaction-filter-dialog-footer">
                       <button type="button" className="transaction-filter-reset" onClick={onClear}>
-                        清空筛选条件
+                        {tf('transactions.filters.clearFilters', '清空筛选条件')}
                       </button>
                       <button
                         type="button"
                         className="primary transaction-filter-done"
                         onClick={() => setMenuOpen(false)}
                       >
-                        完成
+                        {tf('transactions.filters.done', '完成')}
                       </button>
                     </div>
                   </div>

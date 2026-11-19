@@ -1,6 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
+import { setFormattingLocale } from '../shared/lib/format';
 import enTranslation from './locales/en/translation.json';
 import zhTranslation from './locales/zh/translation.json';
 
@@ -34,6 +35,8 @@ function applyDocumentTitle(language: string) {
 function handleLanguageChanged(language: string) {
   applyDocumentLanguage(language);
   applyDocumentTitle(language);
+  // 金额简写(万/亿 与 K/M/B)跟随界面语言,避免英文界面里出现「¥1.84万」。
+  setFormattingLocale(language);
 }
 
 i18n
@@ -68,6 +71,7 @@ i18n
 
 applyDocumentLanguage(i18n.language || initialLanguage);
 applyDocumentTitle(i18n.language || initialLanguage);
+setFormattingLocale(i18n.language || initialLanguage);
 i18n.off('languageChanged', handleLanguageChanged);
 i18n.on('languageChanged', handleLanguageChanged);
 

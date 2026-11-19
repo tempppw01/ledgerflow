@@ -14,13 +14,49 @@ export function formatCurrency(value: number) {
   }).format(normalized);
 }
 
-/** 金额自动简写：按中文数量级缩写，避免长数字挤压布局。 */
+type CompactLocale = 'zh' | 'en';
+
+let compactLocale: CompactLocale = 'zh';
+
+const EN_UNITS = [
+  { threshold: 1e12, divisor: 1e12, label: 'T' },
+  { threshold: 1e9, divisor: 1e9, label: 'B' },
+  { threshold: 1e6, divisor: 1e6, label: 'M' },
+  { threshold: 1e3, divisor: 1e3, label: 'K' }
+];
+
+/**
+ * 金额简写跟随界面语言:中文用「万/亿」,英文用「K/M/B」。
+ * i18n 初始化与切换语言时调用,业务代码不需要传参。
+ */
+export function setFormattingLocale(language: string | undefined) {
+  compactLocale = language && language.startsWith('en') ? 'en' : 'zh';
+}
+
+/** 金额自动简写:按当前语言的数量级缩写,避免长数字挤压布局。 */
 export function formatCurrencyAuto(value: number) {
   const normalized = normalizeCurrencyInput(value, 2);
   const abs = Math.abs(normalized);
+  const isEn = compactLocale === 'en';
 
   if (abs < 1000) {
+    if (isEn) {
+      // 英文环境仍用 ¥ 前缀(与简写分支保持一致),避免出现 CN¥ 这种本地化差异。
+      const body = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(abs);
+      return `${normalized < 0 ? '-' : ''}¥${body.includes('.') ? body : `${body}.00`}`;
+    }
     return formatCurrency(normalized);
+  }
+
+  if (isEn) {
+    const enUnit = EN_UNITS.find((item) => abs >= item.threshold) ?? EN_UNITS[EN_UNITS.length - 1];
+    const enCompact = abs / enUnit.divisor;
+    const enDigits = enCompact >= 100 ? 0 : enCompact >= 10 ? 1 : 2;
+    const enText = enCompact
+      .toFixed(enDigits)
+      .replace(/\.0+$/, '')
+      .replace(/(\.\d*[1-9])0+$/, '$1');
+    return `${normalized < 0 ? '-' : ''}¥${enText}${enUnit.label}`;
   }
 
   const units = [

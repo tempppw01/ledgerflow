@@ -5,9 +5,10 @@ import './language-switcher.css';
 
 type Language = 'zh' | 'en';
 
-const LANGUAGES: Array<{ value: Language; label: string; shortLabel: string }> = [
+const LANGUAGES: Array<{ value: Language; label: string; shortLabel: string; badge?: string }> = [
   { value: 'zh', label: '简体中文', shortLabel: '中文' },
-  { value: 'en', label: 'English', shortLabel: 'EN' }
+  // 英文文案尚未覆盖全部页面,先标注 beta,避免用户切过去后误以为坏了。
+  { value: 'en', label: 'English', shortLabel: 'EN', badge: 'beta' }
 ];
 
 export function LanguageSwitcher() {
@@ -120,6 +121,9 @@ export function LanguageSwitcher() {
                 onClick={() => selectLanguage(language.value)}
               >
                 <span className="language-switcher-option-label">{language.label}</span>
+                {language.badge ? (
+                  <span className="language-switcher-option-badge">{language.badge}</span>
+                ) : null}
                 {isActive ? (
                   <svg
                     className="language-switcher-check"

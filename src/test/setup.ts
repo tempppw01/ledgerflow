@@ -44,3 +44,11 @@ if (!isStorageUsable(globalThis.sessionStorage)) {
     value: createMemoryStorage()
   });
 }
+
+// i18n 用 localStorage + navigator 探测语言,jsdom 的 navigator 是 en-US,
+// 会让组件在测试里渲染英文,和既有中文断言冲突。这里固定为中文。
+try {
+  window.localStorage.setItem('i18nextLng', 'zh');
+} catch {
+  // 存储不可用时忽略,组件会退化成中文兜底文案
+}

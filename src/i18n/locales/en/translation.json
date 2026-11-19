@@ -542,7 +542,7 @@
   },
   "dashboard": {
     "greeting": {
-      "night": "It’s late. Get some rest.",
+      "night": "It’s late — get some rest",
       "morning": "Good morning",
       "forenoon": "Good morning",
       "noon": "Good afternoon",
@@ -640,13 +640,13 @@
       "weekShort": "Week {{week}}",
       "categoryShareThisMonth": "This month’s share",
       "densityAria": "Dashboard information density",
-      "densityLabel": "Dashboard view",
-      "densityCore": "Core information",
+      "densityLabel": "Dashboard density",
+      "densityCore": "Core",
       "densityFull": "Full analysis",
-      "chartEmptyTitle": "Add a transaction and your trends will start here",
-      "chartEmptyDesc": "Once real income and expenses are recorded, spending rhythm and category structure will appear here.",
+      "chartEmptyTitle": "Add a transaction and trends will appear",
+      "chartEmptyDesc": "Once there is real income and spending, the pacing and category mix show up here.",
       "firstEntry": "Add your first transaction",
-      "densityHint": "Full trends and category analysis are visible. Switch to Core information to hide secondary charts.",
+      "densityHint": "Full trend and category analysis are shown; switch to Core to collapse the secondary charts.",
       "cashflow": {
         "aria": "Cash flow and financial tasks for the next 30 days",
         "title": "Upcoming & To Do",
@@ -697,7 +697,11 @@
         "estimatedBalance": "Estimated balance",
         "calendarNetWorth": "Net worth: {{amount}}",
         "calendarLiabilities": "Liabilities: {{amount}}"
-      }
+      },
+      "monthBalance": "This month's balance",
+      "traceMonth": "View this month's transactions",
+      "densityTitle": "Show on dashboard",
+      "chartEmptyCta": "Add first entry"
     }
   },
   "transactions": {
@@ -764,6 +768,188 @@
       "clearFilters": "Clear filters",
       "maxExpense": "Max expense",
       "noExpenseData": "No identifiable expense records"
+    },
+    "filters": {
+      "title": "Transaction log",
+      "caption": "Keep the focus on the records themselves; filters and actions stay close at hand and expand only when needed.",
+      "keyword": "Keyword",
+      "keywordPlaceholder": "Search notes or tags",
+      "type": "Type",
+      "typeAria": "Filter by transaction type",
+      "optionAll": "All",
+      "optionIncome": "Income",
+      "optionExpense": "Expense",
+      "optionBudget": "Budget",
+      "optionRepayment": "Repayment",
+      "date": "Date",
+      "dateAria": "Filter by date range",
+      "dateAll": "All time",
+      "dateThisMonth": "This month",
+      "dateLast3Months": "Last 3 months",
+      "dateLast30Days": "Last 30 days",
+      "dateCustom": "Custom",
+      "actions": "Actions",
+      "quickAdd": "Add transaction",
+      "dateFrom": "Start date",
+      "dateTo": "End date",
+      "viewInsights": "View insights",
+      "hideInsights": "Hide insights",
+      "quickToggles": "Quick toggles",
+      "bulkOn": "Bulk on",
+      "bulk": "Bulk actions",
+      "privacyOn": "Privacy on",
+      "privacy": "Privacy mode",
+      "settings": "Filter settings",
+      "dialogEyebrow": "Transaction log · Personalize",
+      "dialogTitle": "Filters & display",
+      "dialogDesc": "Organize records by source and customize what the table shows.",
+      "dialogClose": "Close filter settings",
+      "sourceTitle": "Source filter",
+      "sourceDesc": "Only show records from specific channels",
+      "source": "Source",
+      "sourceAria": "Filter by source",
+      "sourceAll": "All sources",
+      "sourceManual": "Manual entry",
+      "sourceWechat": "WeChat import",
+      "sourceAlipay": "Alipay",
+      "sourceAi": "AI bookkeeping",
+      "columnsTitle": "Table columns",
+      "importTitle": "Import & cleanup",
+      "importDesc": "Manage import mode and duplicate handling",
+      "importMode": "Import mode",
+      "importIncremental": "Incremental (skip duplicates)",
+      "importMerge": "Merge (overwrite duplicates)",
+      "importOverwrite": "Overwrite (clear, then import)",
+      "setMonthStart": "Start of month",
+      "setMonthEnd": "End of month",
+      "shortInsights": "Insights",
+      "shortBulk": "Bulk",
+      "shortPrivacy": "Privacy",
+      "shortFilter": "Filter",
+      "chooseFields": "Choose what to show",
+      "exportCsv": "Export CSV",
+      "checkDuplicates": "Check duplicates",
+      "importWechat": "Import WeChat",
+      "importAlipay": "Import Alipay",
+      "clearFilters": "Clear filters",
+      "done": "Done",
+      "adjusted": "Adjusted: {count}",
+      "hiddenCount": "· {count} hidden"
+    },
+    "table": {
+      "col": {
+        "date": "Date",
+        "type": "Type",
+        "status": "Status",
+        "category": "Category",
+        "account": "Account",
+        "amount": "Amount",
+        "orderNo": "Order No.",
+        "merchantOrderNo": "Merchant No.",
+        "note": "Note"
+      },
+      "status": {
+        "pending": "Pending",
+        "completed": "Completed",
+        "refunded": "Refunded",
+        "closed": "Closed",
+        "failed": "Failed"
+      },
+      "type": {
+        "income": "Income",
+        "expense": "Expense",
+        "budget": "Budget",
+        "repayment": "Repayment",
+        "refund": "Refund",
+        "reversal": "Reversal",
+        "spending": "Spending"
+      },
+      "badge": {
+        "income": "I",
+        "expense": "E",
+        "budget": "B",
+        "repayment": "R",
+        "refund": "Rf",
+        "reversal": "Rv"
+      },
+      "attachment": {
+        "has": "Has attachment",
+        "count": "Has {count} attachments"
+      },
+      "empty": {
+        "loadError": "Failed to load transactions",
+        "clearFilters": "Clear filters",
+        "retry": "Retry",
+        "filteredTitle": "No matching transactions",
+        "noneTitle": "No transactions yet",
+        "filteredDesc": "Adjust the filters and try again.",
+        "noneDesc": "Add your first transaction, or import a statement.",
+        "add": "New transaction"
+      },
+      "task": {
+        "aria": "Transaction overview",
+        "adjustments": "Refund / Reversal",
+        "failed": "Failed"
+      },
+      "selectPage": "Select current page",
+      "filterAria": {
+        "type": "Filter by type",
+        "status": "Filter by status",
+        "category": "Filter by category",
+        "account": "Filter by account",
+        "date": "Filter date",
+        "minAmount": "Min"
+      },
+      "filter": {
+        "all": "All",
+        "allCategories": "All",
+        "uncategorized": "Uncategorized",
+        "allAccounts": "All accounts",
+        "empty": "No matching transactions — adjust the filters and try again."
+      },
+      "anomaly": {
+        "label": "Above average",
+        "title": "Above average — check for possible duplicates"
+      },
+      "mobile": {
+        "aria": "Mobile transaction list",
+        "noNote": "(no note)"
+      },
+      "moreActions": {
+        "label": "More actions"
+      },
+      "pager": {
+        "size": "Rows per page",
+        "first": "First page",
+        "prev": "Previous page",
+        "next": "Next page",
+        "last": "Last page",
+        "summary": "{filtered} of {total} rows",
+        "every": "Rows",
+        "rowsOption": "{count}",
+        "indicator": "Page {page} / {pages}",
+        "shortFirst": "First",
+        "shortPrev": "Prev",
+        "shortNext": "Next",
+        "shortLast": "Last"
+      },
+      "rowActions": {
+        "label": "Transaction actions"
+      },
+      "selected": "Selected: {count}",
+      "columnResizeAria": "{label}: drag to resize",
+      "filterColumnPlaceholder": "{label}",
+      "repeatHint": "{note} · {label} ×{count} this month",
+      "selectRowAria": "Select transaction {date} {note}",
+      "repeat": {
+        "label": "{label} ×{count} this month"
+      },
+      "summary": {
+        "label": "Totals (this page: {count}) / Sum",
+        "income": "Income",
+        "expense": "Expense",
+        "net": "Net"
+      }
     }
   },
   "finance": {

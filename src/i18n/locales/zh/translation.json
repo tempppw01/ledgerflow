@@ -640,13 +640,13 @@
       "weekShort": "第{{week}}周",
       "categoryShareThisMonth": "本月占比",
       "densityAria": "首页信息密度",
-      "densityLabel": "首页显示",
+      "densityLabel": "首页信息密度",
       "densityCore": "核心信息",
       "densityFull": "完整分析",
-      "chartEmptyTitle": "记下一笔，趋势就会开始出现",
-      "chartEmptyDesc": "有了真实收支后，这里会展示花钱节奏和分类结构。",
+      "chartEmptyTitle": "记下一笔,趋势就会开始出现",
+      "chartEmptyDesc": "有了真实收支后,这里会展示花钱节奏和分类结构。",
       "firstEntry": "记第一笔",
-      "densityHint": "已显示完整趋势与分类分析；切换到“核心信息”可收起次要图表。",
+      "densityHint": "已显示完整趋势与分类分析;切换到“核心信息”可收起次要图表。",
       "cashflow": {
         "aria": "未来三十天现金流与财务待办",
         "title": "未来与待办",
@@ -697,7 +697,11 @@
         "estimatedBalance": "预计结余",
         "calendarNetWorth": "净资产：{{amount}}",
         "calendarLiabilities": "负债：{{amount}}"
-      }
+      },
+      "monthBalance": "本月结余",
+      "traceMonth": "点击追溯本月交易",
+      "densityTitle": "首页显示",
+      "chartEmptyCta": "记第一笔"
     }
   },
   "transactions": {
@@ -764,6 +768,188 @@
       "clearFilters": "清除筛选",
       "maxExpense": "最大支出",
       "noExpenseData": "暂无可识别的支出记录"
+    },
+    "filters": {
+      "title": "交易记录",
+      "caption": "把首屏注意力放在流水本身,筛选与操作保持就近、克制、可展开。",
+      "keyword": "关键词",
+      "keywordPlaceholder": "搜索备注或标签",
+      "type": "类型",
+      "typeAria": "按交易类型筛选",
+      "optionAll": "全部",
+      "optionIncome": "收入",
+      "optionExpense": "支出",
+      "optionBudget": "预算",
+      "optionRepayment": "还款",
+      "date": "日期",
+      "dateAria": "按日期范围筛选",
+      "dateAll": "全部时间",
+      "dateThisMonth": "本月",
+      "dateLast3Months": "最近三个月",
+      "dateLast30Days": "最近 30 天",
+      "dateCustom": "自定义",
+      "actions": "操作",
+      "quickAdd": "记一笔",
+      "dateFrom": "筛选开始日期",
+      "dateTo": "筛选结束日期",
+      "viewInsights": "查看洞察",
+      "hideInsights": "收起洞察",
+      "quickToggles": "快捷开关",
+      "bulkOn": "批量已开",
+      "bulk": "批量操作",
+      "privacyOn": "隐私已开",
+      "privacy": "隐私模式",
+      "settings": "筛选设置",
+      "dialogEyebrow": "交易记录 · 个性化",
+      "dialogTitle": "筛选与显示设置",
+      "dialogDesc": "按来源整理流水,并自定义表格信息。",
+      "dialogClose": "关闭筛选设置",
+      "sourceTitle": "来源筛选",
+      "sourceDesc": "只查看来自特定渠道的记录",
+      "source": "交易来源",
+      "sourceAria": "按来源筛选",
+      "sourceAll": "全部来源",
+      "sourceManual": "手工录入",
+      "sourceWechat": "微信导入",
+      "sourceAlipay": "支付宝",
+      "sourceAi": "AI 记账",
+      "columnsTitle": "表格显示",
+      "importTitle": "导入与整理",
+      "importDesc": "管理账单导入方式及重复记录",
+      "importMode": "账单导入模式",
+      "importIncremental": "增量(跳过重复)",
+      "importMerge": "合并(覆盖重复)",
+      "importOverwrite": "覆盖(清空后导入)",
+      "setMonthStart": "设为月初",
+      "setMonthEnd": "设为月末",
+      "shortInsights": "洞察",
+      "shortBulk": "批量",
+      "shortPrivacy": "隐私",
+      "shortFilter": "筛选",
+      "chooseFields": "选择需要展示的信息",
+      "exportCsv": "导出 CSV",
+      "checkDuplicates": "检测重复",
+      "importWechat": "导入微信",
+      "importAlipay": "导入支付宝",
+      "clearFilters": "清空筛选条件",
+      "done": "完成",
+      "adjusted": "已调整 {count} 项",
+      "hiddenCount": "· 已收起 {count} 项"
+    },
+    "table": {
+      "col": {
+        "date": "日期",
+        "type": "类型",
+        "status": "交易状态",
+        "category": "分类",
+        "account": "账户",
+        "amount": "金额",
+        "orderNo": "交易订单号",
+        "merchantOrderNo": "商家订单号",
+        "note": "备注"
+      },
+      "status": {
+        "pending": "待处理",
+        "completed": "已完成",
+        "refunded": "已退款",
+        "closed": "已关闭",
+        "failed": "失败"
+      },
+      "type": {
+        "income": "收入",
+        "expense": "支出",
+        "budget": "预算",
+        "repayment": "还款",
+        "refund": "退款",
+        "reversal": "冲正",
+        "spending": "消费"
+      },
+      "badge": {
+        "income": "收",
+        "expense": "支",
+        "budget": "预",
+        "repayment": "还",
+        "refund": "退",
+        "reversal": "冲"
+      },
+      "attachment": {
+        "has": "有附件",
+        "count": "有 {count} 个附件"
+      },
+      "empty": {
+        "loadError": "交易数据加载失败",
+        "clearFilters": "清空筛选",
+        "retry": "重试",
+        "filteredTitle": "没有符合条件的交易",
+        "noneTitle": "暂无交易记录",
+        "filteredDesc": "调整筛选条件后重试。",
+        "noneDesc": "添加第一笔交易,或导入账单数据。",
+        "add": "新增账目"
+      },
+      "task": {
+        "aria": "交易任务概览",
+        "adjustments": "退款 / 冲正",
+        "failed": "失败单"
+      },
+      "selectPage": "全选当前页",
+      "filterAria": {
+        "type": "按类型筛选",
+        "status": "按交易状态筛选",
+        "category": "按分类筛选",
+        "account": "按账户筛选",
+        "date": "筛选日期",
+        "minAmount": "最小金额"
+      },
+      "filter": {
+        "all": "全部",
+        "allCategories": "全部分类",
+        "uncategorized": "未分类",
+        "allAccounts": "全部账户",
+        "empty": "没有符合条件的交易,调整筛选条件后重试。"
+      },
+      "anomaly": {
+        "label": "高于平均",
+        "title": "高于平均,建议检查是否重复记账。"
+      },
+      "mobile": {
+        "aria": "移动端交易列表",
+        "noNote": "(无备注)"
+      },
+      "moreActions": {
+        "label": "更多操作"
+      },
+      "pager": {
+        "size": "每页显示条数",
+        "first": "第一页",
+        "prev": "上一页",
+        "next": "下一页",
+        "last": "最后一页",
+        "summary": "当前 {filtered} 条 / 全部 {total} 条",
+        "every": "每页",
+        "rowsOption": "{count} 条",
+        "indicator": "第 {page} / {pages} 页",
+        "shortFirst": "首页",
+        "shortPrev": "上页",
+        "shortNext": "下页",
+        "shortLast": "末页"
+      },
+      "rowActions": {
+        "label": "交易操作"
+      },
+      "selected": "已选 {count} 条",
+      "columnResizeAria": "{label}:列宽拖拽调节",
+      "filterColumnPlaceholder": "筛选{label}",
+      "repeatHint": "{note}本月{label}{count}次",
+      "selectRowAria": "选择交易 {date} {note}",
+      "repeat": {
+        "label": "本月{label} {count} 次"
+      },
+      "summary": {
+        "label": "汇总（当前页 {count} 条）/ 金额合计",
+        "income": "收入",
+        "expense": "支出",
+        "net": "净额"
+      }
     }
   },
   "finance": {
