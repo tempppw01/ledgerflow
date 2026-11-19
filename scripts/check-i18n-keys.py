@@ -19,6 +19,7 @@ sys.stdout.reconfigure(encoding='utf-8')
 
 FILES = [
     'src/pages/subscriptions/SubscriptionsPage.tsx',
+    'src/pages/transaction-edit/TransactionEditPage.tsx',
     'src/pages/dashboard/DashboardPage.tsx',
     'src/features/transactions/components/TransactionFilters.tsx',
     'src/features/transactions/components/TransactionTable.tsx',

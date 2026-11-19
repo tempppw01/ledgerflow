@@ -1,4 +1,5 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTFallback, type TfFallback } from '../../shared/lib/useTFallback';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { TransactionStatus } from '../../entities/transaction/types';
 import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
@@ -143,54 +144,82 @@ function suggestTags(note: string, merchantOrderNo: string, orderNo: string): st
   return rules.filter((item) => item.keyword.test(source)).map((item) => item.tag);
 }
 
-function validateAmount(raw: string): { ok: true; value: number } | { ok: false; message: string } {
+function validateAmount(
+  raw: string,
+  tf: TfFallback
+): { ok: true; value: number } | { ok: false; message: string } {
   const normalized = raw.trim();
   if (!normalized) {
-    return { ok: false, message: '请输入金额。' };
+    return { ok: false, message: tf('transactions.edit.error.amountRequired', '请输入金额。') };
   }
 
   if (!/^\d+(\.\d{1,2})?$/.test(normalized)) {
-    return { ok: false, message: '金额格式不正确，仅支持最多 2 位小数。' };
+    return {
+      ok: false,
+      message: tf('transactions.edit.error.amountFormat', '金额格式不正确，仅支持最多 2 位小数。')
+    };
   }
 
   const value = Number(normalized);
   if (!Number.isFinite(value) || value <= 0) {
-    return { ok: false, message: '金额必须大于 0。' };
+    return { ok: false, message: tf('transactions.edit.error.amountPositive', '金额必须大于 0。') };
   }
 
   if (value > MAX_AMOUNT) {
-    return { ok: false, message: `金额过大，请输入不超过 ${MAX_AMOUNT} 的数值。` };
+    return {
+      ok: false,
+      message: tf(
+        'transactions.edit.error.amountTooLarge',
+        '金额过大,请输入不超过 {max} 的数值。'
+      ).replace('{max}', String(MAX_AMOUNT))
+    };
   }
 
   return { ok: true, value };
 }
 
-function validateDate(raw: string): { ok: true; value: string } | { ok: false; message: string } {
+function validateDate(
+  raw: string,
+  tf: TfFallback
+): { ok: true; value: string } | { ok: false; message: string } {
   if (!raw) {
-    return { ok: false, message: '请输入日期时间。' };
+    return { ok: false, message: tf('transactions.edit.error.dateRequired', '请输入日期时间。') };
   }
 
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(raw)) {
-    return { ok: false, message: '日期时间格式不正确。' };
+    return { ok: false, message: tf('transactions.edit.error.dateFormat', '日期时间格式不正确。') };
   }
 
   const date = new Date(raw);
   if (Number.isNaN(date.getTime())) {
-    return { ok: false, message: '日期时间无效，请重新输入。' };
+    return {
+      ok: false,
+      message: tf('transactions.edit.error.dateInvalid', '日期时间无效，请重新输入。')
+    };
   }
 
   if (formatLocalDateTime(date.toISOString()) !== raw) {
-    return { ok: false, message: '日期时间无效，请检查年月日和时间。' };
+    return {
+      ok: false,
+      message: tf('transactions.edit.error.dateInvalidDetail', '日期时间无效，请检查年月日和时间。')
+    };
   }
 
   if (raw < MIN_DATE || raw > MAX_DATE) {
-    return { ok: false, message: '日期超出允许范围（2000-01-01 ~ 2100-12-31）。' };
+    return {
+      ok: false,
+      message: tf(
+        'transactions.edit.error.dateRange',
+        '日期超出允许范围（2000-01-01 ~ 2100-12-31）。'
+      )
+    };
   }
 
   return { ok: true, value: date.toISOString() };
 }
 
 export function TransactionEditPage() {
+  const tf = useTFallback();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -258,7 +287,9 @@ export function TransactionEditPage() {
   const [recognizing, setRecognizing] = useState(false);
   const [suggestion, setSuggestion] = useState<RecognitionSuggestion | null>(null);
   const amountInputRef = useRef<HTMLInputElement | null>(null);
-  const [draftStatus, setDraftStatus] = useState(initialDraft ? '已恢复未完成草稿' : '');
+  const [draftStatus, setDraftStatus] = useState(
+    initialDraft ? tf('transactions.edit.draftRestored', '已恢复未完成草稿') : ''
+  );
 
   const draftHasContent = Boolean(
     amount.trim() ||
@@ -292,7 +323,7 @@ export function TransactionEditPage() {
       calculatorExpression
     };
     writeTransactionDraft(draftStorageId, draft);
-    setDraftStatus('草稿已自动保存');
+    setDraftStatus(tf('transactions.edit.draftSaved', '草稿已自动保存'));
   }, [
     accountId,
     amount,
@@ -309,7 +340,8 @@ export function TransactionEditPage() {
     orderNo,
     status,
     tags,
-    type
+    type,
+    tf
   ]);
 
   const suggestedTags = useMemo(
@@ -415,7 +447,7 @@ export function TransactionEditPage() {
       if (key === '=') {
         const value = evaluateExpression(calculatorExpression);
         if (value === null) {
-          setCalculatorError('表达式无效，无法计算');
+          setCalculatorError(tf('transactions.edit.error.expression', '表达式无效，无法计算'));
           return;
         }
         const normalized = formatAmountFromNumber(value);
@@ -438,7 +470,7 @@ export function TransactionEditPage() {
         return next;
       });
     },
-    [amountError, calculatorExpression]
+    [amountError, calculatorExpression, tf]
   );
 
   function handleSubmit(event: FormEvent) {
@@ -448,22 +480,24 @@ export function TransactionEditPage() {
     setFormError('');
 
     if (!categoryId) {
-      setFormError('分类不能为空，请先选择或新建分类。');
+      setFormError(
+        tf('transactions.edit.error.categoryRequired', '分类不能为空，请先选择或新建分类。')
+      );
       return;
     }
 
     if (!accountId) {
-      setFormError('请先选择账户。');
+      setFormError(tf('transactions.edit.error.accountRequired', '请先选择账户。'));
       return;
     }
 
-    const amountResult = validateAmount(amount);
+    const amountResult = validateAmount(amount, tf);
     if (!amountResult.ok) {
       setAmountError(amountResult.message);
       return;
     }
 
-    const dateResult = validateDate(date);
+    const dateResult = validateDate(date, tf);
     if (!dateResult.ok) {
       setDateError(dateResult.message);
       return;
@@ -498,15 +532,30 @@ export function TransactionEditPage() {
   return (
     <section className="panel transaction-edit-panel vi-page">
       <div className="row" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
-        <button type="button" onClick={handleBack} aria-label="返回交易列表">
-          ← 返回
+        <button
+          type="button"
+          onClick={handleBack}
+          aria-label={tf('transactions.edit.backAria', '返回交易列表')}
+        >
+          {tf('transactions.edit.back', '← 返回')}
         </button>
-        <small style={{ color: 'var(--color-text-secondary)' }}>按 Esc 快速返回</small>
+        <small style={{ color: 'var(--color-text-secondary)' }}>
+          {tf('transactions.edit.escHint', '按 Esc 快速返回')}
+        </small>
       </div>
-      <h2>{id ? '编辑账目' : quickMode ? '秒速记账' : '新增账目'}</h2>
+      <h2>
+        {id
+          ? tf('transactions.edit.titleEdit', '编辑账目')
+          : quickMode
+            ? tf('transactions.edit.titleQuick', '秒速记账')
+            : tf('transactions.edit.titleNew', '新增账目')}
+      </h2>
       {quickMode && !id ? (
         <small style={{ color: 'var(--color-text-secondary)', display: 'block', marginBottom: 10 }}>
-          快速模式：仅需填写金额与必要字段，保存后自动返回交易页。
+          {tf(
+            'transactions.edit.quickHint',
+            '快速模式：仅需填写金额与必要字段，保存后自动返回交易页。'
+          )}
         </small>
       ) : null}
       {!id ? (
@@ -514,36 +563,41 @@ export function TransactionEditPage() {
           style={{ color: 'var(--color-text-secondary)', display: 'block', marginBottom: 10 }}
           role="status"
         >
-          {draftStatus || '输入内容会自动保存为草稿'}
+          {draftStatus || tf('transactions.edit.draftHint', '输入内容会自动保存为草稿')}
         </small>
       ) : null}
       <form onSubmit={handleSubmit} className="transaction-edit-form">
         <div className="transaction-edit-layout">
           <div className="transaction-edit-main">
-            <section className="transaction-edit-group" aria-label="基础信息">
-              <h3>基础信息</h3>
+            <section
+              className="transaction-edit-group"
+              aria-label={tf('transactions.edit.sections.basic', '基础信息')}
+            >
+              <h3>{tf('transactions.edit.sections.basic', '基础信息')}</h3>
               <div className="field">
-                <label htmlFor="tx-type">类型</label>
+                <label htmlFor="tx-type">{tf('transactions.table.col.type', '类型')}</label>
                 <select
                   id="tx-type"
-                  aria-label="交易类型"
+                  aria-label={tf('transactions.edit.typeAria', '交易类型')}
                   value={type}
                   onChange={(e) =>
                     setType(e.target.value as 'income' | 'expense' | 'budget' | 'repayment')
                   }
                 >
-                  <option value="expense">支出</option>
-                  <option value="income">收入</option>
-                  <option value="budget">预算</option>
-                  <option value="repayment">还款</option>
+                  <option value="expense">{tf('transactions.table.type.expense', '支出')}</option>
+                  <option value="income">{tf('transactions.table.type.income', '收入')}</option>
+                  <option value="budget">{tf('transactions.table.type.budget', '预算')}</option>
+                  <option value="repayment">
+                    {tf('transactions.table.type.repayment', '还款')}
+                  </option>
                 </select>
               </div>
 
               <div className="field">
-                <label htmlFor="tx-category">分类</label>
+                <label htmlFor="tx-category">{tf('transactions.table.col.category', '分类')}</label>
                 <select
                   id="tx-category"
-                  aria-label="交易分类"
+                  aria-label={tf('transactions.edit.categoryAria', '交易分类')}
                   value={categoryId}
                   onChange={(e) => {
                     setCategoryId(e.target.value);
@@ -559,10 +613,10 @@ export function TransactionEditPage() {
               </div>
 
               <div className="field">
-                <label htmlFor="tx-account">账户</label>
+                <label htmlFor="tx-account">{tf('transactions.table.col.account', '账户')}</label>
                 <select
                   id="tx-account"
-                  aria-label="交易账户"
+                  aria-label={tf('transactions.edit.accountAria', '交易账户')}
                   value={accountId}
                   onChange={(e) => setAccountId(e.target.value)}
                 >
@@ -575,29 +629,41 @@ export function TransactionEditPage() {
               </div>
 
               <div className="field">
-                <label htmlFor="tx-status">交易状态</label>
+                <label htmlFor="tx-status">{tf('transactions.edit.statusAria', '交易状态')}</label>
                 <select
                   id="tx-status"
-                  aria-label="交易状态"
+                  aria-label={tf('transactions.edit.statusAria', '交易状态')}
                   value={status}
                   onChange={(e) => setStatus(e.target.value as TransactionStatus)}
                 >
-                  <option value="pending">待处理</option>
-                  <option value="completed">已完成</option>
-                  <option value="refunded">已退款</option>
-                  <option value="closed">已关闭</option>
-                  <option value="failed">失败</option>
+                  <option value="pending">
+                    {tf('transactions.table.status.pending', '待处理')}
+                  </option>
+                  <option value="completed">
+                    {tf('transactions.table.status.completed', '已完成')}
+                  </option>
+                  <option value="refunded">
+                    {tf('transactions.table.status.refunded', '已退款')}
+                  </option>
+                  <option value="closed">{tf('transactions.table.status.closed', '已关闭')}</option>
+                  <option value="failed">{tf('transactions.table.status.failed', '失败')}</option>
                 </select>
               </div>
             </section>
 
-            <section className="transaction-edit-group" aria-label="金额与时间">
-              <h3>金额与时间</h3>
+            <section
+              className="transaction-edit-group"
+              aria-label={tf(
+                'transactions.edit.sections.amountTime',
+                tf('transactions.edit.sections.amountTime', '金额与时间')
+              )}
+            >
+              <h3>{tf('transactions.edit.sections.amountTime', '金额与时间')}</h3>
               <div className="field">
-                <label htmlFor="tx-amount">金额</label>
+                <label htmlFor="tx-amount">{tf('transactions.table.col.amount', '金额')}</label>
                 <input
                   id="tx-amount"
-                  aria-label="交易金额"
+                  aria-label={tf('transactions.edit.amountAria', '交易金额')}
                   ref={amountInputRef}
                   value={amount}
                   onChange={(e) => {
@@ -611,17 +677,20 @@ export function TransactionEditPage() {
                   }}
                   type="text"
                   inputMode="decimal"
-                  placeholder="例如 88.50"
+                  placeholder={tf(
+                    'transactions.edit.amountPlaceholder',
+                    tf('transactions.edit.amountPlaceholder', '例如 88.50')
+                  )}
                   maxLength={16}
                 />
                 {amountError ? <small className="error">{amountError}</small> : null}
               </div>
 
               <div className="field">
-                <label htmlFor="tx-date">日期时间</label>
+                <label htmlFor="tx-date">{tf('transactions.edit.dateTime', '日期时间')}</label>
                 <input
                   id="tx-date"
-                  aria-label="交易日期时间"
+                  aria-label={tf('transactions.edit.dateAria', '交易日期时间')}
                   value={date}
                   onChange={(e) => {
                     setDate(e.target.value);
@@ -637,36 +706,55 @@ export function TransactionEditPage() {
               </div>
 
               <div className="field">
-                <label htmlFor="tx-order-no">交易订单号</label>
+                <label htmlFor="tx-order-no">
+                  {tf('transactions.edit.orderNoAria', '交易订单号')}
+                </label>
                 <input
                   id="tx-order-no"
-                  aria-label="交易订单号"
+                  aria-label={tf('transactions.edit.orderNoAria', '交易订单号')}
                   value={orderNo}
                   onChange={(e) => setOrderNo(e.target.value)}
-                  placeholder="如：202602100001"
+                  placeholder={tf(
+                    'transactions.edit.orderNoPlaceholder',
+                    tf('transactions.edit.orderNoPlaceholder', '如：202602100001')
+                  )}
                 />
               </div>
 
               <div className="field">
-                <label htmlFor="tx-merchant-order-no">商家订单号</label>
+                <label htmlFor="tx-merchant-order-no">
+                  {tf('transactions.edit.merchantOrderNoAria', '商家订单号')}
+                </label>
                 <input
                   id="tx-merchant-order-no"
-                  aria-label="商家订单号"
+                  aria-label={tf(
+                    'transactions.edit.merchantOrderNoAria',
+                    tf('transactions.edit.merchantOrderNoAria', '商家订单号')
+                  )}
                   value={merchantOrderNo}
                   onChange={(e) => setMerchantOrderNo(e.target.value)}
-                  placeholder="如：MCH-20260210-01"
+                  placeholder={tf(
+                    'transactions.edit.merchantOrderPlaceholder',
+                    tf('transactions.edit.merchantOrderPlaceholder', '如：MCH-20260210-01')
+                  )}
                 />
               </div>
             </section>
 
-            <section className="transaction-edit-group" aria-label="备注与标签">
-              <h3>备注与标签</h3>
+            <section
+              className="transaction-edit-group"
+              aria-label={tf(
+                'transactions.edit.sections.noteTags',
+                tf('transactions.edit.sections.noteTags', '备注与标签')
+              )}
+            >
+              <h3>{tf('transactions.edit.sections.noteTags', '备注与标签')}</h3>
               <div className="field">
-                <label htmlFor="tx-note">备注</label>
+                <label htmlFor="tx-note">{tf('transactions.table.col.note', '备注')}</label>
                 <textarea
                   id="tx-note"
-                  aria-label="交易备注"
-                  placeholder="例如：工作日午餐"
+                  aria-label={tf('transactions.edit.noteAria', '交易备注')}
+                  placeholder={tf('transactions.edit.notePlaceholder', '例如：工作日午餐')}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                 />
@@ -676,13 +764,18 @@ export function TransactionEditPage() {
                     onClick={() => void recognizeMerchant()}
                     disabled={recognizing}
                   >
-                    {recognizing ? 'AI 识别中...' : 'AI 识别商户与分类'}
+                    {recognizing
+                      ? tf('transactions.edit.aiRecognizing', 'AI 识别中...')
+                      : tf('transactions.edit.aiRecognize', 'AI 识别商户与分类')}
                   </button>
                 </div>
                 {suggestion ? (
                   <small>
-                    建议：商户「{suggestion.merchant || '未识别'}」，分类「
-                    {suggestion.category || '未识别'}」。
+                    {tf('transactions.edit.suggestionPrefix', '建议:商户「')}
+                    {suggestion.merchant || tf('transactions.edit.unrecognized', '未识别')}
+                    {tf('transactions.edit.suggestionMiddle', '」,分类「')}
+                    {suggestion.category || tf('transactions.edit.unrecognized', '未识别')}"
+                    {tf('transactions.edit.suggestionSuffix', '」。')}
                     <button
                       type="button"
                       onClick={() => {
@@ -701,24 +794,26 @@ export function TransactionEditPage() {
                         }
                       }}
                     >
-                      应用建议
+                      {tf('transactions.edit.applySuggestion', '应用建议')}
                     </button>
                   </small>
                 ) : null}
               </div>
 
               <div className="field">
-                <label htmlFor="tx-tags">标签（逗号分隔）</label>
+                <label htmlFor="tx-tags">
+                  {tf('transactions.edit.tagsLabel', '标签（逗号分隔）')}
+                </label>
                 <input
                   id="tx-tags"
-                  aria-label="交易标签"
-                  placeholder="如：餐饮,工作日"
+                  aria-label={tf('transactions.edit.tagsAria', '交易标签')}
+                  placeholder={tf('transactions.edit.tagsPlaceholder', '如：餐饮,工作日')}
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
                 />
                 {suggestedTags.length > 0 ? (
                   <small style={{ color: 'var(--color-text-secondary)' }}>
-                    自动建议：
+                    {tf('transactions.edit.autoSuggestion', '自动建议:')}
                     {suggestedTags.map((tag) => (
                       <button
                         key={tag}
@@ -738,24 +833,29 @@ export function TransactionEditPage() {
             {formError ? <p className="error">{formError}</p> : null}
 
             <button className="primary" type="submit">
-              保存
+              {tf('common.save', '保存')}
             </button>
           </div>
 
           {!quickMode ? (
-            <aside className="transaction-edit-keypad-panel" aria-label="金额快捷输入">
+            <aside
+              className="transaction-edit-keypad-panel"
+              aria-label={tf('transactions.edit.keypadPanelAria', '金额快捷输入')}
+            >
               <div className="transaction-edit-keypad-sticky">
-                <small className="transaction-edit-keypad-title">金额辅助键盘（加减）</small>
+                <small className="transaction-edit-keypad-title">
+                  {tf('transactions.edit.keypadTitle', '金额辅助键盘（加减）')}
+                </small>
                 <div className="transaction-edit-calculator-screen mono-inline" aria-live="polite">
                   {calculatorExpression}
                 </div>
                 {calculatorError ? <small className="error">{calculatorError}</small> : null}
                 <div className="quick-add-amount-display transaction-edit-amount-display">
-                  当前金额：¥{amount || '0'}
+                  {tf('transactions.edit.currentAmount', '当前金额:')}¥{amount || '0'}
                 </div>
                 <AmountKeypad
                   className="transaction-edit-keypad"
-                  label="金额计算器键盘"
+                  label={tf('transactions.edit.keypadAria', '金额计算器键盘')}
                   onKey={(key) => handleAmountKeypadInput(key === 'clear' ? 'C' : key)}
                 />
               </div>
@@ -766,21 +866,27 @@ export function TransactionEditPage() {
 
       <section
         style={{ marginTop: 16, borderTop: '1px solid var(--color-border)', paddingTop: 12 }}
-        aria-label="分类学习"
+        aria-label={tf(
+          'transactions.edit.categoryLearning',
+          tf('transactions.edit.categoryLearning', '分类学习')
+        )}
       >
         <div className="row" style={{ justifyContent: 'space-between', marginBottom: 8 }}>
-          <strong>分类学习</strong>
+          <strong>{tf('transactions.edit.categoryLearning', '分类学习')}</strong>
           <button
             type="button"
             onClick={() => {
               clearCategoryLearning();
             }}
           >
-            清空历史学习记录
+            {tf('transactions.edit.clearLearning', '清空历史学习记录')}
           </button>
         </div>
         <small style={{ color: 'var(--color-text-secondary)' }}>
-          分类学习自动推荐已临时停用（先止血）。手动分类和 AI 重分类功能不受影响。
+          {tf(
+            'transactions.edit.categoryLearningPaused',
+            '分类学习自动推荐已临时停用（先止血）。手动分类和 AI 重分类功能不受影响。'
+          )}
         </small>
       </section>
     </section>
