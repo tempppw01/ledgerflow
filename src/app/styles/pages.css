@@ -2409,9 +2409,13 @@
 }
 
 .financial-analysis-market-bar-track {
+  /* 柱子从中线向两侧生长,所以可用高度只有轨道的一半;--bar-max 需要与
+     FinancialAnalysisPage.tsx 的 MARKET_BAR_MAX_HEIGHT 保持一致。 */
+  --bar-track-height: 92px;
+  --bar-max: calc(var(--bar-track-height) / 2 - 8px);
   position: relative;
   width: 100%;
-  min-height: 92px;
+  min-height: var(--bar-track-height);
   overflow: hidden;
   border-radius: 14px;
   border: 1px solid var(--color-border-light);
@@ -2438,7 +2442,7 @@
   position: absolute;
   left: 50%;
   width: min(28px, 52%);
-  max-height: calc(50% - 8px);
+  max-height: var(--bar-max);
   transform: translateX(-50%);
   border-radius: 10px 10px 4px 4px;
   background: linear-gradient(

@@ -16,6 +16,14 @@ import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { EmptyState } from '../../shared/ui/EmptyState';
 
+/**
+ * 资金看板柱子只画净额,并且从中线向两侧生长,可用高度只有轨道的一半。
+ * 42px = 轨道 92px 的一半(46px)减去 8px 内边距,必须与 pages.css 里
+ * .financial-analysis-market-bar-track 的 --bar-track-height / --bar-max 保持一致。
+ */
+const MARKET_BAR_MIN_HEIGHT = 6;
+const MARKET_BAR_MAX_HEIGHT = 38;
+
 interface AiBehaviorAnalysisPayload {
   summary: string;
   habits: string[];
@@ -402,12 +410,10 @@ export function FinancialAnalysisPage() {
       previousMarketRow: marketRows[marketRows.length - 2] || latest
     };
   }, [analysis.metrics, marketRows, range.label]);
+  // 柱子只画净额,基准也必须只看净额:否则收入/支出更大的月份会把柱子整体压扁,
+  // 再被轨道的 max-height 截断,导致不同月份高度看起来一样。
   const marketBarScale = useMemo(
-    () =>
-      Math.max(
-        ...marketRows.map((item) => Math.max(Math.abs(item.net), item.income, item.expense)),
-        1
-      ),
+    () => Math.max(...marketRows.map((item) => Math.abs(item.net)), 1),
     [marketRows]
   );
   const marketCards = useMemo(
@@ -723,7 +729,10 @@ export function FinancialAnalysisPage() {
                   <i
                     className={item.net >= 0 ? 'is-positive' : 'is-negative'}
                     style={{
-                      height: `${Math.max(14, (Math.abs(item.net) / marketBarScale) * 96)}px`
+                      height: `${Math.max(
+                        MARKET_BAR_MIN_HEIGHT,
+                        Math.round((Math.abs(item.net) / marketBarScale) * MARKET_BAR_MAX_HEIGHT)
+                      )}px`
                     }}
                   />
                 </div>
