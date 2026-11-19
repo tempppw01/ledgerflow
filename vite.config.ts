@@ -2,8 +2,7 @@ import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-const appLogoUrl =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/public/logo.png?v=2';
+const appLogoUrl = 'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/public/logo.png?v=2';
 
 const apiProxyTarget = process.env.LEDGERFLOW_API_PROXY_TARGET || 'http://127.0.0.1:8787';
 
@@ -76,7 +75,12 @@ function manualChunks(id: string) {
 
 export default defineConfig({
   server: {
-    proxy: apiProxy
+    proxy: apiProxy,
+    // 编辑器/工具常以「临时目录 + rename」方式落盘,Windows 上 watcher 抓到
+    // 这些瞬时 tmp 文件会抛 EBUSY 并直接终止 dev server,这里统一忽略。
+    watch: {
+      ignored: ['**/.*.tmpdir/**', '**/*.tmpdir/**']
+    }
   },
   // 构建产物预览时同样需要把 /api 转发到后端，否则前端无法完成数据库初始化。
   preview: {
