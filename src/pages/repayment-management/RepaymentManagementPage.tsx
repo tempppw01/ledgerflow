@@ -979,14 +979,15 @@ function renderAiStructuredText(content: string): JSX.Element[] {
 function getPressureLevel(ratio: number): {
   tone: 'safe' | 'warning' | 'danger';
   label: string;
+  labelKey: string;
 } {
   if (ratio < 0.3) {
-    return { tone: 'safe', label: '健康' };
+    return { tone: 'safe', label: '健康', labelKey: 'repayment.card.pressureHealthy' };
   }
   if (ratio < 0.6) {
-    return { tone: 'warning', label: '关注' };
+    return { tone: 'warning', label: '关注', labelKey: 'repayment.card.pressureWatch' };
   }
-  return { tone: 'danger', label: '偏高' };
+  return { tone: 'danger', label: '偏高', labelKey: 'repayment.card.pressureHigh' };
 }
 
 function getDebtAssumedAnnualRate(
@@ -1598,20 +1599,32 @@ export function RepaymentManagementPage() {
                 ? tf('repayment.form.statusPaused', '暂缓处理')
                 : isRepaidThisCycle
                   ? nextCycleDueInDays !== null && nextCycleDueInDays >= 0
-                    ? `本期已还 · 下期 ${nextCycleDueInDays} 天后`
-                    : '本期已还'
+                    ? tf(
+                        'repayment.status.paidWithNextCycle',
+                        '本期已还 · 下期 {days} 天后'
+                      ).replace('{days}', String(nextCycleDueInDays))
+                    : tf('repayment.status.paidThisCycle', '本期已还')
                   : !Number.isFinite(dueInDays) ||
                       (!isSimpleReminder && typeof item.repaymentDay !== 'number')
-                    ? '待补日期'
+                    ? tf('repayment.status.missingDate', '待补日期')
                     : isSimpleReminder && dueInDays < 0
-                      ? `已逾期 ${Math.abs(dueInDays)} 天`
+                      ? tf('repayment.status.overdue', '已逾期 {days} 天').replace(
+                          '{days}',
+                          String(Math.abs(dueInDays))
+                        )
                       : dueInDays === 0
                         ? isSimpleReminder
-                          ? '今日待处理'
-                          : '今日应还'
+                          ? tf('repayment.status.dueTodayPending', '今日待处理')
+                          : tf('repayment.status.dueToday', '今日应还')
                         : dueInDays <= 7
-                          ? `${dueInDays} 天后到期`
-                          : `本期待还 · ${dueInDays} 天后`;
+                          ? tf('repayment.status.dueSoon', '{days} 天后到期').replace(
+                              '{days}',
+                              String(dueInDays)
+                            )
+                          : tf('repayment.status.dueInDays', '本期待还 · {days} 天后').replace(
+                              '{days}',
+                              String(dueInDays)
+                            );
 
         return {
           id: item.id,
@@ -1878,7 +1891,10 @@ export function RepaymentManagementPage() {
     }
   }, [selectedDebtId]);
 
-  const incomeConfidenceTag = incomeSourceTag === 'manual' ? '👤 你手动输入' : '— 未确定';
+  const incomeConfidenceTag =
+    incomeSourceTag === 'manual'
+      ? tf('repayment.card.incomeSourceManual', '👤 你手动输入')
+      : tf('repayment.card.incomeSourceUnknown', '— 未确定');
   const isLoanType = debtType === 'loan';
 
   function fillDebtPeriodGap(source: 'total' | 'remaining' | 'paid', nextValue: string): void {
@@ -2763,7 +2779,12 @@ export function RepaymentManagementPage() {
             <article
               className={`repayment-overview-stat repayment-overview-pressure-${pressureLevel.tone}`}
             >
-              <p className="finance-overview-label">⚠️ 负债率（{pressureLevel.label}）</p>
+              <p className="finance-overview-label">
+                {tf('repayment.card.pressureLevel', '⚠️ 负债率（{level}）').replace(
+                  '{level}',
+                  tf(pressureLevel.labelKey, pressureLevel.label)
+                )}
+              </p>
               <p className="finance-overview-value">
                 <span className="finance-overview-number">
                   {(debtSummary.pressureRatio * 100).toFixed(1)}
@@ -2858,7 +2879,8 @@ export function RepaymentManagementPage() {
                 <span className="finance-overview-unit">¥</span>
               </p>
               <p className="muted" style={{ margin: 0, fontSize: 12 }}>
-                来源：{incomeConfidenceTag}
+                {tf('repayment.card.incomeSource', '来源：')}
+                {incomeConfidenceTag}
               </p>
             </article>
           </div>

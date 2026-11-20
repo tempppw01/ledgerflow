@@ -503,6 +503,51 @@
       "creditDueToday": "Due today",
       "creditDueOn": "Due {{date}}",
       "creditOverdueDays": "{{days}} days overdue"
+    },
+    "welcome": {
+      "sectionAria": "AI Assistant",
+      "eyebrowBrand": "AI Assistant",
+      "eyebrowScope": "Bookkeeping, Q&A, edits",
+      "headlineLead": "Log it, look it up —",
+      "headlineAccent": "just say it",
+      "description": "Say \"lunch 28 yuan\" and it is recorded; paste a bill screenshot and I read it for you. You can also ask about the ledger, look at trends, or have me edit or delete a specific entry.",
+      "featureVoiceNlTitle": "One-line logging",
+      "featureVoiceNlNote": "Plain language goes straight to the books",
+      "featureOcrTitle": "Screenshot capture",
+      "featureOcrNote": "Check each entry before saving",
+      "featureEditTitle": "Look up and edit",
+      "featureEditNote": "Add, remove or change any entry",
+      "briefPrefix": "This month: ",
+      "briefExpense": "Spending",
+      "briefIncome": "Income",
+      "briefBalance": "Balance",
+      "briefAdvice": "Tip",
+      "briefEmpty": "No data yet",
+      "briefKeepLogging": "Keep logging",
+      "briefCutLarge": "Rein in big-ticket items first"
+    },
+    "creditWelcome": {
+      "sectionAria": "AI Credit Assistant",
+      "eyebrowBrand": "AI Credit Assistant",
+      "eyebrowScope": "Start with clarity",
+      "headlineLead": "Know what each bill needs —",
+      "headlineAccent": "no surprises",
+      "description": "Hand me your loans, Huabei, installments and credit card bills. I will sort out what is due this period, the due dates and the missing details, and can log a repayment for you right away.",
+      "featureBillTitle": "Read the bill",
+      "featureBillNote": "Pull out amounts, dates and terms",
+      "featureDueTitle": "Check what is due",
+      "featureDueNote": "Flag what still needs confirming",
+      "featureLogTitle": "Log and verify",
+      "featureLogNote": "One sentence logs a repayment"
+    },
+    "greeting": {
+      "date": "Today is {{date}}, ",
+      "assistant": "you can just say it to log, check or edit an entry — I will give you the conclusion first.",
+      "credit": "Hand me your Huabei, installment, loan or credit card bills and I will break out the amount due, the dates and what is still missing."
+    },
+    "composer": {
+      "ariaCredit": "AI credit manager input",
+      "ariaDefault": "AI assistant input"
     }
   },
   "about": {
@@ -2258,7 +2303,13 @@
       "close": "Close",
       "pause": "Pause",
       "deleteInline": "🗑 Delete",
-      "thisDue": "Due now"
+      "thisDue": "Due now",
+      "pressureLevel": "⚠️ Debt-to-income ({level})",
+      "pressureHealthy": "Healthy",
+      "pressureWatch": "Watch",
+      "pressureHigh": "High",
+      "incomeSourceManual": "👤 Entered by you",
+      "incomeSourceUnknown": "— Not set"
     },
     "health": {
       "title": "Debt health",
@@ -2359,7 +2410,8 @@
       "currentPaymentShare": "This month’s payment share",
       "monthDue": "{month} due",
       "thisMonthDue": "Due this month",
-      "futureSixMonths": "Projected repayments for the next 6 months"
+      "futureSixMonths": "Projected repayments for the next 6 months",
+      "needsConfirm": "Needs confirmation"
     },
     "extract": {
       "running": "Reading…",
@@ -2510,6 +2562,16 @@
       "today": "Today",
       "todayAria": "Set to today",
       "headingWithCount": "📜 Repayment records"
+    },
+    "status": {
+      "paidWithNextCycle": "Paid this cycle · next due in {days} days",
+      "paidThisCycle": "Paid this cycle",
+      "missingDate": "Due date pending",
+      "overdue": "Overdue by {days} days",
+      "dueTodayPending": "Handle today",
+      "dueToday": "Due today",
+      "dueSoon": "Due in {days} days",
+      "dueInDays": "Due this cycle · in {days} days"
     }
   },
   "categoriesAccounts": {

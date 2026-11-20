@@ -619,7 +619,7 @@ export function RepaymentDashboard({
                             >
                               {tf('repayment.dashboard.registerPaid', '登记已还')}
                             </button>
-                            <small>需确认</small>
+                            <small>{tf('repayment.dashboard.needsConfirm', '需确认')}</small>
                           </span>
                         )}
                       </span>

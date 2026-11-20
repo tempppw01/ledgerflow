@@ -503,6 +503,51 @@
       "creditDueToday": "今天到期",
       "creditDueOn": "{{date}}到期",
       "creditOverdueDays": "逾期 {{days}} 天"
+    },
+    "welcome": {
+      "sectionAria": "AI 助手",
+      "eyebrowBrand": "AI 助手",
+      "eyebrowScope": "记账、问答、改账",
+      "headlineLead": "记一笔、查一笔，",
+      "headlineAccent": "直接说就行",
+      "description": "说“午饭 28 元”直接记账，贴账单截图自动识别；也可以问账本、看趋势，或者让我修改、删除某一笔账单。",
+      "featureVoiceNlTitle": "一句话记账",
+      "featureVoiceNlNote": "自然语言直接入账",
+      "featureOcrTitle": "截图识别",
+      "featureOcrNote": "保存前逐笔核对",
+      "featureEditTitle": "查账改账",
+      "featureEditNote": "增删改都能交给它",
+      "briefPrefix": "本月",
+      "briefExpense": "支出",
+      "briefIncome": "收入",
+      "briefBalance": "结余",
+      "briefAdvice": "建议",
+      "briefEmpty": "暂无",
+      "briefKeepLogging": "继续记录",
+      "briefCutLarge": "先控大额"
+    },
+    "creditWelcome": {
+      "sectionAria": "AI 信贷管家",
+      "eyebrowBrand": "AI 信贷管家",
+      "eyebrowScope": "从看清开始",
+      "headlineLead": "每一笔该还什么，",
+      "headlineAccent": "心里都有数",
+      "description": "贷款、花呗、分期和信用账单都可以交给我。我会先理清本期应还、还款日和还缺哪些资料,也能直接帮你记一笔还款。",
+      "featureBillTitle": "识别账单",
+      "featureBillNote": "提取金额、日期和期数",
+      "featureDueTitle": "核对本期应还",
+      "featureDueNote": "把待确认的信息标出来",
+      "featureLogTitle": "登记与核对",
+      "featureLogNote": "说一句就能记还款"
+    },
+    "greeting": {
+      "date": "今天 {{date}}，",
+      "assistant": "记账、查账、改账都可以直接说，我先给结论。",
+      "credit": "把花呗、分期、贷款或信用账单交给我，我先帮你拆出应还金额、时间点和待补信息。"
+    },
+    "composer": {
+      "ariaCredit": "AI 信贷管家输入",
+      "ariaDefault": "AI 助手输入"
     }
   },
   "about": {
@@ -2243,7 +2288,7 @@
       "archived": "🗂️ 历史负债",
       "archivedTotal": "余额合计",
       "income": "💼 月收入",
-      "incomeSource": "来源:",
+      "incomeSource": "来源：",
       "datePending": "日期待补",
       "amountPending": "金额待补",
       "edit": "编辑",
@@ -2258,7 +2303,13 @@
       "close": "关闭",
       "pause": "暂缓",
       "deleteInline": "🗑 删除",
-      "thisDue": "本次待还"
+      "thisDue": "本次待还",
+      "pressureLevel": "⚠️ 负债率（{level}）",
+      "pressureHealthy": "健康",
+      "pressureWatch": "关注",
+      "pressureHigh": "偏高",
+      "incomeSourceManual": "👤 你手动输入",
+      "incomeSourceUnknown": "— 未确定"
     },
     "health": {
       "title": "负债健康度",
@@ -2359,7 +2410,8 @@
       "currentPaymentShare": "本月应还占比",
       "monthDue": "{month}应还",
       "thisMonthDue": "本月应还",
-      "futureSixMonths": "未来 6 个月预计还款"
+      "futureSixMonths": "未来 6 个月预计还款",
+      "needsConfirm": "需确认"
     },
     "extract": {
       "running": "识别中...",
@@ -2510,6 +2562,16 @@
       "today": "今天",
       "todayAria": "设为今天",
       "headingWithCount": "📜 还款记录"
+    },
+    "status": {
+      "paidWithNextCycle": "本期已还 · 下期 {days} 天后",
+      "paidThisCycle": "本期已还",
+      "missingDate": "待补日期",
+      "overdue": "已逾期 {days} 天",
+      "dueTodayPending": "今日待处理",
+      "dueToday": "今日应还",
+      "dueSoon": "{days} 天后到期",
+      "dueInDays": "本期待还 · {days} 天后"
     }
   },
   "categoriesAccounts": {

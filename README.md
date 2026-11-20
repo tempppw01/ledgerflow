@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/tempppw01/ledgerflow/releases"><img src="https://img.shields.io/github/v/release/tempppw01/ledgerflow?display_name=tag&style=flat-square&color=f59e0b" alt="Release" /></a>
-  <img src="https://img.shields.io/badge/version-0.8.2-0f766e?style=flat-square" alt="Version 0.8.2" />
+  <img src="https://img.shields.io/badge/version-0.8.3-0f766e?style=flat-square" alt="Version 0.8.3" />
   <img src="https://img.shields.io/badge/Node.js-20%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js 20+" />
   <img src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker ready" />
   <a href="https://ledgerflow.shuaihong.fun"><img src="https://img.shields.io/badge/Live%20demo-open-f59e0b?style=flat-square" alt="Live demo" /></a>
@@ -16,7 +16,7 @@
 <p align="center"><a href="#快速部署">快速部署</a> · <a href="#主要能力">主要能力</a> · <a href="#备份与同步">数据与备份</a> · <a href="https://github.com/tempppw01/ledgerflow/releases">版本发布</a></p>
 
 > [!NOTE]
-> 当前版本：`0.8.2`。项目仍在快速迭代，重要数据请保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
+> 当前版本：`0.8.3`。项目仍在快速迭代，重要数据请保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
 
 > 说明：项目仍处于快速迭代阶段，功能、界面和数据结构会持续调整。重要数据请务必保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
 
@@ -57,6 +57,13 @@
 </table>
 
 </details>
+
+### 0.8.3 功能亮点
+
+- AI 助手页支持英文:三种模式的欢迎卡片(标题、说明、三条能力说明、本月支出/收入/结余摘要)与首条问候语都跟随界面语言,问候语里的日期与星期改用 `Intl` 本地化,不再固定中文。
+- 还款管理页补齐英文:负债率标签(健康/关注/偏高)、负债列表的全部 8 种状态徽标(本期已还、待补日期、已逾期、今日待还、本期待还等)、月收入来源与「需确认」提示。
+- 修复一个隐性的本地化耦合:信贷管家聚焦输入框时,原先靠 `textarea[aria-label="AI 信贷管家输入"]` 这个中文串去查询 DOM;aria-label 一旦跟随语言变化,英文界面下就会找不到元素。改为直接使用 `ref`。
+- 中英文 locale 各 2511 个 key,集合完全一致。
 
 ### 0.8.2 功能亮点
 
