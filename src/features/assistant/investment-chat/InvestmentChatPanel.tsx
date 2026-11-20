@@ -11,6 +11,7 @@ import {
   useState
 } from 'react';
 import type { CSSProperties } from 'react';
+import { useTFallback } from '../../../shared/lib/useTFallback';
 import { Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import type { InvestmentAiAgentAction } from '../../../entities/investment/types';
@@ -104,18 +105,21 @@ const FLOATING_CHAT_VIEWPORT_GUTTER = 16;
 const MAX_INVESTMENT_AI_IMAGES = 4;
 const MAX_INVESTMENT_AI_IMAGE_SIZE_MB = 6;
 const MAX_INVESTMENT_AGENT_ROUNDS = 4;
-const INVESTMENT_STARTER_PROMPTS = [
-  '帮我看当前持仓的主要风险',
-  '今天市场该进攻还是防守?',
-  '帮我检查目标资金缺口',
-  '结合我的情况给一个配置思路'
+const INVESTMENT_STARTER_PROMPTS: Array<{ key: string; fallback: string }> = [
+  { key: 'investmentAi.suggest.risk', fallback: '帮我看当前持仓的主要风险' },
+  { key: 'investmentAi.suggest.stance', fallback: '今天市场该进攻还是防守?' },
+  { key: 'investmentAi.suggest.gap', fallback: '帮我检查目标资金缺口' },
+  { key: 'investmentAi.suggest.allocation', fallback: '结合我的情况给一个配置思路' }
 ];
-const INVESTMENT_CHAT_PROGRESS_LABELS: Record<Exclude<InvestmentChatProgress, ''>, string> = {
-  market: '正在读取页面持仓、自选和账本数据',
-  web: '正在查询公开联网资讯',
-  tools: '正在核对你自己的持仓与目标数据',
-  thinking: '正在思考投资结论',
-  answering: '正在组织回答'
+const INVESTMENT_CHAT_PROGRESS_ENTRIES: Record<
+  Exclude<InvestmentChatProgress, ''>,
+  { key: string; fallback: string }
+> = {
+  market: { key: 'investmentAi.stage.market', fallback: '正在读取页面持仓、自选和账本数据' },
+  web: { key: 'investmentAi.stage.web', fallback: '正在查询公开联网资讯' },
+  tools: { key: 'investmentAi.stage.tools', fallback: '正在核对你自己的持仓与目标数据' },
+  thinking: { key: 'investmentAi.stage.thinking', fallback: '正在思考投资结论' },
+  answering: { key: 'investmentAi.stage.answering', fallback: '正在组织回答' }
 };
 
 function getModelDisplayLabel(modelId: string): string {
@@ -175,6 +179,7 @@ export function InvestmentChatComposer({
   starterPrompt = null,
   onRegisterAgentUndo
 }: InvestmentChatComposerProps) {
+  const tf = useTFallback();
   const { baseUrl, apiKey, model, webSearch } = useAiSettings();
   const setModel = useAiSettings((s) => s.setModel);
   const messages = useAppPreferences((s) => s.investmentAiMessages);
@@ -392,7 +397,10 @@ export function InvestmentChatComposer({
     if (slots <= 0) {
       setToast({
         visible: true,
-        message: `最多只能附加 ${MAX_INVESTMENT_AI_IMAGES} 张截图。`,
+        message: tf('investmentAi.error.tooManyImages', '最多只能附加 {count} 张截图。').replace(
+          '{count}',
+          String(MAX_INVESTMENT_AI_IMAGES)
+        ),
         variant: 'warning'
       });
       return;
@@ -405,7 +413,10 @@ export function InvestmentChatComposer({
     if (oversized) {
       setToast({
         visible: true,
-        message: `单张图片不能超过 ${MAX_INVESTMENT_AI_IMAGE_SIZE_MB}MB。`,
+        message: tf('investmentAi.error.imageTooLarge', '单张图片不能超过 {size}MB。').replace(
+          '{size}',
+          String(MAX_INVESTMENT_AI_IMAGE_SIZE_MB)
+        ),
         variant: 'warning'
       });
       return;
@@ -417,7 +428,10 @@ export function InvestmentChatComposer({
     } catch (err) {
       setToast({
         visible: true,
-        message: err instanceof Error ? err.message : '图片读取失败，请重试。',
+        message:
+          err instanceof Error
+            ? err.message
+            : tf('investmentAi.error.imageRead', '图片读取失败，请重试。'),
         variant: 'error'
       });
     }
@@ -458,7 +472,10 @@ export function InvestmentChatComposer({
       }
       setToast({
         visible: true,
-        message: '请先在设置中配置可用的 AI Key，问题已保留在输入框。',
+        message: tf(
+          'investmentAi.error.noKey',
+          '请先在设置中配置可用的 AI Key，问题已保留在输入框。'
+        ),
         variant: 'warning'
       });
       return;
@@ -721,7 +738,7 @@ export function InvestmentChatComposer({
             const assistantMessage: Message = createInvestmentAiMessage({
               id: `investment-assistant-${Date.now()}`,
               role: 'assistant',
-              text: answer || '已完成分析。',
+              text: answer || tf('investmentAi.answer.fallback', '已完成分析。'),
               createdAt: new Date().toISOString(),
               reasoning,
               webTrace: auxiliaryInfo.webTrace,
@@ -762,9 +779,15 @@ export function InvestmentChatComposer({
     } catch (err) {
       if (requestVersion !== requestVersionRef.current) return;
       if (err instanceof DOMException && err.name === 'AbortError') return;
-      setError(err instanceof Error ? err.message : '投资分析失败');
+      setError(
+        err instanceof Error ? err.message : tf('investmentAi.error.analysisFailed', '投资分析失败')
+      );
       setFailedTurn({ messageId: userMessage.id, text: requestText, images: requestImages });
-      setToast({ visible: true, message: '投资分析失败', variant: 'error' });
+      setToast({
+        visible: true,
+        message: tf('investmentAi.error.analysisFailed', '投资分析失败'),
+        variant: 'error'
+      });
     } finally {
       if (requestVersion === requestVersionRef.current) {
         abortControllerRef.current = null;
@@ -809,23 +832,36 @@ export function InvestmentChatComposer({
               type="button"
               onClick={() => void submitPrompt(undefined, { retryMessageId: failedTurn.messageId })}
             >
-              重试本次
+              {tf('investmentAi.retry', '重试本次')}
             </button>
           ) : null}
         </div>
       ) : null}
 
       {images.length > 0 ? (
-        <div className="investments-ai-image-strip" aria-label="待分析图片">
+        <div
+          className="investments-ai-image-strip"
+          aria-label={tf('investmentAi.imagesAria', '待分析图片')}
+        >
           <div className="investments-ai-thumb-list">
             {images.map((url, index) => (
               <div key={`${url.slice(0, 20)}-${index}`} className="investments-ai-thumb-item">
-                <img src={url} alt={`待分析图片 ${index + 1}`} className="investments-ai-thumb" />
+                <img
+                  src={url}
+                  alt={tf('investmentAi.imageAlt', '待分析图片 {index}').replace(
+                    '{index}',
+                    String(index + 1)
+                  )}
+                  className="investments-ai-thumb"
+                />
                 <button
                   type="button"
                   className="investments-ai-thumb-remove"
                   onClick={() => setImages((prev) => prev.filter((_, idx) => idx !== index))}
-                  aria-label={`移除第 ${index + 1} 张图片`}
+                  aria-label={tf('investmentAi.removeImage', '移除第 {index} 张图片').replace(
+                    '{index}',
+                    String(index + 1)
+                  )}
                 >
                   x
                 </button>
@@ -833,7 +869,7 @@ export function InvestmentChatComposer({
             ))}
           </div>
           <button type="button" onClick={() => setImages([])}>
-            清空图片
+            {tf('investmentAi.clearImages', '清空图片')}
           </button>
         </div>
       ) : null}
@@ -842,22 +878,29 @@ export function InvestmentChatComposer({
         <div className="investments-ai-links">
           <Link to="/investments" className="button-with-icon">
             <ChatUploadIcon className="chat-svg-icon" />
-            投资资料与管理
+            {tf('investmentAi.manage', '投资资料与管理')}
           </Link>
         </div>
       ) : null}
 
       {!apiKey.trim() ? (
         <div className="investments-ai-settings-hint" role="status">
-          <span>尚未配置 AI 模型 Key，配置后才能生成投资分析。</span>
-          <Link to="/settings">去设置</Link>
+          <span>
+            {tf('investmentAi.noKeyHint', '尚未配置 AI 模型 Key，配置后才能生成投资分析。')}
+          </span>
+          <Link to="/settings">{tf('investmentAi.goSettings', '去设置')}</Link>
         </div>
       ) : null}
 
       {progress ? (
         <div className="investments-ai-progress" role="status" aria-live="polite">
           <span className="investments-ai-progress-indicator" aria-hidden="true" />
-          <span>{INVESTMENT_CHAT_PROGRESS_LABELS[progress]}</span>
+          <span>
+            {tf(
+              INVESTMENT_CHAT_PROGRESS_ENTRIES[progress].key,
+              INVESTMENT_CHAT_PROGRESS_ENTRIES[progress].fallback
+            )}
+          </span>
         </div>
       ) : null}
 
@@ -895,7 +938,7 @@ export function InvestmentChatComposer({
               tabIndex={-1}
               aria-hidden="true"
               className="chat-file-input-hidden"
-              aria-label="上传基金截图"
+              aria-label={tf('investmentAi.uploadAria', '上传基金截图')}
               onChange={(event) => {
                 const files = Array.from(event.target.files || []);
                 void appendImageFiles(files);
@@ -907,8 +950,8 @@ export function InvestmentChatComposer({
               rows={1}
               value={input}
               className="chat-input-textarea investments-ai-textarea"
-              placeholder="输入基金问题，Enter 发送"
-              aria-label="基金分析输入框"
+              placeholder={tf('investmentAi.inputPlaceholder', '输入基金问题，Enter 发送')}
+              aria-label={tf('investmentAi.inputAria', '基金分析输入框')}
               onChange={(event) => setInput(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' && !event.shiftKey) {
@@ -921,15 +964,18 @@ export function InvestmentChatComposer({
             <div className="chat-input-toolbar investments-ai-input-toolbar">
               <div
                 className="chat-input-toolbar-left investments-ai-suggestion-row"
-                aria-label="AI 联想提问"
+                aria-label={tf('investmentAi.suggestionsAria', 'AI 联想提问')}
               >
                 <button
                   type="button"
                   className="chat-upload-btn investments-ai-upload-btn"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={loading}
-                  title={`支持上传或粘贴最多 ${MAX_INVESTMENT_AI_IMAGES} 张截图`}
-                  aria-label="上传基金截图"
+                  title={tf('investmentAi.uploadHint', '支持上传或粘贴最多 {count} 张截图').replace(
+                    '{count}',
+                    String(MAX_INVESTMENT_AI_IMAGES)
+                  )}
+                  aria-label={tf('investmentAi.uploadAria', '上传基金截图')}
                 >
                   <ChatUploadIcon className="chat-svg-icon" />
                 </button>
@@ -938,8 +984,16 @@ export function InvestmentChatComposer({
                   className={`chat-upload-btn investments-ai-web-btn ${webEnabled ? 'is-active' : ''}`}
                   onClick={() => setWebEnabled((value) => !value)}
                   aria-pressed={webEnabled}
-                  aria-label={webEnabled ? '关闭联网核验' : '开启联网核验'}
-                  title={webEnabled ? '已开启联网核验' : '开启联网核验'}
+                  aria-label={
+                    webEnabled
+                      ? tf('investmentAi.webOff', '关闭联网核验')
+                      : tf('investmentAi.webOn', '开启联网核验')
+                  }
+                  title={
+                    webEnabled
+                      ? tf('investmentAi.webOnTitle', '已开启联网核验')
+                      : tf('investmentAi.webOn', '开启联网核验')
+                  }
                 >
                   {webEnabled ? (
                     <ChatGlobeIcon className="chat-svg-icon" />
@@ -953,8 +1007,16 @@ export function InvestmentChatComposer({
                   onClick={() => setSuggestionsCollapsed((value) => !value)}
                   aria-expanded={!suggestionsCollapsed}
                   aria-controls="investments-ai-suggestions"
-                  aria-label={suggestionsCollapsed ? '展开追问建议' : '收起追问建议'}
-                  title={suggestionsCollapsed ? '展开追问建议' : '收起追问建议'}
+                  aria-label={
+                    suggestionsCollapsed
+                      ? tf('investmentAi.expandSuggestions', '展开追问建议')
+                      : tf('investmentAi.collapseSuggestions', '收起追问建议')
+                  }
+                  title={
+                    suggestionsCollapsed
+                      ? tf('investmentAi.expandSuggestions', '展开追问建议')
+                      : tf('investmentAi.collapseSuggestions', '收起追问建议')
+                  }
                 >
                   {suggestionsCollapsed ? (
                     <ChatChevronsUpDownIcon className="chat-svg-icon" />
@@ -978,8 +1040,10 @@ export function InvestmentChatComposer({
                     }}
                     aria-haspopup="listbox"
                     aria-expanded={modelOpen}
-                    aria-label={`当前模型：${getModelDisplayLabel(model || '选择模型')}`}
-                    title={getModelDisplayLabel(model || '选择模型')}
+                    aria-label={`当前模型：${getModelDisplayLabel(model || tf('investmentAi.modelFallback', '选择模型'))}`}
+                    title={getModelDisplayLabel(
+                      model || tf('investmentAi.modelFallback', '选择模型')
+                    )}
                     ref={modelTriggerRef}
                   >
                     <span className="chat-model-trigger-icon">
@@ -989,7 +1053,7 @@ export function InvestmentChatComposer({
                       />
                     </span>
                     <span className="chat-model-inline-label">
-                      {getModelDisplayLabel(model || '选择模型')}
+                      {getModelDisplayLabel(model || tf('investmentAi.modelFallback', '选择模型'))}
                     </span>
                   </button>
 
@@ -999,14 +1063,18 @@ export function InvestmentChatComposer({
                           ref={dropdownRef}
                           className="chat-model-dropdown investments-ai-model-dropdown"
                           role="dialog"
-                          aria-label="模型列表"
+                          aria-label={tf('investmentAi.modelListAria', '模型列表')}
                           style={dropdownStyle}
                         >
                           <div className="chat-model-list">
                             {loadingModels ? (
-                              <div className="chat-model-empty">正在加载模型列表...</div>
+                              <div className="chat-model-empty">
+                                {tf('investmentAi.modelLoading', '正在加载模型列表...')}
+                              </div>
                             ) : models.length === 0 ? (
-                              <div className="chat-model-empty">暂无可选模型</div>
+                              <div className="chat-model-empty">
+                                {tf('investmentAi.modelEmpty', '暂无可选模型')}
+                              </div>
                             ) : (
                               models.map((item) => (
                                 <button
@@ -1051,8 +1119,8 @@ export function InvestmentChatComposer({
                 type="button"
                 className="chat-upload-btn investments-ai-scroll-top-btn"
                 onClick={scrollToConversationTop}
-                title="返回页面顶部"
-                aria-label="返回页面顶部"
+                title={tf('investmentAi.backToTop', '返回页面顶部')}
+                aria-label={tf('investmentAi.backToTop', '返回页面顶部')}
               >
                 <ChatChevronUpIcon className="chat-svg-icon" />
               </button>
@@ -1061,8 +1129,8 @@ export function InvestmentChatComposer({
                   type="button"
                   className="chat-send-btn investments-ai-submit-btn is-stop"
                   onClick={stopRequest}
-                  title="停止生成"
-                  aria-label="停止生成"
+                  title={tf('investmentAi.stop', '停止生成')}
+                  aria-label={tf('investmentAi.stop', '停止生成')}
                 >
                   <ChatStopIcon className="chat-svg-icon chat-svg-icon--filled chat-send-stop-icon" />
                 </button>
@@ -1072,7 +1140,7 @@ export function InvestmentChatComposer({
                   className="chat-send-btn investments-ai-submit-btn"
                   disabled={!input.trim() && images.length === 0}
                   title="发送"
-                  aria-label="开始分析"
+                  aria-label={tf('investmentAi.sendAria', '开始分析')}
                 >
                   <ChatSendIcon className="chat-svg-icon" />
                 </button>
@@ -1117,6 +1185,7 @@ export function InvestmentChatPanel({
   floating = false,
   floatingPosition = 'bottom-right'
 }: InvestmentChatPanelProps) {
+  const tf = useTFallback();
   const messages = useAppPreferences((s) => s.investmentAiMessages);
   const setInvestmentAiMessages = useAppPreferences((s) => s.setInvestmentAiMessages);
   const clearInvestmentAiMessages = useAppPreferences((s) => s.clearInvestmentAiMessages);
@@ -1408,7 +1477,7 @@ export function InvestmentChatPanel({
         <button
           type="button"
           className="investment-chat-floating-launcher"
-          aria-label="打开 AI 投资助手"
+          aria-label={tf('investmentAi.launcherOpen', '打开 AI 投资助手')}
           aria-expanded={false}
           onClick={() => setFloatingOpen(true)}
         >
@@ -1416,10 +1485,17 @@ export function InvestmentChatPanel({
             <ChatSparklesIcon className="chat-svg-icon" />
           </span>
           <span className="investment-chat-floating-launcher-copy" aria-hidden="true">
-            <strong>AI 投资助手</strong>
-            <small>持仓 · 行情 · 目标</small>
+            <strong>{tf('investmentAi.title', 'AI 投资助手')}</strong>
+            <small>{tf('investmentAi.subtitle', '持仓 · 行情 · 目标')}</small>
           </span>
-          {messages.length > 0 ? <i aria-label={`${messages.length} 条对话`} /> : null}
+          {messages.length > 0 ? (
+            <i
+              aria-label={tf('investmentAi.messageCount', '{count} 条对话').replace(
+                '{count}',
+                String(messages.length)
+              )}
+            />
+          ) : null}
         </button>
       ) : null}
 
@@ -1475,18 +1551,18 @@ export function InvestmentChatPanel({
               </span>
               <div>
                 <strong>
-                  AI 投资助手
+                  {tf('investmentAi.title', 'AI 投资助手')}
                   <em className="investment-chat-agent-badge">Agent</em>
                 </strong>
-                <small>已同步持仓、自选与今日行情</small>
+                <small>{tf('investmentAi.syncedHint', '已同步持仓、自选与今日行情')}</small>
               </div>
             </div>
             <div className="investment-chat-floating-head-actions">
               <Link
                 to="/assistant"
                 className="investment-chat-floating-expand"
-                aria-label="打开完整 AI 投资助手"
-                title="打开完整 AI 投资助手"
+                aria-label={tf('investmentAi.openFull', '打开完整 AI 投资助手')}
+                title={tf('investmentAi.openFull', '打开完整 AI 投资助手')}
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M14 4h6v6" />
@@ -1497,8 +1573,16 @@ export function InvestmentChatPanel({
               <button
                 type="button"
                 className={`investment-chat-floating-pin ${floatingPinned ? 'is-active' : ''}`}
-                aria-label={floatingPinned ? '取消置顶 AI 投资助手' : '置顶 AI 投资助手'}
-                title={floatingPinned ? '取消置顶，点击外围可自动收起' : '置顶，点击外围不收起'}
+                aria-label={
+                  floatingPinned
+                    ? tf('investmentAi.unpin', '取消置顶 AI 投资助手')
+                    : tf('investmentAi.pin', '置顶 AI 投资助手')
+                }
+                title={
+                  floatingPinned
+                    ? tf('investmentAi.unpinTitle', '取消置顶，点击外围可自动收起')
+                    : tf('investmentAi.pinTitle', '置顶，点击外围不收起')
+                }
                 aria-pressed={floatingPinned}
                 onClick={() => setFloatingPinned((current) => !current)}
               >
@@ -1510,8 +1594,8 @@ export function InvestmentChatPanel({
               <button
                 type="button"
                 className="investment-chat-floating-close"
-                aria-label="收起 AI 投资助手"
-                title="收起 AI 投资助手"
+                aria-label={tf('investmentAi.collapse', '收起 AI 投资助手')}
+                title={tf('investmentAi.collapse', '收起 AI 投资助手')}
                 onClick={minimizeFloatingPanel}
               >
                 ×
@@ -1520,35 +1604,44 @@ export function InvestmentChatPanel({
           </header>
         ) : null}
 
-        <div className="investment-chat-context-strip" aria-label="AI 已同步的投资上下文">
+        <div
+          className="investment-chat-context-strip"
+          aria-label={tf('investmentAi.contextAria', 'AI 已同步的投资上下文')}
+        >
           <span>
-            <b>{contextStats.positions}</b> 笔持仓
+            <b>{contextStats.positions}</b> {tf('investmentAi.context.positions', '笔持仓')}
           </span>
           <span>
-            <b>{contextStats.watchlist}</b> 只自选
+            <b>{contextStats.watchlist}</b> {tf('investmentAi.context.watchlist', '只自选')}
           </span>
           <span>
-            <b>{contextStats.goals}</b> 个目标
+            <b>{contextStats.goals}</b> {tf('investmentAi.context.goals', '个目标')}
           </span>
           <span
             className={agentReady ? 'is-agent-ready' : 'is-agent-offline'}
             title={
               agentReady
-                ? '已配置 AI 模型,可直接读取持仓、自选与今日行情'
-                : '尚未配置 AI 模型 Key,配置后助手才能生成分析'
+                ? tf('investmentAi.readyHint', '已配置 AI 模型,可直接读取持仓、自选与今日行情')
+                : tf('investmentAi.notReadyHint', '尚未配置 AI 模型 Key,配置后助手才能生成分析')
             }
           >
             <i aria-hidden="true" />
-            {agentReady ? 'Agent 已连接' : '待配置 AI Key'}
+            {agentReady
+              ? tf('investmentAi.agentReady', 'Agent 已连接')
+              : tf('investmentAi.agentPending', '待配置 AI Key')}
           </span>
           {focus ? <strong title={focus.label}>正在看：{focus.label}</strong> : null}
         </div>
 
         {showHero && messages.length === 0 ? (
-          <section className="chat-mode-welcome chat-investment-welcome" aria-label="AI 投资助手">
+          <section
+            className="chat-mode-welcome chat-investment-welcome"
+            aria-label={tf('investmentAi.title', 'AI 投资助手')}
+          >
             <div className="chat-mode-welcome-copy">
               <div className="chat-mode-welcome-eyebrow">
-                AI 投资助手 <span>·</span> 看懂市场，也看懂自己的持仓
+                {tf('investmentAi.title', 'AI 投资助手')}
+                <span>·</span> 看懂市场，也看懂自己的持仓
               </div>
               <h2>
                 投资上的问题，<em>一起理清楚</em>
@@ -1717,16 +1810,24 @@ export function InvestmentChatPanel({
             <div className="chat-msg-body">
               <div className="chat-msg-header">投资助手</div>
               <div className="chat-msg-content">
-                <p>可以从你的持仓、基金定投或今天的市场开始问。我会把结论和判断依据说清楚。</p>
-                <div className="chat-investment-starter-prompts" aria-label="快捷问题">
+                <p>
+                  {tf(
+                    'investmentAi.welcomeHint',
+                    '可以从你的持仓、基金定投或今天的市场开始问。我会把结论和判断依据说清楚。'
+                  )}
+                </p>
+                <div
+                  className="chat-investment-starter-prompts"
+                  aria-label={tf('investmentAi.quickPromptsAria', '快捷问题')}
+                >
                   {INVESTMENT_STARTER_PROMPTS.map((prompt) => (
                     <button
-                      key={prompt}
+                      key={prompt.key}
                       type="button"
-                      onClick={() => handleStarterPrompt(prompt)}
+                      onClick={() => handleStarterPrompt(tf(prompt.key, prompt.fallback))}
                       disabled={Boolean(activeTurnMessageId)}
                     >
-                      {prompt}
+                      {tf(prompt.key, prompt.fallback)}
                     </button>
                   ))}
                 </div>

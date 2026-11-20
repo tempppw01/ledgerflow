@@ -2135,5 +2135,79 @@
       "emptyCategoryDesc": "切换到其他分类,或用基金代码添加一只新的。",
       "count": "{count} 只"
     }
+  },
+  "investmentAi": {
+    "suggest": {
+      "risk": "帮我看当前持仓的主要风险",
+      "stance": "今天市场该进攻还是防守?",
+      "gap": "帮我检查目标资金缺口",
+      "allocation": "结合我的情况给一个配置思路"
+    },
+    "stage": {
+      "market": "正在读取页面持仓、自选和账本数据",
+      "web": "正在查询公开联网资讯",
+      "tools": "正在核对你自己的持仓与目标数据",
+      "thinking": "正在思考投资结论",
+      "answering": "正在组织回答"
+    },
+    "error": {
+      "imageRead": "图片读取失败,请重试。",
+      "noKey": "请先在设置中配置可用的 AI Key,问题已保留在输入框。",
+      "analysisFailed": "投资分析失败",
+      "tooManyImages": "最多只能附加 {count} 张截图。",
+      "imageTooLarge": "单张图片不能超过 {size}MB。"
+    },
+    "answer": {
+      "fallback": "已完成分析。"
+    },
+    "retry": "重试本次",
+    "imagesAria": "待分析图片",
+    "clearImages": "清空图片",
+    "manage": "投资资料与管理",
+    "noKeyHint": "尚未配置 AI 模型 Key,配置后才能生成投资分析。",
+    "goSettings": "去设置",
+    "inputPlaceholder": "输入基金问题,Enter 发送",
+    "inputAria": "基金分析输入框",
+    "suggestionsAria": "AI 联想提问",
+    "uploadAria": "上传基金截图",
+    "webOff": "关闭联网核验",
+    "webOn": "开启联网核验",
+    "webOnTitle": "已开启联网核验",
+    "expandSuggestions": "展开追问建议",
+    "collapseSuggestions": "收起追问建议",
+    "modelFallback": "选择模型",
+    "modelListAria": "模型列表",
+    "modelLoading": "正在加载模型列表...",
+    "modelEmpty": "暂无可选模型",
+    "backToTop": "返回页面顶部",
+    "stop": "停止生成",
+    "sendAria": "开始分析",
+    "launcherOpen": "打开 AI 投资助手",
+    "title": "AI 投资助手",
+    "subtitle": "持仓 · 行情 · 目标",
+    "syncedHint": "已同步持仓、自选与今日行情",
+    "openFull": "打开完整 AI 投资助手",
+    "unpin": "取消置顶 AI 投资助手",
+    "pin": "置顶 AI 投资助手",
+    "unpinTitle": "取消置顶,点击外围可自动收起",
+    "pinTitle": "置顶,点击外围不收起",
+    "collapse": "收起 AI 投资助手",
+    "contextAria": "AI 已同步的投资上下文",
+    "readyHint": "已配置 AI 模型,可直接读取持仓、自选与今日行情",
+    "notReadyHint": "尚未配置 AI 模型 Key,配置后助手才能生成分析",
+    "agentReady": "Agent 已连接",
+    "agentPending": "待配置 AI Key",
+    "context": {
+      "positions": "笔持仓",
+      "watchlist": "只自选",
+      "goals": "个目标"
+    },
+    "messageCount": "{count} 条对话",
+    "imageAlt": "待分析图片 {index}",
+    "removeImage": "移除第 {index} 张图片",
+    "uploadHint": "支持上传或粘贴最多 {count} 张截图",
+    "currentModel": "当前模型",
+    "welcomeHint": "可以从你的持仓、基金定投或今天的市场开始问。我会把结论和判断依据说清楚。",
+    "quickPromptsAria": "快捷问题"
   }
 }

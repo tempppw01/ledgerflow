@@ -2135,5 +2135,79 @@
       "emptyCategoryDesc": "Switch to another category, or add one with a fund code.",
       "count": "{count}"
     }
+  },
+  "investmentAi": {
+    "suggest": {
+      "risk": "Review the main risks in my current holdings",
+      "stance": "Should I attack or defend in today’s market?",
+      "gap": "Check my goal funding gap",
+      "allocation": "Suggest an allocation for my situation"
+    },
+    "stage": {
+      "market": "Reading page holdings, watchlist and ledger data",
+      "web": "Searching public online sources",
+      "tools": "Checking your own holdings and goal data",
+      "thinking": "Thinking through the investment view",
+      "answering": "Composing the answer"
+    },
+    "error": {
+      "imageRead": "Could not read the image. Try again.",
+      "noKey": "Configure a usable AI key in settings first; your question stays in the input.",
+      "analysisFailed": "Investment analysis failed",
+      "tooManyImages": "You can attach at most {count} screenshots.",
+      "imageTooLarge": "Each image must be under {size}MB."
+    },
+    "answer": {
+      "fallback": "Analysis complete."
+    },
+    "retry": "Retry",
+    "imagesAria": "Images to analyse",
+    "clearImages": "Clear images",
+    "manage": "Investment data & settings",
+    "noKeyHint": "No AI model key configured yet; add one to generate analysis.",
+    "goSettings": "Open settings",
+    "inputPlaceholder": "Ask a fund question, Enter to send",
+    "inputAria": "Fund analysis input",
+    "suggestionsAria": "AI suggested questions",
+    "uploadAria": "Upload a fund screenshot",
+    "webOff": "Turn off web verification",
+    "webOn": "Turn on web verification",
+    "webOnTitle": "Web verification is on",
+    "expandSuggestions": "Show suggested follow-ups",
+    "collapseSuggestions": "Hide suggested follow-ups",
+    "modelFallback": "Choose model",
+    "modelListAria": "Model list",
+    "modelLoading": "Loading models…",
+    "modelEmpty": "No models available",
+    "backToTop": "Back to top",
+    "stop": "Stop generating",
+    "sendAria": "Start analysis",
+    "launcherOpen": "Open the AI investment assistant",
+    "title": "AI investment assistant",
+    "subtitle": "Holdings · Market · Goals",
+    "syncedHint": "Holdings, watchlist and today’s quotes are in sync",
+    "openFull": "Open the full AI investment assistant",
+    "unpin": "Unpin the AI investment assistant",
+    "pin": "Pin the AI investment assistant",
+    "unpinTitle": "Unpinned: click outside to collapse",
+    "pinTitle": "Pinned: clicking outside will not collapse",
+    "collapse": "Collapse the AI investment assistant",
+    "contextAria": "Investment context synced by AI",
+    "readyHint": "An AI model is configured; it can read holdings, watchlist and today’s quotes",
+    "notReadyHint": "No AI model key yet; configure one before the assistant can analyse",
+    "agentReady": "Agent connected",
+    "agentPending": "AI key required",
+    "context": {
+      "positions": "positions",
+      "watchlist": "watchlist",
+      "goals": "goals"
+    },
+    "messageCount": "{count} messages",
+    "imageAlt": "Image to analyse {index}",
+    "removeImage": "Remove image {index}",
+    "uploadHint": "Upload or paste up to {count} screenshots",
+    "currentModel": "Current model",
+    "welcomeHint": "Ask about your holdings, SIP plans or today’s market. I will state the conclusion and the evidence behind it.",
+    "quickPromptsAria": "Quick questions"
   }
 }
