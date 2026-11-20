@@ -1801,6 +1801,26 @@
     "stat": {
       "watchCount": "{count} watchlist",
       "positionCount": "{count} positions"
+    },
+    "holdings": {
+      "title": "Today’s holdings",
+      "subtitle": "Start with your own positions; do not let the index decide for you.",
+      "aiCheckupAria": "Ask AI to check my holdings",
+      "aiCheckup": "AI checkup",
+      "unrealizedPl": "Unrealized P/L",
+      "costPending": "Cost not entered",
+      "todayEstimate": "Today’s market estimate",
+      "waitingQuotes": "Waiting for quotes",
+      "estimateHint": "Watchlist holdings are ranked by today’s change, top 3 only when quotes exist; without fund quotes the main-index average is used.",
+      "askAiTitle": "Ask AI about this holding",
+      "marketValue": "Market value",
+      "costBasis": "Cost basis",
+      "floatingPl": "Unrealized gain/loss",
+      "watchLabel": "watchlist holding",
+      "shares": "Shares",
+      "todayEstimateShort": "Today’s estimate",
+      "count": "{count}",
+      "askAiNamed": "Ask AI about {name}"
     }
   }
 }

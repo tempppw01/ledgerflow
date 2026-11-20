@@ -116,6 +116,7 @@ type WatchDisplayMode = 'grid' | 'list';
 type InvestmentWorkspace = 'overview' | 'boards' | 'watchlist' | 'news';
 
 const EMPTY_MARKET_DATA_META: MarketDataMeta = {
+  // 数据占位值(不是界面文案),渲染处再做本地化
   source: '等待行情',
   updatedAt: '',
   freshness: 'stale'
@@ -772,11 +773,14 @@ function HoldingsTodayPanel({
   const hasKnownCost = positions.length > 0;
 
   return (
-    <section className="panel investments-today-holdings-panel" aria-label="今日持仓">
+    <section
+      className="panel investments-today-holdings-panel"
+      aria-label={tf('investments.holdings.title', '今日持仓')}
+    >
       <div className="investments-today-panel-head">
         <div>
-          <h2>今日持仓</h2>
-          <p>先看自己的持仓，别让大盘替你做决定。</p>
+          <h2>{tf('investments.holdings.title', '今日持仓')}</h2>
+          <p>{tf('investments.holdings.subtitle', '先看自己的持仓，别让大盘替你做决定。')}</p>
         </div>
         <div className="investments-panel-head-actions">
           <button
@@ -787,39 +791,57 @@ function HoldingsTodayPanel({
                 '请帮我做一次持仓体检：看整体盈亏、仓位集中度、风险暴露和目标缺口，告诉我最优先要调整的一到两项，并给出具体金额或比例。'
               )
             }
-            aria-label="让 AI 体检我的持仓"
+            aria-label={tf(
+              'investments.holdings.aiCheckupAria',
+              tf('investments.holdings.aiCheckupAria', '让 AI 体检我的持仓')
+            )}
           >
             <ChatSparklesIcon className="chat-svg-icon" />
-            AI 体检
+            {tf('investments.holdings.aiCheckup', 'AI 体检')}
           </button>
-          <span className="badge">{holdingCount} 笔</span>
+          <span className="badge">
+            {tf('investments.holdings.count', '{count} 笔').replace(
+              '{count}',
+              String(holdingCount)
+            )}
+          </span>
         </div>
       </div>
 
       <div className="investments-today-summary">
         <div className={totalProfit >= 0 ? 'is-positive' : 'is-negative'}>
-          <span className="investments-key-label">账面盈亏</span>
+          <span className="investments-key-label">
+            {tf('investments.holdings.unrealizedPl', '账面盈亏')}
+          </span>
           <strong className="investments-key-number">
             {hasKnownCost ? formatCurrencyAuto(totalProfit) : '--'}
           </strong>
-          <em>{hasKnownCost ? `${(profitRate * 100).toFixed(1)}%` : '成本待录入'}</em>
+          <em>
+            {hasKnownCost
+              ? `${(profitRate * 100).toFixed(1)}%`
+              : tf('investments.holdings.costPending', '成本待录入')}
+          </em>
         </div>
         <div className={getMarketTone(effectiveMarketChange)}>
-          <span className="investments-key-label">今日市场估算</span>
+          <span className="investments-key-label">
+            {tf('investments.holdings.todayEstimate', '今日市场估算')}
+          </span>
           <strong className="investments-key-number">
             {estimatedTodayProfit === null ? '--' : formatCurrencyAuto(estimatedTodayProfit)}
           </strong>
           <em>
             {effectiveMarketChange === null
-              ? '等待行情'
+              ? tf('investments.holdings.waitingQuotes', '等待行情')
               : `${getMovementEmoji(effectiveMarketChange)} ${formatMarketPercent(effectiveMarketChange)}`}
           </em>
         </div>
       </div>
 
       <p className="investments-today-note">
-        自选持仓按今日涨跌幅从高到低排列，TOP 3
-        仅标记有行情的基金；没有基金行情时再按主要指数平均涨跌估算。
+        {tf(
+          'investments.holdings.estimateHint',
+          '自选持仓按今日涨跌幅从高到低排列,TOP 3 仅标记有行情的基金;没有基金行情时再按主要指数平均涨跌估算。'
+        )}
       </p>
 
       <div className="investments-position-glance-list">
@@ -840,8 +862,11 @@ function HoldingsTodayPanel({
                   <button
                     type="button"
                     className="investments-position-ai-btn"
-                    aria-label={`让 AI 分析 ${position.name}`}
-                    title="让 AI 分析这只持仓"
+                    aria-label={tf('investments.holdings.askAiNamed', '让 AI 分析 {name}').replace(
+                      '{name}',
+                      position.name
+                    )}
+                    title={tf('investments.holdings.askAiTitle', '让 AI 分析这只持仓')}
                     onClick={() =>
                       onAskAi?.(
                         buildInvestmentHoldingAskPrompt({
@@ -862,15 +887,15 @@ function HoldingsTodayPanel({
                 <span>{POSITION_CATEGORY_LABELS[position.category]}</span>
               </div>
               <div>
-                <span>当前市值</span>
+                <span>{tf('investments.holdings.marketValue', '当前市值')}</span>
                 <strong>{formatCurrencyAuto(position.currentValue)}</strong>
               </div>
               <div>
-                <span>持仓成本</span>
+                <span>{tf('investments.holdings.costBasis', '持仓成本')}</span>
                 <strong>{formatCurrencyAuto(position.investedAmount)}</strong>
               </div>
               <div className={profit >= 0 ? 'is-positive' : 'is-negative'}>
-                <span>浮盈浮亏</span>
+                <span>{tf('investments.holdings.floatingPl', '浮盈浮亏')}</span>
                 <strong>{formatCurrencyAuto(profit)}</strong>
                 <em>{(positionProfitRate * 100).toFixed(1)}%</em>
               </div>
@@ -891,18 +916,20 @@ function HoldingsTodayPanel({
                   </b>
                 ) : null}
               </div>
-              <span>{holding.category} · 自选持仓</span>
+              <span>
+                {holding.category} · {tf('investments.holdings.watchLabel', '自选持仓')}
+              </span>
             </div>
             <div>
-              <span>当前市值</span>
+              <span>{tf('investments.holdings.marketValue', '当前市值')}</span>
               <strong>{formatCurrencyAuto(holding.currentValue)}</strong>
             </div>
             <div>
-              <span>持有份额</span>
+              <span>{tf('investments.holdings.shares', '持有份额')}</span>
               <strong>{formatHoldingShares(holding.shares)}</strong>
             </div>
             <div className={getMarketTone(holding.marketChange)}>
-              <span>今日估算</span>
+              <span>{tf('investments.holdings.todayEstimateShort', '今日估算')}</span>
               <strong>
                 {holding.estimatedTodayProfit === null
                   ? '--'

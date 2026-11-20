@@ -1801,6 +1801,26 @@
     "stat": {
       "watchCount": "{count} 只自选",
       "positionCount": "{count} 笔持仓"
+    },
+    "holdings": {
+      "title": "今日持仓",
+      "subtitle": "先看自己的持仓,别让大盘替你做决定。",
+      "aiCheckupAria": "让 AI 体检我的持仓",
+      "aiCheckup": "AI 体检",
+      "unrealizedPl": "账面盈亏",
+      "costPending": "成本待录入",
+      "todayEstimate": "今日市场估算",
+      "waitingQuotes": "等待行情",
+      "estimateHint": "自选持仓按今日涨跌幅从高到低排列,TOP 3 仅标记有行情的基金;没有基金行情时再按主要指数平均涨跌估算。",
+      "askAiTitle": "让 AI 分析这只持仓",
+      "marketValue": "当前市值",
+      "costBasis": "持仓成本",
+      "floatingPl": "浮盈浮亏",
+      "watchLabel": "自选持仓",
+      "shares": "持有份额",
+      "todayEstimateShort": "今日估算",
+      "count": "{count} 笔",
+      "askAiNamed": "让 AI 分析 {name}"
     }
   }
 }
