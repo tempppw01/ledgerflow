@@ -2225,7 +2225,22 @@
       "archived": "🗂️ Archived debt",
       "archivedTotal": "Balance total",
       "income": "💼 Monthly income",
-      "incomeSource": "Source:"
+      "incomeSource": "Source:",
+      "datePending": "date pending",
+      "amountPending": "amount pending",
+      "edit": "Edit",
+      "editReminder": "Edit reminder time",
+      "setDueDate": "Set due date",
+      "registerPayment": "Record payment",
+      "settle": "Settle",
+      "delete": "Delete",
+      "reminder": "Repayment reminder",
+      "editInline": "✏️ Edit",
+      "restore": "Restore",
+      "close": "Close",
+      "pause": "Pause",
+      "deleteInline": "🗑 Delete",
+      "thisDue": "Due now"
     },
     "health": {
       "title": "Debt health",
@@ -2250,7 +2265,18 @@
       "aria": "Upload a debt screenshot"
     },
     "list": {
-      "title": "Debts"
+      "title": "Debts",
+      "toolsAria": "Debt filter and sort",
+      "filter": "Filter",
+      "filterAll": "All",
+      "filterActive": "Active debts",
+      "filterMissing": "Needs details",
+      "filterInactive": "Settled / closed",
+      "sort": "Sort",
+      "sortDue": "Due date",
+      "sortName": "Name",
+      "emptyTitle": "No debts yet",
+      "emptyDesc": "Start with “Add” or “Scan”"
     },
     "agent": {
       "kind": {
@@ -2310,7 +2336,36 @@
       "dueInDays": "In {days} days",
       "setDueDateAria": "Set the due date for {name}",
       "registerAria": "Record this payment for {name}",
-      "registerPaid": "Record payment"
+      "registerPaid": "Record payment",
+      "paymentShare": "{month} payment share",
+      "currentPaymentShare": "This month’s payment share",
+      "monthDue": "{month} due",
+      "thisMonthDue": "Due this month",
+      "futureSixMonths": "Projected repayments for the next 6 months"
+    },
+    "extract": {
+      "running": "Reading…",
+      "action": "📷 Scan"
+    },
+    "add": {
+      "action": "+ Add"
+    },
+    "detail": {
+      "remainingPrincipal": "Remaining principal",
+      "paymentDue": "Payment due",
+      "dueDate": "Due date",
+      "pending": "To be filled",
+      "amount": "Amount",
+      "minimumPayment": "Minimum payment",
+      "apr": "Annual rate (APR)"
+    },
+    "type": {
+      "creditCard": "Credit card",
+      "consumerLoan": "Consumer loan",
+      "loan": "Loan"
+    },
+    "form": {
+      "actualAmountAria": "Actual repayment amount"
     }
   }
 }

@@ -667,16 +667,30 @@ export function RepaymentDashboard({
 
         <div className="repayment-dashboard-chart">
           <h3 className="repayment-dashboard-section-title">
-            {selectedProjection ? `${selectedProjection.monthLabel}应还占比` : '本月应还占比'}
+            {selectedProjection
+              ? tf('repayment.dashboard.paymentShare', '{month}应还占比').replace(
+                  '{month}',
+                  selectedProjection.monthLabel
+                )
+              : tf('repayment.dashboard.currentPaymentShare', '本月应还占比')}
           </h3>
           <BreakdownDonut
             segments={donutSegments}
-            totalLabel={selectedProjection ? `${selectedProjection.monthLabel}应还` : '本月应还'}
+            totalLabel={
+              selectedProjection
+                ? tf('repayment.dashboard.monthDue', '{month}应还').replace(
+                    '{month}',
+                    selectedProjection.monthLabel
+                  )
+                : tf('repayment.dashboard.thisMonthDue', '本月应还')
+            }
           />
         </div>
 
         <div className="repayment-dashboard-chart">
-          <h3 className="repayment-dashboard-section-title">未来 6 个月预计还款</h3>
+          <h3 className="repayment-dashboard-section-title">
+            {tf('repayment.dashboard.futureSixMonths', '未来 6 个月预计还款')}
+          </h3>
           <ProjectionLineChart
             data={overview.monthlyProjection}
             onHoverMonthChange={setHoveredProjectionIndex}

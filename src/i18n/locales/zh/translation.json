@@ -2225,7 +2225,22 @@
       "archived": "🗂️ 历史负债",
       "archivedTotal": "余额合计",
       "income": "💼 月收入",
-      "incomeSource": "来源:"
+      "incomeSource": "来源:",
+      "datePending": "日期待补",
+      "amountPending": "金额待补",
+      "edit": "编辑",
+      "editReminder": "编辑提醒时间",
+      "setDueDate": "设置还款日",
+      "registerPayment": "登记还款",
+      "settle": "结清",
+      "delete": "删除",
+      "reminder": "还款提醒",
+      "editInline": "✏️ 编辑",
+      "restore": "恢复",
+      "close": "关闭",
+      "pause": "暂缓",
+      "deleteInline": "🗑 删除",
+      "thisDue": "本次待还"
     },
     "health": {
       "title": "负债健康度",
@@ -2250,7 +2265,18 @@
       "aria": "上传负债截图"
     },
     "list": {
-      "title": "负债列表"
+      "title": "负债列表",
+      "toolsAria": "负债筛选和排序",
+      "filter": "筛选",
+      "filterAll": "全部",
+      "filterActive": "活跃负债",
+      "filterMissing": "待补信息",
+      "filterInactive": "已结清/关闭",
+      "sort": "排序",
+      "sortDue": "还款日",
+      "sortName": "名称",
+      "emptyTitle": "还没有负债记录",
+      "emptyDesc": "点击「新增」或「识别」开始"
     },
     "agent": {
       "kind": {
@@ -2310,7 +2336,36 @@
       "dueInDays": "{days} 天后",
       "setDueDateAria": "设置{name}还款日",
       "registerAria": "登记{name}本期还款",
-      "registerPaid": "登记已还"
+      "registerPaid": "登记已还",
+      "paymentShare": "{month}应还占比",
+      "currentPaymentShare": "本月应还占比",
+      "monthDue": "{month}应还",
+      "thisMonthDue": "本月应还",
+      "futureSixMonths": "未来 6 个月预计还款"
+    },
+    "extract": {
+      "running": "识别中...",
+      "action": "📷 识别"
+    },
+    "add": {
+      "action": "+ 新增"
+    },
+    "detail": {
+      "remainingPrincipal": "剩余本金",
+      "paymentDue": "本期应还",
+      "dueDate": "还款日期",
+      "pending": "待补充",
+      "amount": "金额",
+      "minimumPayment": "最低还款",
+      "apr": "年化利率(APR)"
+    },
+    "type": {
+      "creditCard": "信用卡",
+      "consumerLoan": "消费贷",
+      "loan": "贷款"
+    },
+    "form": {
+      "actualAmountAria": "实际还款金额"
     }
   }
 }

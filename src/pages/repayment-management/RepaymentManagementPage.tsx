@@ -2884,7 +2884,9 @@ export function RepaymentManagementPage() {
                   onClick={() => fileInputRef.current?.click()}
                   disabled={extractLoading}
                 >
-                  {extractLoading ? '识别中…' : '📷 识别'}
+                  {extractLoading
+                    ? tf('repayment.extract.running', '识别中…')
+                    : tf('repayment.extract.action', '📷 识别')}
                 </button>
                 <button
                   type="button"
@@ -2913,35 +2915,42 @@ export function RepaymentManagementPage() {
                     setShowAddDebtModal(true);
                   }}
                 >
-                  + 新增
+                  {tf('repayment.add.action', '+ 新增')}
                 </button>
               </div>
             </div>
 
-            <div className="repayment-debt-list-tools" aria-label="负债筛选和排序">
+            <div
+              className="repayment-debt-list-tools"
+              aria-label={tf('repayment.list.toolsAria', '负债筛选和排序')}
+            >
               <label>
-                <span>筛选</span>
+                <span>{tf('repayment.list.filter', '筛选')}</span>
                 <select
                   value={debtFilter}
                   onChange={(event) => setDebtFilter(event.target.value as typeof debtFilter)}
                 >
-                  <option value="all">全部</option>
-                  <option value="active">活跃负债</option>
-                  <option value="missing">待补信息</option>
-                  <option value="inactive">已结清/关闭</option>
+                  <option value="all">{tf('repayment.list.filterAll', '全部')}</option>
+                  <option value="active">{tf('repayment.list.filterActive', '活跃负债')}</option>
+                  <option value="missing">{tf('repayment.list.filterMissing', '待补信息')}</option>
+                  <option value="inactive">
+                    {tf('repayment.list.filterInactive', '已结清/关闭')}
+                  </option>
                 </select>
               </label>
               <label>
-                <span>排序</span>
+                <span>{tf('repayment.list.sort', '排序')}</span>
                 <select
                   value={debtSort}
                   onChange={(event) => setDebtSort(event.target.value as typeof debtSort)}
                 >
-                  <option value="due">还款日</option>
-                  <option value="balance">剩余本金</option>
+                  <option value="due">{tf('repayment.list.sortDue', '还款日')}</option>
+                  <option value="balance">
+                    {tf('repayment.detail.remainingPrincipal', '剩余本金')}
+                  </option>
                   <option value="apr">APR</option>
-                  <option value="payment">本期应还</option>
-                  <option value="name">名称</option>
+                  <option value="payment">{tf('repayment.detail.paymentDue', '本期应还')}</option>
+                  <option value="name">{tf('repayment.list.sortName', '名称')}</option>
                 </select>
               </label>
             </div>
@@ -2952,10 +2961,10 @@ export function RepaymentManagementPage() {
                   📋
                 </span>
                 <p className="muted" style={{ margin: '4px 0 0 0' }}>
-                  还没有负债记录
+                  {tf('repayment.list.emptyTitle', '还没有负债记录')}
                 </p>
                 <p className="muted" style={{ margin: 0, fontSize: 12 }}>
-                  点击「新增」或「识别」开始
+                  {tf('repayment.list.emptyDesc', '点击「新增」或「识别」开始')}
                 </p>
               </div>
             ) : (
@@ -2986,14 +2995,14 @@ export function RepaymentManagementPage() {
                       <strong>{item.name}</strong>
                       <span className="muted">
                         {item.isSimpleReminder ? (
-                          `还款提醒 · ${item.simpleDueDate || '日期待补'}`
+                          `还款提醒 · ${item.simpleDueDate || tf('repayment.card.datePending', '日期待补')}`
                         ) : (
                           <>
                             {item.type === 'credit-card'
-                              ? '信用卡'
+                              ? tf('repayment.type.creditCard', '信用卡')
                               : item.type === 'consumer-loan'
-                                ? '消费贷'
-                                : '贷款'}
+                                ? tf('repayment.type.consumerLoan', '消费贷')
+                                : tf('repayment.type.loan', '贷款')}
                             {' · ¥'}
                             {item.principal.toFixed(0)}
                           </>
@@ -3002,9 +3011,9 @@ export function RepaymentManagementPage() {
                       <span className="repayment-debt-list-payment">
                         {item.isSimpleReminder
                           ? item.simpleAmount !== undefined
-                            ? `本次待还 ${formatCurrency(item.simpleAmount)}`
-                            : '金额待补'
-                          : `本期应还 ${formatCurrency(item.minimumPayment)}`}
+                            ? `${tf('repayment.card.thisDue', '本次待还')} ${formatCurrency(item.simpleAmount)}`
+                            : tf('repayment.card.amountPending', '金额待补')
+                          : `${tf('repayment.detail.paymentDue', '本期应还')} ${formatCurrency(item.minimumPayment)}`}
                       </span>
                     </div>
                     <span className={`repayment-debt-due-badge tone-${item.statusTone}`}>
@@ -3029,7 +3038,7 @@ export function RepaymentManagementPage() {
                     setDebtContextMenu(null);
                   }}
                 >
-                  编辑
+                  {tf('repayment.card.edit', '编辑')}
                 </button>
                 <button
                   type="button"
@@ -3043,8 +3052,8 @@ export function RepaymentManagementPage() {
                   {isSimpleRepaymentReminder(
                     debtsWithStatus.find((debt) => debt.id === debtContextMenu.id) as DebtItem
                   )
-                    ? '编辑提醒时间'
-                    : '设置还款日'}
+                    ? tf('repayment.card.editReminder', '编辑提醒时间')
+                    : tf('repayment.card.setDueDate', '设置还款日')}
                 </button>
                 {!isSimpleRepaymentReminder(
                   debtsWithStatus.find((debt) => debt.id === debtContextMenu.id) as DebtItem
@@ -3065,7 +3074,7 @@ export function RepaymentManagementPage() {
                       );
                     }}
                   >
-                    登记还款
+                    {tf('repayment.card.registerPayment', '登记还款')}
                   </button>
                 ) : null}
                 <button
@@ -3076,14 +3085,14 @@ export function RepaymentManagementPage() {
                     setDebtContextMenu(null);
                   }}
                 >
-                  结清
+                  {tf('repayment.card.settle', '结清')}
                 </button>
                 <button
                   type="button"
                   className="is-danger"
                   onClick={() => requestDebtDeletion(debtContextMenu.id)}
                 >
-                  删除
+                  {tf('repayment.card.delete', '删除')}
                 </button>
               </div>
             ) : null}
@@ -3109,12 +3118,12 @@ export function RepaymentManagementPage() {
                     </div>
                     <p className="muted" style={{ margin: '4px 0 0 0' }}>
                       {selectedDebt.isSimpleReminder
-                        ? '还款提醒'
+                        ? tf('repayment.card.reminder', '还款提醒')
                         : selectedDebt.type === 'credit-card'
-                          ? '信用卡'
+                          ? tf('repayment.type.creditCard', '信用卡')
                           : selectedDebt.type === 'consumer-loan'
-                            ? '消费贷'
-                            : '贷款'}
+                            ? tf('repayment.type.consumerLoan', '消费贷')
+                            : tf('repayment.type.loan', '贷款')}
                       {' · '}
                       {selectedDebt.lifecycleStatusLabel}
                       {Number.isFinite(selectedDebt.dueInDays)
@@ -3124,7 +3133,7 @@ export function RepaymentManagementPage() {
                   </div>
                   <div className="repayment-debt-detail-actions">
                     <button type="button" onClick={() => startEditingDebt(selectedDebtOriginal)}>
-                      ✏️ 编辑
+                      {tf('repayment.card.editInline', '✏️ 编辑')}
                     </button>
                     {(['active', 'settled', 'closed', 'paused'] as DebtLifecycleStatus[])
                       .filter((s) => s !== selectedDebt.lifecycleStatus)
@@ -3137,16 +3146,16 @@ export function RepaymentManagementPage() {
                           }
                         >
                           {s === 'active'
-                            ? '恢复'
+                            ? tf('repayment.card.restore', '恢复')
                             : s === 'settled'
-                              ? '结清'
+                              ? tf('repayment.card.settle', '结清')
                               : s === 'closed'
-                                ? '关闭'
-                                : '暂缓'}
+                                ? tf('repayment.card.close', '关闭')
+                                : tf('repayment.card.pause', '暂缓')}
                         </button>
                       ))}
                     <button type="button" onClick={() => requestDebtDeletion(selectedDebtId)}>
-                      🗑 删除
+                      {tf('repayment.card.deleteInline', '🗑 删除')}
                     </button>
                   </div>
                 </div>
@@ -3154,17 +3163,21 @@ export function RepaymentManagementPage() {
                 {selectedDebt.isSimpleReminder ? (
                   <div className="repayment-debt-detail-metrics repayment-debt-detail-metrics-core">
                     <div className="repayment-debt-metric">
-                      <span className="repayment-debt-metric-label">还款日期</span>
+                      <span className="repayment-debt-metric-label">
+                        {tf('repayment.detail.dueDate', '还款日期')}
+                      </span>
                       <span className="repayment-debt-metric-value">
-                        {selectedDebt.simpleDueDate || '待补充'}
+                        {selectedDebt.simpleDueDate || tf('repayment.detail.pending', '待补充')}
                       </span>
                     </div>
                     <div className="repayment-debt-metric">
-                      <span className="repayment-debt-metric-label">金额</span>
+                      <span className="repayment-debt-metric-label">
+                        {tf('repayment.detail.amount', '金额')}
+                      </span>
                       <span className="repayment-debt-metric-value">
                         {selectedDebt.simpleAmount !== undefined
                           ? `¥${selectedDebt.simpleAmount.toFixed(2)}`
-                          : '待补充'}
+                          : tf('repayment.detail.pending', '待补充')}
                       </span>
                     </div>
                   </div>
@@ -3172,23 +3185,31 @@ export function RepaymentManagementPage() {
                   <>
                     <div className="repayment-debt-detail-metrics repayment-debt-detail-metrics-core">
                       <div className="repayment-debt-metric">
-                        <span className="repayment-debt-metric-label">剩余本金</span>
+                        <span className="repayment-debt-metric-label">
+                          {tf('repayment.detail.remainingPrincipal', '剩余本金')}
+                        </span>
                         <span className="repayment-debt-metric-value">
                           ¥{selectedDebt.principal.toFixed(2)}
                         </span>
                       </div>
                       <div className="repayment-debt-metric">
                         <span className="repayment-debt-metric-label">
-                          {isFixedInstallmentLoan(selectedDebt) ? '本期应还' : '最低还款'}
+                          {isFixedInstallmentLoan(selectedDebt)
+                            ? tf('repayment.detail.paymentDue', '本期应还')
+                            : tf('repayment.detail.minimumPayment', '最低还款')}
                         </span>
                         <span className="repayment-debt-metric-value">
                           ¥{selectedDebt.minimumPayment.toFixed(2)}
                         </span>
                       </div>
                       <div className="repayment-debt-metric">
-                        <span className="repayment-debt-metric-label">年化利率（APR）</span>
+                        <span className="repayment-debt-metric-label">
+                          {tf('repayment.detail.apr', '年化利率（APR）')}
+                        </span>
                         <span className="repayment-debt-metric-value">
-                          {selectedDebt.apr > 0 ? `${selectedDebt.apr.toFixed(2)}%` : '待补充'}
+                          {selectedDebt.apr > 0
+                            ? `${selectedDebt.apr.toFixed(2)}%`
+                            : tf('repayment.detail.pending', '待补充')}
                         </span>
                         {selectedDebt.apr > 0 ? (
                           <span className="repayment-debt-rate-rank">
@@ -3216,12 +3237,14 @@ export function RepaymentManagementPage() {
                               ? `${selectedDebt.remainingMonths} 期`
                               : selectedDebt.totalPeriods
                                 ? `${Math.max(0, selectedDebt.totalPeriods - (selectedDebt.paidPeriods || 0))} 期`
-                                : '待补充'}
+                                : tf('repayment.detail.pending', '待补充')}
                           </span>
                         </div>
                       )}
                       <div className="repayment-debt-metric">
-                        <span className="repayment-debt-metric-label">还款日</span>
+                        <span className="repayment-debt-metric-label">
+                          {tf('repayment.list.sortDue', '还款日')}
+                        </span>
                         <span className="repayment-debt-metric-value">
                           {selectedDebt.repaymentDay || '--'} 日
                         </span>
@@ -3293,7 +3316,7 @@ export function RepaymentManagementPage() {
                           <span className="repayment-debt-metric-value">
                             {selectedDebt.remainingInterestCost !== null
                               ? `¥${selectedDebt.remainingInterestCost.toFixed(2)}`
-                              : '待补充'}
+                              : tf('repayment.detail.pending', '待补充')}
                           </span>
                         </div>
                         <div className="repayment-debt-metric">
@@ -3301,7 +3324,7 @@ export function RepaymentManagementPage() {
                           <span className="repayment-debt-metric-value">
                             {selectedDebt.remainingTotalCost !== null
                               ? `¥${selectedDebt.remainingTotalCost.toFixed(2)}`
-                              : '待补充'}
+                              : tf('repayment.detail.pending', '待补充')}
                           </span>
                         </div>
                         <div className="repayment-debt-metric">
@@ -3369,8 +3392,8 @@ export function RepaymentManagementPage() {
                           unit="¥"
                           min={0}
                           step="0.01"
-                          placeholder="实际还款金额"
-                          ariaLabel="实际还款金额"
+                          placeholder={tf('repayment.form.actualAmountAria', '实际还款金额')}
+                          ariaLabel={tf('repayment.form.actualAmountAria', '实际还款金额')}
                         />
                         <DatePicker
                           className="finance-debt-form-control"
@@ -3458,7 +3481,7 @@ export function RepaymentManagementPage() {
                               ) : null}
                             </div>
                             <button type="button" onClick={() => removeRepaymentRecord(item.id)}>
-                              删除
+                              {tf('repayment.card.delete', '删除')}
                             </button>
                           </div>
                         ))}
@@ -3782,7 +3805,7 @@ export function RepaymentManagementPage() {
                   type="button"
                   className="repayment-modal-close"
                   onClick={() => setShowAddDebtModal(false)}
-                  aria-label="关闭"
+                  aria-label={tf('repayment.card.close', '关闭')}
                 >
                   ✕
                 </button>
@@ -3910,7 +3933,9 @@ export function RepaymentManagementPage() {
                     <form onSubmit={onAddDebt} className="debt-form-line">
                       <div className="debt-form-core">
                         <label className="debt-form-field">
-                          <span className="debt-form-field-label">名称</span>
+                          <span className="debt-form-field-label">
+                            {tf('repayment.list.sortName', '名称')}
+                          </span>
                           <input
                             className="debt-form-input"
                             value={debtName}
@@ -3932,11 +3957,13 @@ export function RepaymentManagementPage() {
                           >
                             <option value="credit-card">信用类负债</option>
                             <option value="consumer-loan">消费/信用分期</option>
-                            <option value="loan">贷款</option>
+                            <option value="loan">{tf('repayment.type.loan', '贷款')}</option>
                           </select>
                         </label>
                         <label className="debt-form-field">
-                          <span className="debt-form-field-label">剩余本金</span>
+                          <span className="debt-form-field-label">
+                            {tf('repayment.detail.remainingPrincipal', '剩余本金')}
+                          </span>
                           <span className="debt-form-money">
                             <span className="debt-form-money-unit">¥</span>
                             <input
@@ -3953,7 +3980,7 @@ export function RepaymentManagementPage() {
                                 setDebtFormError('');
                               }}
                               placeholder="输入剩余本金"
-                              aria-label="剩余本金"
+                              aria-label={tf('repayment.detail.remainingPrincipal', '剩余本金')}
                             />
                           </span>
                           {calculatedRemainingPrincipal !== null ? (
@@ -4022,7 +4049,9 @@ export function RepaymentManagementPage() {
                           </summary>
                           <div className="debt-form-extra-grid">
                             <label className="debt-form-field">
-                              <span className="debt-form-field-label">还款日</span>
+                              <span className="debt-form-field-label">
+                                {tf('repayment.list.sortDue', '还款日')}
+                              </span>
                               <span className="debt-form-money">
                                 <input
                                   className="debt-form-input debt-form-input-money"
@@ -4035,7 +4064,7 @@ export function RepaymentManagementPage() {
                                     setDebtFormError('');
                                   }}
                                   placeholder="—"
-                                  aria-label="还款日"
+                                  aria-label={tf('repayment.list.sortDue', '还款日')}
                                 />
                                 <span className="debt-form-money-unit">日</span>
                               </span>
@@ -4058,7 +4087,9 @@ export function RepaymentManagementPage() {
                                   }}
                                   aria-label="还款方式"
                                 >
-                                  <option value="minimum-payment">最低还款</option>
+                                  <option value="minimum-payment">
+                                    {tf('repayment.detail.minimumPayment', '最低还款')}
+                                  </option>
                                   <option value="equal-installment">等额本息</option>
                                   <option value="equal-principal">等额本金</option>
                                   <option value="custom">自定义</option>
@@ -4304,11 +4335,13 @@ export function RepaymentManagementPage() {
                                               dueDate: value
                                             });
                                           }}
-                                          ariaLabel="还款日期"
+                                          ariaLabel={tf('repayment.detail.dueDate', '还款日期')}
                                         />
                                       </label>
                                       <label className="debt-form-field">
-                                        <span className="debt-form-field-label">金额</span>
+                                        <span className="debt-form-field-label">
+                                          {tf('repayment.detail.amount', '金额')}
+                                        </span>
                                         <span className="debt-form-money">
                                           <span className="debt-form-money-unit">¥</span>
                                           <input
@@ -4476,7 +4509,9 @@ export function RepaymentManagementPage() {
                         />
                       </label>
                       <label className="debt-form-field">
-                        <span className="debt-form-field-label">还款日期</span>
+                        <span className="debt-form-field-label">
+                          {tf('repayment.detail.dueDate', '还款日期')}
+                        </span>
                         <DatePicker
                           className="debt-form-input"
                           value={simpleDueDate}
