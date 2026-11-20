@@ -1859,6 +1859,64 @@
         "weakening": "市场有点泄气,今天更适合看,不适合冲动操作。",
         "hesitant": "大盘还在犹豫,今天先看自己持仓,不用被每一根波动带着走。"
       }
+    },
+    "clock": {
+      "eyebrow": "全球市场接力",
+      "viewerZonePrefix": "当前时区",
+      "hideTimeline": "收起时间轴",
+      "showTimeline": "展开时间轴",
+      "statusesAria": "全球股市开闭市状态",
+      "timelineAria": "按当前时区显示的全球市场时间轴",
+      "now": "现在",
+      "summaryAria": "折叠的全球市场时间轴",
+      "timelineTitle": "交易时间轴",
+      "timelineHint": "常规交易时段 · 自动换算当前时区 · 不含节假日与盘前盘后",
+      "allClosed": "当前常规交易时段均已休市",
+      "tradingSuffix": "正在交易",
+      "nameSeparator": "、"
+    },
+    "notice": {
+      "holidayEyebrow": "休市公告",
+      "holidayTitleSuffix": "今日主要市场休市",
+      "weekendEyebrow": "休市提醒",
+      "weekendTitle": "周末休市 · 暂无实时行情",
+      "noOpenEyebrow": "交易时段提醒",
+      "noOpenTitle": "当前没有市场处于交易中",
+      "noOpenDetail": "各市场会按当地交易日历分别开闭市;休市期间不刷新实时价格,走势图仍可查看最近行情。",
+      "weekendDetail": "为周末,A 股、日韩及美股均不进行常规交易。页面展示最近收盘数据,下一交易日开盘后自动恢复更新。",
+      "holidayDetail": "{date} 为{holiday}休市日,行情将保留最近收盘数据,自动轮询会在下一交易时段恢复。"
+    },
+    "state": {
+      "trading": "交易中",
+      "weekend": "周末休市",
+      "lunchBreak": "午间休市",
+      "preOpen": "未开盘",
+      "closed": "已收盘"
+    },
+    "markets": {
+      "cn": "A 股",
+      "cnShort": "沪深",
+      "hk": "港股",
+      "hkShort": "香港",
+      "jp": "日股",
+      "jpShort": "东京",
+      "kr": "韩股",
+      "krShort": "首尔",
+      "uk": "英股",
+      "ukShort": "伦敦",
+      "de": "德股",
+      "deShort": "法兰克福",
+      "us": "美股",
+      "usShort": "纽约"
+    },
+    "holidays": {
+      "newYear": "元旦",
+      "labour": "劳动节",
+      "national": "国庆节",
+      "christmas": "圣诞节(部分海外市场)"
+    },
+    "market": {
+      "indexFallback": "指数"
     }
   }
 }

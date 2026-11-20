@@ -1095,7 +1095,9 @@ function PlainMarketBriefingPanel({
 type GlobalMarketDefinition = {
   id: string;
   name: string;
+  nameKey?: string;
   shortName: string;
+  shortNameKey?: string;
   flag: string;
   timeZone: string;
   color: string;
@@ -1106,7 +1108,9 @@ const GLOBAL_MARKETS: GlobalMarketDefinition[] = [
   {
     id: 'cn',
     name: 'A 股',
+    nameKey: 'investments.markets.cn',
     shortName: '沪深',
+    shortNameKey: 'investments.markets.cnShort',
     flag: '🇨🇳',
     timeZone: 'Asia/Shanghai',
     color: '#f59e0b',
@@ -1118,7 +1122,9 @@ const GLOBAL_MARKETS: GlobalMarketDefinition[] = [
   {
     id: 'hk',
     name: '港股',
+    nameKey: 'investments.markets.hk',
     shortName: '香港',
+    shortNameKey: 'investments.markets.hkShort',
     flag: '🇭🇰',
     timeZone: 'Asia/Hong_Kong',
     color: '#e879f9',
@@ -1130,7 +1136,9 @@ const GLOBAL_MARKETS: GlobalMarketDefinition[] = [
   {
     id: 'jp',
     name: '日股',
+    nameKey: 'investments.markets.jp',
     shortName: '东京',
+    shortNameKey: 'investments.markets.jpShort',
     flag: '🇯🇵',
     timeZone: 'Asia/Tokyo',
     color: '#ef4444',
@@ -1142,7 +1150,9 @@ const GLOBAL_MARKETS: GlobalMarketDefinition[] = [
   {
     id: 'kr',
     name: '韩股',
+    nameKey: 'investments.markets.kr',
     shortName: '首尔',
+    shortNameKey: 'investments.markets.krShort',
     flag: '🇰🇷',
     timeZone: 'Asia/Seoul',
     color: '#22c55e',
@@ -1151,7 +1161,9 @@ const GLOBAL_MARKETS: GlobalMarketDefinition[] = [
   {
     id: 'uk',
     name: '英股',
+    nameKey: 'investments.markets.uk',
     shortName: '伦敦',
+    shortNameKey: 'investments.markets.ukShort',
     flag: '🇬🇧',
     timeZone: 'Europe/London',
     color: '#f97316',
@@ -1160,7 +1172,9 @@ const GLOBAL_MARKETS: GlobalMarketDefinition[] = [
   {
     id: 'de',
     name: '德股',
+    nameKey: 'investments.markets.de',
     shortName: '法兰克福',
+    shortNameKey: 'investments.markets.deShort',
     flag: '🇩🇪',
     timeZone: 'Europe/Berlin',
     color: '#8b5cf6',
@@ -1169,7 +1183,9 @@ const GLOBAL_MARKETS: GlobalMarketDefinition[] = [
   {
     id: 'us',
     name: '美股',
+    nameKey: 'investments.markets.us',
     shortName: '纽约',
+    shortNameKey: 'investments.markets.usShort',
     flag: '🇺🇸',
     timeZone: 'America/New_York',
     color: '#3b82f6',
@@ -1227,7 +1243,7 @@ function getTimeZoneOffsetMinutes(now: Date, timeZone: string) {
   return (asUtc - now.getTime()) / 60000;
 }
 
-function getGlobalMarketState(market: GlobalMarketDefinition, now: Date) {
+function getGlobalMarketState(market: GlobalMarketDefinition, now: Date, tf: TfFallback) {
   const clock = getZonedClock(now, market.timeZone);
   const isWeekend = clock.weekday === 0 || clock.weekday === 6;
   const activeSession = isWeekend
@@ -1243,14 +1259,14 @@ function getGlobalMarketState(market: GlobalMarketDefinition, now: Date) {
     clock.minutes >= market.sessions[0].end &&
     clock.minutes < market.sessions[1].start;
   const label = activeSession
-    ? '交易中'
+    ? tf('investments.state.trading', '交易中')
     : isWeekend
-      ? '周末休市'
+      ? tf('investments.state.weekend', '周末休市')
       : isLunchBreak
-        ? '午间休市'
+        ? tf('investments.state.lunchBreak', '午间休市')
         : nextSession
-          ? '未开盘'
-          : '已收盘';
+          ? tf('investments.state.preOpen', '未开盘')
+          : tf('investments.state.closed', '已收盘');
 
   return {
     ...market,
@@ -1260,22 +1276,49 @@ function getGlobalMarketState(market: GlobalMarketDefinition, now: Date) {
   };
 }
 
-function isLiveMarketPollingTime(now = new Date()) {
+function isLiveMarketPollingTime(tf: TfFallback, now = new Date()) {
   return GLOBAL_MARKETS.some(
-    (market) => AUTO_REFRESH_MARKET_IDS.has(market.id) && getGlobalMarketState(market, now).isOpen
+    (market) =>
+      AUTO_REFRESH_MARKET_IDS.has(market.id) && getGlobalMarketState(market, now, tf).isOpen
   );
 }
 
-const MARKET_HOLIDAY_NOTICES: Array<{ start: string; end: string; label: string }> = [
-  { start: '2026-01-01', end: '2026-01-01', label: '元旦' },
-  { start: '2026-05-01', end: '2026-05-05', label: '劳动节' },
-  { start: '2026-10-01', end: '2026-10-07', label: '国庆节' },
-  { start: '2026-12-25', end: '2026-12-25', label: '圣诞节（部分海外市场）' }
+const MARKET_HOLIDAY_NOTICES: Array<{
+  start: string;
+  end: string;
+  label: string;
+  labelKey: string;
+}> = [
+  {
+    start: '2026-01-01',
+    end: '2026-01-01',
+    label: '元旦',
+    labelKey: 'investments.holidays.newYear'
+  },
+  {
+    start: '2026-05-01',
+    end: '2026-05-05',
+    label: '劳动节',
+    labelKey: 'investments.holidays.labour'
+  },
+  {
+    start: '2026-10-01',
+    end: '2026-10-07',
+    label: '国庆节',
+    labelKey: 'investments.holidays.national'
+  },
+  {
+    start: '2026-12-25',
+    end: '2026-12-25',
+    label: '圣诞节（部分海外市场）',
+    labelKey: 'investments.holidays.christmas'
+  }
 ];
 
 function getMarketClosureNotice(
   now: Date,
-  marketStates: Array<ReturnType<typeof getGlobalMarketState>>
+  marketStates: Array<ReturnType<typeof getGlobalMarketState>>,
+  tf: TfFallback
 ) {
   const viewerZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Shanghai';
   const clock = getZonedClock(now, viewerZone);
@@ -1288,15 +1331,15 @@ function getMarketClosureNotice(
   if (marketStates.some((market) => market.isOpen)) return null;
   if (holiday) {
     return {
-      eyebrow: '休市公告',
-      title: `${holiday.label} · 今日主要市场休市`,
+      eyebrow: tf('investments.notice.holidayEyebrow', '休市公告'),
+      title: `${tf(holiday.labelKey, holiday.label)}${tf('investments.notice.holidayTitleSuffix', ' · 今日主要市场休市')}`,
       detail: `${dateKey} 为${holiday.label}休市日，行情将保留最近收盘数据，自动轮询会在下一交易时段恢复。`
     };
   }
   if (isWeekend) {
     return {
-      eyebrow: '休市提醒',
-      title: '周末休市 · 暂无实时行情',
+      eyebrow: tf('investments.notice.weekendEyebrow', '休市提醒'),
+      title: tf('investments.notice.weekendTitle', '周末休市 · 暂无实时行情'),
       detail: `${dateKey} 为周末，A 股、日韩及美股均不进行常规交易。页面展示最近收盘数据，下一交易日开盘后自动恢复更新。`
     };
   }
@@ -1333,14 +1376,15 @@ function buildViewerTimelineSegments(
 }
 
 function GlobalMarketClock() {
+  const tf = useTFallback();
   const [now, setNow] = useState(() => new Date());
   const [timelineExpanded, setTimelineExpanded] = useState(false);
   const viewerTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Shanghai';
   const viewerClock = getZonedClock(now, viewerTimeZone);
   const isWeekend = viewerClock.weekday === 0 || viewerClock.weekday === 6;
-  const marketStates = GLOBAL_MARKETS.map((market) => getGlobalMarketState(market, now));
+  const marketStates = GLOBAL_MARKETS.map((market) => getGlobalMarketState(market, now, tf));
   const openMarkets = marketStates.filter((market) => market.isOpen);
-  const closureNotice = getMarketClosureNotice(now, marketStates);
+  const closureNotice = getMarketClosureNotice(now, marketStates, tf);
   const currentPosition = Math.min(100, Math.max(0, (viewerClock.minutes / 1440) * 100));
   const viewerZoneLabel = new Intl.DateTimeFormat('zh-CN', {
     timeZone: viewerTimeZone,
@@ -1359,23 +1403,33 @@ function GlobalMarketClock() {
     <div className="investments-global-clock" data-testid="market-session-status">
       <div className="investments-global-clock-head">
         <div>
-          <span className="investments-global-clock-eyebrow">全球市场接力</span>
+          <span className="investments-global-clock-eyebrow">
+            {tf('investments.clock.eyebrow', '全球市场接力')}
+          </span>
           <strong>
             {openMarkets.length > 0
-              ? `${openMarkets.map((market) => market.name).join('、')}正在交易`
-              : '当前常规交易时段均已休市'}
+              ? `${openMarkets
+                  .map((market) => tf(market.nameKey || '', market.name))
+                  .join(tf('investments.clock.nameSeparator', '、'))}${tf(
+                  'investments.clock.tradingSuffix',
+                  '正在交易'
+                )}`
+              : tf('investments.clock.allClosed', '当前常规交易时段均已休市')}
           </strong>
         </div>
         <div className="investments-global-clock-actions">
           <span className="investments-global-clock-zone">
-            当前时区 · {viewerTimeZone} · {viewerZoneLabel}
+            {tf('investments.clock.viewerZonePrefix', '当前时区')} · {viewerTimeZone} ·{' '}
+            {viewerZoneLabel}
           </span>
           <button
             type="button"
             aria-expanded={timelineExpanded}
             onClick={() => setTimelineExpanded((current) => !current)}
           >
-            {timelineExpanded ? '收起时间轴' : '展开时间轴'}
+            {timelineExpanded
+              ? tf('investments.clock.hideTimeline', '收起时间轴')
+              : tf('investments.clock.showTimeline', '展开时间轴')}
           </button>
         </div>
       </div>
@@ -1393,7 +1447,10 @@ function GlobalMarketClock() {
         </aside>
       ) : null}
 
-      <div className="investments-global-market-statuses" aria-label="全球股市开闭市状态">
+      <div
+        className="investments-global-market-statuses"
+        aria-label={tf('investments.clock.statusesAria', '全球股市开闭市状态')}
+      >
         {marketStates.map((market) => (
           <div
             key={market.id}
@@ -1402,7 +1459,7 @@ function GlobalMarketClock() {
           >
             <span aria-hidden="true">{market.flag}</span>
             <div>
-              <strong>{market.name}</strong>
+              <strong>{tf(market.nameKey || '', market.name)}</strong>
               <small>{market.localTime}</small>
             </div>
             <b>{market.label}</b>
@@ -1411,7 +1468,10 @@ function GlobalMarketClock() {
       </div>
 
       {timelineExpanded ? (
-        <div className="investments-global-timeline" aria-label="按当前时区显示的全球市场时间轴">
+        <div
+          className="investments-global-timeline"
+          aria-label={tf('investments.clock.timelineAria', '按当前时区显示的全球市场时间轴')}
+        >
           <div className="investments-global-timeline-axis" aria-hidden="true">
             {[0, 4, 8, 12, 16, 20, 24].map((hour) => (
               <span key={hour} style={{ left: `${(hour / 24) * 100}%` }}>
@@ -1425,7 +1485,7 @@ function GlobalMarketClock() {
               style={{ left: `calc(84px + ${currentPosition}% - ${currentPosition * 0.84}px)` }}
               aria-hidden="true"
             >
-              <span>现在</span>
+              <span>{tf('investments.clock.now', '现在')}</span>
             </div>
           ) : null}
           {marketStates.map((market) => (
@@ -1435,7 +1495,7 @@ function GlobalMarketClock() {
               style={{ '--market-color': market.color } as CSSProperties}
             >
               <span className="investments-global-timeline-label">
-                {market.flag} {market.name}
+                {market.flag} {tf(market.nameKey || '', market.name)}
               </span>
               <div className="investments-global-timeline-track">
                 {buildViewerTimelineSegments(market, now, viewerTimeZone).map((segment) => (
@@ -1452,21 +1512,27 @@ function GlobalMarketClock() {
           ))}
         </div>
       ) : (
-        <div className="investments-global-timeline-summary" aria-label="折叠的全球市场时间轴">
-          <strong>交易时间轴</strong>
+        <div
+          className="investments-global-timeline-summary"
+          aria-label={tf('investments.clock.summaryAria', '折叠的全球市场时间轴')}
+        >
+          <strong>{tf('investments.clock.timelineTitle', '交易时间轴')}</strong>
           {marketStates.map((market) => (
             <span
               className={market.isOpen ? 'is-open' : ''}
               key={market.id}
               style={{ '--market-color': market.color } as CSSProperties}
             >
-              {market.flag} {market.name} {market.localTime}
+              {market.flag} {tf(market.nameKey || '', market.name)} {market.localTime}
             </span>
           ))}
         </div>
       )}
       <p className="investments-global-clock-note">
-        常规交易时段 · 自动换算当前时区 · 不含节假日与盘前盘后
+        {tf(
+          'investments.clock.timelineHint',
+          '常规交易时段 · 自动换算当前时区 · 不含节假日与盘前盘后'
+        )}
       </p>
     </div>
   );
@@ -1537,9 +1603,10 @@ function buildMarketTrendGeometry(points: EastmoneyMarketTrendPoint[]) {
 }
 
 function MarketClosureBanner() {
+  const tf = useTFallback();
   const [now, setNow] = useState(() => new Date());
-  const marketStates = GLOBAL_MARKETS.map((market) => getGlobalMarketState(market, now));
-  const notice = getMarketClosureNotice(now, marketStates);
+  const marketStates = GLOBAL_MARKETS.map((market) => getGlobalMarketState(market, now, tf));
+  const notice = getMarketClosureNotice(now, marketStates, tf);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60_000);
@@ -2193,6 +2260,7 @@ function MarketOverviewPanel({
   error: string;
   onSelect: (secId: string) => void;
 }) {
+  const tf = useTFallback();
   const quotes = useMemo(() => overview?.quotes || [], [overview?.quotes]);
   const quoteBySecId = new Map(quotes.map((quote) => [quote.secId, quote]));
   const activeIndex = EASTMONEY_MARKET_INDEXES.find((item) => item.secId === selectedSecId);
@@ -2224,7 +2292,7 @@ function MarketOverviewPanel({
   );
   const globalQuotesRef = useRef(globalQuotes);
   globalQuotesRef.current = globalQuotes;
-  const isAnyMarketOpen = isLiveMarketPollingTime();
+  const isAnyMarketOpen = isLiveMarketPollingTime(tf);
   const [selectedGlobalId, setSelectedGlobalId] = useState<string | null>(null);
   const [globalChartMode, setGlobalChartMode] = useState<'line' | 'kline'>('line');
   const [globalTrendPoints, setGlobalTrendPoints] = useState<GlobalMarketTrendPoint[]>([]);
@@ -3069,7 +3137,7 @@ function MarketOverviewPanel({
               <span>四大指数成交额</span>
               <strong>{formatMarketAmount(totalAmount)}</strong>
               <em>
-                {activeIndex?.shortName || '指数'}{' '}
+                {activeIndex?.shortName || tf('investments.market.indexFallback', '指数')}{' '}
                 {formatMarketPercent(selectedQuoteData?.changePercent)}
               </em>
             </div>
@@ -4381,7 +4449,7 @@ export function InvestmentsPage() {
 
     void loadMarketData(true);
     const interval = window.setInterval(() => {
-      if (document.visibilityState !== 'hidden' && isLiveMarketPollingTime()) {
+      if (document.visibilityState !== 'hidden' && isLiveMarketPollingTime(tf)) {
         void loadMarketData();
       }
     }, 10_000);
@@ -4390,7 +4458,7 @@ export function InvestmentsPage() {
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, [selectedMarketSecId]);
+  }, [selectedMarketSecId, tf]);
 
   useEffect(() => {
     let cancelled = false;
@@ -4486,7 +4554,7 @@ export function InvestmentsPage() {
 
     void loadMarketBoards();
     const interval = window.setInterval(() => {
-      if (document.visibilityState !== 'hidden' && isLiveMarketPollingTime()) {
+      if (document.visibilityState !== 'hidden' && isLiveMarketPollingTime(tf)) {
         void loadMarketBoards();
       }
     }, 180_000);
@@ -4495,7 +4563,7 @@ export function InvestmentsPage() {
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, [trackedMarketThemes, trackedMarketThemesKey]);
+  }, [trackedMarketThemes, trackedMarketThemesKey, tf]);
 
   useEffect(() => {
     if (holdingStockSecIds.length === 0) {
@@ -4517,7 +4585,7 @@ export function InvestmentsPage() {
 
     void loadHoldingStockQuotes();
     const interval = window.setInterval(() => {
-      if (document.visibilityState !== 'hidden' && isLiveMarketPollingTime()) {
+      if (document.visibilityState !== 'hidden' && isLiveMarketPollingTime(tf)) {
         void loadHoldingStockQuotes();
       }
     }, 10_000);
@@ -4526,7 +4594,7 @@ export function InvestmentsPage() {
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, [holdingStockSecIds, holdingStockSecIdsKey]);
+  }, [holdingStockSecIds, holdingStockSecIdsKey, tf]);
 
   function setToastState(message: string, variant: ToastVariant = 'success') {
     setToast({ visible: true, message, variant });

@@ -1859,6 +1859,64 @@
         "weakening": "Sentiment is fading; today is for watching, not impulsive moves.",
         "hesitant": "The index is undecided; watch your own holdings instead of every tick."
       }
+    },
+    "clock": {
+      "eyebrow": "Global market relay",
+      "viewerZonePrefix": "Current time zone",
+      "hideTimeline": "Hide timeline",
+      "showTimeline": "Show timeline",
+      "statusesAria": "Global market open/close status",
+      "timelineAria": "Global market timeline in your time zone",
+      "now": "Now",
+      "summaryAria": "Collapsed global market timeline",
+      "timelineTitle": "Trading timeline",
+      "timelineHint": "Regular sessions, converted to your time zone; excludes holidays and pre/post market.",
+      "allClosed": "All regular sessions are closed right now",
+      "tradingSuffix": " trading",
+      "nameSeparator": ", "
+    },
+    "notice": {
+      "holidayEyebrow": "Market holiday",
+      "holidayTitleSuffix": " · major markets closed today",
+      "weekendEyebrow": "Market closed",
+      "weekendTitle": "Weekend — no live quotes",
+      "noOpenEyebrow": "Trading hours",
+      "noOpenTitle": "No market is trading right now",
+      "noOpenDetail": "Each market follows its own local calendar; live prices pause while closed, and charts still show the latest session.",
+      "weekendDetail": " is a weekend: A-shares, Japan, Korea and the US all skip regular trading. The page shows the latest close and resumes automatically next session.",
+      "holidayDetail": "{date} is a {holiday} holiday: quotes keep the latest close and auto-refresh resumes next session."
+    },
+    "state": {
+      "trading": "Trading",
+      "weekend": "Weekend",
+      "lunchBreak": "Lunch break",
+      "preOpen": "Pre-open",
+      "closed": "Closed"
+    },
+    "markets": {
+      "cn": "A-shares",
+      "cnShort": "CN",
+      "hk": "Hong Kong",
+      "hkShort": "HK",
+      "jp": "Japan",
+      "jpShort": "JP",
+      "kr": "Korea",
+      "krShort": "KR",
+      "uk": "UK",
+      "ukShort": "LDN",
+      "de": "Germany",
+      "deShort": "FRA",
+      "us": "US",
+      "usShort": "NY"
+    },
+    "holidays": {
+      "newYear": "New Year's Day",
+      "labour": "Labour Day",
+      "national": "National Day",
+      "christmas": "Christmas (some overseas markets)"
+    },
+    "market": {
+      "indexFallback": "Index"
     }
   }
 }
