@@ -838,7 +838,9 @@ describe('RepaymentManagementPage', () => {
 
     expect(screen.getByText('未来还款走势')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: '走势测试贷款还款走势' })).toBeInTheDocument();
-    expect(screen.getByText(/未来 12 期/)).toBeInTheDocument();
+    // 期数文案现在由 tf('repayment.chart.futurePeriods', '未来 {count} 期') 组合出两个文本节点。
+    expect(document.querySelector('.repayment-debt-trend-header')).toHaveTextContent('未来 12 期');
+    expect(document.querySelector('.repayment-debt-trend-next')).toHaveTextContent('首期');
   });
 
   it('在还款走势底部显示计划对应的年月', () => {
@@ -867,7 +869,10 @@ describe('RepaymentManagementPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('2026/10')).toBeInTheDocument();
+    // 月份刻度改为跟随语言的 Intl 短月份(中文 `10月` / 英文 `Oct`)。
+    const trendDates = document.querySelector('.debt-pressure-dates')!;
+    expect(trendDates).toHaveTextContent('10月');
+    expect(trendDates).toHaveTextContent('12月');
     expect(screen.getByText('其中利息')).toBeInTheDocument();
     expect(screen.getByText(/未来利息约/)).toBeInTheDocument();
     fireEvent.change(screen.getByRole('slider', { name: '查看还款期次' }), {
@@ -887,7 +892,6 @@ describe('RepaymentManagementPage', () => {
     expect(screen.getByRole('slider', { name: '查看还款期次' })).toHaveValue('2');
     fireEvent.pointerLeave(chart.querySelector('.debt-pressure-plot')!);
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-    expect(screen.getByText('2026/12')).toBeInTheDocument();
   });
 
   it('本期还清后,负债卡片展示已还与下期倒计时', () => {

@@ -1,6 +1,8 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useTFallback, type TfFallback } from '../../shared/lib/useTFallback';
 import { useLocation } from 'react-router-dom';
+import { formatMonthKey } from '../../shared/lib/i18nDate';
 import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
 import { RepaymentAgentBar } from '../../features/debt/components/RepaymentAgentBar';
 import {
@@ -38,6 +40,9 @@ import {
   getManualScheduleStartPeriod
 } from '../../features/debt/model/debtPressureSchedule';
 import { resolveDebtRepaymentDueDisplay } from '../../features/debt/model/repaymentCycle';
+
+/** 数据模型在缺少日期时输出的中文占位;渲染层按语言判定是否隐藏。 */
+const CHART_DATE_PLACEHOLDER = '日期待填';
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const REPAYMENT_CACHE_KEY = 'ledgerflow-repayment-advice-cache-v1';
@@ -276,23 +281,63 @@ function shiftMonthWithDay(base: Date, offset: number, day?: number): Date {
   );
 }
 
+/**
+ * 图表 X 轴月份刻度跟随界面语言:中文 `11月`,英文 `Nov`。
+ * 统一走 shared/lib/i18nDate 里基于 Intl.DateTimeFormat 的实现,不维护中英映射表。
+ */
+function formatMonthAxisTick(monthKey: string, language?: string) {
+  return formatMonthKey(monthKey, language);
+}
+
+/** 数据模型里“没有日期”的占位文案也需要跟随语言,不能把中文 `日期待填` 漏到英文界面。 */
+function isEmptyChartDate(dateValue: string) {
+  return !dateValue || dateValue === CHART_DATE_PLACEHOLDER;
+}
+
+/** 期次标签(`第 3 期`)由数据模型生成,渲染时按语言改写。 */
+function formatPeriodLabel(period: string, tf: TfFallback) {
+  const matched = /^第\s*(\d+)\s*期$/.exec(period.trim());
+  if (!matched) return period;
+  return tf('repayment.chart.periodIndex', '第 {count} 期').replace('{count}', matched[1]);
+}
+
+/** 英文序号后缀:1st / 2nd / 3rd / 4th,11~13 一律 th。 */
+function ordinalDaySuffix(day: number) {
+  const mod100 = day % 100;
+  if (mod100 >= 11 && mod100 <= 13) return 'th';
+  return ['th', 'st', 'nd', 'rd'][day % 10] ?? 'th';
+}
+
+/** 每月还款日:中文 `25 日`,英文 `25th`。 */
+function formatRepaymentDay(day: number | undefined, language: string | undefined, tf: TfFallback) {
+  if (!day) return `--${tf('repayment.chart.daySuffix', '日')}`;
+  if (language?.startsWith('en')) return `${day}${ordinalDaySuffix(day)}`;
+  return `${day}${tf('repayment.chart.daySuffix', '日')}`;
+}
+
 function formatShortDate(dateValue: string): string {
-  if (!dateValue || dateValue === '日期待填') return dateValue;
+  if (!dateValue || dateValue === CHART_DATE_PLACEHOLDER) return dateValue;
   const date = new Date(dateValue);
   if (Number.isNaN(date.getTime())) return dateValue;
   return `${date.getMonth() + 1}/${date.getDate()}`;
 }
 
-function formatChartDate(dateValue: string): string {
-  if (!dateValue || dateValue === '日期待填') return dateValue;
+function formatChartDate(dateValue: string, language: string): string {
+  if (isEmptyChartDate(dateValue)) return dateValue;
   const date = new Date(`${dateValue}T00:00:00`);
   if (Number.isNaN(date.getTime())) return dateValue;
-  return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+  const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  const monthTick = formatMonthAxisTick(monthKey, language);
+  // 跨年的期次必须带上年份,否则看不出落在哪一年。
+  if (date.getFullYear() !== new Date().getFullYear()) {
+    return `${date.getFullYear()}/${monthTick}`;
+  }
+  return monthTick;
 }
 
 function DebtPressureChart({
   points,
-  ariaLabel = '还款压力曲线',
+  ariaLabel,
   compact = false
 }: {
   points: Array<{
@@ -306,6 +351,8 @@ function DebtPressureChart({
   ariaLabel?: string;
   compact?: boolean;
 }) {
+  const tf = useTFallback();
+  const { i18n } = useTranslation();
   const [metric, setMetric] = useState<'amount' | 'remaining'>('amount');
   const [selected, setSelected] = useState(0);
   const [showTooltip, setShowTooltip] = useState(false);
@@ -324,7 +371,7 @@ function DebtPressureChart({
   if (points.length === 0) {
     return (
       <div className="debt-pressure-empty">
-        暂无足够的计划数据，请填写还款日期和金额后再查看曲线。
+        {tf('repayment.chart.emptyHint', '暂无足够的计划数据，请填写还款日期和金额后再查看曲线。')}
       </div>
     );
   }
@@ -344,35 +391,39 @@ function DebtPressureChart({
 
   return (
     <div className="debt-pressure-chart debt-pressure-chart--readable">
-      <div className="debt-pressure-controls" role="group" aria-label="走势指标">
+      <div
+        className="debt-pressure-controls"
+        role="group"
+        aria-label={tf('repayment.chart.metricsAria', '走势指标')}
+      >
         <button
           type="button"
           aria-pressed={metric === 'amount'}
           onClick={() => setMetric('amount')}
         >
-          每期还款
+          {tf('repayment.chart.metricAmount', '每期还款')}
         </button>
         <button
           type="button"
           aria-pressed={metric === 'remaining'}
           onClick={() => setMetric('remaining')}
         >
-          还款后本金
+          {tf('repayment.chart.metricRemaining', '还款后本金')}
         </button>
       </div>
       <div className="debt-pressure-readout" aria-live="polite">
         <div>
           <span>
-            {active.period} · {active.dueDate}
+            {formatPeriodLabel(active.period, tf)} · {active.dueDate}
           </span>
           <strong>{formatCurrency(active[metric])}</strong>
         </div>
         {metric === 'amount' ? (
           <div
             className="debt-pressure-interest-readout"
-            aria-label={`其中利息 ${formatCurrency(active.interest)}`}
+            aria-label={`${tf('repayment.chart.interestLabel', '其中利息')} ${formatCurrency(active.interest)}`}
           >
-            <span>其中利息</span>
+            <span>{tf('repayment.chart.interestLabel', '其中利息')}</span>
             <strong>{formatCurrency(active.interest)}</strong>
             <em>
               {active.amount > 0
@@ -390,10 +441,13 @@ function DebtPressureChart({
             style={{ [activeIndex < points.length / 2 ? 'right' : 'left']: 0 }}
           >
             <span>
-              {active.period} · {active.dueDate}
+              {formatPeriodLabel(active.period, tf)} · {active.dueDate}
             </span>
             <strong>
-              {metric === 'amount' ? '本期还款' : '还款后本金'} {formatCurrency(active[metric])}
+              {metric === 'amount'
+                ? tf('repayment.chart.periodAmount', '本期还款')
+                : tf('repayment.chart.principalAfter', '还款后本金')}{' '}
+              {formatCurrency(active[metric])}
             </strong>
           </div>
         ) : null}
@@ -504,38 +558,44 @@ function DebtPressureChart({
                 onPointerEnter={reveal}
                 onPointerMove={reveal}
                 onPointerDown={reveal}
-                aria-label={`${item.period}，${item.dueDate}，${formatCurrency(item[metric])}`}
+                aria-label={`${formatPeriodLabel(item.period, tf)}，${item.dueDate}，${formatCurrency(item[metric])}`}
               />
             );
           })}
         </svg>
       </div>
       <div className="debt-pressure-dates">
-        <span>{formatChartDate(points[0].dueDate)}</span>
-        <span>{points.length > 1 ? formatChartDate(points[points.length - 1].dueDate) : ''}</span>
+        <span>{formatChartDate(points[0].dueDate, i18n.language)}</span>
+        <span>
+          {points.length > 1
+            ? formatChartDate(points[points.length - 1].dueDate, i18n.language)
+            : ''}
+        </span>
       </div>
       {metric === 'amount' ? (
         <div
           className="debt-pressure-interest-summary"
-          aria-label={`未来利息估算 ${formatCurrency(totalInterest)}，占计划还款 ${interestRatio.toFixed(1)}%`}
+          aria-label={`${tf('repayment.chart.interestSummaryAria', '未来利息估算')} ${formatCurrency(totalInterest)},
+            ${tf('repayment.chart.interestShareAria', '占计划还款')} ${interestRatio.toFixed(1)}%`}
         >
           <div>
             <span className="debt-pressure-interest-legend">
               <i />
-              本金
+              {tf('repayment.chart.principal', '本金')}
             </span>
             <span className="debt-pressure-interest-legend is-interest">
               <i />
-              利息
+              {tf('repayment.chart.interest', '利息')}
             </span>
           </div>
           <strong>
-            未来利息约 {formatCurrency(totalInterest)} <em>· {interestRatio.toFixed(1)}%</em>
+            {tf('repayment.chart.futureInterest', '未来利息约')} {formatCurrency(totalInterest)}{' '}
+            <em>· {interestRatio.toFixed(1)}%</em>
           </strong>
         </div>
       ) : null}
       <label className="debt-pressure-period">
-        <span>查看期次</span>
+        <span>{tf('repayment.chart.viewPeriod', '查看期次')}</span>
         <input
           type="range"
           min="0"
@@ -543,8 +603,8 @@ function DebtPressureChart({
           value={activeIndex}
           disabled={points.length === 1}
           onChange={(event) => setSelected(Number(event.target.value))}
-          aria-label="查看还款期次"
-          aria-valuetext={`${active.period}，${active.dueDate}，${formatCurrency(active[metric])}`}
+          aria-label={tf('repayment.chart.viewPeriodAria', '查看还款期次')}
+          aria-valuetext={`${formatPeriodLabel(active.period, tf)},${active.dueDate},${formatCurrency(active[metric])}`}
         />
         <span>
           {activeIndex + 1}/{points.length}
@@ -552,8 +612,10 @@ function DebtPressureChart({
       </label>
       <div className="debt-pressure-footnote">
         {metric === 'remaining'
-          ? '曲线为按计划扣减本金的估算，实际以账单为准'
-          : `共 ${points.length} 期 · 合计 ${formatCurrency(totalPayment)}`}
+          ? tf('repayment.chart.principalCurveHint', '曲线为按计划扣减本金的估算，实际以账单为准')
+          : tf('repayment.chart.footnoteTotal', '共 {count} 期 · 合计 {total}')
+              .replace('{count}', String(points.length))
+              .replace('{total}', formatCurrency(totalPayment))}
       </div>
     </div>
   );
@@ -1187,6 +1249,7 @@ function getDebtAmountInputValue(value: unknown): string {
 
 export function RepaymentManagementPage() {
   const tf = useTFallback();
+  const { i18n } = useTranslation();
   const location = useLocation();
   const {
     debts,
@@ -3266,17 +3329,27 @@ export function RepaymentManagementPage() {
                         {selectedDebt.apr > 0 ? (
                           <span className="repayment-debt-rate-rank">
                             {annualRateRankings.get(selectedDebtId)
-                              ? `年化排名 第 ${annualRateRankings.get(selectedDebtId)?.rank} / ${annualRateRankings.get(selectedDebtId)?.total}`
+                              ? tf('repayment.chart.annualRank', '年化排名 第 {rank} / {total}')
+                                  .replace(
+                                    '{rank}',
+                                    String(annualRateRankings.get(selectedDebtId)?.rank)
+                                  )
+                                  .replace(
+                                    '{total}',
+                                    String(annualRateRankings.get(selectedDebtId)?.total)
+                                  )
                               : '当前状态不参与排名'}
                             {annualRateRankings.get(selectedDebtId)?.rateSource === 'inferred'
-                              ? ' · 按合同金额推算'
+                              ? tf('repayment.chart.rateSourceInferred', ' · 按合同金额推算')
                               : ''}
                           </span>
                         ) : null}
                       </div>
                       {!isFixedInstallmentLoan(selectedDebt) ? (
                         <div className="repayment-debt-metric">
-                          <span className="repayment-debt-metric-label">预计月供</span>
+                          <span className="repayment-debt-metric-label">
+                            {tf('repayment.chart.estimatedMonthly', '预计月供')}
+                          </span>
                           <span className="repayment-debt-metric-value">
                             ¥{selectedDebt.estimatedMonthlyPayment.toFixed(2)}
                           </span>
@@ -3298,33 +3371,37 @@ export function RepaymentManagementPage() {
                           {tf('repayment.list.sortDue', '还款日')}
                         </span>
                         <span className="repayment-debt-metric-value">
-                          {selectedDebt.repaymentDay || '--'} 日
+                          {formatRepaymentDay(selectedDebt.repaymentDay, i18n.language, tf)}
                         </span>
                       </div>
                     </div>
 
                     <section
                       className="repayment-debt-trend"
-                      aria-label={`${selectedDebt.name}还款走势`}
+                      aria-label={`${selectedDebt.name}${tf('repayment.chart.trendAriaSuffix', '还款走势')}`}
                     >
                       <div className="repayment-debt-trend-header">
                         <div>
-                          <strong>未来还款走势</strong>
+                          <strong>{tf('repayment.chart.futureTrend', '未来还款走势')}</strong>
                           <span>
                             {selectedDebtPressurePoints.length > 0
-                              ? `未来 ${selectedDebtPressurePoints.length} 期`
-                              : '补齐期数或逐期计划后显示走势'}
+                              ? tf('repayment.chart.futurePeriods', '未来 {count} 期').replace(
+                                  '{count}',
+                                  String(selectedDebtPressurePoints.length)
+                                )
+                              : tf('repayment.chart.trendEmpty', '补齐期数或逐期计划后显示走势')}
                           </span>
                         </div>
                         {selectedDebtPressurePoints.length > 0 ? (
                           <span className="repayment-debt-trend-next">
-                            首期 ¥{selectedDebtPressurePoints[0]?.amount.toFixed(2)}
+                            {tf('repayment.chart.firstPeriodAmount', '首期')} ¥
+                            {selectedDebtPressurePoints[0]?.amount.toFixed(2)}
                           </span>
                         ) : null}
                       </div>
                       <DebtPressureChart
                         points={selectedDebtPressurePoints}
-                        ariaLabel={`${selectedDebt.name}还款走势`}
+                        ariaLabel={`${selectedDebt.name}${tf('repayment.chart.trendAriaSuffix', '还款走势')}`}
                         compact
                       />
                     </section>
@@ -3344,7 +3421,8 @@ export function RepaymentManagementPage() {
                       }}
                     >
                       <summary>
-                        更多详情 <small>利息、账户、期数等</small>
+                        {tf('repayment.chart.moreDetails', '更多详情')}{' '}
+                        <small>{tf('repayment.chart.moreDetailsHint', '利息、账户、期数等')}</small>
                       </summary>
                       <div className="repayment-debt-detail-metrics repayment-debt-detail-metrics-secondary">
                         <div className="repayment-debt-metric">
@@ -4575,27 +4653,43 @@ export function RepaymentManagementPage() {
                       </div>
 
                       {showDebtPressurePreview ? (
-                        <section className="debt-pressure-preview" aria-label="还款压力预览">
+                        <section
+                          className="debt-pressure-preview"
+                          aria-label={tf('repayment.chart.previewAria', '还款压力预览')}
+                        >
                           <div className="debt-pressure-preview-header">
                             <div>
-                              <strong>还款压力曲线</strong>
-                              <span>查看每期还款与还款后本金</span>
+                              <strong>{tf('repayment.chart.previewTitle', '还款压力曲线')}</strong>
+                              <span>
+                                {tf('repayment.chart.previewHint', '查看每期还款与还款后本金')}
+                              </span>
                             </div>
-                            <span className="debt-pressure-preview-tag">已生成</span>
+                            <span className="debt-pressure-preview-tag">
+                              {tf('repayment.chart.previewTag', '已生成')}
+                            </span>
                           </div>
                           <div className="debt-pressure-preview-summary">
-                            <span>计划期数 {debtPressurePreview.length} 期</span>
                             <span>
-                              总计划还款{' '}
+                              {tf('repayment.chart.previewPeriods', '计划期数 {count} 期').replace(
+                                '{count}',
+                                String(debtPressurePreview.length)
+                              )}
+                            </span>
+                            <span>
+                              {tf('repayment.chart.previewTotal', '总计划还款')}{' '}
                               {formatCurrency(
                                 debtPressurePreview.reduce((sum, item) => sum + item.amount, 0)
                               )}
                             </span>
                             <span>
-                              首期压力 {formatCurrency(debtPressurePreview[0]?.amount || 0)}
+                              {tf('repayment.chart.previewFirst', '首期压力')}{' '}
+                              {formatCurrency(debtPressurePreview[0]?.amount || 0)}
                             </span>
                           </div>
-                          <DebtPressureChart points={debtPressurePreview} />
+                          <DebtPressureChart
+                            points={debtPressurePreview}
+                            ariaLabel={tf('repayment.chart.pressureAria', '还款压力曲线')}
+                          />
                           <div className="debt-pressure-table">
                             {debtPressurePreview.slice(0, 6).map((item, index) => (
                               <div
@@ -4605,7 +4699,10 @@ export function RepaymentManagementPage() {
                                 <span>{item.period}</span>
                                 <span>{formatShortDate(item.dueDate)}</span>
                                 <strong>{formatCurrency(item.amount)}</strong>
-                                <small>剩余 {formatCurrency(item.remaining)}</small>
+                                <small>
+                                  {tf('repayment.chart.previewRemaining', '剩余')}{' '}
+                                  {formatCurrency(item.remaining)}
+                                </small>
                               </div>
                             ))}
                           </div>

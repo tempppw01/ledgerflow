@@ -1,5 +1,7 @@
 import { MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useTFallback } from '../../../shared/lib/useTFallback';
+import { formatMonthKey } from '../../../shared/lib/i18nDate';
 import type { DebtItem, RepaymentRecord } from '../model/debtMetrics';
 import { getRepaymentBreakdownColor, getRepaymentOverview } from '../model/repaymentOverview';
 import { formatCurrency, formatCurrencyAuto } from '../../../shared/lib/format';
@@ -241,10 +243,16 @@ function ProjectionLineChart({
   data,
   onHoverMonthChange
 }: {
-  data: Array<{ monthLabel: string; total: number }>;
+  data: Array<{ monthKey?: string; monthLabel: string; total: number }>;
   onHoverMonthChange?: (index: number | null) => void;
 }) {
   const tf = useTFallback();
+  const { i18n } = useTranslation();
+  // X 轴月份刻度跟随界面语言:中文 `11月`,英文 `Nov`(统一走 Intl.DateTimeFormat)。
+  const monthTick = (item: { monthKey?: string; monthLabel: string }) =>
+    item.monthKey
+      ? formatMonthKey(item.monthKey, i18n.language) || item.monthLabel
+      : item.monthLabel;
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const width = 620;
   const height = 228;
@@ -391,14 +399,14 @@ function ProjectionLineChart({
               top: `${(activePoint.y / height) * 100}%`
             }}
           >
-            <span>{activePoint.monthLabel}</span>
+            <span>{monthTick(activePoint)}</span>
             <strong>{formatCurrency(activePoint.total)}</strong>
           </div>
         ) : null}
       </div>
       <div className="repayment-projection-axis" aria-hidden="true">
         {data.map((item) => (
-          <span key={item.monthLabel}>{item.monthLabel}</span>
+          <span key={item.monthLabel}>{monthTick(item)}</span>
         ))}
       </div>
     </div>
@@ -412,6 +420,7 @@ export function RepaymentDashboard({
   onSetRepaymentDay
 }: RepaymentDashboardProps) {
   const tf = useTFallback();
+  const { i18n } = useTranslation();
   const [editingRepaymentDayId, setEditingRepaymentDayId] = useState<string | null>(null);
   const [repaymentDayDraft, setRepaymentDayDraft] = useState('');
   const [hoveredProjectionIndex, setHoveredProjectionIndex] = useState<number | null>(null);
@@ -419,6 +428,11 @@ export function RepaymentDashboard({
     () => getRepaymentOverview({ debts, repaymentRecords }),
     [debts, repaymentRecords]
   );
+  // 环图标题里的月份也要跟随语言(中文 `11月` / 英文 `Nov`)。
+  const monthTick = (item: { monthKey?: string; monthLabel: string }) =>
+    item.monthKey
+      ? formatMonthKey(item.monthKey, i18n.language) || item.monthLabel
+      : item.monthLabel;
 
   // 环图和预测图共用同一组品牌色。这样切换月份时，用户不需要重新记忆
   // 每一段代表哪笔负债。
@@ -670,7 +684,7 @@ export function RepaymentDashboard({
             {selectedProjection
               ? tf('repayment.dashboard.paymentShare', '{month}应还占比').replace(
                   '{month}',
-                  selectedProjection.monthLabel
+                  monthTick(selectedProjection)
                 )
               : tf('repayment.dashboard.currentPaymentShare', '本月应还占比')}
           </h3>
@@ -680,7 +694,7 @@ export function RepaymentDashboard({
               selectedProjection
                 ? tf('repayment.dashboard.monthDue', '{month}应还').replace(
                     '{month}',
-                    selectedProjection.monthLabel
+                    monthTick(selectedProjection)
                   )
                 : tf('repayment.dashboard.thisMonthDue', '本月应还')
             }
