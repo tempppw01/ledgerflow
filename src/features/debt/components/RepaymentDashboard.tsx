@@ -1,4 +1,5 @@
 import { MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useTFallback } from '../../../shared/lib/useTFallback';
 import type { DebtItem, RepaymentRecord } from '../model/debtMetrics';
 import { getRepaymentBreakdownColor, getRepaymentOverview } from '../model/repaymentOverview';
 import { formatCurrency, formatCurrencyAuto } from '../../../shared/lib/format';
@@ -14,6 +15,12 @@ const DEBT_TYPE_LABELS: Record<DebtItem['type'], string> = {
   'credit-card': '信用卡',
   'consumer-loan': '消费贷',
   loan: '贷款'
+};
+
+const DEBT_TYPE_KEYS: Record<DebtItem['type'], string> = {
+  'credit-card': 'repayment.dashboard.type.creditCard',
+  'consumer-loan': 'repayment.dashboard.type.consumerLoan',
+  loan: 'repayment.dashboard.type.loan'
 };
 
 function useMountedProgress(target: number, durationMs = 700) {
@@ -60,6 +67,8 @@ function ProgressRing({
   totalLabel: string;
   paidLabel: string;
 }) {
+  const tf = useTFallback();
+  const resolvedTotalLabel = totalLabel ?? tf('repayment.dashboard.monthlyDue', '每月应还');
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const animated = useMountedProgress(progress, 800);
@@ -91,7 +100,7 @@ function ProgressRing({
       </svg>
       <div className="repayment-ring-center">
         <span className="repayment-ring-progress-text">{Math.round(animated * 100)}%</span>
-        <span className="repayment-ring-label">{totalLabel}</span>
+        <span className="repayment-ring-label">{resolvedTotalLabel}</span>
         <span className="repayment-ring-sub">{paidLabel}</span>
       </div>
     </div>
@@ -100,11 +109,13 @@ function ProgressRing({
 
 function BreakdownDonut({
   segments,
-  totalLabel = '每月应还'
+  totalLabel
 }: {
   segments: Array<{ id: string; name: string; payment: number; color: string }>;
   totalLabel?: string;
 }) {
+  const tf = useTFallback();
+  const resolvedTotalLabel = totalLabel ?? tf('repayment.dashboard.monthlyDue', '每月应还');
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const total = segments.reduce((sum, s) => sum + s.payment, 0);
   const size = 180;
@@ -130,7 +141,7 @@ function BreakdownDonut({
   if (segments.length === 0) {
     return (
       <div className="repayment-donut-empty">
-        <span>暂无活跃负债</span>
+        <span>{tf('repayment.dashboard.noActiveDebt', '暂无活跃负债')}</span>
       </div>
     );
   }
@@ -159,7 +170,9 @@ function BreakdownDonut({
               strokeDasharray={`${mounted ? arc.dash : 0} ${circumference}`}
               strokeDashoffset={arc.offset}
               className={`repayment-donut-arc${hoverIndex === arc.index ? ' is-active' : ''}`}
-              style={{ transition: 'opacity 150ms ease, filter 150ms ease, stroke-dasharray 700ms ease' }}
+              style={{
+                transition: 'opacity 150ms ease, filter 150ms ease, stroke-dasharray 700ms ease'
+              }}
               onMouseEnter={() => setHoverIndex(arc.index)}
               onMouseLeave={() => setHoverIndex(null)}
             />
@@ -168,7 +181,7 @@ function BreakdownDonut({
       </svg>
       <div className="repayment-donut-center">
         <span className="repayment-donut-total">{formatCurrencyAuto(total)}</span>
-        <span className="repayment-donut-label">{totalLabel}</span>
+        <span className="repayment-donut-label">{resolvedTotalLabel}</span>
       </div>
       <ul className="repayment-donut-legend">
         {segments.map((seg, index) => (
@@ -199,9 +212,8 @@ function buildSmoothPath(
   if (points.length === 1) return `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
 
   const tension = 1;
-  return points
-    .slice(0, -1)
-    .reduce((path, point, index) => {
+  return points.slice(0, -1).reduce(
+    (path, point, index) => {
       const next = points[index + 1];
       const previous = points[index - 1] ?? point;
       const afterNext = points[index + 2] ?? next;
@@ -220,7 +232,9 @@ function buildSmoothPath(
       }
 
       return `${path} C ${controlOne.x.toFixed(2)} ${controlOne.y.toFixed(2)}, ${controlTwo.x.toFixed(2)} ${controlTwo.y.toFixed(2)}, ${next.x.toFixed(2)} ${next.y.toFixed(2)}`;
-    }, `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`);
+    },
+    `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`
+  );
 }
 
 function ProjectionLineChart({
@@ -230,6 +244,7 @@ function ProjectionLineChart({
   data: Array<{ monthLabel: string; total: number }>;
   onHoverMonthChange?: (index: number | null) => void;
 }) {
+  const tf = useTFallback();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const width = 620;
   const height = 228;
@@ -295,7 +310,7 @@ function ProjectionLineChart({
         <svg
           viewBox={`0 0 ${width} ${height}`}
           role="img"
-          aria-label="未来六个月预计还款折线图"
+          aria-label={tf('repayment.dashboard.chartAria', '未来六个月预计还款折线图')}
           onMouseMove={handlePointerMove}
         >
           <defs>
@@ -396,6 +411,7 @@ export function RepaymentDashboard({
   onMarkCurrentPayment,
   onSetRepaymentDay
 }: RepaymentDashboardProps) {
+  const tf = useTFallback();
   const [editingRepaymentDayId, setEditingRepaymentDayId] = useState<string | null>(null);
   const [repaymentDayDraft, setRepaymentDayDraft] = useState('');
   const [hoveredProjectionIndex, setHoveredProjectionIndex] = useState<number | null>(null);
@@ -419,7 +435,9 @@ export function RepaymentDashboard({
   }, [overview.breakdown, overview.monthlyProjection]);
 
   const selectedProjection =
-    hoveredProjectionIndex === null ? null : overview.monthlyProjection[hoveredProjectionIndex] ?? null;
+    hoveredProjectionIndex === null
+      ? null
+      : (overview.monthlyProjection[hoveredProjectionIndex] ?? null);
   const donutSegments = selectedProjection
     ? selectedProjection.items.map((item, index) => ({
         id: item.id,
@@ -441,35 +459,52 @@ export function RepaymentDashboard({
   }
 
   return (
-    <section className="card repayment-dashboard" aria-label="本月还款概览">
+    <section
+      className="card repayment-dashboard"
+      aria-label={tf('repayment.dashboard.title', '本月还款概览')}
+    >
       <h2 className="repayment-dashboard-title">
-        <span aria-hidden="true">📅</span> 本月还款概览
+        <span aria-hidden="true">📅</span> {tf('repayment.dashboard.title', '本月还款概览')}
       </h2>
 
       <div className="repayment-dashboard-grid">
         <div className="repayment-dashboard-hero">
           <div className="repayment-dashboard-total">
-            <span className="repayment-dashboard-total-label">本月应还总额</span>
+            <span className="repayment-dashboard-total-label">
+              {tf('repayment.dashboard.monthTotal', '本月应还总额')}
+            </span>
             <span className="repayment-dashboard-total-value">
               {formatCurrency(overview.thisMonthTotal)}
             </span>
             <div className="repayment-dashboard-total-meta">
-              <span>已还 {formatCurrency(overview.thisMonthPaid)}</span>
+              <span>
+                {tf('repayment.dashboard.paidPrefix', '已还')}{' '}
+                {formatCurrency(overview.thisMonthPaid)}
+              </span>
               <span className="repayment-dashboard-sep">·</span>
-              <span>待还 {formatCurrency(overview.thisMonthRemaining)}</span>
+              <span>
+                {tf('repayment.dashboard.remainingPrefix', '待还')}{' '}
+                {formatCurrency(overview.thisMonthRemaining)}
+              </span>
             </div>
             {overview.nextDueDate ? (
               <span className="repayment-dashboard-next-due">
                 {overview.nextDueDays !== null && overview.nextDueDays < 0
-                  ? '已逾期：'
-                  : '下一笔：'}
+                  ? tf('repayment.dashboard.overduePrefix', '已逾期：')
+                  : tf('repayment.dashboard.nextDuePrefix', '下一笔：')}
                 {overview.nextDueDate}
                 {overview.nextDueDays !== null
                   ? overview.nextDueDays === 0
-                    ? '（今日到期）'
+                    ? tf('repayment.dashboard.dueTodaySuffix', '（今日到期）')
                     : overview.nextDueDays < 0
-                      ? `（已逾期 ${Math.abs(overview.nextDueDays)} 天）`
-                      : `（${overview.nextDueDays} 天后）`
+                      ? tf('repayment.dashboard.overdueDaysSuffix', '(已逾期 {days} 天)').replace(
+                          '{days}',
+                          String(Math.abs(overview.nextDueDays))
+                        )
+                      : tf('repayment.dashboard.dueInDaysSuffix', '({days} 天后)').replace(
+                          '{days}',
+                          String(overview.nextDueDays)
+                        )
                   : ''}
               </span>
             ) : null}
@@ -477,15 +512,21 @@ export function RepaymentDashboard({
           <ProgressRing
             key={ringKey}
             progress={overview.progress}
-            totalLabel="本月进度"
-            paidLabel={`已还 ${formatCurrency(overview.thisMonthPaid)}`}
+            totalLabel={tf('repayment.dashboard.monthProgress', '本月进度')}
+            paidLabel={`${tf('repayment.dashboard.paidPrefix', '已还')} ${formatCurrency(
+              overview.thisMonthPaid
+            )}`}
           />
         </div>
 
         <div className="repayment-dashboard-timeline">
-          <h3 className="repayment-dashboard-section-title">未来还款</h3>
+          <h3 className="repayment-dashboard-section-title">
+            {tf('repayment.dashboard.upcomingTitle', '未来还款')}
+          </h3>
           {overview.breakdown.length === 0 ? (
-            <p className="muted">暂无活跃负债需要还款。</p>
+            <p className="muted">
+              {tf('repayment.dashboard.upcomingEmpty', '暂无活跃负债需要还款。')}
+            </p>
           ) : (
             <ul className="repayment-timeline">
               {overview.breakdown.slice(0, 6).map((item) => (
@@ -508,11 +549,16 @@ export function RepaymentDashboard({
                       <span className="repayment-timeline-info">
                         <span className="repayment-timeline-name">{item.name}</span>
                         <span className="repayment-timeline-type">
-                          {item.isSimpleReminder ? '还款提醒' : DEBT_TYPE_LABELS[item.type] ?? item.type}
+                          {item.isSimpleReminder
+                            ? tf('repayment.dashboard.reminderType', '还款提醒')
+                            : tf(
+                                DEBT_TYPE_KEYS[item.type],
+                                DEBT_TYPE_LABELS[item.type] ?? item.type
+                              )}
                         </span>
                         <span className="repayment-timeline-amount">
                           {item.isSimpleReminder && item.payment <= 0
-                            ? '金额待补充'
+                            ? tf('repayment.dashboard.amountPending', '金额待补充')
                             : formatCurrency(item.payment)}
                         </span>
                       </span>
@@ -521,15 +567,21 @@ export function RepaymentDashboard({
                           {item.isSimpleReminder
                             ? item.dueDate || ''
                             : item.dueInDays === null
-                            ? '未设还款日'
-                            : item.dueInDays === 0
-                              ? '今日应还'
-                              : item.dueInDays < 0
-                                ? `已逾期 ${Math.abs(item.dueInDays)} 天`
-                                : `${item.dueInDays} 天后`}
+                              ? tf('repayment.dashboard.noDueDate', '未设还款日')
+                              : item.dueInDays === 0
+                                ? tf('repayment.dashboard.dueToday', '今日应还')
+                                : item.dueInDays < 0
+                                  ? tf(
+                                      'repayment.dashboard.overdueDays',
+                                      '已逾期 {days} 天'
+                                    ).replace('{days}', String(Math.abs(item.dueInDays)))
+                                  : tf('repayment.dashboard.dueInDays', '{days} 天后').replace(
+                                      '{days}',
+                                      String(item.dueInDays)
+                                    )}
                         </span>
                         {item.isSimpleReminder ? (
-                          <strong>待处理</strong>
+                          <strong>{tf('repayment.dashboard.pending', '待处理')}</strong>
                         ) : item.dueInDays === null ? (
                           <button
                             type="button"
@@ -539,12 +591,15 @@ export function RepaymentDashboard({
                               setRepaymentDayDraft('');
                             }}
                             disabled={!onSetRepaymentDay}
-                            aria-label={`设置${item.name}还款日`}
+                            aria-label={tf(
+                              'repayment.dashboard.setDueDateAria',
+                              '设置{name}还款日'
+                            ).replace('{name}', item.name)}
                           >
-                            设置还款日
+                            {tf('repayment.dashboard.setDueDate', '设置还款日')}
                           </button>
                         ) : item.isPaid ? (
-                          <strong>✓ 已还</strong>
+                          <strong>{tf('repayment.dashboard.paid', '✓ 已还')}</strong>
                         ) : (
                           <span className="repayment-timeline-action-group">
                             <button
@@ -557,9 +612,12 @@ export function RepaymentDashboard({
                                 )
                               }
                               disabled={!onMarkCurrentPayment}
-                              aria-label={`登记${item.name}本期还款`}
+                              aria-label={tf(
+                                'repayment.dashboard.registerAria',
+                                '登记{name}本期还款'
+                              ).replace('{name}', item.name)}
                             >
-                              登记已还
+                              {tf('repayment.dashboard.registerPaid', '登记已还')}
                             </button>
                             <small>需确认</small>
                           </span>
@@ -592,8 +650,12 @@ export function RepaymentDashboard({
                           />
                           日
                         </label>
-                        <button type="submit" className="primary">保存</button>
-                        <button type="button" onClick={() => setEditingRepaymentDayId(null)}>取消</button>
+                        <button type="submit" className="primary">
+                          保存
+                        </button>
+                        <button type="button" onClick={() => setEditingRepaymentDayId(null)}>
+                          取消
+                        </button>
                       </form>
                     ) : null}
                   </div>

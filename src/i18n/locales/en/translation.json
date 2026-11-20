@@ -2251,6 +2251,66 @@
     },
     "list": {
       "title": "Debts"
+    },
+    "agent": {
+      "kind": {
+        "read": "Query",
+        "create": "Create",
+        "update": "Update",
+        "delete": "Delete"
+      },
+      "error": {
+        "noKey": "Configure an AI model and API key in settings first.",
+        "failed": "Request failed. Check the model configuration and try again.",
+        "undo": "Undo failed"
+      },
+      "noResult": "Nothing to return — try phrasing it differently.",
+      "title": "AI ledger assistant",
+      "placeholder": "Just say it, e.g. “paid 300 on Huabei today” or “which debt first?”",
+      "running": "Working…",
+      "run": "Run",
+      "thisAction": "This change",
+      "thisQuery": "This query",
+      "undo": "Undo",
+      "quick": {
+        "paidSoFar": "How much did I repay this month, and how much is left?",
+        "priority": "Which debts should I pay first?",
+        "huabei": "Did I pay Huabei this month?"
+      }
+    },
+    "dashboard": {
+      "type": {
+        "creditCard": "Credit card",
+        "consumerLoan": "Consumer loan",
+        "loan": "Loan"
+      },
+      "monthlyDue": "Monthly due",
+      "noActiveDebt": "No active debt",
+      "chartAria": "Projected repayments for the next six months",
+      "title": "This month’s repayment overview",
+      "monthTotal": "Due this month",
+      "paidPrefix": "Paid",
+      "remainingPrefix": "Remaining",
+      "overduePrefix": "Overdue:",
+      "nextDuePrefix": "Next:",
+      "dueTodaySuffix": "(due today)",
+      "monthProgress": "This month",
+      "upcomingTitle": "Upcoming repayments",
+      "upcomingEmpty": "No active debt needs repaying.",
+      "reminderType": "Repayment reminder",
+      "amountPending": "Amount pending",
+      "noDueDate": "No due date",
+      "dueToday": "Due today",
+      "pending": "Pending",
+      "setDueDate": "Set due date",
+      "paid": "✓ Paid",
+      "overdueDaysSuffix": "(overdue {days} days)",
+      "dueInDaysSuffix": "(in {days} days)",
+      "overdueDays": "Overdue {days} days",
+      "dueInDays": "In {days} days",
+      "setDueDateAria": "Set the due date for {name}",
+      "registerAria": "Record this payment for {name}",
+      "registerPaid": "Record payment"
     }
   }
 }

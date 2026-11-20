@@ -23,6 +23,8 @@ FILES = [
     'src/pages/database-settings/DatabaseSettingsPage.tsx',
     'src/pages/investments/InvestmentsPage.tsx',
     'src/pages/repayment-management/RepaymentManagementPage.tsx',
+    'src/features/debt/components/RepaymentAgentBar.tsx',
+    'src/features/debt/components/RepaymentDashboard.tsx',
     'src/features/assistant/investment-chat/InvestmentChatPanel.tsx',
     'src/features/backup/ui/BackupScopeSelector.tsx',
     'src/features/mysql-snapshot/ui/MysqlSnapshotPanel.tsx',

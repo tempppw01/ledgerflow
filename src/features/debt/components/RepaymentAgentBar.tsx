@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState, type FormEvent } from 'react';
+import { useTFallback } from '../../../shared/lib/useTFallback';
 import type { DebtItem, RepaymentRecord } from '../model/debtMetrics';
 import type { CreditDraft } from '../model/creditDrafts';
 import {
@@ -31,7 +32,11 @@ export interface RepaymentAgentBarProps {
   removeCreditDraft: (id: string) => void;
 }
 
-const QUICK_COMMANDS = ['本月还了多少、还差多少?', '哪几笔最该先还?', '花呗这个月还了吗?'] as const;
+const QUICK_COMMANDS: Array<{ key: string; fallback: string }> = [
+  { key: 'repayment.agent.quick.paidSoFar', fallback: '本月还了多少、还差多少?' },
+  { key: 'repayment.agent.quick.priority', fallback: '哪几笔最该先还?' },
+  { key: 'repayment.agent.quick.huabei', fallback: '花呗这个月还了吗?' }
+];
 
 const ACTION_KIND_LABELS: Record<AgentActionView['kind'], string> = {
   read: '查询',
@@ -40,11 +45,19 @@ const ACTION_KIND_LABELS: Record<AgentActionView['kind'], string> = {
   delete: '删除'
 };
 
+const ACTION_KIND_KEYS: Record<AgentActionView['kind'], string> = {
+  read: 'repayment.agent.kind.read',
+  create: 'repayment.agent.kind.create',
+  update: 'repayment.agent.kind.update',
+  delete: 'repayment.agent.kind.delete'
+};
+
 /**
  * 还款管理页内嵌的信贷 Agent:用自然语言查询或被授权地改动台账,
  * 每次改动都保留可撤销记录。
  */
 export function RepaymentAgentBar(props: RepaymentAgentBarProps) {
+  const tf = useTFallback();
   const {
     baseUrl,
     apiKey,
@@ -103,7 +116,7 @@ export function RepaymentAgentBar(props: RepaymentAgentBarProps) {
       const text = command.trim();
       if (!text || runningRef.current) return;
       if (!apiKey.trim() || !model.trim()) {
-        setError('请先在设置页配置可用的 AI 模型与 API Key。');
+        setError(tf('repayment.agent.error.noKey', '请先在设置页配置可用的 AI 模型与 API Key。'));
         return;
       }
       runningRef.current = true;
@@ -135,17 +148,20 @@ export function RepaymentAgentBar(props: RepaymentAgentBarProps) {
           result.content.trim() ||
             (result.actions.length > 0
               ? `已按你的要求处理:${result.actions.map((action) => action.label).join(';')}`
-              : '没有可返回的结果,请换个说法再试。')
+              : tf('repayment.agent.noResult', '没有可返回的结果,请换个说法再试。'))
         );
         setInput('');
       } catch (err) {
-        setError((err as Error).message || '处理失败,请检查模型配置后重试。');
+        setError(
+          (err as Error).message ||
+            tf('repayment.agent.error.failed', '处理失败,请检查模型配置后重试。')
+        );
       } finally {
         runningRef.current = false;
         setRunning(false);
       }
     },
-    [apiKey, baseUrl, buildContext, creditDrafts, model, upsertCreditDraft]
+    [apiKey, baseUrl, buildContext, creditDrafts, model, upsertCreditDraft, tf]
   );
 
   const onSubmit = (event: FormEvent) => {
@@ -161,7 +177,7 @@ export function RepaymentAgentBar(props: RepaymentAgentBarProps) {
       undoRef.current.delete(actionId);
       setActions((prev) => prev.filter((item) => item.id !== actionId));
     } catch (err) {
-      setError((err as Error).message || '撤销失败');
+      setError((err as Error).message || tf('repayment.agent.error.undo', '撤销失败'));
     }
   };
 
@@ -169,29 +185,42 @@ export function RepaymentAgentBar(props: RepaymentAgentBarProps) {
     <div className="repayment-agent-bar">
       <form className="repayment-agent-input" onSubmit={onSubmit}>
         <label className="repayment-agent-label" htmlFor="repayment-agent-command">
-          AI 台账助手
+          {tf('repayment.agent.title', 'AI 台账助手')}
         </label>
         <div className="repayment-agent-input-row">
           <input
             id="repayment-agent-command"
             type="text"
             value={input}
-            placeholder="直接说,例如“花呗今天还了 300”“哪笔最该先还”"
+            placeholder={tf(
+              'repayment.agent.placeholder',
+              '直接说,例如“花呗今天还了 300”“哪笔最该先还”'
+            )}
             onChange={(event) => setInput(event.target.value)}
             disabled={running}
           />
           <button type="submit" disabled={running || !input.trim()}>
-            {running ? '处理中...' : '执行'}
+            {running
+              ? tf('repayment.agent.running', '处理中...')
+              : tf('repayment.agent.run', '执行')}
           </button>
         </div>
       </form>
 
       <div className="repayment-agent-quick">
-        {QUICK_COMMANDS.map((command) => (
-          <button key={command} type="button" onClick={() => void run(command)} disabled={running}>
-            {command}
-          </button>
-        ))}
+        {QUICK_COMMANDS.map((command) => {
+          const label = tf(command.key, command.fallback);
+          return (
+            <button
+              key={command.key}
+              type="button"
+              onClick={() => void run(label)}
+              disabled={running}
+            >
+              {label}
+            </button>
+          );
+        })}
       </div>
 
       {error ? <p className="repayment-agent-error">{error}</p> : null}
@@ -202,15 +231,17 @@ export function RepaymentAgentBar(props: RepaymentAgentBarProps) {
           {actions.length > 0 ? (
             <div className="repayment-agent-actions">
               <span className="repayment-agent-actions-head">
-                {actions.some((action) => action.kind !== 'read') ? '本次操作' : '本次查询'}
+                {actions.some((action) => action.kind !== 'read')
+                  ? tf('repayment.agent.thisAction', '本次操作')
+                  : tf('repayment.agent.thisQuery', '本次查询')}
               </span>
               {actions.map((action) => (
                 <div key={action.id} className={`repayment-agent-action is-${action.kind}`}>
-                  <b>{ACTION_KIND_LABELS[action.kind]}</b>
+                  <b>{tf(ACTION_KIND_KEYS[action.kind], ACTION_KIND_LABELS[action.kind])}</b>
                   <span>{action.label}</span>
                   {action.undoable ? (
                     <button type="button" onClick={() => undo(action.id)}>
-                      撤销
+                      {tf('repayment.agent.undo', '撤销')}
                     </button>
                   ) : null}
                 </div>

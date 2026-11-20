@@ -2251,6 +2251,66 @@
     },
     "list": {
       "title": "负债列表"
+    },
+    "agent": {
+      "kind": {
+        "read": "查询",
+        "create": "新增",
+        "update": "修改",
+        "delete": "删除"
+      },
+      "error": {
+        "noKey": "请先在设置页配置可用的 AI 模型与 API Key。",
+        "failed": "处理失败,请检查模型配置后重试。",
+        "undo": "撤销失败"
+      },
+      "noResult": "没有可返回的结果,请换个说法再试。",
+      "title": "AI 台账助手",
+      "placeholder": "直接说,例如“花呗今天还了 300”“哪笔最该先还”",
+      "running": "处理中...",
+      "run": "执行",
+      "thisAction": "本次操作",
+      "thisQuery": "本次查询",
+      "undo": "撤销",
+      "quick": {
+        "paidSoFar": "本月还了多少、还差多少?",
+        "priority": "哪几笔最该先还?",
+        "huabei": "花呗这个月还了吗?"
+      }
+    },
+    "dashboard": {
+      "type": {
+        "creditCard": "信用卡",
+        "consumerLoan": "消费贷",
+        "loan": "贷款"
+      },
+      "monthlyDue": "每月应还",
+      "noActiveDebt": "暂无活跃负债",
+      "chartAria": "未来六个月预计还款折线图",
+      "title": "本月还款概览",
+      "monthTotal": "本月应还总额",
+      "paidPrefix": "已还",
+      "remainingPrefix": "待还",
+      "overduePrefix": "已逾期:",
+      "nextDuePrefix": "下一笔:",
+      "dueTodaySuffix": "(今日到期)",
+      "monthProgress": "本月进度",
+      "upcomingTitle": "未来还款",
+      "upcomingEmpty": "暂无活跃负债需要还款。",
+      "reminderType": "还款提醒",
+      "amountPending": "金额待补充",
+      "noDueDate": "未设还款日",
+      "dueToday": "今日应还",
+      "pending": "待处理",
+      "setDueDate": "设置还款日",
+      "paid": "✓ 已还",
+      "overdueDaysSuffix": "(已逾期 {days} 天)",
+      "dueInDaysSuffix": "({days} 天后)",
+      "overdueDays": "已逾期 {days} 天",
+      "dueInDays": "{days} 天后",
+      "setDueDateAria": "设置{name}还款日",
+      "registerAria": "登记{name}本期还款",
+      "registerPaid": "登记已还"
     }
   }
 }
