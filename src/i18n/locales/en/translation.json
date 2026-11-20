@@ -1755,5 +1755,52 @@
       "successDetail": "Backup {action} finished — updated {scope} ({sections})",
       "success": "Backup {action} finished"
     }
+  },
+  "investments": {
+    "title": "Investments",
+    "subtitle": "Today’s read, market monitoring and your watchlist live in one workspace, switched on demand instead of stacked up.",
+    "overviewAria": "Current investment overview",
+    "watchlistCountSuffix": "watchlist items",
+    "todayPrefix": "Today",
+    "dataUpdatedPrefix": "Data updated",
+    "refreshPending": "Waiting to refresh",
+    "aiBarAria": "AI investment assistant entry",
+    "aiBarTitle": "The AI investment assistant is connected to this page",
+    "positionsSuffix": "positions",
+    "marketPrefix": "Market",
+    "tab": {
+      "checkup": "Position checkup",
+      "review": "Daily review",
+      "overview": "Overview & market",
+      "boards": "Sector monitor",
+      "watchlist": "Watchlist",
+      "news": "Market news"
+    },
+    "ask": {
+      "review": "Today’s market review"
+    },
+    "tabsAria": "Investment sections",
+    "panels": {
+      "todayAria": "Today’s investment board",
+      "marketAria": "Market and sector monitoring"
+    },
+    "loading": {
+      "market": "Loading market data…",
+      "positions": "Loading holdings…"
+    },
+    "empty": {
+      "positions": "No holdings yet",
+      "watchlist": "No funds in the watchlist",
+      "generic": "No data"
+    },
+    "retry": "Retry",
+    "refresh": "Refresh",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "viewMore": "View more",
+    "stat": {
+      "watchCount": "{count} watchlist",
+      "positionCount": "{count} positions"
+    }
   }
 }

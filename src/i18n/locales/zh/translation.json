@@ -1755,5 +1755,52 @@
       "successDetail": "备份{action}成功:已更新{scope}({sections})",
       "success": "备份{action}成功"
     }
+  },
+  "investments": {
+    "title": "投资理财",
+    "subtitle": "把今日判断、行情监控和基金自选放进一个工作台,按需切换,不再上下堆叠。",
+    "overviewAria": "当前投资概览",
+    "watchlistCountSuffix": "只自选",
+    "todayPrefix": "今日",
+    "dataUpdatedPrefix": "数据更新",
+    "refreshPending": "待刷新",
+    "aiBarAria": "AI 投资助手入口",
+    "aiBarTitle": "AI 投资助手已接入这页数据",
+    "positionsSuffix": "笔持仓",
+    "marketPrefix": "行情",
+    "tab": {
+      "checkup": "持仓体检",
+      "review": "今日复盘",
+      "overview": "今日总览 & 大盘行情",
+      "boards": "板块监控",
+      "watchlist": "基金自选",
+      "news": "市场快讯"
+    },
+    "ask": {
+      "review": "今日行情复盘"
+    },
+    "tabsAria": "投资理财板块",
+    "panels": {
+      "todayAria": "今日投资看板",
+      "marketAria": "大盘和市场监控"
+    },
+    "loading": {
+      "market": "市场数据加载中...",
+      "positions": "持仓数据加载中..."
+    },
+    "empty": {
+      "positions": "暂无持仓数据",
+      "watchlist": "暂无自选基金",
+      "generic": "暂无数据"
+    },
+    "retry": "重试",
+    "refresh": "刷新",
+    "expand": "展开",
+    "collapse": "收起",
+    "viewMore": "查看更多",
+    "stat": {
+      "watchCount": "{count} 只自选",
+      "positionCount": "{count} 笔持仓"
+    }
   }
 }

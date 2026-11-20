@@ -21,6 +21,7 @@ FILES = [
     'src/pages/subscriptions/SubscriptionsPage.tsx',
     'src/pages/transaction-edit/TransactionEditPage.tsx',
     'src/pages/database-settings/DatabaseSettingsPage.tsx',
+    'src/pages/investments/InvestmentsPage.tsx',
     'src/features/backup/ui/BackupScopeSelector.tsx',
     'src/features/mysql-snapshot/ui/MysqlSnapshotPanel.tsx',
     'src/features/database-provider/ui/DatabaseProviderSetupPanel.tsx',

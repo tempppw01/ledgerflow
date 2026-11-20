@@ -16,6 +16,7 @@ import type {
   InvestmentWatchItem
 } from '../../entities/investment/types';
 import { sendAiChatStream } from '../../features/assistant/api/openaiCompatibleClient';
+import { useTFallback, type TfFallback } from '../../shared/lib/useTFallback';
 import { InvestmentChatPanel } from '../../features/assistant/investment-chat/InvestmentChatPanel';
 import { ChatSparklesIcon } from '../../features/assistant/ui/chatIcons';
 import { DatePicker } from '../../shared/ui/DatePicker';
@@ -580,7 +581,10 @@ function parseStoredPercent(value?: string) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function getWatchHoldingSnapshot(item: InvestmentWatchItem): WatchHoldingSnapshot | null {
+function getWatchHoldingSnapshot(
+  item: InvestmentWatchItem,
+  tf: TfFallback
+): WatchHoldingSnapshot | null {
   if (typeof item.holdingShares !== 'number' || item.holdingShares <= 0) return null;
   const netValue = Number(String(item.netValue || '').replace(/,/g, ''));
   if (!Number.isFinite(netValue) || netValue <= 0) return null;
@@ -590,7 +594,7 @@ function getWatchHoldingSnapshot(item: InvestmentWatchItem): WatchHoldingSnapsho
   return {
     id: `watch-${item.id}`,
     name: item.name,
-    category: item.tags?.[0] || '基金自选',
+    category: item.tags?.[0] || tf('investments.tab.watchlist', '基金自选'),
     shares: item.holdingShares,
     currentValue,
     marketChange,
@@ -624,7 +628,8 @@ function buildMarketAlgorithmSignals({
   news,
   positions,
   watchlist,
-  totalCurrentValue
+  totalCurrentValue,
+  tf
 }: {
   marketChange: number | null;
   themeBoards: EastmoneyMarketBoard[];
@@ -633,6 +638,7 @@ function buildMarketAlgorithmSignals({
   positions: InvestmentPosition[];
   watchlist: InvestmentWatchItem[];
   totalCurrentValue: number;
+  tf: TfFallback;
 }): MarketAlgorithmSignals {
   const boards = [...themeBoards, ...industryBoards].filter(
     (item) => typeof item.changePercent === 'number' && Number.isFinite(item.changePercent)
@@ -670,14 +676,14 @@ function buildMarketAlgorithmSignals({
       (a.changePercent || Number.POSITIVE_INFINITY) - (b.changePercent || Number.POSITIVE_INFINITY)
   )[0];
   const watchHoldingValue = watchlist.reduce((sum, item) => {
-    const snapshot = getWatchHoldingSnapshot(item);
+    const snapshot = getWatchHoldingSnapshot(item, tf);
     return sum + (snapshot?.currentValue || 0);
   }, 0);
   const portfolioValue = totalCurrentValue + watchHoldingValue;
   const largestPositionShare = portfolioValue
     ? Math.max(
         ...positions.map((item) => item.currentValue),
-        ...watchlist.map((item) => getWatchHoldingSnapshot(item)?.currentValue || 0),
+        ...watchlist.map((item) => getWatchHoldingSnapshot(item, tf)?.currentValue || 0),
         0
       ) / portfolioValue
     : 0;
@@ -736,8 +742,9 @@ function HoldingsTodayPanel({
     focus?: { type: 'position' | 'watch' | 'market' | 'news'; label: string; detail?: string }
   ) => void;
 }) {
+  const tf = useTFallback();
   const watchHoldings = watchlist
-    .map(getWatchHoldingSnapshot)
+    .map((item) => getWatchHoldingSnapshot(item, tf))
     .filter((item): item is WatchHoldingSnapshot => Boolean(item));
   const rankedWatchHoldings = rankWatchHoldingsByTodayChange(watchHoldings);
   const estimatedPositionProfit =
@@ -3220,6 +3227,7 @@ function MarketBoardsPanel({
   onLoadConstituents: (code: string, force?: boolean) => void;
   onAskAi?: (prompt: string) => void;
 }) {
+  const tf = useTFallback();
   const [newThemeCode, setNewThemeCode] = useState('');
   const [editingThemeCode, setEditingThemeCode] = useState('');
   const [editingThemeName, setEditingThemeName] = useState('');
@@ -3275,7 +3283,7 @@ function MarketBoardsPanel({
             AI 看板块
           </button>
           <button type="button" onClick={onRefresh} disabled={status === 'loading'}>
-            {status === 'loading' ? '刷新中' : '刷新'}
+            {status === 'loading' ? '刷新中' : tf('investments.refresh', '刷新')}
           </button>
         </div>
       </div>
@@ -3290,7 +3298,7 @@ function MarketBoardsPanel({
             <small>
               {globalSectorBoards.length
                 ? `${globalSectorBoards.length} 个 · ${globalSectorMeta.freshness === 'stale' ? '缓存' : '更新'}`
-                : '暂无数据'}
+                : tf('investments.empty.generic', '暂无数据')}
             </small>
           </div>
           <div className="investments-market-sector-strip">
@@ -3617,6 +3625,7 @@ function MarketNewsPanel({
   onRefresh: () => void;
   onAskAi?: (prompt: string) => void;
 }) {
+  const tf = useTFallback();
   return (
     <section
       className={`panel investments-market-news-panel ${status === 'loading' ? 'is-loading' : ''}`}
@@ -3647,7 +3656,7 @@ function MarketNewsPanel({
             AI 解读
           </button>
           <button type="button" onClick={onRefresh} disabled={status === 'loading'}>
-            {status === 'loading' ? '刷新中' : '刷新'}
+            {status === 'loading' ? '刷新中' : tf('investments.refresh', '刷新')}
           </button>
         </div>
       </div>
@@ -3677,7 +3686,10 @@ function MarketNewsPanel({
           <span>稍后刷新，或切换其他分类看看。</span>
         </div>
       ) : (
-        <div className="investments-market-news-list" aria-label="市场快讯">
+        <div
+          className="investments-market-news-list"
+          aria-label={tf('investments.tab.news', '市场快讯')}
+        >
           {news.slice(0, 8).map((item) => (
             <a
               key={item.id}
@@ -3761,6 +3773,7 @@ function formatHoldingShares(value?: number) {
 }
 
 export function InvestmentsPage() {
+  const tf = useTFallback();
   const transactions = useFinanceStore((state) => state.transactions);
   const positions = useAppPreferences((state) => state.investmentPositions);
   const investmentWatchlist = useAppPreferences((state) => state.investmentWatchlist);
@@ -3925,6 +3938,7 @@ export function InvestmentsPage() {
   const marketAlgorithmSignals = useMemo(
     () =>
       buildMarketAlgorithmSignals({
+        tf,
         marketChange: averageMarketChange,
         themeBoards: marketThemeBoards,
         industryBoards: marketIndustryBoards,
@@ -3940,7 +3954,8 @@ export function InvestmentsPage() {
       marketIndustryBoards,
       marketNews,
       marketThemeBoards,
-      positionSummary.totalCurrentValue
+      positionSummary.totalCurrentValue,
+      tf
     ]
   );
 
@@ -4867,10 +4882,18 @@ export function InvestmentsPage() {
       <header className="investments-console-header">
         <div>
           <p className="investments-console-eyebrow">INVESTMENT CONTROL</p>
-          <h1>投资理财</h1>
-          <p>把今日判断、行情监控和基金自选放进一个工作台，按需切换，不再上下堆叠。</p>
+          <h1>{tf('investments.title', '投资理财')}</h1>
+          <p>
+            {tf(
+              'investments.subtitle',
+              '把今日判断、行情监控和基金自选放进一个工作台，按需切换，不再上下堆叠。'
+            )}
+          </p>
         </div>
-        <div className="investments-console-stat" aria-label="当前投资概览">
+        <div
+          className="investments-console-stat"
+          aria-label={tf('investments.overviewAria', '当前投资概览')}
+        >
           <div className="investments-console-stat-row">
             <strong>{formatCurrencyAuto(positionSummary.totalCurrentValue)}</strong>
             <time dateTime={new Date().toISOString()}>
@@ -4878,25 +4901,46 @@ export function InvestmentsPage() {
             </time>
           </div>
           <span>
-            {investmentWatchlist.length} 只自选 · 今日 {formatMarketPercent(averageMarketChange)}
+            {tf('investments.stat.watchCount', '{count} 只自选').replace(
+              '{count}',
+              String(investmentWatchlist.length)
+            )}{' '}
+            · {tf('investments.todayPrefix', '今日')} {formatMarketPercent(averageMarketChange)}
           </span>
-          <small>数据更新 · {formatMarketClock(marketOverview?.updatedAt) || '待刷新'}</small>
+          <small>
+            {tf('investments.dataUpdatedPrefix', '数据更新')} ·{' '}
+            {formatMarketClock(marketOverview?.updatedAt) ||
+              tf('investments.refreshPending', '待刷新')}
+          </small>
         </div>
       </header>
 
-      <section className="investments-ai-context-bar" aria-label="AI 投资助手入口">
+      <section
+        className="investments-ai-context-bar"
+        aria-label={tf('investments.aiBarAria', 'AI 投资助手入口')}
+      >
         <span className="investments-ai-context-orb" aria-hidden="true">
           <ChatSparklesIcon className="chat-svg-icon" />
         </span>
         <div className="investments-ai-context-copy">
           <strong>
-            AI 投资助手已接入这页数据
+            {tf('investments.aiBarTitle', 'AI 投资助手已接入这页数据')}
             <em className="investment-chat-agent-badge">Agent</em>
           </strong>
           <span>
-            {activePositions.length} 笔持仓 · {investmentWatchlist.length} 只自选 · 今日{' '}
-            {formatMarketPercent(averageMarketChange)} · 行情{' '}
-            {formatMarketClock(marketOverview?.updatedAt) || '待刷新'}
+            {tf('investments.stat.positionCount', '{count} 笔持仓').replace(
+              '{count}',
+              String(activePositions.length)
+            )}{' '}
+            ·{' '}
+            {tf('investments.stat.watchCount', '{count} 只自选').replace(
+              '{count}',
+              String(investmentWatchlist.length)
+            )}{' '}
+            · {tf('investments.todayPrefix', '今日')} {formatMarketPercent(averageMarketChange)} ·{' '}
+            {tf('investments.marketPrefix', '行情')}{' '}
+            {formatMarketClock(marketOverview?.updatedAt) ||
+              tf('investments.refreshPending', '待刷新')}
           </span>
         </div>
         <div className="investments-ai-context-actions">
@@ -4905,11 +4949,11 @@ export function InvestmentsPage() {
             onClick={() =>
               askInvestmentAi(
                 '请帮我做一次持仓体检：看整体盈亏、仓位集中度、风险暴露和目标缺口，告诉我最优先要调整的一到两项，并给出具体金额或比例。',
-                { type: 'position', label: '持仓体检' }
+                { type: 'position', label: tf('investments.tab.checkup', '持仓体检') }
               )
             }
           >
-            持仓体检
+            {tf('investments.tab.checkup', '持仓体检')}
           </button>
           <button
             type="button"
@@ -4924,22 +4968,25 @@ export function InvestmentsPage() {
                     .map((item) => item.name),
                   news: marketNews[0]?.title
                 }),
-                { type: 'market', label: '今日行情复盘' }
+                { type: 'market', label: tf('investments.ask.review', '今日行情复盘') }
               )
             }
           >
-            今日复盘
+            {tf('investments.tab.review', '今日复盘')}
           </button>
         </div>
       </section>
 
-      <nav className="investments-console-tabs" aria-label="投资理财板块">
+      <nav
+        className="investments-console-tabs"
+        aria-label={tf('investments.tabsAria', '投资理财板块')}
+      >
         {(
           [
-            ['overview', '今日总览 & 大盘行情'],
-            ['boards', '板块监控'],
-            ['watchlist', '基金自选'],
-            ['news', '市场快讯']
+            ['overview', tf('investments.tab.overview', '今日总览 & 大盘行情')],
+            ['boards', tf('investments.tab.boards', '板块监控')],
+            ['watchlist', tf('investments.tab.watchlist', '基金自选')],
+            ['news', tf('investments.tab.news', '市场快讯')]
           ] as const
         ).map(([key, label]) => (
           <button
@@ -4961,7 +5008,7 @@ export function InvestmentsPage() {
           <>
             <section
               className="investments-core-grid investments-workspace-overview"
-              aria-label="今日投资看板"
+              aria-label={tf('investments.panels.todayAria', '今日投资看板')}
             >
               <HoldingsTodayPanel
                 positions={activePositions}
@@ -4983,7 +5030,10 @@ export function InvestmentsPage() {
                 onAskAi={askInvestmentAi}
               />
             </section>
-            <section className="investments-workspace-market" aria-label="大盘和市场监控">
+            <section
+              className="investments-workspace-market"
+              aria-label={tf('investments.panels.marketAria', '大盘和市场监控')}
+            >
               <MarketOverviewPanel
                 overview={marketOverview}
                 globalQuotes={globalMarketQuotes}
@@ -5025,7 +5075,10 @@ export function InvestmentsPage() {
         ) : null}
 
         {investmentWorkspace === 'news' ? (
-          <section className="investments-workspace-news" aria-label="市场快讯">
+          <section
+            className="investments-workspace-news"
+            aria-label={tf('investments.tab.news', '市场快讯')}
+          >
             <MarketNewsPanel
               news={marketNews}
               selectedCategoryId={selectedNewsCategoryId}
@@ -5039,14 +5092,17 @@ export function InvestmentsPage() {
         ) : null}
 
         {investmentWorkspace === 'watchlist' ? (
-          <section className="investments-workspace-watchlist" aria-label="基金自选">
+          <section
+            className="investments-workspace-watchlist"
+            aria-label={tf('investments.tab.watchlist', '基金自选')}
+          >
             <aside
               className="panel investments-watchlist-panel"
-              data-investment-support-title="基金自选"
+              data-investment-support-title={tf('investments.tab.watchlist', '基金自选')}
             >
               <div className="investments-section-head investments-watchlist-head">
                 <div>
-                  <h3>基金自选</h3>
+                  <h3>{tf('investments.tab.watchlist', '基金自选')}</h3>
                 </div>
                 <div className="investments-watchlist-actions">
                   <span className="badge">{investmentWatchlist.length} 只</span>
