@@ -2058,6 +2058,58 @@
       "catForex": "外汇",
       "catBond": "债券",
       "catFund": "基金"
+    },
+    "detail": {
+      "sections": {
+        "performance": "历史业绩",
+        "analysis": "基金分析",
+        "holdings": "基金持仓",
+        "assetAllocation": "基金资产分布",
+        "industryAllocation": "行业分布",
+        "buyFee": "买入费率",
+        "company": "基金公司",
+        "reasons": "判断依据",
+        "riskNotes": "风险提示"
+      },
+      "risk": {
+        "low": "偏稳",
+        "medium": "均衡",
+        "high": "进取"
+      },
+      "time": {
+        "unavailable": "数据更新时间暂不可用",
+        "today": "今天",
+        "yesterday": "昨天",
+        "rawPrefix": "数据时间:{value}",
+        "navDate": "净值日期 {year}年{month}月{day}日",
+        "monthDay": "{month}月{day}日",
+        "estimateUpdated": "估值更新至{day} {time}"
+      },
+      "category": {
+        "cash": "现金理财",
+        "fixedIncome": "固收",
+        "indexFund": "指数基金",
+        "activeFund": "主动基金",
+        "stock": "股票",
+        "gold": "黄金",
+        "other": "其他"
+      }
+    },
+    "watchFilter": {
+      "all": "全部",
+      "allShort": "全",
+      "stock": "个股",
+      "stockShort": "股",
+      "index-fund": "指数",
+      "index-fundShort": "指",
+      "active-fund": "主动",
+      "active-fundShort": "主",
+      "fixed-income": "债券",
+      "fixed-incomeShort": "债",
+      "cash": "货币",
+      "cashShort": "货",
+      "other": "其他",
+      "otherShort": "其"
     }
   }
 }

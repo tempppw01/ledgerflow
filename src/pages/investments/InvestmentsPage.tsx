@@ -89,6 +89,20 @@ const POSITION_CATEGORY_LABELS: Record<InvestmentCategory, string> = {
   other: '其他'
 };
 
+const POSITION_CATEGORY_KEYS: Record<InvestmentCategory, string> = {
+  cash: 'investments.detail.category.cash',
+  'fixed-income': 'investments.detail.category.fixedIncome',
+  'index-fund': 'investments.detail.category.indexFund',
+  'active-fund': 'investments.detail.category.activeFund',
+  stock: 'investments.detail.category.stock',
+  gold: 'investments.detail.category.gold',
+  other: 'investments.detail.category.other'
+};
+
+function getPositionCategoryLabel(category: InvestmentCategory, tf: TfFallback): string {
+  return tf(POSITION_CATEGORY_KEYS[category], POSITION_CATEGORY_LABELS[category]);
+}
+
 type WatchCategoryFilterId =
   | 'all'
   | 'stock'
@@ -98,14 +112,62 @@ type WatchCategoryFilterId =
   | 'cash'
   | 'other';
 
-const WATCH_CATEGORY_FILTERS: Array<{ id: WatchCategoryFilterId; label: string; mark: string }> = [
-  { id: 'all', label: '全部', mark: '全' },
-  { id: 'stock', label: '个股', mark: '股' },
-  { id: 'index-fund', label: '指数', mark: '指' },
-  { id: 'active-fund', label: '主动', mark: '主' },
-  { id: 'fixed-income', label: '债券', mark: '债' },
-  { id: 'cash', label: '货币', mark: '货' },
-  { id: 'other', label: '其他', mark: '其' }
+const WATCH_CATEGORY_FILTERS: Array<{
+  id: WatchCategoryFilterId;
+  label: string;
+  labelKey: string;
+  mark: string;
+  markKey: string;
+}> = [
+  {
+    id: 'all',
+    label: '全部',
+    labelKey: 'investments.watchFilter.all',
+    mark: '全',
+    markKey: 'investments.watchFilter.allShort'
+  },
+  {
+    id: 'stock',
+    label: '个股',
+    labelKey: 'investments.watchFilter.stock',
+    mark: '股',
+    markKey: 'investments.watchFilter.stockShort'
+  },
+  {
+    id: 'index-fund',
+    label: '指数',
+    labelKey: 'investments.watchFilter.index-fund',
+    mark: '指',
+    markKey: 'investments.watchFilter.index-fundShort'
+  },
+  {
+    id: 'active-fund',
+    label: '主动',
+    labelKey: 'investments.watchFilter.active-fund',
+    mark: '主',
+    markKey: 'investments.watchFilter.active-fundShort'
+  },
+  {
+    id: 'fixed-income',
+    label: '债券',
+    labelKey: 'investments.watchFilter.fixed-income',
+    mark: '债',
+    markKey: 'investments.watchFilter.fixed-incomeShort'
+  },
+  {
+    id: 'cash',
+    label: '货币',
+    labelKey: 'investments.watchFilter.cash',
+    mark: '货',
+    markKey: 'investments.watchFilter.cashShort'
+  },
+  {
+    id: 'other',
+    label: '其他',
+    labelKey: 'investments.watchFilter.other',
+    mark: '其',
+    markKey: 'investments.watchFilter.otherShort'
+  }
 ];
 
 const WATCH_GRID_COLUMN_OPTIONS = [1, 2, 3] as const;
@@ -181,36 +243,46 @@ function formatDateTimeLabel(value?: string) {
   }
 }
 
-function formatFundDataFreshness(value?: string) {
-  if (!value) return '数据更新时间暂不可用';
+function formatFundDataFreshness(value: string | undefined, tf: TfFallback) {
+  if (!value) return tf('investments.detail.time.unavailable', '数据更新时间暂不可用');
   const normalizedValue = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(value)
     ? value.replace(' ', 'T')
     : value;
   const date = new Date(normalizedValue);
   if (!Number.isFinite(date.getTime())) return `数据时间：${value}`;
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return `净值日期 ${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+    return tf('investments.detail.time.navDate', '净值日期 {year}年{month}月{day}日')
+      .replace('{year}', String(date.getFullYear()))
+      .replace('{month}', String(date.getMonth() + 1))
+      .replace('{day}', String(date.getDate()));
   }
   const now = new Date();
   const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
   const dayLabel =
     date.toDateString() === now.toDateString()
-      ? '今天'
+      ? tf('investments.detail.time.today', '今天')
       : date.toDateString() === yesterday.toDateString()
-        ? '昨天'
-        : `${date.getMonth() + 1}月${date.getDate()}日`;
+        ? tf('investments.detail.time.yesterday', '昨天')
+        : tf('investments.detail.time.monthDay', '{month}月{day}日')
+            .replace('{month}', String(date.getMonth() + 1))
+            .replace('{day}', String(date.getDate()));
   const time = date.toLocaleTimeString('zh-CN', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false
   });
-  return `估值更新至${dayLabel} ${time}`;
+  return tf('investments.detail.time.estimateUpdated', '估值更新至{day} {time}')
+    .replace('{day}', dayLabel)
+    .replace('{time}', time);
 }
 
-function getAnalysisRiskLabel(riskLevel?: InvestmentFundAnalysis['riskLevel']) {
-  if (riskLevel === 'low') return '偏稳';
-  if (riskLevel === 'medium') return '均衡';
-  if (riskLevel === 'high') return '进取';
+function getAnalysisRiskLabel(
+  riskLevel: InvestmentFundAnalysis['riskLevel'] | undefined,
+  tf: TfFallback
+) {
+  if (riskLevel === 'low') return tf('investments.detail.risk.low', '偏稳');
+  if (riskLevel === 'medium') return tf('investments.detail.risk.medium', '均衡');
+  if (riskLevel === 'high') return tf('investments.detail.risk.high', '进取');
   return '';
 }
 
@@ -227,17 +299,56 @@ type WatchDetailSection = {
   items: string[];
 };
 
-function compactWatchDetailSections(item: InvestmentWatchItem): WatchDetailSection[] {
+function compactWatchDetailSections(
+  item: InvestmentWatchItem,
+  tf: TfFallback
+): WatchDetailSection[] {
   return [
-    { title: '历史业绩', kind: 'chart' as const, items: item.performanceHistory || [] },
-    { title: '基金分析', kind: 'text' as const, items: item.fundAnalysis || [] },
-    { title: '基金持仓', kind: 'chips' as const, items: item.fundHoldings || [] },
-    { title: '基金资产分布', kind: 'chips' as const, items: item.assetAllocation || [] },
-    { title: '行业分布', kind: 'chips' as const, items: item.industryAllocation || [] },
-    { title: '买入费率', kind: 'stat' as const, items: item.buyFeeRate ? [item.buyFeeRate] : [] },
-    { title: '基金公司', kind: 'stat' as const, items: item.fundCompany ? [item.fundCompany] : [] },
-    { title: '判断依据', kind: 'text' as const, items: item.adviceReasons || [] },
-    { title: '风险提示', kind: 'text' as const, items: item.riskNotes || [] }
+    {
+      title: tf('investments.detail.sections.performance', '历史业绩'),
+      kind: 'chart' as const,
+      items: item.performanceHistory || []
+    },
+    {
+      title: tf('investments.detail.sections.analysis', '基金分析'),
+      kind: 'text' as const,
+      items: item.fundAnalysis || []
+    },
+    {
+      title: tf('investments.detail.sections.holdings', '基金持仓'),
+      kind: 'chips' as const,
+      items: item.fundHoldings || []
+    },
+    {
+      title: tf('investments.detail.sections.assetAllocation', '基金资产分布'),
+      kind: 'chips' as const,
+      items: item.assetAllocation || []
+    },
+    {
+      title: tf('investments.detail.sections.industryAllocation', '行业分布'),
+      kind: 'chips' as const,
+      items: item.industryAllocation || []
+    },
+    {
+      title: tf('investments.detail.sections.buyFee', '买入费率'),
+      kind: 'stat' as const,
+      items: item.buyFeeRate ? [item.buyFeeRate] : []
+    },
+    {
+      title: tf('investments.detail.sections.company', '基金公司'),
+      kind: 'stat' as const,
+      items: item.fundCompany ? [item.fundCompany] : []
+    },
+    {
+      title: tf('investments.detail.sections.reasons', '判断依据'),
+      kind: 'text' as const,
+      items: item.adviceReasons || []
+    },
+    {
+      title: tf('investments.detail.sections.riskNotes', '风险提示'),
+      kind: 'text' as const,
+      items: item.riskNotes || []
+    }
   ].filter((section) => section.items.length > 0);
 }
 
@@ -894,7 +1005,7 @@ function HoldingsTodayPanel({
                           profitRate: positionProfitRate * 100,
                           allocationShare,
                           currentValue: position.currentValue,
-                          riskLevel: getAnalysisRiskLabel(position.riskLevel) || undefined,
+                          riskLevel: getAnalysisRiskLabel(position.riskLevel, tf) || undefined,
                           monthlyContribution: position.monthlyContribution
                         }),
                         { type: 'position', label: position.name }
@@ -904,7 +1015,7 @@ function HoldingsTodayPanel({
                     <ChatSparklesIcon className="chat-svg-icon" />
                   </button>
                 </div>
-                <span>{POSITION_CATEGORY_LABELS[position.category]}</span>
+                <span>{getPositionCategoryLabel(position.category, tf)}</span>
               </div>
               <div>
                 <span>{tf('investments.holdings.marketValue', '当前市值')}</span>
@@ -4172,15 +4283,15 @@ export function InvestmentsPage() {
     const totalProfit = totalCurrentValue - totalInvested;
     const profitRate = totalInvested > 0 ? totalProfit / totalInvested : 0;
 
-    const allocationRows = Object.entries(POSITION_CATEGORY_LABELS)
-      .map(([category, label]) => {
+    const allocationRows = Object.keys(POSITION_CATEGORY_LABELS)
+      .map((category) => {
         const value = activePositions
           .filter((item) => item.category === category)
           .reduce((sum, item) => sum + item.currentValue, 0);
         const share = totalCurrentValue > 0 ? value / totalCurrentValue : 0;
         return {
           category: category as InvestmentCategory,
-          label,
+          label: getPositionCategoryLabel(category as InvestmentCategory, tf),
           value,
           share
         };
@@ -4196,7 +4307,7 @@ export function InvestmentsPage() {
       profitRate,
       allocationRows
     };
-  }, [activePositions]);
+  }, [activePositions, tf]);
 
   const monthlyInvestableCash = useMemo(() => {
     const baseline = monthlyIncome > 0 ? monthlyIncome - monthExpenseTotal : monthNetBalance;
@@ -5506,7 +5617,7 @@ export function InvestmentsPage() {
                               disabled={count === 0 && category.id !== 'all'}
                               value={category.id}
                             >
-                              {category.label} {count}
+                              {tf(category.labelKey, category.label)} {count}
                             </option>
                           );
                         })}
@@ -5560,7 +5671,7 @@ export function InvestmentsPage() {
                     >
                       {filteredInvestmentWatchlist.map((item) => {
                         const isExpanded = expandedWatchItemId === item.id;
-                        const detailSections = compactWatchDetailSections(item);
+                        const detailSections = compactWatchDetailSections(item, tf);
                         const performanceSection = detailSections.find(
                           (section) => section.title === '历史业绩'
                         );
@@ -5606,13 +5717,14 @@ export function InvestmentsPage() {
                                 <span className="investments-watch-card-category">
                                   {watchCategory.label}
                                 </span>
-                                {item.lastRiskLevel && getAnalysisRiskLabel(item.lastRiskLevel) ? (
+                                {item.lastRiskLevel &&
+                                getAnalysisRiskLabel(item.lastRiskLevel, tf) ? (
                                   <span
                                     className={`investments-analysis-risk ${getAnalysisRiskClass(
                                       item.lastRiskLevel
                                     )}`}
                                   >
-                                    {getAnalysisRiskLabel(item.lastRiskLevel)}
+                                    {getAnalysisRiskLabel(item.lastRiskLevel, tf)}
                                   </span>
                                 ) : null}
                                 <button
@@ -5702,7 +5814,7 @@ export function InvestmentsPage() {
                                       name: item.name,
                                       code: item.code,
                                       riskLevel:
-                                        getAnalysisRiskLabel(item.lastRiskLevel) || undefined,
+                                        getAnalysisRiskLabel(item.lastRiskLevel, tf) || undefined,
                                       advice: item.investmentAdvice,
                                       netValue: item.netValue,
                                       addedReturn: item.addedReturn,
@@ -5747,7 +5859,7 @@ export function InvestmentsPage() {
                               </button>
                             </div>
                             <div className="investments-watch-card-meta">
-                              <span>{formatFundDataFreshness(item.lastDataAt)}</span>
+                              <span>{formatFundDataFreshness(item.lastDataAt, tf)}</span>
                             </div>
 
                             {isExpanded ? (

@@ -2058,6 +2058,58 @@
       "catForex": "Forex",
       "catBond": "Bonds",
       "catFund": "Funds"
+    },
+    "detail": {
+      "sections": {
+        "performance": "Historical performance",
+        "analysis": "Fund analysis",
+        "holdings": "Top holdings",
+        "assetAllocation": "Asset allocation",
+        "industryAllocation": "Industry allocation",
+        "buyFee": "Purchase fee",
+        "company": "Fund company",
+        "reasons": "Why this view",
+        "riskNotes": "Risk notes"
+      },
+      "risk": {
+        "low": "Conservative",
+        "medium": "Balanced",
+        "high": "Aggressive"
+      },
+      "time": {
+        "unavailable": "Update time unavailable",
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "rawPrefix": "Data time: {value}",
+        "navDate": "NAV date {year}-{month}-{day}",
+        "monthDay": "{month}/{day}",
+        "estimateUpdated": "Estimate updated {day} {time}"
+      },
+      "category": {
+        "cash": "Cash management",
+        "fixedIncome": "Fixed income",
+        "indexFund": "Index fund",
+        "activeFund": "Active fund",
+        "stock": "Stock",
+        "gold": "Gold",
+        "other": "Other"
+      }
+    },
+    "watchFilter": {
+      "all": "All",
+      "allShort": "All",
+      "stock": "Stocks",
+      "stockShort": "S",
+      "index-fund": "Index",
+      "index-fundShort": "I",
+      "active-fund": "Active",
+      "active-fundShort": "A",
+      "fixed-income": "Bonds",
+      "fixed-incomeShort": "B",
+      "cash": "Cash",
+      "cashShort": "C",
+      "other": "Other",
+      "otherShort": "O"
     }
   }
 }
