@@ -2209,5 +2209,48 @@
     "currentModel": "Current model",
     "welcomeHint": "Ask about your holdings, SIP plans or today’s market. I will state the conclusion and the evidence behind it.",
     "quickPromptsAria": "Quick questions"
+  },
+  "repayment": {
+    "eyebrow": "Assets & debt / Repayment",
+    "title": "Repayment",
+    "subtitle": "Keep every due and paid amount on one clear timeline, and manage debt at your own pace.",
+    "statusAria": "Repayment overview",
+    "debtUnit": "debts",
+    "card": {
+      "totalDebt": "💰 Total debt",
+      "totalDebtHint": "Active debts only",
+      "monthlyDue": "📉 Monthly due",
+      "pressure": "⚠️ Debt-to-income",
+      "health": "🩺 Debt health",
+      "archived": "🗂️ Archived debt",
+      "archivedTotal": "Balance total",
+      "income": "💼 Monthly income",
+      "incomeSource": "Source:"
+    },
+    "health": {
+      "title": "Debt health",
+      "aria": "About debt health",
+      "show": "View how debt health is calculated",
+      "close": "Close the debt health explanation",
+      "scope": "What is counted",
+      "scopeDesc": "Active debts only; settled, closed, paused and simple reminders are excluded.",
+      "dimensions": "How it is judged",
+      "dimensionsDesc": "Total debt against annual income, plus monthly due against monthly income.",
+      "disclaimer": "A cash-flow reference, not a credit score or lending decision."
+    },
+    "unitDebtShort": "items",
+    "income": {
+      "title": "Monthly income",
+      "subtitle": "Used for debt pressure and repayment advice",
+      "placeholder": "Enter your monthly after-tax income",
+      "aria": "Manual monthly income",
+      "save": "Save income"
+    },
+    "upload": {
+      "aria": "Upload a debt screenshot"
+    },
+    "list": {
+      "title": "Debts"
+    }
   }
 }

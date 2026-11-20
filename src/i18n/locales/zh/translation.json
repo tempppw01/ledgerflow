@@ -2209,5 +2209,48 @@
     "currentModel": "当前模型",
     "welcomeHint": "可以从你的持仓、基金定投或今天的市场开始问。我会把结论和判断依据说清楚。",
     "quickPromptsAria": "快捷问题"
+  },
+  "repayment": {
+    "eyebrow": "资产负债 / 还款管理",
+    "title": "还款管理",
+    "subtitle": "把每一笔应还和已还放在同一条清晰的时间线上,按自己的节奏维护负债。",
+    "statusAria": "还款管理概况",
+    "debtUnit": "笔负债",
+    "card": {
+      "totalDebt": "💰 总负债",
+      "totalDebtHint": "仅统计进行中的负债",
+      "monthlyDue": "📉 每月应还",
+      "pressure": "⚠️ 负债率",
+      "health": "🩺 负债健康度",
+      "archived": "🗂️ 历史负债",
+      "archivedTotal": "余额合计",
+      "income": "💼 月收入",
+      "incomeSource": "来源:"
+    },
+    "health": {
+      "title": "负债健康度",
+      "aria": "负债健康度说明",
+      "show": "查看负债健康度说明",
+      "close": "关闭负债健康度说明",
+      "scope": "计算对象",
+      "scopeDesc": "仅统计进行中的负债,不含已结清、关闭、暂缓和简单提醒。",
+      "dimensions": "评估维度",
+      "dimensionsDesc": "负债总额相对年收入,以及每月应还相对月收入的压力。",
+      "disclaimer": "这是现金流参考指标,不是征信评分或授信结论。"
+    },
+    "unitDebtShort": "笔",
+    "income": {
+      "title": "月收入设置",
+      "subtitle": "用于计算负债压力和还款建议",
+      "placeholder": "输入每月税后收入",
+      "aria": "手动月收入",
+      "save": "保存收入"
+    },
+    "upload": {
+      "aria": "上传负债截图"
+    },
+    "list": {
+      "title": "负债列表"
+    }
   }
 }
