@@ -15,6 +15,10 @@ export type BudgetHealth = {
   factors: BudgetHealthFactor[];
 };
 
+export type BudgetHealthTranslator = (key: string, fallback: string) => string;
+
+const identityHealthTranslator: BudgetHealthTranslator = (_key, fallback) => fallback;
+
 const LEVEL_LABEL: Record<BudgetHealthLevel, string> = {
   excellent: '状态优秀',
   good: '状态良好',
@@ -28,12 +32,15 @@ const LEVEL_LABEL: Record<BudgetHealthLevel, string> = {
  * - 执行节奏：只对超出预算的部分加重扣分，省钱不做惩罚。
  * - 收支平衡：本月收入覆盖不了支出时扣分。
  */
-export function calculateBudgetHealth(params: {
-  executionRate: number;
-  overspentCount: number;
-  monthIncome: number;
-  monthExpense: number;
-}): BudgetHealth {
+export function calculateBudgetHealth(
+  params: {
+    executionRate: number;
+    overspentCount: number;
+    monthIncome: number;
+    monthExpense: number;
+  },
+  t: BudgetHealthTranslator = identityHealthTranslator
+): BudgetHealth {
   const executionRate = Number.isFinite(params.executionRate) ? params.executionRate : 0;
   const overspentCount = Math.max(0, Math.round(params.overspentCount));
   const monthIncome = Number.isFinite(params.monthIncome) ? Math.max(0, params.monthIncome) : 0;
@@ -54,38 +61,62 @@ export function calculateBudgetHealth(params: {
   const factors: BudgetHealthFactor[] = [
     {
       key: 'overspend',
-      label: '分类超支',
+      label: t('smartBudget.health.factor.overspend.label', '分类超支'),
       penalty: Math.round(overspendPenalty),
-      detail: overspentCount > 0 ? `${overspentCount} 个分类已经超出预算` : '没有分类超出预算'
+      detail:
+        overspentCount > 0
+          ? t(
+              'smartBudget.health.factor.overspend.detail.some',
+              '{count} 个分类已经超出预算'
+            ).replace('{count}', String(overspentCount))
+          : t('smartBudget.health.factor.overspend.detail.none', '没有分类超出预算')
     },
     {
       key: 'execution',
-      label: '执行节奏',
+      label: t('smartBudget.health.factor.execution.label', '执行节奏'),
       penalty: Math.round(executionPenalty),
       detail:
         executionRate > 1
-          ? `整体已用掉预算的 ${(executionRate * 100).toFixed(0)}%`
-          : `整体用掉预算的 ${(executionRate * 100).toFixed(0)}%，节奏可控`
+          ? t(
+              'smartBudget.health.factor.execution.detail.over',
+              '整体已用掉预算的 {percent}%'
+            ).replace('{percent}', String((executionRate * 100).toFixed(0)))
+          : t(
+              'smartBudget.health.factor.execution.detail.under',
+              '整体用掉预算的 {percent}%，节奏可控'
+            ).replace('{percent}', String((executionRate * 100).toFixed(0)))
     },
     {
       key: 'balance',
-      label: '收支平衡',
+      label: t('smartBudget.health.factor.balance.label', '收支平衡'),
       penalty: Math.round(balancePenalty),
       detail:
         monthExpense > 0 && monthIncome < monthExpense
-          ? `收入比支出少 ${Math.round(monthExpense - monthIncome)} 元`
-          : '收入可以覆盖本月支出'
+          ? t('smartBudget.health.factor.balance.detail.short', '收入比支出少 {amount} 元').replace(
+              '{amount}',
+              String(Math.round(monthExpense - monthIncome))
+            )
+          : t('smartBudget.health.factor.balance.detail.cover', '收入可以覆盖本月支出')
     }
   ];
 
   const summary =
     level === 'excellent'
-      ? '预算执行得很稳，可以把结余优先安排到储蓄或应急金。'
+      ? t(
+          'smartBudget.health.summary.excellent',
+          '预算执行得很稳，可以把结余优先安排到储蓄或应急金。'
+        )
       : level === 'good'
-        ? '整体执行健康，保持现在的节奏就可以。'
+        ? t('smartBudget.health.summary.good', '整体执行健康，保持现在的节奏就可以。')
         : level === 'fair'
-          ? '还有收紧空间，优先从超支分类里压降。'
-          : '当前预算缺口明显，建议立刻调整超支分类的额度。';
+          ? t('smartBudget.health.summary.fair', '还有收紧空间，优先从超支分类里压降。')
+          : t('smartBudget.health.summary.risk', '当前预算缺口明显，建议立刻调整超支分类的额度。');
 
-  return { score, level, label: LEVEL_LABEL[level], summary, factors };
+  return {
+    score,
+    level,
+    label: t(`smartBudget.health.level.${level}`, LEVEL_LABEL[level]),
+    summary,
+    factors
+  };
 }

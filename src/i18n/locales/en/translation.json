@@ -2357,7 +2357,8 @@
       "pending": "To be filled",
       "amount": "Amount",
       "minimumPayment": "Minimum payment",
-      "apr": "Annual rate (APR)"
+      "apr": "Annual rate (APR)",
+      "selectPrompt": "Select a debt from the list to view details"
     },
     "type": {
       "creditCard": "Credit card",
@@ -2365,7 +2366,516 @@
       "loan": "Loan"
     },
     "form": {
-      "actualAmountAria": "Actual repayment amount"
+      "actualAmountAria": "Actual repayment amount",
+      "estimatedPrefix": "Estimated:",
+      "addTitle": "Add debt",
+      "apr": "Annual interest rate",
+      "balancePlaceholder": "Enter remaining principal",
+      "basicHint": "Enter a name and remaining principal first; add the loan term for an estimate.",
+      "custom": "Custom",
+      "dayUnit": "day",
+      "editTitle": "Edit debt",
+      "equalPayment": "Equal payment",
+      "equalPrincipal": "Equal principal",
+      "extracted": "Recognized",
+      "extracting": "Reading…",
+      "fixedMonthly": "Fixed monthly payment (term and amount below)",
+      "imageHint": "Supports Alipay, bank and credit card statement screenshots.",
+      "imagePreviewAlt": "Debt screenshot preview",
+      "manualAmountKept": "manual amount kept",
+      "modeAria": "Entry mode",
+      "modeFull": "Full entry",
+      "modeSimple": "Quick entry",
+      "moreSettings": "More settings",
+      "moreSettingsHint": "Due day and record method",
+      "nameAria": "Debt name",
+      "namePlaceholder": "e.g. Bank credit card",
+      "paymentMethod": "Payment method",
+      "planHint": "If you do not know the total repayment, enter each instalment manually.",
+      "planManual": "Manual instalments",
+      "planMode": "Repayment plan",
+      "planStructured": "By total term",
+      "presetsAria": "Common loan templates",
+      "presetsHint": "Choose a template, then fill in the amounts and terms from your agreement.",
+      "presetsTitle": "Common loans",
+      "recordMode": "Record method",
+      "status": "Status",
+      "statusActive": "Active",
+      "statusClosed": "Closed",
+      "statusPaused": "Paused",
+      "statusSettled": "Settled",
+      "type": "Type",
+      "typeAria": "Debt type",
+      "typeConsumer": "Consumer / instalment loan",
+      "typeCredit": "Credit debt",
+      "uploadRecognize": "Upload a statement to recognize automatically"
+    },
+    "repayment": {
+      "record": {
+        "heading": "Record this period’s payment",
+        "hint": "Enter the amount and date first; notes can be added later.",
+        "fillPlanned": "Use planned amount",
+        "dateAria": "Actual payment date",
+        "todayAria": "Set to today",
+        "today": "Today",
+        "modeAria": "Repayment record method",
+        "modeManual": "Manual entry",
+        "modeMatch": "Match transaction",
+        "modeAuto": "Auto debit",
+        "notePlaceholder": "Note (optional)",
+        "submit": "Record payment",
+        "listTitle": "Repayment history",
+        "empty": "No payment records yet. Record one to start.",
+        "notePrefix": "Note:"
+      },
+      "detail": {
+        "selectPrompt": "Select a debt from the list to view details"
+      },
+      "form": {
+        "editTitle": "Edit debt",
+        "addTitle": "Add debt",
+        "modeAria": "Entry mode",
+        "modeSimple": "Quick entry",
+        "modeFull": "Full entry",
+        "presetsAria": "Common loan templates",
+        "presetsTitle": "Common loans",
+        "presetsHint": "Choose a template, then fill in the amounts and terms from your agreement.",
+        "extracting": "Reading…",
+        "extracted": "Recognized",
+        "uploadRecognize": "Upload a statement to recognize automatically",
+        "imageHint": "Supports Alipay, bank and credit card statement screenshots.",
+        "imagePreviewAlt": "Debt screenshot preview",
+        "basicHint": "Enter a name and remaining principal first; add the loan term for an estimate.",
+        "nameAria": "Debt name",
+        "namePlaceholder": "e.g. Bank credit card",
+        "type": "Type",
+        "typeAria": "Debt type",
+        "typeCredit": "Credit debt",
+        "typeConsumer": "Consumer / instalment loan",
+        "balancePlaceholder": "Enter remaining principal",
+        "estimatedPrefix": "Estimated:",
+        "manualAmountKept": "manual amount kept",
+        "planMode": "Repayment plan",
+        "planHint": "If you do not know the total repayment, enter each instalment manually.",
+        "planStructured": "By total term",
+        "planManual": "Manual instalments",
+        "moreSettings": "More settings",
+        "moreSettingsHint": "Due day and record method",
+        "dayUnit": "day",
+        "paymentMethod": "Payment method",
+        "fixedMonthly": "Fixed monthly payment (term and amount below)",
+        "equalPayment": "Equal payment",
+        "equalPrincipal": "Equal principal",
+        "custom": "Custom",
+        "recordMode": "Record method",
+        "status": "Status",
+        "statusActive": "Active",
+        "statusSettled": "Settled",
+        "statusClosed": "Closed",
+        "statusPaused": "Paused",
+        "apr": "Annual interest rate"
+      }
+    },
+    "record": {
+      "dateAria": "Actual payment date",
+      "empty": "No payment records yet. Record one to start.",
+      "fillPlanned": "Use planned amount",
+      "heading": "Record this period’s payment",
+      "hint": "Enter the amount and date first; notes can be added later.",
+      "modeAria": "Repayment record method",
+      "modeAuto": "Auto debit",
+      "modeManual": "Manual entry",
+      "modeMatch": "Match transaction",
+      "notePlaceholder": "Note (optional)",
+      "notePrefix": "Note:",
+      "submit": "Record payment",
+      "today": "Today",
+      "todayAria": "Set to today"
+    }
+  },
+  "categoriesAccounts": {
+    "accountName": "Account name",
+    "accountNamePlaceholder": "e.g. Chase debit card / Wallet / Alipay",
+    "accountType": {
+      "cash": "Cash",
+      "credit": "Credit card",
+      "debit": "Debit card",
+      "liability": "Liability",
+      "none": "Uncategorized",
+      "receivable": "Receivable",
+      "savings": "Savings card",
+      "virtual": "Virtual account"
+    },
+    "accountTypeLabel": "Account type",
+    "accountTypeOption": {
+      "cash": "💵 Cash",
+      "debit": "💳 Debit card",
+      "savings": "🏦 Savings card",
+      "virtual": "📱 Virtual account"
+    },
+    "accountTypePlaceholder": "Choose a type",
+    "accountsMetricsAria": "Account statistics",
+    "accountsSubtitle": "Balances update automatically as you record transactions. Double-click an amount to calibrate it.",
+    "accountsTitle": "Account management",
+    "accountsToolbarHint": "Keep bank cards, cash, and virtual accounts in one place for easier tracking.",
+    "add": "Add",
+    "addAccount": "+ Add account",
+    "addAdjustment": "Add adjustment",
+    "addChild": "+ Subcategory",
+    "adjustmentNote": "Single account adjustment",
+    "adjustmentPlaceholder": "+ income / - expense",
+    "adjustmentTag": "Account calibration",
+    "balanceAutoHint": "Summed from transactions · double-click to calibrate",
+    "balanceEditTitle": "Double-click to edit the balance",
+    "balancePlaceholder": "Enter balance",
+    "categoriesMetricsAria": "Category statistics",
+    "categoriesSubtitle": "Manage expenses and income separately, and nest subcategories under a top-level category.",
+    "categoriesTitle": "Category & tag management",
+    "childBadge": "Subcategory",
+    "collapse": "Collapse",
+    "confirm": {
+      "accountTrashPlain": "This account moves to the recycle bin first. You can still restore it or delete it permanently. Continue?",
+      "accountUsage": "This account has {count} transactions. Only the account itself moves to the recycle bin; the transactions are kept. Continue?",
+      "categoryChildren": "Its {count} subcategories will be promoted to top-level categories. ",
+      "categoryTrashed": "After it moves to the recycle bin, those transactions are kept and filed under “Uncategorized”. Continue?",
+      "categoryTrashedOnly": "This category moves to the recycle bin first. You can still restore it or delete it permanently. Continue?",
+      "categoryUsage": "This category has {count} transactions. ",
+      "tagRemovePlain": "This cannot be undone. Continue?",
+      "tagUsage": "This tag is used on {count} transactions and will be removed from them. Continue?"
+    },
+    "confirmRemove": "Remove",
+    "confirmRemoveTagTitle": "Remove tag?",
+    "confirmTrashTitle": "Move to recycle bin?",
+    "countItems": "items",
+    "delete": "Delete",
+    "deleteCategoryAria": "Delete category {name}",
+    "deleteTagAria": "Delete tag {name}",
+    "edit": "Edit",
+    "emptyAccountsDescription": "Add your first money account.",
+    "emptyAccountsTitle": "No accounts yet",
+    "emptyCategoriesDescription": "Add a top-level category first, then nest subcategories under it.",
+    "emptyCategoriesTitle": "No categories yet",
+    "emptyTagsDescription": "Tags you add to transactions are collected here automatically.",
+    "emptyTagsTitle": "No tags yet",
+    "error": {
+      "accountName": "Account names must be 1–24 characters and cannot contain < or >.",
+      "accountType": "Choose an account type before adding the account.",
+      "categoryName": "Category names must be 1–24 characters and cannot contain < or >."
+    },
+    "expandRemaining": "Show {count} more",
+    "initialBalance": "Opening balance",
+    "initialPrefix": "Opening:",
+    "kindExpense": "Expense categories",
+    "kindExpenseShort": "Expense",
+    "kindIncome": "Income categories",
+    "kindIncomeShort": "Income",
+    "kindTabsAria": "Category type",
+    "merge": "Merge",
+    "mergeIntoPlaceholder": "Merge into…",
+    "mergeTargetAria": "Choose a merge target for {name}",
+    "metricChild": "Subcategories",
+    "metricRoot": "Top-level",
+    "metricTag": "Tags",
+    "moveAccountDownAria": "Move account {name} down",
+    "moveAccountUpAria": "Move account {name} up",
+    "moveCategoryDownAria": "Move category {name} down",
+    "moveCategoryUpAria": "Move category {name} up",
+    "moveDown": "↓ Down",
+    "moveToTrash": "Move to recycle bin",
+    "moveUp": "↑ Up",
+    "negativeBalance": "Negative balances",
+    "newAccountHint": "New accounts are included in transaction totals and balance statistics.",
+    "newCategoryNameAria": "New category name",
+    "newExpensePlaceholder": "New expense category",
+    "newIncomePlaceholder": "New income category",
+    "parentCategoryAria": "Parent category",
+    "parentIntoPrefix": "Under",
+    "parentNone": "Top-level category",
+    "rename": "Rename",
+    "renameCategoryAria": "Rename category {name}",
+    "renameTagAria": "Rename tag {name}",
+    "saveAccount": "Save account",
+    "setParentAria": "Set a parent for category {name}",
+    "shownPrefix": "Showing",
+    "singleAdjustment": "Single adjustment",
+    "statAria": "Accounts and categories overview",
+    "statUnit": " base settings",
+    "structureTitle": "Category structure",
+    "subtitle": "Manage your categories, tags, and money accounts in one tidy workspace.",
+    "tabAccounts": "Money accounts",
+    "tabCategories": "Categories & Tags",
+    "tabsAria": "Accounts and categories workspaces",
+    "tagLibraryHint": "Tags come from transaction notes and AI recognition. Merge or clean them up here.",
+    "tagLibraryTitle": "Tag library",
+    "toolsSummary": "Manage",
+    "totalBalance": "Total balance",
+    "treeHintSuffix": " tree · use “+ Subcategory” to add another level",
+    "viewCategoryTxAria": "View the {count} transactions in {name}"
+  },
+  "smartBudget": {
+    "action": {
+      "adjusted": "Set the “{category}” budget to {amount}",
+      "adjustedFeedback": "The “{category}” budget is now {amount}; other categories were rebalanced proportionally.",
+      "reminder": "Reminder set for “{category}” overspending this month — aim to cut at least {amount}"
+    },
+    "ai": {
+      "defaultSummary": "Budget execution looks steady; keep tracking the overspent items.",
+      "failed": "Failed to generate AI suggestions",
+      "noData": "There is no budget data to analyze for this month yet.",
+      "notConfigured": "No AI model configured. Set the model endpoint, key, and model name in Settings first."
+    },
+    "backToDashboard": "Back to the budget board",
+    "categorySectionHint": "Open any category to see the details, or fine-tune the budget right on the card.",
+    "categorySectionTitle": "Category budget execution",
+    "clearButton": "Clear budget",
+    "error": {
+      "fixedLessThanIncome": "Fixed costs must be lower than monthly income to build a workable budget.",
+      "fixedNonNegative": "Fixed costs cannot be less than 0.",
+      "generateFailed": "Failed to generate the budget.",
+      "incomePositive": "Monthly income must be greater than 0."
+    },
+    "filterAll": "All",
+    "filterAria": "Budget status filter",
+    "filterOverspent": "Overspent",
+    "filterSafe": "On track",
+    "historyButton": "Budget history",
+    "identity": {
+      "employee": "Employee",
+      "freelancer": "Freelancer",
+      "other": "Other",
+      "student": "Student"
+    },
+    "identityHint": {
+      "employee": "Steady income, predictable spending pattern",
+      "freelancer": "Irregular income, so keep a buffer",
+      "other": "Start from a general-purpose baseline",
+      "student": "Low fixed costs and a more flexible schedule"
+    },
+    "logAria": "Suggested action log",
+    "logHint": "Recent adjustments stay here for easy review.",
+    "logTitle": "Action log",
+    "monthLabel": "Month",
+    "monthlyIncomeSuffix": "· Monthly income",
+    "needSetup": "Finish and confirm your budget setup before opening the smart budget board.",
+    "restartButton": "Set up again",
+    "savingsSuffix": "· Savings",
+    "subtitle": "Answer five questions to generate a monthly budget you can actually follow.",
+    "title": "Smart budget",
+    "wizard": {
+      "categoryAmountAria": "{category} budget amount",
+      "confirm": {
+        "fixedBills": "Fixed bills",
+        "flexibleDaily": "Flexible daily spending",
+        "monthlyIncome": "Take-home pay",
+        "savingsFirst": "Saved first"
+      },
+      "confirmAria": "Budget confirmation",
+      "confirmPlan": "Use this budget",
+      "currentSavingsRatio": "Current savings rate",
+      "fixedLabel": "Fixed costs (rent, mortgage, commute, subscriptions…)",
+      "fixedNone": "None",
+      "fixedShortcutsAria": "Fixed cost shortcuts",
+      "generate": "Generate budget",
+      "identityAria": "Identity choice",
+      "incomeAria": "Monthly income",
+      "incomeLabel": "Monthly take-home pay",
+      "incomeShortcutsAria": "Income shortcuts",
+      "introAria": "Current step description",
+      "introHint": "Five steps give you a workable monthly budget — leave and come back any time.",
+      "next": "Next",
+      "prev": "Back",
+      "preview": {
+        "disposable": "Disposable",
+        "flexible": "Flexible spending",
+        "savings": "Saved first"
+      },
+      "previewAria": "Income allocation preview",
+      "rebalanceHint": "Edit any cell and the other categories rebalance proportionally, so the total always equals your monthly income.",
+      "restart": "Start over",
+      "savingsRatioAria": "Savings rate",
+      "savingsShortcutsAria": "Savings rate shortcuts",
+      "stepProgress": "Step {step} / {total}",
+      "stepperAria": "Budget question steps",
+      "steps": {
+        "confirm": {
+          "short": "Confirm",
+          "title": "Does this budget look right?"
+        },
+        "fixed": {
+          "short": "Fixed costs",
+          "title": "How much do you pay in fixed costs each month?"
+        },
+        "identity": {
+          "short": "Identity",
+          "title": "What best describes you right now?"
+        },
+        "income": {
+          "short": "Income",
+          "title": "How much do you take home each month?"
+        },
+        "savings": {
+          "short": "Savings",
+          "title": "How much do you want to save first?"
+        }
+      },
+      "summary": {
+        "fixed": "Fixed"
+      },
+      "table": {
+        "amount": "Amount",
+        "category": "Category",
+        "share": "Share of income"
+      }
+    },
+    "aiPanel": {
+      "action": {
+        "decrease": "tighten",
+        "increase": "increase a bit",
+        "keep": "keep"
+      },
+      "analyzing": "Analyzing",
+      "applyNextMonth": "Tune next month's budget",
+      "aria": "AI budget review",
+      "idleHint": "Click “Re-analyze” to let the AI suggest adjustments from this month’s data.",
+      "loadingHint": "Checking which spending areas need the most attention…",
+      "nextMonthPrefix": "Next month you can set the budget to",
+      "orTrimPrefix": ", or trim",
+      "reanalyze": "Re-analyze",
+      "remindMe": "Remind me this month",
+      "subtitle": "Highlights what to watch next based on how the budget is running.",
+      "tagColon": ": ",
+      "title": "AI budget review",
+      "usedPrefix": "has already used"
+    },
+    "anomaly": {
+      "aboutBudget": ", which is about",
+      "aria": "Anomaly alerts",
+      "empty": "No category is close to overspending — keep the current pace.",
+      "projected": "Projected month-end spending",
+      "subtitle": "Categories that may overspend by month end at the current pace.",
+      "title": "Anomaly alerts and suggestions",
+      "trim": "Trim about"
+    },
+    "categoryList": {
+      "adjust": "Adjust budget",
+      "amountAria": "{category} budget amount",
+      "budget": "Budget",
+      "collapse": "Collapse categories",
+      "details": "View details",
+      "empty": "No budget rows under the current filter. Try another month or filter.",
+      "expandAll": "Show all {count} categories",
+      "left": "{amount} left",
+      "over": "{amount} over",
+      "shown": "Showing",
+      "shownUnit": "budget categories",
+      "spent": "Spent",
+      "status": {
+        "normal": "On track",
+        "overspent": "Overspent",
+        "warning": "Watch"
+      },
+      "vsLastMonth": "vs last month"
+    },
+    "common": {
+      "executionRate": "Execution rate"
+    },
+    "comparison": {
+      "aria": "Month-over-month comparison",
+      "empty": "No comparable category data yet.",
+      "less": "less",
+      "more": "more",
+      "previousSuffix": "→ this month, overall",
+      "title": "What changed versus last month"
+    },
+    "detail": {
+      "aria": "{category} budget details",
+      "avgPrefix": "Average spending over the last",
+      "avgSuffix": "months",
+      "barTitle": "{month}: {amount}",
+      "close": "Close details",
+      "diff": "Difference",
+      "empty": "No details to show yet.",
+      "emptyMonth": "No spending recorded for this category this month.",
+      "recentPrefix": "Last",
+      "recentSuffix": "months",
+      "recentTitle": "Recent spending",
+      "title": "Category details"
+    },
+    "health": {
+      "factor": {
+        "balance": {
+          "detail": {
+            "cover": "Income covers this month’s spending",
+            "short": "Spending exceeds income by {amount}"
+          },
+          "label": "Income balance"
+        },
+        "execution": {
+          "detail": {
+            "over": "The budget is {percent}% used overall",
+            "under": "The budget is {percent}% used overall, a manageable pace"
+          },
+          "label": "Execution pace"
+        },
+        "overspend": {
+          "detail": {
+            "none": "No category is over budget",
+            "some": "{count} categories are over budget"
+          },
+          "label": "Overspent categories"
+        }
+      },
+      "level": {
+        "excellent": "Excellent",
+        "fair": "Needs attention",
+        "good": "Good",
+        "risk": "At risk"
+      },
+      "summary": {
+        "excellent": "Budget execution is steady — put the surplus toward savings or an emergency fund first.",
+        "fair": "There is room to tighten up — start with the overspent categories.",
+        "good": "Execution is healthy overall; keep the current pace.",
+        "risk": "The budget gap is clear — adjust the overspent categories right away."
+      }
+    },
+    "historyPanel": {
+      "aria": "Budget version history",
+      "current": "Current version",
+      "empty": "Confirmed budgets are kept here as versions you can go back to.",
+      "incomeSavings": "Monthly income · Savings",
+      "restore": "Restore this version",
+      "subtitle": "Every confirmation keeps a version you can restore without re-entering anything."
+    },
+    "overview": {
+      "aria": "Budget overview",
+      "flexTotal": "Flexible categories total",
+      "healthTitle": "Budget health",
+      "monthBudget": "This month’s budget",
+      "pacing": {
+        "none": "Select a month to see the daily allowance.",
+        "over": "At the current pace you will end the month {amount} over budget.",
+        "pastMonth": "This month has {days} days and is already over, so it is a past month.",
+        "steady": "On pace to use it evenly — you can still spend about {amount} today.",
+        "warning": "Spending faster than planned — tighten up over the remaining {days} days."
+      },
+      "remaining": "Still available",
+      "ringAria": "Budget used {percent}%",
+      "ringCaption": "Share of budget used",
+      "safeCount": "{count} categories within budget",
+      "setupFirst": "Finish the budget setup first",
+      "spent": "Used so far",
+      "todayAllowance": "About {amount} today"
+    },
+    "trend": {
+      "aria": "Budget execution trend",
+      "barTitle": "{month} spending {amount}",
+      "empty": "Once you have two months of records, the category budget versus actual spending trend appears here.",
+      "subtitle": "Bars are actual spending; the dashed line is the monthly budget.",
+      "title": "Where the money went over recent months"
+    },
+    "month": {
+      "short": "{month}",
+      "yearMonth": "{month}/{year}"
     }
   }
 }

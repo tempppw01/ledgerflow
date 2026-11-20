@@ -1,4 +1,5 @@
 import { formatCurrency } from '../../../shared/lib/format';
+import { useTFallback } from '../../../shared/lib/useTFallback';
 import { BudgetTrackingRow } from '../model/budgetInsights';
 import { BudgetRefreshIcon, BudgetSparkIcon } from './budgetIcons';
 
@@ -24,17 +25,24 @@ export type BudgetAiPanelProps = {
 
 export function BudgetAiPanel(props: BudgetAiPanelProps) {
   const { status, error, advice, topOverspent, onRefresh, onApplyNextMonth, onSetReminder } = props;
+  const tf = useTFallback();
 
   return (
-    <section className="sb-panel sb-ai-panel" aria-live="polite" aria-label="AI 预算观察">
+    <section
+      className="sb-panel sb-ai-panel"
+      aria-live="polite"
+      aria-label={tf('smartBudget.aiPanel.aria', 'AI 预算观察')}
+    >
       <div className="sb-panel-head">
         <div className="sb-ai-title">
           <span className="sb-ai-icon" aria-hidden="true">
             <BudgetSparkIcon className="sb-icon-sm" />
           </span>
           <div>
-            <h3 className="sb-section-title">AI 预算观察</h3>
-            <p className="sb-panel-sub">按当前执行情况给出下一步该盯住的地方。</p>
+            <h3 className="sb-section-title">{tf('smartBudget.aiPanel.title', 'AI 预算观察')}</h3>
+            <p className="sb-panel-sub">
+              {tf('smartBudget.aiPanel.subtitle', '按当前执行情况给出下一步该盯住的地方。')}
+            </p>
           </div>
         </div>
         <button
@@ -44,28 +52,38 @@ export function BudgetAiPanel(props: BudgetAiPanelProps) {
           disabled={status === 'loading'}
         >
           <BudgetRefreshIcon className="sb-icon-xs" />
-          {status === 'loading' ? '分析中' : '重新分析'}
+          {status === 'loading'
+            ? tf('smartBudget.aiPanel.analyzing', '分析中')
+            : tf('smartBudget.aiPanel.reanalyze', '重新分析')}
         </button>
       </div>
 
-      {status === 'loading' ? <p className="sb-muted">正在看哪几类支出最需要留意...</p> : null}
+      {status === 'loading' ? (
+        <p className="sb-muted">
+          {tf('smartBudget.aiPanel.loadingHint', '正在看哪几类支出最需要留意...')}
+        </p>
+      ) : null}
 
       {status === 'error' ? <p className="sb-error">{error}</p> : null}
 
       {status === 'idle' ? (
-        <p className="sb-muted">点击「重新分析」，让 AI 结合本月数据给出调整建议。</p>
+        <p className="sb-muted">
+          {tf('smartBudget.aiPanel.idleHint', '点击「重新分析」，让 AI 结合本月数据给出调整建议。')}
+        </p>
       ) : null}
 
       {topOverspent ? (
         <div className="sb-ai-highlight">
           <p>
-            <strong>{topOverspent.category}</strong> 已经花到预算的{' '}
+            <strong>{topOverspent.category}</strong>{' '}
+            {tf('smartBudget.aiPanel.usedPrefix', '已经花到预算的')}{' '}
             <strong>{(topOverspent.ratio * 100).toFixed(0)}%</strong>
           </p>
           <p>
-            下个月可以把预算调到{' '}
+            {tf('smartBudget.aiPanel.nextMonthPrefix', '下个月可以把预算调到')}{' '}
             <strong>{formatCurrency(topOverspent.budgetAmount + topOverspent.diff * 0.5)}</strong>
-            ，或者这个月先少花 <strong>{formatCurrency(topOverspent.diff)}</strong>
+            {tf('smartBudget.aiPanel.orTrimPrefix', '，或者这个月先少花')}{' '}
+            <strong>{formatCurrency(topOverspent.diff)}</strong>
           </p>
           <div className="sb-ai-actions">
             <button
@@ -73,10 +91,10 @@ export function BudgetAiPanel(props: BudgetAiPanelProps) {
               className="sb-btn sb-btn--primary sb-btn--xs"
               onClick={onApplyNextMonth}
             >
-              调优下月预算
+              {tf('smartBudget.aiPanel.applyNextMonth', '调优下月预算')}
             </button>
             <button type="button" className="sb-btn sb-btn--xs" onClick={onSetReminder}>
-              这个月提醒我
+              {tf('smartBudget.aiPanel.remindMe', '这个月提醒我')}
             </button>
           </div>
         </div>
@@ -99,12 +117,13 @@ export function BudgetAiPanel(props: BudgetAiPanelProps) {
                   key={`${item.category}-${item.action}`}
                   className={`sb-tag is-${item.action}`}
                 >
-                  {item.category}：
+                  {item.category}
+                  {tf('smartBudget.aiPanel.tagColon', '：')}
                   {item.action === 'decrease'
-                    ? '建议收紧'
+                    ? tf('smartBudget.aiPanel.action.decrease', '建议收紧')
                     : item.action === 'increase'
-                      ? '可适度加配'
-                      : '保持'}
+                      ? tf('smartBudget.aiPanel.action.increase', '可适度加配')
+                      : tf('smartBudget.aiPanel.action.keep', '保持')}
                 </span>
               ))}
             </div>

@@ -10,6 +10,7 @@ import {
   type AuthUser
 } from '../../../shared/api/authClient';
 import { APP_LOGO_URL } from '../../../shared/config/app';
+import { useTFallback } from '../../../shared/lib/useTFallback';
 import { PasswordInput } from '../../../shared/ui/PasswordInput';
 import { AuthContext } from './authContext';
 
@@ -35,6 +36,7 @@ function clearPasswordResetTokenFromUrl() {
 }
 
 export function AuthGate({ children }: { children: ReactNode }) {
+  const tf = useTFallback();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [registrationOpen, setRegistrationOpen] = useState(false);
   const [resetToken, setResetToken] = useState(readPasswordResetToken);
@@ -145,7 +147,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (loading && !showingReset) {
     return (
       <main className="auth-gate">
-        <p className="sync-tip">正在检查账号状态...</p>
+        <p className="sync-tip">{tf('auth.checkingStatus', '正在检查账号状态...')}</p>
       </main>
     );
   }

@@ -40,6 +40,25 @@ const apiProxy = {
   }
 };
 
+// 字体文件不进仓库,@font-face 里用的是同源 /cdn/fonts/*.woff2。
+// dev / preview 通过下面的代理把它转发到 R2,浏览器侧就是同源请求,
+// 不再需要 R2 提供 Access-Control-Allow-Origin(它并不提供)。
+const cdnProxyTarget = 'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev';
+
+const cdnProxy = {
+  '/cdn': {
+    target: cdnProxyTarget,
+    changeOrigin: true,
+    rewrite: (requestPath: string) => requestPath.replace(/^\/cdn/, '')
+  }
+};
+
+// /api 与 /cdn 必须同时挂上:漏掉任何一个都会让对应功能在 dev/preview 下失效。
+const devProxy = {
+  ...apiProxy,
+  ...cdnProxy
+};
+
 function manualChunks(id: string) {
   if (!id.includes('node_modules')) {
     return undefined;
@@ -75,16 +94,16 @@ function manualChunks(id: string) {
 
 export default defineConfig({
   server: {
-    proxy: apiProxy,
+    proxy: devProxy,
     // 编辑器/工具常以「临时目录 + rename」方式落盘,Windows 上 watcher 抓到
     // 这些瞬时 tmp 文件会抛 EBUSY 并直接终止 dev server,这里统一忽略。
     watch: {
       ignored: ['**/.*.tmpdir/**', '**/*.tmpdir/**']
     }
   },
-  // 构建产物预览时同样需要把 /api 转发到后端，否则前端无法完成数据库初始化。
+  // 构建产物预览时同样需要把 /api 转发到后端，否则前端无法完成数据库初始化；devProxy 同时覆盖 /api 与 /cdn。
   preview: {
-    proxy: apiProxy
+    proxy: devProxy
   },
   plugins: [
     react(),

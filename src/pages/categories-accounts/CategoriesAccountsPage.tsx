@@ -9,6 +9,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { formatCurrencyFixed2 } from '../../shared/lib/format';
+import { useTFallback } from '../../shared/lib/useTFallback';
 import { EmptyState } from '../../shared/ui/EmptyState';
 import { LoadingSkeleton } from '../../shared/ui/LoadingSkeleton';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
@@ -83,6 +84,7 @@ function inferCategoryAppearance(name: string, kind: 'income' | 'expense') {
 
 export function CategoriesAccountsPage() {
   const navigate = useNavigate();
+  const tf = useTFallback();
   const categories = useFinanceStore((s) => s.categories);
   const accounts = useFinanceStore((s) => s.accounts);
   const transactions = useFinanceStore((s) => s.transactions);
@@ -135,7 +137,9 @@ export function CategoriesAccountsPage() {
     e.preventDefault();
     const normalized = normalizeNameInput(categoryName);
     if (!isValidName(normalized)) {
-      setCategoryError('分类名称需为 1-24 个字符，且不能包含 < 或 >。');
+      setCategoryError(
+        tf('categoriesAccounts.error.categoryName', '分类名称需为 1-24 个字符，且不能包含 < 或 >。')
+      );
       return;
     }
     const appearance = inferCategoryAppearance(normalized, categoryKind);
@@ -153,11 +157,13 @@ export function CategoriesAccountsPage() {
     e.preventDefault();
     const normalized = normalizeNameInput(accountName);
     if (!isValidName(normalized)) {
-      setAccountError('账户名称需为 1-24 个字符，且不能包含 < 或 >。');
+      setAccountError(
+        tf('categoriesAccounts.error.accountName', '账户名称需为 1-24 个字符，且不能包含 < 或 >。')
+      );
       return;
     }
     if (!accountType) {
-      setAccountError('请选择账户类型后再添加账户。');
+      setAccountError(tf('categoriesAccounts.error.accountType', '请选择账户类型后再添加账户。'));
       return;
     }
     const initialBalance = Number(accountInitialBalance || '0');
@@ -367,8 +373,8 @@ export function CategoriesAccountsPage() {
       accountId,
       amount: Math.abs(value),
       date: new Date().toISOString(),
-      note: '账户单笔调整',
-      tags: ['账户校准'],
+      note: tf('categoriesAccounts.adjustmentNote', '账户单笔调整'),
+      tags: [tf('categoriesAccounts.adjustmentTag', '账户校准')],
       source: 'manual',
       status: 'completed'
     });
@@ -418,7 +424,9 @@ export function CategoriesAccountsPage() {
     if (!editingCategoryId) return;
     const normalized = normalizeNameInput(editCategoryName);
     if (!isValidName(normalized)) {
-      setCategoryActionError('分类名称需为 1-24 个字符,且不能包含 < 或 >。');
+      setCategoryActionError(
+        tf('categoriesAccounts.error.categoryName', '分类名称需为 1-24 个字符,且不能包含 < 或 >。')
+      );
       return;
     }
     updateCategory(editingCategoryId, {
@@ -575,28 +583,34 @@ export function CategoriesAccountsPage() {
               value={editCategoryName}
               onChange={(event) => setEditCategoryName(event.target.value)}
               maxLength={24}
-              aria-label={`重命名分类 ${item.name}`}
+              aria-label={tf('categoriesAccounts.renameCategoryAria', '重命名分类 {name}').replace(
+                '{name}',
+                String(item.name)
+              )}
               autoFocus
             />
             <select
-              aria-label={`设置分类 ${item.name} 的上级`}
+              aria-label={tf('categoriesAccounts.setParentAria', '设置分类 {name} 的上级').replace(
+                '{name}',
+                String(item.name)
+              )}
               value={editCategoryParentId}
               onChange={(event) => setEditCategoryParentId(event.target.value)}
             >
-              <option value="">作为一级分类</option>
+              <option value="">{tf('categoriesAccounts.parentNone', '作为一级分类')}</option>
               {rootCategoryOptions
                 .filter((root) => root.id !== item.id)
                 .map((root) => (
                   <option key={root.id} value={root.id}>
-                    归入 {root.name}
+                    {tf('categoriesAccounts.parentIntoPrefix', '归入')} {root.name}
                   </option>
                 ))}
             </select>
             <button className="primary" type="submit">
-              保存
+              {tf('common.save', '保存')}
             </button>
             <button type="button" onClick={cancelEditCategory}>
-              取消
+              {tf('confirmDialog.cancel', '取消')}
             </button>
           </form>
           {categoryActionError ? (
@@ -614,7 +628,9 @@ export function CategoriesAccountsPage() {
           </span>
           <span className="category-node-title">
             <strong>{item.name}</strong>
-            {options.isChild ? <small>子分类</small> : null}
+            {options.isChild ? (
+              <small>{tf('categoriesAccounts.childBadge', '子分类')}</small>
+            ) : null}
           </span>
         </span>
         <span className="category-node-actions">
@@ -622,9 +638,14 @@ export function CategoriesAccountsPage() {
             type="button"
             className="category-count-chip"
             onClick={() => navigate(`/transactions?categoryId=${encodeURIComponent(item.id)}`)}
-            aria-label={`查看分类 ${item.name} 的 ${usage} 条交易`}
+            aria-label={tf(
+              'categoriesAccounts.viewCategoryTxAria',
+              '查看分类 {name} 的 {count} 条交易'
+            )
+              .replace('{name}', String(item.name))
+              .replace('{count}', String(usage))}
           >
-            {usage} 条
+            {usage} {tf('categoriesAccounts.countItems', '条')}
           </button>
           {!options.isChild ? (
             <button
@@ -636,16 +657,19 @@ export function CategoriesAccountsPage() {
                 categoryNameInputRef.current?.focus();
               }}
             >
-              ＋子分类
+              {tf('categoriesAccounts.addChild', '＋子分类')}
             </button>
           ) : null}
           <button type="button" className="category-action" onClick={() => startEditCategory(item)}>
-            编辑
+            {tf('categoriesAccounts.edit', '编辑')}
           </button>
           <button
             type="button"
             className="category-icon-action"
-            aria-label={`上移分类 ${item.name}`}
+            aria-label={tf('categoriesAccounts.moveCategoryUpAria', '上移分类 {name}').replace(
+              '{name}',
+              String(item.name)
+            )}
             onClick={() => moveCategoryWithinSiblings(item.id, -1, options.siblingIds)}
           >
             ↑
@@ -653,7 +677,10 @@ export function CategoriesAccountsPage() {
           <button
             type="button"
             className="category-icon-action"
-            aria-label={`下移分类 ${item.name}`}
+            aria-label={tf('categoriesAccounts.moveCategoryDownAria', '下移分类 {name}').replace(
+              '{name}',
+              String(item.name)
+            )}
             onClick={() => moveCategoryWithinSiblings(item.id, 1, options.siblingIds)}
           >
             ↓
@@ -661,10 +688,13 @@ export function CategoriesAccountsPage() {
           <button
             type="button"
             className="category-icon-action is-danger"
-            aria-label={`删除分类 ${item.name}`}
+            aria-label={tf('categoriesAccounts.deleteCategoryAria', '删除分类 {name}').replace(
+              '{name}',
+              String(item.name)
+            )}
             onClick={() => setPendingDeleteCategoryId(item.id)}
           >
-            删除
+            {tf('categoriesAccounts.delete', '删除')}
           </button>
         </span>
       </li>
@@ -675,23 +705,35 @@ export function CategoriesAccountsPage() {
       <header className="categories-console-header">
         <div>
           <p className="categories-console-eyebrow">BOOKKEEPING SETUP</p>
-          <h1>账户与分类</h1>
-          <p>在一个清爽的工作区里，管理记账的分类、标签和资金账户。</p>
+          <h1>{tf('nav.categoriesAccounts', '账户与分类')}</h1>
+          <p>
+            {tf(
+              'categoriesAccounts.subtitle',
+              '在一个清爽的工作区里，管理记账的分类、标签和资金账户。'
+            )}
+          </p>
         </div>
-        <div className="categories-console-stat" aria-label="账户与分类概览">
+        <div
+          className="categories-console-stat"
+          aria-label={tf('categoriesAccounts.statAria', '账户与分类概览')}
+        >
           <strong>{categories.length + managedAccounts.length}</strong>
-          <span>项基础设置</span>
+          <span>{tf('categoriesAccounts.statUnit', '项基础设置')}</span>
         </div>
       </header>
 
-      <nav className="categories-console-tabs" aria-label="账户与分类工作区">
+      <nav
+        className="categories-console-tabs"
+        aria-label={tf('categoriesAccounts.tabsAria', '账户与分类工作区')}
+      >
         <button
           type="button"
           className={workspace === 'categories' ? 'is-active' : undefined}
           aria-current={workspace === 'categories' ? 'page' : undefined}
           onClick={() => setWorkspace('categories')}
         >
-          分类与标签 <span>{categories.length + tagGroups.length}</span>
+          {tf('categoriesAccounts.tabCategories', '分类与标签')}{' '}
+          <span>{categories.length + tagGroups.length}</span>
         </button>
         <button
           type="button"
@@ -699,7 +741,7 @@ export function CategoriesAccountsPage() {
           aria-current={workspace === 'accounts' ? 'page' : undefined}
           onClick={() => setWorkspace('accounts')}
         >
-          资金账户 <span>{managedAccounts.length}</span>
+          {tf('categoriesAccounts.tabAccounts', '资金账户')} <span>{managedAccounts.length}</span>
         </button>
       </nav>
 
@@ -708,23 +750,37 @@ export function CategoriesAccountsPage() {
           <header className="categories-accounts-head">
             <div>
               <span className="categories-console-kicker">CATEGORIES & TAGS</span>
-              <h2>分类与标签管理</h2>
-              <p>支出和收入分开管理,一级分类下面还能再挂子分类。</p>
+              <h2>{tf('categoriesAccounts.categoriesTitle', '分类与标签管理')}</h2>
+              <p>
+                {tf(
+                  'categoriesAccounts.categoriesSubtitle',
+                  '支出和收入分开管理,一级分类下面还能再挂子分类。'
+                )}
+              </p>
             </div>
-            <div className="categories-accounts-metrics" aria-label="分类统计">
+            <div
+              className="categories-accounts-metrics"
+              aria-label={tf('categoriesAccounts.categoriesMetricsAria', '分类统计')}
+            >
               <span className="metric-chip">
-                一级分类 <strong>{rootCategoryOptions.length}</strong>
+                {tf('categoriesAccounts.metricRoot', '一级分类')}{' '}
+                <strong>{rootCategoryOptions.length}</strong>
               </span>
               <span className="metric-chip">
-                子分类 <strong>{childCategoryCount}</strong>
+                {tf('categoriesAccounts.metricChild', '子分类')}{' '}
+                <strong>{childCategoryCount}</strong>
               </span>
               <span className="metric-chip">
-                标签 <strong>{tagGroups.length}</strong>
+                {tf('categoriesAccounts.metricTag', '标签')} <strong>{tagGroups.length}</strong>
               </span>
             </div>
           </header>
 
-          <div className="category-kind-switch" role="tablist" aria-label="分类收支类型">
+          <div
+            className="category-kind-switch"
+            role="tablist"
+            aria-label={tf('categoriesAccounts.kindTabsAria', '分类收支类型')}
+          >
             <button
               type="button"
               role="tab"
@@ -736,7 +792,7 @@ export function CategoriesAccountsPage() {
                 setEditingCategoryId(null);
               }}
             >
-              支出分类
+              {tf('categoriesAccounts.kindExpense', '支出分类')}
             </button>
             <button
               type="button"
@@ -749,36 +805,40 @@ export function CategoriesAccountsPage() {
                 setEditingCategoryId(null);
               }}
             >
-              收入分类
+              {tf('categoriesAccounts.kindIncome', '收入分类')}
             </button>
           </div>
 
           <form onSubmit={submitCategory} className="category-create-form">
             <input
               ref={categoryNameInputRef}
-              placeholder={categoryKind === 'expense' ? '新增支出分类' : '新增收入分类'}
+              placeholder={
+                categoryKind === 'expense'
+                  ? tf('categoriesAccounts.newExpensePlaceholder', '新增支出分类')
+                  : tf('categoriesAccounts.newIncomePlaceholder', '新增收入分类')
+              }
               value={categoryName}
               onChange={(event) => {
                 setCategoryName(event.target.value);
                 if (categoryError) setCategoryError('');
               }}
               maxLength={24}
-              aria-label="新增分类名称"
+              aria-label={tf('categoriesAccounts.newCategoryNameAria', '新增分类名称')}
             />
             <select
-              aria-label="上级分类"
+              aria-label={tf('categoriesAccounts.parentCategoryAria', '上级分类')}
               value={newCategoryParentId}
               onChange={(event) => setNewCategoryParentId(event.target.value)}
             >
-              <option value="">作为一级分类</option>
+              <option value="">{tf('categoriesAccounts.parentNone', '作为一级分类')}</option>
               {rootCategoryOptions.map((root) => (
                 <option key={root.id} value={root.id}>
-                  归入 {root.name}
+                  {tf('categoriesAccounts.parentIntoPrefix', '归入')} {root.name}
                 </option>
               ))}
             </select>
             <button className="primary" type="submit">
-              添加
+              {tf('categoriesAccounts.add', '添加')}
             </button>
           </form>
           {categoryError ? <small className="error">{categoryError}</small> : null}
@@ -787,16 +847,22 @@ export function CategoriesAccountsPage() {
             <LoadingSkeleton lines={4} />
           ) : categoryTree.length === 0 ? (
             <EmptyState
-              title="暂无分类"
-              description="先添加一个一级分类,再往下挂子分类。"
+              title={tf('categoriesAccounts.emptyCategoriesTitle', '暂无分类')}
+              description={tf(
+                'categoriesAccounts.emptyCategoriesDescription',
+                '先添加一个一级分类,再往下挂子分类。'
+              )}
               icon="🧩"
             />
           ) : (
             <section className="categories-fold-block">
               <div className="category-block-head">
-                <strong>分类结构</strong>
+                <strong>{tf('categoriesAccounts.structureTitle', '分类结构')}</strong>
                 <small>
-                  {categoryKind === 'expense' ? '支出' : '收入'}树 · 点「＋子分类」可以继续分层
+                  {categoryKind === 'expense'
+                    ? tf('categoriesAccounts.kindExpenseShort', '支出')
+                    : tf('categoriesAccounts.kindIncomeShort', '收入')}
+                  {tf('categoriesAccounts.treeHintSuffix', '树 · 点「＋子分类」可以继续分层')}
                 </small>
               </div>
               <ul className="category-tree">
@@ -823,13 +889,18 @@ export function CategoriesAccountsPage() {
 
           <section className="categories-fold-block categories-fold-block-tags">
             <div className="category-block-head">
-              <strong>标签库</strong>
-              <small>标签来自交易备注和 AI 识别,可合并、清理</small>
+              <strong>{tf('categoriesAccounts.tagLibraryTitle', '标签库')}</strong>
+              <small>
+                {tf('categoriesAccounts.tagLibraryHint', '标签来自交易备注和 AI 识别,可合并、清理')}
+              </small>
             </div>
             {tagGroups.length === 0 ? (
               <EmptyState
-                title="暂无标签"
-                description="在交易里加标签后会自动汇总到这里。"
+                title={tf('categoriesAccounts.emptyTagsTitle', '暂无标签')}
+                description={tf(
+                  'categoriesAccounts.emptyTagsDescription',
+                  '在交易里加标签后会自动汇总到这里。'
+                )}
                 icon="🏷️"
               />
             ) : (
@@ -848,11 +919,14 @@ export function CategoriesAccountsPage() {
                           value={editTagName}
                           onChange={(event) => setEditTagName(event.target.value)}
                           maxLength={24}
-                          aria-label={`重命名标签 ${tag.label}`}
+                          aria-label={tf(
+                            'categoriesAccounts.renameTagAria',
+                            '重命名标签 {name}'
+                          ).replace('{name}', String(tag.label))}
                           autoFocus
                         />
                         <button className="primary" type="submit">
-                          保存
+                          {tf('common.save', '保存')}
                         </button>
                         <button
                           type="button"
@@ -861,7 +935,7 @@ export function CategoriesAccountsPage() {
                             setEditTagName('');
                           }}
                         >
-                          取消
+                          {tf('confirmDialog.cancel', '取消')}
                         </button>
                       </form>
                     ) : (
@@ -874,7 +948,7 @@ export function CategoriesAccountsPage() {
                             navigate(`/transactions?keyword=${encodeURIComponent(tag.label)}`)
                           }
                         >
-                          {tag.count} 条
+                          {tag.count} {tf('categoriesAccounts.countItems', '条')}
                         </button>
                         <span className="tag-manage-actions">
                           <button
@@ -882,10 +956,13 @@ export function CategoriesAccountsPage() {
                             className="category-action"
                             onClick={() => startEditTag(tag)}
                           >
-                            重命名
+                            {tf('categoriesAccounts.rename', '重命名')}
                           </button>
                           <select
-                            aria-label={`选择 ${tag.label} 的合并目标`}
+                            aria-label={tf(
+                              'categoriesAccounts.mergeTargetAria',
+                              '选择 {name} 的合并目标'
+                            ).replace('{name}', String(tag.label))}
                             value={mergeTargetByTag[tag.key] || ''}
                             onChange={(event) =>
                               setMergeTargetByTag((prev) => ({
@@ -894,7 +971,9 @@ export function CategoriesAccountsPage() {
                               }))
                             }
                           >
-                            <option value="">合并到…</option>
+                            <option value="">
+                              {tf('categoriesAccounts.mergeIntoPlaceholder', '合并到…')}
+                            </option>
                             {tagGroups
                               .filter((item) => item.key !== tag.key)
                               .map((item) => (
@@ -910,15 +989,18 @@ export function CategoriesAccountsPage() {
                               mergeTagIntoAnother(tag.label, mergeTargetByTag[tag.key] || '')
                             }
                           >
-                            合并
+                            {tf('categoriesAccounts.merge', '合并')}
                           </button>
                           <button
                             type="button"
                             className="category-icon-action is-danger"
-                            aria-label={`删除标签 ${tag.label}`}
+                            aria-label={tf(
+                              'categoriesAccounts.deleteTagAria',
+                              '删除标签 {name}'
+                            ).replace('{name}', String(tag.label))}
                             onClick={() => setPendingRemoveTagLabel(tag.label)}
                           >
-                            删除
+                            {tf('categoriesAccounts.delete', '删除')}
                           </button>
                         </span>
                       </>
@@ -934,15 +1016,25 @@ export function CategoriesAccountsPage() {
           <header className="categories-accounts-head">
             <div>
               <span className="categories-console-kicker">CASH & ACCOUNTS</span>
-              <h2>账户管理</h2>
-              <p>余额会随交易自动汇总；需要时双击金额进行校准。</p>
+              <h2>{tf('categoriesAccounts.accountsTitle', '账户管理')}</h2>
+              <p>
+                {tf(
+                  'categoriesAccounts.accountsSubtitle',
+                  '余额会随交易自动汇总；需要时双击金额进行校准。'
+                )}
+              </p>
             </div>
-            <div className="categories-accounts-metrics" aria-label="账户统计">
+            <div
+              className="categories-accounts-metrics"
+              aria-label={tf('categoriesAccounts.accountsMetricsAria', '账户统计')}
+            >
               <span className="metric-chip metric-chip-highlight">
-                当前总余额 <strong>{formatCurrencyFixed2(totalBalance)}</strong>
+                {tf('categoriesAccounts.totalBalance', '当前总余额')}{' '}
+                <strong>{formatCurrencyFixed2(totalBalance)}</strong>
               </span>
               <span className="metric-chip">
-                负余额 <strong>{negativeAccounts}</strong>
+                {tf('categoriesAccounts.negativeBalance', '负余额')}{' '}
+                <strong>{negativeAccounts}</strong>
               </span>
             </div>
           </header>
@@ -951,9 +1043,12 @@ export function CategoriesAccountsPage() {
             <form onSubmit={submitAccount} className="account-create-form">
               <div className="account-create-grid">
                 <div className="field">
-                  <label>账户名称</label>
+                  <label>{tf('categoriesAccounts.accountName', '账户名称')}</label>
                   <input
-                    placeholder="如：招商银行卡 / 零钱 / 花呗"
+                    placeholder={tf(
+                      'categoriesAccounts.accountNamePlaceholder',
+                      '如：招商银行卡 / 零钱 / 花呗'
+                    )}
                     value={accountName}
                     onChange={(e) => {
                       setAccountName(e.target.value);
@@ -963,21 +1058,31 @@ export function CategoriesAccountsPage() {
                   />
                 </div>
                 <div className="field">
-                  <label>账户类型</label>
+                  <label>{tf('categoriesAccounts.accountTypeLabel', '账户类型')}</label>
                   <select
-                    aria-label="账户类型"
+                    aria-label={tf('categoriesAccounts.accountTypeLabel', '账户类型')}
                     value={accountType}
                     onChange={(e) => setAccountType(e.target.value as AccountType | '')}
                   >
-                    <option value="">请选择类型</option>
-                    <option value="cash">💵 现金</option>
-                    <option value="debit">💳 借记卡</option>
-                    <option value="savings">🏦 储蓄卡</option>
-                    <option value="virtual">📱 虚拟账户</option>
+                    <option value="">
+                      {tf('categoriesAccounts.accountTypePlaceholder', '请选择类型')}
+                    </option>
+                    <option value="cash">
+                      {tf('categoriesAccounts.accountTypeOption.cash', '💵 现金')}
+                    </option>
+                    <option value="debit">
+                      {tf('categoriesAccounts.accountTypeOption.debit', '💳 借记卡')}
+                    </option>
+                    <option value="savings">
+                      {tf('categoriesAccounts.accountTypeOption.savings', '🏦 储蓄卡')}
+                    </option>
+                    <option value="virtual">
+                      {tf('categoriesAccounts.accountTypeOption.virtual', '📱 虚拟账户')}
+                    </option>
                   </select>
                 </div>
                 <div className="field">
-                  <label>初始余额</label>
+                  <label>{tf('categoriesAccounts.initialBalance', '初始余额')}</label>
                   <input
                     type="number"
                     placeholder="0"
@@ -987,7 +1092,9 @@ export function CategoriesAccountsPage() {
                 </div>
               </div>
               <div className="account-create-actions">
-                <span className="muted">新账户将参与交易汇总和余额统计。</span>
+                <span className="muted">
+                  {tf('categoriesAccounts.newAccountHint', '新账户将参与交易汇总和余额统计。')}
+                </span>
                 <div>
                   <button
                     type="button"
@@ -996,10 +1103,10 @@ export function CategoriesAccountsPage() {
                       setAccountError('');
                     }}
                   >
-                    取消
+                    {tf('confirmDialog.cancel', '取消')}
                   </button>
                   <button className="primary" type="submit">
-                    保存账户
+                    {tf('categoriesAccounts.saveAccount', '保存账户')}
                   </button>
                 </div>
               </div>
@@ -1007,11 +1114,16 @@ export function CategoriesAccountsPage() {
           ) : (
             <div className="account-create-toolbar">
               <div>
-                <strong>资金账户</strong>
-                <p className="muted">集中管理银行卡、现金和虚拟账户，方便交易记录与余额追踪。</p>
+                <strong>{tf('categoriesAccounts.tabAccounts', '资金账户')}</strong>
+                <p className="muted">
+                  {tf(
+                    'categoriesAccounts.accountsToolbarHint',
+                    '集中管理银行卡、现金和虚拟账户，方便交易记录与余额追踪。'
+                  )}
+                </p>
               </div>
               <button className="primary" type="button" onClick={() => setShowAccountForm(true)}>
-                ＋ 新增账户
+                {tf('categoriesAccounts.addAccount', '＋ 新增账户')}
               </button>
             </div>
           )}
@@ -1020,7 +1132,14 @@ export function CategoriesAccountsPage() {
           {loading ? (
             <LoadingSkeleton lines={4} />
           ) : managedAccounts.length === 0 ? (
-            <EmptyState title="暂无账户" description="请添加第一个资金账户。" icon="💳" />
+            <EmptyState
+              title={tf('categoriesAccounts.emptyAccountsTitle', '暂无账户')}
+              description={tf(
+                'categoriesAccounts.emptyAccountsDescription',
+                '请添加第一个资金账户。'
+              )}
+              icon="💳"
+            />
           ) : (
             <>
               <div className="account-card-grid">
@@ -1055,10 +1174,16 @@ export function CategoriesAccountsPage() {
                           <strong>{item.name}</strong>
                           {item.type ? (
                             <span className="account-type-badge">
-                              {getAccountTypeLabel(item.type)}
+                              {tf(
+                                `categoriesAccounts.accountType.${item.type}`,
+                                getAccountTypeLabel(item.type)
+                              )}
                             </span>
                           ) : null}
-                          <small>初始：{formatCurrencyFixed2(item.initialBalance ?? 0)}</small>
+                          <small>
+                            {tf('categoriesAccounts.initialPrefix', '初始：')}
+                            {formatCurrencyFixed2(item.initialBalance ?? 0)}
+                          </small>
                         </div>
                         <div className="account-card-balance-wrap">
                           {isEditingBalance ? (
@@ -1068,7 +1193,10 @@ export function CategoriesAccountsPage() {
                                 type="number"
                                 inputMode="decimal"
                                 aria-label={`account-balance-editor-${item.id}`}
-                                placeholder="输入余额"
+                                placeholder={tf(
+                                  'categoriesAccounts.balancePlaceholder',
+                                  '输入余额'
+                                )}
                                 value={balanceValue}
                                 onChange={(e) =>
                                   setEditingBalances((prev) => ({
@@ -1083,13 +1211,13 @@ export function CategoriesAccountsPage() {
                               />
                               <div className="account-card-balance-editor-actions">
                                 <button type="button" onClick={() => applyAccountBalance(item.id)}>
-                                  保存
+                                  {tf('common.save', '保存')}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => cancelEditBalance(item.id, item.computedBalance)}
                                 >
-                                  取消
+                                  {tf('confirmDialog.cancel', '取消')}
                                 </button>
                               </div>
                             </div>
@@ -1105,26 +1233,34 @@ export function CategoriesAccountsPage() {
                                 onDoubleClick={() =>
                                   startEditBalance(item.id, item.computedBalance)
                                 }
-                                title="双击编辑余额"
+                                title={tf('categoriesAccounts.balanceEditTitle', '双击编辑余额')}
                                 aria-label={`account-balance-display-${item.id}`}
                               >
                                 {formatCurrencyFixed2(item.computedBalance)}
                               </button>
-                              <small>按交易自动汇总，双击可校准</small>
+                              <small>
+                                {tf(
+                                  'categoriesAccounts.balanceAutoHint',
+                                  '按交易自动汇总，双击可校准'
+                                )}
+                              </small>
                             </>
                           )}
                         </div>
                       </header>
 
                       <details className="account-card-tools">
-                        <summary>管理</summary>
+                        <summary>{tf('categoriesAccounts.toolsSummary', '管理')}</summary>
                         <div className="account-card-tools-body">
                           <label>
-                            <span>单笔调整</span>
+                            <span>{tf('categoriesAccounts.singleAdjustment', '单笔调整')}</span>
                             <input
                               className="account-balance-input"
                               type="number"
-                              placeholder="+收入 / -支出"
+                              placeholder={tf(
+                                'categoriesAccounts.adjustmentPlaceholder',
+                                '+收入 / -支出'
+                              )}
                               value={adjustAmounts[item.id] || ''}
                               onChange={(e) =>
                                 setAdjustAmounts((prev) => ({
@@ -1135,28 +1271,34 @@ export function CategoriesAccountsPage() {
                             />
                           </label>
                           <button type="button" onClick={() => applySingleAdjustment(item.id)}>
-                            添加单笔调整
+                            {tf('categoriesAccounts.addAdjustment', '添加单笔调整')}
                           </button>
                           <button
                             type="button"
                             onClick={() => moveAccount(item.id, -1)}
-                            aria-label={`上移账户 ${item.name}`}
+                            aria-label={tf(
+                              'categoriesAccounts.moveAccountUpAria',
+                              '上移账户 {name}'
+                            ).replace('{name}', String(item.name))}
                           >
-                            ↑ 上移
+                            {tf('categoriesAccounts.moveUp', '↑ 上移')}
                           </button>
                           <button
                             type="button"
                             onClick={() => moveAccount(item.id, 1)}
-                            aria-label={`下移账户 ${item.name}`}
+                            aria-label={tf(
+                              'categoriesAccounts.moveAccountDownAria',
+                              '下移账户 {name}'
+                            ).replace('{name}', String(item.name))}
                           >
-                            ↓ 下移
+                            {tf('categoriesAccounts.moveDown', '↓ 下移')}
                           </button>
                           <button
                             type="button"
                             className="danger"
                             onClick={() => setPendingDeleteAccountId(item.id)}
                           >
-                            删除
+                            {tf('categoriesAccounts.delete', '删除')}
                           </button>
                         </div>
                       </details>
@@ -1168,10 +1310,16 @@ export function CategoriesAccountsPage() {
               {managedAccounts.length > ACCOUNT_COLLAPSE_THRESHOLD ? (
                 <div className="row" style={{ justifyContent: 'space-between', marginTop: 10 }}>
                   <small style={{ color: 'var(--color-text-secondary)' }}>
-                    已显示 {displayAccounts.length}/{managedAccounts.length}
+                    {tf('categoriesAccounts.shownPrefix', '已显示')} {displayAccounts.length}/
+                    {managedAccounts.length}
                   </small>
                   <button type="button" onClick={() => setShowAllAccounts((prev) => !prev)}>
-                    {showAllAccounts ? '收起' : `展开剩余 ${hiddenAccountCount} 项`}
+                    {showAllAccounts
+                      ? tf('categoriesAccounts.collapse', '收起')
+                      : tf('categoriesAccounts.expandRemaining', '展开剩余 {count} 项').replace(
+                          '{count}',
+                          String(hiddenAccountCount)
+                        )}
                   </button>
                 </div>
               ) : null}
@@ -1182,14 +1330,14 @@ export function CategoriesAccountsPage() {
 
       <ConfirmDialog
         open={Boolean(pendingDeleteCategoryId)}
-        title="确认移入回收站"
+        title={tf('categoriesAccounts.confirmTrashTitle', '确认移入回收站')}
         description={
           pendingDeleteCategoryUsageCount > 0
-            ? `该分类下存在 ${pendingDeleteCategoryUsageCount} 条交易记录,${pendingDeleteCategoryChildCount > 0 ? `其中 ${pendingDeleteCategoryChildCount} 个子分类会提升为一级分类,` : ''}移入回收站后这些交易会继续保留并归入“未分类”。是否继续?`
-            : `${pendingDeleteCategoryChildCount > 0 ? `其中 ${pendingDeleteCategoryChildCount} 个子分类会提升为一级分类,` : ''}该分类将先移入回收站,你之后仍可恢复或彻底删除。是否继续?`
+            ? `${tf('categoriesAccounts.confirm.categoryUsage', '该分类下存在 {count} 条交易记录,').replace('{count}', String(pendingDeleteCategoryUsageCount))}${pendingDeleteCategoryChildCount > 0 ? tf('categoriesAccounts.confirm.categoryChildren', '其中 {count} 个子分类会提升为一级分类,').replace('{count}', String(pendingDeleteCategoryChildCount)) : ''}${tf('categoriesAccounts.confirm.categoryTrashed', '移入回收站后这些交易会继续保留并归入“未分类”。是否继续?')}`
+            : `${pendingDeleteCategoryChildCount > 0 ? tf('categoriesAccounts.confirm.categoryChildren', '其中 {count} 个子分类会提升为一级分类,').replace('{count}', String(pendingDeleteCategoryChildCount)) : ''}${tf('categoriesAccounts.confirm.categoryTrashedOnly', '该分类将先移入回收站,你之后仍可恢复或彻底删除。是否继续?')}`
         }
-        confirmText="移入回收站"
-        cancelText="取消"
+        confirmText={tf('categoriesAccounts.moveToTrash', '移入回收站')}
+        cancelText={tf('confirmDialog.cancel', '取消')}
         danger
         onConfirm={() => {
           if (!pendingDeleteCategoryId) return;
@@ -1201,14 +1349,17 @@ export function CategoriesAccountsPage() {
 
       <ConfirmDialog
         open={Boolean(pendingRemoveTagLabel)}
-        title="确认移除标签"
+        title={tf('categoriesAccounts.confirmRemoveTagTitle', '确认移除标签')}
         description={
           pendingRemoveTagUsageCount > 0
-            ? `该标签已用于 ${pendingRemoveTagUsageCount} 条交易，移除后将从这些交易中清除。是否继续？`
-            : '移除后将无法恢复，是否继续？'
+            ? tf(
+                'categoriesAccounts.confirm.tagUsage',
+                '该标签已用于 {count} 条交易，移除后将从这些交易中清除。是否继续？'
+              ).replace('{count}', String(pendingRemoveTagUsageCount))
+            : tf('categoriesAccounts.confirm.tagRemovePlain', '移除后将无法恢复，是否继续？')
         }
-        confirmText="确认移除"
-        cancelText="取消"
+        confirmText={tf('categoriesAccounts.confirmRemove', '确认移除')}
+        cancelText={tf('confirmDialog.cancel', '取消')}
         danger
         onConfirm={() => {
           if (!pendingRemoveTagLabel) return;
@@ -1220,14 +1371,20 @@ export function CategoriesAccountsPage() {
 
       <ConfirmDialog
         open={Boolean(pendingDeleteAccountId)}
-        title="确认移入回收站"
+        title={tf('categoriesAccounts.confirmTrashTitle', '确认移入回收站')}
         description={
           pendingDeleteLinkedCount > 0
-            ? `该账户下存在 ${pendingDeleteLinkedCount} 条交易记录，移入回收站后仅移除账户本身，交易仍会保留。是否继续？`
-            : '该账户将先移入回收站，你之后仍可恢复或彻底删除。是否继续？'
+            ? tf(
+                'categoriesAccounts.confirm.accountUsage',
+                '该账户下存在 {count} 条交易记录，移入回收站后仅移除账户本身，交易仍会保留。是否继续？'
+              ).replace('{count}', String(pendingDeleteLinkedCount))
+            : tf(
+                'categoriesAccounts.confirm.accountTrashPlain',
+                '该账户将先移入回收站，你之后仍可恢复或彻底删除。是否继续？'
+              )
         }
-        confirmText="移入回收站"
-        cancelText="取消"
+        confirmText={tf('categoriesAccounts.moveToTrash', '移入回收站')}
+        cancelText={tf('confirmDialog.cancel', '取消')}
         danger
         onConfirm={() => {
           if (!pendingDeleteAccountId) return;

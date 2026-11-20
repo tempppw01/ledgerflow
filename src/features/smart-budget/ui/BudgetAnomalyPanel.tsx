@@ -1,4 +1,5 @@
 import { formatCurrency } from '../../../shared/lib/format';
+import { useTFallback } from '../../../shared/lib/useTFallback';
 import { BudgetAlertIcon } from './budgetIcons';
 
 export type BudgetAnomaly = {
@@ -14,20 +15,28 @@ export type BudgetAnomalyPanelProps = {
 };
 
 export function BudgetAnomalyPanel({ anomalies, onSelectCategory }: BudgetAnomalyPanelProps) {
+  const tf = useTFallback();
   return (
-    <section className="sb-panel sb-anomaly-panel" aria-label="异常提醒">
+    <section
+      className="sb-panel sb-anomaly-panel"
+      aria-label={tf('smartBudget.anomaly.aria', '异常提醒')}
+    >
       <div className="sb-panel-head">
         <div>
           <h3 className="sb-section-title">
             <BudgetAlertIcon className="sb-icon-sm" />
-            异常提醒与调整建议
+            {tf('smartBudget.anomaly.title', '异常提醒与调整建议')}
           </h3>
-          <p className="sb-panel-sub">按当前速度，月底可能超支的分类。</p>
+          <p className="sb-panel-sub">
+            {tf('smartBudget.anomaly.subtitle', '按当前速度，月底可能超支的分类。')}
+          </p>
         </div>
       </div>
 
       {anomalies.length === 0 ? (
-        <p className="sb-empty">目前没有临近超支的分类,保持当前节奏即可。</p>
+        <p className="sb-empty">
+          {tf('smartBudget.anomaly.empty', '目前没有临近超支的分类,保持当前节奏即可。')}
+        </p>
       ) : (
         <ul className="sb-anomaly-list">
           {anomalies.slice(0, 5).map((item) => (
@@ -40,12 +49,15 @@ export function BudgetAnomalyPanel({ anomalies, onSelectCategory }: BudgetAnomal
                 <div>
                   <strong>{item.category}</strong>
                   <span>
-                    预计月末支出 {formatCurrency(item.projectedSpent)}，约为预算的{' '}
+                    {tf('smartBudget.anomaly.projected', '预计月末支出')}{' '}
+                    {formatCurrency(item.projectedSpent)}
+                    {tf('smartBudget.anomaly.aboutBudget', '，约为预算的')}{' '}
                     {(item.riskRatio * 100).toFixed(0)}%
                   </span>
                 </div>
                 <span className="sb-anomaly-tip">
-                  建议少花 {formatCurrency(item.suggestedSaving)}
+                  {tf('smartBudget.anomaly.trim', '建议少花')}{' '}
+                  {formatCurrency(item.suggestedSaving)}
                 </span>
               </button>
             </li>

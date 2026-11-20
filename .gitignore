@@ -20,6 +20,11 @@ test-results/
 # Local Codex preview/runtime state
 .codex-run/
 
+# Local AI/browser audit scratch directories
+/.audit/
+/.tmp-i18n/
+/e2e-artifacts/
+
 # One-off local maintenance output
 /output/
 /*.py

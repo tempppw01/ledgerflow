@@ -3,10 +3,17 @@
    设计目标：克制、留白、中性色、少量强调色
    ============================================================ */
 
+/* ---- Web 字体 ----
+   字体文件不进仓库,统一走同源 /cdn/fonts/ 由代理(dev / preview / nginx)转发到
+   对象存储。之前直接写 R2 绝对地址,pub-*.r2.dev 不返回 Access-Control-Allow-Origin,
+   而跨域 @font-face 必须带该响应头,于是全站字体被浏览器拒绝、控制台每页报 CORS 错误。
+   这里把同源地址放在 src 列表第一位;第二个候选保留原始 R2 绝对地址,当同源地址
+   404(例如没有代理的纯静态托管)时浏览器仍会回退尝试,避免功能回退。 */
 @font-face {
   font-family: 'Geist Mono Ledger';
-  src: url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/GeistMono-Regular.woff2')
-    format('woff2');
+  src: url('/cdn/fonts/GeistMono-Regular.woff2') format('woff2'),
+    url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/GeistMono-Regular.woff2')
+      format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -14,8 +21,9 @@
 
 @font-face {
   font-family: 'Geist Mono Ledger';
-  src: url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/GeistMono-SemiBold.woff2')
-    format('woff2');
+  src: url('/cdn/fonts/GeistMono-SemiBold.woff2') format('woff2'),
+    url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/GeistMono-SemiBold.woff2')
+      format('woff2');
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -23,8 +31,11 @@
 
 @font-face {
   font-family: 'Geist Mono Ledger';
-  src: url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/GeistMono-SemiBoldItalic.woff2')
-    format('woff2');
+  src: url('/cdn/fonts/GeistMono-SemiBoldItalic.woff2') format('woff2'),
+    url(
+        'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/GeistMono-SemiBoldItalic.woff2'
+      )
+      format('woff2');
   font-weight: 600;
   font-style: italic;
   font-display: swap;
@@ -32,8 +43,9 @@
 
 @font-face {
   font-family: 'MiSans Ledger';
-  src: url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/MiSans-Thin.woff2')
-    format('woff2');
+  src: url('/cdn/fonts/MiSans-Thin.woff2') format('woff2'),
+    url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/MiSans-Thin.woff2')
+      format('woff2');
   font-weight: 100;
   font-style: normal;
   font-display: swap;
@@ -41,8 +53,9 @@
 
 @font-face {
   font-family: 'MiSans Ledger';
-  src: url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/MiSans-ExtraLight.woff2')
-    format('woff2');
+  src: url('/cdn/fonts/MiSans-ExtraLight.woff2') format('woff2'),
+    url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/MiSans-ExtraLight.woff2')
+      format('woff2');
   font-weight: 200;
   font-style: normal;
   font-display: swap;
@@ -50,8 +63,9 @@
 
 @font-face {
   font-family: 'MiSans Ledger';
-  src: url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/MiSans-Light.woff2')
-    format('woff2');
+  src: url('/cdn/fonts/MiSans-Light.woff2') format('woff2'),
+    url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/MiSans-Light.woff2')
+      format('woff2');
   font-weight: 300;
   font-style: normal;
   font-display: swap;
@@ -59,8 +73,9 @@
 
 @font-face {
   font-family: 'MiSans Ledger';
-  src: url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/MiSans-Normal.woff2')
-    format('woff2');
+  src: url('/cdn/fonts/MiSans-Normal.woff2') format('woff2'),
+    url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/MiSans-Normal.woff2')
+      format('woff2');
   font-weight: 350;
   font-style: normal;
   font-display: swap;
@@ -68,8 +83,9 @@
 
 @font-face {
   font-family: 'MiSans Ledger';
-  src: url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/MiSans-Regular.woff2')
-    format('woff2');
+  src: url('/cdn/fonts/MiSans-Regular.woff2') format('woff2'),
+    url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/MiSans-Regular.woff2')
+      format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -77,8 +93,9 @@
 
 @font-face {
   font-family: 'MiSans Ledger';
-  src: url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/MiSans-Medium.woff2')
-    format('woff2');
+  src: url('/cdn/fonts/MiSans-Medium.woff2') format('woff2'),
+    url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/MiSans-Medium.woff2')
+      format('woff2');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -86,8 +103,9 @@
 
 @font-face {
   font-family: 'MiSans Ledger';
-  src: url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/MiSans-Demibold.woff2')
-    format('woff2');
+  src: url('/cdn/fonts/MiSans-Demibold.woff2') format('woff2'),
+    url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/MiSans-Demibold.woff2')
+      format('woff2');
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -95,8 +113,9 @@
 
 @font-face {
   font-family: 'MiSans Ledger';
-  src: url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/MiSans-Semibold.woff2')
-    format('woff2');
+  src: url('/cdn/fonts/MiSans-Semibold.woff2') format('woff2'),
+    url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/MiSans-Semibold.woff2')
+      format('woff2');
   font-weight: 650;
   font-style: normal;
   font-display: swap;
@@ -104,8 +123,9 @@
 
 @font-face {
   font-family: 'MiSans Ledger';
-  src: url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/MiSans-Bold.woff2')
-    format('woff2');
+  src: url('/cdn/fonts/MiSans-Bold.woff2') format('woff2'),
+    url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/MiSans-Bold.woff2')
+      format('woff2');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -113,8 +133,9 @@
 
 @font-face {
   font-family: 'MiSans Ledger';
-  src: url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/MiSans-Heavy.woff2')
-    format('woff2');
+  src: url('/cdn/fonts/MiSans-Heavy.woff2') format('woff2'),
+    url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/MiSans-Heavy.woff2')
+      format('woff2');
   font-weight: 900;
   font-style: normal;
   font-display: swap;

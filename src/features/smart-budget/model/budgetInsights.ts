@@ -1,7 +1,12 @@
 import { BudgetRecommendation } from './budgetPlanner';
 import { Category } from '../../../entities/category/types';
 import { TransactionItem } from '../../../entities/transaction/types';
-import { formatMonthKey, monthLabelFromKey, parseDateInput } from './budgetDate';
+import {
+  BudgetTextTranslator,
+  formatMonthKey,
+  monthLabelFromKey,
+  parseDateInput
+} from './budgetDate';
 
 export { formatMonthKey, monthLabelFromKey, parseDateInput };
 
@@ -26,7 +31,8 @@ function normalizeCategoryName(raw: string): string {
 export function getRecentMonthOptions(
   transactions: TransactionItem[],
   count = 6,
-  now = new Date()
+  now = new Date(),
+  t?: BudgetTextTranslator
 ): BudgetMonthOption[] {
   const monthSet = new Set<string>();
 
@@ -46,7 +52,7 @@ export function getRecentMonthOptions(
   return Array.from(monthSet)
     .sort((a, b) => b.localeCompare(a))
     .slice(0, count)
-    .map((key) => ({ key, label: monthLabelFromKey(key) }));
+    .map((key) => ({ key, label: monthLabelFromKey(key, t) }));
 }
 
 export function buildBudgetTrackingRows(params: {

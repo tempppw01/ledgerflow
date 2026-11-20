@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { formatCurrency } from '../../shared/lib/format';
+import { formatCurrency, formatDateTime } from '../../shared/lib/format';
+import { useTFallback } from '../../shared/lib/useTFallback';
 import { summarizeTransactions } from '../../shared/lib/transactionMetrics';
 import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
 import { useAiSettings } from '../../shared/store/useAiSettings';
@@ -131,7 +132,7 @@ function extractFirstJsonObject(text: string): string {
   throw new Error('AI 返回内容不是有效 JSON');
 }
 
-function parseAiAdvice(raw: string): BudgetAiAdvice {
+function parseAiAdvice(raw: string, fallbackSummary: string): BudgetAiAdvice {
   const parsed = JSON.parse(extractFirstJsonObject(raw)) as {
     summary?: unknown;
     suggestions?: unknown;
@@ -172,13 +173,14 @@ function parseAiAdvice(raw: string): BudgetAiAdvice {
     : [];
 
   return {
-    summary: String(parsed.summary || '预算执行总体平稳，可持续跟踪超支项。'),
+    summary: String(parsed.summary || fallbackSummary),
     suggestions,
     focusCategories
   };
 }
 
 export function SmartBudgetPage() {
+  const tf = useTFallback();
   const confirmedPlan = useSmartBudgetStore((s) => s.confirmedPlan);
   const planHistory = useSmartBudgetStore((s) => s.history);
   const confirmPlan = useSmartBudgetStore((s) => s.confirmPlan);
@@ -222,7 +224,10 @@ export function SmartBudgetPage() {
   const [actionLogs, setActionLogs] = useState<BudgetActionLog[]>([]);
   const [actionFeedback, setActionFeedback] = useState('');
 
-  const monthOptions = useMemo(() => getRecentMonthOptions(transactions), [transactions]);
+  const monthOptions = useMemo(
+    () => getRecentMonthOptions(transactions, 6, new Date(), tf),
+    [transactions, tf]
+  );
   const activeMonthKey = selectedMonthKey || monthOptions[0]?.key || '';
 
   const linkedRecommendation = useMemo(() => {
@@ -271,13 +276,16 @@ export function SmartBudgetPage() {
 
   const health = useMemo(
     () =>
-      calculateBudgetHealth({
-        executionRate: overview.executionRate,
-        overspentCount: overview.overspentCount,
-        monthIncome: monthTotals.income,
-        monthExpense: monthTotals.expense
-      }),
-    [overview.executionRate, overview.overspentCount, monthTotals]
+      calculateBudgetHealth(
+        {
+          executionRate: overview.executionRate,
+          overspentCount: overview.overspentCount,
+          monthIncome: monthTotals.income,
+          monthExpense: monthTotals.expense
+        },
+        tf
+      ),
+    [overview.executionRate, overview.overspentCount, monthTotals, tf]
   );
 
   const pacing = useMemo(
@@ -302,7 +310,7 @@ export function SmartBudgetPage() {
 
   const trendSeries = useMemo<BudgetTrendSeries[]>(() => {
     if (!linkedRecommendation) return [];
-    const recentKeys = getRecentMonthOptions(transactions, 6)
+    const recentKeys = getRecentMonthOptions(transactions, 6, new Date(), tf)
       .map((item) => item.key)
       .reverse();
 
@@ -330,7 +338,7 @@ export function SmartBudgetPage() {
           };
         })
       }));
-  }, [linkedRecommendation, transactions, categories]);
+  }, [linkedRecommendation, transactions, categories, tf]);
 
   const anomalies = useMemo(() => {
     if (!activeMonthKey || trackingRows.length === 0) return [];
@@ -412,17 +420,22 @@ export function SmartBudgetPage() {
     setWizardError(null);
 
     if (step === 2 && answers.monthlyIncome <= 0) {
-      setWizardError('每月收入必须大于 0。');
+      setWizardError(tf('smartBudget.error.incomePositive', '每月收入必须大于 0。'));
       return;
     }
 
     if (step === 3) {
       if (answers.monthlyFixedExpense < 0) {
-        setWizardError('固定支出不能小于 0。');
+        setWizardError(tf('smartBudget.error.fixedNonNegative', '固定支出不能小于 0。'));
         return;
       }
       if (answers.monthlyFixedExpense >= answers.monthlyIncome) {
-        setWizardError('固定支出需要小于月收入，才能生成可执行预算。');
+        setWizardError(
+          tf(
+            'smartBudget.error.fixedLessThanIncome',
+            '固定支出需要小于月收入，才能生成可执行预算。'
+          )
+        );
         return;
       }
     }
@@ -432,7 +445,11 @@ export function SmartBudgetPage() {
         const result = generateBudgetRecommendation(answers);
         setDraftRecommendation(syncRecommendationWithExpenseCategories(result, categories));
       } catch (error) {
-        setWizardError(error instanceof Error ? error.message : '预算生成失败。');
+        setWizardError(
+          error instanceof Error
+            ? error.message
+            : tf('smartBudget.error.generateFailed', '预算生成失败。')
+        );
         return;
       }
     }
@@ -490,23 +507,35 @@ export function SmartBudgetPage() {
         type: 'adjust-category',
         category,
         delta,
-        message: `已将「${category}」预算调整为 ${formatCurrency(amount)}`
+        message: tf('smartBudget.action.adjusted', '已将「{category}」预算调整为 {amount}')
+          .replace('{category}', String(category))
+          .replace('{amount}', String(formatCurrency(amount)))
       })
     );
     setActionFeedback(
-      `「${category}」预算已调整为 ${formatCurrency(amount)}，其它分类已按比例回填。`
+      tf(
+        'smartBudget.action.adjustedFeedback',
+        '「{category}」预算已调整为 {amount}，其它分类已按比例回填。'
+      )
+        .replace('{category}', String(category))
+        .replace('{amount}', String(formatCurrency(amount)))
     );
   };
 
   const runAiAnalysis = useCallback(async () => {
     if (!confirmedPlan || !linkedRecommendation || !activeMonthKey || trackingRows.length === 0) {
       setAiStatus('error');
-      setAiError('当前月份还没有可分析的预算数据。');
+      setAiError(tf('smartBudget.ai.noData', '当前月份还没有可分析的预算数据。'));
       return;
     }
     if (!hasAiConfig) {
       setAiStatus('error');
-      setAiError('未配置 AI 模型，请先在设置页完成模型地址、密钥与模型名称。');
+      setAiError(
+        tf(
+          'smartBudget.ai.notConfigured',
+          '未配置 AI 模型，请先在设置页完成模型地址、密钥与模型名称。'
+        )
+      );
       return;
     }
 
@@ -548,18 +577,26 @@ export function SmartBudgetPage() {
         ]
       });
 
-      setAiAdvice(parseAiAdvice(response.content));
+      setAiAdvice(
+        parseAiAdvice(
+          response.content,
+          tf('smartBudget.ai.defaultSummary', '预算执行总体平稳，可持续跟踪超支项。')
+        )
+      );
       setAiStatus('done');
     } catch (error) {
       setAiStatus('error');
       setAiAdvice(null);
-      setAiError(error instanceof Error ? error.message : 'AI 建议生成失败');
+      setAiError(
+        error instanceof Error ? error.message : tf('smartBudget.ai.failed', 'AI 建议生成失败')
+      );
     }
   }, [
     confirmedPlan,
     linkedRecommendation,
     activeMonthKey,
     trackingRows,
+    tf,
     hasAiConfig,
     baseUrl,
     apiKey,
@@ -572,7 +609,9 @@ export function SmartBudgetPage() {
     const nextAmount = Math.max(0, Math.round(topOverspent.budgetAmount + topOverspent.diff * 0.5));
     updatePlan(applyBalancedCategoryEdit(linkedRecommendation, topOverspent.category, nextAmount));
 
-    const message = `已将「${topOverspent.category}」预算调整为 ${formatCurrency(nextAmount)}`;
+    const message = tf('smartBudget.action.adjusted', '已将「{category}」预算调整为 {amount}')
+      .replace('{category}', String(topOverspent.category))
+      .replace('{amount}', String(formatCurrency(nextAmount)));
     setActionLogs((prev) =>
       appendBudgetActionLog(prev, {
         id: `${Date.now()}-apply-${topOverspent.category}`,
@@ -588,9 +627,12 @@ export function SmartBudgetPage() {
 
   const handleSetReminder = () => {
     if (!topOverspent) return;
-    const message = `已为「${topOverspent.category}」设置本月超支提醒，建议至少压降 ${formatCurrency(
-      topOverspent.diff
-    )}`;
+    const message = tf(
+      'smartBudget.action.reminder',
+      '已为「{category}」设置本月超支提醒，建议至少压降 {amount}'
+    )
+      .replace('{category}', String(topOverspent.category))
+      .replace('{amount}', String(formatCurrency(topOverspent.diff)));
     setActionLogs((prev) =>
       appendBudgetActionLog(prev, {
         id: `${Date.now()}-reminder-${topOverspent.category}`,
@@ -616,8 +658,8 @@ export function SmartBudgetPage() {
       <div className="vi-page sb-page">
         <header className="vi-page-head">
           <div className="vi-page-title">
-            <h1>智能预算</h1>
-            <p>回答五个问题，生成一份能直接执行下去的月度预算。</p>
+            <h1>{tf('smartBudget.title', '智能预算')}</h1>
+            <p>{tf('smartBudget.subtitle', '回答五个问题，生成一份能直接执行下去的月度预算。')}</p>
           </div>
           {confirmedPlan ? (
             <div className="vi-page-actions">
@@ -626,7 +668,7 @@ export function SmartBudgetPage() {
                 className="sb-btn sb-btn--ghost"
                 onClick={() => setMode('management')}
               >
-                返回预算看板
+                {tf('smartBudget.backToDashboard', '返回预算看板')}
               </button>
             </div>
           ) : null}
@@ -655,7 +697,9 @@ export function SmartBudgetPage() {
     return (
       <div className="vi-page sb-page">
         <section className="vi-section">
-          <p className="sb-empty">请先完成预算设置并确认后，再查看智能预算看板。</p>
+          <p className="sb-empty">
+            {tf('smartBudget.needSetup', '请先完成预算设置并确认后，再查看智能预算看板。')}
+          </p>
         </section>
       </div>
     );
@@ -665,10 +709,15 @@ export function SmartBudgetPage() {
     <div className="vi-page sb-page">
       <header className="vi-page-head">
         <div className="vi-page-title">
-          <h1>智能预算</h1>
+          <h1>{tf('smartBudget.title', '智能预算')}</h1>
           <p>
-            {getIdentityLabel(confirmedPlan.answers.identity)} · 月收入{' '}
-            {formatCurrency(linkedRecommendation.monthlyIncome)} · 储蓄{' '}
+            {tf(
+              `smartBudget.identity.${confirmedPlan.answers.identity}`,
+              getIdentityLabel(confirmedPlan.answers.identity)
+            )}{' '}
+            {tf('smartBudget.monthlyIncomeSuffix', '· 月收入')}{' '}
+            {formatCurrency(linkedRecommendation.monthlyIncome)}{' '}
+            {tf('smartBudget.savingsSuffix', '· 储蓄')}{' '}
             {Math.round(confirmedPlan.answers.savingsRatio * 100)}%
           </p>
         </div>
@@ -678,13 +727,13 @@ export function SmartBudgetPage() {
             className="sb-btn sb-btn--ghost"
             onClick={() => setHistoryOpen((open) => !open)}
           >
-            预算记录
+            {tf('smartBudget.historyButton', '预算记录')}
           </button>
           <button type="button" className="sb-btn sb-btn--ghost" onClick={handleRestartWizard}>
-            重新设置
+            {tf('smartBudget.restartButton', '重新设置')}
           </button>
           <button type="button" className="sb-btn" onClick={handleResetPlan}>
-            清除预算
+            {tf('smartBudget.clearButton', '清除预算')}
           </button>
         </div>
       </header>
@@ -693,7 +742,7 @@ export function SmartBudgetPage() {
         <div className="vi-toolbar-main">
           <div className="vi-field">
             <label className="vi-field-label" htmlFor="sb-month">
-              统计月份
+              {tf('smartBudget.monthLabel', '统计月份')}
             </label>
             <select
               id="sb-month"
@@ -709,27 +758,31 @@ export function SmartBudgetPage() {
             </select>
           </div>
 
-          <div className="sb-filter-group" role="group" aria-label="预算状态过滤">
+          <div
+            className="sb-filter-group"
+            role="group"
+            aria-label={tf('smartBudget.filterAria', '预算状态过滤')}
+          >
             <button
               type="button"
               className={statusFilter === 'all' ? 'is-active' : ''}
               onClick={() => setStatusFilter('all')}
             >
-              全部 {trackingRows.length}
+              {tf('smartBudget.filterAll', '全部')} {trackingRows.length}
             </button>
             <button
               type="button"
               className={statusFilter === 'overspent' ? 'is-active' : ''}
               onClick={() => setStatusFilter('overspent')}
             >
-              已超支 {overview.overspentCount}
+              {tf('smartBudget.filterOverspent', '已超支')} {overview.overspentCount}
             </button>
             <button
               type="button"
               className={statusFilter === 'safe' ? 'is-active' : ''}
               onClick={() => setStatusFilter('safe')}
             >
-              正常 {overview.safeCount}
+              {tf('smartBudget.filterSafe', '正常')} {overview.safeCount}
             </button>
           </div>
         </div>
@@ -740,8 +793,13 @@ export function SmartBudgetPage() {
       <section className="vi-section">
         <div className="vi-section-head">
           <div className="vi-section-title">
-            <h2>分类预算执行</h2>
-            <p>点开任意分类可以看明细，也可以直接在卡片上微调预算额度。</p>
+            <h2>{tf('smartBudget.categorySectionTitle', '分类预算执行')}</h2>
+            <p>
+              {tf(
+                'smartBudget.categorySectionHint',
+                '点开任意分类可以看明细，也可以直接在卡片上微调预算额度。'
+              )}
+            </p>
           </div>
         </div>
         <BudgetCategoryList
@@ -782,19 +840,17 @@ export function SmartBudgetPage() {
       />
 
       {actionLogs.length ? (
-        <section className="vi-section" aria-label="建议动作执行记录">
+        <section className="vi-section" aria-label={tf('smartBudget.logAria', '建议动作执行记录')}>
           <div className="vi-section-head">
             <div className="vi-section-title">
-              <h2>动作记录</h2>
-              <p>最近执行过的调整都会留在这里，方便回看。</p>
+              <h2>{tf('smartBudget.logTitle', '动作记录')}</h2>
+              <p>{tf('smartBudget.logHint', '最近执行过的调整都会留在这里，方便回看。')}</p>
             </div>
           </div>
           <ul className="sb-log-list">
             {actionLogs.map((item) => (
               <li key={item.id}>
-                <span className="sb-log-time">
-                  {new Date(item.createdAt).toLocaleString('zh-CN', { hour12: false })}
-                </span>
+                <span className="sb-log-time">{formatDateTime(item.createdAt)}</span>
                 <span className="sb-log-message">{item.message}</span>
               </li>
             ))}

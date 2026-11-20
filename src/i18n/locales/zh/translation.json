@@ -2357,7 +2357,8 @@
       "pending": "待补充",
       "amount": "金额",
       "minimumPayment": "最低还款",
-      "apr": "年化利率(APR)"
+      "apr": "年化利率(APR)",
+      "selectPrompt": "从左侧列表选择一笔负债查看详情"
     },
     "type": {
       "creditCard": "信用卡",
@@ -2365,7 +2366,516 @@
       "loan": "贷款"
     },
     "form": {
-      "actualAmountAria": "实际还款金额"
+      "actualAmountAria": "实际还款金额",
+      "estimatedPrefix": "已自动估算：",
+      "addTitle": "新增负债",
+      "apr": "年化利率",
+      "balancePlaceholder": "输入剩余本金",
+      "basicHint": "先填写名称和剩余本金;贷款可再补充期数,自动估算后续还款。",
+      "custom": "自定义",
+      "dayUnit": "日",
+      "editTitle": "编辑负债",
+      "equalPayment": "等额本息",
+      "equalPrincipal": "等额本金",
+      "extracted": "识别完成",
+      "extracting": "正在识别...",
+      "fixedMonthly": "按月固定扣款(期数和具体金额见下方)",
+      "imageHint": "支持支付宝/银行/信用卡账单截图。",
+      "imagePreviewAlt": "负债截图预览",
+      "manualAmountKept": "已保留手动填写金额",
+      "modeAria": "录入方式",
+      "modeFull": "完整录入",
+      "modeSimple": "简单录入",
+      "moreSettings": "更多设置",
+      "moreSettingsHint": "还款日和记录方式",
+      "nameAria": "负债名称",
+      "namePlaceholder": "招商信用卡",
+      "paymentMethod": "还款方式",
+      "planHint": "不知道总还款时,选择手动逐期计划最方便。",
+      "planManual": "手动逐期",
+      "planMode": "还款计划方式",
+      "planStructured": "按总期数",
+      "presetsAria": "常用贷款模板",
+      "presetsHint": "先选模板,再按你的合同补充金额和期限",
+      "presetsTitle": "常用贷款",
+      "recordMode": "记录方式",
+      "status": "状态",
+      "statusActive": "进行中",
+      "statusClosed": "已关闭",
+      "statusPaused": "暂缓处理",
+      "statusSettled": "已结清",
+      "type": "类型",
+      "typeAria": "负债类型",
+      "typeConsumer": "消费/信用分期",
+      "typeCredit": "信用类负债",
+      "uploadRecognize": "上传账单自动识别"
+    },
+    "repayment": {
+      "record": {
+        "heading": "登记本期还款",
+        "hint": "先填金额和日期,备注可以稍后补充。",
+        "fillPlanned": "带入计划金额",
+        "dateAria": "实际还款日期",
+        "todayAria": "设为今天",
+        "today": "今天",
+        "modeAria": "还款记录方式",
+        "modeManual": "手动登记",
+        "modeMatch": "交易匹配",
+        "modeAuto": "自动扣款",
+        "notePlaceholder": "备注（可选）",
+        "submit": "记录还款",
+        "listTitle": "还款记录",
+        "empty": "还没有还款记录,先登记一笔。",
+        "notePrefix": "备注:"
+      },
+      "detail": {
+        "selectPrompt": "从左侧列表选择一笔负债查看详情"
+      },
+      "form": {
+        "editTitle": "编辑负债",
+        "addTitle": "新增负债",
+        "modeAria": "录入方式",
+        "modeSimple": "简单录入",
+        "modeFull": "完整录入",
+        "presetsAria": "常用贷款模板",
+        "presetsTitle": "常用贷款",
+        "presetsHint": "先选模板,再按你的合同补充金额和期限",
+        "extracting": "正在识别...",
+        "extracted": "识别完成",
+        "uploadRecognize": "上传账单自动识别",
+        "imageHint": "支持支付宝/银行/信用卡账单截图。",
+        "imagePreviewAlt": "负债截图预览",
+        "basicHint": "先填写名称和剩余本金;贷款可再补充期数,自动估算后续还款。",
+        "nameAria": "负债名称",
+        "namePlaceholder": "招商信用卡",
+        "type": "类型",
+        "typeAria": "负债类型",
+        "typeCredit": "信用类负债",
+        "typeConsumer": "消费/信用分期",
+        "balancePlaceholder": "输入剩余本金",
+        "estimatedPrefix": "已自动估算:",
+        "manualAmountKept": "已保留手动填写金额",
+        "planMode": "还款计划方式",
+        "planHint": "不知道总还款时,选择手动逐期计划最方便。",
+        "planStructured": "按总期数",
+        "planManual": "手动逐期",
+        "moreSettings": "更多设置",
+        "moreSettingsHint": "还款日和记录方式",
+        "dayUnit": "日",
+        "paymentMethod": "还款方式",
+        "fixedMonthly": "按月固定扣款(期数和具体金额见下方)",
+        "equalPayment": "等额本息",
+        "equalPrincipal": "等额本金",
+        "custom": "自定义",
+        "recordMode": "记录方式",
+        "status": "状态",
+        "statusActive": "进行中",
+        "statusSettled": "已结清",
+        "statusClosed": "已关闭",
+        "statusPaused": "暂缓处理",
+        "apr": "年化利率"
+      }
+    },
+    "record": {
+      "dateAria": "实际还款日期",
+      "empty": "还没有还款记录,先登记一笔。",
+      "fillPlanned": "带入计划金额",
+      "heading": "登记本期还款",
+      "hint": "先填金额和日期,备注可以稍后补充。",
+      "modeAria": "还款记录方式",
+      "modeAuto": "自动扣款",
+      "modeManual": "手动登记",
+      "modeMatch": "交易匹配",
+      "notePlaceholder": "备注（可选）",
+      "notePrefix": "备注:",
+      "submit": "记录还款",
+      "today": "今天",
+      "todayAria": "设为今天"
+    }
+  },
+  "categoriesAccounts": {
+    "accountName": "账户名称",
+    "accountNamePlaceholder": "如：招商银行卡 / 零钱 / 花呗",
+    "accountType": {
+      "cash": "现金",
+      "credit": "信用卡",
+      "debit": "借记卡",
+      "liability": "负债",
+      "none": "未分类",
+      "receivable": "应收",
+      "savings": "储蓄卡",
+      "virtual": "虚拟账户"
+    },
+    "accountTypeLabel": "账户类型",
+    "accountTypeOption": {
+      "cash": "💵 现金",
+      "debit": "💳 借记卡",
+      "savings": "🏦 储蓄卡",
+      "virtual": "📱 虚拟账户"
+    },
+    "accountTypePlaceholder": "请选择类型",
+    "accountsMetricsAria": "账户统计",
+    "accountsSubtitle": "余额会随交易自动汇总；需要时双击金额进行校准。",
+    "accountsTitle": "账户管理",
+    "accountsToolbarHint": "集中管理银行卡、现金和虚拟账户，方便交易记录与余额追踪。",
+    "add": "添加",
+    "addAccount": "＋ 新增账户",
+    "addAdjustment": "添加单笔调整",
+    "addChild": "＋子分类",
+    "adjustmentNote": "账户单笔调整",
+    "adjustmentPlaceholder": "+收入 / -支出",
+    "adjustmentTag": "账户校准",
+    "balanceAutoHint": "按交易自动汇总，双击可校准",
+    "balanceEditTitle": "双击编辑余额",
+    "balancePlaceholder": "输入余额",
+    "categoriesMetricsAria": "分类统计",
+    "categoriesSubtitle": "支出和收入分开管理,一级分类下面还能再挂子分类。",
+    "categoriesTitle": "分类与标签管理",
+    "childBadge": "子分类",
+    "collapse": "收起",
+    "confirm": {
+      "accountTrashPlain": "该账户将先移入回收站，你之后仍可恢复或彻底删除。是否继续？",
+      "accountUsage": "该账户下存在 {count} 条交易记录，移入回收站后仅移除账户本身，交易仍会保留。是否继续？",
+      "categoryChildren": "其中 {count} 个子分类会提升为一级分类,",
+      "categoryTrashed": "移入回收站后这些交易会继续保留并归入“未分类”。是否继续?",
+      "categoryTrashedOnly": "该分类将先移入回收站,你之后仍可恢复或彻底删除。是否继续?",
+      "categoryUsage": "该分类下存在 {count} 条交易记录,",
+      "tagRemovePlain": "移除后将无法恢复，是否继续？",
+      "tagUsage": "该标签已用于 {count} 条交易，移除后将从这些交易中清除。是否继续？"
+    },
+    "confirmRemove": "确认移除",
+    "confirmRemoveTagTitle": "确认移除标签",
+    "confirmTrashTitle": "确认移入回收站",
+    "countItems": "条",
+    "delete": "删除",
+    "deleteCategoryAria": "删除分类 {name}",
+    "deleteTagAria": "删除标签 {name}",
+    "edit": "编辑",
+    "emptyAccountsDescription": "请添加第一个资金账户。",
+    "emptyAccountsTitle": "暂无账户",
+    "emptyCategoriesDescription": "先添加一个一级分类,再往下挂子分类。",
+    "emptyCategoriesTitle": "暂无分类",
+    "emptyTagsDescription": "在交易里加标签后会自动汇总到这里。",
+    "emptyTagsTitle": "暂无标签",
+    "error": {
+      "accountName": "账户名称需为 1-24 个字符，且不能包含 < 或 >。",
+      "accountType": "请选择账户类型后再添加账户。",
+      "categoryName": "分类名称需为 1-24 个字符，且不能包含 < 或 >。"
+    },
+    "expandRemaining": "展开剩余 {count} 项",
+    "initialBalance": "初始余额",
+    "initialPrefix": "初始：",
+    "kindExpense": "支出分类",
+    "kindExpenseShort": "支出",
+    "kindIncome": "收入分类",
+    "kindIncomeShort": "收入",
+    "kindTabsAria": "分类收支类型",
+    "merge": "合并",
+    "mergeIntoPlaceholder": "合并到…",
+    "mergeTargetAria": "选择 {name} 的合并目标",
+    "metricChild": "子分类",
+    "metricRoot": "一级分类",
+    "metricTag": "标签",
+    "moveAccountDownAria": "下移账户 {name}",
+    "moveAccountUpAria": "上移账户 {name}",
+    "moveCategoryDownAria": "下移分类 {name}",
+    "moveCategoryUpAria": "上移分类 {name}",
+    "moveDown": "↓ 下移",
+    "moveToTrash": "移入回收站",
+    "moveUp": "↑ 上移",
+    "negativeBalance": "负余额",
+    "newAccountHint": "新账户将参与交易汇总和余额统计。",
+    "newCategoryNameAria": "新增分类名称",
+    "newExpensePlaceholder": "新增支出分类",
+    "newIncomePlaceholder": "新增收入分类",
+    "parentCategoryAria": "上级分类",
+    "parentIntoPrefix": "归入",
+    "parentNone": "作为一级分类",
+    "rename": "重命名",
+    "renameCategoryAria": "重命名分类 {name}",
+    "renameTagAria": "重命名标签 {name}",
+    "saveAccount": "保存账户",
+    "setParentAria": "设置分类 {name} 的上级",
+    "shownPrefix": "已显示",
+    "singleAdjustment": "单笔调整",
+    "statAria": "账户与分类概览",
+    "statUnit": "项基础设置",
+    "structureTitle": "分类结构",
+    "subtitle": "在一个清爽的工作区里，管理记账的分类、标签和资金账户。",
+    "tabAccounts": "资金账户",
+    "tabCategories": "分类与标签",
+    "tabsAria": "账户与分类工作区",
+    "tagLibraryHint": "标签来自交易备注和 AI 识别,可合并、清理",
+    "tagLibraryTitle": "标签库",
+    "toolsSummary": "管理",
+    "totalBalance": "当前总余额",
+    "treeHintSuffix": "树 · 点「＋子分类」可以继续分层",
+    "viewCategoryTxAria": "查看分类 {name} 的 {count} 条交易"
+  },
+  "smartBudget": {
+    "action": {
+      "adjusted": "已将「{category}」预算调整为 {amount}",
+      "adjustedFeedback": "「{category}」预算已调整为 {amount}，其它分类已按比例回填。",
+      "reminder": "已为「{category}」设置本月超支提醒，建议至少压降 {amount}"
+    },
+    "ai": {
+      "defaultSummary": "预算执行总体平稳，可持续跟踪超支项。",
+      "failed": "AI 建议生成失败",
+      "noData": "当前月份还没有可分析的预算数据。",
+      "notConfigured": "未配置 AI 模型，请先在设置页完成模型地址、密钥与模型名称。"
+    },
+    "backToDashboard": "返回预算看板",
+    "categorySectionHint": "点开任意分类可以看明细，也可以直接在卡片上微调预算额度。",
+    "categorySectionTitle": "分类预算执行",
+    "clearButton": "清除预算",
+    "error": {
+      "fixedLessThanIncome": "固定支出需要小于月收入，才能生成可执行预算。",
+      "fixedNonNegative": "固定支出不能小于 0。",
+      "generateFailed": "预算生成失败。",
+      "incomePositive": "每月收入必须大于 0。"
+    },
+    "filterAll": "全部",
+    "filterAria": "预算状态过滤",
+    "filterOverspent": "已超支",
+    "filterSafe": "正常",
+    "historyButton": "预算记录",
+    "identity": {
+      "employee": "上班族",
+      "freelancer": "自由职业者",
+      "other": "其他",
+      "student": "学生"
+    },
+    "identityHint": {
+      "employee": "收入稳定，开销结构规律",
+      "freelancer": "收入波动，需要预留缓冲",
+      "other": "按通用结构给出一份基准",
+      "student": "固定支出少，时间比较灵活"
+    },
+    "logAria": "建议动作执行记录",
+    "logHint": "最近执行过的调整都会留在这里，方便回看。",
+    "logTitle": "动作记录",
+    "monthLabel": "统计月份",
+    "monthlyIncomeSuffix": "· 月收入",
+    "needSetup": "请先完成预算设置并确认后，再查看智能预算看板。",
+    "restartButton": "重新设置",
+    "savingsSuffix": "· 储蓄",
+    "subtitle": "回答五个问题，生成一份能直接执行下去的月度预算。",
+    "title": "智能预算",
+    "wizard": {
+      "categoryAmountAria": "{category}预算金额",
+      "confirm": {
+        "fixedBills": "固定账单",
+        "flexibleDaily": "日常可灵活使用",
+        "monthlyIncome": "每月到手",
+        "savingsFirst": "先存起来"
+      },
+      "confirmAria": "预算确认",
+      "confirmPlan": "就用这份预算",
+      "currentSavingsRatio": "当前储蓄比例",
+      "fixedLabel": "固定支出（房租、房贷、通勤、订阅等）",
+      "fixedNone": "没有",
+      "fixedShortcutsAria": "固定支出快捷选择",
+      "generate": "生成预算推荐",
+      "identityAria": "身份选择",
+      "incomeAria": "月收入",
+      "incomeLabel": "每月到手收入",
+      "incomeShortcutsAria": "收入快捷选择",
+      "introAria": "当前步骤说明",
+      "introHint": "五步就能算出可执行的月度预算，中途离开也可以随时回来。",
+      "next": "下一步",
+      "prev": "上一步",
+      "preview": {
+        "disposable": "可支配",
+        "flexible": "可自由支配",
+        "savings": "先存下"
+      },
+      "previewAria": "收入分配预览",
+      "rebalanceHint": "改任意一格，其他分类会自动按比例回填，总额始终等于月收入。",
+      "restart": "重新答一遍",
+      "savingsRatioAria": "储蓄比例",
+      "savingsShortcutsAria": "储蓄比例快捷选择",
+      "stepProgress": "第 {step} / {total} 步",
+      "stepperAria": "预算问答步骤",
+      "steps": {
+        "confirm": {
+          "short": "确认",
+          "title": "看看这份预算合不合适"
+        },
+        "fixed": {
+          "short": "固定支出",
+          "title": "每月固定要付多少？"
+        },
+        "identity": {
+          "short": "身份",
+          "title": "你目前是哪种状态？"
+        },
+        "income": {
+          "short": "收入",
+          "title": "每个月大概到手多少？"
+        },
+        "savings": {
+          "short": "储蓄",
+          "title": "想先存下多少？"
+        }
+      },
+      "summary": {
+        "fixed": "固定"
+      },
+      "table": {
+        "amount": "金额",
+        "category": "分类",
+        "share": "占收入"
+      }
+    },
+    "aiPanel": {
+      "action": {
+        "decrease": "建议收紧",
+        "increase": "可适度加配",
+        "keep": "保持"
+      },
+      "analyzing": "分析中",
+      "applyNextMonth": "调优下月预算",
+      "aria": "AI 预算观察",
+      "idleHint": "点击「重新分析」，让 AI 结合本月数据给出调整建议。",
+      "loadingHint": "正在看哪几类支出最需要留意...",
+      "nextMonthPrefix": "下个月可以把预算调到",
+      "orTrimPrefix": "，或者这个月先少花",
+      "reanalyze": "重新分析",
+      "remindMe": "这个月提醒我",
+      "subtitle": "按当前执行情况给出下一步该盯住的地方。",
+      "tagColon": "：",
+      "title": "AI 预算观察",
+      "usedPrefix": "已经花到预算的"
+    },
+    "anomaly": {
+      "aboutBudget": "，约为预算的",
+      "aria": "异常提醒",
+      "empty": "目前没有临近超支的分类,保持当前节奏即可。",
+      "projected": "预计月末支出",
+      "subtitle": "按当前速度，月底可能超支的分类。",
+      "title": "异常提醒与调整建议",
+      "trim": "建议少花"
+    },
+    "categoryList": {
+      "adjust": "调整预算",
+      "amountAria": "{category}预算金额",
+      "budget": "预算",
+      "collapse": "收起分类",
+      "details": "查看详情",
+      "empty": "当前筛选条件下暂无预算项，切换月份或筛选条件试试。",
+      "expandAll": "展开全部 {count} 个分类",
+      "left": "剩 {amount}",
+      "over": "超 {amount}",
+      "shown": "已显示",
+      "shownUnit": "个预算分类",
+      "spent": "已花费",
+      "status": {
+        "normal": "正常",
+        "overspent": "超支",
+        "warning": "预警"
+      },
+      "vsLastMonth": "环比"
+    },
+    "common": {
+      "executionRate": "执行率"
+    },
+    "comparison": {
+      "aria": "环比对比",
+      "empty": "暂时没有可对比的分类数据。",
+      "less": "少花",
+      "more": "多花",
+      "previousSuffix": "→ 本月，整体",
+      "title": "和上个月比，花在哪儿变了"
+    },
+    "detail": {
+      "aria": "{category}预算详情",
+      "avgPrefix": "近",
+      "avgSuffix": "个月平均支出",
+      "barTitle": "{month}：{amount}",
+      "close": "关闭详情",
+      "diff": "差额",
+      "empty": "暂时没有可展示的明细。",
+      "emptyMonth": "这个月还没有该分类的支出记录。",
+      "recentPrefix": "最近",
+      "recentSuffix": "个月",
+      "recentTitle": "近期支出",
+      "title": "分类详情"
+    },
+    "health": {
+      "factor": {
+        "balance": {
+          "detail": {
+            "cover": "收入可以覆盖本月支出",
+            "short": "收入比支出少 {amount} 元"
+          },
+          "label": "收支平衡"
+        },
+        "execution": {
+          "detail": {
+            "over": "整体已用掉预算的 {percent}%",
+            "under": "整体用掉预算的 {percent}%，节奏可控"
+          },
+          "label": "执行节奏"
+        },
+        "overspend": {
+          "detail": {
+            "none": "没有分类超出预算",
+            "some": "{count} 个分类已经超出预算"
+          },
+          "label": "分类超支"
+        }
+      },
+      "level": {
+        "excellent": "状态优秀",
+        "fair": "需要留意",
+        "good": "状态良好",
+        "risk": "存在风险"
+      },
+      "summary": {
+        "excellent": "预算执行得很稳，可以把结余优先安排到储蓄或应急金。",
+        "fair": "还有收紧空间，优先从超支分类里压降。",
+        "good": "整体执行健康，保持现在的节奏就可以。",
+        "risk": "当前预算缺口明显，建议立刻调整超支分类的额度。"
+      }
+    },
+    "historyPanel": {
+      "aria": "预算版本记录",
+      "current": "当前版本",
+      "empty": "确认预算后，这里会自动留下可回溯版本。",
+      "incomeSavings": "月收入 · 储蓄",
+      "restore": "恢复此版本",
+      "subtitle": "每次确认都会保留一份版本，随时恢复，不用重新填写。"
+    },
+    "overview": {
+      "aria": "预算总览",
+      "flexTotal": "灵活分类合计",
+      "healthTitle": "预算健康度",
+      "monthBudget": "本月预算",
+      "pacing": {
+        "none": "选择月份后可以看到每天可用金额。",
+        "over": "按现在的节奏，月底预计超支 {amount}。",
+        "pastMonth": "该月共 {days} 天，已全部走完，属于历史月份。",
+        "steady": "按当前节奏能稳稳用完，今天大约可以花 {amount}。",
+        "warning": "每天花得比计划多，后面 {days} 天需要收紧一点。"
+      },
+      "remaining": "还能花",
+      "ringAria": "预算执行率 {percent}%",
+      "ringCaption": "预算已用比例",
+      "safeCount": "{count} 个分类在预算内",
+      "setupFirst": "先完成预算设置",
+      "spent": "已经用掉",
+      "todayAllowance": "今天约 {amount}"
+    },
+    "trend": {
+      "aria": "预算执行趋势",
+      "barTitle": "{month} 支出 {amount}",
+      "empty": "记录满两个月后,这里会显示分类预算与实际支出的趋势对比。",
+      "subtitle": "柱子是实际支出，虚线是当月预算线。",
+      "title": "最近几个月，钱主要花在哪里"
+    },
+    "month": {
+      "short": "{month}月",
+      "yearMonth": "{year} 年 {month} 月"
     }
   }
 }

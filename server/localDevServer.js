@@ -20,6 +20,10 @@ if (existsSync(envFile)) {
 const apiPort = process.env.LEDGERFLOW_API_PORT || '3000';
 const proxyTarget = process.env.LEDGERFLOW_API_PROXY_TARGET || `http://127.0.0.1:${apiPort}`;
 
+// 字体文件不随仓库分发,tokens.css 里引用的是同源 /cdn/fonts/*.woff2。
+// 这里把它转发到 R2,浏览器只看到同源请求,因此不再需要 R2 的 CORS 响应头。
+const cdnTarget = process.env.LEDGERFLOW_CDN_PROXY_TARGET || 'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev';
+
 const host = process.env.LEDGERFLOW_DEV_HOST || '127.0.0.1';
 const port = Number(process.env.LEDGERFLOW_DEV_PORT || 5175);
 
@@ -37,6 +41,12 @@ const server = await createServer({
       '/api': {
         target: proxyTarget,
         changeOrigin: true
+      },
+      // /cdn/* 去掉前缀后拼到 R2:同一份 tokens.css 在 dev、preview、nginx 下行为一致。
+      '/cdn': {
+        target: cdnTarget,
+        changeOrigin: true,
+        rewrite: (requestPath) => requestPath.replace(/^\/cdn/, '')
       }
     }
   }
@@ -45,4 +55,5 @@ const server = await createServer({
 await server.listen();
 console.log(`[ledgerflow] dev server -> http://${host}:${port}`);
 console.log(`[ledgerflow] /api proxy  -> ${proxyTarget}`);
+console.log(`[ledgerflow] /cdn proxy  -> ${cdnTarget}`);
 server.printUrls();

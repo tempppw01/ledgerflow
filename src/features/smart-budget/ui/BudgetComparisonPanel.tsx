@@ -1,4 +1,5 @@
 import { formatCurrency } from '../../../shared/lib/format';
+import { useTFallback } from '../../../shared/lib/useTFallback';
 import { BudgetComparison } from '../model/budgetComparison';
 import { formatBudgetMonthLabel } from '../model/budgetPacing';
 
@@ -12,23 +13,32 @@ export function BudgetComparisonPanel({
   onSelectCategory
 }: BudgetComparisonPanelProps) {
   const rows = comparison.rows.slice(0, 8);
+  const tf = useTFallback();
   const maxDelta = Math.max(...rows.map((row) => Math.abs(row.spentDelta)), 1);
   const totalUp = comparison.totalDelta > 0;
 
   return (
-    <section className="sb-panel" aria-label="环比对比">
+    <section className="sb-panel" aria-label={tf('smartBudget.comparison.aria', '环比对比')}>
       <div className="sb-panel-head">
         <div>
-          <h3 className="sb-section-title">和上个月比，花在哪儿变了</h3>
+          <h3 className="sb-section-title">
+            {tf('smartBudget.comparison.title', '和上个月比，花在哪儿变了')}
+          </h3>
           <p className="sb-panel-sub">
-            {formatBudgetMonthLabel(comparison.previousMonthKey)} → 本月，整体
-            {totalUp ? '多花' : '少花'} {formatCurrency(Math.abs(comparison.totalDelta))}
+            {formatBudgetMonthLabel(comparison.previousMonthKey, tf)}{' '}
+            {tf('smartBudget.comparison.previousSuffix', '→ 本月，整体')}
+            {totalUp
+              ? tf('smartBudget.comparison.more', '多花')
+              : tf('smartBudget.comparison.less', '少花')}{' '}
+            {formatCurrency(Math.abs(comparison.totalDelta))}
           </p>
         </div>
       </div>
 
       {rows.length === 0 ? (
-        <p className="sb-muted">暂时没有可对比的分类数据。</p>
+        <p className="sb-muted">
+          {tf('smartBudget.comparison.empty', '暂时没有可对比的分类数据。')}
+        </p>
       ) : (
         <ul className="sb-compare-list">
           {rows.map((row) => {

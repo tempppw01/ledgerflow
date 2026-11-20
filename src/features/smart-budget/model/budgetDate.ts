@@ -16,7 +16,16 @@ export function formatMonthKey(date: Date): string {
   return `${year}-${month}`;
 }
 
-export function monthLabelFromKey(monthKey: string): string {
+export type BudgetTextTranslator = (key: string, fallback: string) => string;
+
+export const identityTextTranslator: BudgetTextTranslator = (_key, fallback) => fallback;
+
+export function monthLabelFromKey(
+  monthKey: string,
+  t: BudgetTextTranslator = identityTextTranslator
+): string {
   const [year, month] = monthKey.split('-');
-  return `${year} 年 ${Number(month)} 月`;
+  return t('smartBudget.month.yearMonth', '{year} 年 {month} 月')
+    .replace('{year}', String(year))
+    .replace('{month}', String(Number(month)));
 }

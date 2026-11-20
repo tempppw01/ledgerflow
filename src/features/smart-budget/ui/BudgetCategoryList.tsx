@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { formatCurrency } from '../../../shared/lib/format';
+import { useTFallback } from '../../../shared/lib/useTFallback';
 import { BudgetTrackingRow } from '../model/budgetInsights';
 import { BudgetComparisonRow } from '../model/budgetComparison';
 import { BudgetEditIcon, BudgetTargetIcon } from './budgetIcons';
@@ -30,6 +31,7 @@ function CategoryRow(props: {
   onAdjust: (amount: number) => void;
 }) {
   const { row, delta, onSelect, onAdjust } = props;
+  const tf = useTFallback();
   const status = statusOf(row);
   const [editing, setEditing] = useState(false);
   const [draftAmount, setDraftAmount] = useState(row.budgetAmount);
@@ -63,16 +65,18 @@ function CategoryRow(props: {
     >
       <header className="sb-category-card-head">
         <h4>{row.category}</h4>
-        <span className={`sb-status-tag is-${status.key}`}>{status.label}</span>
+        <span className={`sb-status-tag is-${status.key}`}>
+          {tf(`smartBudget.categoryList.status.${status.key}`, status.label)}
+        </span>
       </header>
 
       <div className="sb-category-amounts">
         <div>
-          <span>已花费</span>
+          <span>{tf('smartBudget.categoryList.spent', '已花费')}</span>
           <strong className="sb-number">{formatCurrency(row.spentAmount)}</strong>
         </div>
         <div>
-          <span>预算</span>
+          <span>{tf('smartBudget.categoryList.budget', '预算')}</span>
           {editing ? (
             <div
               className="sb-amount-input is-compact"
@@ -80,7 +84,10 @@ function CategoryRow(props: {
             >
               <span aria-hidden="true">¥</span>
               <input
-                aria-label={`${row.category}预算金额`}
+                aria-label={tf('smartBudget.categoryList.amountAria', '{category}预算金额').replace(
+                  '{category}',
+                  String(row.category)
+                )}
                 type="number"
                 min={0}
                 step={100}
@@ -108,13 +115,23 @@ function CategoryRow(props: {
       </div>
 
       <div className="sb-category-meta">
-        <span>执行率 {(row.ratio * 100).toFixed(1)}%</span>
+        <span>
+          {tf('smartBudget.common.executionRate', '执行率')} {(row.ratio * 100).toFixed(1)}%
+        </span>
         <span className={row.diff <= 0 ? 'is-safe' : 'is-warn'}>
-          {row.diff <= 0 ? `剩 ${formatCurrency(-row.diff)}` : `超 ${formatCurrency(row.diff)}`}
+          {row.diff <= 0
+            ? tf('smartBudget.categoryList.left', '剩 {amount}').replace(
+                '{amount}',
+                String(formatCurrency(-row.diff))
+              )
+            : tf('smartBudget.categoryList.over', '超 {amount}').replace(
+                '{amount}',
+                String(formatCurrency(row.diff))
+              )}
         </span>
         {typeof delta === 'number' && Math.abs(delta) >= 1 ? (
           <span className={delta > 0 ? 'is-warn' : 'is-safe'}>
-            环比 {delta > 0 ? '+' : ''}
+            {tf('smartBudget.categoryList.vsLastMonth', '环比')} {delta > 0 ? '+' : ''}
             {formatCurrency(delta)}
           </span>
         ) : null}
@@ -137,7 +154,7 @@ function CategoryRow(props: {
           }}
         >
           <BudgetEditIcon className="sb-icon-xs" />
-          调整预算
+          {tf('smartBudget.categoryList.adjust', '调整预算')}
         </button>
         <button
           type="button"
@@ -148,7 +165,7 @@ function CategoryRow(props: {
           }}
         >
           <BudgetTargetIcon className="sb-icon-xs" />
-          查看详情
+          {tf('smartBudget.categoryList.details', '查看详情')}
         </button>
       </footer>
     </article>
@@ -157,18 +174,24 @@ function CategoryRow(props: {
 
 export function BudgetCategoryList(props: BudgetCategoryListProps) {
   const { rows, comparisonRows, expanded, onToggleExpanded, onSelect, onAdjust } = props;
+  const tf = useTFallback();
   const deltaMap = new Map(comparisonRows.map((row) => [row.category, row.spentDelta]));
   const visibleRows = expanded ? rows : rows.slice(0, 8);
 
   if (rows.length === 0) {
-    return <p className="sb-empty">当前筛选条件下暂无预算项，切换月份或筛选条件试试。</p>;
+    return (
+      <p className="sb-empty">
+        {tf('smartBudget.categoryList.empty', '当前筛选条件下暂无预算项，切换月份或筛选条件试试。')}
+      </p>
+    );
   }
 
   return (
     <>
       <div className="sb-list-toolbar">
         <span className="sb-muted">
-          已显示 {visibleRows.length} / {rows.length} 个预算分类
+          {tf('smartBudget.categoryList.shown', '已显示')} {visibleRows.length} / {rows.length}{' '}
+          {tf('smartBudget.categoryList.shownUnit', '个预算分类')}
         </span>
         {rows.length > 8 ? (
           <button
@@ -176,7 +199,12 @@ export function BudgetCategoryList(props: BudgetCategoryListProps) {
             className="sb-btn sb-btn--ghost sb-btn--xs"
             onClick={onToggleExpanded}
           >
-            {expanded ? '收起分类' : `展开全部 ${rows.length} 个分类`}
+            {expanded
+              ? tf('smartBudget.categoryList.collapse', '收起分类')
+              : tf('smartBudget.categoryList.expandAll', '展开全部 {count} 个分类').replace(
+                  '{count}',
+                  String(rows.length)
+                )}
           </button>
         ) : null}
       </div>

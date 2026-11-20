@@ -1,3 +1,5 @@
+import { BudgetTextTranslator, identityTextTranslator } from './budgetDate';
+
 export type BudgetPacingStatus = 'safe' | 'warning' | 'over';
 
 export type BudgetPacing = {
@@ -34,16 +36,24 @@ export function getBudgetMonthMeta(monthKey: string): BudgetMonthMeta | null {
   return { year, month, daysInMonth: new Date(year, month, 0).getDate() };
 }
 
-export function formatBudgetMonthLabel(monthKey: string): string {
+export function formatBudgetMonthLabel(
+  monthKey: string,
+  t: BudgetTextTranslator = identityTextTranslator
+): string {
   const meta = getBudgetMonthMeta(monthKey);
   if (!meta) return monthKey;
-  return `${meta.year} 年 ${meta.month} 月`;
+  return t('smartBudget.month.yearMonth', '{year} 年 {month} 月')
+    .replace('{year}', String(meta.year))
+    .replace('{month}', String(meta.month));
 }
 
-export function formatBudgetMonthShortLabel(monthKey: string): string {
+export function formatBudgetMonthShortLabel(
+  monthKey: string,
+  t: BudgetTextTranslator = identityTextTranslator
+): string {
   const meta = getBudgetMonthMeta(monthKey);
   if (!meta) return monthKey;
-  return `${meta.month}月`;
+  return t('smartBudget.month.short', '{month}月').replace('{month}', String(meta.month));
 }
 
 /**
