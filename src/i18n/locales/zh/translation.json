@@ -1570,5 +1570,190 @@
       "amountRequired": "订阅金额必须大于 0。",
       "generateFailed": "生成订阅支出失败,请稍后重试。"
     }
+  },
+  "dataBackup": {
+    "title": "数据与备份",
+    "subtitle": "管理账本数据、恢复点和异地副本。",
+    "managedRowsSuffix": "条已纳管数据",
+    "backupMethod": "备份方式",
+    "currentVolume": "当前数据量",
+    "tabs": {
+      "local": "本地备份",
+      "billImport": "账单导入",
+      "database": "数据库",
+      "objectStorage": "对象存储"
+    },
+    "local": {
+      "export": "导出备份文件",
+      "import": "导入备份文件",
+      "desc": "导出的备份可直接恢复,也可作为迁移至新数据库实例的原始文件。"
+    },
+    "database": {
+      "exportTitle": "导出 SQL 数据库",
+      "exportFormat": "SQLite 导出 .sqlite · MySQL 导出 .sql",
+      "exportHint": "仅导出当前登录账号及其关联数据,并保留可导入所需的表结构。请妥善保管导出文件。",
+      "download": "下载 SQL 数据库"
+    },
+    "reset": {
+      "title": "一键清空所有账户账单",
+      "desc": "清空所有账户账单(交易记录),保留账户与分类。",
+      "section": "数据重制"
+    },
+    "billImport": {
+      "wechat": "导入微信账单",
+      "alipay": "导入支付宝账单",
+      "desc": "支持微信、支付宝官方账单 CSV / TXT(含制表符)和微信 XLSX。",
+      "duplicateStrategy": "遇到重复账单时",
+      "strategyKeep": "保留旧账单,重复但有变更时更新为最新",
+      "strategyOverwrite": "用新账单覆盖重复账单的导入字段",
+      "strategyReset": "清空现有交易后重新导入",
+      "fileAria": "导入账单文件",
+      "modeAria": "账单导入模式"
+    },
+    "webdav": {
+      "section": "WebDAV 备份",
+      "desc": "用于远程备份与恢复,默认通过同源代理连接。",
+      "proxyEnable": "启用同源代理",
+      "proxyPath": "代理入口路径",
+      "proxyToken": "代理令牌",
+      "proxyOn": "代理已启用",
+      "direct": "浏览器直连",
+      "modeProxy": "当前:同源代理已启用。",
+      "modeDirect": "当前:浏览器直连,可能受跨域限制。",
+      "url": "WebDAV 地址",
+      "realUrl": "真实 WebDAV 地址",
+      "username": "用户名",
+      "password": "密码",
+      "remotePath": "远程文件路径",
+      "keepVersions": "保留版本数",
+      "pathStyle": "使用路径风格地址",
+      "backupNow": "立即备份",
+      "restore": "恢复备份",
+      "restoreSelect": "选择要恢复的 WebDAV 备份版本",
+      "restoreSelected": "恢复所选版本",
+      "latest": "(最新)",
+      "lastBackupPrefix": "上次备份:"
+    },
+    "objectStorage": {
+      "section": "对象存储备份",
+      "desc": "支持阿里云 OSS 与 S3 兼容服务,适合把备份放到自己的 Bucket。",
+      "region": "地域",
+      "hint": "如遇到跨域提示,需要在 Bucket 里允许网页访问;密钥不会长期保存到本地。",
+      "oss": "阿里云 OSS",
+      "ossDesc": "适合已开通 OSS Bucket 的用户",
+      "s3": "S3 兼容",
+      "s3Desc": "适合 MinIO、R2、COS 等兼容服务",
+      "lastBackupPrefix": "上次备份:",
+      "currentPrefix": "当前:"
+    },
+    "common": {
+      "save": "保存",
+      "cancel": "取消"
+    },
+    "toggle": {
+      "collapse": "收起配置",
+      "expand": "展开配置",
+      "collapseAdvanced": "收起高级选项",
+      "expandAdvanced": "展开高级选项"
+    },
+    "status": {
+      "importDone": "导入完成",
+      "importFailed": "导入失败",
+      "writing": "正在写入数据库",
+      "exporting": "正在导出...",
+      "cleared": "已清空所有账户账单",
+      "loading": "读取中...",
+      "noRecord": "暂无记录"
+    },
+    "placeholder": {
+      "username": "请输入用户名",
+      "password": "请输入密码",
+      "accessKeyId": "请输入 AccessKey ID",
+      "sessionOnly": "仅保存在本次会话",
+      "tokenHint": "与服务端 LEDGERFLOW_API_TOKEN 保持一致"
+    },
+    "aria": {
+      "apiToken": "LedgerFlow API 令牌",
+      "importProgress": "备份导入进度",
+      "importJson": "导入 JSON 备份",
+      "webdavUsername": "WebDAV 用户名",
+      "webdavPassword": "WebDAV 密码",
+      "webdavVersion": "选择 WebDAV 恢复版本",
+      "confirmClear": "确认清空账单"
+    },
+    "confirmSuffix": "后才能确认",
+    "scope": {
+      "aria": "备份范围设置",
+      "title": "选择备份内容",
+      "hint": "所有备份方式共用此范围",
+      "emptyWarning": "请至少勾选一个备份范围。",
+      "ledger": "账本数据",
+      "ledgerDesc": "交易、分类、账户、回收站和余额记录",
+      "subscriptions": "订阅数据",
+      "subscriptionsDesc": "订阅项目和已归档订阅",
+      "memories": "AI 记忆",
+      "memoriesDesc": "助手偏好、记忆和上下文资料",
+      "investments": "投资理财",
+      "investmentsDesc": "投资持仓、理财目标、基金自选和 AI 基金分析记录",
+      "noneSelected": "未选择",
+      "separator": "、"
+    },
+    "currentRows": "当前 {count} 条数据",
+    "snapshot": {
+      "noRecord": "暂无记录",
+      "notRead": "尚未读取数据库快照",
+      "scopeRequired": "请至少选择一个备份范围。",
+      "creating": "正在生成快照...",
+      "syncFailed": "同步到数据库失败",
+      "reading": "正在读取数据库最新快照...",
+      "noneInDb": "数据库中还没有快照。",
+      "readDone": "已读取最新数据库快照,请确认后恢复。",
+      "readFailed": "读取数据库快照失败",
+      "restored": "已从数据库快照恢复到本地。",
+      "title": "手动恢复点",
+      "desc": "日常数据已自动保存到当前数据库。需要额外保险时,在这里创建一个可手动恢复的副本。",
+      "scopePrefix": "恢复点将保存:",
+      "create": "创建恢复点",
+      "restoreLatest": "恢复最近副本",
+      "hideAdvanced": "收起技术设置",
+      "advanced": "技术设置",
+      "token": "服务访问令牌",
+      "tokenPlaceholder": "仅远程 MySQL 服务需要",
+      "show": "显示",
+      "hide": "隐藏",
+      "tokenHint": "本机 SQLite 无需填写。远程部署可由管理员提供该令牌。",
+      "confirmTitle": "确认从数据库恢复",
+      "confirmBody": "将用数据库最新快照覆盖当前本地数据。建议确认已经导出本地备份后再继续。",
+      "confirmOk": "确认恢复",
+      "cancel": "取消"
+    },
+    "provider": {
+      "sqliteDesc": "适合单机和轻量自托管,数据保存为部署卷中的文件。",
+      "mysqlDesc": "适合阿里云 RDS、多设备同步和后续多用户部署。",
+      "mysqlNotConfigured": "未检测到 MySQL 配置,请先设置 MYSQL_URL 或 MYSQL_HOST。",
+      "uninitialized": "未初始化",
+      "readStatusFailed": "无法读取数据库初始化状态。",
+      "locking": "正在校验并锁定数据存储类型...",
+      "initFailed": "初始化数据库类型失败。",
+      "title": "数据存储类型",
+      "locked": "已锁定",
+      "waiting": "等待初始化",
+      "switchHint": "首次初始化后不能直接切换数据存储类型。",
+      "readingStatus": "正在读取服务端初始化状态...",
+      "mismatch": "部署环境与已锁定类型不一致,请恢复原部署配置或迁移到新实例。",
+      "selectAria": "选择数据存储类型",
+      "initializing": "正在初始化...",
+      "currentUsing": "当前使用 {provider}。如需更换,请导出数据并在新部署中导入。"
+    },
+    "message": {
+      "ledgerSection": "账本 {transactions} 条交易 / {categories} 个分类 / {accounts} 个账户",
+      "subscriptionsSection": "订阅 {count} 条",
+      "memoriesSection": "AI 记忆 {count} 条",
+      "investmentsSection": "投资理财 {positions} 笔持仓 / {history} 条持仓流水 / {goals} 个目标 / {watchlist} 只自选",
+      "actionImport": "导入",
+      "actionRestore": "恢复",
+      "successDetail": "备份{action}成功:已更新{scope}({sections})",
+      "success": "备份{action}成功"
+    }
   }
 }

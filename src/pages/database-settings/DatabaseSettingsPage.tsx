@@ -1,10 +1,8 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useTFallback, type TfFallback } from '../../shared/lib/useTFallback';
 import { MysqlSnapshotPanel } from '../../features/mysql-snapshot/ui/MysqlSnapshotPanel';
 import { DatabaseProviderSetupPanel } from '../../features/database-provider/ui/DatabaseProviderSetupPanel';
-import {
-  BACKUP_SCOPE_LABELS,
-  BackupScopeSelector
-} from '../../features/backup/ui/BackupScopeSelector';
+import { BackupScopeSelector } from '../../features/backup/ui/BackupScopeSelector';
 import {
   applyBillImportMode,
   BillImportMode,
@@ -72,17 +70,23 @@ const BILL_ACCEPTED_EXTENSIONS = new Set(['.csv', '.txt', '.xlsx']);
 const OBJECT_STORAGE_OPTIONS: Array<{
   value: BackupObjectStorageProvider;
   label: string;
+  labelKey: string;
   description: string;
+  descriptionKey: string;
 }> = [
   {
     value: 'aliyun-oss',
     label: '阿里云 OSS',
-    description: '适合已开通 OSS Bucket 的用户'
+    labelKey: 'dataBackup.objectStorage.oss',
+    description: '适合已开通 OSS Bucket 的用户',
+    descriptionKey: 'dataBackup.objectStorage.ossDesc'
   },
   {
     value: 's3-compatible',
     label: 'S3 兼容',
-    description: '适合 MinIO、R2、COS 等兼容服务'
+    labelKey: 'dataBackup.objectStorage.s3',
+    description: '适合 MinIO、R2、COS 等兼容服务',
+    descriptionKey: 'dataBackup.objectStorage.s3Desc'
   }
 ];
 function getFileExtension(fileName: string): string {
@@ -165,8 +169,11 @@ function getLatestWebdavBackupAt(versions: WebdavBackupVersionItem[]): string {
   );
 }
 
-function getObjectStorageLabel(provider: BackupObjectStorageProvider): string {
-  return OBJECT_STORAGE_OPTIONS.find((item) => item.value === provider)?.label || '对象存储';
+function getObjectStorageLabel(provider: BackupObjectStorageProvider, tf: TfFallback): string {
+  const option = OBJECT_STORAGE_OPTIONS.find((item) => item.value === provider);
+  return option
+    ? tf(option.labelKey, option.label)
+    : tf('dataBackup.tabs.objectStorage', '对象存储');
 }
 
 function getObjectStorageBackupSignature(config: BackupObjectStorageConfig): string {
@@ -271,42 +278,87 @@ function hasSelectedBackupScope(scope: FinanceBackupScope): boolean {
   return scope.ledger || scope.subscriptions || scope.globalMemories || scope.investments;
 }
 
-function getBackupScopeSummary(scope: FinanceBackupScope): string {
+const BACKUP_SCOPE_ENTRIES: Record<keyof FinanceBackupScope, { key: string; fallback: string }> = {
+  ledger: { key: 'dataBackup.scope.ledger', fallback: '账本数据' },
+  subscriptions: { key: 'dataBackup.scope.subscriptions', fallback: '订阅数据' },
+  globalMemories: { key: 'dataBackup.scope.memories', fallback: 'AI 记忆' },
+  investments: { key: 'dataBackup.scope.investments', fallback: '投资理财' }
+};
+
+function getBackupScopeSummary(scope: FinanceBackupScope, tf: TfFallback): string {
   const labels = (Object.keys(scope) as Array<keyof FinanceBackupScope>)
     .filter((key) => scope[key])
-    .map((key) => BACKUP_SCOPE_LABELS[key]);
-  return labels.length ? labels.join('、') : '未选择';
+    .map((key) => tf(BACKUP_SCOPE_ENTRIES[key].key, BACKUP_SCOPE_ENTRIES[key].fallback));
+  if (!labels.length) {
+    return tf('dataBackup.scope.noneSelected', '未选择');
+  }
+  return labels.join(tf('dataBackup.scope.separator', '、'));
 }
 
-function buildBackupRestoreSuccessMessage(action: '导入' | '恢复', payload: FinanceBackupPayload) {
+function buildBackupRestoreSuccessMessage(
+  action: '导入' | '恢复',
+  payload: FinanceBackupPayload,
+  tf: TfFallback
+) {
   const sections: string[] = [];
 
   if (payload.scope.ledger) {
     sections.push(
-      `账本 ${payload.data.transactions.length} 条交易 / ${payload.data.categories.length} 个分类 / ${payload.data.accounts.length} 个账户`
+      tf(
+        'dataBackup.message.ledgerSection',
+        '账本 {transactions} 条交易 / {categories} 个分类 / {accounts} 个账户'
+      )
+        .replace('{transactions}', String(payload.data.transactions.length))
+        .replace('{categories}', String(payload.data.categories.length))
+        .replace('{accounts}', String(payload.data.accounts.length))
     );
   }
 
   if (payload.scope.subscriptions) {
-    sections.push(`订阅 ${payload.data.subscriptions.length} 条`);
+    sections.push(
+      tf('dataBackup.message.subscriptionsSection', '订阅 {count} 条').replace(
+        '{count}',
+        String(payload.data.subscriptions.length)
+      )
+    );
   }
 
   if (payload.scope.globalMemories) {
-    sections.push(`AI 记忆 ${payload.data.globalMemories.length} 条`);
+    sections.push(
+      tf('dataBackup.message.memoriesSection', 'AI 记忆 {count} 条').replace(
+        '{count}',
+        String(payload.data.globalMemories.length)
+      )
+    );
   }
 
   if (payload.scope.investments) {
     sections.push(
-      `投资理财 ${payload.data.investmentPositions.length} 笔持仓 / ${payload.data.investmentPositionHistory.length} 条持仓流水 / ${payload.data.investmentGoals.length} 个目标 / ${payload.data.investmentWatchlist.length} 只自选`
+      tf(
+        'dataBackup.message.investmentsSection',
+        '投资理财 {positions} 笔持仓 / {history} 条持仓流水 / {goals} 个目标 / {watchlist} 只自选'
+      )
+        .replace('{positions}', String(payload.data.investmentPositions.length))
+        .replace('{history}', String(payload.data.investmentPositionHistory.length))
+        .replace('{goals}', String(payload.data.investmentGoals.length))
+        .replace('{watchlist}', String(payload.data.investmentWatchlist.length))
     );
   }
 
+  const actionLabel = tf(
+    action === '导入' ? 'dataBackup.message.actionImport' : 'dataBackup.message.actionRestore',
+    action
+  );
   return sections.length
-    ? `备份${action}成功：已更新${getBackupScopeSummary(payload.scope)}（${sections.join('；')}）`
-    : `备份${action}成功`;
+    ? tf('dataBackup.message.successDetail', '备份{action}成功:已更新{scope}({sections})')
+        .replace('{action}', actionLabel)
+        .replace('{scope}', getBackupScopeSummary(payload.scope, tf))
+        .replace('{sections}', sections.join(';'))
+    : tf('dataBackup.message.success', '备份{action}成功').replace('{action}', actionLabel);
 }
 
 export function DatabaseSettingsPage() {
+  const tf = useTFallback();
   const hasHydrated = useFinanceStore((s) => s.hasHydrated);
   const transactions = useFinanceStore((s) => s.transactions);
   const categories = useFinanceStore((s) => s.categories);
@@ -429,11 +481,14 @@ export function DatabaseSettingsPage() {
   };
 
   const canCreateBackup = useMemo(() => hasSelectedBackupScope(backupScope), [backupScope]);
-  const backupScopeSummary = useMemo(() => getBackupScopeSummary(backupScope), [backupScope]);
+  const backupScopeSummary = useMemo(
+    () => getBackupScopeSummary(backupScope, tf),
+    [backupScope, tf]
+  );
   const objectStorage = objectStorageConfigs[objectStorageProvider];
   const objectStorageLabel = useMemo(
-    () => getObjectStorageLabel(objectStorageProvider),
-    [objectStorageProvider]
+    () => getObjectStorageLabel(objectStorageProvider, tf),
+    [objectStorageProvider, tf]
   );
 
   const updateObjectStorage = (patch: Partial<BackupObjectStorageConfig>) => {
@@ -517,7 +572,7 @@ export function DatabaseSettingsPage() {
       investmentWatchlist: nextInvestmentWatchlist,
       investmentAiMessages: nextInvestmentAiMessages
     });
-    showToast(buildBackupRestoreSuccessMessage(action, payload), 'success');
+    showToast(buildBackupRestoreSuccessMessage(action, payload, tf), 'success');
   };
 
   useEffect(() => {
@@ -964,35 +1019,38 @@ export function DatabaseSettingsPage() {
   const lastWebdavBackupText = lastWebdavBackupAt
     ? formatWebdavBackupTime(lastWebdavBackupAt)
     : lastWebdavBackupLoading
-      ? '读取中...'
-      : '暂无记录';
+      ? tf('dataBackup.status.loading', '读取中...')
+      : tf('dataBackup.status.noRecord', '暂无记录');
   const lastObjectStorageBackupText = lastObjectStorageBackupAt[objectStorageProvider]
     ? formatWebdavBackupTime(lastObjectStorageBackupAt[objectStorageProvider])
     : lastObjectStorageBackupLoading
-      ? '读取中...'
-      : '暂无记录';
+      ? tf('dataBackup.status.loading', '读取中...')
+      : tf('dataBackup.status.noRecord', '暂无记录');
 
   return (
     <div className="database-settings-page vi-page">
       <header className="database-console-header">
         <div>
           <p className="database-console-eyebrow">DATA CONTROL</p>
-          <h1>数据与备份</h1>
-          <p>管理账本数据、恢复点和异地副本。</p>
+          <h1>{tf('dataBackup.title', '数据与备份')}</h1>
+          <p>{tf('dataBackup.subtitle', '管理账本数据、恢复点和异地副本。')}</p>
         </div>
-        <div className="database-console-stat" aria-label="当前数据量">
+        <div
+          className="database-console-stat"
+          aria-label={tf('dataBackup.currentVolume', '当前数据量')}
+        >
           <strong>{totalRows}</strong>
-          <span>条已纳管数据</span>
+          <span>{tf('dataBackup.managedRowsSuffix', '条已纳管数据')}</span>
         </div>
       </header>
 
-      <nav className="database-console-tabs" aria-label="备份方式">
+      <nav className="database-console-tabs" aria-label={tf('dataBackup.backupMethod', '备份方式')}>
         {[
-          ['local', '本地备份'],
-          ['import', '账单导入'],
-          ['database', '数据库'],
+          ['local', tf('dataBackup.tabs.local', '本地备份')],
+          ['import', tf('dataBackup.tabs.billImport', '账单导入')],
+          ['database', tf('dataBackup.tabs.database', '数据库')],
           ['webdav', 'WebDAV'],
-          ['object-storage', '对象存储']
+          ['object-storage', tf('dataBackup.tabs.objectStorage', '对象存储')]
         ].map(([key, label]) => (
           <button
             key={key}
@@ -1011,11 +1069,21 @@ export function DatabaseSettingsPage() {
           <div className="database-console-workspace-head">
             <div>
               <span className="database-console-kicker">JSON ARCHIVE</span>
-              <h2>本地备份</h2>
+              <h2>{tf('dataBackup.tabs.local', '本地备份')}</h2>
             </div>
-            <span className="database-data-section-meta">当前 {totalRows} 条数据</span>
+            <span className="database-data-section-meta">
+              {tf('dataBackup.currentRows', '当前 {count} 条数据').replace(
+                '{count}',
+                String(totalRows)
+              )}
+            </span>
           </div>
-          <p className="sync-tip">导出的备份可直接恢复，也可作为迁移至新数据库实例的原始文件。</p>
+          <p className="sync-tip">
+            {tf(
+              'dataBackup.local.desc',
+              '导出的备份可直接恢复，也可作为迁移至新数据库实例的原始文件。'
+            )}
+          </p>
           <BackupScopeSelector scope={backupScope} onChange={setBackupScope} />
           <div className="database-data-hub-actions">
             <button
@@ -1025,7 +1093,7 @@ export function DatabaseSettingsPage() {
               disabled={!hasHydrated || !canCreateBackup}
             >
               <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
-              导出备份文件
+              {tf('dataBackup.local.export', '导出备份文件')}
             </button>
             <button
               type="button"
@@ -1034,7 +1102,7 @@ export function DatabaseSettingsPage() {
               disabled={busy}
             >
               <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
-              导入备份文件
+              {tf('dataBackup.local.import', '导入备份文件')}
             </button>
             {backupImportProgress ? (
               <div
@@ -1045,10 +1113,10 @@ export function DatabaseSettingsPage() {
                 <div className="database-backup-import-progress-copy">
                   <strong>
                     {backupImportProgress.phase === 'complete'
-                      ? '导入完成'
+                      ? tf('dataBackup.status.importDone', '导入完成')
                       : backupImportProgress.phase === 'error'
-                        ? '导入失败'
-                        : '正在写入数据库'}
+                        ? tf('dataBackup.status.importFailed', '导入失败')
+                        : tf('dataBackup.status.writing', '正在写入数据库')}
                   </strong>
                   <span>
                     {backupImportProgress.completed} / {backupImportProgress.total} 条
@@ -1060,7 +1128,7 @@ export function DatabaseSettingsPage() {
                 <div
                   className="database-backup-import-progress-track"
                   role="progressbar"
-                  aria-label="备份导入进度"
+                  aria-label={tf('dataBackup.aria.importProgress', '备份导入进度')}
                   aria-valuemin={0}
                   aria-valuemax={backupImportProgress.total}
                   aria-valuenow={backupImportProgress.completed}
@@ -1082,8 +1150,8 @@ export function DatabaseSettingsPage() {
             <input
               ref={backupInputRef}
               type="file"
-              title="导入 JSON 备份"
-              aria-label="导入 JSON 备份"
+              title={tf('dataBackup.aria.importJson', '导入 JSON 备份')}
+              aria-label={tf('dataBackup.aria.importJson', '导入 JSON 备份')}
               accept="application/json,.json"
               style={{ display: 'none' }}
               onChange={handleBackupFileImport}
@@ -1097,21 +1165,32 @@ export function DatabaseSettingsPage() {
           <div className="database-console-workspace-head">
             <div>
               <span className="database-console-kicker">BILL INGESTION</span>
-              <h2>账单导入</h2>
+              <h2>{tf('dataBackup.tabs.billImport', '账单导入')}</h2>
             </div>
           </div>
-          <p className="sync-tip">支持微信、支付宝官方账单 CSV / TXT（含制表符）和微信 XLSX。</p>
+          <p className="sync-tip">
+            {tf(
+              'dataBackup.billImport.desc',
+              '支持微信、支付宝官方账单 CSV / TXT（含制表符）和微信 XLSX。'
+            )}
+          </p>
           <div className="database-import-actions">
             <label className="field database-import-mode-field" style={{ marginBottom: 0 }}>
-              遇到重复账单时
+              {tf('dataBackup.billImport.duplicateStrategy', '遇到重复账单时')}
               <select
-                aria-label="账单导入模式"
+                aria-label={tf('dataBackup.billImport.modeAria', '账单导入模式')}
                 value={importMode}
                 onChange={(e) => setImportMode(e.target.value as BillImportMode)}
               >
-                <option value="incremental">保留旧账单，重复但有变更时更新为最新</option>
-                <option value="merge">用新账单覆盖重复账单的导入字段</option>
-                <option value="overwrite">清空现有交易后重新导入</option>
+                <option value="incremental">
+                  {tf('dataBackup.billImport.strategyKeep', '保留旧账单，重复但有变更时更新为最新')}
+                </option>
+                <option value="merge">
+                  {tf('dataBackup.billImport.strategyOverwrite', '用新账单覆盖重复账单的导入字段')}
+                </option>
+                <option value="overwrite">
+                  {tf('dataBackup.billImport.strategyReset', '清空现有交易后重新导入')}
+                </option>
               </select>
             </label>
             <button
@@ -1122,7 +1201,7 @@ export function DatabaseSettingsPage() {
               }}
               disabled={!hasHydrated}
             >
-              导入微信账单
+              {tf('dataBackup.billImport.wechat', '导入微信账单')}
             </button>
             <button
               type="button"
@@ -1132,13 +1211,13 @@ export function DatabaseSettingsPage() {
               }}
               disabled={!hasHydrated}
             >
-              导入支付宝账单
+              {tf('dataBackup.billImport.alipay', '导入支付宝账单')}
             </button>
             <input
               ref={billInputRef}
               type="file"
-              title="导入账单文件"
-              aria-label="导入账单文件"
+              title={tf('dataBackup.billImport.fileAria', '导入账单文件')}
+              aria-label={tf('dataBackup.billImport.fileAria', '导入账单文件')}
               accept=".csv,text/csv,.txt,text/plain,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               style={{ display: 'none' }}
               onChange={handleImportBillFile}
@@ -1154,13 +1233,21 @@ export function DatabaseSettingsPage() {
             <div className="database-remote-backup-head">
               <div>
                 <div className="row" style={{ gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
-                  <h3 style={{ margin: 0 }}>导出 SQL 数据库</h3>
+                  <h3 style={{ margin: 0 }}>
+                    {tf('dataBackup.database.exportTitle', '导出 SQL 数据库')}
+                  </h3>
                   <span className="sync-tip" style={{ whiteSpace: 'nowrap' }}>
-                    SQLite 导出 .sqlite · MySQL 导出 .sql
+                    {tf(
+                      'dataBackup.database.exportFormat',
+                      'SQLite 导出 .sqlite · MySQL 导出 .sql'
+                    )}
                   </span>
                 </div>
                 <p className="sync-tip" style={{ margin: '6px 0 0' }}>
-                  仅导出当前登录账号及其关联数据，并保留可导入所需的表结构。请妥善保管导出文件。
+                  {tf(
+                    'dataBackup.database.exportHint',
+                    '仅导出当前登录账号及其关联数据，并保留可导入所需的表结构。请妥善保管导出文件。'
+                  )}
                 </p>
               </div>
             </div>
@@ -1173,7 +1260,9 @@ export function DatabaseSettingsPage() {
                   disabled={!hasHydrated || sqlExporting}
                 >
                   <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
-                  {sqlExporting ? '正在导出...' : '下载 SQL 数据库'}
+                  {sqlExporting
+                    ? tf('dataBackup.status.exporting', '正在导出...')
+                    : tf('dataBackup.database.download', '下载 SQL 数据库')}
                 </button>
                 {sqlExportStatus ? (
                   <span className="sync-tip" role="status">
@@ -1202,18 +1291,21 @@ export function DatabaseSettingsPage() {
           <div className="database-remote-backup-head">
             <div>
               <div className="row" style={{ gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
-                <h3 style={{ margin: 0 }}>WebDAV 备份</h3>
+                <h3 style={{ margin: 0 }}>{tf('dataBackup.webdav.section', 'WebDAV 备份')}</h3>
                 <span className="sync-tip" style={{ whiteSpace: 'nowrap' }}>
-                  上次备份：{lastWebdavBackupText}
+                  {tf('dataBackup.webdav.lastBackupPrefix', '上次备份:')}
+                  {lastWebdavBackupText}
                 </span>
               </div>
               <p className="sync-tip" style={{ margin: '6px 0 0' }}>
-                用于远程备份与恢复，默认通过同源代理连接。
+                {tf('dataBackup.webdav.desc', '用于远程备份与恢复，默认通过同源代理连接。')}
               </p>
             </div>
             <div className="database-remote-backup-summary">
               <span className="sync-tip" style={{ whiteSpace: 'nowrap' }}>
-                {webdav.proxyEnabled ? '代理已启用' : '浏览器直连'}
+                {webdav.proxyEnabled
+                  ? tf('dataBackup.webdav.proxyOn', '代理已启用')
+                  : tf('dataBackup.webdav.direct', '浏览器直连')}
               </span>
               <button
                 type="button"
@@ -1221,7 +1313,9 @@ export function DatabaseSettingsPage() {
                 aria-expanded={webdavBackupOpen}
                 onClick={() => setWebdavBackupOpen((prev) => !prev)}
               >
-                {webdavBackupOpen ? '收起配置' : '展开配置'}
+                {webdavBackupOpen
+                  ? tf('dataBackup.toggle.collapse', '收起配置')
+                  : tf('dataBackup.toggle.expand', '展开配置')}
               </button>
             </div>
           </div>
@@ -1230,18 +1324,26 @@ export function DatabaseSettingsPage() {
             <div className="database-remote-backup-body">
               <div className="grid grid-2" style={{ gap: 10 }}>
                 <div className="field" style={{ marginBottom: 0 }}>
-                  <label>{webdav.proxyEnabled ? '真实 WebDAV 地址' : 'WebDAV 地址'}</label>
+                  <label>
+                    {webdav.proxyEnabled
+                      ? tf('dataBackup.webdav.realUrl', '真实 WebDAV 地址')
+                      : tf('dataBackup.webdav.url', 'WebDAV 地址')}
+                  </label>
                   <input
-                    title={webdav.proxyEnabled ? '真实 WebDAV 地址' : 'WebDAV 地址'}
+                    title={
+                      webdav.proxyEnabled
+                        ? tf('dataBackup.webdav.realUrl', '真实 WebDAV 地址')
+                        : tf('dataBackup.webdav.url', 'WebDAV 地址')
+                    }
                     placeholder="https://dav.example.com/remote.php/dav/files/user"
                     value={webdav.endpoint}
                     onChange={(e) => setWebdav((prev) => ({ ...prev, endpoint: e.target.value }))}
                   />
                 </div>
                 <div className="field" style={{ marginBottom: 0 }}>
-                  <label>远程文件路径</label>
+                  <label>{tf('dataBackup.webdav.remotePath', '远程文件路径')}</label>
                   <input
-                    title="远程文件路径"
+                    title={tf('dataBackup.webdav.remotePath', '远程文件路径')}
                     placeholder="ledgerflow/backup.json"
                     value={webdav.remoteFilePath}
                     onChange={(e) =>
@@ -1250,19 +1352,19 @@ export function DatabaseSettingsPage() {
                   />
                 </div>
                 <div className="field" style={{ marginBottom: 0 }}>
-                  <label>用户名</label>
+                  <label>{tf('dataBackup.webdav.username', '用户名')}</label>
                   <input
-                    title="WebDAV 用户名"
-                    placeholder="请输入用户名"
+                    title={tf('dataBackup.aria.webdavUsername', 'WebDAV 用户名')}
+                    placeholder={tf('dataBackup.placeholder.username', '请输入用户名')}
                     value={webdav.username}
                     onChange={(e) => setWebdav((prev) => ({ ...prev, username: e.target.value }))}
                   />
                 </div>
                 <div className="field" style={{ marginBottom: 0 }}>
-                  <label>密码</label>
+                  <label>{tf('dataBackup.webdav.password', '密码')}</label>
                   <PasswordInput
-                    title="WebDAV 密码"
-                    placeholder="请输入密码"
+                    title={tf('dataBackup.aria.webdavPassword', 'WebDAV 密码')}
+                    placeholder={tf('dataBackup.placeholder.password', '请输入密码')}
                     value={webdav.password}
                     onChange={(e) => setWebdav((prev) => ({ ...prev, password: e.target.value }))}
                     showLabel="显示密码"
@@ -1273,7 +1375,9 @@ export function DatabaseSettingsPage() {
 
               <div style={{ marginTop: 10 }}>
                 <button type="button" onClick={() => setWebdavAdvancedOpen((prev) => !prev)}>
-                  {webdavAdvancedOpen ? '收起高级选项' : '展开高级选项'}
+                  {webdavAdvancedOpen
+                    ? tf('dataBackup.toggle.collapseAdvanced', '收起高级选项')
+                    : tf('dataBackup.toggle.expandAdvanced', '展开高级选项')}
                 </button>
               </div>
 
@@ -1288,13 +1392,13 @@ export function DatabaseSettingsPage() {
                           setWebdav((prev) => ({ ...prev, proxyEnabled: e.target.checked }))
                         }
                       />
-                      启用同源代理
+                      {tf('dataBackup.webdav.proxyEnable', '启用同源代理')}
                     </label>
                   </div>
                   <div className="field" style={{ marginBottom: 0 }}>
-                    <label>保留版本数</label>
+                    <label>{tf('dataBackup.webdav.keepVersions', '保留版本数')}</label>
                     <input
-                      title="保留版本数"
+                      title={tf('dataBackup.webdav.keepVersions', '保留版本数')}
                       type="number"
                       min={1}
                       max={50}
@@ -1308,9 +1412,9 @@ export function DatabaseSettingsPage() {
                     />
                   </div>
                   <div className="field" style={{ marginBottom: 0 }}>
-                    <label>代理入口路径</label>
+                    <label>{tf('dataBackup.webdav.proxyPath', '代理入口路径')}</label>
                     <input
-                      title="代理入口路径"
+                      title={tf('dataBackup.webdav.proxyPath', '代理入口路径')}
                       placeholder="/api/webdav"
                       value={webdav.proxyBasePath}
                       onChange={(e) =>
@@ -1321,10 +1425,13 @@ export function DatabaseSettingsPage() {
                   </div>
                   {webdav.proxyEnabled ? (
                     <div className="field" style={{ marginBottom: 0 }}>
-                      <label>代理令牌</label>
+                      <label>{tf('dataBackup.webdav.proxyToken', '代理令牌')}</label>
                       <PasswordInput
-                        title="LedgerFlow API 令牌"
-                        placeholder="与服务端 LEDGERFLOW_API_TOKEN 保持一致"
+                        title={tf('dataBackup.aria.apiToken', 'LedgerFlow API 令牌')}
+                        placeholder={tf(
+                          'dataBackup.placeholder.tokenHint',
+                          '与服务端 LEDGERFLOW_API_TOKEN 保持一致'
+                        )}
                         value={serverApiToken}
                         onChange={(e) => handleServerApiTokenChange(e.target.value)}
                         showLabel="显示"
@@ -1337,8 +1444,8 @@ export function DatabaseSettingsPage() {
 
               <p className="sync-tip" style={{ margin: '10px 0 0' }}>
                 {webdav.proxyEnabled
-                  ? '当前：同源代理已启用。'
-                  : '当前：浏览器直连，可能受跨域限制。'}
+                  ? tf('dataBackup.webdav.modeProxy', '当前：同源代理已启用。')
+                  : tf('dataBackup.webdav.modeDirect', '当前：浏览器直连，可能受跨域限制。')}
               </p>
               <p className="sync-tip" style={{ margin: '6px 0 0' }}>
                 当前备份范围：{backupScopeSummary}
@@ -1349,7 +1456,7 @@ export function DatabaseSettingsPage() {
 
               <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
                 <button type="button" onClick={handleSaveWebdavConfig} disabled={busy}>
-                  保存
+                  {tf('dataBackup.common.save', '保存')}
                 </button>
                 <button
                   type="button"
@@ -1358,7 +1465,7 @@ export function DatabaseSettingsPage() {
                   disabled={busy || !canCreateBackup}
                 >
                   <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
-                  立即备份
+                  {tf('dataBackup.webdav.backupNow', '立即备份')}
                 </button>
                 <button
                   type="button"
@@ -1367,7 +1474,7 @@ export function DatabaseSettingsPage() {
                   disabled={busy}
                 >
                   <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
-                  恢复备份
+                  {tf('dataBackup.webdav.restore', '恢复备份')}
                 </button>
                 {webdavStatus ? <span className="sync-tip">{webdavStatus}</span> : null}
               </div>
@@ -1381,18 +1488,25 @@ export function DatabaseSettingsPage() {
           <div className="database-remote-backup-head">
             <div>
               <div className="row" style={{ gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
-                <h3 style={{ margin: 0 }}>对象存储备份</h3>
+                <h3 style={{ margin: 0 }}>
+                  {tf('dataBackup.objectStorage.section', '对象存储备份')}
+                </h3>
                 <span className="sync-tip" style={{ whiteSpace: 'nowrap' }}>
-                  上次备份：{lastObjectStorageBackupText}
+                  {tf('dataBackup.objectStorage.lastBackupPrefix', '上次备份:')}
+                  {lastObjectStorageBackupText}
                 </span>
               </div>
               <p className="sync-tip" style={{ margin: '6px 0 0' }}>
-                支持阿里云 OSS 与 S3 兼容服务，适合把备份放到自己的 Bucket。
+                {tf(
+                  'dataBackup.objectStorage.desc',
+                  '支持阿里云 OSS 与 S3 兼容服务，适合把备份放到自己的 Bucket。'
+                )}
               </p>
             </div>
             <div className="database-remote-backup-summary">
               <span className="sync-tip" style={{ whiteSpace: 'nowrap' }}>
-                当前：{objectStorageLabel}
+                {tf('dataBackup.objectStorage.currentPrefix', '当前:')}
+                {objectStorageLabel}
               </span>
               <button
                 type="button"
@@ -1400,7 +1514,9 @@ export function DatabaseSettingsPage() {
                 aria-expanded={objectStorageBackupOpen}
                 onClick={() => setObjectStorageBackupOpen((prev) => !prev)}
               >
-                {objectStorageBackupOpen ? '收起配置' : '展开配置'}
+                {objectStorageBackupOpen
+                  ? tf('dataBackup.toggle.collapse', '收起配置')
+                  : tf('dataBackup.toggle.expand', '展开配置')}
               </button>
             </div>
           </div>
@@ -1452,9 +1568,9 @@ export function DatabaseSettingsPage() {
                   />
                 </div>
                 <div className="field" style={{ marginBottom: 0 }}>
-                  <label>远程文件路径</label>
+                  <label>{tf('dataBackup.webdav.remotePath', '远程文件路径')}</label>
                   <input
-                    title="远程文件路径"
+                    title={tf('dataBackup.webdav.remotePath', '远程文件路径')}
                     placeholder="ledgerflow/backup.json"
                     value={objectStorage.remoteFilePath}
                     onChange={(e) => updateObjectStorage({ remoteFilePath: e.target.value })}
@@ -1464,7 +1580,10 @@ export function DatabaseSettingsPage() {
                   <label>AccessKey ID</label>
                   <input
                     title="AccessKey ID"
-                    placeholder="请输入 AccessKey ID"
+                    placeholder={tf(
+                      'dataBackup.placeholder.accessKeyId',
+                      tf('dataBackup.placeholder.accessKeyId', '请输入 AccessKey ID')
+                    )}
                     value={objectStorage.accessKeyId}
                     onChange={(e) => updateObjectStorage({ accessKeyId: e.target.value })}
                   />
@@ -1473,7 +1592,10 @@ export function DatabaseSettingsPage() {
                   <label>AccessKey Secret</label>
                   <PasswordInput
                     title="AccessKey Secret"
-                    placeholder="仅保存在本次会话"
+                    placeholder={tf(
+                      'dataBackup.placeholder.sessionOnly',
+                      tf('dataBackup.placeholder.sessionOnly', '仅保存在本次会话')
+                    )}
                     value={objectStorage.accessKeySecret}
                     onChange={(e) => updateObjectStorage({ accessKeySecret: e.target.value })}
                     showLabel="显示密钥"
@@ -1484,16 +1606,18 @@ export function DatabaseSettingsPage() {
 
               <div style={{ marginTop: 10 }}>
                 <button type="button" onClick={() => setObjectStorageAdvancedOpen((prev) => !prev)}>
-                  {objectStorageAdvancedOpen ? '收起高级选项' : '展开高级选项'}
+                  {objectStorageAdvancedOpen
+                    ? tf('dataBackup.toggle.collapseAdvanced', '收起高级选项')
+                    : tf('dataBackup.toggle.expandAdvanced', '展开高级选项')}
                 </button>
               </div>
 
               {objectStorageAdvancedOpen ? (
                 <div className="grid grid-2" style={{ gap: 10, marginTop: 10 }}>
                   <div className="field" style={{ marginBottom: 0 }}>
-                    <label>地域</label>
+                    <label>{tf('dataBackup.objectStorage.region', '地域')}</label>
                     <input
-                      title="地域"
+                      title={tf('dataBackup.objectStorage.region', '地域')}
                       placeholder={
                         objectStorageProvider === 'aliyun-oss' ? 'cn-guangzhou' : 'us-east-1'
                       }
@@ -1502,9 +1626,9 @@ export function DatabaseSettingsPage() {
                     />
                   </div>
                   <div className="field" style={{ marginBottom: 0 }}>
-                    <label>保留版本数</label>
+                    <label>{tf('dataBackup.webdav.keepVersions', '保留版本数')}</label>
                     <input
-                      title="保留版本数"
+                      title={tf('dataBackup.webdav.keepVersions', '保留版本数')}
                       type="number"
                       min={1}
                       max={50}
@@ -1524,7 +1648,7 @@ export function DatabaseSettingsPage() {
                             updateObjectStorage({ forcePathStyle: e.target.checked })
                           }
                         />
-                        使用路径风格地址
+                        {tf('dataBackup.webdav.pathStyle', '使用路径风格地址')}
                       </label>
                     </div>
                   ) : null}
@@ -1532,7 +1656,10 @@ export function DatabaseSettingsPage() {
               ) : null}
 
               <p className="sync-tip" style={{ margin: '10px 0 0' }}>
-                如遇到跨域提示，需要在 Bucket 里允许网页访问；密钥不会长期保存到本地。
+                {tf(
+                  'dataBackup.objectStorage.hint',
+                  '如遇到跨域提示，需要在 Bucket 里允许网页访问；密钥不会长期保存到本地。'
+                )}
               </p>
               <p className="sync-tip" style={{ margin: '6px 0 0' }}>
                 当前备份范围：{backupScopeSummary}
@@ -1543,7 +1670,7 @@ export function DatabaseSettingsPage() {
 
               <div className="row" style={{ gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
                 <button type="button" onClick={handleSaveObjectStorageConfig} disabled={busy}>
-                  保存
+                  {tf('dataBackup.common.save', '保存')}
                 </button>
                 <button
                   type="button"
@@ -1552,7 +1679,7 @@ export function DatabaseSettingsPage() {
                   disabled={busy || !canCreateBackup}
                 >
                   <img src={BACKUP_ICON_URL} alt="" aria-hidden="true" />
-                  立即备份
+                  {tf('dataBackup.webdav.backupNow', '立即备份')}
                 </button>
                 <button
                   type="button"
@@ -1561,7 +1688,7 @@ export function DatabaseSettingsPage() {
                   disabled={busy}
                 >
                   <img src={RESTORE_ICON_URL} alt="" aria-hidden="true" />
-                  恢复备份
+                  {tf('dataBackup.webdav.restore', '恢复备份')}
                 </button>
                 {objectStorageStatus ? (
                   <span className="sync-tip">{objectStorageStatus}</span>
@@ -1574,8 +1701,10 @@ export function DatabaseSettingsPage() {
 
       {backupWorkspace === 'local' ? (
         <section className="database-console-danger-zone">
-          <h3 style={{ marginTop: 0 }}>数据重制</h3>
-          <p className="sync-tip">清空所有账户账单（交易记录），保留账户与分类。</p>
+          <h3 style={{ marginTop: 0 }}>{tf('dataBackup.reset.section', '数据重制')}</h3>
+          <p className="sync-tip">
+            {tf('dataBackup.reset.desc', '清空所有账户账单（交易记录），保留账户与分类。')}
+          </p>
           <button
             type="button"
             className="danger"
@@ -1584,7 +1713,7 @@ export function DatabaseSettingsPage() {
               setClearBillsOpen(true);
             }}
           >
-            一键清空所有账户账单
+            {tf('dataBackup.reset.title', '一键清空所有账户账单')}
           </button>
         </section>
       ) : null}
@@ -1599,10 +1728,12 @@ export function DatabaseSettingsPage() {
             className="dialog"
             role="dialog"
             aria-modal="true"
-            aria-label="选择 WebDAV 恢复版本"
+            aria-label={tf('dataBackup.aria.webdavVersion', '选择 WebDAV 恢复版本')}
             onClick={(event) => event.stopPropagation()}
           >
-            <header className="dialog-header">选择要恢复的 WebDAV 备份版本</header>
+            <header className="dialog-header">
+              {tf('dataBackup.webdav.restoreSelect', '选择要恢复的 WebDAV 备份版本')}
+            </header>
             <div className="dialog-body">
               <div className="webdav-restore-list">
                 {webdavRestoreVersions.map((item) => (
@@ -1616,7 +1747,7 @@ export function DatabaseSettingsPage() {
                     <span className="webdav-restore-item-copy">
                       <strong>
                         {item.label}
-                        {item.isLatest ? '（最新）' : ''}
+                        {item.isLatest ? tf('dataBackup.webdav.latest', '（最新）') : ''}
                       </strong>
                       <small>{item.fileName}</small>
                     </span>
@@ -1626,7 +1757,7 @@ export function DatabaseSettingsPage() {
             </div>
             <footer className="dialog-footer">
               <button type="button" onClick={() => setWebdavRestoreDialogOpen(false)}>
-                取消
+                {tf('dataBackup.common.cancel', '取消')}
               </button>
               <button
                 type="button"
@@ -1634,7 +1765,7 @@ export function DatabaseSettingsPage() {
                 onClick={() => void handleConfirmWebdavRestore()}
                 disabled={busy || !selectedRestorePath}
               >
-                恢复所选版本
+                {tf('dataBackup.webdav.restoreSelected', '恢复所选版本')}
               </button>
             </footer>
           </section>
@@ -1668,7 +1799,7 @@ export function DatabaseSettingsPage() {
                     <span className="webdav-restore-item-copy">
                       <strong>
                         {item.label}
-                        {item.isLatest ? '（最新）' : ''}
+                        {item.isLatest ? tf('dataBackup.webdav.latest', '（最新）') : ''}
                       </strong>
                       <small>{item.fileName}</small>
                     </span>
@@ -1678,7 +1809,7 @@ export function DatabaseSettingsPage() {
             </div>
             <footer className="dialog-footer">
               <button type="button" onClick={() => setObjectStorageRestoreDialogOpen(false)}>
-                取消
+                {tf('dataBackup.common.cancel', '取消')}
               </button>
               <button
                 type="button"
@@ -1686,7 +1817,7 @@ export function DatabaseSettingsPage() {
                 onClick={() => void handleConfirmObjectStorageRestore()}
                 disabled={busy || !selectedObjectStorageRestorePath}
               >
-                恢复所选版本
+                {tf('dataBackup.webdav.restoreSelected', '恢复所选版本')}
               </button>
             </footer>
           </section>
@@ -1702,13 +1833,14 @@ export function DatabaseSettingsPage() {
 
       <ConfirmDialog
         open={clearBillsOpen}
-        title="确认清空账单"
+        title={tf('dataBackup.aria.confirmClear', '确认清空账单')}
         description={
           <div className="danger-confirm-copy">
             <p>将清空全部 {transactions.length} 条交易，账户余额会按初始值重算。此操作不可恢复。</p>
             <label className="danger-confirm-field">
               <span>
-                输入 <strong>{CLEAR_BILLS_CONFIRM_TEXT}</strong> 后才能确认
+                输入 <strong>{CLEAR_BILLS_CONFIRM_TEXT}</strong>{' '}
+                {tf('dataBackup.confirmSuffix', '后才能确认')}
               </span>
               <input
                 value={clearBillsConfirmText}
@@ -1732,7 +1864,7 @@ export function DatabaseSettingsPage() {
           clearAllAccountBills();
           setClearBillsOpen(false);
           setClearBillsConfirmText('');
-          showToast('已清空所有账户账单', 'success');
+          showToast(tf('dataBackup.status.cleared', '已清空所有账户账单'), 'success');
         }}
       />
     </div>

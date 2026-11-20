@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTFallback, type TfFallback } from '../../../shared/lib/useTFallback';
 import {
   type DatabaseProvider,
   getDatabaseSetupStatus,
@@ -6,28 +7,36 @@ import {
   type DatabaseSetupStatus
 } from '../../../shared/api/databaseProviderClient';
 
-const PROVIDER_COPY: Record<DatabaseProvider, { label: string; description: string }> = {
+const PROVIDER_COPY: Record<
+  DatabaseProvider,
+  { label: string; description: string; descriptionKey: string }
+> = {
   sqlite: {
     label: 'SQLite',
-    description: '适合单机和轻量自托管，数据保存为部署卷中的文件。'
+    description: '适合单机和轻量自托管,数据保存为部署卷中的文件。',
+    descriptionKey: 'dataBackup.provider.sqliteDesc'
   },
   mysql: {
     label: 'MySQL',
-    description: '适合阿里云 RDS、多设备同步和后续多用户部署。'
+    description: '适合阿里云 RDS、多设备同步和后续多用户部署。',
+    descriptionKey: 'dataBackup.provider.mysqlDesc'
   }
 };
-
 const MYSQL_NOT_CONFIGURED_MESSAGE = '未检测到 MySQL 配置，请先设置 MYSQL_URL 或 MYSQL_HOST。';
+const MYSQL_NOT_CONFIGURED_KEY = 'dataBackup.provider.mysqlNotConfigured';
 
 interface DatabaseProviderSetupPanelProps {
   onInitialized?: (status: DatabaseSetupStatus) => void;
 }
 
-function formatProvider(provider: DatabaseProvider | null) {
-  return provider ? PROVIDER_COPY[provider].label : '未初始化';
+function formatProvider(provider: DatabaseProvider | null, tf: TfFallback) {
+  return provider
+    ? PROVIDER_COPY[provider].label
+    : tf('dataBackup.provider.uninitialized', '未初始化');
 }
 
 export function DatabaseProviderSetupPanel({ onInitialized }: DatabaseProviderSetupPanelProps) {
+  const tf = useTFallback();
   const [status, setStatus] = useState<DatabaseSetupStatus | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<DatabaseProvider>('sqlite');
   const [busy, setBusy] = useState(false);
@@ -37,11 +46,18 @@ export function DatabaseProviderSetupPanel({ onInitialized }: DatabaseProviderSe
   const providerChoices = (status?.allowedProviders || []).filter(
     (provider): provider is DatabaseProvider => provider in PROVIDER_COPY
   );
-  const getProviderAvailability = (provider: DatabaseProvider) =>
-    status?.providerAvailability?.[provider] || {
+  const getProviderAvailability = (provider: DatabaseProvider) => {
+    const availability = status?.providerAvailability?.[provider];
+    if (availability) {
+      return availability;
+    }
+    return {
       configured: provider === 'sqlite',
-      message: provider === 'mysql' ? MYSQL_NOT_CONFIGURED_MESSAGE : ''
+      // 服务端只在 MySQL 未配置时给出这句提示,这里提供本地化的等价文案
+      message:
+        provider === 'mysql' ? tf(MYSQL_NOT_CONFIGURED_KEY, MYSQL_NOT_CONFIGURED_MESSAGE) : ''
     };
+  };
   const selectedProviderIsConfigured = getProviderAvailability(selectedProvider).configured;
 
   useEffect(() => {
@@ -63,14 +79,18 @@ export function DatabaseProviderSetupPanel({ onInitialized }: DatabaseProviderSe
       })
       .catch((error) => {
         if (active) {
-          setMessage(error instanceof Error ? error.message : '无法读取数据库初始化状态。');
+          setMessage(
+            error instanceof Error
+              ? error.message
+              : tf('dataBackup.provider.readStatusFailed', '无法读取数据库初始化状态。')
+          );
         }
       });
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [tf]);
 
   async function handleInitialize() {
     if (!selectedProviderIsConfigured) {
@@ -88,7 +108,7 @@ export function DatabaseProviderSetupPanel({ onInitialized }: DatabaseProviderSe
 
     try {
       setBusy(true);
-      setMessage('正在校验并锁定数据存储类型...');
+      setMessage(tf('dataBackup.provider.locking', '正在校验并锁定数据存储类型...'));
       const nextStatus = await initializeDatabaseProvider({
         provider: selectedProvider
       });
@@ -96,7 +116,11 @@ export function DatabaseProviderSetupPanel({ onInitialized }: DatabaseProviderSe
       onInitialized?.(nextStatus);
       setMessage(`已锁定为 ${PROVIDER_COPY[nextStatus.provider!].label}。`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : '初始化数据库类型失败。');
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : tf('dataBackup.provider.initFailed', '初始化数据库类型失败。')
+      );
     } finally {
       setBusy(false);
     }
@@ -107,22 +131,36 @@ export function DatabaseProviderSetupPanel({ onInitialized }: DatabaseProviderSe
       <div className="database-remote-backup-head">
         <div>
           <div className="row" style={{ gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
-            <h3 style={{ margin: 0 }}>数据存储类型</h3>
-            <span className="sync-tip">{status?.initialized ? '已锁定' : '等待初始化'}</span>
+            <h3 style={{ margin: 0 }}>{tf('dataBackup.provider.title', '数据存储类型')}</h3>
+            <span className="sync-tip">
+              {status?.initialized
+                ? tf('dataBackup.provider.locked', '已锁定')
+                : tf('dataBackup.provider.waiting', '等待初始化')}
+            </span>
           </div>
           <p className="sync-tip" style={{ margin: '6px 0 0' }}>
             {status?.initialized
-              ? `当前使用 ${formatProvider(status.provider)}。如需更换，请导出数据并在新部署中导入。`
-              : '首次初始化后不能直接切换数据存储类型。'}
+              ? tf(
+                  'dataBackup.provider.currentUsing',
+                  '当前使用 {provider}。如需更换,请导出数据并在新部署中导入。'
+                ).replace('{provider}', formatProvider(status.provider, tf))
+              : tf('dataBackup.provider.switchHint', '首次初始化后不能直接切换数据存储类型。')}
           </p>
         </div>
       </div>
 
       <div className="database-remote-backup-body">
-        {!isReady ? <p className="sync-tip">正在读取服务端初始化状态...</p> : null}
+        {!isReady ? (
+          <p className="sync-tip">
+            {tf('dataBackup.provider.readingStatus', '正在读取服务端初始化状态...')}
+          </p>
+        ) : null}
         {status?.configurationMismatch ? (
           <p className="database-backup-scope-warning">
-            部署环境与已锁定类型不一致，请恢复原部署配置或迁移到新实例。
+            {tf(
+              'dataBackup.provider.mismatch',
+              '部署环境与已锁定类型不一致，请恢复原部署配置或迁移到新实例。'
+            )}
           </p>
         ) : null}
 
@@ -131,7 +169,7 @@ export function DatabaseProviderSetupPanel({ onInitialized }: DatabaseProviderSe
             <div
               className="database-provider-options"
               role="radiogroup"
-              aria-label="选择数据存储类型"
+              aria-label={tf('dataBackup.provider.selectAria', '选择数据存储类型')}
             >
               {providerChoices.map((provider) => {
                 const availability = getProviderAvailability(provider);
@@ -151,7 +189,12 @@ export function DatabaseProviderSetupPanel({ onInitialized }: DatabaseProviderSe
                     />
                     <span>
                       <strong>{PROVIDER_COPY[provider].label}</strong>
-                      <small>{PROVIDER_COPY[provider].description}</small>
+                      <small>
+                        {tf(
+                          PROVIDER_COPY[provider].descriptionKey,
+                          PROVIDER_COPY[provider].description
+                        )}
+                      </small>
                       {!availability.configured ? <em>{availability.message}</em> : null}
                     </span>
                   </label>
@@ -166,7 +209,9 @@ export function DatabaseProviderSetupPanel({ onInitialized }: DatabaseProviderSe
                 onClick={() => void handleInitialize()}
                 disabled={busy || !selectedProviderIsConfigured}
               >
-                {busy ? '正在初始化...' : `初始化 ${PROVIDER_COPY[selectedProvider].label}`}
+                {busy
+                  ? tf('dataBackup.provider.initializing', '正在初始化...')
+                  : `初始化 ${PROVIDER_COPY[selectedProvider].label}`}
               </button>
             </div>
           </>

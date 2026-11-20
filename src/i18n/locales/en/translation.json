@@ -1570,5 +1570,190 @@
       "amountRequired": "The amount must be greater than 0.",
       "generateFailed": "Failed to generate the expense. Please try again later."
     }
+  },
+  "dataBackup": {
+    "title": "Data & backup",
+    "subtitle": "Manage ledger data, restore points and off-site copies.",
+    "managedRowsSuffix": "managed rows",
+    "backupMethod": "Backup method",
+    "currentVolume": "Current volume",
+    "tabs": {
+      "local": "Local backup",
+      "billImport": "Bill import",
+      "database": "Database",
+      "objectStorage": "Object storage"
+    },
+    "local": {
+      "export": "Export backup file",
+      "import": "Import backup file",
+      "desc": "Exported backups can be restored directly, or used to migrate to a new database instance."
+    },
+    "database": {
+      "exportTitle": "Export SQL database",
+      "exportFormat": "SQLite exports .sqlite · MySQL exports .sql",
+      "exportHint": "Only the signed-in account and its data are exported, keeping the table structure needed for re-import. Store the file safely.",
+      "download": "Download SQL database"
+    },
+    "reset": {
+      "title": "Clear all account transactions",
+      "desc": "Clears all account transactions while keeping accounts and categories.",
+      "section": "Data reset"
+    },
+    "billImport": {
+      "wechat": "Import WeChat bills",
+      "alipay": "Import Alipay bills",
+      "desc": "Supports official WeChat / Alipay CSV and TXT bills (tab separated), plus WeChat XLSX.",
+      "duplicateStrategy": "When a bill already exists",
+      "strategyKeep": "Keep the old bill, update when it changed",
+      "strategyOverwrite": "Overwrite the imported fields with the new bill",
+      "strategyReset": "Clear existing transactions, then import",
+      "fileAria": "Bill file to import",
+      "modeAria": "Bill import mode"
+    },
+    "webdav": {
+      "section": "WebDAV backup",
+      "desc": "For remote backup and restore; connects through the same-origin proxy by default.",
+      "proxyEnable": "Enable same-origin proxy",
+      "proxyPath": "Proxy entry path",
+      "proxyToken": "Proxy token",
+      "proxyOn": "Proxy enabled",
+      "direct": "Direct from browser",
+      "modeProxy": "Current: same-origin proxy is enabled.",
+      "modeDirect": "Current: direct browser access, may be blocked by CORS.",
+      "url": "WebDAV URL",
+      "realUrl": "Real WebDAV URL",
+      "username": "Username",
+      "password": "Password",
+      "remotePath": "Remote file path",
+      "keepVersions": "Versions to keep",
+      "pathStyle": "Use path-style URLs",
+      "backupNow": "Back up now",
+      "restore": "Restore backup",
+      "restoreSelect": "Choose a WebDAV backup version to restore",
+      "restoreSelected": "Restore selected version",
+      "latest": "(latest)",
+      "lastBackupPrefix": "Last backup: "
+    },
+    "objectStorage": {
+      "section": "Object storage backup",
+      "desc": "Works with Alibaba Cloud OSS and S3-compatible services, so backups can live in your own bucket.",
+      "region": "Region",
+      "hint": "If you hit CORS errors, allow web access on the bucket; keys are not stored locally long term.",
+      "oss": "Alibaba Cloud OSS",
+      "ossDesc": "For users with an OSS bucket already",
+      "s3": "S3-compatible",
+      "s3Desc": "For MinIO, R2, COS and similar services",
+      "lastBackupPrefix": "Last backup: ",
+      "currentPrefix": "Current: "
+    },
+    "common": {
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "toggle": {
+      "collapse": "Hide settings",
+      "expand": "Show settings",
+      "collapseAdvanced": "Hide advanced options",
+      "expandAdvanced": "Show advanced options"
+    },
+    "status": {
+      "importDone": "Import finished",
+      "importFailed": "Import failed",
+      "writing": "Writing to the database",
+      "exporting": "Exporting…",
+      "cleared": "All account transactions cleared",
+      "loading": "Loading…",
+      "noRecord": "No record"
+    },
+    "placeholder": {
+      "username": "Enter the username",
+      "password": "Enter the password",
+      "accessKeyId": "Enter the AccessKey ID",
+      "sessionOnly": "Kept for this session only",
+      "tokenHint": "Must match the server LEDGERFLOW_API_TOKEN"
+    },
+    "aria": {
+      "apiToken": "LedgerFlow API token",
+      "importProgress": "Backup import progress",
+      "importJson": "Import JSON backup",
+      "webdavUsername": "WebDAV username",
+      "webdavPassword": "WebDAV password",
+      "webdavVersion": "Choose a WebDAV restore version",
+      "confirmClear": "Confirm clearing transactions"
+    },
+    "confirmSuffix": "to confirm",
+    "scope": {
+      "aria": "Backup scope",
+      "title": "What to back up",
+      "hint": "Applies to every backup method",
+      "emptyWarning": "Select at least one backup scope.",
+      "ledger": "Ledger data",
+      "ledgerDesc": "Transactions, categories, accounts, recycle bin and balance records",
+      "subscriptions": "Subscriptions",
+      "subscriptionsDesc": "Subscriptions and archived subscriptions",
+      "memories": "AI memory",
+      "memoriesDesc": "Assistant preferences, memories and context",
+      "investments": "Investments",
+      "investmentsDesc": "Holdings, goals, watchlist and AI analysis history",
+      "noneSelected": "None selected",
+      "separator": ", "
+    },
+    "currentRows": "{count} rows tracked",
+    "snapshot": {
+      "noRecord": "No record",
+      "notRead": "No snapshot read yet",
+      "scopeRequired": "Select at least one backup scope.",
+      "creating": "Creating a snapshot…",
+      "syncFailed": "Failed to sync to the database",
+      "reading": "Reading the latest database snapshot…",
+      "noneInDb": "The database has no snapshot yet.",
+      "readDone": "Latest snapshot loaded. Review it, then restore.",
+      "readFailed": "Failed to read the database snapshot",
+      "restored": "Restored local data from the database snapshot.",
+      "title": "Manual restore points",
+      "desc": "Your data is saved to the current database automatically. Create a manual copy here when you want extra safety.",
+      "scopePrefix": "A restore point keeps: ",
+      "create": "Create restore point",
+      "restoreLatest": "Restore latest copy",
+      "hideAdvanced": "Hide technical settings",
+      "advanced": "Technical settings",
+      "token": "Service access token",
+      "tokenPlaceholder": "Only needed for remote MySQL services",
+      "show": "Show",
+      "hide": "Hide",
+      "tokenHint": "Local SQLite does not need this. For remote deployments, ask an administrator for the token.",
+      "confirmTitle": "Confirm restoring from the database",
+      "confirmBody": "The latest database snapshot will overwrite your current local data. Export a local backup first if you are unsure.",
+      "confirmOk": "Restore",
+      "cancel": "Cancel"
+    },
+    "provider": {
+      "sqliteDesc": "Great for single-server and lightweight self-hosting; data is stored as a file in the deployment volume.",
+      "mysqlDesc": "Suits Alibaba Cloud RDS, multi-device sync and later multi-user deployments.",
+      "mysqlNotConfigured": "No MySQL configuration found. Set MYSQL_URL or MYSQL_HOST first.",
+      "uninitialized": "Not initialized",
+      "readStatusFailed": "Could not read the database initialization status.",
+      "locking": "Validating and locking the storage type…",
+      "initFailed": "Failed to initialize the database type.",
+      "title": "Storage type",
+      "locked": "Locked",
+      "waiting": "Waiting for initialization",
+      "switchHint": "The storage type cannot be switched after the first initialization.",
+      "readingStatus": "Reading the server initialization status…",
+      "mismatch": "This deployment does not match the locked type. Restore the original configuration or migrate to a new instance.",
+      "selectAria": "Choose the storage type",
+      "initializing": "Initializing…",
+      "currentUsing": "Currently using {provider}. To switch, export your data and import it in a new deployment."
+    },
+    "message": {
+      "ledgerSection": "Ledger: {transactions} transactions / {categories} categories / {accounts} accounts",
+      "subscriptionsSection": "Subscriptions: {count}",
+      "memoriesSection": "AI memory: {count}",
+      "investmentsSection": "Investments: {positions} holdings / {history} history rows / {goals} goals / {watchlist} watchlist items",
+      "actionImport": "import",
+      "actionRestore": "restore",
+      "successDetail": "Backup {action} finished — updated {scope} ({sections})",
+      "success": "Backup {action} finished"
+    }
   }
 }
