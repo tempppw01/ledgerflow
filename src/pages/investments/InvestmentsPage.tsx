@@ -294,6 +294,16 @@ function getAnalysisRiskClass(riskLevel?: InvestmentFundAnalysis['riskLevel']) {
 }
 
 type WatchDetailSection = {
+  id:
+    | 'performance'
+    | 'analysis'
+    | 'holdings'
+    | 'assetAllocation'
+    | 'industryAllocation'
+    | 'buyFee'
+    | 'company'
+    | 'reasons'
+    | 'riskNotes';
   title: string;
   kind: 'chart' | 'chips' | 'stat' | 'text';
   items: string[];
@@ -305,46 +315,55 @@ function compactWatchDetailSections(
 ): WatchDetailSection[] {
   return [
     {
+      id: 'performance' as const,
       title: tf('investments.detail.sections.performance', '历史业绩'),
       kind: 'chart' as const,
       items: item.performanceHistory || []
     },
     {
+      id: 'analysis' as const,
       title: tf('investments.detail.sections.analysis', '基金分析'),
       kind: 'text' as const,
       items: item.fundAnalysis || []
     },
     {
+      id: 'holdings' as const,
       title: tf('investments.detail.sections.holdings', '基金持仓'),
       kind: 'chips' as const,
       items: item.fundHoldings || []
     },
     {
+      id: 'assetAllocation' as const,
       title: tf('investments.detail.sections.assetAllocation', '基金资产分布'),
       kind: 'chips' as const,
       items: item.assetAllocation || []
     },
     {
+      id: 'industryAllocation' as const,
       title: tf('investments.detail.sections.industryAllocation', '行业分布'),
       kind: 'chips' as const,
       items: item.industryAllocation || []
     },
     {
+      id: 'buyFee' as const,
       title: tf('investments.detail.sections.buyFee', '买入费率'),
       kind: 'stat' as const,
       items: item.buyFeeRate ? [item.buyFeeRate] : []
     },
     {
+      id: 'company' as const,
       title: tf('investments.detail.sections.company', '基金公司'),
       kind: 'stat' as const,
       items: item.fundCompany ? [item.fundCompany] : []
     },
     {
+      id: 'reasons' as const,
       title: tf('investments.detail.sections.reasons', '判断依据'),
       kind: 'text' as const,
       items: item.adviceReasons || []
     },
     {
+      id: 'riskNotes' as const,
       title: tf('investments.detail.sections.riskNotes', '风险提示'),
       kind: 'text' as const,
       items: item.riskNotes || []
@@ -5153,7 +5172,9 @@ export function InvestmentsPage() {
   function handleAddStockWatchItem(result: EastmoneyStockSearchResult) {
     const existing = investmentWatchlist.find(
       (item) =>
-        item.code === result.code || (item.tags.includes('个股') && item.name === result.name)
+        item.code === result.code ||
+        (item.tags.includes(tf('investments.watchlist.stockFallback', '个股')) &&
+          item.name === result.name)
     );
 
     upsertInvestmentWatchItem({
@@ -5162,8 +5183,10 @@ export function InvestmentsPage() {
       code: result.code,
       platform: existing?.platform || '东方财富',
       tags: existing?.tags?.length
-        ? Array.from(new Set(['个股', ...existing.tags])).slice(0, 8)
-        : ['个股', '东方财富'],
+        ? Array.from(
+            new Set([tf('investments.watchlist.stockFallback', '个股'), ...existing.tags])
+          ).slice(0, 8)
+        : [tf('investments.watchlist.stockFallback', '个股'), '东方财富'],
       note:
         existing?.note ||
         [result.securityTypeName, result.market ? `市场 ${result.market}` : '', result.secId]
@@ -5433,7 +5456,10 @@ export function InvestmentsPage() {
         ) : null}
 
         {investmentWorkspace === 'boards' ? (
-          <section className="investments-workspace-boards" aria-label="A股行业监控">
+          <section
+            className="investments-workspace-boards"
+            aria-label={tf('investments.watchlist.boardsAria', 'A股行业监控')}
+          >
             <MarketBoardsPanel
               industryBoards={marketIndustryBoards}
               globalSectorBoards={globalSectorBoards}
@@ -5489,7 +5515,12 @@ export function InvestmentsPage() {
                   <h3>{tf('investments.tab.watchlist', '基金自选')}</h3>
                 </div>
                 <div className="investments-watchlist-actions">
-                  <span className="badge">{investmentWatchlist.length} 只</span>
+                  <span className="badge">
+                    {tf('investments.watchlist.count', '{count} 只').replace(
+                      '{count}',
+                      String(investmentWatchlist.length)
+                    )}
+                  </span>
                   <button
                     type="button"
                     className={`investments-watchlist-refresh-all-btn ${refreshingAllWatchItems ? 'is-loading' : ''}`}
@@ -5499,8 +5530,8 @@ export function InvestmentsPage() {
                       refreshingWatchItemId !== null ||
                       investmentWatchlist.length === 0
                     }
-                    aria-label="刷新全部自选基金资料"
-                    title="刷新全部自选基金资料"
+                    aria-label={tf('investments.watchlist.refreshAll', '刷新全部自选基金资料')}
+                    title={tf('investments.watchlist.refreshAll', '刷新全部自选基金资料')}
                   >
                     <img src={ROTATE_CCW_ICON_URL} alt="" aria-hidden="true" />
                   </button>
@@ -5508,7 +5539,9 @@ export function InvestmentsPage() {
               </div>
 
               <form className="investments-fund-lookup" onSubmit={handleFundLookupSubmit}>
-                <label htmlFor="investment-fund-code">添加基金代码</label>
+                <label htmlFor="investment-fund-code">
+                  {tf('investments.watchlist.addFundLabel', '添加基金代码')}
+                </label>
                 <div className="investments-fund-lookup-row">
                   <input
                     id="investment-fund-code"
@@ -5516,7 +5549,10 @@ export function InvestmentsPage() {
                     pattern="\d{6}"
                     maxLength={6}
                     value={fundLookupCode}
-                    placeholder="例如 161725"
+                    placeholder={tf(
+                      'investments.watchlist.addFundPlaceholder',
+                      tf('investments.watchlist.addFundPlaceholder', '例如 161725')
+                    )}
                     onChange={(event) => {
                       setFundLookupCode(event.target.value.replace(/\D/g, '').slice(0, 6));
                       if (fundLookupError) setFundLookupError('');
@@ -5530,7 +5566,9 @@ export function InvestmentsPage() {
                     disabled={fundLookupStatus === 'loading' || fundLookupCode.length < 6}
                   >
                     <img src={INFO_ICON_URL} alt="" aria-hidden="true" />
-                    {fundLookupStatus === 'loading' ? '获取中' : '获取资料'}
+                    {fundLookupStatus === 'loading'
+                      ? tf('investments.watchlist.fundLookupLoading', '获取中')
+                      : tf('investments.watchlist.fundLookup', '获取资料')}
                   </button>
                 </div>
                 {fundLookupError ? (
@@ -5542,14 +5580,19 @@ export function InvestmentsPage() {
                 className="investments-fund-lookup investments-stock-lookup"
                 onSubmit={handleStockLookupSubmit}
               >
-                <label htmlFor="investment-stock-query">添加个股自选</label>
+                <label htmlFor="investment-stock-query">
+                  {tf('investments.watchlist.addStockLabel', '添加个股自选')}
+                </label>
                 <div className="investments-fund-lookup-row">
                   <input
                     id="investment-stock-query"
                     type="search"
                     autoComplete="off"
                     value={stockLookupQuery}
-                    placeholder="搜索股票名、代码或拼音"
+                    placeholder={tf(
+                      'investments.watchlist.addStockPlaceholder',
+                      tf('investments.watchlist.addStockPlaceholder', '搜索股票名、代码或拼音')
+                    )}
                     onChange={(event) => {
                       setStockLookupQuery(event.target.value);
                       if (stockLookupError) setStockLookupError('');
@@ -5563,14 +5606,22 @@ export function InvestmentsPage() {
                     disabled={stockLookupStatus === 'loading' || !stockLookupQuery.trim()}
                   >
                     <img src={INFO_ICON_URL} alt="" aria-hidden="true" />
-                    {stockLookupStatus === 'loading' ? '搜索中' : '搜索个股'}
+                    {stockLookupStatus === 'loading'
+                      ? tf('investments.watchlist.stockSearching', '搜索中')
+                      : tf('investments.watchlist.searchStock', '搜索个股')}
                   </button>
                 </div>
                 {stockLookupError ? (
                   <p className="investments-fund-lookup-error">{stockLookupError}</p>
                 ) : null}
                 {stockLookupResults.length > 0 ? (
-                  <div className="investments-stock-lookup-results" aria-label="个股搜索结果">
+                  <div
+                    className="investments-stock-lookup-results"
+                    aria-label={tf(
+                      'investments.watchlist.stockResultsAria',
+                      tf('investments.watchlist.stockResultsAria', '个股搜索结果')
+                    )}
+                  >
                     {stockLookupResults.map((result) => (
                       <button
                         key={result.secId}
@@ -5583,7 +5634,9 @@ export function InvestmentsPage() {
                           <small>{result.code}</small>
                         </span>
                         <em>
-                          {result.securityTypeName || '个股'} · {result.secId}
+                          {result.securityTypeName ||
+                            tf('investments.watchlist.stockFallback', '个股')}{' '}
+                          · {result.secId}
                         </em>
                       </button>
                     ))}
@@ -5593,16 +5646,24 @@ export function InvestmentsPage() {
 
               {investmentWatchlist.length === 0 ? (
                 <div className="investments-watchlist-empty">
-                  <strong>还没有自选基金或个股</strong>
-                  <p>搜索后觉得值得跟踪，就把基金或股票加入这里。</p>
+                  <strong>{tf('investments.watchlist.emptyTitle', '还没有自选基金或个股')}</strong>
+                  <p>
+                    {tf(
+                      'investments.watchlist.emptyDesc',
+                      '搜索后觉得值得跟踪，就把基金或股票加入这里。'
+                    )}
+                  </p>
                 </div>
               ) : (
                 <>
                   <div className="investments-watchlist-tools">
                     <label className="investments-watch-category-select">
-                      <span>分类</span>
+                      <span>{tf('investments.watchlist.categoryLabel', '分类')}</span>
                       <select
-                        aria-label="自选基金分类"
+                        aria-label={tf(
+                          'investments.watchlist.categoryAria',
+                          tf('investments.watchlist.categoryAria', '自选基金分类')
+                        )}
                         value={selectedWatchCategoryId}
                         onChange={(event) =>
                           setSelectedWatchCategoryId(event.target.value as WatchCategoryFilterId)
@@ -5623,14 +5684,20 @@ export function InvestmentsPage() {
                         })}
                       </select>
                     </label>
-                    <div className="investments-watch-grid-controls" aria-label="每行卡片数量">
+                    <div
+                      className="investments-watch-grid-controls"
+                      aria-label={tf(
+                        'investments.watchlist.gridColumnsAria',
+                        tf('investments.watchlist.gridColumnsAria', '每行卡片数量')
+                      )}
+                    >
                       <button
                         type="button"
                         className={watchDisplayMode === 'grid' ? 'is-active' : ''}
                         onClick={() => setWatchDisplayMode('grid')}
-                        aria-label="卡片监控视图"
+                        aria-label={tf('investments.watchlist.gridView', '卡片监控视图')}
                         aria-pressed={watchDisplayMode === 'grid'}
-                        title="卡片监控视图"
+                        title={tf('investments.watchlist.gridView', '卡片监控视图')}
                       >
                         <span aria-hidden="true">&#9638;</span>
                       </button>
@@ -5638,9 +5705,9 @@ export function InvestmentsPage() {
                         type="button"
                         className={watchDisplayMode === 'list' ? 'is-active' : ''}
                         onClick={() => setWatchDisplayMode('list')}
-                        aria-label="列表监控视图"
+                        aria-label={tf('investments.watchlist.listView', '列表监控视图')}
                         aria-pressed={watchDisplayMode === 'list'}
-                        title="列表监控视图"
+                        title={tf('investments.watchlist.listView', '列表监控视图')}
                       >
                         <span aria-hidden="true">&#9779;</span>
                       </button>
@@ -5662,8 +5729,15 @@ export function InvestmentsPage() {
 
                   {filteredInvestmentWatchlist.length === 0 ? (
                     <div className="investments-watchlist-empty investments-watchlist-filter-empty">
-                      <strong>当前分类没有自选基金</strong>
-                      <p>切换到其他分类，或用基金代码添加一只新的。</p>
+                      <strong>
+                        {tf('investments.watchlist.emptyCategoryTitle', '当前分类没有自选基金')}
+                      </strong>
+                      <p>
+                        {tf(
+                          'investments.watchlist.emptyCategoryDesc',
+                          '切换到其他分类，或用基金代码添加一只新的。'
+                        )}
+                      </p>
                     </div>
                   ) : (
                     <div
@@ -5673,10 +5747,10 @@ export function InvestmentsPage() {
                         const isExpanded = expandedWatchItemId === item.id;
                         const detailSections = compactWatchDetailSections(item, tf);
                         const performanceSection = detailSections.find(
-                          (section) => section.title === '历史业绩'
+                          (section) => section.id === 'performance'
                         );
                         const otherDetailSections = detailSections.filter(
-                          (section) => section.title !== '历史业绩'
+                          (section) => section.id !== 'performance'
                         );
                         const investmentAdvice = item.investmentAdvice?.trim();
                         const showInvestmentAdvice = Boolean(

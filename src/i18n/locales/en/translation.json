@@ -2110,6 +2110,30 @@
       "cashShort": "C",
       "other": "Other",
       "otherShort": "O"
+    },
+    "watchlist": {
+      "boardsAria": "A-share sector monitor",
+      "refreshAll": "Refresh data for all watchlist funds",
+      "addFundLabel": "Add a fund code",
+      "addFundPlaceholder": "e.g. 161725",
+      "fundLookupLoading": "Fetching",
+      "fundLookup": "Fetch data",
+      "addStockLabel": "Add a stock",
+      "addStockPlaceholder": "Search by name, code or pinyin",
+      "stockSearching": "Searching",
+      "searchStock": "Search stocks",
+      "stockResultsAria": "Stock search results",
+      "stockFallback": "Stock",
+      "emptyTitle": "No funds or stocks yet",
+      "emptyDesc": "Once something is worth tracking, add the fund or stock here.",
+      "categoryLabel": "Category",
+      "categoryAria": "Watchlist category",
+      "gridColumnsAria": "Cards per row",
+      "gridView": "Card view",
+      "listView": "List view",
+      "emptyCategoryTitle": "No funds in this category",
+      "emptyCategoryDesc": "Switch to another category, or add one with a fund code.",
+      "count": "{count}"
     }
   }
 }

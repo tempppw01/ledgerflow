@@ -2110,6 +2110,30 @@
       "cashShort": "货",
       "other": "其他",
       "otherShort": "其"
+    },
+    "watchlist": {
+      "boardsAria": "A股行业监控",
+      "refreshAll": "刷新全部自选基金资料",
+      "addFundLabel": "添加基金代码",
+      "addFundPlaceholder": "例如 161725",
+      "fundLookupLoading": "获取中",
+      "fundLookup": "获取资料",
+      "addStockLabel": "添加个股自选",
+      "addStockPlaceholder": "搜索股票名、代码或拼音",
+      "stockSearching": "搜索中",
+      "searchStock": "搜索个股",
+      "stockResultsAria": "个股搜索结果",
+      "stockFallback": "个股",
+      "emptyTitle": "还没有自选基金或个股",
+      "emptyDesc": "搜索后觉得值得跟踪,就把基金或股票加入这里。",
+      "categoryLabel": "分类",
+      "categoryAria": "自选基金分类",
+      "gridColumnsAria": "每行卡片数量",
+      "gridView": "卡片监控视图",
+      "listView": "列表监控视图",
+      "emptyCategoryTitle": "当前分类没有自选基金",
+      "emptyCategoryDesc": "切换到其他分类,或用基金代码添加一只新的。",
+      "count": "{count} 只"
     }
   }
 }
