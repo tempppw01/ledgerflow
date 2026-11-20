@@ -1890,6 +1890,7 @@ function getDateInputWeekday(value: string) {
 }
 
 function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexName: string }) {
+  const tf = useTFallback();
   const today = useMemo(() => new Date(), []);
   const defaultStartDate = formatDateInputValue(shiftDateByYears(today, 1));
   const [historyRange, setHistoryRange] = useState<EastmoneyMarketHistoryRange>('1y');
@@ -2055,7 +2056,8 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
                   起点 <strong>{formatMarketIndexValue(firstHistoryPoint?.value)}</strong>
                 </span>
                 <span>
-                  最新 <strong>{formatMarketIndexValue(lastHistoryPoint?.value)}</strong>
+                  {tf('investments.market.latest', '最新')}
+                  <strong>{formatMarketIndexValue(lastHistoryPoint?.value)}</strong>
                 </span>
                 <strong className={historyTone}>
                   {historyChange === null ? '--' : formatMarketPercent(historyChange * 100)}
@@ -2172,30 +2174,36 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
               </label>
             ) : null}
             <label>
-              <span>每期金额</span>
+              <span>{tf('investments.market.sim.amount', '每期金额')}</span>
               <input
                 type="number"
                 min="1"
                 step="1"
                 value={simulationAmount}
                 onChange={(event) => setSimulationAmount(event.target.value)}
-                aria-label="定投每期金额"
+                aria-label={tf('investments.market.sim.amountAria', '定投每期金额')}
               />
             </label>
             <label>
-              <span>开始日期</span>
+              <span>{tf('investments.market.sim.startDate', '开始日期')}</span>
               <DatePicker
                 value={simulationStartDate}
                 onChange={setSimulationStartDate}
-                ariaLabel="定投开始日期"
+                ariaLabel={tf(
+                  'investments.market.sim.startDateAria',
+                  tf('investments.market.sim.startDateAria', '定投开始日期')
+                )}
               />
             </label>
             <label>
-              <span>结束日期</span>
+              <span>{tf('investments.market.sim.endDate', '结束日期')}</span>
               <DatePicker
                 value={simulationEndDate}
                 onChange={setSimulationEndDate}
-                ariaLabel="定投结束日期"
+                ariaLabel={tf(
+                  'investments.market.sim.endDateAria',
+                  tf('investments.market.sim.endDateAria', '定投结束日期')
+                )}
               />
             </label>
           </div>
@@ -2204,25 +2212,30 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
             className="primary investments-simulation-submit"
             disabled={simulationStatus === 'loading'}
           >
-            {simulationStatus === 'loading' ? '模拟中…' : '开始模拟'}
+            {simulationStatus === 'loading'
+              ? tf('investments.market.sim.running', '模拟中…')
+              : tf('investments.market.sim.run', '开始模拟')}
           </button>
           {simulationError ? <p className="investments-market-error">{simulationError}</p> : null}
           {simulationResult ? (
-            <div className="investments-simulation-result" aria-label="定投模拟结果">
+            <div
+              className="investments-simulation-result"
+              aria-label={tf('investments.market.sim.resultAria', '定投模拟结果')}
+            >
               <div>
-                <span>累计投入</span>
+                <span>{tf('investments.market.sim.contributed', '累计投入')}</span>
                 <strong>{formatCurrencyAuto(simulationResult.investedAmount)}</strong>
               </div>
               <div>
-                <span>期末资产</span>
+                <span>{tf('investments.market.sim.finalValue', '期末资产')}</span>
                 <strong>{formatCurrencyAuto(simulationResult.endingValue)}</strong>
               </div>
               <div className={simulationResult.profit >= 0 ? 'is-positive' : 'is-negative'}>
-                <span>模拟盈亏</span>
+                <span>{tf('investments.market.sim.profit', '模拟盈亏')}</span>
                 <strong>{formatCurrencyAuto(simulationResult.profit)}</strong>
               </div>
               <div className={simulationResult.returnRate >= 0 ? 'is-positive' : 'is-negative'}>
-                <span>收益率</span>
+                <span>{tf('investments.market.sim.returnRate', '收益率')}</span>
                 <strong>{formatMarketPercent(simulationResult.returnRate * 100)}</strong>
               </div>
               <small>
@@ -2370,14 +2383,16 @@ function MarketOverviewPanel({
         if (cancelled) return;
         setGlobalChartStatus('error');
         setGlobalChartError(
-          reason instanceof Error ? reason.message : '国际大盘走势加载失败，请稍后重试。'
+          reason instanceof Error
+            ? reason.message
+            : tf('investments.market.globalTrendError', '国际大盘走势加载失败，请稍后重试。')
         );
       });
 
     return () => {
       cancelled = true;
     };
-  }, [globalChartMode, selectedGlobalId]);
+  }, [globalChartMode, selectedGlobalId, tf]);
 
   useEffect(() => {
     if (!selectedGlobalId || globalChartMode !== 'kline') return;
@@ -2395,7 +2410,7 @@ function MarketOverviewPanel({
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [globalChartMode, selectedGlobalId]);
+  }, [globalChartMode, selectedGlobalId, tf]);
 
   useEffect(() => {
     const currentValues = new Map<string, string>();
@@ -2502,25 +2517,34 @@ function MarketOverviewPanel({
 
   const activeTrendText =
     activeTrendPoint && Number.isFinite(activeTrendPoint.value)
-      ? `${activeTrendPoint.label || '当前'} · ${formatMarketIndexValue(activeTrendPoint.value)}`
-      : '等待分时线';
+      ? `${activeTrendPoint.label || tf('investments.market.current', '当前')} · ${formatMarketIndexValue(activeTrendPoint.value)}`
+      : tf('investments.market.waitingTrend', '等待分时线');
 
   return (
     <section
       className={`panel investments-market-panel ${status === 'loading' ? 'is-loading' : ''}`}
-      data-investment-support-title="大盘概览"
+      data-investment-support-title={tf('investments.market.overviewTitle', '大盘概览')}
     >
       <div className="investments-market-head">
         <div>
-          <h3>大盘概览</h3>
-          <p>{updatedAt ? `东方财富行情 · ${updatedAt}` : '东方财富行情'}</p>
+          <h3>{tf('investments.market.overviewTitle', '大盘概览')}</h3>
+          <p>
+            {updatedAt
+              ? `${tf('investments.market.eastmoney', '东方财富行情')} · ${updatedAt}`
+              : tf('investments.market.eastmoney', '东方财富行情')}
+          </p>
         </div>
-        <div className="investments-market-live-status" aria-label="大盘自动更新状态">
+        <div
+          className="investments-market-live-status"
+          aria-label={tf('investments.market.liveStatusAria', '大盘自动更新状态')}
+        >
           <span className="investments-market-live-dot" aria-hidden="true" />
           <div>
-            <strong>实时轮询</strong>
+            <strong>{tf('investments.market.livePolling', '实时轮询')}</strong>
             <small>
-              {isAnyMarketOpen ? '交易中 · 每 10 秒自动更新' : '非交易时段 · 保留最近行情'}
+              {isAnyMarketOpen
+                ? tf('investments.market.liveTrading', '交易中 · 每 10 秒自动更新')
+                : tf('investments.market.liveClosed', '非交易时段 · 保留最近行情')}
             </small>
           </div>
         </div>
@@ -2528,14 +2552,24 @@ function MarketOverviewPanel({
 
       <GlobalMarketClock />
 
-      <div className="investments-global-quotes" aria-label="全球主要指数行情">
+      <div
+        className="investments-global-quotes"
+        aria-label={tf(
+          'investments.market.globalQuotesAria',
+          tf('investments.market.globalQuotesAria', '全球主要指数行情')
+        )}
+      >
         <div className="investments-global-quotes-head">
           <div>
-            <strong>全球主要指数</strong>
-            <span>Yahoo Finance · 同源代理</span>
+            <strong>{tf('investments.market.globalQuotesTitle', '全球主要指数')}</strong>
+            <span>{tf('investments.market.globalQuotesSource', 'Yahoo Finance · 同源代理')}</span>
           </div>
-          {globalStatus === 'loading' ? <small>更新中…</small> : null}
-          {globalStatus === 'error' ? <small>{globalError || '暂时无法更新'}</small> : null}
+          {globalStatus === 'loading' ? (
+            <small>{tf('investments.market.updating', '更新中…')}</small>
+          ) : null}
+          {globalStatus === 'error' ? (
+            <small>{globalError || tf('investments.market.updateFailed', '暂时无法更新')}</small>
+          ) : null}
         </div>
         <div className="investments-global-quote-grid">
           {[
@@ -2568,7 +2602,8 @@ function MarketOverviewPanel({
                 >
                   <div className="investments-global-quote-name">
                     <span>
-                      <i aria-hidden="true">🇨🇳</i>A 股
+                      <i aria-hidden="true">🇨🇳</i>
+                      {tf('investments.market.aShares', 'A 股')}
                     </span>
                     <strong>
                       <span className="investments-index-name-full">{index.name}</span>
@@ -2622,7 +2657,13 @@ function MarketOverviewPanel({
       </div>
 
       {selectedGlobalId && selectedGlobalIndex ? (
-        <section className="investments-global-trend-panel" aria-label="国际大盘走势图">
+        <section
+          className="investments-global-trend-panel"
+          aria-label={tf(
+            'investments.market.globalTrendAria',
+            tf('investments.market.globalTrendAria', '国际大盘走势图')
+          )}
+        >
           <div className="investments-global-trend-head">
             <div>
               <strong>
@@ -2635,25 +2676,30 @@ function MarketOverviewPanel({
               <span>
                 {selectedGlobalQuote
                   ? `${formatMarketIndexValue(selectedGlobalQuote.value)} · ${
-                      globalPreviousCloseDate ? `${globalPreviousCloseDate} 收盘` : '最近交易日收盘'
+                      globalPreviousCloseDate
+                        ? `${globalPreviousCloseDate}${tf('investments.market.closeSuffix', ' 收盘')}`
+                        : tf('investments.market.lastSessionClose', '最近交易日收盘')
                     } ${formatMarketIndexValue(selectedGlobalQuote.previousClose)}`
-                  : 'Yahoo Finance 实时走势'}
+                  : tf('investments.market.yahooRealtime', 'Yahoo Finance 实时走势')}
               </span>
             </div>
-            <div className="investments-global-trend-toggle" aria-label="走势图模式">
+            <div
+              className="investments-global-trend-toggle"
+              aria-label={tf('investments.market.chartModeAria', '走势图模式')}
+            >
               <button
                 type="button"
                 className={globalChartMode === 'line' ? 'is-active' : ''}
                 onClick={() => setGlobalChartMode('line')}
               >
-                分时
+                {tf('investments.market.modeIntraday', '分时')}
               </button>
               <button
                 type="button"
                 className={globalChartMode === 'kline' ? 'is-active' : ''}
                 onClick={() => setGlobalChartMode('kline')}
               >
-                K 线
+                {tf('investments.market.modeCandle', 'K 线')}
               </button>
             </div>
           </div>
@@ -2675,7 +2721,7 @@ function MarketOverviewPanel({
                       )}`}
                       viewBox={`0 0 ${globalTrendChart.width} ${globalTrendChart.height}`}
                       role="img"
-                      aria-label={`${selectedGlobalIndex.name}实时走势`}
+                      aria-label={`${selectedGlobalIndex.name}${tf('investments.market.realtimeTrendSuffix', '实时走势')}`}
                     >
                       <defs>
                         <linearGradient
@@ -2794,12 +2840,18 @@ function MarketOverviewPanel({
                 <div className="investments-market-chart-empty">
                   <strong>
                     {globalChartStatus === 'error'
-                      ? '走势暂时没有连上'
+                      ? tf('investments.market.trendDisconnected', '走势暂时没有连上')
                       : globalChartStatus === 'loading'
-                        ? '正在加载实时走势'
-                        : '等待实时走势'}
+                        ? tf('investments.market.trendLoading', '正在加载实时走势')
+                        : tf('investments.market.trendWaiting', '等待实时走势')}
                   </strong>
-                  <span>{globalChartError || 'Yahoo Finance 分时数据加载后会显示在这里。'}</span>
+                  <span>
+                    {globalChartError ||
+                      tf(
+                        'investments.market.trendHint',
+                        'Yahoo Finance 分时数据加载后会显示在这里。'
+                      )}
+                  </span>
                 </div>
               )
             ) : globalKlineChart.candles.length ? (
@@ -2812,23 +2864,31 @@ function MarketOverviewPanel({
                   <div
                     className="investments-global-kline-tooltip"
                     role="status"
-                    aria-label="K线详情"
+                    aria-label={tf(
+                      'investments.market.candleDetailAria',
+                      tf('investments.market.candleDetailAria', 'K线详情')
+                    )}
                   >
                     <strong>{hoveredGlobalCandle.label}</strong>
                     <span>
-                      开 <b>{formatMarketIndexValue(hoveredGlobalCandle.open)}</b>
+                      {tf('investments.market.candle.open', '开')}
+                      <b>{formatMarketIndexValue(hoveredGlobalCandle.open)}</b>
                     </span>
                     <span>
-                      高 <b>{formatMarketIndexValue(hoveredGlobalCandle.high)}</b>
+                      {tf('investments.market.candle.high', '高')}
+                      <b>{formatMarketIndexValue(hoveredGlobalCandle.high)}</b>
                     </span>
                     <span>
-                      低 <b>{formatMarketIndexValue(hoveredGlobalCandle.low)}</b>
+                      {tf('investments.market.candle.low', '低')}
+                      <b>{formatMarketIndexValue(hoveredGlobalCandle.low)}</b>
                     </span>
                     <span>
-                      收 <b>{formatMarketIndexValue(hoveredGlobalCandle.value)}</b>
+                      {tf('investments.market.candle.close', '收')}
+                      <b>{formatMarketIndexValue(hoveredGlobalCandle.value)}</b>
                     </span>
                     <span>
-                      量 <b>{formatMarketAmount(hoveredGlobalCandle.volume)}</b>
+                      {tf('investments.market.candle.volume', '量')}
+                      <b>{formatMarketAmount(hoveredGlobalCandle.volume)}</b>
                     </span>
                   </div>
                 ) : null}
@@ -2838,7 +2898,7 @@ function MarketOverviewPanel({
                   )}`}
                   viewBox={`0 0 ${globalKlineChart.width} ${globalKlineChart.height}`}
                   role="img"
-                  aria-label={`${selectedGlobalIndex.name}K线图`}
+                  aria-label={`${selectedGlobalIndex.name}${tf('investments.market.candleChartSuffix', 'K线图')}`}
                 >
                   {[0, 0.5, 1].map((ratio) => (
                     <line
@@ -2942,7 +3002,7 @@ function MarketOverviewPanel({
                       height={bar.height}
                       rx="1"
                     >
-                      <title>{`${bar.label} · 成交量 ${formatMarketAmount(bar.volume)}`}</title>
+                      <title>{`${bar.label} · ${tf('investments.market.volume', '成交量')} ${formatMarketAmount(bar.volume)}`}</title>
                     </rect>
                   ))}
                   <text
@@ -2950,7 +3010,7 @@ function MarketOverviewPanel({
                     x={globalKlineChart.plotLeft}
                     y={globalKlineChart.volumeTop + 12}
                   >
-                    成交量
+                    {tf('investments.market.volume', '成交量')}
                   </text>
                 </svg>
                 {globalKlineChart.labels.length ? (
@@ -2965,12 +3025,18 @@ function MarketOverviewPanel({
               <div className="investments-market-chart-empty">
                 <strong>
                   {globalChartStatus === 'error'
-                    ? 'K 线暂时没有连上'
+                    ? tf('investments.market.candleDisconnected', 'K 线暂时没有连上')
                     : globalChartStatus === 'loading'
-                      ? '正在加载 K 线'
-                      : '等待 K 线数据'}
+                      ? tf('investments.market.candleLoading', '正在加载 K 线')
+                      : tf('investments.market.candleWaiting', '等待 K 线数据')}
                 </strong>
-                <span>{globalChartError || 'Yahoo Finance 历史 K 线加载后会显示在这里。'}</span>
+                <span>
+                  {globalChartError ||
+                    tf(
+                      'investments.market.candleHint',
+                      'Yahoo Finance 历史 K 线加载后会显示在这里。'
+                    )}
+                </span>
               </div>
             )}
           </div>
@@ -2982,19 +3048,23 @@ function MarketOverviewPanel({
           <div className="investments-market-main">
             <div
               className="investments-market-mini-stats"
-              aria-label={`${activeIndex?.name || '大盘'}关键数据`}
+              aria-label={`${activeIndex?.name || tf('investments.market.marketFallback', '大盘')}关键数据`}
             >
               <span>
-                最新 <strong>{formatMarketIndexValue(selectedQuoteData?.value)}</strong>
+                {tf('investments.market.latest', '最新')}
+                <strong>{formatMarketIndexValue(selectedQuoteData?.value)}</strong>
               </span>
               <span>
-                最高 <strong>{formatMarketIndexValue(selectedQuoteData?.high)}</strong>
+                {tf('investments.market.high', '最高')}
+                <strong>{formatMarketIndexValue(selectedQuoteData?.high)}</strong>
               </span>
               <span>
-                最低 <strong>{formatMarketIndexValue(selectedQuoteData?.low)}</strong>
+                {tf('investments.market.low', '最低')}
+                <strong>{formatMarketIndexValue(selectedQuoteData?.low)}</strong>
               </span>
               <span>
-                成交额 <strong>{formatMarketAmount(selectedQuoteData?.amount)}</strong>
+                {tf('investments.market.turnover', '成交额')}
+                <strong>{formatMarketAmount(selectedQuoteData?.amount)}</strong>
               </span>
             </div>
 
@@ -3014,7 +3084,7 @@ function MarketOverviewPanel({
                     )}`}
                     viewBox={`0 0 ${chart.width} ${chart.height}`}
                     role="img"
-                    aria-label={`${activeIndex?.name || '指数'}分时走势`}
+                    aria-label={`${activeIndex?.name || tf('investments.market.indexFallback', '指数')}${tf('investments.market.intradayTrendAria', '分时走势')}`}
                   >
                     <defs>
                       <linearGradient id="investments-market-area" x1="0" x2="0" y1="0" y2="1">
@@ -3094,12 +3164,15 @@ function MarketOverviewPanel({
                 <div className="investments-market-chart-empty">
                   <strong>
                     {status === 'error'
-                      ? '行情暂时没有连上'
+                      ? tf('investments.market.quoteDisconnected', '行情暂时没有连上')
                       : isSwitchingTrend
-                        ? '正在切换指数'
-                        : '等待分时线'}
+                        ? tf('investments.market.switchingIndex', '正在切换指数')
+                        : tf('investments.market.waitingTrend', '等待分时线')}
                   </strong>
-                  <span>{error || `${activeIndex?.name || '指数'}分时线加载后会显示在这里。`}</span>
+                  <span>
+                    {error ||
+                      `${activeIndex?.name || tf('investments.market.indexFallback', '指数')}${tf('investments.market.intradayHintSuffix', '分时线加载后会显示在这里。')}`}
+                  </span>
                 </div>
               )}
 
@@ -3116,25 +3189,30 @@ function MarketOverviewPanel({
                   <strong>{activeTrendText}</strong>
                   <span>
                     {activeTrendPoint
-                      ? `均价 ${formatMarketIndexValue(activeTrendPoint.average)}`
-                      : '分时点位'}
+                      ? `${tf('investments.market.averagePrefix', '均价')} ${formatMarketIndexValue(activeTrendPoint.average)}`
+                      : tf('investments.market.intradayPoint', '分时点位')}
                   </span>
                 </div>
                 <div>
                   <span>
-                    成交额 <strong>{formatMarketAmount(activeTrendPoint?.amount)}</strong>
+                    {tf('investments.market.turnover', '成交额')}
+                    <strong>{formatMarketAmount(activeTrendPoint?.amount)}</strong>
                   </span>
                   <span>
-                    成交量 <strong>{formatMarketAmount(activeTrendPoint?.volume)}</strong>
+                    {tf('investments.market.volume', '成交量')}
+                    <strong>{formatMarketAmount(activeTrendPoint?.volume)}</strong>
                   </span>
                 </div>
               </div>
             </div>
           </div>
 
-          <aside className="investments-market-side" aria-label="大盘成交概览">
+          <aside
+            className="investments-market-side"
+            aria-label={tf('investments.market.turnoverAria', '大盘成交概览')}
+          >
             <div className="investments-market-turnover-card">
-              <span>四大指数成交额</span>
+              <span>{tf('investments.market.topIndicesTurnover', '四大指数成交额')}</span>
               <strong>{formatMarketAmount(totalAmount)}</strong>
               <em>
                 {activeIndex?.shortName || tf('investments.market.indexFallback', '指数')}{' '}
@@ -3143,11 +3221,11 @@ function MarketOverviewPanel({
             </div>
             <div className="investments-market-side-grid">
               <span>
-                选中指数
+                {tf('investments.market.selectedIndex', '选中指数')}
                 <strong>{formatMarketAmount(selectedQuoteData?.amount)}</strong>
               </span>
               <span>
-                昨收
+                {tf('investments.market.previousClose', '昨收')}
                 <strong>{formatMarketIndexValue(selectedQuoteData?.previousClose)}</strong>
               </span>
             </div>
@@ -3158,12 +3236,14 @@ function MarketOverviewPanel({
       {!selectedGlobalId ? (
         <details className="investments-market-history-disclosure">
           <summary>
-            查看历史走势与定投模拟
-            <span>按需展开，不打断当前行情判断</span>
+            {tf('investments.market.historyToggle', '查看历史走势与定投模拟')}
+            <span>
+              {tf('investments.market.historyToggleHint', '按需展开，不打断当前行情判断')}
+            </span>
           </summary>
           <MarketHistoryAndSimulator
             secId={selectedSecId}
-            indexName={activeIndex?.name || '大盘指数'}
+            indexName={activeIndex?.name || tf('investments.market.indexNameFallback', '大盘指数')}
           />
         </details>
       ) : null}
@@ -3176,6 +3256,7 @@ function MarketOverviewPanel({
 type MarketBoardView = string;
 
 function IndustrySparkline({ board }: { board: EastmoneyMarketBoard }) {
+  const tf = useTFallback();
   const [points, setPoints] = useState<number[]>([]);
   useEffect(() => {
     let cancelled = false;
@@ -3205,7 +3286,7 @@ function IndustrySparkline({ board }: { board: EastmoneyMarketBoard }) {
     <svg
       className={`investments-industry-sparkline ${getMarketTone(board.changePercent)}`}
       viewBox="0 0 100 28"
-      aria-label={`${board.name}走势示意`}
+      aria-label={`${board.name}${tf('investments.market.boardTrendSuffix', '走势示意')}`}
       role="img"
     >
       <path d={line} />
