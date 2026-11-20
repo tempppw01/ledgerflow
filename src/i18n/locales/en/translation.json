@@ -2038,6 +2038,26 @@
       "renameAria": "Rename {name}",
       "indexPrefix": "Index",
       "sectorCount": "{count} sectors"
+    },
+    "news": {
+      "title": "News",
+      "aiAria": "Ask AI to explain the latest headlines",
+      "aiAction": "AI explain",
+      "tabsAria": "News categories",
+      "emptyTitle": "No headlines yet",
+      "emptyDesc": "Refresh later, or try another category.",
+      "tagsAria": "Related tickers",
+      "refreshing": "Refreshing",
+      "sourceNote": "Source: Eastmoney 7×24 news · same-origin proxy on the server to avoid browser CORS issues",
+      "catAllDay": "7×24",
+      "catFocus": "Focus",
+      "catListedCompany": "Listed companies",
+      "catChinaMarket": "China market",
+      "catGlobalMarket": "Global market",
+      "catCommodity": "Commodities",
+      "catForex": "Forex",
+      "catBond": "Bonds",
+      "catFund": "Funds"
     }
   }
 }

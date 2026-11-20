@@ -109,6 +109,18 @@ const WATCH_CATEGORY_FILTERS: Array<{ id: WatchCategoryFilterId; label: string; 
 ];
 
 const WATCH_GRID_COLUMN_OPTIONS = [1, 2, 3] as const;
+const NEWS_CATEGORY_KEYS: Record<string, string> = {
+  'all-day': 'investments.news.catAllDay',
+  focus: 'investments.news.catFocus',
+  'listed-company': 'investments.news.catListedCompany',
+  'china-market': 'investments.news.catChinaMarket',
+  'global-market': 'investments.news.catGlobalMarket',
+  commodity: 'investments.news.catCommodity',
+  forex: 'investments.news.catForex',
+  bond: 'investments.news.catBond',
+  fund: 'investments.news.catFund'
+};
+
 const MARKET_THEME_STORAGE_KEY = 'ledgerflow-investment-market-themes-v1';
 
 type WatchGridColumnCount = (typeof WATCH_GRID_COLUMN_OPTIONS)[number];
@@ -3879,12 +3891,13 @@ function MarketNewsPanel({
   return (
     <section
       className={`panel investments-market-news-panel ${status === 'loading' ? 'is-loading' : ''}`}
-      data-investment-support-title="快讯"
+      data-investment-support-title={tf('investments.news.title', '快讯')}
     >
       <div className="investments-market-news-head">
         <div>
           <h3>
-            快讯 <span>7x24</span>
+            {tf('investments.news.title', '快讯')}
+            <span>7x24</span>
           </h3>
         </div>
         <div className="investments-panel-head-actions">
@@ -3900,10 +3913,10 @@ function MarketNewsPanel({
                 })
               )
             }
-            aria-label="让 AI 解读最新快讯"
+            aria-label={tf('investments.news.aiAria', '让 AI 解读最新快讯')}
           >
             <ChatSparklesIcon className="chat-svg-icon" />
-            AI 解读
+            {tf('investments.news.aiAction', 'AI 解读')}
           </button>
           <button type="button" onClick={onRefresh} disabled={status === 'loading'}>
             {status === 'loading' ? '刷新中' : tf('investments.refresh', '刷新')}
@@ -3911,7 +3924,11 @@ function MarketNewsPanel({
         </div>
       </div>
 
-      <div className="investments-market-news-tabs" role="tablist" aria-label="快讯分类">
+      <div
+        className="investments-market-news-tabs"
+        role="tablist"
+        aria-label={tf('investments.news.tabsAria', '快讯分类')}
+      >
         {EASTMONEY_MARKET_NEWS_CATEGORIES.map((item) => (
           <button
             key={item.id}
@@ -3921,7 +3938,7 @@ function MarketNewsPanel({
             className={selectedCategoryId === item.id ? 'is-active' : ''}
             onClick={() => onSelectCategory(item.id)}
           >
-            {item.label}
+            {tf(NEWS_CATEGORY_KEYS[item.id] || '', item.label)}
           </button>
         ))}
       </div>
@@ -3932,8 +3949,8 @@ function MarketNewsPanel({
 
       {news.length === 0 && status !== 'loading' ? (
         <div className="investments-market-news-empty">
-          <strong>暂无快讯</strong>
-          <span>稍后刷新，或切换其他分类看看。</span>
+          <strong>{tf('investments.news.emptyTitle', '暂无快讯')}</strong>
+          <span>{tf('investments.news.emptyDesc', '稍后刷新，或切换其他分类看看。')}</span>
         </div>
       ) : (
         <div
@@ -3954,7 +3971,10 @@ function MarketNewsPanel({
               <strong>{item.title}</strong>
               {item.summary ? <p>{item.summary}</p> : null}
               {item.stocks.length ? (
-                <div className="investments-market-news-tags" aria-label="关联代码">
+                <div
+                  className="investments-market-news-tags"
+                  aria-label={tf('investments.news.tagsAria', '关联代码')}
+                >
                   {item.stocks.map((stock) => (
                     <em key={stock}>{stock}</em>
                   ))}
@@ -3965,7 +3985,10 @@ function MarketNewsPanel({
         </div>
       )}
       <p className="investments-market-source-note">
-        数据源：东方财富 7×24 快讯 · 服务端同源代理，避免部署环境浏览器跨域拦截
+        {tf(
+          'investments.news.sourceNote',
+          '数据源：东方财富 7×24 快讯 · 服务端同源代理，避免部署环境浏览器跨域拦截'
+        )}
       </p>
     </section>
   );

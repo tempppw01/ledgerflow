@@ -2038,6 +2038,26 @@
       "renameAria": "修改 {name} 的显示名称",
       "indexPrefix": "指数",
       "sectorCount": "{count} 个"
+    },
+    "news": {
+      "title": "快讯",
+      "aiAria": "让 AI 解读最新快讯",
+      "aiAction": "AI 解读",
+      "tabsAria": "快讯分类",
+      "emptyTitle": "暂无快讯",
+      "emptyDesc": "稍后刷新,或切换其他分类看看。",
+      "tagsAria": "关联代码",
+      "refreshing": "刷新中",
+      "sourceNote": "数据源:东方财富 7×24 快讯 · 服务端同源代理,避免部署环境浏览器跨域拦截",
+      "catAllDay": "7×24",
+      "catFocus": "焦点",
+      "catListedCompany": "上市公司",
+      "catChinaMarket": "中国股市",
+      "catGlobalMarket": "全球股市",
+      "catCommodity": "商品",
+      "catForex": "外汇",
+      "catBond": "债券",
+      "catFund": "基金"
     }
   }
 }
