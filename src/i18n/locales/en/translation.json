@@ -1821,6 +1821,44 @@
       "todayEstimateShort": "Today’s estimate",
       "count": "{count}",
       "askAiNamed": "Ask AI about {name}"
+    },
+    "briefing": {
+      "aria": "Today’s market briefing",
+      "title": "Today’s market, in plain words",
+      "subtitle": "Moves, sectors and news boiled down to a few lines — enough to act on.",
+      "aiAria": "Ask AI to review today’s market",
+      "aiAction": "AI review",
+      "noPriceSignal": "No price signal yet — watch news momentum instead of chasing strength.",
+      "card": {
+        "sector": "Sector",
+        "sectorLoading": "Sector data is still loading.",
+        "avoid": "Avoid",
+        "noWeakSector": "No clearly weak sector right now.",
+        "policy": "Policy",
+        "news": "News",
+        "newsFallback": "A new story is shaping market attention.",
+        "newsLoading": "News is syncing — refresh in a moment.",
+        "sectorStrong": " — relatively strong today.",
+        "sectorWeak": " — weak today, do not rush in."
+      },
+      "regenerate": "Regenerate",
+      "scoreLabel": "score",
+      "riskLabel": "risk",
+      "status": {
+        "live": "Prices, news and sectors combined · updates every 15 min · score",
+        "localOnly": "Local signals only · configure AI for 15-minute updates · score",
+        "needModel": "Local signals ready · pick an AI model to generate briefings · score",
+        "aiUnavailable": "Local signals ready, AI unavailable · score",
+        "collecting": "Collecting prices and news · score"
+      },
+      "line": {
+        "loading": "Quotes are still loading — no conclusions yet.",
+        "strong": "The index is strong today; enjoy it without chasing the heat.",
+        "warming": "The market is warming up; nothing to force today.",
+        "dumped": "The index took another hit — steadying yourself beats rushing to add.",
+        "weakening": "Sentiment is fading; today is for watching, not impulsive moves.",
+        "hesitant": "The index is undecided; watch your own holdings instead of every tick."
+      }
     }
   }
 }

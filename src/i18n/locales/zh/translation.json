@@ -1821,6 +1821,44 @@
       "todayEstimateShort": "今日估算",
       "count": "{count} 笔",
       "askAiNamed": "让 AI 分析 {name}"
+    },
+    "briefing": {
+      "aria": "今日行情播报",
+      "title": "今天的市场,说人话",
+      "subtitle": "把涨跌、板块和新闻拎成几句,够用就好。",
+      "aiAria": "让 AI 复盘今日市场",
+      "aiAction": "AI 复盘",
+      "noPriceSignal": "价格信号暂缺,先结合新闻热度观察,不做追涨判断。",
+      "card": {
+        "sector": "板块",
+        "sectorLoading": "板块数据还在加载。",
+        "avoid": "回避",
+        "noWeakSector": "暂时没有明显的弱势板块。",
+        "policy": "政策",
+        "news": "资讯",
+        "newsFallback": "有一条新资讯正在影响市场关注。",
+        "newsLoading": "资讯正在同步,稍后刷新看看。",
+        "sectorStrong": ",今天相对有劲。",
+        "sectorWeak": ",今天偏弱,别急着接。"
+      },
+      "regenerate": "重新生成",
+      "scoreLabel": "综合",
+      "riskLabel": "风险",
+      "status": {
+        "live": "结合行情、新闻和板块 · 每 15 分钟更新 · 综合",
+        "localOnly": "先用本地信号 · 配置 AI 后每 15 分钟更新 · 综合",
+        "needModel": "本地信号可用 · 请先选择 AI 模型再生成简报 · 综合",
+        "aiUnavailable": "本地信号可用,AI 暂不可用 · 综合",
+        "collecting": "正在整理行情和新闻 · 综合"
+      },
+      "line": {
+        "loading": "行情还在加载,先别急着下结论。",
+        "strong": "大盘今天挺有劲,热闹归热闹,别一上头就追。",
+        "warming": "大盘慢慢回暖,今天不是硬扛的一天。",
+        "dumped": "大盘又被砸了,先把节奏稳住比急着补仓更重要。",
+        "weakening": "市场有点泄气,今天更适合看,不适合冲动操作。",
+        "hesitant": "大盘还在犹豫,今天先看自己持仓,不用被每一根波动带着走。"
+      }
     }
   }
 }

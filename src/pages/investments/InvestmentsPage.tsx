@@ -531,13 +531,21 @@ function getMovementEmoji(value?: number | null) {
   return '😐';
 }
 
-function getPlainMarketLine(change?: number | null) {
-  if (typeof change !== 'number') return '行情还在加载，先别急着下结论。';
-  if (change >= 1) return '大盘今天挺有劲，热闹归热闹，别一上头就追。';
-  if (change >= 0.25) return '大盘慢慢回暖，今天不是硬扛的一天。';
-  if (change <= -1) return '大盘又被砸了，先把节奏稳住比急着补仓更重要。';
-  if (change <= -0.25) return '市场有点泄气，今天更适合看，不适合冲动操作。';
-  return '大盘还在犹豫，今天先看自己持仓，不用被每一根波动带着走。';
+function getPlainMarketLine(change: number | null | undefined, tf: TfFallback) {
+  if (typeof change !== 'number')
+    return tf('investments.briefing.line.loading', '行情还在加载,先别急着下结论。');
+  if (change >= 1)
+    return tf('investments.briefing.line.strong', '大盘今天挺有劲,热闹归热闹,别一上头就追。');
+  if (change >= 0.25)
+    return tf('investments.briefing.line.warming', '大盘慢慢回暖,今天不是硬扛的一天。');
+  if (change <= -1)
+    return tf('investments.briefing.line.dumped', '大盘又被砸了,先把节奏稳住比急着补仓更重要。');
+  if (change <= -0.25)
+    return tf('investments.briefing.line.weakening', '市场有点泄气,今天更适合看,不适合冲动操作。');
+  return tf(
+    'investments.briefing.line.hesitant',
+    '大盘还在犹豫,今天先看自己持仓,不用被每一根波动带着走。'
+  );
 }
 
 function getBoardHealth(change?: number | null) {
@@ -963,6 +971,7 @@ function PlainMarketBriefingPanel({
   onRetryInsight?: () => void;
   onAskAi?: (prompt: string) => void;
 }) {
+  const tf = useTFallback();
   const strongestTheme = [...themeBoards].sort(
     (a, b) =>
       (b.changePercent || Number.NEGATIVE_INFINITY) - (a.changePercent || Number.NEGATIVE_INFINITY)
@@ -975,11 +984,14 @@ function PlainMarketBriefingPanel({
   const topNews = policyNews || news[0];
 
   return (
-    <section className="panel investments-plain-briefing-panel" aria-label="今日行情播报">
+    <section
+      className="panel investments-plain-briefing-panel"
+      aria-label={tf('investments.briefing.aria', '今日行情播报')}
+    >
       <div className="investments-today-panel-head">
         <div>
-          <h2>今天的市场，说人话</h2>
-          <p>把涨跌、板块和新闻拎成几句，够用就好。</p>
+          <h2>{tf('investments.briefing.title', '今天的市场，说人话')}</h2>
+          <p>{tf('investments.briefing.subtitle', '把涨跌、板块和新闻拎成几句，够用就好。')}</p>
         </div>
         <div className="investments-panel-head-actions">
           <button
@@ -998,10 +1010,10 @@ function PlainMarketBriefingPanel({
                 })
               )
             }
-            aria-label="让 AI 复盘今日市场"
+            aria-label={tf('investments.briefing.aiAria', '让 AI 复盘今日市场')}
           >
             <ChatSparklesIcon className="chat-svg-icon" />
-            AI 复盘
+            {tf('investments.briefing.aiAction', 'AI 复盘')}
           </button>
           <span aria-hidden="true">🗣️</span>
         </div>
@@ -1009,8 +1021,11 @@ function PlainMarketBriefingPanel({
       <strong className="investments-plain-briefing-lead">
         {insight?.headline ||
           (marketChange === null && news.length
-            ? '价格信号暂缺，先结合新闻热度观察，不做追涨判断。'
-            : getPlainMarketLine(marketChange))}
+            ? tf(
+                'investments.briefing.noPriceSignal',
+                '价格信号暂缺，先结合新闻热度观察，不做追涨判断。'
+              )
+            : getPlainMarketLine(marketChange, tf))}
       </strong>
       {insight?.summary ? <p className="investments-market-ai-summary">{insight.summary}</p> : null}
       <div className="investments-plain-briefing-points">
@@ -1023,23 +1038,26 @@ function PlainMarketBriefingPanel({
             ))
           : [
               {
-                label: '板块',
+                label: tf('investments.briefing.card.sector', '板块'),
                 text: strongestTheme
-                  ? `${strongestTheme.name} ${formatMarketPercent(strongestTheme.changePercent)}，今天相对有劲。`
-                  : '板块数据还在加载。'
+                  ? `${strongestTheme.name} ${formatMarketPercent(strongestTheme.changePercent)}${tf('investments.briefing.card.sectorStrong', '，今天相对有劲。')}`
+                  : tf('investments.briefing.card.sectorLoading', '板块数据还在加载。')
               },
               {
-                label: '回避',
+                label: tf('investments.briefing.card.avoid', '回避'),
                 text:
                   weakestTheme && weakestTheme.code !== strongestTheme?.code
-                    ? `${weakestTheme.name} ${formatMarketPercent(weakestTheme.changePercent)}，今天偏弱，别急着接。`
-                    : '暂时没有明显的弱势板块。'
+                    ? `${weakestTheme.name} ${formatMarketPercent(weakestTheme.changePercent)}${tf('investments.briefing.card.sectorWeak', '，今天偏弱，别急着接。')}`
+                    : tf('investments.briefing.card.noWeakSector', '暂时没有明显的弱势板块。')
               },
               {
-                label: policyNews ? '政策' : '资讯',
+                label: policyNews
+                  ? tf('investments.briefing.card.policy', '政策')
+                  : tf('investments.briefing.card.news', '资讯'),
                 text: topNews
-                  ? topNews.summary || '有一条新资讯正在影响市场关注。'
-                  : '资讯正在同步，稍后刷新看看。'
+                  ? topNews.summary ||
+                    tf('investments.briefing.card.newsFallback', '有一条新资讯正在影响市场关注。')
+                  : tf('investments.briefing.card.newsLoading', '资讯正在同步，稍后刷新看看。')
               }
             ].map((point) => (
               <p key={point.label}>
@@ -1051,14 +1069,14 @@ function PlainMarketBriefingPanel({
       <div className="investments-market-insight-footer">
         <small className="investments-market-insight-meta">
           {insightStatus === 'ready' && insight
-            ? `结合行情、新闻和板块 · 每 15 分钟更新 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
+            ? `${tf('investments.briefing.status.live', '结合行情、新闻和板块 · 每 15 分钟更新 · 综合')} ${algorithmSignals.score} · ${tf('investments.briefing.riskLabel', '风险')} ${algorithmSignals.riskScore}`
             : insightStatus === 'disabled'
-              ? `先用本地信号 · 配置 AI 后每 15 分钟更新 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
+              ? `${tf('investments.briefing.status.localOnly', '先用本地信号 · 配置 AI 后每 15 分钟更新 · 综合')} ${algorithmSignals.score} · ${tf('investments.briefing.riskLabel', '风险')} ${algorithmSignals.riskScore}`
               : insightStatus === 'model-missing'
-                ? `本地信号可用 · 请先选择 AI 模型再生成简报 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
+                ? `${tf('investments.briefing.status.needModel', '本地信号可用 · 请先选择 AI 模型再生成简报 · 综合')} ${algorithmSignals.score} · ${tf('investments.briefing.riskLabel', '风险')} ${algorithmSignals.riskScore}`
                 : insightStatus === 'error'
                   ? `本地信号可用，AI 暂不可用 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
-                  : `正在整理行情和新闻 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`}
+                  : `${tf('investments.briefing.status.collecting', '正在整理行情和新闻 · 综合')} ${algorithmSignals.score} · ${tf('investments.briefing.riskLabel', '风险')} ${algorithmSignals.riskScore}`}
         </small>
         {insightStatus === 'error' && onRetryInsight ? (
           <button
@@ -1066,7 +1084,7 @@ function PlainMarketBriefingPanel({
             className="investments-market-insight-retry"
             onClick={onRetryInsight}
           >
-            重新生成
+            {tf('investments.briefing.regenerate', '重新生成')}
           </button>
         ) : null}
       </div>
