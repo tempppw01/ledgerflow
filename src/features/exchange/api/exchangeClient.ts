@@ -1,3 +1,4 @@
+import i18n from '../../../i18n';
 import { ENV } from '../../../shared/config/env';
 import type { ExchangeApiResponse } from '../model/types';
 
@@ -18,7 +19,12 @@ export async function fetchLatestRates(base: string): Promise<ExchangeApiRespons
     const response = await fetch(url, { signal: controller.signal });
 
     if (!response.ok) {
-      throw new Error(`汇率 API 请求失败: ${response.status} ${response.statusText}`);
+      // 这里没法用 hook,直接走 i18n 单例。key 缺失时 defaultValue 兜底成中文,
+      // 所以单测等未合并 locale 的环境行为不变。
+      const prefix = i18n.t('exchange.error.apiRequest', {
+        defaultValue: '汇率 API 请求失败'
+      });
+      throw new Error(`${prefix}: ${response.status} ${response.statusText}`);
     }
 
     const data: ExchangeApiResponse = await response.json();

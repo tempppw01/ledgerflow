@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/tempppw01/ledgerflow/releases"><img src="https://img.shields.io/github/v/release/tempppw01/ledgerflow?display_name=tag&style=flat-square&color=f59e0b" alt="Release" /></a>
-  <img src="https://img.shields.io/badge/version-0.8.4-0f766e?style=flat-square" alt="Version 0.8.4" />
+  <img src="https://img.shields.io/badge/version-0.8.5-0f766e?style=flat-square" alt="Version 0.8.5" />
   <img src="https://img.shields.io/badge/Node.js-20%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js 20+" />
   <img src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker ready" />
   <a href="https://ledgerflow.shuaihong.fun"><img src="https://img.shields.io/badge/Live%20demo-open-f59e0b?style=flat-square" alt="Live demo" /></a>
@@ -16,7 +16,7 @@
 <p align="center"><a href="#快速部署">快速部署</a> · <a href="#主要能力">主要能力</a> · <a href="#备份与同步">数据与备份</a> · <a href="https://github.com/tempppw01/ledgerflow/releases">版本发布</a></p>
 
 > [!NOTE]
-> 当前版本：`0.8.4`。项目仍在快速迭代，重要数据请保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
+> 当前版本：`0.8.5`。项目仍在快速迭代，重要数据请保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
 
 > 说明：项目仍处于快速迭代阶段，功能、界面和数据结构会持续调整。重要数据请务必保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
 
@@ -57,6 +57,15 @@
 </table>
 
 </details>
+
+### 0.8.5 功能亮点
+
+- 新建 / 编辑负债表单支持英文:全部 42 处文案,含主按钮(保存修改、取消编辑、继续添加负债、完成并关闭)、「还差:{缺少字段}」提示、结构化字段(剩余期数/总期数/借款金额等)与手动还款计划编辑器。
+- 「确认登记本期还款」与「删除负债记录」两个确认弹窗支持英文。
+- 表单里的短日期不再固定中文习惯,改用 `Intl.DateTimeFormat` 由语言决定月日顺序。
+- 汇率请求失败时的错误详情也跟随界面语言(此前英文界面会看到「汇率 API 请求失败: 500」)。
+
+至此中英文两套界面都已覆盖到全部主要页面;中英文 locale 各 2606 个 key,集合完全一致。
 
 ### 0.8.4 功能亮点
 

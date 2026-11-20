@@ -2478,7 +2478,49 @@
       "typeAria": "Debt type",
       "typeConsumer": "Consumer / instalment loan",
       "typeCredit": "Credit debt",
-      "uploadRecognize": "Upload a statement to recognize automatically"
+      "uploadRecognize": "Upload a statement to recognize automatically",
+      "statusAria": "Debt status",
+      "aprPlaceholder": "Leave blank, e.g. 18.25",
+      "aprOptional": "Leave blank",
+      "remainingMonths": "Remaining periods",
+      "monthsUnit": "months",
+      "totalPeriodsLabel": "Total periods",
+      "periodsUnit": "periods",
+      "paidPeriods": "Periods paid",
+      "loanAmount": "Loan amount",
+      "totalRepaymentLabel": "Total repayment",
+      "manualScheduleTitle": "Manual repayment plan",
+      "manualScheduleHint": "Fill in from the next due payment (period {count}); dates follow your repayment day by default.",
+      "addPeriod": "+ Add period",
+      "manualSummaryPeriods": "{count} periods",
+      "manualSummaryRemaining": "Remaining",
+      "periodLabelField": "Period label",
+      "dateLabel": "Date",
+      "rowAmountAria": "Repayment amount",
+      "reusePrevAmount": "Use previous amount",
+      "sameAmount": "Same",
+      "removePeriodAria": "Remove this period",
+      "manualEmpty": "No manual plan yet. If the total repayment is unclear, fill in period by period starting from the next one.",
+      "missingFields": "Missing: {fields}",
+      "missingFieldsSeparator": ", ",
+      "saved": "✔ Updated",
+      "addedSuccess": "✔ Added",
+      "saveChanges": "Save changes",
+      "addDebt": "+ Add debt",
+      "cancelEdit": "Cancel editing",
+      "continueAdding": "Add another debt",
+      "doneAndClose": "Done and close",
+      "simpleIntro": "Note the item, date and this period's amount first; upgrade to full debt tracking when needed.",
+      "simpleDraftHint": "Your input is saved automatically; continue anytime",
+      "simpleDraftSaving": "Your input is saved automatically",
+      "simpleDraftRestored": "Restored your unfinished draft",
+      "simpleProject": "Repayment item",
+      "simpleProjectPlaceholder": "e.g. September credit card bill",
+      "simpleDateAria": "Repayment date",
+      "simpleAmount": "Amount due this period",
+      "simpleAmountPlaceholder": "Optional",
+      "addReminder": "Add repayment reminder",
+      "debtAddedToast": "Debt added"
     },
     "repayment": {
       "record": {
@@ -2611,6 +2653,24 @@
       "moreDetails": "More details",
       "moreDetailsHint": "Interest, accounts, periods and more",
       "trendAriaSuffix": "repayment trend"
+    },
+    "quickConfirm": {
+      "title": "Confirm this period's payment",
+      "description": "Record this period's payment for {name}.",
+      "thisDebt": "this debt",
+      "planned": "Planned this period",
+      "registered": "Amount recorded",
+      "totalLabel": "Applied after recording",
+      "afterHint": "The remaining principal and repayment periods update together.",
+      "confirmWithAmount": "Record {amount}",
+      "confirm": "Record",
+      "cancel": "Not now"
+    },
+    "deleteDebt": {
+      "title": "Delete debt record",
+      "description": "Delete \"{name}\"? This cannot be undone.",
+      "confirm": "Delete",
+      "cancel": "Cancel"
     }
   },
   "categoriesAccounts": {
@@ -3083,6 +3143,10 @@
       "RON": "Romanian Leu",
       "BGN": "Bulgarian Lev",
       "ISK": "Icelandic Krona"
+    },
+    "error": {
+      "apiRequest": "Exchange rate request failed",
+      "loadFailed": "Failed to load exchange rates"
     }
   },
   "salaryTools": {

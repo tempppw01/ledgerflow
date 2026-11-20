@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import i18n from '../../../i18n';
 import { fetchLatestRates } from '../api/exchangeClient';
 import { readCache, writeCache } from '../model/cache';
 import type { ExchangeRate } from '../model/types';
@@ -88,7 +89,11 @@ export function useExchangeRates(initialBase = 'CNY'): UseExchangeRatesReturn {
           setDate(stale.date);
           setFromCache(true);
         } else {
-          setError(err instanceof Error ? err.message : '获取汇率失败');
+          setError(
+            err instanceof Error
+              ? err.message
+              : i18n.t('exchange.error.loadFailed', { defaultValue: '获取汇率失败' })
+          );
         }
       } finally {
         if (mountedRef.current) setLoading(false);
