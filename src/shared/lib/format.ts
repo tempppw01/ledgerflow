@@ -18,6 +18,11 @@ type CompactLocale = 'zh' | 'en';
 
 let compactLocale: CompactLocale = 'zh';
 
+/** Intl 的 locale 标识,供日期与纯数字格式化复用。 */
+function activeIntlLocale() {
+  return compactLocale === 'en' ? 'en-US' : 'zh-CN';
+}
+
 const EN_UNITS = [
   { threshold: 1e12, divisor: 1e12, label: 'T' },
   { threshold: 1e9, divisor: 1e9, label: 'B' },
@@ -106,7 +111,23 @@ export function formatMoneyByCurrency(value: number, currency = 'CNY') {
 
 /** 格式化日期（仅日期） */
 export function formatDate(value: string) {
-  return new Intl.DateTimeFormat('zh-CN').format(new Date(value));
+  const date = new Date(value);
+  // 传进来的可能已经是坏值或空串:返回原值好过抛出,也避免渲染出 "Invalid Date"。
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(activeIntlLocale()).format(date);
+}
+
+/**
+ * 纯数字格式化(千分位 + 两位小数,不带货币符号)。
+ * 用于「大号数字 + 小号单位」的统计卡布局:金额和单位是两个 span,没法直接用 formatCurrency。
+ * 这些卡片原先用 toFixed(2),渲染出 54860.40 这种没有千分位的数字,和同页其它金额不一致。
+ */
+export function formatNumberFixed2(value: number) {
+  const normalized = normalizeCurrencyInput(value, 2);
+  return new Intl.NumberFormat(activeIntlLocale(), {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(normalized);
 }
 
 /** 格式化日期+时间（24小时制） */

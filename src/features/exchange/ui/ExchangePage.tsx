@@ -6,8 +6,14 @@ import {
   type MouseEvent as ReactMouseEvent
 } from 'react';
 import { GLOBE_ICON_URL } from '../../../shared/config/brandAssets';
+import { useTFallback } from '../../../shared/lib/useTFallback';
 import { useExchangeRates } from '../hooks/useExchangeRates';
-import { getCurrencyFlag, getCurrencyName, CURRENCY_NAMES } from '../model/types';
+import {
+  getCurrencyFlag,
+  getCurrencyName,
+  getCurrencyNameKey,
+  CURRENCY_NAMES
+} from '../model/types';
 import { ExchangeConverter } from './ExchangeConverter';
 import { ExchangeRateTable } from './ExchangeRateTable';
 
@@ -18,6 +24,7 @@ const MIN_RIGHT_WIDTH = 420;
 const DEFAULT_LEFT_WIDTH = 420;
 
 export function ExchangePage() {
+  const tf = useTFallback();
   const { rates, base, date, loading, error, fromCache, setBase, refresh } =
     useExchangeRates('CNY');
   const layoutRef = useRef<HTMLDivElement | null>(null);
@@ -81,29 +88,33 @@ export function ExchangePage() {
         <div className="exchange-header exchange-card-header">
           <h2 className="exchange-title" style={{ margin: 0 }}>
             <img className="exchange-title-icon" src={GLOBE_ICON_URL} alt="" aria-hidden="true" />
-            汇率换算器
+            {tf('exchange.title', '汇率换算器')}
           </h2>
           <div className="exchange-base-picker">
-            <label htmlFor="exchange-base-code">基准货币：</label>
+            <label htmlFor="exchange-base-code">
+              {tf('exchange.baseCurrency', '基准货币\uFF1A')}
+            </label>
             <select
               id="exchange-base-code"
-              aria-label="基准货币"
+              aria-label={tf('exchange.baseCurrencyAria', '基准货币')}
               value={base}
               onChange={(e) => setBase(e.target.value)}
             >
-              <optgroup label="常用">
+              <optgroup label={tf('exchange.currencyGroup.common', '常用')}>
                 {BASE_OPTIONS.map((code) => (
                   <option key={code} value={code}>
-                    {getCurrencyFlag(code)} {code} - {getCurrencyName(code)}
+                    {getCurrencyFlag(code)} {code} -{' '}
+                    {tf(getCurrencyNameKey(code), getCurrencyName(code))}
                   </option>
                 ))}
               </optgroup>
-              <optgroup label="全部">
+              <optgroup label={tf('exchange.currencyGroup.all', '全部')}>
                 {allCodes
                   .filter((code) => !BASE_OPTIONS.includes(code))
                   .map((code) => (
                     <option key={code} value={code}>
-                      {getCurrencyFlag(code)} {code} - {getCurrencyName(code)}
+                      {getCurrencyFlag(code)} {code} -{' '}
+                      {tf(getCurrencyNameKey(code), getCurrencyName(code))}
                     </option>
                   ))}
               </optgroup>
@@ -117,7 +128,7 @@ export function ExchangePage() {
       <div
         className="exchange-resize-divider"
         role="separator"
-        aria-label="调整汇率换算器与汇率数据宽度"
+        aria-label={tf('exchange.resizeAria', '调整汇率换算器与汇率数据宽度')}
         aria-orientation="vertical"
         onMouseDown={handleDividerMouseDown}
       />
@@ -126,7 +137,7 @@ export function ExchangePage() {
         <div className="exchange-data-header exchange-card-header">
           <h2 className="exchange-title" style={{ margin: 0 }}>
             <img className="exchange-title-icon" src={GLOBE_ICON_URL} alt="" aria-hidden="true" />
-            汇率数据
+            {tf('exchange.dataTitle', '汇率数据')}
           </h2>
         </div>
         <ExchangeRateTable

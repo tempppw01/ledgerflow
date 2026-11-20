@@ -40,7 +40,25 @@
     "switchToLogin": "已有账号？去登录",
     "createFirstAccount": "创建第一个账号",
     "registrationClosed": "当前实例未开放自助注册，请使用已有账号登录。",
-    "retry": "重新检查账号服务"
+    "retry": "重新检查账号服务",
+    "forgotButton": "忘记密码?",
+    "forgotTitle": "找回密码",
+    "forgotDescription": "输入注册邮箱,我们会发送一个 30 分钟内有效的一次性重置链接。",
+    "sendResetEmail": "发送重置邮件",
+    "backToLogin": "返回登录",
+    "resetTitle": "设置新密码",
+    "resetDescription": "重置链接只能使用一次。设置成功后,所有已登录设备都需要重新登录。",
+    "newPassword": "新密码",
+    "saveNewPassword": "保存新密码",
+    "passwordConfirmation": "确认新密码",
+    "passwordConfirmationPlaceholder": "再次输入新密码",
+    "showPassword": "显示密码",
+    "hidePassword": "隐藏密码",
+    "showPasswordConfirmation": "显示确认密码",
+    "hidePasswordConfirmation": "隐藏确认密码",
+    "passwordMismatch": "两次输入的新密码不一致。",
+    "resetEmailSent": "如果该邮箱已注册,密码重置邮件将在几分钟内送达。",
+    "resetSucceeded": "密码已重置,请使用新密码登录。"
   },
   "databaseSetup": {
     "initializationTitle": "初始化数据存储",
@@ -2490,7 +2508,8 @@
       "notePrefix": "备注:",
       "submit": "记录还款",
       "today": "今天",
-      "todayAria": "设为今天"
+      "todayAria": "设为今天",
+      "headingWithCount": "📜 还款记录"
     }
   },
   "categoriesAccounts": {
@@ -2876,6 +2895,139 @@
     "month": {
       "short": "{month}月",
       "yearMonth": "{year} 年 {month} 月"
+    }
+  },
+  "exchange": {
+    "title": "汇率换算器",
+    "baseCurrency": "基准货币：",
+    "baseCurrencyAria": "基准货币",
+    "currencyGroup": {
+      "common": "常用",
+      "all": "全部"
+    },
+    "dataTitle": "汇率数据",
+    "resizeAria": "调整汇率换算器与汇率数据宽度",
+    "converter": {
+      "title": "💱 货币换算",
+      "from": "从",
+      "fromAria": "从货币",
+      "to": "到",
+      "toAria": "到货币",
+      "swap": "交换货币",
+      "amount": "金额",
+      "screenHint": "可用下方计算器键盘输入",
+      "keypadAria": "计算器键盘",
+      "resultAria": "换算结果",
+      "invalidExpression": "表达式无效，无法计算",
+      "screenSeparator": ","
+    },
+    "table": {
+      "trendUp": "上涨",
+      "trendDown": "下跌",
+      "trendFlat": "持平",
+      "searchPlaceholder": "搜索货币代码或名称…",
+      "basePrefix": "基准:",
+      "fromCache": "缓存",
+      "synced": "已同步最新",
+      "collapseTitle": "仅显示常见货币（含收藏）",
+      "expandTitle": "展开显示全部货币",
+      "collapse": "收起非常见货币",
+      "expand": "展开全部货币",
+      "refreshTitle": "刷新汇率",
+      "loading": "加载中…",
+      "refresh": "刷新",
+      "errorPrefix": "错误:",
+      "retry": "重试",
+      "columnCode": "货币",
+      "columnName": "货币名称",
+      "columnRate": "汇率",
+      "emptySearch": "没有匹配的货币,换个代码或名称试试",
+      "emptyAll": "无匹配货币",
+      "emptyCommon": "当前仅展示常见货币（含收藏），可点击“展开全部货币”查看全部",
+      "favoriteAdd": "收藏",
+      "favoriteRemove": "取消收藏",
+      "prevPage": "上一页",
+      "nextPage": "下一页"
+    },
+    "currency": {
+      "USD": "美元",
+      "EUR": "欧元",
+      "GBP": "英镑",
+      "JPY": "日元",
+      "CNY": "人民币",
+      "HKD": "港币",
+      "TWD": "新台币",
+      "KRW": "韩元",
+      "SGD": "新加坡元",
+      "AUD": "澳元",
+      "CAD": "加元",
+      "CHF": "瑞士法郎",
+      "NZD": "新西兰元",
+      "THB": "泰铢",
+      "INR": "印度卢比",
+      "MYR": "马来西亚林吉特",
+      "PHP": "菲律宾比索",
+      "IDR": "印尼盾",
+      "SEK": "瑞典克朗",
+      "NOK": "挪威克朗",
+      "DKK": "丹麦克朗",
+      "PLN": "波兰兹罗提",
+      "CZK": "捷克克朗",
+      "HUF": "匈牙利福林",
+      "TRY": "土耳其里拉",
+      "ZAR": "南非兰特",
+      "BRL": "巴西雷亚尔",
+      "MXN": "墨西哥比索",
+      "ILS": "以色列新谢克尔",
+      "RON": "罗马尼亚列伊",
+      "BGN": "保加利亚列弗",
+      "ISK": "冰岛克朗"
+    }
+  },
+  "salaryTools": {
+    "title": "工资估算",
+    "headline": "把每一小时的价值算清楚",
+    "subtitle": "输入你的月薪，快速得到日薪、时薪与加班参考。数字会随输入即时更新，适合作为谈薪和排班时的轻量参考。",
+    "inputs": {
+      "kicker": "输入参数",
+      "heading": "先从你的工作日常开始",
+      "monthlySalary": "月薪",
+      "monthlySalaryPlaceholder": "例如 12000",
+      "workingDays": "计薪天数",
+      "workingDaysPlaceholder": "例如 21.75",
+      "dailyHours": "每日工时",
+      "dailyHoursPlaceholder": "例如 8",
+      "overtimeHours": "加班时长",
+      "overtimeHoursPlaceholder": "例如 2"
+    },
+    "unit": {
+      "money": "元",
+      "day": "天",
+      "hour": "小时"
+    },
+    "result": {
+      "daily": "日薪参考",
+      "dailyNote": "按月薪 ÷ 计薪天数估算",
+      "hourly": "时薪参考",
+      "hourlyNote": "按日薪 ÷ 每日工时估算",
+      "weekly": "周薪参考（按 5 天）",
+      "weeklyNote": "默认按 5 个工作日折算"
+    },
+    "overtime": {
+      "title": "加班工资估算",
+      "hint": "按当前时薪估算工作日 1.5 倍、休息日 2 倍、法定节假日 3 倍。",
+      "basePrefix": "当前时薪基准：",
+      "baseSuffix": "，加班费按这个时薪做倍数估算。",
+      "workday": "工作日加班费（1.5x）",
+      "workdayNote": "适用于工作日延时加班估算",
+      "restDay": "休息日加班费（2x）",
+      "restDayNote": "适用于休息日加班估算",
+      "holiday": "法定节假日加班费（3x）",
+      "holidayNote": "适用于法定节假日加班估算"
+    },
+    "disclaimer": {
+      "line1": "说明 1：结果仅供税前估算参考，默认不含社保、个税、公积金、补贴、提成与特殊排班。",
+      "line2": "说明 2：周薪默认按 5 个工作日折算；加班费按当前时薪做倍数估算，不代表公司最终核算口径。"
     }
   }
 }

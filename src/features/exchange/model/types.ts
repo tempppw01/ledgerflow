@@ -109,3 +109,12 @@ export function getCurrencyFlag(code: string): string {
 export function getCurrencyName(code: string): string {
   return CURRENCY_NAMES[code] || code;
 }
+
+/**
+ * 货币名称的 i18n key。
+ * 币种代码来自汇率接口,不参与翻译;名称用 exchange.currency.<CODE> 取译文,
+ * 取不到时以 CURRENCY_NAMES 里的中文名兜底(单测环境同样走中文)。
+ */
+export function getCurrencyNameKey(code: string): string {
+  return `exchange.currency.${code}`;
+}

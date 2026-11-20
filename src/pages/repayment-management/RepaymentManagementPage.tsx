@@ -27,7 +27,7 @@ import {
   QIFUJIETIAO_ICON_URL,
   WEBANK_ICON_URL
 } from '../../shared/config/brandAssets';
-import { formatCurrency } from '../../shared/lib/format';
+import { formatCurrency, formatDate, formatNumberFixed2 } from '../../shared/lib/format';
 import { AmountBreakdown } from '../../shared/ui/AmountBreakdown';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { Toast } from '../../shared/ui/Toast';
@@ -2740,7 +2740,9 @@ export function RepaymentManagementPage() {
                 {tf('repayment.card.totalDebt', '💰 总负债')}
               </p>
               <p className="finance-overview-value">
-                <span className="finance-overview-number">{overviewTotalDebt.toFixed(2)}</span>
+                <span className="finance-overview-number">
+                  {formatNumberFixed2(overviewTotalDebt)}
+                </span>
                 <span className="finance-overview-unit">¥</span>
               </p>
               <p className="muted" style={{ margin: 0, fontSize: 12 }}>
@@ -2753,7 +2755,7 @@ export function RepaymentManagementPage() {
               </p>
               <p className="finance-overview-value">
                 <span className="finance-overview-number">
-                  {debtSummary.totalMinimumPayment.toFixed(2)}
+                  {formatNumberFixed2(debtSummary.totalMinimumPayment)}
                 </span>
                 <span className="finance-overview-unit">¥</span>
               </p>
@@ -3506,7 +3508,8 @@ export function RepaymentManagementPage() {
                 {!selectedDebt.isSimpleReminder ? (
                   <div className="repayment-debt-detail-records">
                     <h4 style={{ margin: '0 0 8px 0' }}>
-                      📜 还款记录 ({selectedDebtRecords.length})
+                      {tf('repayment.record.headingWithCount', '📜 还款记录')} (
+                      {selectedDebtRecords.length})
                     </h4>
                     {selectedDebtRecords.length === 0 ? (
                       <p className="muted">
@@ -3517,9 +3520,9 @@ export function RepaymentManagementPage() {
                         {selectedDebtRecords.map((item) => (
                           <div key={item.id} className="finance-debt-item">
                             <div>
-                              <strong>¥{item.amount.toFixed(2)}</strong>
+                              <strong>{formatCurrency(item.amount)}</strong>
                               <p className="muted" style={{ margin: 0 }}>
-                                {item.paidAt} ·{' '}
+                                {formatDate(item.paidAt)} ·{' '}
                                 {tf(
                                   REPAYMENT_RECORD_MODE_KEYS[item.recordMode],
                                   REPAYMENT_RECORD_MODE_LABELS[item.recordMode]

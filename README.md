@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/tempppw01/ledgerflow/releases"><img src="https://img.shields.io/github/v/release/tempppw01/ledgerflow?display_name=tag&style=flat-square&color=f59e0b" alt="Release" /></a>
-  <img src="https://img.shields.io/badge/version-0.8.1-0f766e?style=flat-square" alt="Version 0.8.1" />
+  <img src="https://img.shields.io/badge/version-0.8.2-0f766e?style=flat-square" alt="Version 0.8.2" />
   <img src="https://img.shields.io/badge/Node.js-20%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js 20+" />
   <img src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker ready" />
   <a href="https://ledgerflow.shuaihong.fun"><img src="https://img.shields.io/badge/Live%20demo-open-f59e0b?style=flat-square" alt="Live demo" /></a>
@@ -16,7 +16,7 @@
 <p align="center"><a href="#快速部署">快速部署</a> · <a href="#主要能力">主要能力</a> · <a href="#备份与同步">数据与备份</a> · <a href="https://github.com/tempppw01/ledgerflow/releases">版本发布</a></p>
 
 > [!NOTE]
-> 当前版本：`0.8.1`。项目仍在快速迭代，重要数据请保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
+> 当前版本：`0.8.2`。项目仍在快速迭代，重要数据请保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
 
 > 说明：项目仍处于快速迭代阶段，功能、界面和数据结构会持续调整。重要数据请务必保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
 
@@ -57,6 +57,16 @@
 </table>
 
 </details>
+
+### 0.8.2 功能亮点
+
+- 登录、注册、忘记密码、重置密码四个界面支持英文。此前「登录 LedgerFlow」这一屏——用户看到的第一个界面——在中英文切换后仍然是纯中文。
+- 汇率换算页支持英文,包括 32 个币种名称(Chinese Yuan / US Dollar / Hong Kong Dollar…),接口返回的币种代码保持不变。
+- 工资工具页支持英文:输入项、结果、加班参考与单位文案跟随界面语言。
+- 修复还款记录直接渲染原始时间戳的问题:之前列表里显示 `2026-10-25T00:00:00.000Z`,现在按界面语言显示本地化日期。
+- 修复还款概览统计条金额没有千分位的问题(`54860.40` 与同屏的 `¥12,860.40` 不一致);新增 `formatNumberFixed2`,在保留「大号数字 + 小号单位」版式的同时补上千分位。
+- `formatDate` 跟随界面语言,不再固定使用 `zh-CN`;遇到无法解析的值返回原值,不再渲染出 `Invalid Date`。
+- 新增版本号守卫测试:界面上的版本(`src/shared/config/app.ts`)与 `package.json` 不一致时直接失败。v0.8.0 就是漏了前者,界面一直停在 v0.8.0。
 
 ### 0.8.1 功能亮点
 

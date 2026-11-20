@@ -7,7 +7,8 @@ import {
   STAR_OFF_ICON_URL
 } from '../../../shared/config/brandAssets';
 import type { ExchangeRate } from '../model/types';
-import { getCurrencyFlag, getCurrencyName } from '../model/types';
+import { getCurrencyFlag, getCurrencyName, getCurrencyNameKey } from '../model/types';
+import { useTFallback } from '../../../shared/lib/useTFallback';
 
 interface ExchangeRateTableProps {
   rates: ExchangeRate[];
@@ -51,6 +52,12 @@ const TREND_ICON: Record<NonNullable<ExchangeRate['trend']>, string> = {
   flat: '→'
 };
 
+const TREND_KEYS: Record<NonNullable<ExchangeRate['trend']>, string> = {
+  up: 'exchange.table.trendUp',
+  down: 'exchange.table.trendDown',
+  flat: 'exchange.table.trendFlat'
+};
+
 const TREND_LABEL: Record<NonNullable<ExchangeRate['trend']>, string> = {
   up: '上涨',
   down: '下跌',
@@ -66,6 +73,7 @@ export function ExchangeRateTable({
   error,
   onRefresh
 }: ExchangeRateTableProps) {
+  const tf = useTFallback();
   const [search, setSearch] = useState('');
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
@@ -106,12 +114,24 @@ export function ExchangeRateTable({
   const safePage = Math.min(page, totalPages);
   const pageRows = displayRows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
+  // 空态文案:依次对应 加载中 / 搜索无结果 / 展开后无结果 / 仅展示常见货币 四种情况
+  const emptyText = loading
+    ? tf('exchange.table.loading', '加载中…')
+    : keyword
+      ? tf('exchange.table.emptySearch', '没有匹配的货币,换个代码或名称试试')
+      : showAll
+        ? tf('exchange.table.emptyAll', '无匹配货币')
+        : tf(
+            'exchange.table.emptyCommon',
+            '当前仅展示常见货币\uFF08含收藏\uFF09\uFF0C可点击“展开全部货币”查看全部'
+          );
+
   return (
     <div>
       <div className="exchange-toolbar">
         <input
           className="exchange-search"
-          placeholder="搜索货币代码或名称…"
+          placeholder={tf('exchange.table.searchPlaceholder', '搜索货币代码或名称…')}
           value={search}
           onChange={(event) => {
             setSearch(event.target.value);
@@ -120,7 +140,8 @@ export function ExchangeRateTable({
         />
         <span className="exchange-meta">
           <span className="exchange-meta-item">
-            基准: {getCurrencyFlag(base)} {base} ({getCurrencyName(base)})
+            {tf('exchange.table.basePrefix', '基准:')} {getCurrencyFlag(base)} {base} (
+            {tf(getCurrencyNameKey(base), getCurrencyName(base))})
           </span>
           {date ? <span className="exchange-meta-item">{date}</span> : null}
           <span className="exchange-meta-item">
@@ -130,7 +151,9 @@ export function ExchangeRateTable({
               alt=""
               aria-hidden="true"
             />
-            {fromCache ? '缓存' : '已同步最新'}
+            {fromCache
+              ? tf('exchange.table.fromCache', '缓存')
+              : tf('exchange.table.synced', '已同步最新')}
           </span>
         </span>
         <button
@@ -139,16 +162,22 @@ export function ExchangeRateTable({
             setShowAll((prev) => !prev);
             setPage(1);
           }}
-          title={showAll ? '仅显示常见货币（含收藏）' : '展开显示全部货币'}
+          title={
+            showAll
+              ? tf('exchange.table.collapseTitle', '仅显示常见货币\uFF08含收藏\uFF09')
+              : tf('exchange.table.expandTitle', '展开显示全部货币')
+          }
         >
-          {showAll ? '收起非常见货币' : '展开全部货币'}
+          {showAll
+            ? tf('exchange.table.collapse', '收起非常见货币')
+            : tf('exchange.table.expand', '展开全部货币')}
         </button>
         <button
           type="button"
           className="exchange-toolbar-btn"
           onClick={onRefresh}
           disabled={loading}
-          title="刷新汇率"
+          title={tf('exchange.table.refreshTitle', '刷新汇率')}
         >
           <img
             className="exchange-inline-icon"
@@ -156,15 +185,15 @@ export function ExchangeRateTable({
             alt=""
             aria-hidden="true"
           />
-          {loading ? '加载中…' : '刷新'}
+          {loading ? tf('exchange.table.loading', '加载中…') : tf('exchange.table.refresh', '刷新')}
         </button>
       </div>
 
       {error ? (
         <div className="exchange-error">
-          错误: {error}
+          {tf('exchange.table.errorPrefix', '错误:')} {error}
           <button type="button" onClick={onRefresh} style={{ marginLeft: 8 }}>
-            重试
+            {tf('exchange.table.retry', '重试')}
           </button>
         </div>
       ) : null}
@@ -173,9 +202,11 @@ export function ExchangeRateTable({
         <thead>
           <tr>
             <th style={{ width: 40 }}>★</th>
-            <th>货币</th>
-            <th>货币名称</th>
-            <th style={{ textAlign: 'right' }}>汇率 (1 {base})</th>
+            <th>{tf('exchange.table.columnCode', '货币')}</th>
+            <th>{tf('exchange.table.columnName', '货币名称')}</th>
+            <th style={{ textAlign: 'right' }}>
+              {tf('exchange.table.columnRate', '汇率')} (1 {base})
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -185,13 +216,7 @@ export function ExchangeRateTable({
                 colSpan={4}
                 style={{ textAlign: 'center', padding: 24, color: 'var(--color-text-tertiary)' }}
               >
-                {loading
-                  ? '加载中…'
-                  : keyword
-                    ? '没有匹配的货币,换个代码或名称试试'
-                    : showAll
-                      ? '无匹配货币'
-                      : '当前仅展示常见货币（含收藏），可点击“展开全部货币”查看全部'}
+                {emptyText}
               </td>
             </tr>
           ) : (
@@ -205,7 +230,11 @@ export function ExchangeRateTable({
                     type="button"
                     className={`exchange-fav-btn${favorites.includes(rate.code) ? ' is-active' : ''}`}
                     onClick={() => toggleFavorite(rate.code)}
-                    title={favorites.includes(rate.code) ? '取消收藏' : '收藏'}
+                    title={
+                      favorites.includes(rate.code)
+                        ? tf('exchange.table.favoriteRemove', '取消收藏')
+                        : tf('exchange.table.favoriteAdd', '收藏')
+                    }
                   >
                     <img
                       className="exchange-inline-icon"
@@ -218,12 +247,12 @@ export function ExchangeRateTable({
                 <td className="mono-inline">
                   {getCurrencyFlag(rate.code)} {rate.code}
                 </td>
-                <td>{rate.name}</td>
+                <td>{tf(getCurrencyNameKey(rate.code), rate.name)}</td>
                 <td style={{ textAlign: 'right' }} className="mono-inline">
                   <span>{rate.rate.toFixed(rate.rate < 1 ? 6 : 4)}</span>
                   {rate.trend ? (
                     <span className={`exchange-rate-trend exchange-rate-trend-${rate.trend}`}>
-                      {TREND_ICON[rate.trend]} {TREND_LABEL[rate.trend]}
+                      {TREND_ICON[rate.trend]} {tf(TREND_KEYS[rate.trend], TREND_LABEL[rate.trend])}
                     </span>
                   ) : null}
                 </td>
@@ -236,7 +265,7 @@ export function ExchangeRateTable({
       {totalPages > 1 ? (
         <div className="exchange-pagination">
           <button type="button" disabled={safePage <= 1} onClick={() => setPage(safePage - 1)}>
-            上一页
+            {tf('exchange.table.prevPage', '上一页')}
           </button>
           <span>
             {safePage} / {totalPages}
@@ -246,7 +275,7 @@ export function ExchangeRateTable({
             disabled={safePage >= totalPages}
             onClick={() => setPage(safePage + 1)}
           >
-            下一页
+            {tf('exchange.table.nextPage', '下一页')}
           </button>
         </div>
       ) : null}

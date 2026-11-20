@@ -40,7 +40,25 @@
     "switchToLogin": "Already have an account? Sign in",
     "createFirstAccount": "Create the first account",
     "registrationClosed": "Self-service registration is not open on this instance. Sign in with an existing account.",
-    "retry": "Check account service again"
+    "retry": "Check account service again",
+    "forgotButton": "Forgot password?",
+    "forgotTitle": "Reset your password",
+    "forgotDescription": "Enter the email you registered with and we'll send a one-time reset link that stays valid for 30 minutes.",
+    "sendResetEmail": "Send reset email",
+    "backToLogin": "Back to sign in",
+    "resetTitle": "Set a new password",
+    "resetDescription": "The reset link only works once. Once your new password is set, every signed-in device has to sign in again.",
+    "newPassword": "New password",
+    "saveNewPassword": "Save new password",
+    "passwordConfirmation": "Confirm new password",
+    "passwordConfirmationPlaceholder": "Enter the new password again",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "showPasswordConfirmation": "Show confirmation password",
+    "hidePasswordConfirmation": "Hide confirmation password",
+    "passwordMismatch": "The two new passwords do not match.",
+    "resetEmailSent": "If that email is registered, a password reset email will arrive within a few minutes.",
+    "resetSucceeded": "Your password has been reset. Sign in with the new one."
   },
   "databaseSetup": {
     "initializationTitle": "Initialize data storage",
@@ -2490,7 +2508,8 @@
       "notePrefix": "Note:",
       "submit": "Record payment",
       "today": "Today",
-      "todayAria": "Set to today"
+      "todayAria": "Set to today",
+      "headingWithCount": "📜 Repayment records"
     }
   },
   "categoriesAccounts": {
@@ -2876,6 +2895,139 @@
     "month": {
       "short": "{month}",
       "yearMonth": "{month}/{year}"
+    }
+  },
+  "exchange": {
+    "title": "Currency converter",
+    "baseCurrency": "Base currency:",
+    "baseCurrencyAria": "Base currency",
+    "currencyGroup": {
+      "common": "Common",
+      "all": "All"
+    },
+    "dataTitle": "Exchange rates",
+    "resizeAria": "Resize the converter and exchange rate panels",
+    "converter": {
+      "title": "💱 Currency conversion",
+      "from": "From",
+      "fromAria": "From currency",
+      "to": "To",
+      "toAria": "To currency",
+      "swap": "Swap currencies",
+      "amount": "Amount",
+      "screenHint": "use the keypad below to enter a value",
+      "keypadAria": "Calculator keypad",
+      "resultAria": "Conversion result",
+      "invalidExpression": "Invalid expression, cannot calculate",
+      "screenSeparator": ", "
+    },
+    "table": {
+      "trendUp": "Up",
+      "trendDown": "Down",
+      "trendFlat": "Flat",
+      "searchPlaceholder": "Search currency code or name…",
+      "basePrefix": "Base:",
+      "fromCache": "Cached",
+      "synced": "Up to date",
+      "collapseTitle": "Show common currencies only (including favorites)",
+      "expandTitle": "Show all currencies",
+      "collapse": "Hide uncommon currencies",
+      "expand": "Show all currencies",
+      "refreshTitle": "Refresh rates",
+      "loading": "Loading…",
+      "refresh": "Refresh",
+      "errorPrefix": "Error:",
+      "retry": "Retry",
+      "columnCode": "Currency",
+      "columnName": "Currency name",
+      "columnRate": "Rate",
+      "emptySearch": "No matching currency. Try another code or name.",
+      "emptyAll": "No matching currency.",
+      "emptyCommon": "Only common currencies (including favorites) are shown. Select “Show all currencies” to see everything.",
+      "favoriteAdd": "Add to favorites",
+      "favoriteRemove": "Remove from favorites",
+      "prevPage": "Previous",
+      "nextPage": "Next"
+    },
+    "currency": {
+      "USD": "US Dollar",
+      "EUR": "Euro",
+      "GBP": "British Pound",
+      "JPY": "Japanese Yen",
+      "CNY": "Chinese Yuan",
+      "HKD": "Hong Kong Dollar",
+      "TWD": "New Taiwan Dollar",
+      "KRW": "South Korean Won",
+      "SGD": "Singapore Dollar",
+      "AUD": "Australian Dollar",
+      "CAD": "Canadian Dollar",
+      "CHF": "Swiss Franc",
+      "NZD": "New Zealand Dollar",
+      "THB": "Thai Baht",
+      "INR": "Indian Rupee",
+      "MYR": "Malaysian Ringgit",
+      "PHP": "Philippine Peso",
+      "IDR": "Indonesian Rupiah",
+      "SEK": "Swedish Krona",
+      "NOK": "Norwegian Krone",
+      "DKK": "Danish Krone",
+      "PLN": "Polish Zloty",
+      "CZK": "Czech Koruna",
+      "HUF": "Hungarian Forint",
+      "TRY": "Turkish Lira",
+      "ZAR": "South African Rand",
+      "BRL": "Brazilian Real",
+      "MXN": "Mexican Peso",
+      "ILS": "Israeli New Shekel",
+      "RON": "Romanian Leu",
+      "BGN": "Bulgarian Lev",
+      "ISK": "Icelandic Krona"
+    }
+  },
+  "salaryTools": {
+    "title": "Salary calculator",
+    "headline": "Know what an hour of your time is worth",
+    "subtitle": "Enter your monthly salary to get daily, hourly and overtime estimates. Numbers update as you type — a lightweight reference for pay talks and shift planning.",
+    "inputs": {
+      "kicker": "Inputs",
+      "heading": "Start from your typical workday",
+      "monthlySalary": "Monthly salary",
+      "monthlySalaryPlaceholder": "e.g. 12000",
+      "workingDays": "Paid days",
+      "workingDaysPlaceholder": "e.g. 21.75",
+      "dailyHours": "Daily hours",
+      "dailyHoursPlaceholder": "e.g. 8",
+      "overtimeHours": "Overtime hours",
+      "overtimeHoursPlaceholder": "e.g. 2"
+    },
+    "unit": {
+      "money": "CNY",
+      "day": "day",
+      "hour": "hour"
+    },
+    "result": {
+      "daily": "Daily pay estimate",
+      "dailyNote": "Estimated as monthly salary ÷ paid days",
+      "hourly": "Hourly pay estimate",
+      "hourlyNote": "Estimated as daily pay ÷ daily hours",
+      "weekly": "Weekly pay estimate (5 days)",
+      "weeklyNote": "Based on 5 working days by default"
+    },
+    "overtime": {
+      "title": "Overtime pay estimate",
+      "hint": "Uses your current hourly pay: 1.5× on workdays, 2× on rest days and 3× on public holidays.",
+      "basePrefix": "Current hourly base: ",
+      "baseSuffix": " — overtime pay is estimated as a multiple of this hourly rate.",
+      "workday": "Workday overtime (1.5x)",
+      "workdayNote": "Applies to extended hours on workdays",
+      "restDay": "Rest day overtime (2x)",
+      "restDayNote": "Applies to overtime on rest days",
+      "holiday": "Public holiday overtime (3x)",
+      "holidayNote": "Applies to overtime on public holidays"
+    },
+    "disclaimer": {
+      "line1": "Note 1: results are pre-tax estimates only, excluding social insurance, income tax, housing fund, allowances, commissions and special shift patterns.",
+      "line2": "Note 2: weekly pay assumes 5 working days; overtime pay is a multiple of your current hourly rate and may differ from your employer's final calculation."
     }
   }
 }

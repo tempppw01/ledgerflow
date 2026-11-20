@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTFallback } from '../../../shared/lib/useTFallback';
 import type { ExchangeRate } from '../model/types';
-import { getCurrencyFlag, getCurrencyName } from '../model/types';
+import { getCurrencyFlag, getCurrencyName, getCurrencyNameKey } from '../model/types';
 
 interface ExchangeConverterProps {
   rates: ExchangeRate[];
@@ -71,6 +72,7 @@ function mapKeyboardKeyToCalculatorKey(key: string): (typeof KEYPAD)[number] | n
 }
 
 export function ExchangeConverter({ rates, base }: ExchangeConverterProps) {
+  const tf = useTFallback();
   const [fromCode, setFromCode] = useState(base);
   const [toCode, setToCode] = useState('USD');
   const [expression, setExpression] = useState('1');
@@ -118,12 +120,12 @@ export function ExchangeConverter({ rates, base }: ExchangeConverterProps) {
   const applyEqual = useCallback(() => {
     const value = evaluateExpression(expression);
     if (value === null) {
-      setError('表达式无效，无法计算');
+      setError(tf('exchange.converter.invalidExpression', '表达式无效\uFF0C无法计算'));
       return;
     }
     setError('');
     setExpression(prettyNumber(value));
-  }, [expression]);
+  }, [expression, tf]);
 
   const applyKey = useCallback(
     (key: (typeof KEYPAD)[number]) => {
@@ -184,20 +186,21 @@ export function ExchangeConverter({ rates, base }: ExchangeConverterProps) {
 
   return (
     <section className="panel exchange-converter">
-      <h3 style={{ marginTop: 0 }}>💱 货币换算</h3>
+      <h3 style={{ marginTop: 0 }}>{tf('exchange.converter.title', '💱 货币换算')}</h3>
 
       <div className="exchange-converter-row">
         <div className="exchange-converter-field">
-          <label htmlFor="exchange-from-code">从</label>
+          <label htmlFor="exchange-from-code">{tf('exchange.converter.from', '从')}</label>
           <select
             id="exchange-from-code"
-            aria-label="从货币"
+            aria-label={tf('exchange.converter.fromAria', '从货币')}
             value={fromCode}
             onChange={(e) => setFromCode(e.target.value)}
           >
             {allCurrencies.map((code) => (
               <option key={code} value={code}>
-                {getCurrencyFlag(code)} {code} - {getCurrencyName(code)}
+                {getCurrencyFlag(code)} {code} -{' '}
+                {tf(getCurrencyNameKey(code), getCurrencyName(code))}
               </option>
             ))}
           </select>
@@ -207,23 +210,24 @@ export function ExchangeConverter({ rates, base }: ExchangeConverterProps) {
           className="exchange-swap-btn"
           type="button"
           onClick={swap}
-          title="交换货币"
-          aria-label="交换货币"
+          title={tf('exchange.converter.swap', '交换货币')}
+          aria-label={tf('exchange.converter.swap', '交换货币')}
         >
           ⇄
         </button>
 
         <div className="exchange-converter-field">
-          <label htmlFor="exchange-to-code">到</label>
+          <label htmlFor="exchange-to-code">{tf('exchange.converter.to', '到')}</label>
           <select
             id="exchange-to-code"
-            aria-label="到货币"
+            aria-label={tf('exchange.converter.toAria', '到货币')}
             value={toCode}
             onChange={(e) => setToCode(e.target.value)}
           >
             {allCurrencies.map((code) => (
               <option key={code} value={code}>
-                {getCurrencyFlag(code)} {code} - {getCurrencyName(code)}
+                {getCurrencyFlag(code)} {code} -{' '}
+                {tf(getCurrencyNameKey(code), getCurrencyName(code))}
               </option>
             ))}
           </select>
@@ -232,19 +236,29 @@ export function ExchangeConverter({ rates, base }: ExchangeConverterProps) {
 
       <div className="exchange-calculator">
         <label>
-          金额（{getCurrencyFlag(fromCode)} {fromCode}）
+          {tf('exchange.converter.amount', '金额')}
+          {'\uFF08'}
+          {getCurrencyFlag(fromCode)} {fromCode}
+          {'\uFF09'}
         </label>
         <div
           className="exchange-calculator-screen mono-inline"
           role="textbox"
           aria-readonly="true"
-          aria-label={`金额(${fromCode}),可用下方计算器键盘输入`}
+          aria-label={`${tf('exchange.converter.amount', '金额')}(${fromCode})${tf(
+            'exchange.converter.screenSeparator',
+            ','
+          )}${tf('exchange.converter.screenHint', '可用下方计算器键盘输入')}`}
           aria-live="polite"
         >
           {expression}
         </div>
         {error ? <p className="exchange-calculator-error">{error}</p> : null}
-        <div className="exchange-keypad" role="group" aria-label="计算器键盘">
+        <div
+          className="exchange-keypad"
+          role="group"
+          aria-label={tf('exchange.converter.keypadAria', '计算器键盘')}
+        >
           {KEYPAD.map((key) => {
             const isNum = /^\d$/.test(key) || key === '.';
             const isOperator = ['÷', '×', '-', '+', '='].includes(key);
@@ -265,7 +279,10 @@ export function ExchangeConverter({ rates, base }: ExchangeConverterProps) {
         </div>
       </div>
 
-      <div className="exchange-converter-result mono-inline" aria-label="换算结果">
+      <div
+        className="exchange-converter-result mono-inline"
+        aria-label={tf('exchange.converter.resultAria', '换算结果')}
+      >
         {converted === 0 ? '—' : converted.toFixed(converted < 1 ? 6 : 4)}
       </div>
 

@@ -65,11 +65,13 @@ export function AuthGate({ children }: { children: ReactNode }) {
             : 'login'
       );
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : '无法连接账号服务。');
+      setError(
+        reason instanceof Error ? reason.message : tf('auth.statusFailed', '无法连接账号服务。')
+      );
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tf]);
 
   useEffect(() => {
     void loadStatus();
@@ -81,7 +83,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     setNotice('');
 
     if (mode === 'reset' && password !== passwordConfirmation) {
-      setError('两次输入的新密码不一致。');
+      setError(tf('auth.passwordMismatch', '两次输入的新密码不一致。'));
       return;
     }
 
@@ -90,7 +92,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
       if (mode === 'forgot') {
         const result = await requestAccountPasswordReset({ email });
-        setNotice(result.message || '如果该邮箱已注册,密码重置邮件将在几分钟内送达。');
+        setNotice(
+          result.message ||
+            tf('auth.resetEmailSent', '如果该邮箱已注册,密码重置邮件将在几分钟内送达。')
+        );
         return;
       }
 
@@ -102,7 +107,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
         setPassword('');
         setPasswordConfirmation('');
         setMode('login');
-        setNotice('密码已重置,请使用新密码登录。');
+        setNotice(tf('auth.resetSucceeded', '密码已重置,请使用新密码登录。'));
         return;
       }
 
@@ -113,7 +118,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
       setUser(result.user);
       setPassword('');
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : '账号操作失败。');
+      setError(
+        reason instanceof Error ? reason.message : tf('auth.operationFailed', '账号操作失败。')
+      );
     } finally {
       setSubmitting(false);
     }
@@ -158,28 +165,34 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   const title =
     mode === 'register'
-      ? '创建第一个账号'
+      ? tf('auth.registerTitle', '创建第一个账号')
       : mode === 'forgot'
-        ? '找回密码'
+        ? tf('auth.forgotTitle', '找回密码')
         : mode === 'reset'
-          ? '设置新密码'
-          : '登录 LedgerFlow';
+          ? tf('auth.resetTitle', '设置新密码')
+          : tf('auth.loginTitle', '登录 LedgerFlow');
   const description =
     mode === 'register'
-      ? '这个账号会安全接管当前 default 账本,原有数据不会被删除。'
+      ? tf('auth.registerDescription', '这个账号会安全接管当前 default 账本,原有数据不会被删除。')
       : mode === 'forgot'
-        ? '输入注册邮箱,我们会发送一个 30 分钟内有效的一次性重置链接。'
+        ? tf(
+            'auth.forgotDescription',
+            '输入注册邮箱,我们会发送一个 30 分钟内有效的一次性重置链接。'
+          )
         : mode === 'reset'
-          ? '重置链接只能使用一次。设置成功后,所有已登录设备都需要重新登录。'
-          : '登录后只会加载属于你的账户、交易和财务资料。';
+          ? tf(
+              'auth.resetDescription',
+              '重置链接只能使用一次。设置成功后,所有已登录设备都需要重新登录。'
+            )
+          : tf('auth.loginDescription', '登录后只会加载属于你的账户、交易和财务资料。');
   const submitLabel =
     mode === 'register'
-      ? '创建账号并接管账本'
+      ? tf('auth.createAccount', '创建账号并接管账本')
       : mode === 'forgot'
-        ? '发送重置邮件'
+        ? tf('auth.sendResetEmail', '发送重置邮件')
         : mode === 'reset'
-          ? '保存新密码'
-          : '登录';
+          ? tf('auth.saveNewPassword', '保存新密码')
+          : tf('auth.login', '登录');
 
   return (
     <main className="auth-gate">
@@ -187,7 +200,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
         <header className="auth-card-head">
           <img src={APP_LOGO_URL} alt="" className="auth-logo" />
           <div>
-            <p className="auth-kicker">LEDGERFLOW ACCOUNT</p>
+            <p className="auth-kicker">{tf('auth.kicker', 'LEDGERFLOW ACCOUNT')}</p>
             <h1 id="auth-title">{title}</h1>
             <p>{description}</p>
           </div>
@@ -196,20 +209,20 @@ export function AuthGate({ children }: { children: ReactNode }) {
         <form className="auth-form" onSubmit={submit}>
           {mode === 'register' ? (
             <label className="field">
-              <span>显示名称</span>
+              <span>{tf('auth.displayName', '显示名称')}</span>
               <input
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
                 autoComplete="name"
                 maxLength={80}
-                placeholder="例如:我的账本"
+                placeholder={tf('auth.displayNamePlaceholder', '例如：我的账本')}
               />
             </label>
           ) : null}
 
           {mode !== 'reset' ? (
             <label className="field">
-              <span>邮箱</span>
+              <span>{tf('auth.email', '邮箱')}</span>
               <input
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
@@ -224,7 +237,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
           {mode !== 'forgot' ? (
             <div className="field">
               <div className="auth-field-head">
-                <label htmlFor="auth-password">{mode === 'reset' ? '新密码' : '密码'}</label>
+                <label htmlFor="auth-password">
+                  {mode === 'reset'
+                    ? tf('auth.newPassword', '新密码')
+                    : tf('auth.password', '密码')}
+                </label>
                 {mode === 'login' ? (
                   <button
                     type="button"
@@ -236,7 +253,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
                       setPassword('');
                     }}
                   >
-                    忘记密码?
+                    {tf('auth.forgotButton', '忘记密码?')}
                   </button>
                 ) : null}
               </div>
@@ -250,16 +267,18 @@ export function AuthGate({ children }: { children: ReactNode }) {
                 minLength={10}
                 maxLength={200}
                 required
-                placeholder="至少 10 个字符"
-                showLabel="显示密码"
-                hideLabel="隐藏密码"
+                placeholder={tf('auth.passwordPlaceholder', '至少 10 个字符')}
+                showLabel={tf('auth.showPassword', '显示密码')}
+                hideLabel={tf('auth.hidePassword', '隐藏密码')}
               />
             </div>
           ) : null}
 
           {mode === 'reset' ? (
             <div className="field">
-              <label htmlFor="auth-password-confirmation">确认新密码</label>
+              <label htmlFor="auth-password-confirmation">
+                {tf('auth.passwordConfirmation', '确认新密码')}
+              </label>
               <PasswordInput
                 id="auth-password-confirmation"
                 value={passwordConfirmation}
@@ -268,9 +287,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
                 minLength={10}
                 maxLength={200}
                 required
-                placeholder="再次输入新密码"
-                showLabel="显示确认密码"
-                hideLabel="隐藏确认密码"
+                placeholder={tf('auth.passwordConfirmationPlaceholder', '再次输入新密码')}
+                showLabel={tf('auth.showPasswordConfirmation', '显示确认密码')}
+                hideLabel={tf('auth.hidePasswordConfirmation', '隐藏确认密码')}
               />
             </div>
           ) : null}
@@ -288,7 +307,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
           ) : null}
 
           <button type="submit" className="primary auth-submit" disabled={submitting}>
-            {submitting ? '请稍候...' : submitLabel}
+            {submitting ? tf('auth.submitting', '请稍候...') : submitLabel}
           </button>
         </form>
 
@@ -306,7 +325,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
               setPasswordConfirmation('');
             }}
           >
-            返回登录
+            {tf('auth.backToLogin', '返回登录')}
           </button>
         ) : registrationOpen ? (
           <button
@@ -318,15 +337,19 @@ export function AuthGate({ children }: { children: ReactNode }) {
               setNotice('');
             }}
           >
-            {mode === 'register' ? '已有账号?去登录' : '创建第一个账号'}
+            {mode === 'register'
+              ? tf('auth.switchToLogin', '已有账号？去登录')
+              : tf('auth.createFirstAccount', '创建第一个账号')}
           </button>
         ) : (
-          <p className="auth-registration-note">当前实例未开放自助注册,请使用已有账号登录。</p>
+          <p className="auth-registration-note">
+            {tf('auth.registrationClosed', '当前实例未开放自助注册，请使用已有账号登录。')}
+          </p>
         )}
 
         {error && (mode === 'login' || mode === 'register') ? (
           <button type="button" className="auth-retry-button" onClick={() => void loadStatus()}>
-            重新检查账号服务
+            {tf('auth.retry', '重新检查账号服务')}
           </button>
         ) : null}
       </section>
