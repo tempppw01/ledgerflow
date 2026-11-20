@@ -3453,12 +3453,12 @@ function MarketBoardsPanel({
   return (
     <section
       className={`panel investments-market-boards-panel ${status === 'loading' ? 'is-loading' : ''}`}
-      aria-label="A股行业涨跌监控"
+      aria-label={tf('investments.boards.aria', 'A股行业涨跌监控')}
     >
       <div className="investments-market-news-head">
         <div>
-          <h3>A 股行业涨跌</h3>
-          <p>行业强弱一眼看清，点击行业可查看领涨公司。</p>
+          <h3>{tf('investments.boards.title', 'A 股行业涨跌')}</h3>
+          <p>{tf('investments.boards.subtitle', '行业强弱一眼看清，点击行业可查看领涨公司。')}</p>
         </div>
         <div className="investments-panel-head-actions">
           <button
@@ -3471,10 +3471,10 @@ function MarketBoardsPanel({
                 })
               )
             }
-            aria-label="让 AI 分析板块强弱"
+            aria-label={tf('investments.boards.aiAria', '让 AI 分析板块强弱')}
           >
             <ChatSparklesIcon className="chat-svg-icon" />
-            AI 看板块
+            {tf('investments.boards.aiAction', 'AI 看板块')}
           </button>
           <button type="button" onClick={onRefresh} disabled={status === 'loading'}>
             {status === 'loading' ? '刷新中' : tf('investments.refresh', '刷新')}
@@ -3483,15 +3483,25 @@ function MarketBoardsPanel({
       </div>
 
       {view === 'industry' ? (
-        <div className="investments-market-sector-summary" aria-label="全球行业交叉参照">
+        <div
+          className="investments-market-sector-summary"
+          aria-label={tf('investments.boards.globalAria', '全球行业交叉参照')}
+        >
           <div className="investments-market-sector-summary-head">
             <div>
-              <strong>海外行业参考</strong>
-              <span>Yahoo Finance 行业 ETF 涨跌</span>
+              <strong>{tf('investments.boards.globalTitle', '海外行业参考')}</strong>
+              <span>{tf('investments.boards.globalSource', 'Yahoo Finance 行业 ETF 涨跌')}</span>
             </div>
             <small>
               {globalSectorBoards.length
-                ? `${globalSectorBoards.length} 个 · ${globalSectorMeta.freshness === 'stale' ? '缓存' : '更新'}`
+                ? `${tf('investments.boards.sectorCount', '{count} 个').replace(
+                    '{count}',
+                    String(globalSectorBoards.length)
+                  )} · ${
+                    globalSectorMeta.freshness === 'stale'
+                      ? tf('investments.boards.cached', '缓存')
+                      : tf('investments.boards.updated', '更新')
+                  }`
                 : tf('investments.empty.generic', '暂无数据')}
             </small>
           </div>
@@ -3506,7 +3516,9 @@ function MarketBoardsPanel({
                 </span>
               ))
             ) : (
-              <span className="investments-market-sector-empty">海外行业行情暂时不可用。</span>
+              <span className="investments-market-sector-empty">
+                {tf('investments.boards.globalUnavailable', '海外行业行情暂时不可用。')}
+              </span>
             )}
           </div>
         </div>
@@ -3519,13 +3531,15 @@ function MarketBoardsPanel({
       {view === 'theme' ? (
         <>
           <label className="investments-market-theme-select">
-            <span>跟踪题材</span>
+            <span>{tf('investments.boards.trackedLabel', '跟踪题材')}</span>
             <select
-              aria-label="选择热门题材"
+              aria-label={tf('investments.boards.trackedAria', '选择热门题材')}
               value={selectedThemeCode}
               onChange={(event) => onSelectTheme(event.target.value)}
             >
-              {trackedThemes.length === 0 ? <option value="">暂未跟踪题材</option> : null}
+              {trackedThemes.length === 0 ? (
+                <option value="">{tf('investments.boards.noTracked', '暂未跟踪题材')}</option>
+              ) : null}
               {trackedThemes.map((theme) => (
                 <option key={theme.code} value={theme.code}>
                   {theme.name}
@@ -3536,11 +3550,13 @@ function MarketBoardsPanel({
 
           <div className="investments-market-theme-actions">
             <select
-              aria-label="添加可跟踪题材"
+              aria-label={tf('investments.boards.addAria', '添加可跟踪题材')}
               value={newThemeCode}
               onChange={(event) => setNewThemeCode(event.target.value)}
             >
-              <option value="">从东方财富概念板块中选择</option>
+              <option value="">
+                {tf('investments.boards.addPlaceholder', '从东方财富概念板块中选择')}
+              </option>
               {availableConceptBoards.map((theme) => (
                 <option key={theme.code} value={theme.code}>
                   {theme.name} · {theme.code}
@@ -3555,18 +3571,21 @@ function MarketBoardsPanel({
                 setNewThemeCode('');
               }}
             >
-              添加
+              {tf('investments.boards.add', '添加')}
             </button>
           </div>
 
           <details className="investments-market-theme-manager">
-            <summary>管理已跟踪题材</summary>
+            <summary>{tf('investments.boards.manage', '管理已跟踪题材')}</summary>
             <div>
               {trackedThemes.map((theme) => (
                 <div className="investments-market-theme-manager-row" key={theme.code}>
                   {editingThemeCode === theme.code ? (
                     <input
-                      aria-label={`修改 ${theme.name} 的显示名称`}
+                      aria-label={tf(
+                        'investments.boards.renameAria',
+                        '修改 {name} 的显示名称'
+                      ).replace('{name}', theme.name)}
                       value={editingThemeName}
                       onChange={(event) => setEditingThemeName(event.target.value)}
                       onKeyDown={(event) => {
@@ -3595,10 +3614,12 @@ function MarketBoardsPanel({
                       setEditingThemeName(theme.name);
                     }}
                   >
-                    {editingThemeCode === theme.code ? '保存' : '修改'}
+                    {editingThemeCode === theme.code
+                      ? tf('investments.boards.save', '保存')
+                      : tf('investments.boards.rename', '修改')}
                   </button>
                   <button type="button" onClick={() => onRemoveTheme(theme.code)}>
-                    删除
+                    {tf('investments.boards.delete', '删除')}
                   </button>
                 </div>
               ))}
@@ -3606,11 +3627,23 @@ function MarketBoardsPanel({
           </details>
 
           <div className="investments-market-board-overview">
-            <MarketBreadthDonut breadth={breadth} label="热门题材" />
+            <MarketBreadthDonut
+              breadth={breadth}
+              label={tf('investments.boards.hotThemes', '热门题材')}
+            />
             <div>
-              <strong>{visibleBoards.length || '--'} 个板块</strong>
+              <strong>
+                {visibleBoards.length || '--'}
+                {tf('investments.boards.boardCountSuffix', ' 个板块')}
+              </strong>
               <span>
-                涨 {breadth.up} · 平 {breadth.flat} · 跌 {breadth.down}，按涨跌幅展示前 8 个
+                {tf(
+                  'investments.boards.breadthSummary',
+                  '涨 {up} · 平 {flat} · 跌 {down},按涨跌幅展示前 8 个'
+                )
+                  .replace('{up}', String(breadth.up))
+                  .replace('{flat}', String(breadth.flat))
+                  .replace('{down}', String(breadth.down))}
               </span>
             </div>
           </div>
@@ -3654,14 +3687,17 @@ function MarketBoardsPanel({
                   </div>
                   {expandedBoardCode === board.code ? (
                     <div className="investments-market-board-card-stocks" aria-live="polite">
-                      <small>领涨公司</small>
+                      <small>{tf('investments.boards.topMovers', '领涨公司')}</small>
                       {constituentStatus[board.code] === 'loading' ? (
                         <span className="investments-market-board-card-loading">
-                          正在同步公司行情…
+                          {tf('investments.boards.companiesLoading', '正在同步公司行情…')}
                         </span>
                       ) : constituentStatus[board.code] === 'error' ? (
                         <span className="investments-market-board-card-loading">
-                          公司行情暂时不可用，稍后重试。
+                          {tf(
+                            'investments.boards.companiesUnavailable',
+                            '公司行情暂时不可用，稍后重试。'
+                          )}
                         </span>
                       ) : boardConstituents.length > 0 ? (
                         boardConstituents.slice(0, 3).map((stock) => (
@@ -3674,7 +3710,7 @@ function MarketBoardsPanel({
                         ))
                       ) : (
                         <span className="investments-market-board-card-loading">
-                          该板块暂未返回成分股。
+                          {tf('investments.boards.noConstituents', '该板块暂未返回成分股。')}
                         </span>
                       )}
                     </div>
@@ -3684,22 +3720,26 @@ function MarketBoardsPanel({
             })}
           </div>
           <p className="investments-market-source-note">
-            数据源：{activeMeta.source} ·{' '}
-            {activeMeta.freshness === 'stale' ? '最近有效快照' : '实时快照'} · 更新于{' '}
+            {tf('investments.boards.dataSourcePrefix', '数据源:')}
+            {activeMeta.source} ·{' '}
+            {activeMeta.freshness === 'stale'
+              ? tf('investments.boards.snapshotStale', '最近有效快照')
+              : tf('investments.boards.snapshotLive', '实时快照')}{' '}
+            · {tf('investments.boards.updatedAtPrefix', '更新于')}{' '}
             {formatDateTimeLabel(activeMeta.updatedAt)}
           </p>
         </>
       ) : industryBoards.length === 0 && status !== 'loading' ? (
         <div className="investments-market-news-empty">
-          <strong>暂无行业数据</strong>
-          <span>稍后刷新，或切换回热门题材。</span>
+          <strong>{tf('investments.boards.emptyTitle', '暂无行业数据')}</strong>
+          <span>{tf('investments.boards.emptyDesc', '稍后刷新，或切换回热门题材。')}</span>
         </div>
       ) : (
         <>
           <div
             className="investments-hot-industry-filters"
             role="toolbar"
-            aria-label="热门行业筛选"
+            aria-label={tf('investments.boards.filterAria', '热门行业筛选')}
           >
             {HOT_INDUSTRY_FILTERS.map((filter) => (
               <button
@@ -3718,12 +3758,18 @@ function MarketBoardsPanel({
           <div className="investments-market-board-overview">
             <div>
               <strong>
-                {visibleBoards.length || '--'} 个行业 · 涨 {breadth.up} / 跌 {breadth.down}
+                {visibleBoards.length || '--'}
+                {tf('investments.boards.summary', ' 个行业 · 涨 {up} / 跌 {down}')
+                  .replace('{up}', String(breadth.up))
+                  .replace('{down}', String(breadth.down))}
               </strong>
               <span>
                 {hasYahooFallback
-                  ? '东方财富行情暂不可用，当前使用 Yahoo 行业 ETF 参考。'
-                  : '按涨跌幅排序；每条线展示当日行业走势。'}
+                  ? tf(
+                      'investments.boards.fallbackNotice',
+                      '东方财富行情暂不可用，当前使用 Yahoo 行业 ETF 参考。'
+                    )
+                  : tf('investments.boards.sortHint', '按涨跌幅排序；每条线展示当日行业走势。')}
               </span>
             </div>
           </div>
@@ -3757,19 +3803,25 @@ function MarketBoardsPanel({
                     </span>
                   </button>
                   <div className="investments-market-board-card-meta">
-                    <span>指数 {formatMarketIndexValue(board.value)}</span>
+                    <span>
+                      {tf('investments.boards.indexPrefix', '指数')}{' '}
+                      {formatMarketIndexValue(board.value)}
+                    </span>
                     <IndustrySparkline board={board} />
                   </div>
                   {expandedBoardCode === board.code ? (
                     <div className="investments-market-board-card-stocks" aria-live="polite">
-                      <small>领涨公司</small>
+                      <small>{tf('investments.boards.topMovers', '领涨公司')}</small>
                       {constituentStatus[board.code] === 'loading' ? (
                         <span className="investments-market-board-card-loading">
-                          正在同步公司行情…
+                          {tf('investments.boards.companiesLoading', '正在同步公司行情…')}
                         </span>
                       ) : constituentStatus[board.code] === 'error' ? (
                         <span className="investments-market-board-card-loading">
-                          公司行情暂时不可用，稍后重试。
+                          {tf(
+                            'investments.boards.companiesUnavailable',
+                            '公司行情暂时不可用，稍后重试。'
+                          )}
                         </span>
                       ) : boardConstituents.length > 0 ? (
                         boardConstituents.slice(0, 3).map((stock) => (
@@ -3782,7 +3834,7 @@ function MarketBoardsPanel({
                         ))
                       ) : (
                         <span className="investments-market-board-card-loading">
-                          该板块暂未返回成分股。
+                          {tf('investments.boards.noConstituents', '该板块暂未返回成分股。')}
                         </span>
                       )}
                     </div>
@@ -3792,8 +3844,12 @@ function MarketBoardsPanel({
             })}
           </div>
           <p className="investments-market-source-note">
-            数据源：{activeMeta.source} ·{' '}
-            {activeMeta.freshness === 'stale' ? '最近有效快照' : '实时快照'} · 更新于{' '}
+            {tf('investments.boards.dataSourcePrefix', '数据源:')}
+            {activeMeta.source} ·{' '}
+            {activeMeta.freshness === 'stale'
+              ? tf('investments.boards.snapshotStale', '最近有效快照')
+              : tf('investments.boards.snapshotLive', '实时快照')}{' '}
+            · {tf('investments.boards.updatedAtPrefix', '更新于')}{' '}
             {formatDateTimeLabel(activeMeta.updatedAt)}
           </p>
         </>
