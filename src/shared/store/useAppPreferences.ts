@@ -20,6 +20,7 @@ import {
   RepaymentRecord
 } from '../../features/debt/model/debtMetrics';
 import type { CreditDraft } from '../../features/debt/model/creditDrafts';
+import type { ForecastBill } from '../../entities/forecast/types';
 import {
   createCreditDraft,
   findCreditDraftForFragment,
@@ -60,6 +61,7 @@ interface AppPreferencesState {
   debts: DebtItem[];
   repaymentRecords: RepaymentRecord[];
   creditDrafts: CreditDraft[];
+  forecastBills: ForecastBill[];
   monthlyIncome: number;
   setTheme: (theme: AppTheme) => void;
   setAccentTheme: (accentTheme: AppAccentTheme) => void;
@@ -111,6 +113,14 @@ interface AppPreferencesState {
   removeRepaymentRecord: (id: string) => void;
   upsertCreditDraft: (payload: Partial<CreditDraft>) => string;
   removeCreditDraft: (id: string) => void;
+  addForecastBill: (
+    payload: Omit<ForecastBill, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
+  ) => string;
+  updateForecastBill: (
+    id: string,
+    payload: Omit<ForecastBill, 'id' | 'createdAt' | 'updatedAt'>
+  ) => void;
+  removeForecastBill: (id: string) => void;
 }
 
 function createDebtId(type: DebtType): string {
@@ -143,6 +153,48 @@ function createInvestmentAiMessageId(): string {
 
 function createScopedId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function createForecastBillId(): string {
+  return createScopedId('forecast-bill');
+}
+
+/** YYYY-MM-DD;不合法或缺失时返回空串,由调用方决定是否丢弃这条记录。 */
+function normalizeDateOnly(value: unknown): string {
+  const raw = String(value || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return '';
+  const parsed = new Date(`${raw}T00:00:00`);
+  return Number.isNaN(parsed.getTime()) ? '' : raw;
+}
+
+/**
+ * 预测账单的归一化。金额恒为正数,方向由 direction 决定 ——
+ * 这样「支出 -500」和「支出 500」不会在推演里一个加一个减。
+ */
+function normalizeForecastBill(item: {
+  id?: string;
+  name?: string;
+  amount?: number;
+  date?: string;
+  direction?: string;
+  repeat?: string;
+  note?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}): ForecastBill {
+  const now = new Date().toISOString();
+
+  return {
+    id: item.id || createForecastBillId(),
+    name: String(item.name || '').trim() || '预测账单',
+    amount: normalizePositiveNumber(item.amount),
+    date: normalizeDateOnly(item.date),
+    direction: item.direction === 'income' ? 'income' : 'expense',
+    repeat: item.repeat === 'monthly' ? 'monthly' : 'once',
+    note: normalizeOptionalString(item.note),
+    createdAt: item.createdAt || now,
+    updatedAt: item.updatedAt || now
+  };
 }
 
 function normalizeFeedUrl(rawUrl: string): string {
@@ -614,6 +666,7 @@ export const useAppPreferences = create<AppPreferencesState>()(
       debts: [],
       repaymentRecords: [],
       creditDrafts: [],
+      forecastBills: [],
       monthlyIncome: 0,
       setTheme: (theme) => set({ theme }),
       setAccentTheme: (accentTheme) => set({ accentTheme }),
@@ -969,6 +1022,30 @@ export const useAppPreferences = create<AppPreferencesState>()(
       removeCreditDraft: (id) => {
         set((state) => ({
           creditDrafts: state.creditDrafts.filter((item) => item.id !== id)
+        }));
+      },
+      addForecastBill: (payload) => {
+        const bill = normalizeForecastBill(payload);
+        set((state) => ({ forecastBills: [bill, ...state.forecastBills] }));
+        return bill.id;
+      },
+      updateForecastBill: (id, payload) => {
+        set((state) => ({
+          forecastBills: state.forecastBills.map((item) =>
+            item.id === id
+              ? normalizeForecastBill({
+                  ...payload,
+                  id,
+                  createdAt: item.createdAt,
+                  updatedAt: new Date().toISOString()
+                })
+              : item
+          )
+        }));
+      },
+      removeForecastBill: (id) => {
+        set((state) => ({
+          forecastBills: state.forecastBills.filter((item) => item.id !== id)
         }));
       }
     }),

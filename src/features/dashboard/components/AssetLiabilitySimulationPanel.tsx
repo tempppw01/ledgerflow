@@ -9,6 +9,12 @@ import {
 } from '../../../shared/lib/i18nDate';
 import type { AssetLiabilitySimulationRow } from '../model/assetLiabilitySimulation';
 import { formatCalendarAmount } from '../model/assetLiabilitySimulationFormat';
+import type {
+  ForecastBill,
+  ForecastBillDirection,
+  ForecastBillRepeat
+} from '../../../entities/forecast/types';
+import { toLocalDateKey } from '../../../shared/lib/localDate';
 
 type Point = { x: number; y: number };
 
@@ -27,16 +33,35 @@ export function AssetLiabilitySimulationPanel({
   initialAssets,
   initialLiabilities,
   horizonMonths,
-  onHorizonChange
+  onHorizonChange,
+  forecastBills,
+  onAddForecastBill,
+  onRemoveForecastBill
 }: {
   rows: AssetLiabilitySimulationRow[];
   initialAssets: number;
   initialLiabilities: number;
   horizonMonths: 1 | 3 | 6 | 12;
   onHorizonChange: (months: 1 | 3 | 6 | 12) => void;
+  forecastBills: ForecastBill[];
+  onAddForecastBill: (payload: {
+    name: string;
+    amount: number;
+    date: string;
+    direction: ForecastBillDirection;
+    repeat: ForecastBillRepeat;
+    note?: string;
+  }) => string;
+  onRemoveForecastBill: (id: string) => void;
 }) {
   const { t, i18n } = useTranslation();
   const [calendarMode, setCalendarMode] = useState<'balance' | 'assets'>('balance');
+  const [billName, setBillName] = useState('');
+  const [billAmount, setBillAmount] = useState('');
+  const [billDate, setBillDate] = useState(() => toLocalDateKey(new Date()));
+  const [billDirection, setBillDirection] = useState<ForecastBillDirection>('expense');
+  const [billRepeat, setBillRepeat] = useState<ForecastBillRepeat>('once');
+  const [billError, setBillError] = useState('');
   const width = 720;
   const height = 280;
   const padding = { top: 24, right: 18, bottom: 30, left: 48 };
@@ -90,6 +115,39 @@ export function AssetLiabilitySimulationPanel({
       ),
     [locale]
   );
+
+  // 预测账单在这个区间内的合计影响,直接由推演行汇总,保证和图表同源。
+  const forecastTotals = rows.reduce(
+    (totals, row) => {
+      if (row.forecastDelta > 0) totals.income += row.forecastDelta;
+      else if (row.forecastDelta < 0) totals.expense += -row.forecastDelta;
+      return totals;
+    },
+    { income: 0, expense: 0 }
+  );
+  const forecastNet = forecastTotals.income - forecastTotals.expense;
+
+  const submitForecastBill = () => {
+    const amount = Number(billAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setBillError(t('dashboard.ui.simulation.forecastAmountInvalid'));
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(billDate)) {
+      setBillError(t('dashboard.ui.simulation.forecastDateInvalid'));
+      return;
+    }
+    onAddForecastBill({
+      name: billName.trim() || t('dashboard.ui.simulation.forecastDefaultName'),
+      amount,
+      date: billDate,
+      direction: billDirection,
+      repeat: billRepeat
+    });
+    setBillName('');
+    setBillAmount('');
+    setBillError('');
+  };
 
   return (
     <section
@@ -321,6 +379,143 @@ export function AssetLiabilitySimulationPanel({
             </span>
           </div>
         </div>
+      </div>
+
+      <div className="dashboard-forecast-bills">
+        <div className="dashboard-forecast-head">
+          <strong>{t('dashboard.ui.simulation.forecastTitle')}</strong>
+          {forecastBills.length > 0 ? (
+            <div className="dashboard-forecast-summary">
+              {forecastTotals.income > 0 ? (
+                <span>
+                  {t('dashboard.ui.simulation.forecastIncome')}
+                  <strong>{formatCurrencyAuto(forecastTotals.income)}</strong>
+                </span>
+              ) : null}
+              {forecastTotals.expense > 0 ? (
+                <span>
+                  {t('dashboard.ui.simulation.forecastExpense')}
+                  <strong>{formatCurrencyAuto(forecastTotals.expense)}</strong>
+                </span>
+              ) : null}
+              <span className="is-net">
+                {t('dashboard.ui.simulation.forecastNet')}
+                <strong>{formatCurrencyAuto(forecastNet)}</strong>
+              </span>
+            </div>
+          ) : null}
+        </div>
+        <form
+          className="dashboard-forecast-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            submitForecastBill();
+          }}
+        >
+          <input
+            className="dashboard-forecast-input"
+            type="text"
+            value={billName}
+            maxLength={24}
+            placeholder={t('dashboard.ui.simulation.forecastNamePlaceholder')}
+            aria-label={t('dashboard.ui.simulation.forecastNamePlaceholder')}
+            onChange={(event) => setBillName(event.target.value)}
+          />
+          <input
+            className="dashboard-forecast-input is-amount"
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="0.01"
+            value={billAmount}
+            placeholder={t('dashboard.ui.simulation.forecastAmountPlaceholder')}
+            aria-label={t('dashboard.ui.simulation.forecastAmountPlaceholder')}
+            onChange={(event) => setBillAmount(event.target.value)}
+          />
+          <input
+            className="dashboard-forecast-input is-date"
+            type="date"
+            value={billDate}
+            aria-label={t('dashboard.ui.simulation.forecastDateLabel')}
+            onChange={(event) => setBillDate(event.target.value)}
+          />
+          <div
+            className="dashboard-forecast-toggle"
+            role="group"
+            aria-label={t('dashboard.ui.simulation.forecastDirectionAria')}
+          >
+            <button
+              type="button"
+              className={billDirection === 'expense' ? 'is-active' : ''}
+              aria-pressed={billDirection === 'expense'}
+              onClick={() => setBillDirection('expense')}
+            >
+              {t('dashboard.ui.simulation.forecastExpense')}
+            </button>
+            <button
+              type="button"
+              className={billDirection === 'income' ? 'is-active' : ''}
+              aria-pressed={billDirection === 'income'}
+              onClick={() => setBillDirection('income')}
+            >
+              {t('dashboard.ui.simulation.forecastIncome')}
+            </button>
+          </div>
+          <button
+            type="button"
+            className="dashboard-forecast-repeat"
+            aria-pressed={billRepeat === 'monthly'}
+            onClick={() => setBillRepeat(billRepeat === 'monthly' ? 'once' : 'monthly')}
+          >
+            {t('dashboard.ui.simulation.forecastMonthly')}
+          </button>
+          <button type="submit" className="dashboard-forecast-submit">
+            {t('dashboard.ui.simulation.forecastAdd')}
+          </button>
+        </form>
+
+        {billError ? (
+          <p className="dashboard-forecast-error" role="alert">
+            {billError}
+          </p>
+        ) : null}
+
+        {forecastBills.length > 0 ? (
+          <>
+            <ul className="dashboard-forecast-list">
+              {forecastBills.map((bill) => (
+                <li key={bill.id} className="dashboard-forecast-item">
+                  <span className="dashboard-forecast-item-name">{bill.name}</span>
+                  <span className="dashboard-forecast-item-date">
+                    {formatDayMonth(bill.date, locale)}
+                    {bill.repeat === 'monthly'
+                      ? ` · ${t('dashboard.ui.simulation.forecastMonthly')}`
+                      : ''}
+                  </span>
+                  <strong
+                    className={
+                      bill.direction === 'income'
+                        ? 'dashboard-forecast-item-amount is-income'
+                        : 'dashboard-forecast-item-amount is-expense'
+                    }
+                  >
+                    {bill.direction === 'income' ? '+' : '−'}
+                    {formatCurrencyAuto(bill.amount)}
+                  </strong>
+                  <button
+                    type="button"
+                    className="dashboard-forecast-item-remove"
+                    aria-label={t('dashboard.ui.simulation.forecastRemove', { name: bill.name })}
+                    title={t('dashboard.ui.simulation.forecastRemove', { name: bill.name })}
+                    onClick={() => onRemoveForecastBill(bill.id)}
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : null}
       </div>
     </section>
   );

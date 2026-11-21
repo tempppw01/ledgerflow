@@ -58,6 +58,7 @@ function getPayload() {
       repaymentRecords: preferences.repaymentRecords,
       monthlyIncome: preferences.monthlyIncome,
       creditDrafts: preferences.creditDrafts,
+      forecastBills: preferences.forecastBills,
       smartBudgetPlan: smartBudget.confirmedPlan,
       smartBudgetHistory: smartBudget.history
     }
@@ -161,6 +162,9 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
             monthlyIncome: Number(preferences.monthlyIncome) || 0,
             creditDrafts: Array.isArray(preferences.creditDrafts)
               ? (preferences.creditDrafts as never)
+              : [],
+            forecastBills: Array.isArray(preferences.forecastBills)
+              ? (preferences.forecastBills as never)
               : []
           }));
           useSmartBudgetStore.getState().replaceAllData({

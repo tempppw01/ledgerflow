@@ -2,6 +2,7 @@ import type { Account } from '../../../entities/account/types';
 import type { InvestmentPosition } from '../../../entities/investment/types';
 import type { TransactionItem } from '../../../entities/transaction/types';
 import type { SubscriptionItem } from '../../../entities/subscription/types';
+import type { ForecastBill } from '../../../entities/forecast/types';
 import {
   calculateDebtDerivedMetrics,
   calculateDebtScheduledPayment,
@@ -21,6 +22,8 @@ export interface AssetLiabilitySimulationRow {
   assetDelta: number;
   liabilityDelta: number;
   events: string[];
+  /** 当天由「预测账单」造成的资产变化合计(收入为正、支出为负)。 */
+  forecastDelta: number;
 }
 
 export interface AssetLiabilitySimulation {
@@ -37,6 +40,8 @@ type ScheduledEvent = {
   label: string;
   debtId?: string;
   paymentAmount?: number;
+  /** 这条事件来自用户录入的预测账单,而非已有流水/订阅/还款。 */
+  forecast?: boolean;
 };
 
 function safeNumber(value: unknown) {
@@ -114,7 +119,8 @@ function buildScheduledEvents(
   subscriptions: SubscriptionItem[],
   debts: DebtItem[],
   start: Date,
-  end: Date
+  end: Date,
+  forecastBills: ForecastBill[] = []
 ) {
   const events: ScheduledEvent[] = [];
   const include = (dateValue: string | undefined, event: Omit<ScheduledEvent, 'date'>) => {
@@ -122,6 +128,47 @@ function buildScheduledEvents(
     if (!date || date < start || date > end) return;
     events.push({ date: dateKey(date), ...event });
   };
+
+  // 用户自己录入的预测账单。monthly 的按「每月同日」展开到预测区间末尾;
+  // 首次发生日之前的若干月没有账单,所以从 max(账单日期, 区间起点) 开始铺。
+  forecastBills.forEach((bill) => {
+    const amount = Math.abs(safeNumber(bill.amount));
+    const first = parseDate(bill.date);
+    if (!amount || !first) return;
+    const assetDelta = bill.direction === 'income' ? amount : -amount;
+    const label = bill.direction === 'income' ? '预测收入' : '预测支出';
+
+    if (bill.repeat !== 'monthly') {
+      include(bill.date, {
+        assetDelta,
+        liabilityDelta: 0,
+        label: `${label} · ${bill.name}`,
+        forecast: true
+      });
+      return;
+    }
+
+    const anchorDay = first.getDate();
+    const from = first > start ? first : start;
+    const cursor = new Date(from.getFullYear(), from.getMonth(), 1);
+    while (cursor <= end) {
+      const date = new Date(
+        cursor.getFullYear(),
+        cursor.getMonth(),
+        clampDayInMonth(cursor.getFullYear(), cursor.getMonth(), anchorDay)
+      );
+      if (date >= first && date >= start && date <= end) {
+        events.push({
+          date: dateKey(date),
+          assetDelta,
+          liabilityDelta: 0,
+          label: `${label} · ${bill.name}`,
+          forecast: true
+        });
+      }
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+  });
 
   transactions.forEach((transaction) => {
     const amount = Math.abs(safeNumber(transaction.amount));
@@ -216,6 +263,8 @@ export function buildAssetLiabilitySimulation(input: {
   subscriptions: SubscriptionItem[];
   debts: DebtItem[];
   repaymentRecords?: RepaymentRecord[];
+  /** 用户自己录入的预测账单;不参与余额计算,只影响这次推演。 */
+  forecastBills?: ForecastBill[];
   days?: number;
   now?: Date;
 }): AssetLiabilitySimulation {
@@ -251,7 +300,8 @@ export function buildAssetLiabilitySimulation(input: {
     input.subscriptions,
     input.debts,
     start,
-    end
+    end,
+    input.forecastBills
   );
   const eventsByDate = new Map<string, ScheduledEvent[]>();
   scheduledEvents.forEach((event) => {
@@ -307,7 +357,11 @@ export function buildAssetLiabilitySimulation(input: {
       delta: netWorth - previousNetWorth,
       assetDelta,
       liabilityDelta,
-      events: dayEvents.map((event) => event.label)
+      events: dayEvents.map((event) => event.label),
+      forecastDelta: dayEvents.reduce(
+        (sum, event) => (event.forecast ? sum + event.assetDelta : sum),
+        0
+      )
     });
     previousNetWorth = netWorth;
   }

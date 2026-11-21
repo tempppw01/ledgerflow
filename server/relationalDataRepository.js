@@ -8,6 +8,7 @@ const SETTING_KEYS = {
   investmentAiMessages: 'investment-ai-messages',
   investmentWatchlistExtras: 'investment-watchlist-extras',
   creditDrafts: 'credit-drafts',
+  forecastBills: 'forecast-bills',
   smartBudgetPlan: 'smart-budget-plan',
   smartBudgetHistory: 'smart-budget-history',
   monthlyIncome: 'monthly-income',
@@ -648,6 +649,12 @@ export async function replaceRelationalData(
         await setSetting(
           database,
           userId,
+          SETTING_KEYS.forecastBills,
+          list(preferences.forecastBills)
+        );
+        await setSetting(
+          database,
+          userId,
           SETTING_KEYS.smartBudgetPlan,
           preferences.smartBudgetPlan || null
         );
@@ -934,6 +941,7 @@ export async function getRelationalBootstrap(
               rssSubscriptions: list(settings[SETTING_KEYS.rssSubscriptions]),
               monthlyIncome: number(settings[SETTING_KEYS.monthlyIncome]),
               creditDrafts: list(settings[SETTING_KEYS.creditDrafts]),
+              forecastBills: list(settings[SETTING_KEYS.forecastBills]),
               smartBudgetPlan: settings[SETTING_KEYS.smartBudgetPlan] || null,
               smartBudgetHistory: list(settings[SETTING_KEYS.smartBudgetHistory]),
               investmentPositions: positions.map((row) => ({

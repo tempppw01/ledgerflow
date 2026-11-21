@@ -121,8 +121,8 @@ data and the displayed data unchanged.
 
 `ledger_user_settings` is intentionally not a replacement for business tables. It currently holds
 only flexible settings with no stable query contract: RSS subscriptions, AI chat transcript UI
-payloads, global memories, credit drafts, smart-budget plans, category-learning hints, and the
-variable detail arrays on a fund watchlist. The watchlist's searchable identity, current
+payloads, global memories, credit drafts, forecast bills, smart-budget plans, category-learning
+hints, and the variable detail arrays on a fund watchlist. The watchlist's searchable identity, current
 recommendation, risk, timestamps, tags, and holding amount remain normalized columns. New queryable
 domain fields must get a migration and a column/table rather than being appended to a settings JSON
 document.

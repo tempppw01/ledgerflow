@@ -47,6 +47,9 @@ export function DashboardPage() {
   const investmentPositionHistory = useAppPreferences((s) => s.investmentPositionHistory);
   const debts = useAppPreferences((s) => s.debts);
   const repaymentRecords = useAppPreferences((s) => s.repaymentRecords);
+  const forecastBills = useAppPreferences((s) => s.forecastBills);
+  const addForecastBill = useAppPreferences((s) => s.addForecastBill);
+  const removeForecastBill = useAppPreferences((s) => s.removeForecastBill);
 
   const [isWelcomeExpanded, setIsWelcomeExpanded] = useState(true);
   const [trendGranularity, setTrendGranularity] = useState<'week' | 'month' | 'year'>('week');
@@ -111,11 +114,13 @@ export function DashboardPage() {
         subscriptions,
         debts,
         repaymentRecords,
+        forecastBills,
         days: simulationMonths * 30
       }),
     [
       accounts,
       debts,
+      forecastBills,
       investmentPositions,
       repaymentRecords,
       subscriptions,
@@ -526,6 +531,9 @@ export function DashboardPage() {
           {...assetLiabilitySimulation}
           horizonMonths={simulationMonths}
           onHorizonChange={setSimulationMonths}
+          forecastBills={forecastBills}
+          onAddForecastBill={addForecastBill}
+          onRemoveForecastBill={removeForecastBill}
         />
         <div
           className="dashboard-density-control"
