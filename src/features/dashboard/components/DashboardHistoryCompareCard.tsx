@@ -1,3 +1,4 @@
+import { useTFallback } from '../../../shared/lib/useTFallback';
 import { formatCurrencyAuto } from '../../../shared/lib/format';
 
 export interface DashboardHistoryCompareCardProps {
@@ -33,34 +34,35 @@ export function DashboardHistoryCompareCard({
   profile,
   monthlyInsightStatus
 }: DashboardHistoryCompareCardProps) {
+  const tf = useTFallback();
   return (
     <article className="dashboard-history-profile-stream" style={{ marginTop: 12 }}>
       <div className="dashboard-section-header">
-        <h3>消费手账</h3>
-        <span>过去花了多少 + 本月人设</span>
+        <h3>{tf('dashboard.historyCard.title', '消费手账')}</h3>
+        <span>{tf('dashboard.historyCard.subtitle', '过去花了多少 + 本月人设')}</span>
       </div>
 
       <div className="grid grid-2 dashboard-history-profile-grid" style={{ gap: 12 }}>
         <section className="dashboard-history-card">
-          <h4>花钱时间线</h4>
+          <h4>{tf('dashboard.historyCard.timeline', '花钱时间线')}</h4>
           <div className="dashboard-history-metrics dashboard-history-metrics--compact">
             <article>
-              <span>上月花了</span>
+              <span>{tf('dashboard.historyCard.lastMonth', '上月花了')}</span>
               <strong className="expense">{formatCurrencyAuto(previousMonthExpense)}</strong>
             </article>
             <article>
-              <span>本季花了</span>
+              <span>{tf('dashboard.historyCard.thisQuarter', '本季花了')}</span>
               <strong className="expense">{formatCurrencyAuto(quarterExpense)}</strong>
             </article>
             <article>
-              <span>今年花了</span>
+              <span>{tf('dashboard.historyCard.thisYear', '今年花了')}</span>
               <strong className="expense">{formatCurrencyAuto(yearlyExpense)}</strong>
             </article>
           </div>
         </section>
 
         <section className="dashboard-profile-card">
-          <h4>本月消费人设</h4>
+          <h4>{tf('dashboard.historyCard.persona', '本月消费人设')}</h4>
           <div className="dashboard-profile-tags dashboard-profile-tags--compact">
             <span>常买时段：{profile?.timePreference || '待解锁'}</span>
             <span>常去商家：{profile?.topMerchant || '待解锁'}</span>

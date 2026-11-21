@@ -1,3 +1,4 @@
+import { useTFallback } from '../../../shared/lib/useTFallback';
 import { useState } from 'react';
 import { formatCurrency } from '../../../shared/lib/format';
 
@@ -24,6 +25,7 @@ function formatTopTransactionDate(value: string) {
 }
 
 export function DashboardTopTransactionsCard({ items }: DashboardTopTransactionsCardProps) {
+  const tf = useTFallback();
   const [isExpanded, setIsExpanded] = useState(false);
   const visibleItems = isExpanded ? items : items.slice(0, COLLAPSED_TOP_TRANSACTION_COUNT);
   const hiddenCount = Math.max(0, items.length - visibleItems.length);
@@ -31,7 +33,7 @@ export function DashboardTopTransactionsCard({ items }: DashboardTopTransactions
   return (
     <div className="dashboard-core-top-list">
       <div className="dashboard-section-header">
-        <h4>本月大额 TOP</h4>
+        <h4>{tf('dashboard.topTransactions.title', '本月大额 TOP')}</h4>
         <span>{items.length} 笔值得回看</span>
       </div>
       <div className="dashboard-top-list">

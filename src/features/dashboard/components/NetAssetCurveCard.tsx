@@ -1,3 +1,4 @@
+import { useTFallback } from '../../../shared/lib/useTFallback';
 import { formatCurrencyAuto } from '../../../shared/lib/format';
 
 export interface NetAssetCurveRow {
@@ -31,14 +32,15 @@ export function NetAssetCurveCard({
   worstDropDelta,
   onNavigateToMonth
 }: NetAssetCurveCardProps) {
+  const tf = useTFallback();
   const maxValue = Math.max(...rows.map((item) => item.value), 1);
 
   return (
     <article className="panel dashboard-unified-card" style={{ margin: 0 }}>
       <div className="dashboard-section-header dashboard-section-header-tight">
         <div>
-          <h4>净资产趋势</h4>
-          <p className="muted">账户余额 + 投资市值 − 负债余额</p>
+          <h4>{tf('dashboard.netAssetCurve.title', '净资产趋势')}</h4>
+          <p className="muted">{tf('dashboard.netAssetCurve.formula', '账户余额 + 投资市值 − 负债余额')}</p>
         </div>
       </div>
       <div className="dashboard-net-curve">
@@ -53,7 +55,7 @@ export function NetAssetCurveCard({
           >
             <span className="dashboard-net-row-label">
               {item.label}
-              {item.isCurrent ? <em>当前</em> : null}
+              {item.isCurrent ? <em>{tf('dashboard.netAssetCurve.current', '当前')}</em> : null}
             </span>
             <i style={{ width: `${(item.value / maxValue) * 100}%` }} />
             <strong>{formatCurrencyAuto(item.value)}</strong>

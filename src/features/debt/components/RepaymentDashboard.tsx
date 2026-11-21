@@ -651,7 +651,7 @@ export function RepaymentDashboard({
                         }}
                       >
                         <label>
-                          还款日
+                          {tf('repayment.card.dueDay', '还款日')}
                           <input
                             autoFocus
                             type="number"
@@ -662,7 +662,7 @@ export function RepaymentDashboard({
                             placeholder="1-31"
                             aria-label={`${item.name}还款日`}
                           />
-                          日
+                          {tf('common.unit.day', '日')}
                         </label>
                         <button type="submit" className="primary">
                           保存

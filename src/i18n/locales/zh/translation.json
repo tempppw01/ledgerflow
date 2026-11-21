@@ -10,7 +10,11 @@
       "result": "计算结果",
       "plus": "加",
       "minus": "减"
-    }
+    },
+    "unit": {
+      "day": "日"
+    },
+    "cancel": "取消"
   },
   "app": {
     "title": "LedgerFlow 记账软件"
@@ -759,7 +763,39 @@
       "densityTitle": "首页显示",
       "chartEmptyCta": "记第一笔"
     },
-    "financeRadarBasis": "今日财务雷达依据"
+    "financeRadarBasis": "今日财务雷达依据",
+    "historyCard": {
+      "title": "消费手账",
+      "subtitle": "过去花了多少 + 本月人设",
+      "timeline": "花钱时间线",
+      "lastMonth": "上月花了",
+      "thisQuarter": "本季花了",
+      "thisYear": "今年花了",
+      "persona": "本月消费人设"
+    },
+    "radar": {
+      "title": "今日财务雷达",
+      "subtitle": "只捞最值得看的点",
+      "attention": "需要留意",
+      "wins": "做得不错",
+      "openTransactions": "看账单明细",
+      "tuneBudget": "调一下预算"
+    },
+    "monthlySummary": {
+      "title": "本月收支概览",
+      "balance": "结余",
+      "focus": "AI 分析聚焦于本月分类结构与异常波动",
+      "categoryMix": "分类结构",
+      "sortedByAmount": "按金额排序"
+    },
+    "netAssetCurve": {
+      "title": "净资产趋势",
+      "formula": "账户余额 + 投资市值 − 负债余额",
+      "current": "当前"
+    },
+    "topTransactions": {
+      "title": "本月大额 TOP"
+    }
   },
   "transactions": {
     "quickAdd": {
@@ -2681,7 +2717,8 @@
       "pressureWatch": "关注",
       "pressureHigh": "偏高",
       "incomeSourceManual": "👤 你手动输入",
-      "incomeSourceUnknown": "— 未确定"
+      "incomeSourceUnknown": "— 未确定",
+      "dueDay": "还款日"
     },
     "health": {
       "title": "负债健康度",
@@ -2972,7 +3009,21 @@
       "cancel": "取消"
     },
     "actualAmount": "实际还款金额",
-    "noteAria": "备注"
+    "noteAria": "备注",
+    "cost": {
+      "remainingTerms": "剩余期数",
+      "monthlyRate": "月利率",
+      "dailyRate": "日利率",
+      "remainingInterest": "剩余利息",
+      "remainingTotalCost": "剩余总成本",
+      "terms": "期数"
+    },
+    "presets": {
+      "loanTemplateNote": "贷款模板 · 按账单补充参数",
+      "consumerCreditNote": "消费信贷 · 按账单补充参数",
+      "installmentNote": "分期模板 · 按账单补充参数",
+      "manualLoanNote": "贷款模板 · 自行填写合同数据"
+    }
   },
   "categoriesAccounts": {
     "accountName": "账户名称",
@@ -4066,9 +4117,15 @@
     }
   },
   "debugLog": {
-    "scrollArea": "调试日志滚动容器"
+    "scrollArea": "调试日志滚动容器",
+    "title": "首页调试日志",
+    "clear": "清空日志",
+    "empty": "暂无调试日志"
   },
   "tags": {
-    "emptyAria": "暂无标签数据"
+    "emptyAria": "暂无标签数据",
+    "pageTitle": "交易标签",
+    "viewAll": "查看全部",
+    "locateDetail": "定位详情"
   }
 }

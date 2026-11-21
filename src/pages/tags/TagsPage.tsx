@@ -64,7 +64,7 @@ export function TagsPage() {
         className="row"
         style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}
       >
-        <h2 style={{ margin: 0 }}>🏷️ 交易标签</h2>
+        <h2 style={{ margin: 0 }}>🏷️ {tf('tags.pageTitle', '交易标签')}</h2>
         <small style={{ color: 'var(--color-text-secondary)' }}>共 {groups.length} 个标签</small>
       </div>
 
@@ -85,7 +85,7 @@ export function TagsPage() {
 
               <div className="row" style={{ marginBottom: 10 }}>
                 <Link className="tag-panel-link-button" to={buildTransactionsLink(group.label)}>
-                  查看全部
+                  {tf('tags.viewAll', '查看全部')}
                 </Link>
               </div>
 
@@ -102,7 +102,7 @@ export function TagsPage() {
                       </div>
                       <div className="tag-panel-actions">
                         <strong>{formatCurrency(tx.amount)}</strong>
-                        <Link to={buildTransactionsLink(group.label, tx.id)}>定位详情</Link>
+                        <Link to={buildTransactionsLink(group.label, tx.id)}>{tf('tags.locateDetail', '定位详情')}</Link>
                       </div>
                     </div>
                   );

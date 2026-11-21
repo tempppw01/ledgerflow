@@ -1,3 +1,4 @@
+import { useTFallback } from '../../../shared/lib/useTFallback';
 import { formatCurrencyAuto } from '../../../shared/lib/format';
 import { toSafeNumber } from '../model/utils';
 
@@ -42,6 +43,7 @@ export function DashboardMonthlyTrendSummaryCard({
   onRefresh,
   refreshDisabled
 }: DashboardMonthlyTrendSummaryCardProps) {
+  const tf = useTFallback();
   return (
     <section className="panel">
       <header className="dashboard-panel-header">
@@ -65,10 +67,8 @@ export function DashboardMonthlyTrendSummaryCard({
 
       <div className="dashboard-trend-summary">
         <div>
-          <p className="dashboard-summary-title">本月收支概览</p>
-          <p className="dashboard-summary-main">
-            结余
-            <span
+          <p className="dashboard-summary-title">{tf('dashboard.monthlySummary.title', '本月收支概览')}</p>
+          <p className="dashboard-summary-main">{tf('dashboard.monthlySummary.balance', '结余')}<span
               className={
                 monthlyBalance >= 0
                   ? 'dashboard-summary-main-amount positive'
@@ -96,7 +96,7 @@ export function DashboardMonthlyTrendSummaryCard({
             <span className="dashboard-summary-metric neutral">交易 {transactionCount} 笔</span>
           </p>
         </div>
-        <div className="dashboard-summary-chip">AI 分析聚焦于本月分类结构与异常波动</div>
+        <div className="dashboard-summary-chip">{tf('dashboard.monthlySummary.focus', 'AI 分析聚焦于本月分类结构与异常波动')}</div>
       </div>
 
       <div className="dashboard-ai-actions" style={{ marginBottom: 'var(--space-3)' }}>
@@ -115,8 +115,8 @@ export function DashboardMonthlyTrendSummaryCard({
       <div className="dashboard-trend-sections">
         <section>
           <div className="dashboard-section-header">
-            <h4>分类结构</h4>
-            <span>按金额排序</span>
+            <h4>{tf('dashboard.monthlySummary.categoryMix', '分类结构')}</h4>
+            <span>{tf('dashboard.monthlySummary.sortedByAmount', '按金额排序')}</span>
           </div>
           <div className="dashboard-breakdown-grid">
             {displayCategoryBreakdown.map((item, index) => {

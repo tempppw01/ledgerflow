@@ -124,7 +124,8 @@ type DebtEntryMode = 'standard' | 'simple';
 type DebtPreset = {
   id: string;
   name: string;
-  description: string;
+  /** 模板说明的 i18n key:常量在模块级,取不到 t(),渲染时再翻译。 */
+  descriptionKey: string;
   type: DebtType;
   iconUrl?: string;
   mark: string;
@@ -135,7 +136,7 @@ const DEBT_PRESETS: DebtPreset[] = [
   {
     id: 'weilidai',
     name: '微粒贷',
-    description: '贷款模板 · 按账单补充参数',
+    descriptionKey: 'repayment.presets.loanTemplateNote',
     type: 'loan',
     iconUrl: WEBANK_ICON_URL,
     mark: '微',
@@ -144,7 +145,7 @@ const DEBT_PRESETS: DebtPreset[] = [
   {
     id: 'jiebei',
     name: '借呗',
-    description: '贷款模板 · 按账单补充参数',
+    descriptionKey: 'repayment.presets.loanTemplateNote',
     type: 'loan',
     iconUrl: JIEBEI_ICON_URL,
     mark: '借',
@@ -153,7 +154,7 @@ const DEBT_PRESETS: DebtPreset[] = [
   {
     id: 'huabei',
     name: '花呗',
-    description: '消费信贷 · 按账单补充参数',
+    descriptionKey: 'repayment.presets.consumerCreditNote',
     type: 'consumer-loan',
     mark: '花',
     matchTerms: ['花呗', '蚂蚁花呗']
@@ -161,7 +162,7 @@ const DEBT_PRESETS: DebtPreset[] = [
   {
     id: 'jd-baitiao',
     name: '京东白条',
-    description: '消费信贷 · 按账单补充参数',
+    descriptionKey: 'repayment.presets.consumerCreditNote',
     type: 'consumer-loan',
     iconUrl: BAITIAO_ICON_URL,
     mark: '白',
@@ -170,7 +171,7 @@ const DEBT_PRESETS: DebtPreset[] = [
   {
     id: 'jd-jintiao',
     name: '京东金条',
-    description: '贷款模板 · 按账单补充参数',
+    descriptionKey: 'repayment.presets.loanTemplateNote',
     type: 'loan',
     mark: '金',
     matchTerms: ['京东金条', '金条']
@@ -178,7 +179,7 @@ const DEBT_PRESETS: DebtPreset[] = [
   {
     id: 'anyihua',
     name: '安逸花',
-    description: '贷款模板 · 按账单补充参数',
+    descriptionKey: 'repayment.presets.loanTemplateNote',
     type: 'loan',
     iconUrl: ANYIHUA_ICON_URL,
     mark: '安',
@@ -187,7 +188,7 @@ const DEBT_PRESETS: DebtPreset[] = [
   {
     id: 'fangxinjie',
     name: '抖音放心借',
-    description: '贷款模板 · 按账单补充参数',
+    descriptionKey: 'repayment.presets.loanTemplateNote',
     type: 'loan',
     iconUrl: FANGXINJIE_ICON_URL,
     mark: '抖',
@@ -196,7 +197,7 @@ const DEBT_PRESETS: DebtPreset[] = [
   {
     id: 'qifu-jietiao',
     name: '奇富借条',
-    description: '贷款模板 · 按账单补充参数',
+    descriptionKey: 'repayment.presets.loanTemplateNote',
     type: 'loan',
     iconUrl: QIFUJIETIAO_ICON_URL,
     mark: '奇',
@@ -205,7 +206,7 @@ const DEBT_PRESETS: DebtPreset[] = [
   {
     id: 'credit-card-installment',
     name: '信用卡分期',
-    description: '分期模板 · 按账单补充参数',
+    descriptionKey: 'repayment.presets.installmentNote',
     type: 'loan',
     mark: '分',
     matchTerms: ['信用卡分期', '账单分期', '消费分期']
@@ -213,7 +214,7 @@ const DEBT_PRESETS: DebtPreset[] = [
   {
     id: 'consumer-loan',
     name: '通用消费贷',
-    description: '贷款模板 · 自行填写合同数据',
+    descriptionKey: 'repayment.presets.manualLoanNote',
     type: 'loan',
     mark: '贷',
     matchTerms: ['消费贷', '贷款', '借款']
@@ -3369,7 +3370,7 @@ export function RepaymentManagementPage() {
                         </div>
                       ) : (
                         <div className="repayment-debt-metric">
-                          <span className="repayment-debt-metric-label">剩余期数</span>
+                          <span className="repayment-debt-metric-label">{tf('repayment.cost.remainingTerms', '剩余期数')}</span>
                           <span className="repayment-debt-metric-value">
                             {selectedDebt.remainingMonths && selectedDebt.remainingMonths > 0
                               ? `${selectedDebt.remainingMonths} 期`
@@ -3438,7 +3439,7 @@ export function RepaymentManagementPage() {
                       </summary>
                       <div className="repayment-debt-detail-metrics repayment-debt-detail-metrics-secondary">
                         <div className="repayment-debt-metric">
-                          <span className="repayment-debt-metric-label">月利率</span>
+                          <span className="repayment-debt-metric-label">{tf('repayment.cost.monthlyRate', '月利率')}</span>
                           <span className="repayment-debt-metric-value">
                             {selectedDebt.monthlyRate > 0
                               ? `${selectedDebt.monthlyRate.toFixed(3)}%`
@@ -3446,7 +3447,7 @@ export function RepaymentManagementPage() {
                           </span>
                         </div>
                         <div className="repayment-debt-metric">
-                          <span className="repayment-debt-metric-label">日利率</span>
+                          <span className="repayment-debt-metric-label">{tf('repayment.cost.dailyRate', '日利率')}</span>
                           <span className="repayment-debt-metric-value">
                             {selectedDebt.dailyRate > 0
                               ? `${selectedDebt.dailyRate.toFixed(4)}%`
@@ -3454,7 +3455,7 @@ export function RepaymentManagementPage() {
                           </span>
                         </div>
                         <div className="repayment-debt-metric">
-                          <span className="repayment-debt-metric-label">剩余利息</span>
+                          <span className="repayment-debt-metric-label">{tf('repayment.cost.remainingInterest', '剩余利息')}</span>
                           <span className="repayment-debt-metric-value">
                             {selectedDebt.remainingInterestCost !== null
                               ? `¥${selectedDebt.remainingInterestCost.toFixed(2)}`
@@ -3462,7 +3463,7 @@ export function RepaymentManagementPage() {
                           </span>
                         </div>
                         <div className="repayment-debt-metric">
-                          <span className="repayment-debt-metric-label">剩余总成本</span>
+                          <span className="repayment-debt-metric-label">{tf('repayment.cost.remainingTotalCost', '剩余总成本')}</span>
                           <span className="repayment-debt-metric-value">
                             {selectedDebt.remainingTotalCost !== null
                               ? `¥${selectedDebt.remainingTotalCost.toFixed(2)}`
@@ -3489,7 +3490,7 @@ export function RepaymentManagementPage() {
                           </span>
                         </div>
                         <div className="repayment-debt-metric">
-                          <span className="repayment-debt-metric-label">期数</span>
+                          <span className="repayment-debt-metric-label">{tf('repayment.cost.terms', '期数')}</span>
                           <span className="repayment-debt-metric-value">
                             {selectedDebt.totalPeriods
                               ? `${selectedDebt.paidPeriods || 0}/${selectedDebt.totalPeriods}`
@@ -4057,7 +4058,7 @@ export function RepaymentManagementPage() {
                           </span>
                           <span className="repayment-debt-preset-copy">
                             <strong>{preset.name}</strong>
-                            <small>{preset.description}</small>
+                            <small>{tf(preset.descriptionKey, '贷款模板 · 按账单补充参数')}</small>
                           </span>
                           <span className="repayment-debt-preset-arrow" aria-hidden="true">
                             →

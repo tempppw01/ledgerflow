@@ -27,19 +27,19 @@ export function DebugLogPanel() {
       {open ? (
         <section className="panel debug-log-panel debug-log-floating">
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ margin: 0 }}>首页调试日志</h3>
+            <h3 style={{ margin: 0 }}>首页调试{tf('common.unit.day', '日')}志</h3>
             <div className="row" style={{ gap: 8 }}>
               <button type="button" onClick={clearLogs} disabled={logs.length === 0}>
-                清空日志
+                清空{tf('common.unit.day', '日')}志
               </button>
               <button type="button" onClick={() => setOpen(false)}>
-                关闭
+                {tf('common.close', '关闭')}
               </button>
             </div>
           </div>
 
           {logs.length === 0 ? (
-            <p className="debug-log-empty">暂无调试日志</p>
+            <p className="debug-log-empty">暂无调试{tf('common.unit.day', '日')}志</p>
           ) : (
             <div className="debug-log-scroll" aria-label={tf('debugLog.scrollArea', '调试日志滚动容器')}>
               {logs

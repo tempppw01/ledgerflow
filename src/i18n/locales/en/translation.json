@@ -10,7 +10,11 @@
       "result": "Result",
       "plus": "Plus",
       "minus": "Minus"
-    }
+    },
+    "unit": {
+      "day": "d"
+    },
+    "cancel": "Cancel"
   },
   "app": {
     "title": "LedgerFlow Bookkeeping"
@@ -759,7 +763,39 @@
       "densityTitle": "Show on dashboard",
       "chartEmptyCta": "Add first entry"
     },
-    "financeRadarBasis": "What the daily radar is based on"
+    "financeRadarBasis": "What the daily radar is based on",
+    "historyCard": {
+      "title": "Spending journal",
+      "subtitle": "What you spent before, plus this month’s persona",
+      "timeline": "Spending timeline",
+      "lastMonth": "Spent last month",
+      "thisQuarter": "Spent this quarter",
+      "thisYear": "Spent this year",
+      "persona": "This month’s spending persona"
+    },
+    "radar": {
+      "title": "Daily financial radar",
+      "subtitle": "Only the points worth your attention",
+      "attention": "Needs attention",
+      "wins": "Going well",
+      "openTransactions": "Open transactions",
+      "tuneBudget": "Adjust budget"
+    },
+    "monthlySummary": {
+      "title": "This month at a glance",
+      "balance": "Balance",
+      "focus": "AI looks at this month’s category mix and unusual moves",
+      "categoryMix": "Category mix",
+      "sortedByAmount": "Sorted by amount"
+    },
+    "netAssetCurve": {
+      "title": "Net worth trend",
+      "formula": "Account balances + investments − liabilities",
+      "current": "Current"
+    },
+    "topTransactions": {
+      "title": "Biggest transactions this month"
+    }
   },
   "transactions": {
     "quickAdd": {
@@ -2681,7 +2717,8 @@
       "pressureWatch": "Watch",
       "pressureHigh": "High",
       "incomeSourceManual": "👤 Entered by you",
-      "incomeSourceUnknown": "— Not set"
+      "incomeSourceUnknown": "— Not set",
+      "dueDay": "Due day"
     },
     "health": {
       "title": "Debt health",
@@ -2972,7 +3009,21 @@
       "cancel": "Cancel"
     },
     "actualAmount": "Actual repayment amount",
-    "noteAria": "Note"
+    "noteAria": "Note",
+    "cost": {
+      "remainingTerms": "Remaining terms",
+      "monthlyRate": "Monthly rate",
+      "dailyRate": "Daily rate",
+      "remainingInterest": "Remaining interest",
+      "remainingTotalCost": "Remaining total cost",
+      "terms": "Terms"
+    },
+    "presets": {
+      "loanTemplateNote": "Loan template · fill in from your statement",
+      "consumerCreditNote": "Consumer credit · fill in from your statement",
+      "installmentNote": "Installment template · fill in from your statement",
+      "manualLoanNote": "Loan template · enter your contract details"
+    }
   },
   "categoriesAccounts": {
     "accountName": "Account name",
@@ -4066,9 +4117,15 @@
     }
   },
   "debugLog": {
-    "scrollArea": "Debug log scroll area"
+    "scrollArea": "Debug log scroll area",
+    "title": "Home debug log",
+    "clear": "Clear log",
+    "empty": "No debug log yet"
   },
   "tags": {
-    "emptyAria": "No tag data yet"
+    "emptyAria": "No tag data yet",
+    "pageTitle": "Transaction tags",
+    "viewAll": "View all",
+    "locateDetail": "Locate in detail"
   }
 }

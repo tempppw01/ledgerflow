@@ -18,8 +18,8 @@ export function DashboardAnomalyInsights({
   return (
     <section className="panel" style={{ marginTop: 12 }}>
       <div className="dashboard-section-header">
-        <h4>今日财务雷达</h4>
-        <span>只捞最值得看的点</span>
+        <h4>{tf('dashboard.radar.title', '今日财务雷达')}</h4>
+        <span>{tf('dashboard.radar.subtitle', '只捞最值得看的点')}</span>
       </div>
 
       {anomalyInsight.supportFacts.length > 0 ? (
@@ -34,7 +34,7 @@ export function DashboardAnomalyInsights({
 
       <div className="dashboard-anomaly-summary-grid">
         <article className="dashboard-anomaly-summary-card">
-          <p className="dashboard-anomaly-card-title">🚦需要留意</p>
+          <p className="dashboard-anomaly-card-title">🚦{tf('dashboard.radar.attention', '需要留意')}</p>
           <ul className="dashboard-anomaly-list">
             {anomalyInsight.anomalies.map((text) => (
               <li key={text}>{text}</li>
@@ -42,7 +42,7 @@ export function DashboardAnomalyInsights({
           </ul>
         </article>
         <article className="dashboard-anomaly-summary-card">
-          <p className="dashboard-anomaly-card-title">✨做得不错</p>
+          <p className="dashboard-anomaly-card-title">✨{tf('dashboard.radar.wins', '做得不错')}</p>
           <ul className="dashboard-anomaly-list">
             {anomalyInsight.highlights.map((text) => (
               <li key={text}>{text}</li>
@@ -52,12 +52,8 @@ export function DashboardAnomalyInsights({
       </div>
 
       <div className="dashboard-anomaly-toolbar">
-        <button type="button" onClick={onNavigateToTransactions}>
-          看账单明细
-        </button>
-        <button type="button" onClick={onNavigateToSmartBudget}>
-          调一下预算
-        </button>
+        <button type="button" onClick={onNavigateToTransactions}>{tf('dashboard.radar.openTransactions', '看账单明细')}</button>
+        <button type="button" onClick={onNavigateToSmartBudget}>{tf('dashboard.radar.tuneBudget', '调一下预算')}</button>
       </div>
     </section>
   );
