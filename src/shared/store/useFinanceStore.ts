@@ -15,6 +15,7 @@ import { syncChangeIfNeeded } from '../lib/dataSync';
 import { generateId } from '../lib/id';
 import { getSignedAmount } from '../lib/transactionMetrics';
 import { isBalanceAffectingStatus } from '../lib/localDate';
+import { advanceSubscriptionDate } from '../lib/subscriptionSchedule';
 
 interface CategoryLearningRule {
   id: string;
@@ -1450,17 +1451,34 @@ export const useFinanceStore = create<FinanceState>()(
           };
 
           const transactions = [...s.transactions, transaction];
-          const subscriptions = s.subscriptions.map((item) =>
-            item.id === id
-              ? {
-                  ...item,
-                  lastGeneratedAt: today,
-                  lastGeneratedTransactionId: transaction.id,
-                  updatedAt: today,
-                  status: normalizeSubscriptionStatus(item)
-                }
-              : item
-          );
+          const subscriptions = s.subscriptions.map((item) => {
+            if (item.id !== id) {
+              return item;
+            }
+            // 记完这一期就把日期推到下一期。不推进的话,月付订阅过了第一期会
+            // 永远停在「已到期」:支出已经记了,首页却在提示「续费已逾期」。
+            const advanced = {
+              ...item,
+              renewalDate: advanceSubscriptionDate(
+                item.renewalDate,
+                item.billingCycle,
+                item.customCycleDays
+              ),
+              expireDate: advanceSubscriptionDate(
+                item.expireDate,
+                item.billingCycle,
+                item.customCycleDays
+              )
+            };
+            return {
+              ...advanced,
+              lastGeneratedAt: today,
+              lastGeneratedTransactionId: transaction.id,
+              updatedAt: today,
+              // 用推进后的日期重算状态;下面这行以前是空转(日期没变,结果必然相同)。
+              status: normalizeSubscriptionStatus(advanced)
+            };
+          });
 
           result = { transactionId: transaction.id, duplicated: false };
           return {
