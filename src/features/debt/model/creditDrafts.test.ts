@@ -3,6 +3,8 @@ import {
   getCreditDraftPendingFields,
   isCreditDraftReady,
   parseCreditDraftFragment,
+  createCreditDraft,
+  mergeCreditDraft,
   upsertCreditDraft
 } from './creditDrafts';
 
@@ -58,5 +60,36 @@ describe('creditDrafts', () => {
     expect(parseCreditDraftFragment('还有6期')).toMatchObject({ remainingMonths: 6 });
     expect(parseCreditDraftFragment('哪几笔最该先还?')).toBeNull();
     expect(parseCreditDraftFragment('帮我分析一下这个月的还款压力')).toBeNull();
+  });
+
+  /**
+   * 整数字段不能因为「0 < 值 < 1 被截断」而变成 0。
+   * 转换链是 positiveNumber(要求 > 0) → Math.trunc。0.4 这类小数能通过前者的
+   * 检查,却被后者截成 0,于是草稿里出现还款日 0 / 0 期这种自相矛盾的值
+   * (字段约定是正整数)。repaymentDay=0 还能通过后续的 <= 31 检查混进去,
+   * 最终让还款周期窗口算不出来、界面直接不显示这一期。
+   */
+  it('整数字段不会退化成 0', () => {
+    const draft = createCreditDraft({
+      name: '招商信用卡',
+      repaymentDay: 0.4,
+      remainingMonths: 0.9,
+      totalPeriods: 0.2,
+      paidPeriods: 0.7
+    });
+
+    expect(draft.repaymentDay).toBeUndefined();
+    expect(draft.remainingMonths).toBeUndefined();
+    expect(draft.totalPeriods).toBeUndefined();
+    expect(draft.paidPeriods).toBeUndefined();
+
+    // 正常整数照常保留
+    const normal = createCreditDraft({ name: '招商信用卡', repaymentDay: 15, remainingMonths: 12 });
+    expect(normal.repaymentDay).toBe(15);
+    expect(normal.remainingMonths).toBe(12);
+
+    // 合并路径同样不能出现 0
+    const merged = mergeCreditDraft(createCreditDraft({ name: '招商信用卡' }), { repaymentDay: 0.4 });
+    expect(merged.repaymentDay).toBeUndefined();
   });
 });

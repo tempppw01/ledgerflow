@@ -74,7 +74,14 @@ function positiveNumber(value: unknown): number | undefined {
 
 function integerPositive(value: unknown): number | undefined {
   const parsed = positiveNumber(value);
-  return parsed === undefined ? undefined : Math.trunc(parsed);
+  if (parsed === undefined) {
+    return undefined;
+  }
+  // 先按「正整数」截断,再确认截断后仍 ≥ 1:0 < 值 < 1(例如 0.4)会被截成 0,
+  // 而还款日 0、0 期、0 期已还都没有意义 —— 与 positiveNumber 要求的「> 0」自相
+  // 矛盾,也会让 repaymentDay=0 这类脏值通过后续的 <= 31 检查。
+  const truncated = Math.trunc(parsed);
+  return truncated >= 1 ? truncated : undefined;
 }
 
 function repaymentDay(value: unknown): number | undefined {
