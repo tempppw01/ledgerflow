@@ -168,7 +168,6 @@ export function RecycleBinPage() {
       <div className="recycle-bin-header">
         <div>
           <h2>{t('recycleBin.title')}</h2>
-          <p className="muted">{t('recycleBin.description')}</p>
         </div>
         <div className="recycle-bin-header-actions">
           <span className="metric-chip">

@@ -2364,39 +2364,18 @@ export function AssistantPage() {
                       {tf('assistant.creditWelcome.headlineLead', '每一笔该还什么，')}
                       <em>{tf('assistant.creditWelcome.headlineAccent', '心里都有数')}</em>
                     </h2>
-                    <p>
-                      {tf(
-                        'assistant.creditWelcome.description',
-                        '贷款、花呗、分期和信用账单都可以交给我。我会先理清本期应还、还款日和还缺哪些资料，也能直接帮你记一笔还款。'
-                      )}
-                    </p>
                     <div className="chat-mode-welcome-features">
                       <div>
                         <b>01</b>
-                        <span>
-                          {tf('assistant.creditWelcome.featureBillTitle', '识别账单')}
-                          <small>
-                            {tf('assistant.creditWelcome.featureBillNote', '提取金额、日期和期数')}
-                          </small>
-                        </span>
+                        <span>{tf('assistant.creditWelcome.featureBillTitle', '识别账单')}</span>
                       </div>
                       <div>
                         <b>02</b>
-                        <span>
-                          {tf('assistant.creditWelcome.featureDueTitle', '核对本期应还')}
-                          <small>
-                            {tf('assistant.creditWelcome.featureDueNote', '把待确认的信息标出来')}
-                          </small>
-                        </span>
+                        <span>{tf('assistant.creditWelcome.featureDueTitle', '核对本期应还')}</span>
                       </div>
                       <div>
                         <b>03</b>
-                        <span>
-                          {tf('assistant.creditWelcome.featureLogTitle', '登记与核对')}
-                          <small>
-                            {tf('assistant.creditWelcome.featureLogNote', '说一句就能记还款')}
-                          </small>
-                        </span>
+                        <span>{tf('assistant.creditWelcome.featureLogTitle', '登记与核对')}</span>
                       </div>
                     </div>
                   </div>
@@ -2423,37 +2402,18 @@ export function AssistantPage() {
                       {tf('assistant.welcome.headlineLead', '记一笔、查一笔，')}
                       <em>{tf('assistant.welcome.headlineAccent', '直接说就行')}</em>
                     </h2>
-                    <p>
-                      {tf(
-                        'assistant.welcome.description',
-                        '说“午饭 28 元”直接记账，贴账单截图自动识别；也可以问账本、看趋势，或者让我修改、删除某一笔账单。'
-                      )}
-                    </p>
                     <div className="chat-mode-welcome-features">
                       <div>
                         <b>01</b>
-                        <span>
-                          {tf('assistant.welcome.featureVoiceNlTitle', '一句话记账')}
-                          <small>
-                            {tf('assistant.welcome.featureVoiceNlNote', '自然语言直接入账')}
-                          </small>
-                        </span>
+                        <span>{tf('assistant.welcome.featureVoiceNlTitle', '一句话记账')}</span>
                       </div>
                       <div>
                         <b>02</b>
-                        <span>
-                          {tf('assistant.welcome.featureOcrTitle', '截图识别')}
-                          <small>{tf('assistant.welcome.featureOcrNote', '保存前逐笔核对')}</small>
-                        </span>
+                        <span>{tf('assistant.welcome.featureOcrTitle', '截图识别')}</span>
                       </div>
                       <div>
                         <b>03</b>
-                        <span>
-                          {tf('assistant.welcome.featureEditTitle', '查账改账')}
-                          <small>
-                            {tf('assistant.welcome.featureEditNote', '增删改都能交给它')}
-                          </small>
-                        </span>
+                        <span>{tf('assistant.welcome.featureEditTitle', '查账改账')}</span>
                       </div>
                     </div>
                     <div className="chat-mode-welcome-briefs">

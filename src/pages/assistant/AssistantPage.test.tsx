@@ -592,8 +592,9 @@ describe('AssistantPage', () => {
 
     await selectAssistantMode('AI 信贷管家');
 
-    expect(await screen.findByText('核对本期应还')).toBeInTheDocument();
-    expect(screen.getByText('把待确认的信息标出来')).toBeInTheDocument();
+    expect(await screen.findByText('识别账单')).toBeInTheDocument();
+    expect(screen.getByText('核对本期应还')).toBeInTheDocument();
+    expect(screen.getByText('登记与核对')).toBeInTheDocument();
   });
 
   it('顶部不再显示快捷记一笔，清空上下文改到输入工具条', async () => {

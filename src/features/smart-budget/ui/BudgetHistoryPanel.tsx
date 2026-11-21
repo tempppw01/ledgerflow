@@ -25,12 +25,6 @@ export function BudgetHistoryPanel(props: BudgetHistoryPanelProps) {
             <BudgetHistoryIcon className="sb-icon-sm" />
             {tf('smartBudget.historyButton', '预算记录')}
           </h3>
-          <p className="sb-panel-sub">
-            {tf(
-              'smartBudget.historyPanel.subtitle',
-              '每次确认都会保留一份版本，随时恢复，不用重新填写。'
-            )}
-          </p>
         </div>
         <button type="button" className="sb-btn sb-btn--ghost sb-btn--xs" onClick={onClose}>
           {tf('categoriesAccounts.collapse', '收起')}

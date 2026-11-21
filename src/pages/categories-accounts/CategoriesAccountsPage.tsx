@@ -706,12 +706,6 @@ export function CategoriesAccountsPage() {
         <div>
           <p className="categories-console-eyebrow">BOOKKEEPING SETUP</p>
           <h1>{tf('nav.categoriesAccounts', '账户与分类')}</h1>
-          <p>
-            {tf(
-              'categoriesAccounts.subtitle',
-              '在一个清爽的工作区里，管理记账的分类、标签和资金账户。'
-            )}
-          </p>
         </div>
         <div
           className="categories-console-stat"
@@ -751,12 +745,6 @@ export function CategoriesAccountsPage() {
             <div>
               <span className="categories-console-kicker">CATEGORIES & TAGS</span>
               <h2>{tf('categoriesAccounts.categoriesTitle', '分类与标签管理')}</h2>
-              <p>
-                {tf(
-                  'categoriesAccounts.categoriesSubtitle',
-                  '支出和收入分开管理,一级分类下面还能再挂子分类。'
-                )}
-              </p>
             </div>
             <div
               className="categories-accounts-metrics"
@@ -862,7 +850,6 @@ export function CategoriesAccountsPage() {
                   {categoryKind === 'expense'
                     ? tf('categoriesAccounts.kindExpenseShort', '支出')
                     : tf('categoriesAccounts.kindIncomeShort', '收入')}
-                  {tf('categoriesAccounts.treeHintSuffix', '树 · 点「＋子分类」可以继续分层')}
                 </small>
               </div>
               <ul className="category-tree">
@@ -890,9 +877,6 @@ export function CategoriesAccountsPage() {
           <section className="categories-fold-block categories-fold-block-tags">
             <div className="category-block-head">
               <strong>{tf('categoriesAccounts.tagLibraryTitle', '标签库')}</strong>
-              <small>
-                {tf('categoriesAccounts.tagLibraryHint', '标签来自交易备注和 AI 识别,可合并、清理')}
-              </small>
             </div>
             {tagGroups.length === 0 ? (
               <EmptyState
@@ -1017,12 +1001,6 @@ export function CategoriesAccountsPage() {
             <div>
               <span className="categories-console-kicker">CASH & ACCOUNTS</span>
               <h2>{tf('categoriesAccounts.accountsTitle', '账户管理')}</h2>
-              <p>
-                {tf(
-                  'categoriesAccounts.accountsSubtitle',
-                  '余额会随交易自动汇总；需要时双击金额进行校准。'
-                )}
-              </p>
             </div>
             <div
               className="categories-accounts-metrics"
@@ -1092,9 +1070,6 @@ export function CategoriesAccountsPage() {
                 </div>
               </div>
               <div className="account-create-actions">
-                <span className="muted">
-                  {tf('categoriesAccounts.newAccountHint', '新账户将参与交易汇总和余额统计。')}
-                </span>
                 <div>
                   <button
                     type="button"
@@ -1115,12 +1090,6 @@ export function CategoriesAccountsPage() {
             <div className="account-create-toolbar">
               <div>
                 <strong>{tf('categoriesAccounts.tabAccounts', '资金账户')}</strong>
-                <p className="muted">
-                  {tf(
-                    'categoriesAccounts.accountsToolbarHint',
-                    '集中管理银行卡、现金和虚拟账户，方便交易记录与余额追踪。'
-                  )}
-                </p>
               </div>
               <button className="primary" type="button" onClick={() => setShowAccountForm(true)}>
                 {tf('categoriesAccounts.addAccount', '＋ 新增账户')}

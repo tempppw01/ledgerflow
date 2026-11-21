@@ -667,9 +667,6 @@ export function SettingsPage({
             {variant === 'overlay' ? t('common.close') : t('settings.back')}
           </button>
         </div>
-        <p className="settings-page-intro" style={{ marginTop: 16 }}>
-          {t(`settings.intros.${activeWorkspace}`, { defaultValue: t('settings.intro') })}
-        </p>
 
         <nav className="settings-console-tabs" aria-label={t('settings.tabsAria')} role="tablist">
           {SETTINGS_WORKSPACES.map((workspace) => (
@@ -697,7 +694,6 @@ export function SettingsPage({
                 <div>
                   <p className="settings-data-eyebrow">DATABASE</p>
                   <h3 id="data-settings-title">{t('settings.data.title')}</h3>
-                  <p>{t('settings.data.desc')}</p>
                 </div>
                 <button
                   type="button"
@@ -900,7 +896,6 @@ export function SettingsPage({
                 <div className="settings-account-panel-head">
                   <div>
                     <h4 id="device-settings-title">{t('settings.account.devicesTitle')}</h4>
-                    <p>{t('settings.account.devicesDesc')}</p>
                   </div>
                   <button
                     type="button"
@@ -1075,7 +1070,6 @@ export function SettingsPage({
                   <option value="zh">{t('settings.language.zh')}</option>
                   <option value="en">{t('settings.language.en')}</option>
                 </select>
-                <small>{t('settings.language.hint')}</small>
               </div>
 
               <div className="field">
@@ -1132,7 +1126,6 @@ export function SettingsPage({
                 >
                   <span className="settings-subpanel-copy">
                     <strong>{t('settings.embeddingChannel.title')}</strong>
-                    <small>{t('settings.embeddingChannel.desc')}</small>
                   </span>
                 </button>
                 <span className="settings-subpanel-meta">

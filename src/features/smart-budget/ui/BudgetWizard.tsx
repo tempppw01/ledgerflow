@@ -104,12 +104,6 @@ export function BudgetWizard(props: BudgetWizardProps) {
               .replace('{total}', String(stepCount))}
           </span>
           <h3>{tf(`smartBudget.wizard.steps.${currentMeta.key}.title`, currentMeta.title)}</h3>
-          <p>
-            {tf(
-              'smartBudget.wizard.introHint',
-              '五步就能算出可执行的月度预算，中途离开也可以随时回来。'
-            )}
-          </p>
         </div>
         <div className="sb-wizard-summary">
           {summaryChips.map((item) => (

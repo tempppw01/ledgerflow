@@ -41,9 +41,6 @@ export function BudgetAiPanel(props: BudgetAiPanelProps) {
           </span>
           <div>
             <h3 className="sb-section-title">{tf('smartBudget.aiPanel.title', 'AI 预算观察')}</h3>
-            <p className="sb-panel-sub">
-              {tf('smartBudget.aiPanel.subtitle', '按当前执行情况给出下一步该盯住的地方。')}
-            </p>
           </div>
         </div>
         <button

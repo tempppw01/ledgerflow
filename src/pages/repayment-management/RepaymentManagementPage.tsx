@@ -2775,12 +2775,6 @@ export function RepaymentManagementPage() {
               {tf('repayment.eyebrow', '资产负债 / 还款管理')}
             </p>
             <h1>{tf('repayment.title', '还款管理')}</h1>
-            <p>
-              {tf(
-                'repayment.subtitle',
-                '把每一笔应还和已还放在同一条清晰的时间线上，按自己的节奏维护负债。'
-              )}
-            </p>
           </div>
           <div
             className="repayment-console-status"
@@ -2826,9 +2820,6 @@ export function RepaymentManagementPage() {
                   {formatNumberFixed2(overviewTotalDebt)}
                 </span>
                 <span className="finance-overview-unit">¥</span>
-              </p>
-              <p className="muted" style={{ margin: 0, fontSize: 12 }}>
-                {tf('repayment.card.totalDebtHint', '仅统计进行中的负债')}
               </p>
             </article>
             <article className="repayment-overview-stat">
@@ -2955,7 +2946,6 @@ export function RepaymentManagementPage() {
         <div className="finance-overview-income-actions repayment-income-toolbar">
           <div className="repayment-income-toolbar-copy">
             <strong>{tf('repayment.income.title', '月收入设置')}</strong>
-            <span>{tf('repayment.income.subtitle', '用于计算负债压力和还款建议')}</span>
           </div>
           <form className="repayment-income-editor" onSubmit={onManualIncomeSubmit}>
             <label className="repayment-income-field">
@@ -3425,7 +3415,6 @@ export function RepaymentManagementPage() {
                     >
                       <summary>
                         {tf('repayment.chart.moreDetails', '更多详情')}{' '}
-                        <small>{tf('repayment.chart.moreDetailsHint', '利息、账户、期数等')}</small>
                       </summary>
                       <div className="repayment-debt-detail-metrics repayment-debt-detail-metrics-secondary">
                         <div className="repayment-debt-metric">
@@ -3505,7 +3494,6 @@ export function RepaymentManagementPage() {
                     <div className="repayment-record-heading">
                       <div>
                         <h4>{tf('repayment.record.heading', '登记本期还款')}</h4>
-                        <p>{tf('repayment.record.hint', '先填金额和日期，备注可以稍后补充。')}</p>
                       </div>
                       <button
                         type="button"
@@ -3741,7 +3729,6 @@ export function RepaymentManagementPage() {
           >
             <summary>
               <span>查看完整分析</span>
-              <small>优先级 · 三种策略 · 风险 · 到期</small>
             </summary>
             <div className="repayment-ai-details-body">
               <section className="repayment-ai-detail-block">
@@ -4024,9 +4011,6 @@ export function RepaymentManagementPage() {
                   >
                     <div className="repayment-debt-presets-heading">
                       <strong>{tf('repayment.form.presetsTitle', '常用贷款')}</strong>
-                      <span>
-                        {tf('repayment.form.presetsHint', '先选模板，再按你的合同补充金额和期限')}
-                      </span>
                     </div>
                     <div className="repayment-debt-preset-list">
                       {DEBT_PRESETS.map((preset) => (
@@ -4078,9 +4062,6 @@ export function RepaymentManagementPage() {
                             ? tf('repayment.form.extracted', '识别完成')
                             : tf('repayment.form.uploadRecognize', '上传账单自动识别')}
                       </button>
-                      <span className="muted">
-                        {tf('repayment.form.imageHint', '支持支付宝/银行/信用卡账单截图。')}
-                      </span>
                     </div>
 
                     {debtImagePreview ? (
@@ -4103,13 +4084,6 @@ export function RepaymentManagementPage() {
                         {prefillHint}
                       </div>
                     ) : null}
-
-                    <p className="muted" style={{ margin: '12px 0 8px 0' }}>
-                      {tf(
-                        'repayment.form.basicHint',
-                        '先填写名称和剩余本金；贷款可再补充期数，自动估算后续还款。'
-                      )}
-                    </p>
 
                     <form onSubmit={onAddDebt} className="debt-form-line">
                       <div className="debt-form-core">
@@ -4186,12 +4160,6 @@ export function RepaymentManagementPage() {
                         <section className="debt-plan-mode">
                           <div className="debt-plan-mode-copy">
                             <strong>{tf('repayment.form.planMode', '还款计划方式')}</strong>
-                            <span>
-                              {tf(
-                                'repayment.form.planHint',
-                                '不知道总还款时，选择手动逐期计划最方便。'
-                              )}
-                            </span>
                           </div>
                           <div
                             className="debt-plan-mode-switch"
@@ -4241,9 +4209,6 @@ export function RepaymentManagementPage() {
                         >
                           <summary>
                             {tf('repayment.form.moreSettings', '更多设置')}
-                            <small>
-                              {tf('repayment.form.moreSettingsHint', '还款日和记录方式')}
-                            </small>
                           </summary>
                           <div className="debt-form-extra-grid">
                             <label className="debt-form-field">
@@ -4533,12 +4498,6 @@ export function RepaymentManagementPage() {
                                 <span className="debt-form-field-label">
                                   {tf('repayment.form.manualScheduleTitle', '手动还款计划')}
                                 </span>
-                                <small>
-                                  {tf(
-                                    'repayment.form.manualScheduleHint',
-                                    '从下一笔待还（第 {count} 期）开始填写；日期默认按还款日生成。'
-                                  ).replace('{count}', String(manualScheduleStartPeriod))}
-                                </small>
                               </div>
                               <button
                                 type="button"
@@ -4726,9 +4685,6 @@ export function RepaymentManagementPage() {
                           <div className="debt-pressure-preview-header">
                             <div>
                               <strong>{tf('repayment.chart.previewTitle', '还款压力曲线')}</strong>
-                              <span>
-                                {tf('repayment.chart.previewHint', '查看每期还款与还款后本金')}
-                              </span>
                             </div>
                             <span className="debt-pressure-preview-tag">
                               {tf('repayment.chart.previewTag', '已生成')}
@@ -4802,15 +4758,8 @@ export function RepaymentManagementPage() {
                   </>
                 ) : (
                   <form onSubmit={onAddDebt} className="debt-form-line debt-simple-form">
-                    <p className="debt-simple-form-intro">
-                      {tf(
-                        'repayment.form.simpleIntro',
-                        '先记下项目、日期和本期金额；需要时可以升级为完整负债管理。'
-                      )}
-                    </p>
                     <small className="debt-simple-draft-status" role="status">
-                      {simpleDebtDraftStatus ||
-                        tf('repayment.form.simpleDraftHint', '填写内容会自动保存，稍后可继续')}
+                      {simpleDebtDraftStatus }
                     </small>
                     <div className="debt-simple-form-fields">
                       <label className="debt-form-field debt-simple-form-project">

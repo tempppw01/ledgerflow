@@ -3175,9 +3175,6 @@ export function TransactionsPage() {
                 aria-label={tf('txPage.quickAdd.keypadAria', '金额键盘')}
               >
                 <AmountKeypad onKey={handleQuickAddKeypadInput} />
-                <p className="quick-add-keypad-tip">
-                  {tf('txPage.quickAdd.keypadTip', `支持加减乘除；按 Enter 计算`)}
-                </p>
               </section>
             </div>
 
@@ -3186,7 +3183,7 @@ export function TransactionsPage() {
                 {tf('txPage.quickAdd.save', `完成记账`)}
               </button>
               <small role="status">
-                {quickAddDraftStatus || tf('txPage.quickAdd.draftHint', '输入内容会自动保存为草稿')}
+                {quickAddDraftStatus }
               </small>
             </footer>
           </aside>

@@ -71,17 +71,14 @@ const BILL_ACCEPTED_EXTENSIONS = new Set(['.csv', '.txt', '.xlsx']);
 const OBJECT_STORAGE_OPTIONS: Array<{
   value: BackupObjectStorageProvider;
   label: (tf: TfFallback) => string;
-  description: (tf: TfFallback) => string;
 }> = [
   {
     value: 'aliyun-oss',
-    label: (tf) => tf('dataBackup.objectStorage.oss', '阿里云 OSS'),
-    description: (tf) => tf('dataBackup.objectStorage.ossDesc', '适合已开通 OSS Bucket 的用户')
+    label: (tf) => tf('dataBackup.objectStorage.oss', '阿里云 OSS')
   },
   {
     value: 's3-compatible',
-    label: (tf) => tf('dataBackup.objectStorage.s3', 'S3 兼容'),
-    description: (tf) => tf('dataBackup.objectStorage.s3Desc', '适合 MinIO、R2、COS 等兼容服务')
+    label: (tf) => tf('dataBackup.objectStorage.s3', 'S3 兼容')
   }
 ];
 function getFileExtension(fileName: string): string {
@@ -1041,7 +1038,6 @@ export function DatabaseSettingsPage() {
         <div>
           <p className="database-console-eyebrow">DATA CONTROL</p>
           <h1>{tf('dataBackup.title', '数据与备份')}</h1>
-          <p>{tf('dataBackup.subtitle', '管理账本数据、恢复点和异地副本。')}</p>
         </div>
         <div
           className="database-console-stat"
@@ -1086,12 +1082,6 @@ export function DatabaseSettingsPage() {
               )}
             </span>
           </div>
-          <p className="sync-tip">
-            {tf(
-              'dataBackup.local.desc',
-              '导出的备份可直接恢复，也可作为迁移至新数据库实例的原始文件。'
-            )}
-          </p>
           <BackupScopeSelector scope={backupScope} onChange={setBackupScope} />
           <div className="database-data-hub-actions">
             <button
@@ -1175,12 +1165,6 @@ export function DatabaseSettingsPage() {
               <h2>{tf('dataBackup.tabs.billImport', '账单导入')}</h2>
             </div>
           </div>
-          <p className="sync-tip">
-            {tf(
-              'dataBackup.billImport.desc',
-              '支持微信、支付宝官方账单 CSV / TXT（含制表符）和微信 XLSX。'
-            )}
-          </p>
           <div className="database-import-actions">
             <label className="field database-import-mode-field" style={{ marginBottom: 0 }}>
               {tf('dataBackup.billImport.duplicateStrategy', '遇到重复账单时')}
@@ -1250,12 +1234,6 @@ export function DatabaseSettingsPage() {
                     )}
                   </span>
                 </div>
-                <p className="sync-tip" style={{ margin: '6px 0 0' }}>
-                  {tf(
-                    'dataBackup.database.exportHint',
-                    '仅导出当前登录账号及其关联数据，并保留可导入所需的表结构。请妥善保管导出文件。'
-                  )}
-                </p>
               </div>
             </div>
             <div className="database-remote-backup-body">
@@ -1304,9 +1282,6 @@ export function DatabaseSettingsPage() {
                   {lastWebdavBackupText}
                 </span>
               </div>
-              <p className="sync-tip" style={{ margin: '6px 0 0' }}>
-                {tf('dataBackup.webdav.desc', '用于远程备份与恢复，默认通过同源代理连接。')}
-              </p>
             </div>
             <div className="database-remote-backup-summary">
               <span className="sync-tip" style={{ whiteSpace: 'nowrap' }}>
@@ -1451,10 +1426,8 @@ export function DatabaseSettingsPage() {
 
               <p className="sync-tip" style={{ margin: '10px 0 0' }}>
                 {webdav.proxyEnabled
-                  ? tf('dataBackup.webdav.modeProxy', '当前：同源代理已启用。')
-                  : tf('dataBackup.webdav.modeDirect', '当前：浏览器直连，可能受跨域限制。')}
-              </p>
-              <p className="sync-tip" style={{ margin: '6px 0 0' }}>{tf('dataBackup.currentScopePrefix', " 当前备份范围：")}{backupScopeSummary}
+                  ? tf('dataBackup.webdav.modeProxy', '当前:同源代理已启用。')
+                  : tf('dataBackup.webdav.modeDirect', '当前:浏览器直连,可能受跨域限制。')}
               </p>
               <div style={{ marginTop: 10 }}>
                 <BackupScopeSelector scope={backupScope} onChange={setBackupScope} />
@@ -1502,12 +1475,6 @@ export function DatabaseSettingsPage() {
                   {lastObjectStorageBackupText}
                 </span>
               </div>
-              <p className="sync-tip" style={{ margin: '6px 0 0' }}>
-                {tf(
-                  'dataBackup.objectStorage.desc',
-                  '支持阿里云 OSS 与 S3 兼容服务，适合把备份放到自己的 Bucket。'
-                )}
-              </p>
             </div>
             <div className="database-remote-backup-summary">
               <span className="sync-tip" style={{ whiteSpace: 'nowrap' }}>
@@ -1541,13 +1508,6 @@ export function DatabaseSettingsPage() {
                   </button>
                 ))}
               </div>
-              <p className="sync-tip" style={{ margin: '8px 0 0' }}>
-                {
-                  OBJECT_STORAGE_OPTIONS.find((item) => item.value === objectStorageProvider)
-                    ?.description(tf)
-                }
-              </p>
-
               <div className="grid grid-2" style={{ gap: 10, marginTop: 10 }}>
                 <div className="field" style={{ marginBottom: 0 }}>
                   <label>
@@ -1660,15 +1620,6 @@ export function DatabaseSettingsPage() {
                   ) : null}
                 </div>
               ) : null}
-
-              <p className="sync-tip" style={{ margin: '10px 0 0' }}>
-                {tf(
-                  'dataBackup.objectStorage.hint',
-                  '如遇到跨域提示，需要在 Bucket 里允许网页访问；密钥不会长期保存到本地。'
-                )}
-              </p>
-              <p className="sync-tip" style={{ margin: '6px 0 0' }}>{tf('dataBackup.currentScopePrefix', " 当前备份范围：")}{backupScopeSummary}
-              </p>
               <div style={{ marginTop: 10 }}>
                 <BackupScopeSelector scope={backupScope} onChange={setBackupScope} />
               </div>

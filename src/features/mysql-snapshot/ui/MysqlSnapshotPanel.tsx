@@ -91,7 +91,12 @@ export function MysqlSnapshotPanel({
         exportedAt: response.exportedAt,
         createdAt: new Date().toISOString()
       });
-      setStatus(tf('dataBackup.snapshot.synced', "已同步到数据库：{size}").replace("{size}", String(formatBytes(response.payloadBytes))));
+      setStatus(
+        tf('dataBackup.snapshot.synced', '已同步到数据库：{size}').replace(
+          '{size}',
+          String(formatBytes(response.payloadBytes))
+        )
+      );
     } catch (error) {
       setStatus(
         error instanceof Error
@@ -143,12 +148,6 @@ export function MysqlSnapshotPanel({
               {summary}
             </span>
           </div>
-          <p className="sync-tip" style={{ margin: '6px 0 0' }}>
-            {tf(
-              'dataBackup.snapshot.desc',
-              '日常数据已自动保存到当前数据库。需要额外保险时，在这里创建一个可手动恢复的副本。'
-            )}
-          </p>
         </div>
       </div>
 
@@ -225,7 +224,11 @@ export function MysqlSnapshotPanel({
                 '将用数据库最新快照覆盖当前本地数据。建议确认已经导出本地备份后再继续。'
               )}
             </p>
-            <p className="sync-tip" style={{ marginBottom: 0 }}>{tf('dataBackup.snapshot.timeLabel', " 快照时间：")}{formatTime(lastSnapshot?.createdAt, tf)}{tf('dataBackup.snapshot.sizeLabel', " · 大小： ")}{formatBytes(lastSnapshot?.payloadBytes || 0)}
+            <p className="sync-tip" style={{ marginBottom: 0 }}>
+              {tf('dataBackup.snapshot.timeLabel', ' 快照时间：')}
+              {formatTime(lastSnapshot?.createdAt, tf)}
+              {tf('dataBackup.snapshot.sizeLabel', ' · 大小： ')}
+              {formatBytes(lastSnapshot?.payloadBytes || 0)}
             </p>
           </div>
         }

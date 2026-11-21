@@ -508,12 +508,6 @@ export function SubscriptionsPage() {
           <div className="subscriptions-hero-copy vi-hero-copy">
             <span className="vi-page-kicker">{tf('subscriptions.kicker', '周期支出总览')}</span>
             <h2>{tf('subscriptions.title', '订阅管理')}</h2>
-            <p className="muted">
-              {tf(
-                'subscriptions.subtitle',
-                '统一管理数字订阅、话费、会员卡等周期性项目，支持多币种、续费日和到期状态追踪。'
-              )}
-            </p>
             <div
               className="subscriptions-summary-strip"
               aria-label={tf('subscriptions.summaryAria', '订阅概览')}
@@ -568,7 +562,6 @@ export function SubscriptionsPage() {
                 <div className="subscriptions-compact-group subscriptions-attention-compact">
                   <div className="dashboard-section-header">
                     <h4>{tf('subscriptions.overview.reminders', '待处理提醒')}</h4>
-                    <span>{tf('subscriptions.overview.remindersHint', '优先处理到期项')}</span>
                   </div>
                   <div className="subscriptions-alert-list">
                     {attentionItems.map((item) => (
@@ -610,12 +603,6 @@ export function SubscriptionsPage() {
                   ? tf('subscriptions.form.editTitle', '编辑订阅')
                   : tf('subscriptions.form.createTitle', '新增订阅')}
               </h3>
-              <p className="muted">
-                {tf(
-                  'subscriptions.form.subtitle',
-                  '先录入基础信息，再补充账户、续费和备注，后续生成支出会更顺手。'
-                )}
-              </p>
             </div>
             <div className="subscriptions-form-preview">
               <span>{tf('subscriptions.form.monthlyAverage', '折算月均')}</span>
@@ -634,12 +621,6 @@ export function SubscriptionsPage() {
           >
             <div className="subscriptions-template-copy">
               <h4>{tf('subscriptions.form.templatesTitle', '从常用模板开始')}</h4>
-              <p>
-                {tf(
-                  'subscriptions.form.templatesHint',
-                  '点一下能把常见服务自动填好，金额和日期还可继续调整。'
-                )}
-              </p>
             </div>
             <div className="subscriptions-template-list">
               {SUBSCRIPTION_TEMPLATES.map((template) => (
@@ -669,9 +650,6 @@ export function SubscriptionsPage() {
             <div className="subscriptions-form-section subscriptions-form-full">
               <div className="subscriptions-form-section-head">
                 <h4>{tf('subscriptions.form.basicTitle', '基础信息')}</h4>
-                <span>
-                  {tf('subscriptions.form.basicHint', '先定义是什么、多少钱、多久扣一次')}
-                </span>
               </div>
               <div className="subscriptions-form-grid subscriptions-form-grid-primary">
                 <label className="subscriptions-field subscriptions-field-wide">
@@ -763,12 +741,6 @@ export function SubscriptionsPage() {
             <div className="subscriptions-form-section subscriptions-form-full">
               <div className="subscriptions-form-section-head">
                 <h4>{tf('subscriptions.form.billingTitle', '扣费与日期')}</h4>
-                <span>
-                  {tf(
-                    'subscriptions.form.billingHint',
-                    '把账户、平台和续费时间补完整，后面更好追踪'
-                  )}
-                </span>
               </div>
               <div className="subscriptions-form-grid">
                 <label className="subscriptions-field">
@@ -869,12 +841,6 @@ export function SubscriptionsPage() {
           <div className="subscriptions-panel-head vi-section-head">
             <div className="vi-section-title">
               <h3>{tf('subscriptions.list.title', '订阅清单')}</h3>
-              <p className="muted">
-                {tf(
-                  'subscriptions.list.subtitle',
-                  '按到期时间排序，优先把需要处理的项目放到前面。'
-                )}
-              </p>
             </div>
             {summary.total > 0 ? (
               <span className="metric-chip metric-chip-highlight">

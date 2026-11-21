@@ -144,17 +144,11 @@ export function SalaryToolCard() {
           <p className="finance-overview-value">
             <span className="finance-overview-number">{salaryMetrics ? formatMoney(salaryMetrics.hourlySalary) : '—'}</span>
           </p>
-          <p className="finance-salary-metric-note muted">
-            {tf('salaryTools.result.hourlyNote', '按日薪 ÷ 每日工时估算')}
-          </p>
         </article>
         <article className="finance-salary-metric">
           <p className="finance-overview-label">{tf('salaryTools.result.weekly', '周薪参考（按 5 天）')}</p>
           <p className="finance-overview-value">
             <span className="finance-overview-number">{salaryMetrics ? formatMoney(salaryMetrics.weeklySalary) : '—'}</span>
-          </p>
-          <p className="finance-salary-metric-note muted">
-            {tf('salaryTools.result.weeklyNote', '默认按 5 个工作日折算')}
           </p>
         </article>
       </div>
@@ -163,12 +157,6 @@ export function SalaryToolCard() {
         <div className="finance-overtime-header">
           <div>
             <h3 style={{ margin: 0 }}>⏱️ {tf('salaryTools.overtime.title', '加班工资估算')}</h3>
-            <p className="muted finance-salary-hint">
-              {tf(
-                'salaryTools.overtime.hint',
-                '按当前时薪估算工作日 1.5 倍、休息日 2 倍、法定节假日 3 倍。'
-              )}
-            </p>
           </div>
           <label className="finance-salary-field finance-overtime-input">
             <span>{tf('salaryTools.inputs.overtimeHours', '加班时长')}</span>
@@ -201,26 +189,17 @@ export function SalaryToolCard() {
             <p className="finance-overview-value">
               <span className="finance-overview-number">{overtimeResult ? formatMoney(overtimeResult.workdayOvertimePay) : '—'}</span>
             </p>
-            <p className="finance-salary-metric-note muted">
-              {tf('salaryTools.overtime.workdayNote', '适用于工作日延时加班估算')}
-            </p>
           </article>
           <article className="finance-salary-metric">
             <p className="finance-overview-label">{tf('salaryTools.overtime.restDay', '休息日加班费（2x）')}</p>
             <p className="finance-overview-value">
               <span className="finance-overview-number">{overtimeResult ? formatMoney(overtimeResult.restDayOvertimePay) : '—'}</span>
             </p>
-            <p className="finance-salary-metric-note muted">
-              {tf('salaryTools.overtime.restDayNote', '适用于休息日加班估算')}
-            </p>
           </article>
           <article className="finance-salary-metric">
             <p className="finance-overview-label">{tf('salaryTools.overtime.holiday', '法定节假日加班费（3x）')}</p>
             <p className="finance-overview-value">
               <span className="finance-overview-number">{overtimeResult ? formatMoney(overtimeResult.holidayOvertimePay) : '—'}</span>
-            </p>
-            <p className="finance-salary-metric-note muted">
-              {tf('salaryTools.overtime.holidayNote', '适用于法定节假日加班估算')}
             </p>
           </article>
         </div>

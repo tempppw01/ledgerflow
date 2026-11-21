@@ -158,7 +158,6 @@ export function BalanceChangesPage() {
       <div className="balance-change-header">
         <div>
           <h2>{t('balanceChanges.title')}</h2>
-          <p className="muted">{t('balanceChanges.description')}</p>
         </div>
         <div className="balance-change-summary">
           <span className="metric-chip">
@@ -207,7 +206,6 @@ export function BalanceChangesPage() {
                   </span>
                   <span className="balance-change-group-copy">
                     <strong>{groupTitle}</strong>
-                    <small>{t(`balanceChanges.groups.${groupKey}.subtitle`)}</small>
                   </span>
                   <span className="balance-change-group-stat">
                     <strong>

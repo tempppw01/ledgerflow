@@ -659,7 +659,6 @@ export function SmartBudgetPage() {
         <header className="vi-page-head">
           <div className="vi-page-title">
             <h1>{tf('smartBudget.title', '智能预算')}</h1>
-            <p>{tf('smartBudget.subtitle', '回答五个问题，生成一份能直接执行下去的月度预算。')}</p>
           </div>
           {confirmedPlan ? (
             <div className="vi-page-actions">
@@ -794,12 +793,6 @@ export function SmartBudgetPage() {
         <div className="vi-section-head">
           <div className="vi-section-title">
             <h2>{tf('smartBudget.categorySectionTitle', '分类预算执行')}</h2>
-            <p>
-              {tf(
-                'smartBudget.categorySectionHint',
-                '点开任意分类可以看明细，也可以直接在卡片上微调预算额度。'
-              )}
-            </p>
           </div>
         </div>
         <BudgetCategoryList
@@ -844,7 +837,6 @@ export function SmartBudgetPage() {
           <div className="vi-section-head">
             <div className="vi-section-title">
               <h2>{tf('smartBudget.logTitle', '动作记录')}</h2>
-              <p>{tf('smartBudget.logHint', '最近执行过的调整都会留在这里，方便回看。')}</p>
             </div>
           </div>
           <ul className="sb-log-list">

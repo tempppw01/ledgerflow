@@ -633,7 +633,6 @@ export function FinancialAnalysisPage() {
         <div className="financial-analysis-hero-head">
           <div>
             <h2>{t('financialAnalysis.hero.title')}</h2>
-            <p className="muted">{t('financialAnalysis.hero.description')}</p>
           </div>
           <div
             className="financial-analysis-range-switcher"
@@ -698,7 +697,6 @@ export function FinancialAnalysisPage() {
                 <img src={BADGE_DOLLAR_SIGN_ICON_URL} alt="" aria-hidden="true" />
                 {t('financialAnalysis.market.title')}
               </h3>
-              <p className="muted">{t('financialAnalysis.market.description')}</p>
             </div>
             <span className="metric-chip">
               {t('financialAnalysis.market.badge')}
@@ -755,7 +753,6 @@ export function FinancialAnalysisPage() {
           <header>
             <div>
               <h3>{t('financialAnalysis.aiCard.title')}</h3>
-              <p className="muted">{t('financialAnalysis.aiCard.description')}</p>
             </div>
           </header>
           {aiError ? <p className="financial-analysis-ai-error">{aiError}</p> : null}
@@ -822,7 +819,6 @@ export function FinancialAnalysisPage() {
               <img src={SCALE_ICON_URL} alt="" aria-hidden="true" />
               {t('financialAnalysis.behavior.title')}
             </h3>
-            <p className="muted">{t('financialAnalysis.behavior.description')}</p>
           </div>
           <span className="metric-chip">
             {t('financialAnalysis.behavior.badge')}
@@ -1001,7 +997,6 @@ export function FinancialAnalysisPage() {
         <div className="financial-analysis-section-head">
           <div>
             <h3>{t('financialAnalysis.previous.title')}</h3>
-            <p className="muted">{t('financialAnalysis.previous.description')}</p>
           </div>
           <span className="metric-chip">
             {t('financialAnalysis.previous.badge')}
@@ -1086,7 +1081,6 @@ export function FinancialAnalysisPage() {
         <div className="financial-analysis-section-head">
           <div>
             <h3>{t('financialAnalysis.present.title')}</h3>
-            <p className="muted">{t('financialAnalysis.present.description')}</p>
           </div>
           <span className="metric-chip">
             {t('financialAnalysis.present.badge')}
@@ -1143,7 +1137,6 @@ export function FinancialAnalysisPage() {
         <div className="financial-analysis-section-head">
           <div>
             <h3>{t('financialAnalysis.future.title')}</h3>
-            <p className="muted">{t('financialAnalysis.future.description')}</p>
           </div>
           <span className="metric-chip">
             {t('financialAnalysis.future.badge')}

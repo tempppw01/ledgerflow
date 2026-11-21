@@ -33,7 +33,6 @@ export function WebSearchSettingsPanel({ onSaved }: WebSearchSettingsPanelProps)
       <div className="settings-subpanel-toggle">
         <div className="settings-subpanel-copy">
           <strong>{t('settings.tavily.title')}</strong>
-          <small>{t('settings.tavily.desc')}</small>
         </div>
         <span
           className={`settings-subpanel-chip settings-websearch-status ${
@@ -85,9 +84,6 @@ export function WebSearchSettingsPanel({ onSaved }: WebSearchSettingsPanelProps)
                   <span className="settings-websearch-provider-badge">
                     {t(`settings.tavily.providers.${provider.id}.badge`)}
                   </span>
-                  <span className="settings-websearch-provider-desc">
-                    {t(`settings.tavily.providers.${provider.id}.description`)}
-                  </span>
                 </button>
               );
             })}
@@ -116,18 +112,13 @@ export function WebSearchSettingsPanel({ onSaved }: WebSearchSettingsPanelProps)
                   placeholder={t('settings.tavily.engineIdPlaceholder')}
                   onChange={(event) => updateCredential({ engineId: event.target.value })}
                 />
-                <small>{t('settings.tavily.engineIdHint')}</small>
               </div>
             ) : null}
 
-            <p className="settings-websearch-provider-tip">
-              {t(`settings.tavily.providers.${activeProvider}.tip`)}
-            </p>
           </div>
 
           <aside className="settings-websearch-guide">
             <strong>{t('settings.tavily.guideTitle', { provider: definition.name })}</strong>
-            <p>{t('settings.tavily.guideDesc')}</p>
             <div className="settings-websearch-guide-actions">
               <a
                 className="settings-websearch-guide-link"

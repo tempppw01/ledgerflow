@@ -104,7 +104,6 @@ export function GlobalMemoryPage() {
           <div>
             <p className="global-memory-eyebrow">{t('globalMemory.eyebrow')}</p>
             <h2>{t('globalMemory.title')}</h2>
-            <p>{t('globalMemory.description')}</p>
           </div>
           <div className="global-memory-summary">
             <button

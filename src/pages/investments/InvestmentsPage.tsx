@@ -1000,7 +1000,6 @@ function HoldingsTodayPanel({
       <div className="investments-today-panel-head">
         <div>
           <h2>{tf('investments.holdings.title', '今日持仓')}</h2>
-          <p>{tf('investments.holdings.subtitle', '先看自己的持仓，别让大盘替你做决定。')}</p>
         </div>
         <div className="investments-panel-head-actions">
           <button
@@ -1203,7 +1202,6 @@ function PlainMarketBriefingPanel({
       <div className="investments-today-panel-head">
         <div>
           <h2>{tf('investments.briefing.title', '今天的市场，说人话')}</h2>
-          <p>{tf('investments.briefing.subtitle', '把涨跌、板块和新闻拎成几句，够用就好。')}</p>
         </div>
         <div className="investments-panel-head-actions">
           <button
@@ -3681,7 +3679,6 @@ function MarketBoardsPanel({
       <div className="investments-market-news-head">
         <div>
           <h3>{tf('investments.boards.title', 'A 股行业涨跌')}</h3>
-          <p>{tf('investments.boards.subtitle', '行业强弱一眼看清，点击行业可查看领涨公司。')}</p>
         </div>
         <div className="investments-panel-head-actions">
           <button
@@ -5384,12 +5381,6 @@ export function InvestmentsPage() {
         <div>
           <p className="investments-console-eyebrow">INVESTMENT CONTROL</p>
           <h1>{tf('investments.title', '投资理财')}</h1>
-          <p>
-            {tf(
-              'investments.subtitle',
-              '把今日判断、行情监控和基金自选放进一个工作台，按需切换，不再上下堆叠。'
-            )}
-          </p>
         </div>
         <div
           className="investments-console-stat"

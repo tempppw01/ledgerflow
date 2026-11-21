@@ -133,12 +133,6 @@ export function TransactionFilters({
       <div className="transaction-filters-header">
         <div>
           <h2>{tf('transactions.filters.title', '交易记录')}</h2>
-          <p className="surface-caption transaction-filters-caption">
-            {tf(
-              'transactions.filters.caption',
-              '把首屏注意力放在流水本身，筛选与操作保持就近、克制、可展开。'
-            )}
-          </p>
         </div>
       </div>
 
@@ -459,12 +453,6 @@ export function TransactionFilters({
                         <strong id="tx-filter-dialog-title">
                           {tf('transactions.filters.dialogTitle', '筛选与显示设置')}
                         </strong>
-                        <span>
-                          {tf(
-                            'transactions.filters.dialogDesc',
-                            '按来源整理流水，并自定义表格信息。'
-                          )}
-                        </span>
                       </div>
                       <button
                         type="button"
@@ -485,9 +473,6 @@ export function TransactionFilters({
                           <span className="transaction-filter-dialog-index">01</span>
                           <div>
                             <h3>{tf('transactions.filters.sourceTitle', '来源筛选')}</h3>
-                            <p>
-                              {tf('transactions.filters.sourceDesc', '只查看来自特定渠道的记录')}
-                            </p>
                           </div>
                         </div>
                         <div className="field" style={{ marginBottom: 0 }}>
@@ -530,7 +515,6 @@ export function TransactionFilters({
                           <div>
                             <h3>{tf('transactions.filters.columnsTitle', '表格显示')}</h3>
                             <p>
-                              {tf('transactions.filters.chooseFields', '选择需要展示的信息')}
                               {hiddenColumnCount > 0
                                 ? tf(
                                     'transactions.filters.hiddenCount',
@@ -559,9 +543,6 @@ export function TransactionFilters({
                           <span className="transaction-filter-dialog-index">03</span>
                           <div>
                             <h3>{tf('transactions.filters.importTitle', '导入与整理')}</h3>
-                            <p>
-                              {tf('transactions.filters.importDesc', '管理账单导入方式及重复记录')}
-                            </p>
                           </div>
                         </div>
                         <div className="transaction-filter-dialog-import-controls">

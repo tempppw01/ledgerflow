@@ -788,7 +788,7 @@ describe('RepaymentManagementPage', () => {
 
     expect(screen.getByLabelText('还款日期')).toHaveTextContent(expectedDateText);
     expect(screen.getByLabelText('期数标签')).toHaveAttribute('placeholder', '第 9 期');
-    expect(screen.getByText(/从下一笔待还（第 9 期）开始填写/)).toBeInTheDocument();
+    expect(document.querySelector('.debt-form-manual-index')).toHaveTextContent(/^9$/);
   });
 
   it('手动添加期数时不沿用上一期金额', () => {

@@ -1489,7 +1489,6 @@ export function InvestmentChatPanel({
           </span>
           <span className="investment-chat-floating-launcher-copy" aria-hidden="true">
             <strong>{tf('investmentAi.title', 'AI 投资助手')}</strong>
-            <small>{tf('investmentAi.subtitle', '持仓 · 行情 · 目标')}</small>
           </span>
           {messages.length > 0 ? (
             <i

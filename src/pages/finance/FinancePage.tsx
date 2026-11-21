@@ -146,7 +146,6 @@ export function FinancePage() {
         <div className="vi-section-title">
           <span className="vi-page-kicker">{t('finance.ui.marketPulse')}</span>
           <h2>{t('finance.ui.title')}</h2>
-          <p>{t('finance.ui.subtitle')}</p>
         </div>
         <div className="finance-source-strip" aria-label={t('finance.ui.sourceLabel')}>
           <div className="finance-source-strip-copy">

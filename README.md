@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/tempppw01/ledgerflow/releases"><img src="https://img.shields.io/github/v/release/tempppw01/ledgerflow?display_name=tag&style=flat-square&color=f59e0b" alt="Release" /></a>
-  <img src="https://img.shields.io/badge/version-0.8.7-0f766e?style=flat-square" alt="Version 0.8.7" />
+  <img src="https://img.shields.io/badge/version-0.8.8-0f766e?style=flat-square" alt="Version 0.8.8" />
   <img src="https://img.shields.io/badge/Node.js-20%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js 20+" />
   <img src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker ready" />
   <a href="https://ledgerflow.shuaihong.fun"><img src="https://img.shields.io/badge/Live%20demo-open-f59e0b?style=flat-square" alt="Live demo" /></a>
@@ -16,7 +16,7 @@
 <p align="center"><a href="#快速部署">快速部署</a> · <a href="#主要能力">主要能力</a> · <a href="#备份与同步">数据与备份</a> · <a href="https://github.com/tempppw01/ledgerflow/releases">版本发布</a></p>
 
 > [!NOTE]
-> 当前版本：`0.8.7`。项目仍在快速迭代，重要数据请保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
+> 当前版本：`0.8.8`。项目仍在快速迭代，重要数据请保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
 
 > 说明：项目仍处于快速迭代阶段，功能、界面和数据结构会持续调整。重要数据请务必保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
 
@@ -57,6 +57,13 @@
 </table>
 
 </details>
+
+### 0.8.8 功能亮点
+
+- 按反馈做了一轮「去说明书」治理:删掉约 100 处说明性文案,页面不再像软件说明书。判断标准只有一条——这行字删掉以后,用户还能不能在 3 秒内明白这里能做什么;能就删,靠交互去理解。
+- 具体删的是:每个页面大标题下的营销式副标题、每张卡片复述用途的描述句、告诉用户「点哪里、先填什么」的操作指引、勾选框下方逐条解释范围的清单小字、以及和 placeholder 重复的格式提示。
+- 明确保留了:校验错误、破坏性操作警告(不可恢复、会保留账号本身)、空状态、图表图例与单位、以及删了用户就不知道怎么填的配置项技术说明。
+- 单测里断言了已删文案的 2 处,改成断言同源仍存在的元素(标题/字段/期号),断言范围没有放宽。
 
 ### 0.8.7 功能亮点
 

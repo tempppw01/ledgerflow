@@ -28,9 +28,6 @@ export function BudgetAnomalyPanel({ anomalies, onSelectCategory }: BudgetAnomal
             <BudgetAlertIcon className="sb-icon-sm" />
             {tf('smartBudget.anomaly.title', '异常提醒与调整建议')}
           </h3>
-          <p className="sb-panel-sub">
-            {tf('smartBudget.anomaly.subtitle', '按当前速度，月底可能超支的分类。')}
-          </p>
         </div>
       </div>
 

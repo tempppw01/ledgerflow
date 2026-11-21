@@ -31,7 +31,6 @@ export function WorkbenchTopbar({ status, providerText, onOpenSettings }: Workbe
     <header className="assistant-wb-topbar panel">
       <div>
         <h2 className="assistant-wb-title">🤖 AI 记账工作台</h2>
-        <p className="assistant-wb-subtitle">步骤：输入/上传 → 识别预览 → 确认保存</p>
       </div>
       <div className="assistant-wb-topbar-actions">
         <span className={STATUS_CLASS[status]}>{STATUS_TEXT[status]}</span>
