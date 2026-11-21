@@ -79,3 +79,41 @@ E2E —— 打开交易页、勾选、点导出、断言下载事件 + PDF 文�
 当前 `subset: false` 让导出可用但偏大(约 6 MB)。要恢复小体积需要
 `fontkit@1.x` 或 `@pdf-lib/fontkit`,都需要能访问 npm registry —— 本次
 环境不可达,故未做。恢复子集化后,请重跑一次真实浏览器导出验证。
+
+## 七、生产构建在受限环境下的一个坑(已解决)
+
+现象:`npm run build` 失败,报
+
+```
+[vite:esbuild-transpile] remove C:\Users\<user>\AppData\Local\Temp\esbuild-...: Access is denied.
+```
+
+注意失败点在**很靠后**:vite 已经打出 `✓ 537 modules transformed`、PWA 也
+生成了,然后才在 esbuild 清理临时目录时炸掉。所以它看着像构建挂了,实际
+代码是好的。
+
+原因:esbuild 会在系统临时目录里建工作目录再删掉,而当前沙箱对
+`%LOCALAPPDATA%\Temp` 下的删除操作受限。清空历史遗留的 `esbuild-*` 目录
+**没用**(新的照样删不掉)。
+
+解决办法:把临时目录指到工作区内(工作区可写可删):
+
+```bash
+mkdir -p .tmp-build
+TEMP="$PWD/.tmp-build" TMP="$PWD/.tmp-build" TMPDIR="$PWD/.tmp-build" npm run build
+```
+
+结果:`✓ built in 3.36s`,PWA precache 45 entries(3749.51 KiB)。
+
+顺带记录构建产物规模,便于日后观察劣化:
+
+| chunk | 体积 | gzip |
+| --- | --- | --- |
+| vendor | 428.16 KB | 234.14 KB |
+| vendor-pdf | 466.96 KB | 127.88 KB |
+| index | 470.65 KB | 155.98 KB |
+
+`vendor-pdf` 是 pdf-lib + fontkit,动态导入,只在导出时才加载 —— 这个拆分是
+对的,不要把导出相关依赖打进主包。
+
+注意:`.tmp-build` 与 `dist` 都不该入库(`dist` 已在 `.gitignore`)。
