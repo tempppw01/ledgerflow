@@ -17,38 +17,32 @@ node scripts/audit-jsx-hardcoded.mjs --count   # 只输出总数,用来看趋势
 扫描规则:匹配 `>中文<`;跳过 `{...}` 表达式(里面通常是 `tf(key, '兜底')` 的兜底文案)、
 跳过注释、跳过含运算符的代码片段、跳过 `*.test.tsx`。
 
-## 当前存量:173 处 / 9 个文件(起点 226)
+## 当前存量:120 处 / 2 个文件(起点 226)
 
-| 文件 | 处数 | 是否挂载 |
+| 文件 | 处数 | 说明 |
 | --- | --- | --- |
-| `src/pages/assistant/AssistantPage.tsx` | 119 | ✅ 在用 |
-| `src/pages/investments/InvestmentsPage.tsx` | 20 | ✅ 在用 |
-| `src/features/assistant/workbench/WorkbenchPreviewPanel.tsx` | 15 | ❌ 无引用 |
-| `src/features/assistant/workbench/WorkbenchAdvancedPanel.tsx` | 6 | ❌ 无引用 |
-| `src/features/assistant/workbench/WorkbenchSettingsDrawer.tsx` | 6 | ❌ 无引用 |
-| `src/features/assistant/workbench/WorkbenchInputPanel.tsx` | 3 | ❌ 无引用 |
-| `src/features/assistant/workbench/WorkbenchSavePanel.tsx` | 1 | ❌ 无引用 |
-| 其余零散 | ≤3 | 多数在用 |
+| `src/pages/assistant/AssistantPage.tsx` | 119 | ✅ 在用;只在配置 AI 密钥并使用信贷识别时可见 |
+| `src/pages/finance/FinancePage.tsx` | 1 | 「同」是同花顺品牌字标,外层 `aria-hidden="true"` —— **装饰性文字,不该翻译** |
 
-## 先决问题:一批组件其实没有被渲染
+扫描器目前不会跳过 `aria-hidden` 子树,所以最后这一条会长期留在计数里;看计数时把它当成
+1 处已知噪声即可。
 
-盘点时发现 **13 个组件在 `src` 里零引用**(`grep -rn "<Name>"` 与 `git log` 都确认过,
-不是懒加载、也没有 barrel 转出):
+## 已删除的孤儿组件(2026-11-22)
 
-| 组件 | 备注 |
-| --- | --- |
-| `DashboardHistoryCompareCard` | 2026-09-21「simplify dashboard insight sections」之后失去引用 |
-| `DashboardAnomalyInsights` | 同上 |
-| `DashboardMonthlyTrendSummaryCard` | 同上 |
-| `NetAssetCurveCard` | 2026-09-20 之后失去引用 |
-| `DashboardTopTransactionsCard` | 无引用 |
-| `DashboardModuleCustomizer` | 自 SQL 基础改造起就没有被挂载 |
-| `MonthlyInsightPanel` | 自 v0.5.3 组件拆分起无引用 |
-| `WorkbenchPreviewPanel` / `WorkbenchAdvancedPanel` / `WorkbenchSettingsDrawer` / `WorkbenchInputPanel` / `WorkbenchSavePanel` | 整个「AI 工作台」展示层无引用(页面自己在渲染) |
-| `TagsPage` | 不在路由表里 |
+盘点发现 13 个组件零引用,其中 7 个已删除(页面自己渲染了一套,或压根没接路由):
 
-**这直接影响下一步怎么做**:剩下的 173 处里,有 51 处属于这些没人渲染的文件。
-在做 i18n 之前应先决定它们 **删除还是重新接上** —— 否则可能白翻译一批马上被删的代码。
+- 「AI 工作台」展示层:`WorkbenchPreviewPanel`、`WorkbenchAdvancedPanel`、
+  `WorkbenchSettingsDrawer`、`WorkbenchInputPanel`、`WorkbenchSavePanel`、`WorkbenchTopbar`
+  —— 注意同目录下的 `useAssistantWorkbench.ts`、`workbenchUtils.ts`、`workbenchTypes.ts`、
+  `workbenchMapping.ts` 仍在用,只删了展示层
+- `TagsPage`:不在路由表里
+
+删除后:JSX 硬编码 154 → 120,同时清掉 10 条随之失效的 i18n key(zh/en 同步,parity 保持)。
+
+**仍保留待定的 7 个仪表盘组件**:`DashboardHistoryCompareCard`、`DashboardAnomalyInsights`、
+`DashboardMonthlyTrendSummaryCard`、`NetAssetCurveCard`、`DashboardTopTransactionsCard`、
+`DashboardModuleCustomizer`、`MonthlyInsightPanel` —— 它们看着是 2026-09-21
+「simplify dashboard insight sections」重构时被摘掉的卡片,可能还想恢复,所以没删。
 
 ## 已经收敛的部分
 

@@ -512,11 +512,7 @@
         "saving": "保存中",
         "saved": "已保存",
         "error": "异常"
-      },
-      "commonCommands": "常用智能命令",
-      "bookkeepingInput": "AI 记账输入",
-      "settingsDrawer": "AI 设置抽屉",
-      "settingsTitle": "AI 设置"
+      }
     },
     "chatActions": {
       "regenerate": "重新生成",
@@ -526,10 +522,8 @@
       "delete": "删除消息"
     },
     "attachments": {
-      "uploadReceipt": "上传记账图片",
       "uploadBill": "上传账单图片或 PDF",
-      "uploadGeneric": "上传图片/PDF",
-      "pendingList": "待发送图片列表"
+      "uploadGeneric": "上传图片/PDF"
     },
     "modeSwitch": "模式切换",
     "modeAria": "AI 助手模式",
@@ -4146,11 +4140,5 @@
     "title": "首页调试日志",
     "clear": "清空日志",
     "empty": "暂无调试日志"
-  },
-  "tags": {
-    "emptyAria": "暂无标签数据",
-    "pageTitle": "交易标签",
-    "viewAll": "查看全部",
-    "locateDetail": "定位详情"
   }
 }

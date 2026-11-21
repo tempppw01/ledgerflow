@@ -2346,7 +2346,7 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
         <form className="investments-simulation-panel" onSubmit={runSimulation}>
           <div>
             <h4>{tf('investments.simulation.title', '定投模拟')}</h4>
-            <p>用历史收盘价估算：按计划投入后，期末大约剩多少。</p>
+            <p>{tf('investments.simulation.subtitle', '用历史收盘价估算：按计划投入后，期末大约剩多少。')}</p>
           </div>
           <div className="investments-simulation-fields">
             <label>

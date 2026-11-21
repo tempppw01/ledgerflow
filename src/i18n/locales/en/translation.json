@@ -512,11 +512,7 @@
         "saving": "Saving",
         "saved": "Saved",
         "error": "Error"
-      },
-      "commonCommands": "Common smart commands",
-      "bookkeepingInput": "AI bookkeeping input",
-      "settingsDrawer": "AI settings drawer",
-      "settingsTitle": "AI settings"
+      }
     },
     "chatActions": {
       "regenerate": "Regenerate",
@@ -526,10 +522,8 @@
       "delete": "Delete message"
     },
     "attachments": {
-      "uploadReceipt": "Upload a receipt image",
       "uploadBill": "Upload bill image or PDF",
-      "uploadGeneric": "Upload image / PDF",
-      "pendingList": "Pending image attachments"
+      "uploadGeneric": "Upload image / PDF"
     },
     "modeSwitch": "Switch mode",
     "modeAria": "AI assistant mode",
@@ -4146,11 +4140,5 @@
     "title": "Home debug log",
     "clear": "Clear log",
     "empty": "No debug log yet"
-  },
-  "tags": {
-    "emptyAria": "No tag data yet",
-    "pageTitle": "Transaction tags",
-    "viewAll": "View all",
-    "locateDetail": "Locate in detail"
   }
 }

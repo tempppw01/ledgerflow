@@ -665,10 +665,10 @@ export function RepaymentDashboard({
                           {tf('common.unit.day', '日')}
                         </label>
                         <button type="submit" className="primary">
-                          保存
+                          {tf('common.save', '保存')}
                         </button>
                         <button type="button" onClick={() => setEditingRepaymentDayId(null)}>
-                          取消
+                          {tf('common.cancel', '取消')}
                         </button>
                       </form>
                     ) : null}
