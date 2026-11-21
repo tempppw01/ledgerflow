@@ -908,14 +908,25 @@ export function SubscriptionsPage() {
                         String(item.customCycleDays)
                       )
                     : labelOf(CYCLE_LABEL_ENTRIES, tf, item.billingCycle);
-                const nextDateText = item.renewalDate
+                // 到期日必须参与显示:状态徽章(normalizeSubscriptionStatus)与
+                // 顶部告警列表都按「到期日优先」判断,只有主卡片原先按「续费日优先」,
+                // 于是两个日期都填且到期日更早时,会出现「已到期」徽章旁边写着
+                // 「续费 2026/12/15」这种自相矛盾的组合。两个日期都有时并列显示,
+                // 既不矛盾也不丢信息;两者相同则只显示一次。
+                const sameDates =
+                  item.expireDate && item.renewalDate && item.expireDate === item.renewalDate;
+                const expiryText = item.expireDate
+                  ? tf('subscriptions.card.expireTag', '到期 {date}').replace(
+                      '{date}',
+                      formatDate(item.expireDate)
+                    )
+                  : '';
+                const renewalText = item.renewalDate
                   ? `${tf(item.autoRenew ? 'subscriptions.card.renewTag' : 'subscriptions.card.remindTag', item.autoRenew ? '续费' : '提醒')} ${formatDate(item.renewalDate)}`
-                  : item.expireDate
-                    ? tf('subscriptions.card.expireTag', '到期 {date}').replace(
-                        '{date}',
-                        formatDate(item.expireDate)
-                      )
-                    : '';
+                  : '';
+                const nextDateText = sameDates
+                  ? renewalText || expiryText
+                  : [expiryText, renewalText].filter(Boolean).join(' · ');
 
                 return (
                   <article key={item.id} className="subscriptions-card">
