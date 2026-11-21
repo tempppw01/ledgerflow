@@ -159,5 +159,12 @@ export const AWESOME_ILLUSTRATION_URL =
 export const INVESTMENT_HERO_ILLUSTRATION_URL =
   'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/Illustrations/investment-hero.svg';
 
-export const PDF_CHINESE_FONT_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/fonts/NotoSansSC-Regular.ttf';
+/**
+ * PDF 导出用的中文字体。
+ *
+ * 必须走同源 /cdn 代理,不能直接写 R2 公共域名:该域名不返回
+ * Access-Control-Allow-Origin,浏览器 fetch 会被 CORS 拦下,于是
+ * getCachedChineseFontBytes 抛错、整个 PDF 导出直接失败(不只是缺字)。
+ * vite / localDevServer / nginx 都已把 /cdn 反代到 R2。
+ */
+export const PDF_CHINESE_FONT_URL = '/cdn/fonts/NotoSansSC-Regular.ttf';
