@@ -106,6 +106,10 @@ export function CategoriesAccountsPage() {
   const [editCategoryName, setEditCategoryName] = useState('');
   const [editCategoryParentId, setEditCategoryParentId] = useState('');
   const [categoryActionError, setCategoryActionError] = useState('');
+  /** 收起的父级分类 id:让「两级结构」能一眼看清,而不是 16 行平铺。 */
+  const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<string[]>([]);
+  /** 展开的「更多操作」行;同一时间只开一行,避免又变回一排按钮。 */
+  const [openCategoryActionId, setOpenCategoryActionId] = useState<string | null>(null);
   const categoryNameInputRef = useRef<HTMLInputElement | null>(null);
   const [accountName, setAccountName] = useState('');
   const [accountType, setAccountType] = useState<AccountType | ''>('');
@@ -561,7 +565,15 @@ export function CategoriesAccountsPage() {
 
   const renderCategoryNode = (
     item: Category,
-    options: { isChild: boolean; siblingIds: string[]; usage?: number }
+    options: {
+      isChild: boolean;
+      siblingIds: string[];
+      usage?: number;
+      /** 一级分类下的子分类数量;大于 0 时显示折叠箭头与「N 个子分类」。 */
+      childCount?: number;
+      /** 该父级当前是否收起。 */
+      collapsed?: boolean;
+    }
   ) => {
     // 一级分类显示「自己 + 子分类」的合计,和点击后的筛选结果保持一致。
     const usage = options.usage ?? categoryUsageMap.get(item.id) ?? 0;
@@ -620,9 +632,43 @@ export function CategoriesAccountsPage() {
       );
     }
 
+    const childCount = options.childCount ?? 0;
+    const hasChildren = !options.isChild && childCount > 0;
+    const isCollapsed = options.collapsed === true;
+    const isActionOpen = openCategoryActionId === item.id;
+
     return (
-      <li key={item.id} className={`category-node ${options.isChild ? 'is-child' : 'is-root'}`}>
+      <li
+        key={item.id}
+        className={`category-node ${options.isChild ? 'is-child' : 'is-root'}${
+          hasChildren ? ' has-children' : ''
+        }${isCollapsed ? ' is-collapsed' : ''}`}
+      >
         <span className="category-node-main">
+          {hasChildren ? (
+            <button
+              type="button"
+              className="category-node-caret"
+              aria-expanded={!isCollapsed}
+              aria-label={tf(
+                isCollapsed
+                  ? 'categoriesAccounts.expandCategoryAria'
+                  : 'categoriesAccounts.collapseCategoryAria',
+                isCollapsed ? '展开 {name} 的子分类' : '收起 {name} 的子分类'
+              ).replace('{name}', String(item.name))}
+              onClick={() =>
+                setCollapsedCategoryIds((prev) =>
+                  prev.includes(item.id)
+                    ? prev.filter((idValue) => idValue !== item.id)
+                    : [...prev, item.id]
+                )
+              }
+            >
+              {isCollapsed ? '▸' : '▾'}
+            </button>
+          ) : (
+            <span className="category-node-caret-spacer" aria-hidden="true" />
+          )}
           <span className="category-node-icon" aria-hidden="true">
             {item.icon || '📁'}
           </span>
@@ -630,6 +676,13 @@ export function CategoriesAccountsPage() {
             <strong>{item.name}</strong>
             {options.isChild ? (
               <small>{tf('categoriesAccounts.childBadge', '子分类')}</small>
+            ) : hasChildren ? (
+              <small>
+                {tf('categoriesAccounts.childCountLabel', '{count} 个子分类').replace(
+                  '{count}',
+                  String(childCount)
+                )}
+              </small>
             ) : null}
           </span>
         </span>
@@ -663,40 +716,60 @@ export function CategoriesAccountsPage() {
           <button type="button" className="category-action" onClick={() => startEditCategory(item)}>
             {tf('categoriesAccounts.edit', '编辑')}
           </button>
+          {/*
+            排序与删除收进「更多操作」:原来每一行都平铺 +子分类 / 编辑 / ↑ / ↓ / 删除
+            五个按钮,16 行就是 96 个按钮,整页 136 个 —— 这正是「凌乱」的来源。
+            主操作(编辑、加子分类)保持常显,低频操作点一下再出现。
+          */}
           <button
             type="button"
-            className="category-icon-action"
-            aria-label={tf('categoriesAccounts.moveCategoryUpAria', '上移分类 {name}').replace(
+            className={`category-icon-action category-more-toggle${
+              isActionOpen ? ' is-open' : ''
+            }`}
+            aria-expanded={isActionOpen}
+            aria-label={tf('categoriesAccounts.moreActionsAria', '{name} 的更多操作').replace(
               '{name}',
               String(item.name)
             )}
-            onClick={() => moveCategoryWithinSiblings(item.id, -1, options.siblingIds)}
+            onClick={() => setOpenCategoryActionId(isActionOpen ? null : item.id)}
           >
-            ↑
-          </button>
-          <button
-            type="button"
-            className="category-icon-action"
-            aria-label={tf('categoriesAccounts.moveCategoryDownAria', '下移分类 {name}').replace(
-              '{name}',
-              String(item.name)
-            )}
-            onClick={() => moveCategoryWithinSiblings(item.id, 1, options.siblingIds)}
-          >
-            ↓
-          </button>
-          <button
-            type="button"
-            className="category-icon-action is-danger"
-            aria-label={tf('categoriesAccounts.deleteCategoryAria', '删除分类 {name}').replace(
-              '{name}',
-              String(item.name)
-            )}
-            onClick={() => setPendingDeleteCategoryId(item.id)}
-          >
-            {tf('categoriesAccounts.delete', '删除')}
+            ⋯
           </button>
         </span>
+        {isActionOpen ? (
+          <div className="category-secondary-actions">
+            <button
+              type="button"
+              className="category-action"
+              onClick={() => {
+                moveCategoryWithinSiblings(item.id, -1, options.siblingIds);
+                setOpenCategoryActionId(null);
+              }}
+            >
+              {tf('categoriesAccounts.moveUp', '↑ 上移')}
+            </button>
+            <button
+              type="button"
+              className="category-action"
+              onClick={() => {
+                moveCategoryWithinSiblings(item.id, 1, options.siblingIds);
+                setOpenCategoryActionId(null);
+              }}
+            >
+              {tf('categoriesAccounts.moveDown', '↓ 下移')}
+            </button>
+            <button
+              type="button"
+              className="category-action is-danger"
+              onClick={() => {
+                setPendingDeleteCategoryId(item.id);
+                setOpenCategoryActionId(null);
+              }}
+            >
+              {tf('categoriesAccounts.delete', '删除')}
+            </button>
+          </div>
+        ) : null}
       </li>
     );
   };
@@ -857,23 +930,30 @@ export function CategoriesAccountsPage() {
                 </small>
               </div>
               <ul className="category-tree">
-                {categoryTree.map(({ root, children, totalCount }) => (
-                  <li key={root.id} className="category-group">
-                    <ul className="category-group-list">
-                      {renderCategoryNode(root, {
-                        isChild: false,
-                        siblingIds: categoryTree.map((group) => group.root.id),
-                        usage: totalCount
-                      })}
-                      {children.map((child) =>
-                        renderCategoryNode(child, {
-                          isChild: true,
-                          siblingIds: children.map((item) => item.id)
-                        })
-                      )}
-                    </ul>
-                  </li>
-                ))}
+                {categoryTree.map(({ root, children, totalCount }) => {
+                  const isCollapsed = collapsedCategoryIds.includes(root.id);
+                  return (
+                    <li key={root.id} className="category-group">
+                      <ul className="category-group-list">
+                        {renderCategoryNode(root, {
+                          isChild: false,
+                          siblingIds: categoryTree.map((group) => group.root.id),
+                          usage: totalCount,
+                          childCount: children.length,
+                          collapsed: isCollapsed
+                        })}
+                        {isCollapsed
+                          ? null
+                          : children.map((child) =>
+                              renderCategoryNode(child, {
+                                isChild: true,
+                                siblingIds: children.map((item) => item.id)
+                              })
+                            )}
+                      </ul>
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           )}

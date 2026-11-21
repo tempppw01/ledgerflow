@@ -9641,20 +9641,98 @@ body.exchange-resizing {
 }
 
 .category-count-chip {
-  height: 26px;
-  padding: 0 10px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-  background: var(--color-bg-subtle);
+  /* 原来是有边框、有底色的胶囊,是每一行里最抢眼的元素 —— 但它只是次要信息。
+     改成低调文本:无边框、无底色,只在 hover/focus 时浮现点击反馈。 */
+  height: 24px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
   color: var(--color-text-tertiary);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
+  opacity: 0.85;
 }
 
-.category-count-chip:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
-  color: var(--color-primary);
+.category-count-chip:hover,
+.category-count-chip:focus-visible {
+  background: var(--color-bg-hover);
+  color: var(--color-text-secondary);
+  opacity: 1;
+}
+
+/* ---- 分类树:折叠箭头与「更多操作」 ---- */
+/* 每一行原本平铺五个按钮(16 行 = 96 个),是页面凌乱的主因。低频操作收进
+   「更多操作」,主操作保持常显;父级分类多出一个折叠箭头,让两级结构可见。 */
+.category-node-caret,
+.category-node-caret-spacer {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin-right: -2px;
+}
+
+.category-node-caret {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.category-node-caret:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text);
+}
+
+.category-node.is-collapsed {
+  /* 收起后没有子项,底部留白与普通行区分开 */
+  border-bottom-color: transparent;
+}
+
+.category-more-toggle {
+  min-width: 30px;
+  padding: 0 6px;
+  letter-spacing: 1px;
+}
+
+.category-more-toggle.is-open {
+  background: var(--color-bg-hover);
+  color: var(--color-text);
+}
+
+.category-secondary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 2px 48px;
+  padding: 6px 8px;
+  border: 1px solid var(--color-divider);
+  border-radius: 10px;
+  background: var(--color-bg-subtle);
+}
+
+.category-secondary-actions .category-action {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+}
+
+.category-secondary-actions .category-action.is-danger {
+  color: var(--color-text-secondary);
+}
+
+.category-secondary-actions .category-action.is-danger:hover {
+  border-color: color-mix(in srgb, var(--color-danger) 45%, var(--color-border));
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
 }
 
 .category-edit-form {

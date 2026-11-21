@@ -2941,7 +2941,9 @@
     "categoriesMetricsAria": "分类统计",
     "categoriesTitle": "分类与标签管理",
     "childBadge": "子分类",
+    "childCountLabel": "{count} 个子分类",
     "collapse": "收起",
+    "collapseCategoryAria": "收起 {name} 的子分类",
     "confirm": {
       "accountTrashPlain": "该账户将先移入回收站，你之后仍可恢复或彻底删除。是否继续？",
       "accountUsage": "该账户下存在 {count} 条交易记录，移入回收站后仅移除账户本身，交易仍会保留。是否继续？",
@@ -2971,6 +2973,7 @@
       "accountType": "请选择账户类型后再添加账户。",
       "categoryName": "分类名称需为 1-24 个字符，且不能包含 < 或 >。"
     },
+    "expandCategoryAria": "展开 {name} 的子分类",
     "expandRemaining": "展开剩余 {count} 项",
     "eyebrow": "记账设置",
     "initialBalance": "初始余额",
@@ -2986,6 +2989,7 @@
     "metricChild": "子分类",
     "metricRoot": "一级分类",
     "metricTag": "标签",
+    "moreActionsAria": "{name} 的更多操作",
     "moveAccountDownAria": "下移账户 {name}",
     "moveAccountUpAria": "上移账户 {name}",
     "moveCategoryDownAria": "下移分类 {name}",

@@ -2941,7 +2941,9 @@
     "categoriesMetricsAria": "Category statistics",
     "categoriesTitle": "Category & tag management",
     "childBadge": "Subcategory",
+    "childCountLabel": "{count} subcategories",
     "collapse": "Collapse",
+    "collapseCategoryAria": "Collapse subcategories of {name}",
     "confirm": {
       "accountTrashPlain": "This account moves to the recycle bin first. You can still restore it or delete it permanently. Continue?",
       "accountUsage": "This account has {count} transactions. Only the account itself moves to the recycle bin; the transactions are kept. Continue?",
@@ -2971,6 +2973,7 @@
       "accountType": "Choose an account type before adding the account.",
       "categoryName": "Category names must be 1–24 characters and cannot contain < or >."
     },
+    "expandCategoryAria": "Expand subcategories of {name}",
     "expandRemaining": "Show {count} more",
     "eyebrow": "BOOKKEEPING SETUP",
     "initialBalance": "Opening balance",
@@ -2986,6 +2989,7 @@
     "metricChild": "Subcategories",
     "metricRoot": "Top-level",
     "metricTag": "Tags",
+    "moreActionsAria": "More actions for {name}",
     "moveAccountDownAria": "Move account {name} down",
     "moveAccountUpAria": "Move account {name} up",
     "moveCategoryDownAria": "Move category {name} down",
