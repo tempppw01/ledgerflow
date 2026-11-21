@@ -15,6 +15,7 @@ import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient'
 import { extractJsonString } from '../../features/assistant/workbench/workbenchUtils';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { exportTransactionsCsv } from '../../shared/lib/csv';
+import { escapeHtml } from '../../shared/lib/escapeHtml';
 import {
   applyBillImportMode,
   ApplyBillImportModeResult,
@@ -117,15 +118,6 @@ const TX_SIDE_PANEL_VISIBLE_KEY = 'ledgerflow.transactions.sidePanelVisible';
 function easeOutCubic(t: number) {
   const p = Math.min(Math.max(t, 0), 1);
   return 1 - (1 - p) ** 3;
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 function extractLocation(note: string): string {

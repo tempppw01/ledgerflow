@@ -8,6 +8,7 @@ import {
 } from '../../../entities/transaction/types';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../../shared/lib/format';
+import { escapeHtml } from '../../../shared/lib/escapeHtml';
 import { getDateLocale } from '../../../shared/lib/i18nDate';
 import { useTFallback, type TfFallback } from '../../../shared/lib/useTFallback';
 import {
@@ -233,15 +234,6 @@ function maskMerchant(value: string): string {
   if (value.length <= 2) return '••';
   if (value.length <= 6) return `${value.slice(0, 1)}•••${value.slice(-1)}`;
   return `${value.slice(0, 2)}***${value.slice(-2)}`;
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 function buildAbnormalAlert(
