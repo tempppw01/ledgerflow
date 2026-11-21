@@ -76,12 +76,18 @@ export function buildBudgetCategoryDetail(params: {
     }
 
     const amount = Number(item.amount || 0);
-    spentByMonth.set(key, (spentByMonth.get(key) || 0) + amount);
+    // 退款/冲正单的 type 也是 expense,但它们应该**冲减**该分类的支出,而不是
+    // 再加一笔。汇总侧(buildBudgetTrackingRows)一直是这么算的,详情侧以前直接
+    // 累加正值,于是同一个分类在抽屉里和列表里给出两个不同的数字:
+    // 支出 100 + 退款 40 → 列表 60、抽屉 140;全额冲正时抽屉更是翻倍。
+    const refundLike = item.adjustmentKind === 'refund' || item.adjustmentKind === 'reversal';
+    const signedAmount = refundLike ? -amount : amount;
+    spentByMonth.set(key, (spentByMonth.get(key) || 0) + signedAmount);
     recentTransactions.push({
       id: item.id,
       date: item.date,
       note: item.note,
-      amount
+      amount: signedAmount
     });
   });
 
@@ -89,8 +95,13 @@ export function buildBudgetCategoryDetail(params: {
     .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
     .slice(0, transactionLimit);
 
+  // 与汇总侧一致:单个分类单个自然月的净支出不为负(退款多于支出的极端情况)。
+  // 不夹 0 的话,退款多的月份抽屉会显示负数,而列表显示 0,两者又对不上。
   const monthlyPoints = monthKeys
-    .map((key) => ({ monthKey: key, spent: Math.round((spentByMonth.get(key) || 0) * 100) / 100 }))
+    .map((key) => ({
+      monthKey: key,
+      spent: Math.max(0, Math.round((spentByMonth.get(key) || 0) * 100) / 100)
+    }))
     .reverse();
 
   const totalSpentInWindow = monthlyPoints.reduce((sum, item) => sum + item.spent, 0);

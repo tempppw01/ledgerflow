@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Category } from '../../../entities/category/types';
 import type { TransactionItem } from '../../../entities/transaction/types';
 import { buildBudgetCategoryDetail } from './budgetDetail';
+import { buildBudgetTrackingRows } from './budgetInsights';
 
 const categories: Category[] = [
   { id: 'cat-1', name: '餐饮', kind: 'expense' },
@@ -106,5 +107,63 @@ describe('buildBudgetCategoryDetail', () => {
     });
 
     expect(detail.recentTransactions).toHaveLength(3);
+  });
+
+  /**
+   * 详情抽屉与汇总列表必须给出同一个数字。
+   * 之前退款/冲正单(它们的 type 也是 expense)在详情里被当成一笔普通支出一路累加,
+   * 于是同一个分类两处对不上:支出 100 + 退款 40 → 列表 60、抽屉 140;全额冲正时
+   * 抽屉显示 500 而列表是 0。
+   */
+  it('agrees with the tracking row on refunds and reversals', () => {
+    const recommendation = {
+      monthlyIncome: 10000,
+      monthlyFixedExpense: 0,
+      disposableIncome: 10000,
+      savingsAmount: 0,
+      flexibleBudget: 10000,
+      categoryBudgets: [{ category: '餐饮', amount: 1000, ratio: 0.1 }]
+    } as unknown as Parameters<typeof buildBudgetTrackingRows>[0]['recommendation'];
+
+    const make = (over: Partial<TransactionItem>): TransactionItem =>
+      ({
+        id: 'x',
+        type: 'expense',
+        categoryId: 'cat-1',
+        accountId: 'acc-1',
+        amount: 0,
+        date: '2026-11-05',
+        note: '',
+        tags: [],
+        ...over
+      }) as TransactionItem;
+
+    const cases: Array<{ name: string; transactions: TransactionItem[] }> = [
+      { name: '部分退款', transactions: [make({ id: 'a', amount: 100 }), make({ id: 'b', amount: 40, adjustmentKind: 'refund' })] },
+      { name: '全额冲正', transactions: [make({ id: 'a', amount: 250 }), make({ id: 'b', amount: 250, adjustmentKind: 'reversal' })] },
+      { name: '退款多于支出', transactions: [make({ id: 'a', amount: 50 }), make({ id: 'b', amount: 80, adjustmentKind: 'refund' })] }
+    ];
+
+    for (const item of cases) {
+      const rows = buildBudgetTrackingRows({
+        recommendation,
+        transactions: item.transactions,
+        categories,
+        monthKey: '2026-11'
+      });
+      const detail = buildBudgetCategoryDetail({
+        category: '餐饮',
+        budgetAmount: 1000,
+        transactions: item.transactions,
+        categories,
+        monthKey: '2026-11',
+        monthWindow: 1
+      });
+
+      const detailSpent = detail.monthlyPoints[detail.monthlyPoints.length - 1].spent;
+      expect(detailSpent, `${item.name}:抽屉与列表不一致`).toBe(rows[0].spentAmount);
+      expect(detail.totalSpentInWindow, `${item.name}:窗口合计与列表不一致`).toBe(rows[0].spentAmount);
+      expect(detailSpent).toBeGreaterThanOrEqual(0);
+    }
   });
 });
