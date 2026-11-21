@@ -1,6 +1,6 @@
 {
   "name": "ledgerflow-frontend",
-  "version": "0.14.1",
+  "version": "0.14.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -19,7 +19,8 @@
     "format:check": "prettier . --check",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "check:r2-fetch": "node scripts/check-no-r2-fetch.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
