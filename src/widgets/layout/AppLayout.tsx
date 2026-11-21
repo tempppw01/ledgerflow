@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useTFallback } from '../../shared/lib/useTFallback';
 import {
   ASSISTANT_MODE_CHANGED_EVENT,
   getAssistantModeSpark,
@@ -90,6 +91,7 @@ export function AppLayout() {
     },
     [t]
   );
+  const tf = useTFallback();
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -480,23 +482,17 @@ export function AppLayout() {
       ? '/transactions?datePreset=thisMonth'
       : '/assistant';
     const defaultReviewAction = location.pathname.startsWith('/assistant')
-      ? isEnglish
-        ? 'Review month'
-        : '查看本月流水'
-      : isEnglish
-        ? 'Ask AI'
-        : '去 AI 复盘';
+      ? tf('navMobile.reviewMonth', '查看本月流水')
+      : tf('navMobile.askAi', '去 AI 复盘');
 
     if (monthTransactionCount === 0) {
       return {
         tone: 'idle',
         icon: '🧾',
-        eyebrow: isEnglish ? 'This month' : '本月动态',
-        title: isEnglish ? 'No records yet' : '本月还没有新流水',
-        description: isEnglish
-          ? 'Add one real transaction first, then the assistant can give more grounded follow-up suggestions.'
-          : '先补一笔真实收支，再回来追问或复盘，会比固定提示更有参考价值。',
-        actionLabel: isEnglish ? 'Quick add one' : '去补一笔',
+        eyebrow: tf('navMobile.thisMonth', '本月动态'),
+        title: tf('navMobile.noRecordsYet', '本月还没有新流水'),
+        description: tf('navMobile.addOneFirst', '先补一笔真实支收，再回来追问或复盘，会比固定提示更有参考价值。'),
+        actionLabel: tf('navMobile.quickAddOne', '去补一笔'),
         to: '/transactions?quickAdd=1&entry=layout'
       };
     }
@@ -505,14 +501,10 @@ export function AppLayout() {
       return {
         tone: 'warning',
         icon: '⚠️',
-        eyebrow: isEnglish ? 'Cash flow' : '资金提醒',
-        title: isEnglish
-          ? `Monthly balance ${formatCurrency(monthBalance)}`
-          : `本月结余 ${formatCurrency(monthBalance)}`,
-        description: isEnglish
-          ? `You've logged ${monthTransactionCount} records this month. Check budget pressure before continuing.`
-          : `本月已记录 ${monthTransactionCount} 笔，当前已经偏紧，先看看预算或高频支出会更稳。`,
-        actionLabel: isEnglish ? 'Open budget' : '去看预算',
+        eyebrow: tf('navMobile.cashFlow', '资金提醒'),
+        title: tf('navMobile.monthlyBalanceNegative', '本月结余 {{amount}}').split('{{amount}}').join(formatCurrency(monthBalance)),
+        description: tf('navMobile.warningDescription', '本月已记录 {{count}} 笔，当前已经偏紧，先看看预算或高频支出会更稳。').split('{{count}}').join(String(monthTransactionCount)),
+        actionLabel: tf('navMobile.openBudget', '去看预算'),
         to: '/smart-budget'
       };
     }
@@ -521,14 +513,10 @@ export function AppLayout() {
       return {
         tone: 'focus',
         icon: '💸',
-        eyebrow: isEnglish ? 'Income gap' : '记录提醒',
-        title: isEnglish
-          ? `Expenses ${formatCurrency(monthExpense)}`
-          : `本月支出 ${formatCurrency(monthExpense)}`,
-        description: isEnglish
-          ? 'Expenses are already recorded, but income is still blank. Completing the flow will make monthly review clearer.'
-          : '支出已经开始累积，但收入侧还是空白，补齐之后月度结余会更准确。',
-        actionLabel: isEnglish ? 'Continue bookkeeping' : '继续记账',
+        eyebrow: tf('navMobile.incomeGap', '记录提醒'),
+        title: tf('navMobile.monthlyExpense', '本月支出 {{amount}}').split('{{amount}}').join(formatCurrency(monthExpense)),
+        description: tf('navMobile.incomeGapDescription', '支出已经开始累积，但收入侧还是空白，补齐之后月度结余会更准确。'),
+        actionLabel: tf('navMobile.continueBookkeeping', '继续记账'),
         to: '/transactions?quickAdd=1&entry=layout'
       };
     }
@@ -537,38 +525,27 @@ export function AppLayout() {
       ? truncateMobileInsightText(latestMonthTransaction.note.trim(), isEnglish ? 36 : 18)
       : latestMonthTransaction
         ? latestMonthTransaction.type === 'income'
-          ? isEnglish
-            ? 'Latest record is an income entry'
-            : '最近一笔是收入记录'
+          ? tf('navMobile.latestIncome', '最近一笔是收入记录')
           : latestMonthTransaction.type === 'repayment'
-            ? isEnglish
-              ? 'Latest record is a repayment entry'
-              : '最近一笔是还款记录'
-            : isEnglish
-              ? 'Latest record is an expense entry'
-              : '最近一笔是支出记录'
+            ? tf('navMobile.latestRepayment', '最近一笔是还款记录')
+            : tf('navMobile.latestExpense', '最近一笔是支出记录')
         : '';
 
     return {
       tone: 'positive',
       icon: '✨',
-      eyebrow: isEnglish ? 'Latest update' : '最近更新',
-      title: isEnglish
-        ? `${monthTransactionCount} records this month`
-        : `本月已记录 ${monthTransactionCount} 笔`,
-      description: isEnglish
-        ? latestSummary
-          ? `${latestSummary}. Keep going or open the assistant for a quick review.`
-          : 'Your monthly ledger is moving. Continue bookkeeping or open the assistant for a quick review.'
-        : latestSummary
-          ? `${latestSummary}。继续补齐，或者让 AI 直接帮你做一轮复盘。`
-          : '这个月已经有连续记录了，继续补齐，或者让 AI 帮你做一轮复盘。',
+      eyebrow: tf('navMobile.latestUpdate', '最近更新'),
+      title: tf('navMobile.monthlyRecords', '本月已记录 {{count}} 笔').split('{{count}}').join(String(monthTransactionCount)),
+      description: latestSummary
+        ? tf('navMobile.positiveDescriptionWithSummary', '{{summary}}。继续补齐，或者让 AI 直接帮你做一轮复盘。').split('{{summary}}').join(latestSummary)
+        : tf('navMobile.positiveDescriptionEmpty', '这个月已经有连续记录了，继续补齐，或者让 AI 帮你做一轮复盘。'),
       actionLabel: defaultReviewAction,
       to: defaultReviewTo
     };
   }, [
     isEnglish,
     latestMonthTransaction,
+    tf,
     location.pathname,
     monthBalance,
     monthExpense,
@@ -970,7 +947,7 @@ export function AppLayout() {
             className="settings-overlay-dialog"
             role="dialog"
             aria-modal="true"
-            aria-label={t('nav.settings', { defaultValue: '设置' })}
+            aria-label={tf('nav.settings', '设置')}
             onClick={(event) => event.stopPropagation()}
           >
             <SettingsPage variant="overlay" onClose={closeSettingsOverlay} />
@@ -988,7 +965,7 @@ export function AppLayout() {
             className="mobile-nav-drawer"
             role="dialog"
             aria-modal="true"
-            aria-label={t('layout.drawerAria', { defaultValue: '功能抽屉' })}
+            aria-label={tf('layout.drawerAria', '功能抽屉')}
             onClick={(e) => e.stopPropagation()}
           >
             <header className="mobile-nav-header mobile-nav-profile">
@@ -1002,10 +979,7 @@ export function AppLayout() {
                 <div>
                   <p className="mobile-nav-name">{user.displayName}</p>
                   <p className="mobile-nav-subtitle">
-                    {t('layout.drawerSubtitle', {
-                      today: todayLabel,
-                      defaultValue: `${todayLabel} · 今天也要轻松记一笔`
-                    })}
+                    {tf('layout.drawerSubtitle', '{{today}} · 今天也要轻松记一笔').split('{{today}}').join(todayLabel)}
                   </p>
                 </div>
               </div>
@@ -1013,7 +987,7 @@ export function AppLayout() {
                 type="button"
                 className="icon-btn"
                 onClick={() => setMobileNavOpen(false)}
-                aria-label={t('layout.closeDrawer', { defaultValue: '关闭功能抽屉' })}
+                aria-label={tf('layout.closeDrawer', '关闭功能抽屉')}
               >
                 ✕
               </button>
@@ -1022,19 +996,10 @@ export function AppLayout() {
             <section className="mobile-nav-summary-card">
               <h3>{monthLabel}</h3>
               <p>
-                {t('layout.monthlyBalance', {
-                  amount: formatCurrency(monthBalance),
-                  defaultValue: `结余 ${formatCurrency(monthBalance)}`
-                })}
+                {tf('layout.monthlyBalance', '结余 {{amount}}').split('{{amount}}').join(formatCurrency(monthBalance))}
               </p>
               <p>
-                {t('layout.monthlyIncomeExpense', {
-                  income: formatCurrency(monthIncome),
-                  expense: formatCurrency(monthExpense),
-                  defaultValue: `收入 ${formatCurrency(monthIncome)} · 支出 ${formatCurrency(
-                    monthExpense
-                  )}`
-                })}
+                {tf('layout.monthlyIncomeExpense', '收入 {{income}} · 支出 {{expense}}').split('{{income}}').join(formatCurrency(monthIncome)).split('{{expense}}').join(formatCurrency(monthExpense))}
               </p>
             </section>
 

@@ -4171,5 +4171,28 @@
     "saving": "保存中",
     "save": "保存到账本",
     "accountPlaceholder": "如 招商银行储蓄卡"
+  },
+  "navMobile": {
+    "reviewMonth": "查看本月流水",
+    "askAi": "去 AI 复盘",
+    "thisMonth": "本月动态",
+    "noRecordsYet": "本月还没有新流水",
+    "addOneFirst": "先补一笔真实支收，再回来追问或复盘，会比固定提示更有参考价值。",
+    "quickAddOne": "去补一笔",
+    "cashFlow": "资金提醒",
+    "monthlyBalanceNegative": "本月结余 {{amount}}",
+    "warningDescription": "本月已记录 {{count}} 笔，当前已经偏紧，先看看预算或高频支出会更稳。",
+    "openBudget": "去看预算",
+    "incomeGap": "记录提醒",
+    "monthlyExpense": "本月支出 {{amount}}",
+    "incomeGapDescription": "支出已经开始累积，但收入侧还是空白，补齐之后月度结余会更准确。",
+    "continueBookkeeping": "继续记账",
+    "latestIncome": "最近一笔是收入记录",
+    "latestRepayment": "最近一笔是还款记录",
+    "latestExpense": "最近一笔是支出记录",
+    "latestUpdate": "最近更新",
+    "monthlyRecords": "本月已记录 {{count}} 笔",
+    "positiveDescriptionWithSummary": "{{summary}}。继续补齐，或者让 AI 直接帮你做一轮复盘。",
+    "positiveDescriptionEmpty": "这个月已经有连续记录了，继续补齐，或者让 AI 帮你做一轮复盘。"
   }
 }

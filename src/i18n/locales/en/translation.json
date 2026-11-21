@@ -4171,5 +4171,28 @@
     "saving": "Saving",
     "save": "Save to ledger",
     "accountPlaceholder": "e.g. CMB debit card"
+  },
+  "navMobile": {
+    "reviewMonth": "Review month",
+    "askAi": "Ask AI",
+    "thisMonth": "This month",
+    "noRecordsYet": "No records yet",
+    "addOneFirst": "Add one real transaction first, then the assistant can give more grounded follow-up suggestions.",
+    "quickAddOne": "Quick add one",
+    "cashFlow": "Cash flow",
+    "monthlyBalanceNegative": "Monthly balance {{amount}}",
+    "warningDescription": "You've logged {{count}} records this month. Check budget pressure before continuing.",
+    "openBudget": "Open budget",
+    "incomeGap": "Income gap",
+    "monthlyExpense": "Expenses {{amount}}",
+    "incomeGapDescription": "Expenses are already recorded, but income is still blank. Completing the flow will make monthly review clearer.",
+    "continueBookkeeping": "Continue bookkeeping",
+    "latestIncome": "Latest record is an income entry",
+    "latestRepayment": "Latest record is a repayment entry",
+    "latestExpense": "Latest record is an expense entry",
+    "latestUpdate": "Latest update",
+    "monthlyRecords": "{{count}} records this month",
+    "positiveDescriptionWithSummary": "{{summary}}. Keep going or open the assistant for a quick review.",
+    "positiveDescriptionEmpty": "Your monthly ledger is moving. Continue bookkeeping or open the assistant for a quick review."
   }
 }

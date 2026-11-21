@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/tempppw01/ledgerflow/releases"><img src="https://img.shields.io/github/v/release/tempppw01/ledgerflow?display_name=tag&style=flat-square&color=f59e0b" alt="Release" /></a>
-  <img src="https://img.shields.io/badge/version-0.8.8-0f766e?style=flat-square" alt="Version 0.8.8" />
+  <img src="https://img.shields.io/badge/version-0.8.9-0f766e?style=flat-square" alt="Version 0.8.9" />
   <img src="https://img.shields.io/badge/Node.js-20%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js 20+" />
   <img src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker ready" />
   <a href="https://ledgerflow.shuaihong.fun"><img src="https://img.shields.io/badge/Live%20demo-open-f59e0b?style=flat-square" alt="Live demo" /></a>
@@ -16,7 +16,7 @@
 <p align="center"><a href="#快速部署">快速部署</a> · <a href="#主要能力">主要能力</a> · <a href="#备份与同步">数据与备份</a> · <a href="https://github.com/tempppw01/ledgerflow/releases">版本发布</a></p>
 
 > [!NOTE]
-> 当前版本：`0.8.8`。项目仍在快速迭代，重要数据请保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
+> 当前版本：`0.8.9`。项目仍在快速迭代，重要数据请保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
 
 > 说明：项目仍处于快速迭代阶段，功能、界面和数据结构会持续调整。重要数据请务必保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
 
@@ -57,6 +57,12 @@
 </table>
 
 </details>
+
+### 0.8.9 功能亮点
+
+- 导航抽屉的移动端洞察卡片支持英文。此前 390×844 视口下打开侧边抽屉,MobileNavInsight 卡片(本月几笔、资金提醒、记录提醒、最近更新)整块是中文,与仓库其它页面用 `useTFallback()` 的写法不一致。
+- 同步把 `layout.drawerSubtitle`、`layout.monthlyBalance`、`layout.monthlyIncomeExpense` 三个 `defaultValue` 里的中文改走 `tf()`,避免 locale 缺 key 时回退到英文界面的中文。
+- `scan-bare-cjk.mjs` 现在把 `tFallback` 识别为 i18n 调用,AppLayout 裸中文数从 24 降到 0。
 
 ### 0.8.8 功能亮点
 
