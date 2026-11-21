@@ -3736,6 +3736,9 @@
       "step3OpenParen": "（"
     },
     "refund": {
+      "amountInputAria": "本次退款金额",
+      "amountInputLabel": "本次退款金额(可改小做部分退款)",
+      "amountRequired": "请填写大于 0 的退款金额。",
       "notePrefix": "退款：",
       "originalTransaction": "原始交易",
       "createdFullHead": "退款已成功创建，",
@@ -3750,6 +3753,7 @@
       "confirmWillCreateSuffix": "”创建退款记录。",
       "originalAmount": "原交易金额",
       "refundedAmount": "已退款金额",
+      "remainingHint": "最多可退",
       "thisRefundAmount": "本次退款金额",
       "afterRefundAccount": "退款后回补账户",
       "detailHint": "退款记录会写入余额变动明细，原交易的可退款金额会同步更新。",

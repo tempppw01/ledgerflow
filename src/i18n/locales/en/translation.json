@@ -3736,6 +3736,9 @@
       "step3OpenParen": " ("
     },
     "refund": {
+      "amountInputAria": "Refund amount",
+      "amountInputLabel": "Refund amount (lower it for a partial refund)",
+      "amountRequired": "Enter a refund amount greater than 0.",
       "notePrefix": "Refund: ",
       "originalTransaction": "Original transaction",
       "createdFullHead": "Refund created. ",
@@ -3750,6 +3753,7 @@
       "confirmWillCreateSuffix": "\".",
       "originalAmount": "Original amount",
       "refundedAmount": "Refunded amount",
+      "remainingHint": "Refundable up to",
       "thisRefundAmount": "This refund",
       "afterRefundAccount": "Account after refund",
       "detailHint": "The refund is written to the balance history, and the refundable amount of the original transaction is updated.",

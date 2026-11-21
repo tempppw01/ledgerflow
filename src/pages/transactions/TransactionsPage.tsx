@@ -441,6 +441,8 @@ export function TransactionsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
   const [pendingRefundTransactionId, setPendingRefundTransactionId] = useState<string | null>(null);
+  /** 空字符串表示「退剩余全部」,填了数字则按部分退款处理。 */
+  const [pendingRefundAmountInput, setPendingRefundAmountInput] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   /** 批量打印的预览内容:先生成 HTML 给用户看,确认后才真正打印。 */
   const [printPreview, setPrintPreview] = useState<{ html: string; preferPdf: boolean } | null>(
@@ -945,6 +947,18 @@ export function TransactionsPage() {
     );
   }, [pendingRefundTransaction, pendingRefundedAmount]);
 
+  /**
+   * 本次实际退款金额。留空表示退「剩余可退」全部;填了就按部分退款,
+   * 并夹在 (0, 剩余可退] 之间,避免超出可退额度。
+   */
+  const pendingRefundThisAmount = useMemo(() => {
+    const parsed = Number(pendingRefundAmountInput);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return pendingRefundRemainingAmount;
+    }
+    return Math.min(pendingRefundRemainingAmount, Number(parsed.toFixed(2)));
+  }, [pendingRefundAmountInput, pendingRefundRemainingAmount]);
+
   const selectedRefundChildren = useMemo(() => {
     if (!selected) {
       return [];
@@ -1440,16 +1454,20 @@ export function TransactionsPage() {
     }
 
     try {
+      if (pendingRefundThisAmount <= 0) {
+        showToast(tf('txPage.refund.amountRequired', '请填写大于 0 的退款金额。'), 'error');
+        return;
+      }
       const refundResult = refundTransaction({
         transactionId: pendingRefundTransaction.id,
-        amount: pendingRefundRemainingAmount,
+        amount: pendingRefundThisAmount,
         note: `${tf('txPage.refund.notePrefix', `退款：`)}${pendingRefundTransaction.note || tf('txPage.refund.originalTransaction', '原始交易')}`
       });
 
       showToast(
         refundResult.fullyRefunded
-          ? `${tf('txPage.refund.createdFullHead', `退款已成功创建，`)}${pendingRefundRemainingAmount.toFixed(2)}${tf('txPage.refund.creditedFullTail', ` 元已回补到原账户，原单已标记为已退款。`)}`
-          : `${tf('txPage.refund.createdRemainingHead', `退款已成功创建，`)}${pendingRefundRemainingAmount.toFixed(2)}${tf('txPage.refund.creditedRemainingMiddle', ` 元已回补到原账户，剩余可退 ¥`)}${refundResult.remainingRefundableAmount.toFixed(2)}${tf('txPage.refund.period', `。`)}`,
+          ? `${tf('txPage.refund.createdFullHead', `退款已成功创建，`)}${pendingRefundThisAmount.toFixed(2)}${tf('txPage.refund.creditedFullTail', ` 元已回补到原账户，原单已标记为已退款。`)}`
+          : `${tf('txPage.refund.createdRemainingHead', `退款已成功创建，`)}${pendingRefundThisAmount.toFixed(2)}${tf('txPage.refund.creditedRemainingMiddle', ` 元已回补到原账户，剩余可退 ¥`)}${refundResult.remainingRefundableAmount.toFixed(2)}${tf('txPage.refund.period', `。`)}`,
         'success'
       );
       setSelectedId(refundResult.refundTransactionId);
@@ -3286,16 +3304,35 @@ export function TransactionsPage() {
                   },
                   {
                     label: tf('txPage.refund.thisRefundAmount', '本次退款金额'),
-                    amount: formatCurrency(pendingRefundRemainingAmount),
+                    amount: formatCurrency(pendingRefundThisAmount),
                     tone: 'warning'
                   }
                 ]}
                 total={{
                   label: tf('txPage.refund.afterRefundAccount', '退款后回补账户'),
-                  amount: formatCurrency(pendingRefundRemainingAmount),
+                  amount: formatCurrency(pendingRefundThisAmount),
                   tone: 'success'
                 }}
               />
+              {pendingRefundRemainingAmount > 0 ? (
+                <label className="confirm-flow-field">
+                  <span>{tf('txPage.refund.amountInputLabel', '本次退款金额(可改小做部分退款)')}</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min={0.01}
+                    max={pendingRefundRemainingAmount}
+                    step="0.01"
+                    value={pendingRefundAmountInput}
+                    placeholder={pendingRefundRemainingAmount.toFixed(2)}
+                    onChange={(event) => setPendingRefundAmountInput(event.target.value)}
+                    aria-label={tf('txPage.refund.amountInputAria', '本次退款金额')}
+                  />
+                  <small className="muted">
+                    {tf('txPage.refund.remainingHint', '最多可退')} {formatCurrency(pendingRefundRemainingAmount)}
+                  </small>
+                </label>
+              ) : null}
               <p className="muted">
                 {tf(
                   'txPage.refund.detailHint',
@@ -3307,11 +3344,14 @@ export function TransactionsPage() {
             ''
           )
         }
-        confirmText={`${tf('txPage.refund.confirmPrefix', `确认退款（`)}${formatCurrency(pendingRefundRemainingAmount)}）`}
+        confirmText={`${tf('txPage.refund.confirmPrefix', `确认退款（`)}${formatCurrency(pendingRefundThisAmount)}）`}
         cancelText={tf('txPage.common.cancel', '取消')}
         danger
         onConfirm={handleRefundConfirm}
-        onCancel={() => setPendingRefundTransactionId(null)}
+        onCancel={() => {
+          setPendingRefundTransactionId(null);
+          setPendingRefundAmountInput('');
+        }}
       />
 
       <ConfirmDialog
