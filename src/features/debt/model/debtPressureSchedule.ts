@@ -151,19 +151,31 @@ export function buildDebtPressureSchedule(
 
   const manualScheduleStartPeriod = getManualScheduleStartPeriod(debt);
   const monthlyRate = Math.max(0, Number(debt.annualRate) || 0) / 12 / 100;
-  let remaining = balance;
+  // 全程按「分」做整数运算。
+  // 原来是用浮点算利息与本金、再各自 toFixed(2),两条独立的四舍五入会让
+  // 本金 + 利息 与 金额 差出 0.01(实测信用卡 5000 元 / 18% / 第 2 期:
+  // 431.38 + 68.63 = 500.01,而金额写的是 500)。摊还表的「本金 + 利息 = 每期金额」
+  // 是用户会逐行相加去核对的基本等式,差一分就会让人不敢信这张表。
+  // 改成分制整数后,等式与「余额 = 上期余额 − 本金」都按构造精确成立。
+  const toCents = (value: number) => Math.round(value * 100);
+  let remainingCents = toCents(balance);
   return rows.slice(0, 36).map((item, index) => {
-    const openingBalance = remaining;
-    const interest = Math.min(item.amount, Math.max(0, openingBalance * monthlyRate));
-    const principal = Math.min(openingBalance, Math.max(0, item.amount - interest));
-    remaining = Math.max(0, openingBalance - principal);
+    const openingCents = remainingCents;
+    const amountCents = toCents(item.amount);
+    const interestCents = Math.min(
+      amountCents,
+      Math.max(0, Math.round(openingCents * monthlyRate))
+    );
+    // 还款额超过「余额 + 利息」时本金被封顶,不会出现倒欠或多还。
+    const principalCents = Math.min(openingCents, Math.max(0, amountCents - interestCents));
+    remainingCents = Math.max(0, openingCents - principalCents);
     return {
       period: item.label?.trim() || `第 ${manualScheduleStartPeriod + index} 期`,
       dueDate: item.dueDate || '日期待填',
-      amount: Number(item.amount.toFixed(2)),
-      principal: Number(principal.toFixed(2)),
-      interest: Number(interest.toFixed(2)),
-      remaining: Number(remaining.toFixed(2))
+      amount: amountCents / 100,
+      principal: principalCents / 100,
+      interest: interestCents / 100,
+      remaining: remainingCents / 100
     };
   });
 }
