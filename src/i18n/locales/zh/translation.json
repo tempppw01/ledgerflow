@@ -664,6 +664,8 @@
         "title": "资产负债预测",
         "subtitle": "按已登记安排推演未来 {{count}} 个月，帮助你提前看到现金压力。",
         "rangeAria": "模拟时间范围",
+        "horizonMonths": "{{count}} 个月",
+        "horizonMonthsOne": "1 个月",
         "lowestBalanceDate": "预计余额最低日",
         "noData": "暂无数据",
         "registerAccounts": "先登记账户或安排",

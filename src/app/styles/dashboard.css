@@ -279,8 +279,12 @@
 .dashboard-calendar-day,.dashboard-calendar-empty { min-height: 46px; }
 .dashboard-calendar-day { position: relative; display: grid; place-items: center; align-content: center; gap: 2px; border: 1px solid var(--color-border-light); border-radius: var(--radius-sm); background: color-mix(in srgb, var(--color-bg-subtle) 62%, var(--color-bg-elevated)); transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast); }
 .dashboard-calendar-day:hover { border-color: var(--color-primary-border); background: color-mix(in srgb, var(--color-primary-bg) 58%, var(--color-bg-elevated)); transform: translateY(-1px); }
-.dashboard-calendar-day.is-month-start { margin-left: 5px; border-left: 2px solid var(--color-primary); box-shadow: -5px 0 0 color-mix(in srgb, var(--color-primary) 12%, transparent); }
-.dashboard-calendar-day.is-month-start em { position: absolute; top: 2px; left: 5px; color: var(--color-primary); font-size: 8px; font-style: normal; font-weight: 700; }
+/* 月首格子只用来标出月份边界,不能改变几何尺寸:
+   之前用 margin-left: 5px + 外阴影补位,会让这一格变成 37px(其它格 42px),
+   整列与上下行错位,格内金额也被挤掉。改用 inset 阴影画强调条,尺寸与其它格一致;
+   em 的「12月」标签居中放在顶部,配合 padding-top 把日期/金额整体下移,避免压住日期数字。 */
+.dashboard-calendar-day.is-month-start { padding-top: 8px; box-shadow: inset 2px 0 0 var(--color-primary), inset 5px 0 0 color-mix(in srgb, var(--color-primary) 12%, transparent); }
+.dashboard-calendar-day.is-month-start em { position: absolute; top: 0; right: 0; left: 0; height: 8px; color: var(--color-primary); font-size: 8px; font-style: normal; font-weight: 700; line-height: 8px; text-align: center; }
 .dashboard-calendar-day b { color: var(--color-text); font-family: var(--font-number); font-size: 11px; font-weight: 700; }
 .dashboard-calendar-day small { min-width: 0; color: var(--color-text-tertiary); font-family: var(--font-number); font-size: 10px; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; white-space: nowrap; }
 .dashboard-calendar-day.is-positive { border-color: color-mix(in srgb, var(--color-danger) 45%, var(--color-border-light)); background: color-mix(in srgb, var(--color-danger) calc(var(--calendar-intensity) * 100%), var(--color-bg-elevated)); }

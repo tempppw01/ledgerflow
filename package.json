@@ -13,6 +13,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "lint": "eslint . --max-warnings=0",
+    "i18n:check": "node scripts/check-i18n-keys.mjs",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "test": "vitest run --config vitest.config.ts",

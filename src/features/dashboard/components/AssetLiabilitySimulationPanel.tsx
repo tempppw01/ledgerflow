@@ -116,7 +116,9 @@ export function AssetLiabilitySimulationPanel({
                 className={horizonMonths === months ? 'is-active' : ''}
                 onClick={() => onHorizonChange(months as 1 | 3 | 6 | 12)}
               >
-                {t('dashboard.ui.simulation.horizonMonths', { count: months })}
+                {months === 1
+                  ? t('dashboard.ui.simulation.horizonMonthsOne')
+                  : t('dashboard.ui.simulation.horizonMonths', { count: months })}
               </button>
             ))}
           </div>

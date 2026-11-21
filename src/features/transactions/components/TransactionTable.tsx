@@ -25,7 +25,6 @@ const ALIPAY_ACCOUNT_PATTERN = /(支付宝|alipay)/i;
 const WECHAT_ACCOUNT_PATTERN = /(微信|wechat|weixin)/i;
 const BANK_ACCOUNT_PATTERN =
   /(银行|bank|信用卡|储蓄卡|借记卡|icbc|abc|ccb|boc|cmb|psbc|交通银行|招商银行|建设银行|工商银行|农业银行|中国银行)/i;
-const TRANSACTION_SORT_ICON_BASE_URL = 'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui';
 
 type AccountBrand = 'alipay' | 'wechat' | 'bank';
 
@@ -185,24 +184,11 @@ function truncateOrderNo(value: string): string {
   return `${value.slice(0, 8)}...${value.slice(-4)}`;
 }
 
-function sortIndicator(
-  key: TransactionSortKey,
-  active: boolean,
-  direction: TransactionSortDirection
-) {
-  if (key === 'amount') {
-    const iconName =
-      active && direction === 'asc' ? 'arrow-down-narrow-wide' : 'arrow-down-wide-narrow';
-    return (
-      <img
-        className="transaction-sort-icon"
-        src={`${TRANSACTION_SORT_ICON_BASE_URL}/${iconName}.svg`}
-        alt=""
-        aria-hidden="true"
-      />
-    );
-  }
-
+function sortIndicator(active: boolean, direction: TransactionSortDirection) {
+  // 所有列共用同一套文本箭头。以前金额列单独用 R2 上的
+  // arrow-down-wide-narrow.svg,而那个图标本身就是「降序」的样子:
+  // 只要表格没按金额排序,金额列表头也会显示降序图标,和其它列的 ⇅ 冲突,
+  // 等于告诉用户一个并不成立的排序状态。统一成文本箭头后,未排序列一律 ⇅。
   if (!active) {
     return '⇅';
   }
@@ -806,9 +792,7 @@ export function TransactionTable({
                           onClick={() => onSortChange(column.key)}
                         >
                           {column.label}{' '}
-                          <span>
-                            {sortIndicator(column.key, sortKey === column.key, sortDirection)}
-                          </span>
+                          <span>{sortIndicator(sortKey === column.key, sortDirection)}</span>
                         </button>
                         <span
                           className="transaction-col-resizer"

@@ -1687,6 +1687,14 @@
   font-size: 12px;
 }
 
+/* 金额筛选是这一行里唯一一个数字输入。上面的 padding-inline: 12px 会把可用宽度压到 76px,
+   而原生 number 的上下箭头画在输入框右端、盖住「最小金额」占位文字最后两个字。
+   这里只把这一格的内边距收窄到 6px(列宽不变、表格不出现新的横向溢出),
+   输入框涨到 88px,占位文字与箭头各占其位。 */
+.transaction-ledger-surface .transaction-filter-row th.transaction-col-amount {
+  padding-inline: 6px;
+}
+
 /* The shared date picker is intentionally spacious for forms.  Inside a
    ledger header it becomes a single compact control, matching the selects
    beside it rather than consuming an entire table row. */

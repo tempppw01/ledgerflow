@@ -664,6 +664,8 @@
         "title": "Asset & Liability Forecast",
         "subtitle": "Projects your schedules over the next {{count}} months to help you spot cash pressure early.",
         "rangeAria": "Simulation time range",
+        "horizonMonths": "{{count}} months",
+        "horizonMonthsOne": "1 month",
         "lowestBalanceDate": "Projected lowest-balance date",
         "noData": "No data",
         "registerAccounts": "Add accounts or schedules first",
