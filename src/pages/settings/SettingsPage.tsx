@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEven
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { fetchEmbeddings } from '../../features/assistant/api/openaiEmbeddingClient';
+import { fetchAiModels, sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
 import { useAuth } from '../../features/auth/ui/authContext';
 import {
   changeAccountPassword,
@@ -282,6 +283,17 @@ export function SettingsPage({
   const [resetting, setResetting] = useState(false);
   const [resetError, setResetError] = useState('');
   const [embeddingTestStatus, setEmbeddingTestStatus] = useState<{
+    loading: boolean;
+    ok: boolean;
+    message: StatusMessage;
+  }>({ loading: false, ok: false, message: null });
+  const [modelFetchStatus, setModelFetchStatus] = useState<{
+    loading: boolean;
+    ok: boolean;
+    message: StatusMessage;
+    models: string[];
+  }>({ loading: false, ok: false, message: null, models: [] });
+  const [modelTestStatus, setModelTestStatus] = useState<{
     loading: boolean;
     ok: boolean;
     message: StatusMessage;
@@ -626,6 +638,90 @@ export function SettingsPage({
       });
     }
   }, [apiKey, baseUrl, embeddingChannel, embeddingModel, embeddingModelCandidates]);
+  const handleFetchModels = useCallback(async () => {
+    if (!baseUrl.trim()) {
+      setModelFetchStatus({
+        loading: false,
+        ok: false,
+        message: { key: 'settings.openai.fetchModels.missingBaseUrl' },
+        models: []
+      });
+      return;
+    }
+    setModelFetchStatus({
+      loading: true,
+      ok: false,
+      message: { key: 'settings.openai.fetchModels.loading' },
+      models: []
+    });
+    try {
+      const models = await fetchAiModels(baseUrl.trim(), apiKey.trim() || undefined);
+      setModelFetchStatus({
+        loading: false,
+        ok: true,
+        message: { key: 'settings.openai.fetchModels.success', params: { count: models.length } },
+        models
+      });
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : '';
+      setModelFetchStatus({
+        loading: false,
+        ok: false,
+        message: detail
+          ? { key: 'settings.openai.fetchModels.failed', params: { detail } }
+          : { key: 'settings.openai.fetchModels.unknownError' },
+        models: []
+      });
+    }
+  }, [apiKey, baseUrl]);
+  const handleTestModel = useCallback(async () => {
+    if (!baseUrl.trim()) {
+      setModelTestStatus({
+        loading: false,
+        ok: false,
+        message: { key: 'settings.openai.testModel.missingBaseUrl' }
+      });
+      return;
+    }
+    if (!model.trim()) {
+      setModelTestStatus({
+        loading: false,
+        ok: false,
+        message: { key: 'settings.openai.testModel.missingModel' }
+      });
+      return;
+    }
+    setModelTestStatus({
+      loading: true,
+      ok: false,
+      message: { key: 'settings.openai.testModel.testing' }
+    });
+    try {
+      const result = await sendAiChat({
+        baseUrl: baseUrl.trim(),
+        apiKey: apiKey.trim() || undefined,
+        model: model.trim(),
+        messages: [{ role: 'user', text: 'Hi' }]
+      });
+      setModelTestStatus({
+        loading: false,
+        ok: true,
+        message: {
+          key: 'settings.openai.testModel.success',
+          params: { model: model.trim(), reply: result.content.slice(0, 80) }
+        }
+      });
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : '';
+      setModelTestStatus({
+        loading: false,
+        ok: false,
+        message: detail
+          ? { key: 'settings.openai.testModel.failed', params: { detail } }
+          : { key: 'settings.openai.testModel.unknownError' }
+      });
+    }
+  }, [apiKey, baseUrl, model]);
   const handleSelectModel = (setter: (value: string) => void, value: string) => {
     setter(value.trim());
     showSaveToast();
@@ -1044,6 +1140,50 @@ export function SettingsPage({
                 showLabel={t('settings.show')}
                 hideLabel={t('settings.hide')}
               />
+              <div
+                className="settings-model-input-row settings-model-input-row--inline"
+                style={{ marginTop: 8 }}
+              >
+                <button
+                  type="button"
+                  onClick={() => void handleFetchModels()}
+                  disabled={modelFetchStatus.loading || !baseUrl.trim()}
+                >
+                  {modelFetchStatus.loading
+                    ? t('settings.openai.fetchModels.loading')
+                    : t('settings.openai.fetchModels.button')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleTestModel()}
+                  disabled={modelTestStatus.loading || !baseUrl.trim() || !model.trim()}
+                >
+                  {modelTestStatus.loading
+                    ? t('settings.openai.testModel.testing')
+                    : t('settings.openai.testModel.button')}
+                </button>
+                {modelFetchStatus.message ? (
+                  <small
+                    style={{
+                      color: modelFetchStatus.ok ? 'var(--color-success)' : 'var(--color-danger)'
+                    }}
+                  >
+                    {resolveStatusMessage(modelFetchStatus.message, t)}
+                    {modelFetchStatus.ok && modelFetchStatus.models.length > 0
+                      ? ` (${modelFetchStatus.models.length})`
+                      : ''}
+                  </small>
+                ) : null}
+                {modelTestStatus.message ? (
+                  <small
+                    style={{
+                      color: modelTestStatus.ok ? 'var(--color-success)' : 'var(--color-danger)'
+                    }}
+                  >
+                    {resolveStatusMessage(modelTestStatus.message, t)}
+                  </small>
+                ) : null}
+              </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                 <input
                   type="checkbox"

@@ -378,6 +378,25 @@
         "failed": "测试失败：{{detail}}",
         "unknownError": "未知错误"
       }
+    },
+    "openai": {
+      "fetchModels": {
+        "button": "拉取模型",
+        "loading": "拉取中…",
+        "missingBaseUrl": "请先填写 Base URL",
+        "success": "已拉取 {{count}} 个模型",
+        "failed": "拉取失败: {{detail}}",
+        "unknownError": "拉取模型失败"
+      },
+      "testModel": {
+        "button": "测试模型",
+        "testing": "测试中…",
+        "missingBaseUrl": "请先填写 Base URL",
+        "missingModel": "请先填写模型名称",
+        "success": "模型 {{model}} 可用,回复: {{reply}}",
+        "failed": "测试失败: {{detail}}",
+        "unknownError": "模型测试失败"
+      }
     }
   },
   "assistant": {
@@ -439,7 +458,11 @@
       "briefAdvice": "建议",
       "briefEmpty": "暂无",
       "briefKeepLogging": "继续记录",
-      "briefCutLarge": "先控大额"
+      "briefCutLarge": "先控大额",
+      "description": "说“午饭 28 元”直接记账，贴账单截图自动识别；也可以问账本、看趋势，或者让我修改、删除某一笔账单。",
+      "featureVoiceNlNote": "自然语言直接入账",
+      "featureOcrNote": "保存前逐笔核对",
+      "featureEditNote": "增删改都能交给它"
     },
     "creditWelcome": {
       "sectionAria": "AI 信贷管家",
@@ -449,7 +472,11 @@
       "headlineAccent": "心里都有数",
       "featureBillTitle": "识别账单",
       "featureDueTitle": "核对本期应还",
-      "featureLogTitle": "登记与核对"
+      "featureLogTitle": "登记与核对",
+      "description": "贷款、花呗、分期和信用账单都可以交给我。我会先理清本期应还、还款日和还缺哪些资料,也能直接帮你记一笔还款。",
+      "featureBillNote": "提取金额、日期和期数",
+      "featureDueNote": "把待确认的信息标出来",
+      "featureLogNote": "说一句就能记还款"
     },
     "greeting": {
       "date": "今天 {{date}}，",
@@ -1596,6 +1623,11 @@
       },
       "stage": {
         "preparing": "准备 WebDAV 备份..."
+      },
+      "action": {
+        "createDirectory": "创建目录",
+        "download": "下载",
+        "upload": "上传"
       }
     },
     "objectStorage": {
@@ -1633,6 +1665,12 @@
       "s3Storage": "S3 兼容存储",
       "stage": {
         "preparing": "准备 {provider} 备份..."
+      },
+      "action": {
+        "delete": "删除",
+        "download": "下载",
+        "list": "列目录",
+        "upload": "上传"
       }
     },
     "common": {
@@ -1896,7 +1934,8 @@
       "exported": "备份导出成功：{scope}",
       "importFailed": "备份导入失败",
       "scopeRequired": "请至少勾选一个备份范围"
-    }
+    },
+    "currentScopePrefix": " 当前备份范围："
   },
   "investments": {
     "title": "投资理财",
@@ -1948,7 +1987,8 @@
       "shares": "持有份额",
       "todayEstimateShort": "今日估算",
       "count": "{count} 笔",
-      "askAiNamed": "让 AI 分析 {name}"
+      "askAiNamed": "让 AI 分析 {name}",
+      "subtitle": "先看自己的持仓,别让大盘替你做决定。"
     },
     "briefing": {
       "aria": "今日行情播报",
@@ -1983,7 +2023,8 @@
         "dumped": "大盘又被砸了,先把节奏稳住比急着补仓更重要。",
         "weakening": "市场有点泄气,今天更适合看,不适合冲动操作。",
         "hesitant": "大盘还在犹豫,今天先看自己持仓,不用被每一根波动带着走。"
-      }
+      },
+      "subtitle": "把涨跌、板块和新闻拎成几句,够用就好。"
     },
     "clock": {
       "eyebrow": "全球市场接力",
@@ -2198,7 +2239,8 @@
       },
       "weakest": {
         "empty": "暂无弱势板块"
-      }
+      },
+      "subtitle": "行业强弱一眼看清,点击行业可查看领涨公司。"
     },
     "news": {
       "title": "快讯",
@@ -2343,7 +2385,8 @@
           "全球行业行情加载失败请稍": "全球行业行情加载失败，请稍后重试。"
         }
       }
-    }
+    },
+    "subtitle": "把今日判断、行情监控和基金自选放进一个工作台,按需切换,不再上下堆叠。"
   },
   "investmentAi": {
     "suggest": {
@@ -2695,7 +2738,10 @@
       "simpleAmount": "本期应还金额",
       "simpleAmountPlaceholder": "可选",
       "addReminder": "添加还款提醒",
-      "debtAddedToast": "负债已添加"
+      "debtAddedToast": "负债已添加",
+      "manualScheduleHint": "从下一笔待还（第 {count} 期）开始填写；日期默认按还款日生成。",
+      "simpleIntro": "先记下项目、日期和本期金额；需要时可以升级为完整负债管理。",
+      "simpleDraftHint": "填写内容会自动保存，稍后可继续"
     },
     "record": {
       "dateAria": "实际还款日期",
@@ -2758,7 +2804,9 @@
       "previewFirst": "首期压力",
       "previewRemaining": "剩余",
       "moreDetails": "更多详情",
-      "trendAriaSuffix": "还款走势"
+      "trendAriaSuffix": "还款走势",
+      "previewHint": "查看每期还款与还款后本金",
+      "moreDetailsHint": "利息、账户、期数等"
     },
     "quickConfirm": {
       "title": "确认登记本期还款",
@@ -3270,7 +3318,9 @@
       "daily": "日薪参考",
       "dailyNote": "按月薪 ÷ 计薪天数估算",
       "hourly": "时薪参考",
-      "weekly": "周薪参考（按 5 天）"
+      "weekly": "周薪参考（按 5 天）",
+      "hourlyNote": "按日薪 ÷ 每日工时估算",
+      "weeklyNote": "默认按 5 个工作日折算"
     },
     "overtime": {
       "title": "加班工资估算",
@@ -3278,7 +3328,11 @@
       "baseSuffix": "，加班费按这个时薪做倍数估算。",
       "workday": "工作日加班费（1.5x）",
       "restDay": "休息日加班费（2x）",
-      "holiday": "法定节假日加班费（3x）"
+      "holiday": "法定节假日加班费（3x）",
+      "hint": "按当前时薪估算工作日 1.5 倍、休息日 2 倍、法定节假日 3 倍。",
+      "workdayNote": "适用于工作日延时加班估算",
+      "restDayNote": "适用于休息日加班估算",
+      "holidayNote": "适用于法定节假日加班估算"
     },
     "disclaimer": {
       "line1": "说明 1：结果仅供税前估算参考，默认不含社保、个税、公积金、补贴、提成与特殊排班。",
@@ -3488,7 +3542,9 @@
       "note": "备注",
       "optional": "可选",
       "keypadAria": "金额键盘",
-      "save": "完成记账"
+      "save": "完成记账",
+      "keypadTip": "支持加减乘除；按 Enter 计算",
+      "draftHint": "输入内容会自动保存为草稿"
     },
     "error": {
       "invalidDateRange": "自定义日期范围无效：开始日期不能晚于结束日期。",
@@ -3821,5 +3877,94 @@
     "monthlyRecords": "本月已记录 {{count}} 笔",
     "positiveDescriptionWithSummary": "{{summary}}。继续补齐，或者让 AI 直接帮你做一轮复盘。",
     "positiveDescriptionEmpty": "这个月已经有连续记录了，继续补齐，或者让 AI 帮你做一轮复盘。"
+  },
+  "dbSettings": {
+    "connection": {
+      "actionsTitle": "连接操作",
+      "addConnection": "新增连接",
+      "advancedTitle": "连接池与 TLS（默认收起）",
+      "cancel": " 取消 ",
+      "collapseCreate": "收起新增",
+      "collapseLog": "收起日志",
+      "delete": " 删除 ",
+      "edit": "编辑",
+      "elapsedPrefix": "（耗时 ",
+      "empty": "暂无连接配置，需要时点“新增连接”即可。",
+      "enabled": " 启用 ",
+      "error": {
+        "configIncomplete": "请先完善连接配置后再测试连接",
+        "connectionStringInvalid": "连接串格式不正确，请检查协议、主机、端口和路径",
+        "databaseRequired": "数据库名必填",
+        "hostRequired": "主机必填",
+        "nameMin": "名称至少 2 个字符",
+        "poolMinMax": "pool.min 不能大于 pool.max",
+        "portRange": "端口必须在 1-65535",
+        "protocolMismatch": "协议不匹配：{type} 连接应使用 {protocols}://",
+        "timeout": "连接超时（>{timeout}ms）"
+      },
+      "expandLog": "展开日志",
+      "field": {
+        "caCert": "CA 证书",
+        "caCertHint": "可选 CA 证书",
+        "connectionString": "连接串（可选）",
+        "connectionStringHint": "有连接串时可直接粘贴并自动回填字段",
+        "currentPrefix": "（当前 ",
+        "databaseName": "库名",
+        "enabledHint": "保存后默认作为启用连接",
+        "hidePassword": "隐藏密码",
+        "hostHint": "数据库服务地址",
+        "hostPlaceholder": "默认 localhost",
+        "hostPortPrefix": " 主机 / 端口 / ",
+        "idleHint": "空闲连接回收时间",
+        "mysqlDatabase": "MySQL 数据库名",
+        "mysqlDatabasePlaceholder": "默认 ledgerflow",
+        "mysqlUsernameHint": "MySQL 用户名，例如 ledgerflow",
+        "name": "名称",
+        "nameHint": "用于区分不同环境连接",
+        "namePlaceholder": "例如：Redis 生产实例",
+        "password": "密码",
+        "passwordHint": "密码仅用于连接，不会以明文持久化",
+        "passwordPlaceholder": "请输入密码",
+        "poolMax": "连接池 max",
+        "poolMaxHint": "连接池最大连接数",
+        "poolMin": "连接池 min",
+        "poolMinHint": "连接池最小连接数",
+        "portHint": "会按数据库类型自动带入默认端口",
+        "portPlaceholderMysql": "默认 3306",
+        "portPlaceholderRedis": "默认 6379",
+        "redisDatabase": "Redis DB 编号",
+        "redisDatabasePlaceholder": "默认 0",
+        "redisUsernameHint": "Redis 用户名通常可留空",
+        "showPassword": "显示密码",
+        "timeout": "超时（ms）",
+        "timeoutHint": "连接超时时间，单位毫秒",
+        "type": "数据库类型",
+        "typeHint": "支持 MySQL / Redis，切换后会自动带入默认值",
+        "username": " 用户名 ",
+        "usernameExample": "例如：ledgerflow",
+        "usernamePlaceholder": "可选，默认留空",
+        "verifyCert": " 校验证书 "
+      },
+      "formHint": "默认值已为本机常用场景预填，只有在需要覆盖时再展开修改。",
+      "formTitleEdit": "编辑连接配置",
+      "formTitleNew": "新增连接配置",
+      "hint": {
+        "mysqlDefaults": "默认 localhost / 3306 / 库 ledgerflow，不改也能直接测试本机 MySQL。",
+        "redisDefaults": "默认 localhost / 6379 / DB 0，不改也能直接测试本机 Redis。"
+      },
+      "managerHint": " 常用默认已预填：localhost、默认端口，以及 MySQL 库名 ledgerflow / Redis DB 0。只在需要时再改。 ",
+      "managerTitle": "连接配置管理（MySQL / Redis）",
+      "parseConnectionString": " 解析连接串 ",
+      "saveConfig": "保存配置",
+      "saveFailed": "保存失败",
+      "saved": "{type} 配置已保存",
+      "saving": "保存中...",
+      "test": {
+        "serverFailed": "服务端连接失败",
+        "serverOk": "服务端连接成功"
+      },
+      "testConnection": "测试连接",
+      "testing": "连接中..."
+    }
   }
 }

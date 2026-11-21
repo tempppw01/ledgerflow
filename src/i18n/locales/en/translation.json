@@ -378,6 +378,25 @@
         "failed": "Test failed: {{detail}}",
         "unknownError": "Unknown error"
       }
+    },
+    "openai": {
+      "fetchModels": {
+        "button": "Fetch models",
+        "loading": "Fetching…",
+        "missingBaseUrl": "Please fill in the Base URL first",
+        "success": "Fetched {{count}} models",
+        "failed": "Fetch failed: {{detail}}",
+        "unknownError": "Failed to fetch models"
+      },
+      "testModel": {
+        "button": "Test model",
+        "testing": "Testing…",
+        "missingBaseUrl": "Please fill in the Base URL first",
+        "missingModel": "Please fill in the model name first",
+        "success": "Model {{model}} works, reply: {{reply}}",
+        "failed": "Test failed: {{detail}}",
+        "unknownError": "Model test failed"
+      }
     }
   },
   "assistant": {
@@ -439,7 +458,11 @@
       "briefAdvice": "Tip",
       "briefEmpty": "No data yet",
       "briefKeepLogging": "Keep logging",
-      "briefCutLarge": "Rein in big-ticket items first"
+      "briefCutLarge": "Rein in big-ticket items first",
+      "description": "Say \"lunch 28 yuan\" and it is recorded; paste a bill screenshot and I read it for you. You can also ask about the ledger, look at trends, or have me edit or delete a specific entry.",
+      "featureVoiceNlNote": "Plain language goes straight to the books",
+      "featureOcrNote": "Check each entry before saving",
+      "featureEditNote": "Add, remove or change any entry"
     },
     "creditWelcome": {
       "sectionAria": "AI Credit Assistant",
@@ -449,7 +472,11 @@
       "headlineAccent": "no surprises",
       "featureBillTitle": "Read the bill",
       "featureDueTitle": "Check what is due",
-      "featureLogTitle": "Log and verify"
+      "featureLogTitle": "Log and verify",
+      "description": "Hand me your loans, Huabei, installments and credit card bills. I will sort out what is due this period, the due dates and the missing details, and can log a repayment for you right away.",
+      "featureBillNote": "Pull out amounts, dates and terms",
+      "featureDueNote": "Flag what still needs confirming",
+      "featureLogNote": "One sentence logs a repayment"
     },
     "greeting": {
       "date": "Today is {{date}}, ",
@@ -1596,6 +1623,11 @@
       },
       "stage": {
         "preparing": "Preparing the WebDAV backup..."
+      },
+      "action": {
+        "createDirectory": "create directory",
+        "download": "download",
+        "upload": "upload"
       }
     },
     "objectStorage": {
@@ -1633,6 +1665,12 @@
       "s3Storage": "S3-compatible storage",
       "stage": {
         "preparing": "Preparing the {provider} backup..."
+      },
+      "action": {
+        "delete": "delete",
+        "download": "download",
+        "list": "list",
+        "upload": "upload"
       }
     },
     "common": {
@@ -1896,7 +1934,8 @@
       "exported": "Backup exported: {scope}",
       "importFailed": "Backup import failed",
       "scopeRequired": "Select at least one backup scope first"
-    }
+    },
+    "currentScopePrefix": " Current backup scope:"
   },
   "investments": {
     "title": "Investments",
@@ -1948,7 +1987,8 @@
       "shares": "Shares",
       "todayEstimateShort": "Today’s estimate",
       "count": "{count}",
-      "askAiNamed": "Ask AI about {name}"
+      "askAiNamed": "Ask AI about {name}",
+      "subtitle": "Start with your own positions; do not let the index decide for you."
     },
     "briefing": {
       "aria": "Today’s market briefing",
@@ -1983,7 +2023,8 @@
         "dumped": "The index took another hit — steadying yourself beats rushing to add.",
         "weakening": "Sentiment is fading; today is for watching, not impulsive moves.",
         "hesitant": "The index is undecided; watch your own holdings instead of every tick."
-      }
+      },
+      "subtitle": "Moves, sectors and news boiled down to a few lines — enough to act on."
     },
     "clock": {
       "eyebrow": "Global market relay",
@@ -2198,7 +2239,8 @@
       },
       "weakest": {
         "empty": "No weak sector yet"
-      }
+      },
+      "subtitle": "See sector strength at a glance; tap a sector to see its top movers."
     },
     "news": {
       "title": "News",
@@ -2343,7 +2385,8 @@
           "全球行业行情加载失败请稍": "Failed to load global sector quotes. Please try again later."
         }
       }
-    }
+    },
+    "subtitle": "Today’s read, market monitoring and your watchlist live in one workspace, switched on demand instead of stacked up."
   },
   "investmentAi": {
     "suggest": {
@@ -2695,7 +2738,10 @@
       "simpleAmount": "Amount due this period",
       "simpleAmountPlaceholder": "Optional",
       "addReminder": "Add repayment reminder",
-      "debtAddedToast": "Debt added"
+      "debtAddedToast": "Debt added",
+      "manualScheduleHint": "Fill in from the next due payment (period {count}); dates follow your repayment day by default.",
+      "simpleIntro": "Note the item, date and this period's amount first; upgrade to full debt tracking when needed.",
+      "simpleDraftHint": "Your input is saved automatically; continue anytime"
     },
     "record": {
       "dateAria": "Actual payment date",
@@ -2758,7 +2804,9 @@
       "previewFirst": "First payment",
       "previewRemaining": "Left",
       "moreDetails": "More details",
-      "trendAriaSuffix": "repayment trend"
+      "trendAriaSuffix": "repayment trend",
+      "previewHint": "See each period's payment and the principal left after it",
+      "moreDetailsHint": "Interest, accounts, periods and more"
     },
     "quickConfirm": {
       "title": "Confirm this period's payment",
@@ -3270,7 +3318,9 @@
       "daily": "Daily pay estimate",
       "dailyNote": "Estimated as monthly salary ÷ paid days",
       "hourly": "Hourly pay estimate",
-      "weekly": "Weekly pay estimate (5 days)"
+      "weekly": "Weekly pay estimate (5 days)",
+      "hourlyNote": "Estimated as daily pay ÷ daily hours",
+      "weeklyNote": "Based on 5 working days by default"
     },
     "overtime": {
       "title": "Overtime pay estimate",
@@ -3278,7 +3328,11 @@
       "baseSuffix": " — overtime pay is estimated as a multiple of this hourly rate.",
       "workday": "Workday overtime (1.5x)",
       "restDay": "Rest day overtime (2x)",
-      "holiday": "Public holiday overtime (3x)"
+      "holiday": "Public holiday overtime (3x)",
+      "hint": "Uses your current hourly pay: 1.5× on workdays, 2× on rest days and 3× on public holidays.",
+      "workdayNote": "Applies to extended hours on workdays",
+      "restDayNote": "Applies to overtime on rest days",
+      "holidayNote": "Applies to overtime on public holidays"
     },
     "disclaimer": {
       "line1": "Note 1: results are pre-tax estimates only, excluding social insurance, income tax, housing fund, allowances, commissions and special shift patterns.",
@@ -3488,7 +3542,9 @@
       "note": "Note",
       "optional": "Optional",
       "keypadAria": "Amount keypad",
-      "save": "Save entry"
+      "save": "Save entry",
+      "keypadTip": "Supports + - * /; press Enter to calculate",
+      "draftHint": "Your input is saved as a draft automatically"
     },
     "error": {
       "invalidDateRange": "Invalid custom date range: the start date cannot be later than the end date.",
@@ -3821,5 +3877,94 @@
     "monthlyRecords": "{{count}} records this month",
     "positiveDescriptionWithSummary": "{{summary}}. Keep going or open the assistant for a quick review.",
     "positiveDescriptionEmpty": "Your monthly ledger is moving. Continue bookkeeping or open the assistant for a quick review."
+  },
+  "dbSettings": {
+    "connection": {
+      "actionsTitle": "Connection actions",
+      "addConnection": "New connection",
+      "advancedTitle": "Pool and TLS (collapsed by default)",
+      "cancel": "Cancel",
+      "collapseCreate": "Hide new connection",
+      "collapseLog": "Hide log",
+      "delete": "Delete",
+      "edit": "Edit",
+      "elapsedPrefix": "(took ",
+      "empty": "No connections yet. Click \"New connection\" when you need one.",
+      "enabled": "Enabled",
+      "error": {
+        "configIncomplete": "Complete the connection settings before testing",
+        "connectionStringInvalid": "Invalid connection string. Check the protocol, host, port and path",
+        "databaseRequired": "Database name is required",
+        "hostRequired": "Host is required",
+        "nameMin": "Name must be at least 2 characters",
+        "poolMinMax": "pool.min cannot be greater than pool.max",
+        "portRange": "Port must be between 1 and 65535",
+        "protocolMismatch": "Protocol mismatch: a {type} connection must use {protocols}://",
+        "timeout": "Connection timed out (>{timeout}ms)"
+      },
+      "expandLog": "Show log",
+      "field": {
+        "caCert": "CA certificate",
+        "caCertHint": "Optional CA certificate",
+        "connectionString": "Connection string (optional)",
+        "connectionStringHint": "Paste a connection string here to fill the fields automatically",
+        "currentPrefix": " (currently ",
+        "databaseName": "Database",
+        "enabledHint": "Saved as an enabled connection by default",
+        "hidePassword": "Hide password",
+        "hostHint": "Database service address",
+        "hostPlaceholder": "Defaults to localhost",
+        "hostPortPrefix": " Host / port / ",
+        "idleHint": "Idle connection reclaim time",
+        "mysqlDatabase": "MySQL database",
+        "mysqlDatabasePlaceholder": "Defaults to ledgerflow",
+        "mysqlUsernameHint": "MySQL username, e.g. ledgerflow",
+        "name": "Name",
+        "nameHint": "Used to tell connections in different environments apart",
+        "namePlaceholder": "e.g. Redis production",
+        "password": "Password",
+        "passwordHint": "The password is used only for the connection and is never stored in clear text",
+        "passwordPlaceholder": "Enter the password",
+        "poolMax": "Pool max",
+        "poolMaxHint": "Maximum number of pooled connections",
+        "poolMin": "Pool min",
+        "poolMinHint": "Minimum number of pooled connections",
+        "portHint": "The default port is filled in from the database type",
+        "portPlaceholderMysql": "Defaults to 3306",
+        "portPlaceholderRedis": "Defaults to 6379",
+        "redisDatabase": "Redis DB number",
+        "redisDatabasePlaceholder": "Defaults to 0",
+        "redisUsernameHint": "The Redis username is usually left empty",
+        "showPassword": "Show password",
+        "timeout": "Timeout (ms)",
+        "timeoutHint": "Connection timeout in milliseconds",
+        "type": "Database type",
+        "typeHint": "MySQL and Redis are supported; switching fills in the defaults",
+        "username": "Username",
+        "usernameExample": "e.g. ledgerflow",
+        "usernamePlaceholder": "Optional, empty by default",
+        "verifyCert": " Verify certificate "
+      },
+      "formHint": "Defaults are pre-filled for local use. Expand only when you need to override them.",
+      "formTitleEdit": "Edit connection",
+      "formTitleNew": "New connection settings",
+      "hint": {
+        "mysqlDefaults": "Defaults to localhost / 3306 / database ledgerflow. You can test a local MySQL without changing them.",
+        "redisDefaults": "Defaults to localhost / 6379 / DB 0. You can test a local Redis without changing them."
+      },
+      "managerHint": "Common defaults are pre-filled: localhost, the default ports, the MySQL database ledgerflow and Redis DB 0. Change them only when you need to.",
+      "managerTitle": "Connection settings (MySQL / Redis)",
+      "parseConnectionString": "Parse connection string",
+      "saveConfig": "Save settings",
+      "saveFailed": "Could not save",
+      "saved": "{type} settings saved",
+      "saving": "Saving...",
+      "test": {
+        "serverFailed": "Server connection failed",
+        "serverOk": "Server connection succeeded"
+      },
+      "testConnection": "Test connection",
+      "testing": "Testing..."
+    }
   }
 }
