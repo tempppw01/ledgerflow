@@ -902,9 +902,29 @@ export const useAppPreferences = create<AppPreferencesState>()(
           // its period counters, so deleting the record has to undo exactly that.
           // Without this the principal stayed permanently understated and the
           // user "gained" debt reduction they never actually paid.
+          //
+          // Prefer the pre-recording snapshot: it is the only way to restore the
+          // fully-paid case exactly, where recording clamped the balance at 0 and
+          // threw away the surplus. Records written before the snapshot existed
+          // fall back to the previous estimate.
           const amount = Math.max(0, Number(record.amount) || 0);
           const debts = state.debts.map((debt) => {
             if (debt.id !== record.debtId) return debt;
+
+            const hasSnapshot =
+              record.balanceBefore !== undefined || record.remainingMonthsBefore !== undefined;
+            if (hasSnapshot) {
+              return {
+                ...debt,
+                balance: Math.max(
+                  0,
+                  Number(record.balanceBefore ?? debt.balance + amount) || 0
+                ),
+                paidPeriods: record.paidPeriodsBefore ?? debt.paidPeriods,
+                remainingMonths: record.remainingMonthsBefore ?? debt.remainingMonths
+              };
+            }
+
             const shouldRestorePeriod =
               amount >= Math.max(1, calculateDebtMinimumPayment(debt) * 0.98);
             return {

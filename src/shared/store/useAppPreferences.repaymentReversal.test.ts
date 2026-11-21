@@ -87,6 +87,29 @@ describe('useAppPreferences removeRepaymentRecord reverses the debt mutation', (
     expect(next.repaymentRecords).toHaveLength(0);
     expect(next.debts[0].balance).toBe(11360.4);
   });
+
+  it('restores a fully-paid debt exactly from the recorded snapshot', () => {
+    // Recorded 1500 against a 500 balance: recording clamped the balance to 0 and
+    // discarded the 1000 surplus, so "balance + amount" would wrongly restore 1500.
+    seed(
+      [debt({ balance: 0, paidPeriods: 1, remainingMonths: 23 })],
+      [
+        record({
+          amount: 1500,
+          balanceBefore: 500,
+          paidPeriodsBefore: 0,
+          remainingMonthsBefore: 24
+        })
+      ]
+    );
+
+    useAppPreferences.getState().removeRepaymentRecord('r1');
+
+    const target = useAppPreferences.getState().debts[0];
+    expect(target.balance).toBe(500);
+    expect(target.paidPeriods).toBe(0);
+    expect(target.remainingMonths).toBe(24);
+  });
 });
 
 describe('useAppPreferences removeDebt drops the debt repayment history', () => {

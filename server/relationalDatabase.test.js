@@ -44,12 +44,12 @@ test('SQLite relational schema migrates and is idempotent', async () => {
         .map((row) => row.name);
       const user = database.prepare('SELECT id FROM ledger_users WHERE id = ?').get('default');
 
-      assert.equal(first.currentVersion, 5);
+      assert.equal(first.currentVersion, 6);
       assert.deepEqual(second, first);
       assert.deepEqual(status, {
         provider: 'sqlite',
-        currentVersion: 5,
-        expectedVersion: 5,
+        currentVersion: 6,
+        expectedVersion: 6,
         ready: true
       });
       assert.ok(tables.includes('ledger_transactions'));
@@ -110,9 +110,22 @@ test('SQLite upgrades a real V1 database through the authentication and device m
         .prepare('SELECT id FROM ledger_schema_migrations ORDER BY id')
         .all()
         .map((row) => Number(row.id));
-      assert.equal(migrated.currentVersion, 5);
-      assert.deepEqual(versions, [1, 2, 3, 4, 5]);
+      assert.equal(migrated.currentVersion, 6);
+      assert.deepEqual(versions, [1, 2, 3, 4, 5, 6]);
       assert.equal(upgraded.prepare('SELECT COUNT(*) AS count FROM auth_users').get().count, 0);
+      // V6 必须真的把「登记前快照」三列加到既有库上,否则删除还款时
+      // 无法精确还原本金与期数。
+      const repaymentColumns = upgraded
+        .prepare('PRAGMA table_info(ledger_debt_repayments)')
+        .all()
+        .map((row) => row.name);
+      for (const column of [
+        'balance_before',
+        'paid_periods_before',
+        'remaining_months_before'
+      ]) {
+        assert.ok(repaymentColumns.includes(column), `${column} should exist after V6`);
+      }
     } finally {
       upgraded.close();
     }

@@ -22,6 +22,13 @@ export type RepaymentRecord = {
   note?: string;
   recordMode: DebtRepaymentRecordMode;
   createdAt: string;
+  /**
+   * 登记这笔还款前该负债的状态。删除记录时用它精确还原本金与期数;
+   * 旧数据没有这些字段,删除时回落到「余额 + 还款额」的估算。
+   */
+  balanceBefore?: number;
+  paidPeriodsBefore?: number;
+  remainingMonthsBefore?: number;
 };
 
 export type ManualRepaymentItem = {

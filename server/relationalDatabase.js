@@ -3,7 +3,7 @@ import { getDatabaseDataDirectory, getSqliteDatabasePath } from './databaseProvi
 import { withMysqlConnection } from './databaseConnection.js';
 import { openSqliteDatabase } from './sqliteDatabase.js';
 
-export const RELATIONAL_SCHEMA_VERSION = 5;
+export const RELATIONAL_SCHEMA_VERSION = 6;
 const DEFAULT_USER_ID = 'default';
 
 const SQLITE_MIGRATION_TABLE =
@@ -51,6 +51,17 @@ const SQLITE_V3_STATEMENTS = [
 // 记录登录设备的来源 IP。null 表示当时拿不到可信地址(例如反代没传、
 // 或请求里只有畸形值),前端据此显示「未知」而不是伪造一个地址。
 const SQLITE_V5_STATEMENTS = [`ALTER TABLE auth_sessions ADD COLUMN client_ip TEXT`];
+
+// 登记还款时前端会同步扣减负债本金与期数,删除该记录必须精确回退。
+// 只靠「余额 + 还款额」回退在足额还清时偏大(登记时 max(0, 余额-还款额)
+// 丢弃了超额部分),所以这里把登记前的状态一并存下来,让删除可以照原样还原。
+// 用「缺列才加」的方式而不是裸 ALTER:裸 ALTER 不幂等,重复执行会报
+// duplicate column name。
+const V6_COLUMNS = [
+  ['ledger_debt_repayments', 'balance_before', 'REAL', 'DECIMAL(20, 6)'],
+  ['ledger_debt_repayments', 'paid_periods_before', 'INTEGER', 'BIGINT'],
+  ['ledger_debt_repayments', 'remaining_months_before', 'INTEGER', 'BIGINT']
+];
 
 const SQLITE_V4_TABLES = [
   `CREATE TABLE IF NOT EXISTS market_history_cache (cache_key TEXT PRIMARY KEY, provider TEXT NOT NULL, target_id TEXT NOT NULL, range_start TEXT NOT NULL, range_end TEXT NOT NULL, payload_json TEXT NOT NULL, fetched_at TEXT NOT NULL, expires_at TEXT NOT NULL, last_accessed_at TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`
@@ -142,7 +153,8 @@ function migrationsFor(provider) {
     { version: 2, tables: mysql ? MYSQL_V2_TABLES : SQLITE_V2_TABLES, indexes: V2_INDEXES },
     { version: 3, statements: mysql ? MYSQL_V3_STATEMENTS : SQLITE_V3_STATEMENTS },
     { version: 4, tables: mysql ? MYSQL_V4_TABLES : SQLITE_V4_TABLES, indexes: V4_INDEXES },
-    { version: 5, statements: mysql ? MYSQL_V5_STATEMENTS : SQLITE_V5_STATEMENTS }
+    { version: 5, statements: mysql ? MYSQL_V5_STATEMENTS : SQLITE_V5_STATEMENTS },
+    { version: 6, columns: V6_COLUMNS }
   ];
 }
 
@@ -187,6 +199,41 @@ async function ensureMysqlIndexes(connection, indexes) {
   }
 }
 
+// 与 ensure*Indexes 同理:列已存在就跳过,让迁移可以安全重跑。
+// 即使某个库此前被别的方式建成了完整结构,也不会因为重复执行而失败。
+function ensureSqliteColumns(database, columns) {
+  const known = new Map();
+  for (const [table, column, sqliteType] of columns) {
+    if (!known.has(table)) {
+      known.set(
+        table,
+        new Set(
+          database
+            .prepare(`PRAGMA table_info(${table})`)
+            .all()
+            .map((row) => row.name)
+        )
+      );
+    }
+    const existing = known.get(table);
+    if (existing.has(column)) continue;
+    database.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${sqliteType}`);
+    existing.add(column);
+  }
+}
+
+async function ensureMysqlColumns(connection, columns) {
+  for (const [table, column, , mysqlType] of columns) {
+    const [rows] = await connection.execute(
+      `SELECT COLUMN_NAME FROM information_schema.columns
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+      [table, column]
+    );
+    if (Array.isArray(rows) && rows.length > 0) continue;
+    await connection.query(`ALTER TABLE ${table} ADD COLUMN ${column} ${mysqlType}`);
+  }
+}
+
 function seedSqliteDefaultUser(database) {
   const timestamp = now();
   database
@@ -222,6 +269,7 @@ function migrateSqlite(env) {
           database.exec(statement);
         }
         ensureSqliteIndexes(database, migration.indexes || []);
+        ensureSqliteColumns(database, migration.columns || []);
         if (migration.seedDefaultUser) seedSqliteDefaultUser(database);
         database
           .prepare('INSERT INTO ledger_schema_migrations (id, applied_at) VALUES (?, ?)')
@@ -272,6 +320,7 @@ async function migrateMysql(env) {
             await connection.query(statement);
           }
           await ensureMysqlIndexes(connection, migration.indexes || []);
+          await ensureMysqlColumns(connection, migration.columns || []);
           if (migration.seedDefaultUser) await seedMysqlDefaultUser(connection);
           await connection.execute(
             'INSERT INTO ledger_schema_migrations (id, applied_at) VALUES (?, ?)',

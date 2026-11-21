@@ -314,3 +314,54 @@ test('relational repository resets one ledger and leaves other accounts intact',
     await rm(dataDirectory, { recursive: true, force: true });
   }
 });
+
+test('relational repository round-trips the repayment pre-recording snapshot', async () => {
+  const dataDirectory = await mkdtemp(path.join(os.tmpdir(), 'ledgerflow-relational-snapshot-'));
+  const env = { LEDGERFLOW_DATA_DIR: dataDirectory, SQLITE_PATH: '' };
+  try {
+    await migrateRelationalDatabase('sqlite', env);
+    await replaceRelationalData(
+      'sqlite',
+      {
+        finance: { accounts: [], categories: [], transactions: [], subscriptions: [] },
+        preferences: {
+          debts: [
+            {
+              id: 'debt-snapshot',
+              name: '招商银行信用卡',
+              type: 'credit-card',
+              balance: 0,
+              repaymentDay: 25
+            }
+          ],
+          repaymentRecords: [
+            {
+              id: 'record-snapshot',
+              debtId: 'debt-snapshot',
+              amount: 1500,
+              paidAt: '2026-11-21T00:00:00.000Z',
+              recordMode: 'manual',
+              createdAt: '2026-11-21T00:00:00.000Z',
+              balanceBefore: 500,
+              paidPeriodsBefore: 0,
+              remainingMonthsBefore: 24
+            }
+          ]
+        }
+      },
+      env,
+      'default'
+    );
+
+    const bootstrap = await getRelationalBootstrap('sqlite', env, 'default');
+    const record = bootstrap.data.preferences.repaymentRecords.find(
+      (item) => item.id === 'record-snapshot'
+    );
+    assert.ok(record, 'repayment record should survive the round trip');
+    assert.equal(record.balanceBefore, 500);
+    assert.equal(record.paidPeriodsBefore, 0);
+    assert.equal(record.remainingMonthsBefore, 24);
+  } finally {
+    await rm(dataDirectory, { recursive: true, force: true });
+  }
+});

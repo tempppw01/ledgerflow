@@ -2456,7 +2456,12 @@ export function RepaymentManagementPage() {
       amount,
       paidAt: repaymentPaidAt,
       note: repaymentNote.trim() || undefined,
-      recordMode: repaymentRecordModeInput
+      recordMode: repaymentRecordModeInput,
+      // 记录扣减前的状态,删除这笔记录时才能精确还原(尤其是足额还清、
+      // 登记时把余额截断到 0 的情况)。
+      balanceBefore: targetDebt.balance,
+      paidPeriodsBefore: targetDebt.paidPeriods,
+      remainingMonthsBefore: targetDebt.remainingMonths
     });
 
     updateDebt(repaymentDebtId, {
@@ -2547,7 +2552,10 @@ export function RepaymentManagementPage() {
       amount,
       paidAt,
       note: '从未来还款快捷标记为本期已还',
-      recordMode: targetDebt.repaymentRecordMode || 'manual'
+      recordMode: targetDebt.repaymentRecordMode || 'manual',
+      balanceBefore: targetDebt.balance,
+      paidPeriodsBefore: targetDebt.paidPeriods,
+      remainingMonthsBefore: targetDebt.remainingMonths
     });
     updateDebt(debtId, {
       ...targetDebt,

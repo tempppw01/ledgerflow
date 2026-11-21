@@ -51,6 +51,14 @@ function nullable(value) {
   return result || null;
 }
 
+// 可选数值列。NULL 表示这条记录没有登记前快照(旧数据),而不是 0,
+// 所以这里必须显式区分 null/undefined:Number(null) 会得到 0。
+function nullableNumber(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function bool(value) {
   return value ? 1 : 0;
 }
@@ -487,8 +495,8 @@ export async function replaceRelationalData(
         for (const item of repayments) {
           if (!id(item.id) || !debtIds.has(id(item.debtId))) continue;
           await database.run(
-            `INSERT INTO ledger_debt_repayments (id, debt_id, transaction_id, amount, paid_at, payment_account_id, note, record_mode, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO ledger_debt_repayments (id, debt_id, transaction_id, amount, paid_at, payment_account_id, note, record_mode, created_at, balance_before, paid_periods_before, remaining_months_before)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               id(item.id),
               id(item.debtId),
@@ -498,7 +506,10 @@ export async function replaceRelationalData(
               validAccountIds.has(id(item.paymentAccount)) ? id(item.paymentAccount) : null,
               nullable(item.note),
               text(item.recordMode, 'manual'),
-              database.date(item.createdAt)
+              database.date(item.createdAt),
+              nullableNumber(item.balanceBefore),
+              nullableNumber(item.paidPeriodsBefore),
+              nullableNumber(item.remainingMonthsBefore)
             ]
           );
         }
@@ -1027,7 +1038,14 @@ export async function getRelationalBootstrap(
                 paymentAccount: row.payment_account_id || undefined,
                 note: row.note || undefined,
                 recordMode: row.record_mode,
-                createdAt: fromDbDate(row.created_at)
+                createdAt: fromDbDate(row.created_at),
+                balanceBefore: row.balance_before === null ? undefined : number(row.balance_before),
+                paidPeriodsBefore:
+                  row.paid_periods_before === null ? undefined : number(row.paid_periods_before),
+                remainingMonthsBefore:
+                  row.remaining_months_before === null
+                    ? undefined
+                    : number(row.remaining_months_before)
               }))
             }
           }
