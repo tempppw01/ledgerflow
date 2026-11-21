@@ -108,7 +108,13 @@ export async function exportTransactionsPdf(input: ExportTransactionsPdfInput) {
   pdfDoc.registerFontkit(fontkit);
 
   const fontBytes = await getCachedChineseFontBytes();
-  const font = await pdfDoc.embedFont(fontBytes, { subset: true });
+  // 不能开启子集化:pdf-lib 1.17 依赖 subset.encodeStream() 返回 Node 流
+  // (要 .on 和 pipe),而本项目装的 fontkit v2 只提供 encode()(返回字节),
+  // 于是 embedFont 之后在 pdfDoc.save() 阶段抛
+  // “subset.encodeStream(...).on is not a function”,整个导出失败。
+  // 关掉子集化即可正常导出,代价是内嵌整套中文字体、PDF 体积偏大。
+  // 想恢复小体积:把 fontkit 降到 1.x,或改用 @pdf-lib/fontkit。
+  const font = await pdfDoc.embedFont(fontBytes, { subset: false });
   const fontSize = 10;
   const titleSize = 16;
   const lineHeight = 16;
