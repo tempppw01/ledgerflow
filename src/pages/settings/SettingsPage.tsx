@@ -1044,6 +1044,11 @@ export function SettingsPage({
                               t('common.justNow')
                           })}
                         </small>
+                        <small>
+                          {t('settings.account.sessionIp', {
+                            ip: session.ip ?? t('settings.account.sessionIpUnknown')
+                          })}
+                        </small>
                       </div>
                       {session.current ? null : (
                         <button

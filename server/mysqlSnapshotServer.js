@@ -27,6 +27,7 @@ import {
   getUserSessions,
   loginUser,
   logoutSession,
+  normalizeClientIp,
   registerUser,
   requestPasswordReset,
   resetPasswordWithToken,
@@ -239,9 +240,30 @@ function clearedSessionCookie(req) {
     .join('; ');
 }
 
+/**
+ * 取这次请求的客户端 IP。
+ *
+ * 优先级和下面的登录限流保持一致:nginx 注入的 x-real-ip 最可信,其次是
+ * X-Forwarded-For 的第一跳(后面几段是各级代理),最后才是 socket 对端地址。
+ * 任何一段都先过 normalizeClientIp 校验,畸形/缺失一律返回 null ——
+ * 宁可这一条会话没有 IP,也不把不可信的请求头原样写进数据库。
+ */
+function clientIpFromRequest(req) {
+  const forwarded = req.headers['x-forwarded-for'];
+  const forwardedFirst = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+  return (
+    normalizeClientIp(req.headers['x-real-ip']) ??
+    normalizeClientIp(forwardedFirst) ??
+    normalizeClientIp(req.socket?.remoteAddress)
+  );
+}
+
+function requestClientInfo(req) {
+  return { userAgent: req.headers['user-agent'], ip: clientIpFromRequest(req) };
+}
+
 function loginRateLimitKey(req, email) {
-  const forwardedIp = String(req.headers['x-real-ip'] || '').trim();
-  const remoteIp = forwardedIp || req.socket.remoteAddress || 'unknown';
+  const remoteIp = clientIpFromRequest(req) || 'unknown';
   const emailHash = createHash('sha256')
     .update(
       String(email || '')
@@ -317,9 +339,12 @@ function consumeFixedWindowLimit(store, key, limit, windowMs) {
 }
 
 async function requireUserSession(req, res, provider) {
-  const session = await authenticateSession(provider, readSessionToken(req), process.env, {
-    userAgent: req.headers['user-agent']
-  });
+  const session = await authenticateSession(
+    provider,
+    readSessionToken(req),
+    process.env,
+    requestClientInfo(req)
+  );
   if (!session) {
     jsonResponse(res, 401, { ok: false, message: '请先登录 LedgerFlow。' });
     return null;
@@ -2156,9 +2181,7 @@ export async function handleRequest(req, res) {
       if (req.method === 'GET' && pathname === '/auth/status') {
         jsonResponse(res, 200, {
           ok: true,
-          ...(await getAuthStatus(provider, readSessionToken(req), process.env, {
-            userAgent: req.headers['user-agent']
-          }))
+          ...(await getAuthStatus(provider, readSessionToken(req), process.env, requestClientInfo(req)))
         });
         return;
       }
@@ -2171,9 +2194,7 @@ export async function handleRequest(req, res) {
       }
 
       if (req.method === 'POST' && pathname === '/auth/register') {
-        const result = await registerUser(provider, await readJsonBody(req), process.env, {
-          userAgent: req.headers['user-agent']
-        });
+        const result = await registerUser(provider, await readJsonBody(req), process.env, requestClientInfo(req));
         jsonResponse(
           res,
           200,
@@ -2198,9 +2219,7 @@ export async function handleRequest(req, res) {
           return;
         }
         try {
-          const result = await loginUser(provider, body, process.env, {
-            userAgent: req.headers['user-agent']
-          });
+          const result = await loginUser(provider, body, process.env, requestClientInfo(req));
           loginFailures.delete(limit.key);
           jsonResponse(
             res,

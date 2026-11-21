@@ -219,6 +219,8 @@
       "noSessions": "暂无已登录设备。",
       "currentDevice": "当前设备",
       "sessionMeta": "最近活跃 {{lastSeen}} · 登录于 {{created}}",
+      "sessionIp": "登录 IP：{{ip}}",
+      "sessionIpUnknown": "未记录",
       "revoke": "退出",
       "profileSaved": "显示名称已保存。",
       "profileSaveFailed": "保存个人资料失败。",

@@ -3,7 +3,7 @@ import { getDatabaseDataDirectory, getSqliteDatabasePath } from './databaseProvi
 import { withMysqlConnection } from './databaseConnection.js';
 import { openSqliteDatabase } from './sqliteDatabase.js';
 
-export const RELATIONAL_SCHEMA_VERSION = 4;
+export const RELATIONAL_SCHEMA_VERSION = 5;
 const DEFAULT_USER_ID = 'default';
 
 const SQLITE_MIGRATION_TABLE =
@@ -48,6 +48,10 @@ const SQLITE_V3_STATEMENTS = [
   `ALTER TABLE auth_sessions ADD COLUMN device_name TEXT`
 ];
 
+// 记录登录设备的来源 IP。null 表示当时拿不到可信地址(例如反代没传、
+// 或请求里只有畸形值),前端据此显示「未知」而不是伪造一个地址。
+const SQLITE_V5_STATEMENTS = [`ALTER TABLE auth_sessions ADD COLUMN client_ip TEXT`];
+
 const SQLITE_V4_TABLES = [
   `CREATE TABLE IF NOT EXISTS market_history_cache (cache_key TEXT PRIMARY KEY, provider TEXT NOT NULL, target_id TEXT NOT NULL, range_start TEXT NOT NULL, range_end TEXT NOT NULL, payload_json TEXT NOT NULL, fetched_at TEXT NOT NULL, expires_at TEXT NOT NULL, last_accessed_at TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`
 ];
@@ -84,6 +88,7 @@ const MYSQL_V1_TABLES = SQLITE_V1_TABLES.map((statement) => toMysqlTable(stateme
 const MYSQL_V2_TABLES = SQLITE_V2_TABLES.map((statement) => toMysqlTable(statement));
 const MYSQL_V3_STATEMENTS = SQLITE_V3_STATEMENTS.map((statement) => toMysqlTable(statement));
 const MYSQL_V4_TABLES = SQLITE_V4_TABLES.map((statement) => toMysqlTable(statement));
+const MYSQL_V5_STATEMENTS = SQLITE_V5_STATEMENTS.map((statement) => toMysqlTable(statement));
 
 const V1_INDEXES = [
   ['idx_accounts_user_sort', 'ledger_accounts', 'user_id, sort_order'],
@@ -136,7 +141,8 @@ function migrationsFor(provider) {
     { version: 1, tables: mysql ? MYSQL_V1_TABLES : SQLITE_V1_TABLES, indexes: V1_INDEXES, seedDefaultUser: true },
     { version: 2, tables: mysql ? MYSQL_V2_TABLES : SQLITE_V2_TABLES, indexes: V2_INDEXES },
     { version: 3, statements: mysql ? MYSQL_V3_STATEMENTS : SQLITE_V3_STATEMENTS },
-    { version: 4, tables: mysql ? MYSQL_V4_TABLES : SQLITE_V4_TABLES, indexes: V4_INDEXES }
+    { version: 4, tables: mysql ? MYSQL_V4_TABLES : SQLITE_V4_TABLES, indexes: V4_INDEXES },
+    { version: 5, statements: mysql ? MYSQL_V5_STATEMENTS : SQLITE_V5_STATEMENTS }
   ];
 }
 

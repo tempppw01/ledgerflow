@@ -198,6 +198,55 @@ function normalizePasswordResetToken(token) {
   return value;
 }
 
+const IPV4_PATTERN = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+const MAX_CLIENT_IP_LENGTH = 45;
+
+function isValidIpv4(value) {
+  const match = value.match(IPV4_PATTERN);
+  if (!match) return false;
+  // 同时拒绝 01.2.3.4 这类带前导零的写法,避免同一地址出现多种字符串形式。
+  return match.slice(1).every((part) => Number(part) <= 255 && String(Number(part)) === part);
+}
+
+function isValidIpv6(value) {
+  // 至少要两段冒号(::1 / fe80::1 / 2001:db8::1),并且只能是十六进制与冒号。
+  return value.length <= MAX_CLIENT_IP_LENGTH && value.split(':').length >= 3 && /^[0-9a-f:]+$/i.test(value);
+}
+
+/**
+ * 把请求里各种形态的来源地址收敛成一个可以直接入库、可以直接展示的 IP。
+ *
+ * X-Forwarded-For 可能是「客户端, 代理1, 代理2」,取第一段才是真实客户端;
+ * nginx 的 $remote_addr 会带端口或被 [] 包住;Node 在 IPv6 监听下会把 IPv4
+ * 客户端写成 ::ffff:1.2.3.4。这些形态都要先归一,否则同一台设备每次登录
+ * 会记成不同的字符串。解析不出来(缺头、'unknown'、畸形值)时返回 null,
+ * 由调用方决定要不要落库,而不是把原始请求头直接写进数据库。
+ */
+export function normalizeClientIp(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+
+  let candidate = raw.split(',')[0].trim();
+  const bracketed = candidate.match(/^\[([^\]]+)\](?::\d+)?$/);
+  if (bracketed) {
+    candidate = bracketed[1];
+  } else if (/^\d{1,3}(?:\.\d{1,3}){3}:\d+$/.test(candidate)) {
+    candidate = candidate.slice(0, candidate.lastIndexOf(':'));
+  }
+  candidate = candidate.replace(/%.+$/, '').trim();
+
+  const mapped = candidate.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i);
+  if (mapped) candidate = mapped[1];
+
+  if (isValidIpv4(candidate)) return candidate;
+  if (isValidIpv6(candidate)) return candidate.toLowerCase();
+  return null;
+}
+
+function sessionClientIp(clientInfo) {
+  return normalizeClientIp(clientInfo?.ip);
+}
+
 function deviceNameFromUserAgent(value) {
   const userAgent = String(value || '').slice(0, 512);
   const browser = /edg\//i.test(userAgent)
@@ -235,8 +284,8 @@ async function createSession(database, userId, env, clientInfo) {
   const expiresAt = new Date(Date.now() + sessionDurationMs(env)).toISOString();
   await database.run(
     `INSERT INTO auth_sessions
-       (id, user_id, token_hash, expires_at, last_seen_at, revoked_at, created_at, device_name)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, user_id, token_hash, expires_at, last_seen_at, revoked_at, created_at, device_name, client_ip)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       randomUUID(),
       userId,
@@ -245,7 +294,8 @@ async function createSession(database, userId, env, clientInfo) {
       database.date(createdAt),
       null,
       database.date(createdAt),
-      sessionDeviceName(clientInfo)
+      sessionDeviceName(clientInfo),
+      sessionClientIp(clientInfo)
     ]
   );
   return { token, expiresAt };
@@ -387,7 +437,7 @@ export async function authenticateSession(provider, token, env = process.env, cl
     async (database) => {
       const current = now();
       const row = await database.get(
-        `SELECT u.*, s.id AS session_id, s.expires_at, s.last_seen_at, s.device_name
+        `SELECT u.*, s.id AS session_id, s.expires_at, s.last_seen_at, s.device_name, s.client_ip
        FROM auth_sessions s
        JOIN auth_users u ON u.id = s.user_id
        WHERE s.token_hash = ? AND s.revoked_at IS NULL AND s.expires_at > ? AND u.status = 'active'`,
@@ -400,6 +450,15 @@ export async function authenticateSession(provider, token, env = process.env, cl
       if (!row.device_name && deviceName) {
         await database.run('UPDATE auth_sessions SET device_name = ? WHERE id = ?', [
           deviceName,
+          row.session_id
+        ]);
+      }
+      // 本次改动之前建立的会话没有 IP,这里在下次带 Cookie 的请求里补上。
+      // 只补空值:已经记过登录 IP 的会话保持原值,不会因为换网络被改写。
+      const clientIp = row.client_ip || sessionClientIp(clientInfo);
+      if (!row.client_ip && clientIp) {
+        await database.run('UPDATE auth_sessions SET client_ip = ? WHERE id = ?', [
+          clientIp,
           row.session_id
         ]);
       }
@@ -416,6 +475,7 @@ export async function authenticateSession(provider, token, env = process.env, cl
         sessionId: row.session_id,
         expiresAt: fromDbDate(row.expires_at),
         deviceName,
+        clientIp,
         user: publicUser(row)
       };
     },
@@ -660,7 +720,7 @@ export async function getUserSessions(provider, auth, env = process.env) {
     provider,
     async (database) => {
       const rows = await database.query(
-        `SELECT id, device_name, expires_at, last_seen_at, created_at
+        `SELECT id, device_name, client_ip, expires_at, last_seen_at, created_at
        FROM auth_sessions
        WHERE user_id = ? AND revoked_at IS NULL AND expires_at > ?
        ORDER BY last_seen_at DESC, created_at DESC`,
@@ -671,6 +731,7 @@ export async function getUserSessions(provider, auth, env = process.env) {
         sessions: rows.map((row) => ({
           id: row.id,
           deviceName: row.device_name || 'Web 浏览器',
+          ip: row.client_ip || null,
           createdAt: fromDbDate(row.created_at),
           lastSeenAt: fromDbDate(row.last_seen_at),
           expiresAt: fromDbDate(row.expires_at),

@@ -219,6 +219,8 @@
       "noSessions": "No active devices found.",
       "currentDevice": "This device",
       "sessionMeta": "Last active {{lastSeen}} · Signed in {{created}}",
+      "sessionIp": "Sign-in IP: {{ip}}",
+      "sessionIpUnknown": "not recorded",
       "revoke": "Sign out",
       "profileSaved": "Display name saved.",
       "profileSaveFailed": "Failed to save account profile.",

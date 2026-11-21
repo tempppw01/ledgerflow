@@ -116,7 +116,31 @@ test('HTTP auth protects relational data and scopes it to the session user', asy
 
     const sessions = await request('/api/auth/sessions', { headers: { Cookie: ownerCookie } });
     assert.equal(sessions.status, 200);
-    assert.equal((await json(sessions)).sessions[0].current, true);
+    const currentSession = (await json(sessions)).sessions[0];
+    assert.equal(currentSession.current, true);
+    // 登录走的是 127.0.0.1,会话上要落这条记录,而不是空值。
+    assert.equal(currentSession.ip, '127.0.0.1');
+
+    // 反代场景:nginx 的 x-real-ip 优先于 X-Forwarded-For 的后续代理跳。
+    const proxiedLogin = await request('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-real-ip': '198.51.100.16',
+        'x-forwarded-for': '198.51.100.16, 10.0.0.5'
+      },
+      body: JSON.stringify({ email: 'owner@example.com', password: 'owner-secure-password' })
+    });
+    assert.equal(proxiedLogin.status, 200);
+    const proxiedCookie = proxiedLogin.headers.get('set-cookie').split(';', 1)[0];
+    const proxiedSessions = await json(
+      await request('/api/auth/sessions', { headers: { Cookie: proxiedCookie } })
+    );
+    assert.equal(proxiedSessions.sessions[0].ip, '198.51.100.16');
+    assert.equal(
+      proxiedSessions.sessions.some((session) => session.ip === '127.0.0.1'),
+      true
+    );
 
     const profile = await post('/api/auth/profile', { displayName: 'Updated Owner' }, ownerCookie);
     assert.equal(profile.status, 200);

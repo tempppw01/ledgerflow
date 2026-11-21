@@ -20,6 +20,8 @@ export interface AuthStatusResponse {
 export interface AuthSession {
   id: string;
   deviceName: string;
+  /** 登录设备记录的来源 IP;取不到可信地址时为 null。 */
+  ip: string | null;
   createdAt: string | null;
   lastSeenAt: string | null;
   expiresAt: string | null;
