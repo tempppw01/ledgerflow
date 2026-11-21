@@ -1427,7 +1427,7 @@ export function DatabaseSettingsPage() {
               <p className="sync-tip" style={{ margin: '10px 0 0' }}>
                 {webdav.proxyEnabled
                   ? tf('dataBackup.webdav.modeProxy', '当前:同源代理已启用。')
-                  : tf('dataBackup.webdav.modeDirect', '当前:浏览器直连,可能受跨域限制。')}
+                  : tf('dataBackup.webdav.modeDirect', '当前:浏览器直连\uFF0C可能受跨域限制。')}
               </p>
               <div style={{ marginTop: 10 }}>
                 <BackupScopeSelector scope={backupScope} onChange={setBackupScope} />

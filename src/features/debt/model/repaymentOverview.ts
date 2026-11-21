@@ -176,13 +176,20 @@ export function getRepaymentOverview(input: RepaymentOverviewInput): RepaymentOv
 
   const thisMonthTotal = breakdown.reduce((sum, item) => sum + item.payment, 0);
 
-  const thisMonthPaid = financialBreakdown.reduce((sum, item) => sum + item.paidAmount, 0);
+  // A cycle can be overpaid: the surplus settles the balance ahead of schedule
+  // rather than paying more than this month actually owes. Attribute at most the
+  // scheduled amount to this month, so the card's 已还 + 待还 always equals
+  // 本月应还总额 instead of exceeding it on an overpaid cycle.
+  const attributedPaid = (item: MonthlyPaymentBreakdownItem) =>
+    Math.min(item.paidAmount, item.payment);
+
+  const thisMonthPaid = financialBreakdown.reduce((sum, item) => sum + attributedPaid(item), 0);
 
   // Recurring debts only owe the unpaid gap, while dated reminders have no
   // repayment history yet, so their stated amount stays fully outstanding.
   const thisMonthRemaining =
     financialBreakdown.reduce(
-      (sum, item) => sum + Math.max(0, item.payment - item.paidAmount),
+      (sum, item) => sum + (item.payment - attributedPaid(item)),
       0
     ) + reminderBreakdown.reduce((sum, item) => sum + item.payment, 0);
   const progress = thisMonthTotal > 0 ? Math.min(1, thisMonthPaid / thisMonthTotal) : 0;

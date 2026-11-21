@@ -33,7 +33,7 @@ export function BudgetAnomalyPanel({ anomalies, onSelectCategory }: BudgetAnomal
 
       {anomalies.length === 0 ? (
         <p className="sb-empty">
-          {tf('smartBudget.anomaly.empty', '目前没有临近超支的分类,保持当前节奏即可。')}
+          {tf('smartBudget.anomaly.empty', '目前没有临近超支的分类\uFF0C保持当前节奏即可。')}
         </p>
       ) : (
         <ul className="sb-anomaly-list">

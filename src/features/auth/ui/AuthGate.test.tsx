@@ -184,7 +184,7 @@ describe('AuthGate', () => {
       newPassword: 'new-secure-password'
     });
     expect(await screen.findByRole('heading', { name: '登录 LedgerFlow' })).toBeInTheDocument();
-    expect(screen.getByText('密码已重置,请使用新密码登录。')).toBeInTheDocument();
+    expect(screen.getByText('密码已重置\uFF0C请使用新密码登录。')).toBeInTheDocument();
     expect(window.location.search).toBe('');
   });
 });

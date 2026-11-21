@@ -42,7 +42,7 @@ export function BudgetTrendPanel({ series }: BudgetTrendPanelProps) {
 
       {series.length === 0 ? (
         <p className="sb-empty">
-          {tf('smartBudget.trend.empty', '记录满两个月后,这里会显示分类预算与实际支出的趋势对比。')}
+          {tf('smartBudget.trend.empty', '记录满两个月后\uFF0C这里会显示分类预算与实际支出的趋势对比。')}
         </p>
       ) : (
         <div className="sb-trend-grid">

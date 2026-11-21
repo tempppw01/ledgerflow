@@ -979,7 +979,7 @@ export function AppLayout() {
                 <div>
                   <p className="mobile-nav-name">{user.displayName}</p>
                   <p className="mobile-nav-subtitle">
-                    {tf('layout.drawerSubtitle', '{{today}} · 今天也要轻松记一笔').split('{{today}}').join(todayLabel)}
+                    {tf('layout.drawerSubtitle', '{{today}} · 让今天的账目保持清晰').split('{{today}}').join(todayLabel)}
                   </p>
                 </div>
               </div>

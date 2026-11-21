@@ -773,7 +773,7 @@ export function TransactionEditPage() {
                   <small>
                     {tf('transactions.edit.suggestionPrefix', '建议:商户「')}
                     {suggestion.merchant || tf('transactions.edit.unrecognized', '未识别')}
-                    {tf('transactions.edit.suggestionMiddle', '」,分类「')}
+                    {tf('transactions.edit.suggestionMiddle', '」\uFF0C分类「')}
                     {suggestion.category || tf('transactions.edit.unrecognized', '未识别')}"
                     {tf('transactions.edit.suggestionSuffix', '」。')}
                     <button
@@ -807,7 +807,7 @@ export function TransactionEditPage() {
                 <input
                   id="tx-tags"
                   aria-label={tf('transactions.edit.tagsAria', '交易标签')}
-                  placeholder={tf('transactions.edit.tagsPlaceholder', '如：餐饮,工作日')}
+                  placeholder={tf('transactions.edit.tagsPlaceholder', '如：餐饮\uFF0C工作日')}
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
                 />

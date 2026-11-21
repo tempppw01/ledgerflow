@@ -148,13 +148,13 @@ export function RepaymentAgentBar(props: RepaymentAgentBarProps) {
           result.content.trim() ||
             (result.actions.length > 0
               ? `已按你的要求处理:${result.actions.map((action) => action.label).join(';')}`
-              : tf('repayment.agent.noResult', '没有可返回的结果,请换个说法再试。'))
+              : tf('repayment.agent.noResult', '没有可返回的结果\uFF0C请换个说法再试。'))
         );
         setInput('');
       } catch (err) {
         setError(
           (err as Error).message ||
-            tf('repayment.agent.error.failed', '处理失败,请检查模型配置后重试。')
+            tf('repayment.agent.error.failed', '处理失败\uFF0C请检查模型配置后重试。')
         );
       } finally {
         runningRef.current = false;
@@ -194,7 +194,7 @@ export function RepaymentAgentBar(props: RepaymentAgentBarProps) {
             value={input}
             placeholder={tf(
               'repayment.agent.placeholder',
-              '直接说,例如“花呗今天还了 300”“哪笔最该先还”'
+              '直接说\uFF0C例如“花呗今天还了 300”“哪笔最该先还”'
             )}
             onChange={(event) => setInput(event.target.value)}
             disabled={running}

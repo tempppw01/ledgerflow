@@ -320,7 +320,7 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
           <div className="auth-card-head">
             <div>
               <h1>{tf('dataBackup.sync.cloudEmptyTitle', "当前部署的云端账本为空")}</h1>
-              <p>{tf('dataBackup.sync.cloudEmptyBody', " 浏览器里还有一份本机账本。只有确认它属于当前部署时才导入,否则请使用空白账本。 ")}</p>
+              <p>{tf('dataBackup.sync.cloudEmptyBody', " 浏览器里还有一份本机账本。只有确认它属于当前部署时才导入\uFF0C否则请使用空白账本。 ")}</p>
             </div>
           </div>
           <button

@@ -1623,8 +1623,8 @@ export function InvestmentChatPanel({
             className={agentReady ? 'is-agent-ready' : 'is-agent-offline'}
             title={
               agentReady
-                ? tf('investmentAi.readyHint', '已配置 AI 模型,可直接读取持仓、自选与今日行情')
-                : tf('investmentAi.notReadyHint', '尚未配置 AI 模型 Key,配置后助手才能生成分析')
+                ? tf('investmentAi.readyHint', '已配置 AI 模型\uFF0C可直接读取持仓、自选与今日行情')
+                : tf('investmentAi.notReadyHint', '尚未配置 AI 模型 Key\uFF0C配置后助手才能生成分析')
             }
           >
             <i aria-hidden="true" />

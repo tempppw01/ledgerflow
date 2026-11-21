@@ -247,7 +247,7 @@ export function ExchangeConverter({ rates, base }: ExchangeConverterProps) {
           aria-readonly="true"
           aria-label={`${tf('exchange.converter.amount', '金额')}(${fromCode})${tf(
             'exchange.converter.screenSeparator',
-            ','
+            '\uFF0C'
           )}${tf('exchange.converter.screenHint', '可用下方计算器键盘输入')}`}
           aria-live="polite"
         >

@@ -94,7 +94,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
         const result = await requestAccountPasswordReset({ email });
         setNotice(
           result.message ||
-            tf('auth.resetEmailSent', '如果该邮箱已注册,密码重置邮件将在几分钟内送达。')
+            tf('auth.resetEmailSent', '如果该邮箱已注册\uFF0C密码重置邮件将在几分钟内送达。')
         );
         return;
       }
@@ -107,7 +107,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
         setPassword('');
         setPasswordConfirmation('');
         setMode('login');
-        setNotice(tf('auth.resetSucceeded', '密码已重置,请使用新密码登录。'));
+        setNotice(tf('auth.resetSucceeded', '密码已重置\uFF0C请使用新密码登录。'));
         return;
       }
 
@@ -173,16 +173,16 @@ export function AuthGate({ children }: { children: ReactNode }) {
           : tf('auth.loginTitle', '登录 LedgerFlow');
   const description =
     mode === 'register'
-      ? tf('auth.registerDescription', '这个账号会安全接管当前 default 账本,原有数据不会被删除。')
+      ? tf('auth.registerDescription', '该账号将安全接管当前默认账本\uFF0C原有数据不会被删除\u3002')
       : mode === 'forgot'
         ? tf(
             'auth.forgotDescription',
-            '输入注册邮箱,我们会发送一个 30 分钟内有效的一次性重置链接。'
+            '输入注册邮箱\uFF0C我们会发送一个 30 分钟内有效的一次性重置链接。'
           )
         : mode === 'reset'
           ? tf(
               'auth.resetDescription',
-              '重置链接只能使用一次。设置成功后,所有已登录设备都需要重新登录。'
+              '重置链接只能使用一次。设置成功后\uFF0C所有已登录设备都需要重新登录。'
             )
           : tf('auth.loginDescription', '登录后只会加载属于你的账户、交易和财务资料。');
   const submitLabel =

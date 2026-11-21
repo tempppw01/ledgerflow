@@ -13,7 +13,7 @@ const PROVIDER_COPY: Record<
 > = {
   sqlite: {
     label: 'SQLite',
-    description: (tf) => tf('dataBackup.provider.sqliteDesc', '适合单机和轻量自托管,数据保存为部署卷中的文件。')
+    description: (tf) => tf('dataBackup.provider.sqliteDesc', '适合单机和轻量自托管\uFF0C数据保存为部署卷中的文件。')
   },
   mysql: {
     label: 'MySQL',

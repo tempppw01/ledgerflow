@@ -450,7 +450,7 @@ export function BillPreviewCard({
           aria-busy={saving}
           title={
             saving
-              ? tf('billPreview.savingTitle', '正在保存,请稍候')
+              ? tf('billPreview.savingTitle', '正在保存\uFF0C请稍候')
               : saveableCount === 0
                 ? tf('billPreview.nothingToSaveTitle', '请先勾选或修正账单')
                 : undefined

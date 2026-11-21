@@ -238,4 +238,61 @@ describe('getRepaymentOverview', () => {
     ]);
     expect(result.monthlyProjection.map((month) => month.total)).toEqual([350, 0, 0]);
   });
+
+  it('keeps 已还 + 待还 equal to 本月应还总额 when a cycle is overpaid', () => {
+    const from = new Date(2026, 7, 5);
+    const records: RepaymentRecord[] = [
+      {
+        id: 'r1',
+        debtId: 'd1',
+        amount: 1500,
+        paidAt: '2026-08-03',
+        recordMode: 'manual',
+        createdAt: '2026-08-03T00:00:00.000Z'
+      }
+    ];
+
+    const result = getRepaymentOverview({
+      debts: [debt({ customMinPayment: 1000 })],
+      repaymentRecords: records,
+      fromDate: from
+    });
+
+    // The 500 surplus settles the balance ahead of schedule; this month still
+    // only owes 1000, so the card must not report 已还 1500 against a 1000 total.
+    expect(result.thisMonthTotal).toBe(1000);
+    expect(result.thisMonthPaid).toBe(1000);
+    expect(result.thisMonthRemaining).toBe(0);
+    expect(result.thisMonthPaid + result.thisMonthRemaining).toBe(result.thisMonthTotal);
+    expect(result.progress).toBe(1);
+  });
+
+  it('reconciles a mixed overpaid/underpaid month per debt', () => {
+    const from = new Date(2026, 7, 5);
+    const records: RepaymentRecord[] = [
+      {
+        id: 'r1',
+        debtId: 'd1',
+        amount: 1500,
+        paidAt: '2026-08-03',
+        recordMode: 'manual',
+        createdAt: '2026-08-03T00:00:00.000Z'
+      }
+    ];
+
+    const result = getRepaymentOverview({
+      debts: [
+        debt({ id: 'd1', name: '信用卡A', customMinPayment: 1000 }),
+        debt({ id: 'd2', name: '信用卡B', customMinPayment: 500 })
+      ],
+      repaymentRecords: records,
+      fromDate: from
+    });
+
+    // d1 is capped at its 1000 obligation; d2 is untouched and still owes 500.
+    expect(result.thisMonthTotal).toBe(1500);
+    expect(result.thisMonthPaid).toBe(1000);
+    expect(result.thisMonthRemaining).toBe(500);
+    expect(result.thisMonthPaid + result.thisMonthRemaining).toBe(result.thisMonthTotal);
+  });
 });

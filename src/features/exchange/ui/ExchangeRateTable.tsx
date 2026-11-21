@@ -118,7 +118,7 @@ export function ExchangeRateTable({
   const emptyText = loading
     ? tf('exchange.table.loading', '加载中…')
     : keyword
-      ? tf('exchange.table.emptySearch', '没有匹配的货币,换个代码或名称试试')
+      ? tf('exchange.table.emptySearch', '没有匹配的货币\uFF0C换个代码或名称试试')
       : showAll
         ? tf('exchange.table.emptyAll', '无匹配货币')
         : tf(

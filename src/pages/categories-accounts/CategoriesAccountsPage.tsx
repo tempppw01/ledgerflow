@@ -138,7 +138,7 @@ export function CategoriesAccountsPage() {
     const normalized = normalizeNameInput(categoryName);
     if (!isValidName(normalized)) {
       setCategoryError(
-        tf('categoriesAccounts.error.categoryName', '分类名称需为 1-24 个字符,且不能包含 < 或 >。')
+        tf('categoriesAccounts.error.categoryName', '分类名称需为 1-24 个字符\uFF0C且不能包含 < 或 >。')
       );
       return;
     }
@@ -425,7 +425,7 @@ export function CategoriesAccountsPage() {
     const normalized = normalizeNameInput(editCategoryName);
     if (!isValidName(normalized)) {
       setCategoryActionError(
-        tf('categoriesAccounts.error.categoryName', '分类名称需为 1-24 个字符,且不能包含 < 或 >。')
+        tf('categoriesAccounts.error.categoryName', '分类名称需为 1-24 个字符\uFF0C且不能包含 < 或 >。')
       );
       return;
     }
@@ -838,7 +838,7 @@ export function CategoriesAccountsPage() {
               title={tf('categoriesAccounts.emptyCategoriesTitle', '暂无分类')}
               description={tf(
                 'categoriesAccounts.emptyCategoriesDescription',
-                '先添加一个一级分类,再往下挂子分类。'
+                '先添加一个一级分类\uFF0C再往下挂子分类。'
               )}
               icon="🧩"
             />
@@ -1303,7 +1303,7 @@ export function CategoriesAccountsPage() {
         description={
           pendingDeleteCategoryUsageCount > 0
             ? `${tf('categoriesAccounts.confirm.categoryUsage', '该分类下存在 {count} 条交易记录,').replace('{count}', String(pendingDeleteCategoryUsageCount))}${pendingDeleteCategoryChildCount > 0 ? tf('categoriesAccounts.confirm.categoryChildren', '其中 {count} 个子分类会提升为一级分类,').replace('{count}', String(pendingDeleteCategoryChildCount)) : ''}${tf('categoriesAccounts.confirm.categoryTrashed', '移入回收站后这些交易会继续保留并归入“未分类”。是否继续?')}`
-            : `${pendingDeleteCategoryChildCount > 0 ? tf('categoriesAccounts.confirm.categoryChildren', '其中 {count} 个子分类会提升为一级分类,').replace('{count}', String(pendingDeleteCategoryChildCount)) : ''}${tf('categoriesAccounts.confirm.categoryTrashedOnly', '该分类将先移入回收站,你之后仍可恢复或彻底删除。是否继续?')}`
+            : `${pendingDeleteCategoryChildCount > 0 ? tf('categoriesAccounts.confirm.categoryChildren', '其中 {count} 个子分类会提升为一级分类,').replace('{count}', String(pendingDeleteCategoryChildCount)) : ''}${tf('categoriesAccounts.confirm.categoryTrashedOnly', '该分类将先移入回收站\uFF0C你之后仍可恢复或彻底删除。是否继续?')}`
         }
         confirmText={tf('categoriesAccounts.moveToTrash', '移入回收站')}
         cancelText={tf('confirmDialog.cancel', '取消')}
