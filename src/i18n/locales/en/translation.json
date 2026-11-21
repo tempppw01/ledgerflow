@@ -630,7 +630,18 @@
     "currentStatus": "Current status",
     "followUpHint": "You can also ask:",
     "modelShortLabel": "M",
-    "aiDisclaimer": "AI output is for reference only; check it against the original bill before saving."
+    "aiDisclaimer": "AI output is for reference only; check it against the original bill before saving.",
+    "todos": {
+      "uncategorized": "Transactions to categorize",
+      "refundLink": "Refunds to link",
+      "pending": "Pending transactions",
+      "repayment": "Due repayment check",
+      "uncategorizedDetail": "{{count}} transactions are still uncategorized — clear them today.",
+      "refundLinkDetail": "Found {{count}} refund / reversal records you can link to their original transaction.",
+      "pendingDetail": "{{count}} transactions are pending — confirm their status first.",
+      "repaymentDetail": "{{count}} repayment records need confirmation — check the due dates.",
+      "dueToday": "Today / action needed"
+    }
   },
   "about": {
     "kicker": "About LedgerFlow",

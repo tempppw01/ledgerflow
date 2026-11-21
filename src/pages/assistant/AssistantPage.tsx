@@ -1267,38 +1267,38 @@ export function AssistantPage() {
     const todayTodos: TodayTodoItem[] = [
       {
         id: 'todo-uncategorized',
-        label: '待分类交易',
-        detail: `还有 ${uncategorizedCount} 笔交易未分类，建议今天先补齐。`,
+        label: tf('assistant.todos.uncategorized', '待分类交易'),
+        detail: tf('assistant.todos.uncategorizedDetail', '还有 {{count}} 笔交易未分类，建议今天先补齐。').replace('{{count}}', String(uncategorizedCount)),
         level: uncategorizedCount > 0 ? 'warning' : 'default',
         count: uncategorizedCount,
-        statusLabel: uncategorizedCount > 0 ? '今日 / 需处理' : undefined,
+        statusLabel: uncategorizedCount > 0 ? tf('assistant.todos.dueToday', '今日 / 需处理') : undefined,
         href: '/transactions?categoryId=uncategorized'
       },
       {
         id: 'todo-refund-link',
-        label: '待关联退款',
-        detail: `检测到 ${pendingRefundCount} 笔退款/冲正相关记录，可核对原单关联。`,
+        label: tf('assistant.todos.refundLink', '待关联退款'),
+        detail: tf('assistant.todos.refundLinkDetail', '检测到 {{count}} 笔退款/冲正相关记录，可核对原单关联。').replace('{{count}}', String(pendingRefundCount)),
         level: pendingRefundCount > 0 ? 'warning' : 'default',
         count: pendingRefundCount,
-        statusLabel: pendingRefundCount > 0 ? '今日 / 需处理' : undefined,
+        statusLabel: pendingRefundCount > 0 ? tf('assistant.todos.dueToday', '今日 / 需处理') : undefined,
         href: '/transactions?status=refunded'
       },
       {
         id: 'todo-pending',
-        label: '待处理流水',
-        detail: `当前有 ${pendingCount} 笔待处理交易，建议优先确认状态。`,
+        label: tf('assistant.todos.pending', '待处理流水'),
+        detail: tf('assistant.todos.pendingDetail', '当前有 {{count}} 笔待处理交易，建议优先确认状态。').replace('{{count}}', String(pendingCount)),
         level: pendingCount > 0 ? 'warning' : 'default',
         count: pendingCount,
-        statusLabel: pendingCount > 0 ? '今日 / 需处理' : undefined,
+        statusLabel: pendingCount > 0 ? tf('assistant.todos.dueToday', '今日 / 需处理') : undefined,
         href: '/transactions?status=pending'
       },
       {
         id: 'todo-repayment',
-        label: '到期还款检查',
-        detail: `当前有 ${repaymentTodoCount} 笔还款记录待确认，请核对到期日。`,
+        label: tf('assistant.todos.repayment', '到期还款检查'),
+        detail: tf('assistant.todos.repaymentDetail', '当前有 {{count}} 笔还款记录待确认，请核对到期日。').replace('{{count}}', String(repaymentTodoCount)),
         level: repaymentTodoCount > 0 ? 'warning' : 'default',
         count: repaymentTodoCount,
-        statusLabel: repaymentTodoCount > 0 ? '今日 / 需处理' : undefined,
+        statusLabel: repaymentTodoCount > 0 ? tf('assistant.todos.dueToday', '今日 / 需处理') : undefined,
         href: '/repayment-management'
       }
     ];

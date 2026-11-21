@@ -35,6 +35,29 @@ npm run i18n:check-jsx     # 有存量就以非 0 退出,给 CI 用
 
 ## 仍然存在的同类债(不在本闸门范围)
 
-- `AssistantPage` 里还有若干常量/数组里的中文(不在 JSX 文本节点上),以及 AI prompt 文案
-  —— 后者本就不该翻译
-- `docs/i18n-hardcoded-audit.md` 的统计口径覆盖的是更宽的范围(含模板字符串),数字更大
+### 1. 对象字面量里的界面文案(部分已收编)
+
+`label: '中文'`、`detail: '...'` 这类写法不在 JSX 文本节点上,本闸门覆盖不到。
+全站扫了一遍,`label|title|text|description|hint|placeholder|ariaLabel|summary|statusLabel`
+等字段里共 **290 处**含中文,但分布决定了**不适合做全局闸门**:
+
+| 文件 | 处数 | 性质 |
+| --- | --- | --- |
+| `features/assistant/agent/creditAgentTools.ts` | 82 | AI 工具描述 → **prompt,不该翻译** |
+| `features/assistant/agent/assistantAgentTools.ts` | 45 | 同上 |
+| `features/subscriptions/model/brandMarks.ts` | 39 | 品牌名 → 数据 |
+| `pages/investments/InvestmentsPage.tsx` | 29 | 混合:部分 UI 文案、部分数据表 |
+| `features/assistant/agent/investmentAgentTools.ts` | 12 | AI 工具描述 |
+| `features/smart-budget/ui/BudgetWizard.tsx` | 13 | UI 文案(待收编) |
+| 其它 | 70 | 行情字段名、格式化标签等数据 |
+
+已收编的:`AssistantPage` 的「今日待办」卡片(4 个标题 + 4 条带计数的说明 + 1 个状态标签),
+说明用 `{{count}}` 模板 + `.replace()` 注入,保持对象结构与类型不变。
+
+**注意**:`ASSISTANT_INTENT_PATTERNS` 里的 `label`(趋势变化/复盘拆解…)虽然也命中,
+但它最终拼进 **AI prompt** 的「回答偏好」,翻译成英文会改变给模型的指令 —— 保持中文。
+
+### 2. 更宽的统计口径
+
+`docs/i18n-hardcoded-audit.md` 的数字更大(含模板字符串与 prompt),那是另一份更早的分类统计,
+两者口径不同,不要混着看。

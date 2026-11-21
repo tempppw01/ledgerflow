@@ -630,7 +630,18 @@
     "currentStatus": "当前状态",
     "followUpHint": "你可以顺手继续问：",
     "modelShortLabel": "语",
-    "aiDisclaimer": "AI 生成内容仅供参考，请结合原始账单核对后再保存。"
+    "aiDisclaimer": "AI 生成内容仅供参考，请结合原始账单核对后再保存。",
+    "todos": {
+      "uncategorized": "待分类交易",
+      "refundLink": "待关联退款",
+      "pending": "待处理流水",
+      "repayment": "到期还款检查",
+      "uncategorizedDetail": "还有 {{count}} 笔交易未分类，建议今天先补齐。",
+      "refundLinkDetail": "检测到 {{count}} 笔退款/冲正相关记录，可核对原单关联。",
+      "pendingDetail": "当前有 {{count}} 笔待处理交易，建议优先确认状态。",
+      "repaymentDetail": "当前有 {{count}} 笔还款记录待确认，请核对到期日。",
+      "dueToday": "今日 / 需处理"
+    }
   },
   "about": {
     "kicker": "关于 LedgerFlow",
