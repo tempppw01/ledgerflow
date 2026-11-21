@@ -3251,6 +3251,7 @@
       "healthTitle": "预算健康度",
       "monthBudget": "本月预算",
       "pacing": {
+        "futureMonth": "该月还没开始，共 {days} 天，按预算平均每天可以花 {amount}。",
         "none": "选择月份后可以看到每天可用金额。",
         "over": "按现在的节奏，月底预计超支 {amount}。",
         "pastMonth": "该月共 {days} 天，已全部走完，属于历史月份。",

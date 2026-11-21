@@ -20,6 +20,14 @@ function pacingHint(pacing: BudgetPacing | null, tf: TfFallback): string {
   if (!pacing) {
     return tf('smartBudget.overview.pacing.none', '选择月份后可以看到每天可用金额。');
   }
+  if (pacing.isFutureMonth) {
+    return tf(
+      'smartBudget.overview.pacing.futureMonth',
+      '\u8be5\u6708\u8fd8\u6ca1\u5f00\u59cb\uff0c\u5171 {days} \u5929\uff0c\u6309\u9884\u7b97\u5e73\u5747\u6bcf\u5929\u53ef\u4ee5\u82b1 {amount}\u3002'
+    )
+      .replace('{days}', String(pacing.daysInMonth))
+      .replace('{amount}', String(formatCurrency(pacing.dailyBudget)));
+  }
   if (!pacing.isCurrentMonth) {
     return tf(
       'smartBudget.overview.pacing.pastMonth',

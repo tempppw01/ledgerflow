@@ -5,6 +5,9 @@ export type BudgetPacingStatus = 'safe' | 'warning' | 'over';
 export type BudgetPacing = {
   monthKey: string;
   isCurrentMonth: boolean;
+  /** 未来的月份。必须与「已过去的月份」区分开:把未来月当成走完的历史月会
+   *  显示成「该月共 31 天,已全部走完,属于历史月份」这种明显错误的话。 */
+  isFutureMonth: boolean;
   daysInMonth: number;
   daysPassed: number;
   daysRemaining: number;
@@ -71,11 +74,19 @@ export function calculateBudgetPacing(params: {
 
   const now = params.now ?? new Date();
   const isCurrentMonth = now.getFullYear() === meta.year && now.getMonth() + 1 === meta.month;
+  const isFutureMonth =
+    !isCurrentMonth &&
+    (meta.year > now.getFullYear() ||
+      (meta.year === now.getFullYear() && meta.month > now.getMonth() + 1));
 
   const daysPassed = isCurrentMonth
     ? Math.min(Math.max(now.getDate(), 1), meta.daysInMonth)
-    : meta.daysInMonth;
-  const daysRemaining = Math.max(meta.daysInMonth - daysPassed, 0);
+    : isFutureMonth
+      ? 0
+      : meta.daysInMonth;
+  const daysRemaining = isFutureMonth
+    ? meta.daysInMonth
+    : Math.max(meta.daysInMonth - daysPassed, 0);
 
   const totalBudget = Number.isFinite(params.totalBudget) ? params.totalBudget : 0;
   const totalSpent = Number.isFinite(params.totalSpent) ? params.totalSpent : 0;
@@ -97,6 +108,7 @@ export function calculateBudgetPacing(params: {
   return {
     monthKey: params.monthKey,
     isCurrentMonth,
+    isFutureMonth,
     daysInMonth: meta.daysInMonth,
     daysPassed,
     daysRemaining,

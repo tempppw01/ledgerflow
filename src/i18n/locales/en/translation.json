@@ -3251,6 +3251,7 @@
       "healthTitle": "Budget health",
       "monthBudget": "This month’s budget",
       "pacing": {
+        "futureMonth": "This month has not started yet: {days} days, about {amount} per day on budget.",
         "none": "Select a month to see the daily allowance.",
         "over": "At the current pace you will end the month {amount} over budget.",
         "pastMonth": "This month has {days} days and is already over, so it is a past month.",
