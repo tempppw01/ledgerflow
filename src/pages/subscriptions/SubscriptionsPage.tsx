@@ -12,6 +12,17 @@ import { EmptyState } from '../../shared/ui/EmptyState';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { DatePicker } from '../../shared/ui/DatePicker';
 import { useTFallback, type TfFallback } from '../../shared/lib/useTFallback';
+import { resolveBrandMark } from '../../features/subscriptions/model/brandMark';
+import { SubscriptionBrandLogo } from '../../features/subscriptions/ui/SubscriptionBrandLogo';
+
+/**
+ * 认不出品牌时按订阅类型退回通用图标(手机/会员/数字订阅)。
+ */
+function kindLogoKind(kind: SubscriptionKind): TemplateLogoKind {
+  if (kind === 'mobile') return 'mobile';
+  if (kind === 'membership') return 'member';
+  return 'music';
+}
 
 const KIND_LABEL_ENTRIES: Record<SubscriptionKind, { key: string; fallback: string }> = {
   digital: { key: 'subscriptions.kind.digital', fallback: '数字订阅' },
@@ -82,7 +93,7 @@ const DEFAULT_FORM = {
   status: 'active' as SubscriptionStatus
 };
 
-type SubscriptionTemplate = {
+interface SubscriptionTemplate {
   id: string;
   name: string;
   provider: string;
@@ -91,8 +102,10 @@ type SubscriptionTemplate = {
   currency: string;
   billingCycle: SubscriptionBillingCycle;
   autoRenew: boolean;
-  logoKind: 'apple' | 'music' | 'cloud' | 'netflix' | 'mobile' | 'member';
-};
+  logoKind: TemplateLogoKind;
+}
+
+type TemplateLogoKind = 'apple' | 'music' | 'cloud' | 'netflix' | 'mobile' | 'member';
 
 const SUBSCRIPTION_TEMPLATES: SubscriptionTemplate[] = [
   {
@@ -254,7 +267,7 @@ function normalizeShortcutDateInput(value: string) {
   return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
-function SubscriptionTemplateLogo({ kind }: { kind: SubscriptionTemplate['logoKind'] }) {
+function SubscriptionTemplateLogo({ kind }: { kind: TemplateLogoKind }) {
   if (kind === 'apple') {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -630,9 +643,15 @@ export function SubscriptionsPage() {
                   className="subscriptions-template-item"
                   onClick={() => applySubscriptionTemplate(template)}
                 >
-                  <span className={`subscriptions-template-logo is-${template.logoKind}`}>
-                    <SubscriptionTemplateLogo kind={template.logoKind} />
-                  </span>
+                  <SubscriptionBrandLogo
+                    mark={resolveBrandMark(template.name, template.provider)}
+                    size="sm"
+                    fallback={
+                      <span className={`subscriptions-template-logo is-${template.logoKind}`}>
+                        <SubscriptionTemplateLogo kind={template.logoKind} />
+                      </span>
+                    }
+                  />
                   <span className="subscriptions-template-main">
                     <strong>{template.name}</strong>
                     <small>{template.provider}</small>
@@ -892,13 +911,23 @@ export function SubscriptionsPage() {
                 return (
                   <article key={item.id} className="subscriptions-card">
                     <div className="subscriptions-card-head">
-                      <div className="subscriptions-card-title">
-                        <h4>{item.name}</h4>
-                        <p>
-                          {item.provider
-                            ? `${item.provider} · ${labelOf(KIND_LABEL_ENTRIES, tf, item.kind)}`
-                            : labelOf(KIND_LABEL_ENTRIES, tf, item.kind)}
-                        </p>
+                      <div className="subscriptions-card-identity">
+                        <SubscriptionBrandLogo
+                          mark={resolveBrandMark(item.name, item.provider)}
+                          fallback={
+                            <span className="subscriptions-template-logo subscriptions-card-logo-fallback">
+                              <SubscriptionTemplateLogo kind={kindLogoKind(item.kind)} />
+                            </span>
+                          }
+                        />
+                        <div className="subscriptions-card-title">
+                          <h4>{item.name}</h4>
+                          <p>
+                            {item.provider
+                              ? `${item.provider} · ${labelOf(KIND_LABEL_ENTRIES, tf, item.kind)}`
+                              : labelOf(KIND_LABEL_ENTRIES, tf, item.kind)}
+                          </p>
+                        </div>
                       </div>
                       <div className="subscriptions-card-badges">
                         <span className={STATUS_CLASS[item.status]}>

@@ -47,6 +47,16 @@
 .subscriptions-template-logo svg { width: 19px; height: 19px; fill: currentColor; }
 .subscriptions-template-logo.is-apple, .subscriptions-template-logo.is-music, .subscriptions-template-logo.is-cloud { color: var(--color-text); }
 .subscriptions-template-logo.is-netflix { color: #e50914; }
+
+/* 品牌标识:--brand-color 由组件按品牌主色注入。
+   有官方图标的用图标,没有图标只有品牌色的(中国移动/爱奇艺等)用文字瓦片,
+   两者都保持同样的尺寸与圆角,列表里视觉重量一致。 */
+.subscription-brand-logo { display: grid; place-items: center; flex: none; border-radius: 9px; color: var(--brand-color); background: color-mix(in srgb, var(--brand-color) 12%, var(--color-bg-elevated)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand-color) 20%, transparent); }
+.subscription-brand-logo.is-md { width: 38px; height: 38px; }
+.subscription-brand-logo.is-sm { width: 28px; height: 28px; border-radius: 7px; }
+.subscription-brand-logo svg { width: 60%; height: 60%; }
+.subscription-brand-wordmark { max-width: 100%; overflow: hidden; color: var(--brand-color); font-size: 10px; font-weight: 750; letter-spacing: -0.02em; line-height: 1.1; text-align: center; }
+.subscription-brand-logo.is-sm .subscription-brand-wordmark { font-size: 8px; }
 .subscriptions-template-main { display: grid; gap: 1px; min-width: 0; }
 .subscriptions-template-main strong, .subscriptions-template-main small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .subscriptions-template-main strong { font-size: var(--font-sm); }
@@ -81,6 +91,10 @@
 .subscriptions-card-list { display: grid; gap: 0; border-top: 1px solid var(--color-border-light); }
 .subscriptions-card { display: grid; gap: var(--space-3); padding: var(--space-4) 0; border: 0; border-bottom: 1px solid var(--color-border-light); border-radius: 0; background: transparent; }
 .subscriptions-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+/* logo 与标题成一组,靠左;徽标仍然靠右。 */
+.subscriptions-card-identity { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+.subscriptions-card-logo-fallback { width: 38px; height: 38px; border-radius: 9px; background: var(--color-bg-subtle); }
+.subscriptions-card-logo-fallback svg { width: 20px; height: 20px; }
 .subscriptions-card-title { display: grid; gap: 3px; min-width: 0; }
 .subscriptions-card-title p { margin: 0; overflow: hidden; color: var(--color-text-secondary); font-size: var(--font-sm); text-overflow: ellipsis; white-space: nowrap; }
 .subscriptions-card-badges, .subscriptions-card-summary, .subscriptions-actions-inline { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
