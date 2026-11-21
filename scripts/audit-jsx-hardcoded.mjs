@@ -56,6 +56,10 @@ for (const file of listTsx(path.join(root, 'src'))) {
     if (/^[\s|·、,，。:：]+$/.test(text)) continue;
     // 代码片段(含运算符/分号/括号)不是文案
     if (/[=;(){}\[\]$]/.test(text)) continue;
+    // 装饰性文字(外层 aria-hidden)不该翻译,例如品牌字标「同」。
+    // 注意 match.index 指在 `>` 上,所以上下文末尾没有那个 `>`。
+    const context = src.slice(Math.max(0, match.index - 400), match.index);
+    if (/aria-hidden="true"\s*$/.test(context)) continue;
     hits.push({
       file: path.relative(root, file).replace(/\\/g, '/'),
       line: src.slice(0, match.index).split('\n').length,
@@ -67,6 +71,13 @@ for (const file of listTsx(path.join(root, 'src'))) {
 if (args.has('--count')) {
   console.log(hits.length);
   process.exit(0);
+}
+
+// --fail:有存量就以非 0 退出,给 CI 用
+if (args.has('--fail') && hits.length > 0) {
+  console.log('JSX 文本节点里仍有 ' + hits.length + ' 处硬编码中文:');
+  for (const hit of hits) console.log('  ' + hit.file + ':' + hit.line + '  ' + hit.text.slice(0, 60));
+  process.exit(1);
 }
 
 const byFile = new Map();

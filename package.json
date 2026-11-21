@@ -1,6 +1,6 @@
 {
   "name": "ledgerflow-frontend",
-  "version": "0.30.0",
+  "version": "0.31.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,6 +14,8 @@
     "preview": "vite preview",
     "lint": "eslint . --max-warnings=0",
     "i18n:check": "node scripts/check-i18n-keys.mjs",
+    "i18n:check-jsx": "node scripts/audit-jsx-hardcoded.mjs --fail",
+    "i18n:audit-jsx": "node scripts/audit-jsx-hardcoded.mjs",
     "brands:generate": "node scripts/generate-brand-icons.mjs",
     "format": "prettier . --write",
     "format:check": "prettier . --check",

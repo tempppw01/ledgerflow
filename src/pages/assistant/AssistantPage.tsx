@@ -137,7 +137,9 @@ function inputPlaceholder(
   }
 }
 
-function renderCreditCardSkeleton(count = 2) {
+function CreditCardSkeleton({ count = 2 }: { count?: number }) {
+  // 原来是 render*( ) 形式的模块级 helper,拿不到 hook;改成真组件才能用 tf。
+  const tf = useTFallback();
   return (
     <div className="chat-credit-cards chat-credit-cards-skeleton">
       {Array.from({ length: count }, (_, index) => (
@@ -150,7 +152,7 @@ function renderCreditCardSkeleton(count = 2) {
               <strong className="chat-skeleton-line chat-skeleton-line-lg">&nbsp;</strong>
               <span className="chat-skeleton-line chat-skeleton-line-sm">&nbsp;</span>
             </div>
-            <em className="chat-credit-confidence is-medium chat-skeleton-pill">识别中</em>
+            <em className="chat-credit-confidence is-medium chat-skeleton-pill">{tf('assistant.ledger.recognizing', '识别中')}</em>
           </div>
           <div className="chat-credit-grid">
             {Array.from({ length: 6 }, (_, gridIndex) => (
@@ -170,10 +172,10 @@ function renderCreditCardSkeleton(count = 2) {
           </div>
           <div className="chat-credit-actions">
             <button type="button" className="chat-secondary-action-btn" disabled>
-              保存到还款管理
+              {tf('assistant.actions.saveToRepayment', '保存到还款管理')}
             </button>
             <button type="button" className="chat-secondary-action-btn" disabled>
-              带去还款管理
+              {tf('assistant.actions.sendToRepayment', '带去还款管理')}
             </button>
           </div>
         </section>
@@ -2320,7 +2322,7 @@ export function AssistantPage() {
               aria-label={tf('assistant.semanticRecall', '语义召回')}
               title={`语义召回 · ${wb.semanticRecallCacheMeta.indexedDocs} 条`}
             >
-              语
+              {tf('assistant.modelShortLabel', '语')}
             </button>
           ) : null}
           <button
@@ -2542,7 +2544,7 @@ export function AssistantPage() {
                           className="chat-secondary-action-btn is-compact"
                           onClick={() => navigate('/repayment-management')}
                         >
-                          查看完整台账
+                          {tf('assistant.actions.viewFullLedger', '查看完整台账')}
                         </button>
                         <button
                           type="button"
@@ -2553,7 +2555,7 @@ export function AssistantPage() {
                             )
                           }
                         >
-                          继续做汇总分析
+                          {tf('assistant.actions.continueSummary', '继续做汇总分析')}
                         </button>
                       </div>
                     </div>
@@ -2565,7 +2567,7 @@ export function AssistantPage() {
                 <article className="chat-msg chat-credit-draft-msg">
                   {renderChatAvatar('assistant')}
                   <div className="chat-msg-body">
-                    <div className="chat-msg-header">待继续补充</div>
+                    <div className="chat-msg-header">待{tf('assistant.actions.continueFilling', '继续补充')}</div>
                     <div className="chat-credit-drafts">
                       {creditDrafts.map((draft) => {
                         const pendingFields = getCreditDraftPendingFields(draft);
@@ -2590,33 +2592,33 @@ export function AssistantPage() {
                             <div className="chat-credit-draft-fields">
                               {draft.balance !== undefined ? (
                                 <span>
-                                  总待还 <strong>¥{draft.balance.toFixed(2)}</strong>
+                                  {tf('assistant.ledger.totalOutstanding', '总待还')} <strong>¥{draft.balance.toFixed(2)}</strong>
                                 </span>
                               ) : null}
                               {draft.remainingMonths !== undefined ? (
                                 <span>
-                                  剩余 <strong>{draft.remainingMonths} 期</strong>
+                                  {tf('assistant.ledger.remaining', '剩余')} <strong>{draft.remainingMonths} 期</strong>
                                 </span>
                               ) : null}
                               {draft.repaymentDay !== undefined ? (
                                 <span>
-                                  还款日 <strong>{draft.repaymentDay} 号</strong>
+                                  {tf('assistant.ledger.dueDay', '还款日')} <strong>{draft.repaymentDay} 号</strong>
                                 </span>
                               ) : null}
                               {draft.monthlyAmount !== undefined ? (
                                 <span>
-                                  每期 <strong>¥{draft.monthlyAmount.toFixed(2)}</strong>
+                                  {tf('assistant.ledger.perPeriod', '每期')} <strong>¥{draft.monthlyAmount.toFixed(2)}</strong>
                                 </span>
                               ) : null}
                               {draft.dueAmount !== undefined ? (
                                 <span>
-                                  本期应还 <strong>¥{draft.dueAmount.toFixed(2)}</strong>
+                                  {tf('assistant.ledger.currentDue', '本期应还')} <strong>¥{draft.dueAmount.toFixed(2)}</strong>
                                 </span>
                               ) : null}
                             </div>
                             {pendingFields.length > 0 ? (
                               <div className="chat-credit-draft-pending">
-                                <span>还缺</span>
+                                <span>{tf('assistant.ledger.missing', '还缺')}</span>
                                 {pendingFields.map((field) => (
                                   <b key={`${draft.id}-${field}`}>{field}</b>
                                 ))}
@@ -2629,7 +2631,7 @@ export function AssistantPage() {
                                   className="chat-secondary-action-btn"
                                   onClick={() => handlePromoteCreditDraft(draft.id)}
                                 >
-                                  转为正式负债
+                                  {tf('assistant.actions.convertToDebt', '转为正式负债')}
                                 </button>
                               ) : (
                                 <button
@@ -2639,7 +2641,7 @@ export function AssistantPage() {
                                     wb.setTextInput(`补充${draft.name || '这笔信贷'}：例如总共12期`)
                                   }
                                 >
-                                  继续补充
+                                  {tf('assistant.actions.continueFilling', '继续补充')}
                                 </button>
                               )}
                               <button
@@ -2647,7 +2649,7 @@ export function AssistantPage() {
                                 className="chat-secondary-action-btn is-danger"
                                 onClick={() => handleDeleteCreditDraft(draft.id)}
                               >
-                                移除
+                                {tf('assistant.actions.remove', '移除')}
                               </button>
                             </div>
                           </section>
@@ -2713,7 +2715,7 @@ export function AssistantPage() {
                                 className="chat-agent-action-undo"
                                 onClick={() => undoAgentActionItem(item.id, action.id)}
                               >
-                                撤销
+                                {tf('assistant.actions.undo', '撤销')}
                               </button>
                             ) : null}
                           </div>
@@ -2748,20 +2750,20 @@ export function AssistantPage() {
                             </div>
                             <div className="chat-credit-card-summary">
                               <span>
-                                总待还
+                                {tf('assistant.ledger.totalOutstanding', '总待还')}
                                 <strong>{creditItem.totalDebt || '待补充'}</strong>
                               </span>
                               <span>
-                                本期应还
+                                {tf('assistant.ledger.currentDue', '本期应还')}
                                 <strong>{creditItem.dueAmount || '待补充'}</strong>
                               </span>
                               <span>
-                                还款日
+                                {tf('assistant.ledger.dueDay', '还款日')}
                                 <strong>{creditItem.repaymentDate || '待补充'}</strong>
                               </span>
                             </div>
                             {creditItem.mergedFromHistory ? (
-                              <span className="chat-credit-history-note">已承接上轮补充</span>
+                              <span className="chat-credit-history-note">{tf('assistant.duplicate.carriedOver', '已承接上轮补充')}</span>
                             ) : null}
                             {creditItem.pendingFields.length > 0 ? (
                               <p className="chat-credit-card-next">
@@ -2771,7 +2773,7 @@ export function AssistantPage() {
                               </p>
                             ) : (
                               <p className="chat-credit-card-next is-ready">
-                                信息已齐,可以核对后保存。
+                                {tf('assistant.duplicate.readyToSave', '信息已齐,可以核对后保存。')}
                               </p>
                             )}
                             <div className="chat-credit-card-primary-actions">
@@ -2802,11 +2804,11 @@ export function AssistantPage() {
                                   })
                                 }
                               >
-                                去还款管理
+                                {tf('assistant.actions.openRepayment', '去还款管理')}
                               </button>
                             </div>
                             <details className="chat-credit-card-details">
-                              <summary>查看识别明细</summary>
+                              <summary>{tf('assistant.actions.viewRecognitionDetail', '查看识别明细')}</summary>
                               <div className="chat-credit-progress" aria-label={tf('assistant.fieldFillProgress', '字段补全进度')}>
                                 <div className="chat-credit-progress-head">
                                   <span>{creditItem.completionLabel || '0/7 项字段已补齐'}</span>
@@ -2866,7 +2868,7 @@ export function AssistantPage() {
                                 <div className="chat-credit-pending" style={{ marginTop: 10 }}>
                                   {creditItem.rateType || creditItem.rateSource ? (
                                     <div>
-                                      <span>利率口径：</span>
+                                      <span>{tf('assistant.ledger.rateBasis', '利率口径：')}</span>
                                       <strong>
                                         {creditItem.rateType || '待确认'}
                                         {creditItem.rateSource === 'explicit'
@@ -2881,13 +2883,13 @@ export function AssistantPage() {
                                   ) : null}
                                   {creditItem.riskHint ? (
                                     <div style={{ marginTop: 6 }}>
-                                      <span>风险提示：</span>
+                                      <span>{tf('assistant.ledger.riskNote', '风险提示：')}</span>
                                       <strong>{creditItem.riskHint}</strong>
                                     </div>
                                   ) : null}
                                   {creditItem.actionSuggestion ? (
                                     <div style={{ marginTop: 6 }}>
-                                      <span>下一步：</span>
+                                      <span>{tf('assistant.ledger.nextStep', '下一步：')}</span>
                                       <strong>{creditItem.actionSuggestion}</strong>
                                     </div>
                                   ) : null}
@@ -2897,7 +2899,7 @@ export function AssistantPage() {
                                 <div className="chat-credit-lookup-card">
                                   <div className="chat-credit-lookup-head">
                                     <div className="chat-credit-lookup-title-block">
-                                      <strong>还款检索结果</strong>
+                                      <strong>{tf('assistant.stream.repaymentSearchTitle', '还款检索结果')}</strong>
                                       <span>
                                         {creditItem.repaymentLookupSummary.matchedDebtName ||
                                           '未稳定命中已保存负债'}
@@ -2910,14 +2912,14 @@ export function AssistantPage() {
                                   </div>
                                   <div className="chat-credit-lookup-grid">
                                     <div>
-                                      <span>计划中的应还</span>
+                                      <span>{tf('assistant.stream.plannedDue', '计划中的应还')}</span>
                                       <strong>
                                         {creditItem.repaymentLookupSummary.plannedRepaymentText ||
                                           '待确认'}
                                       </strong>
                                     </div>
                                     <div>
-                                      <span>计划 / 实际账户</span>
+                                      <span>计划 / 实际{tf('transactions.table.col.account', '账户')}</span>
                                       <strong>
                                         {formatCreditAccountReference(
                                           creditItem.repaymentLookupSummary.paymentAccountText,
@@ -2926,14 +2928,14 @@ export function AssistantPage() {
                                       </strong>
                                     </div>
                                     <div>
-                                      <span>最近已还流水</span>
+                                      <span>{tf('assistant.stream.recentPaid', '最近已还')}流水</span>
                                       <strong>
                                         {creditItem.repaymentLookupSummary.actualRepaymentText ||
                                           '暂无命中'}
                                       </strong>
                                     </div>
                                     <div>
-                                      <span>流水状态</span>
+                                      <span>{tf('assistant.stream.recordStatus', '流水状态')}</span>
                                       <strong>
                                         {creditItem.repaymentLookupSummary.recordStatusText ||
                                           '待确认'}
@@ -2950,7 +2952,7 @@ export function AssistantPage() {
                               {creditItem.repaymentGapSummary ? (
                                 <div className="chat-credit-gap-card">
                                   <div className="chat-credit-gap-head">
-                                    <strong>计划 vs 实际</strong>
+                                    <strong>{tf('assistant.stream.planVsActual', '计划 vs 实际')}</strong>
                                     <span>
                                       {creditItem.repaymentGapSummary.statusText ||
                                         '先看有没有缺口'}
@@ -2958,27 +2960,27 @@ export function AssistantPage() {
                                   </div>
                                   <div className="chat-credit-gap-grid">
                                     <div>
-                                      <span>计划应还</span>
+                                      <span>{tf('assistant.stream.plannedAmountDue', '计划应还')}</span>
                                       <strong>
                                         {creditItem.repaymentGapSummary.plannedDueAmount ||
                                           '待确认'}
                                       </strong>
                                     </div>
                                     <div>
-                                      <span>最近已还</span>
+                                      <span>{tf('assistant.stream.recentPaid', '最近已还')}</span>
                                       <strong>
                                         {creditItem.repaymentGapSummary.recentActualPaidAmount ||
                                           '暂无记录'}
                                       </strong>
                                     </div>
                                     <div>
-                                      <span>当前还差</span>
+                                      <span>{tf('assistant.ledger.stillShort', '当前还差')}</span>
                                       <strong>
                                         {creditItem.repaymentGapSummary.gapAmount || '0'}
                                       </strong>
                                     </div>
                                     <div>
-                                      <span>扣款/还款账户</span>
+                                      <span>扣款/还款{tf('transactions.table.col.account', '账户')}</span>
                                       <strong>
                                         {formatCreditAccountReference(
                                           creditItem.repaymentGapSummary.paymentAccountSummary,
@@ -3019,7 +3021,7 @@ export function AssistantPage() {
                             {confirmingCreditId === creditItem.id ? (
                               <div className="chat-credit-confirmation">
                                 <div className="chat-credit-confirmation-head">
-                                  <strong>保存前确认</strong>
+                                  <strong>{tf('assistant.actions.confirmBeforeSave', '保存前确认')}</strong>
                                   <span>
                                     {creditItem.pendingFields.length === 0
                                       ? '字段基本齐全'
@@ -3045,7 +3047,7 @@ export function AssistantPage() {
                                 creditItem.conflictFields.length > 0 ? (
                                   <div className="chat-credit-diff-card">
                                     <div className="chat-credit-diff-head">
-                                      <strong>与已保存负债的差异</strong>
+                                      <strong>{tf('assistant.duplicate.diffTitle', '与已保存负债的差异')}</strong>
                                       <span>{creditItem.matchedDebtName || '已有负债'}</span>
                                     </div>
                                     <div className="chat-credit-diff-list">
@@ -3085,7 +3087,7 @@ export function AssistantPage() {
                                       className="chat-secondary-action-btn"
                                       onClick={() => handleSaveCreditItem(creditItem, 'update')}
                                     >
-                                      更新已有负债
+                                      {tf('assistant.actions.updateExistingDebt', '更新已有负债')}
                                     </button>
                                   ) : (
                                     <button
@@ -3093,7 +3095,7 @@ export function AssistantPage() {
                                       className="chat-secondary-action-btn"
                                       onClick={() => handleSaveCreditItem(creditItem)}
                                     >
-                                      确认保存到还款管理
+                                      确认{tf('assistant.actions.saveToRepayment', '保存到还款管理')}
                                     </button>
                                   )}
                                   <button
@@ -3107,7 +3109,7 @@ export function AssistantPage() {
                                       })
                                     }
                                   >
-                                    继续补充后保存
+                                    {tf('assistant.actions.continueFilling', '继续补充')}后保存
                                   </button>
                                   <button
                                     type="button"
@@ -3127,7 +3129,7 @@ export function AssistantPage() {
                                       );
                                     }}
                                   >
-                                    另存为新负债
+                                    {tf('assistant.actions.saveAsNewDebt', '另存为新负债')}
                                   </button>
                                 </div>
                               </div>
@@ -3136,7 +3138,7 @@ export function AssistantPage() {
                               className="chat-credit-more-actions"
                               hidden={!creditItem.matchedDebtId}
                             >
-                              <summary>更多操作</summary>
+                              <summary>{tf('assistant.actions.more', '更多操作')}</summary>
                               <div className="chat-credit-actions">
                                 <button
                                   type="button"
@@ -3149,7 +3151,7 @@ export function AssistantPage() {
                                     handleSaveCreditItem(creditItem);
                                   }}
                                 >
-                                  按当前识别保存
+                                  {tf('assistant.actions.saveAsRecognized', '按当前识别保存')}
                                 </button>
                                 <button
                                   type="button"
@@ -3212,14 +3214,14 @@ export function AssistantPage() {
                                         });
                                       }}
                                     >
-                                      快速登记已还
+                                      {tf('assistant.actions.quickMarkPaid', '快速登记已还')}
                                     </button>
                                     <button
                                       type="button"
                                       className="chat-secondary-action-btn danger"
                                       onClick={() => setPendingDeleteCreditItem(creditItem)}
                                     >
-                                      删除这笔负债
+                                      {tf('assistant.actions.deleteThisDebt', '删除这笔负债')}
                                     </button>
                                   </>
                                 ) : null}
@@ -3231,7 +3233,7 @@ export function AssistantPage() {
                     ) : null}
                     {item.role === 'assistant' && item.reasoningText ? (
                       <details className="chat-reasoning-collapse">
-                        <summary>模型思考过程（点击展开）</summary>
+                        <summary>{tf('assistant.stream.thinkingExpand', '模型思考过程（点击展开）')}</summary>
                         <pre>{item.reasoningText}</pre>
                       </details>
                     ) : null}
@@ -3246,7 +3248,7 @@ export function AssistantPage() {
                     item.followUpPrompts &&
                     item.followUpPrompts.length > 0 ? (
                       <div className="chat-follow-up-block">
-                        <span className="chat-follow-up-title">你可以顺手继续问：</span>
+                        <span className="chat-follow-up-title">{tf('assistant.followUpHint', '你可以顺手继续问：')}</span>
                         <div className="chat-follow-up-list">
                           {item.followUpPrompts.map((prompt) => (
                             <button
@@ -3337,7 +3339,7 @@ export function AssistantPage() {
                 <article className="chat-msg">
                   {renderChatAvatar('success')}
                   <div className="chat-msg-body">
-                    <div className="chat-msg-header">识别结果</div>
+                    <div className="chat-msg-header">{tf('assistant.stream.recognitionResult', '识别结果')}</div>
                     <BillPreviewCard
                       entries={wb.entries}
                       duplicateCount={duplicateEntriesCount}
@@ -3357,10 +3359,10 @@ export function AssistantPage() {
                 <article className="chat-msg">
                   {renderChatAvatar('assistant')}
                   <div className="chat-msg-body">
-                    <div className="chat-msg-header">助手（正在生成）</div>
+                    <div className="chat-msg-header">{tf('assistant.stream.roleAssistant', '助手')}（正在生成）</div>
                     {streamingPreviewReasoning ? (
                       <details className="chat-reasoning-collapse chat-reasoning-collapse-stream">
-                        <summary>模型思考过程（流式输出中）</summary>
+                        <summary>{tf('assistant.stream.thinkingStreaming', '模型思考过程（流式输出中）')}</summary>
                         <pre>{streamingPreviewReasoning}</pre>
                       </details>
                     ) : null}
@@ -3383,32 +3385,32 @@ export function AssistantPage() {
                                     <em
                                       className={`chat-credit-confidence is-${creditItem.confidence}`}
                                     >
-                                      流式预览
+                                      {tf('assistant.stream.preview', '流式预览')}
                                     </em>
                                   </div>
                                   <div className="chat-credit-grid">
                                     <div>
-                                      <span>当前应还</span>
+                                      <span>{tf('assistant.ledger.currentDueNow', '当前应还')}</span>
                                       <strong>{creditItem.dueAmount || '识别中'}</strong>
                                     </div>
                                     <div>
-                                      <span>剩余待还</span>
+                                      <span>{tf('assistant.ledger.remaining', '剩余')}待还</span>
                                       <strong>{creditItem.totalDebt || '识别中'}</strong>
                                     </div>
                                     <div>
-                                      <span>还款日</span>
+                                      <span>{tf('assistant.ledger.dueDay', '还款日')}</span>
                                       <strong>{creditItem.repaymentDate || '识别中'}</strong>
                                     </div>
                                     <div>
-                                      <span>剩余期数</span>
+                                      <span>{tf('assistant.ledger.remaining', '剩余')}期数</span>
                                       <strong>{creditItem.remainingPeriods || '识别中'}</strong>
                                     </div>
                                     <div>
-                                      <span>每期金额</span>
+                                      <span>每期{tf('transactions.table.col.amount', '金额')}</span>
                                       <strong>{creditItem.monthlyAmount || '识别中'}</strong>
                                     </div>
                                     <div>
-                                      <span>利息/费率</span>
+                                      <span>{tf('assistant.ledger.interestRate', '利息/费率')}</span>
                                       <strong>{creditItem.interest || '识别中'}</strong>
                                     </div>
                                   </div>
@@ -3418,13 +3420,13 @@ export function AssistantPage() {
                                     <div className="chat-credit-pending">
                                       {creditItem.riskHint ? (
                                         <div>
-                                          <span>风险提示：</span>
+                                          <span>{tf('assistant.ledger.riskNote', '风险提示：')}</span>
                                           <strong>{creditItem.riskHint}</strong>
                                         </div>
                                       ) : null}
                                       {creditItem.actionSuggestion ? (
                                         <div>
-                                          <span>下一步：</span>
+                                          <span>{tf('assistant.ledger.nextStep', '下一步：')}</span>
                                           <strong>{creditItem.actionSuggestion}</strong>
                                         </div>
                                       ) : null}
@@ -3440,65 +3442,65 @@ export function AssistantPage() {
                                   <div className="chat-credit-lookup-card chat-credit-preview-block">
                                     <div className="chat-credit-lookup-head">
                                       <div className="chat-credit-lookup-title-block">
-                                        <strong>还款检索结果</strong>
-                                        <span>计划 / 账户 / 流水检索中</span>
+                                        <strong>{tf('assistant.stream.repaymentSearchTitle', '还款检索结果')}</strong>
+                                        <span>计划 / {tf('transactions.table.col.account', '账户')} / 流水检索中</span>
                                       </div>
-                                      <em className="chat-credit-lookup-status">预加载中</em>
+                                      <em className="chat-credit-lookup-status">{tf('assistant.stream.preloading', '预加载中')}</em>
                                     </div>
                                     <div className="chat-credit-lookup-grid">
                                       <div>
-                                        <span>计划中的应还</span>
-                                        <strong>检索中</strong>
+                                        <span>{tf('assistant.stream.plannedDue', '计划中的应还')}</span>
+                                        <strong>{tf('assistant.stream.searching', '检索中')}</strong>
                                       </div>
                                       <div>
-                                        <span>计划 / 实际账户</span>
-                                        <strong>检索中</strong>
+                                        <span>计划 / 实际{tf('transactions.table.col.account', '账户')}</span>
+                                        <strong>{tf('assistant.stream.searching', '检索中')}</strong>
                                       </div>
                                       <div>
-                                        <span>最近已还流水</span>
-                                        <strong>检索中</strong>
+                                        <span>{tf('assistant.stream.recentPaid', '最近已还')}流水</span>
+                                        <strong>{tf('assistant.stream.searching', '检索中')}</strong>
                                       </div>
                                       <div>
-                                        <span>流水状态</span>
-                                        <strong>等待串联</strong>
+                                        <span>{tf('assistant.stream.recordStatus', '流水状态')}</span>
+                                        <strong>等{tf('assistant.stream.pendingLink', '待串联')}</strong>
                                       </div>
                                     </div>
                                     <div className="chat-credit-lookup-hint">
-                                      先把台账骨架亮出来，正文和检索结果会继续补齐。
+                                      {tf('assistant.stream.skeletonFirst', '先把台账骨架亮出来，正文和检索结果会继续补齐。')}
                                     </div>
                                   </div>
                                   <div className="chat-credit-gap-card chat-credit-preview-block">
                                     <div className="chat-credit-gap-head">
-                                      <strong>计划 vs 实际</strong>
-                                      <span>差异分析预加载中</span>
+                                      <strong>{tf('assistant.stream.planVsActual', '计划 vs 实际')}</strong>
+                                      <span>差异分析{tf('assistant.stream.preloading', '预加载中')}</span>
                                     </div>
                                     <div className="chat-credit-gap-grid">
                                       <div>
-                                        <span>计划应还</span>
-                                        <strong>检索中</strong>
+                                        <span>{tf('assistant.stream.plannedAmountDue', '计划应还')}</span>
+                                        <strong>{tf('assistant.stream.searching', '检索中')}</strong>
                                       </div>
                                       <div>
-                                        <span>最近已还</span>
-                                        <strong>检索中</strong>
+                                        <span>{tf('assistant.stream.recentPaid', '最近已还')}</span>
+                                        <strong>{tf('assistant.stream.searching', '检索中')}</strong>
                                       </div>
                                       <div>
-                                        <span>当前还差</span>
-                                        <strong>待计算</strong>
+                                        <span>{tf('assistant.ledger.stillShort', '当前还差')}</span>
+                                        <strong>{tf('assistant.stream.pendingCalc', '待计算')}</strong>
                                       </div>
                                       <div>
-                                        <span>扣款/还款账户</span>
-                                        <strong>待串联</strong>
+                                        <span>扣款/还款{tf('transactions.table.col.account', '账户')}</span>
+                                        <strong>{tf('assistant.stream.pendingLink', '待串联')}</strong>
                                       </div>
                                     </div>
                                     <div className="chat-credit-gap-reason">
-                                      流式阶段先展示台账卡片骨架，等模型继续输出后再补全差额原因。
+                                      {tf('assistant.stream.skeletonDiffNote', '流式阶段先展示台账卡片骨架，等模型继续输出后再补全差额原因。')}
                                     </div>
                                   </div>
                                 </section>
                               ))}
                             </div>
                           ) : (
-                            renderCreditCardSkeleton(2)
+                            <CreditCardSkeleton count={2} />
                           );
                         })()
                       : null}
@@ -3517,7 +3519,7 @@ export function AssistantPage() {
                       </div>
                     ) : (
                       <div className="chat-stream-waiting">
-                        正在把思考整理成回复
+                        {tf('assistant.stream.organizing', '正在把思考整理成回复')}
                         <span className="chat-typing-dots" aria-hidden="true">
                           <i />
                           <i />
@@ -3535,9 +3537,9 @@ export function AssistantPage() {
                 <article className="chat-msg">
                   {renderChatAvatar('assistant')}
                   <div className="chat-msg-body">
-                    <div className="chat-msg-header">助手</div>
+                    <div className="chat-msg-header">{tf('assistant.stream.roleAssistant', '助手')}</div>
                     <div className="chat-typing">
-                      模型思考中
+                      {tf('assistant.stream.thinking', '模型思考中')}
                       <span className="chat-typing-dots" aria-hidden="true">
                         <i />
                         <i />
@@ -3552,9 +3554,9 @@ export function AssistantPage() {
                 <article className="chat-msg">
                   {renderChatAvatar('success')}
                   <div className="chat-msg-body">
-                    <div className="chat-msg-header">系统</div>
+                    <div className="chat-msg-header">{tf('assistant.stream.roleSystem', '系统')}</div>
                     <div className="chat-auto-card">
-                      <strong>账单已保存到账本。</strong>
+                      <strong>{tf('assistant.ledger.billSaved', '账单已保存到账本。')}</strong>
                     </div>
                   </div>
                 </article>
@@ -3573,9 +3575,9 @@ export function AssistantPage() {
               <div className="chat-error-strip" role="alert">
                 <details className={`chat-error-details${hasErrorDetail ? '' : ' is-plain'}`}>
                   <summary>
-                    <span className="chat-error-summary-label">请求失败</span>
+                    <span className="chat-error-summary-label">{tf('assistant.error.requestFailed', '请求失败')}</span>
                     <span className="chat-error-summary-text">{wb.error}</span>
-                    <span className="chat-error-expand">详情</span>
+                    <span className="chat-error-expand">{tf('assistant.actions.details', '详情')}</span>
                   </summary>
                   <pre className="chat-error-detail-text">{wb.error}</pre>
                 </details>
@@ -3584,7 +3586,7 @@ export function AssistantPage() {
                   onClick={retryLastPrompt}
                   disabled={wb.status === 'recognizing'}
                 >
-                  重试
+                  {tf('assistant.actions.retry', '重试')}
                 </button>
               </div>
             ) : null}
@@ -3630,12 +3632,12 @@ export function AssistantPage() {
                     wb.setPdfDataUrls([]);
                   }}
                 >
-                  清空附件
+                  {tf('assistant.actions.clearAttachments', '清空附件')}
                 </button>
               </div>
             ) : null}
 
-            <p className="chat-disclaimer">AI 生成内容仅供参考，请结合原始账单核对后再保存。</p>
+            <p className="chat-disclaimer">{tf('assistant.aiDisclaimer', 'AI 生成内容仅供参考，请结合原始账单核对后再保存。')}</p>
 
             {mode === 'credit' && wb.hasApiKey && !wb.textInput.trim() ? (
               <div className="chat-credit-quick-commands" aria-label={tf('assistant.creditQuickCommands', '信贷管家快捷指令')}>
@@ -3810,7 +3812,7 @@ export function AssistantPage() {
                         disabled={chatHistory.length === 0}
                       >
                         <ChatClearIcon className="chat-svg-icon" />
-                        <span className="chat-input-toolbar-btn-label">清空上下文</span>
+                        <span className="chat-input-toolbar-btn-label">{tf('assistant.actions.clearContext', '清空上下文')}</span>
                       </button>
                     </div>
 
@@ -3861,15 +3863,15 @@ export function AssistantPage() {
                 onClick={(event) => event.stopPropagation()}
               >
                 <header className="drawer-header">
-                  <h3>语义召回</h3>
+                  <h3>{tf('assistant.semanticRecall', '语义召回')}</h3>
                   <button type="button" onClick={() => setSemanticPanelOpen(false)}>
-                    关闭
+                    {tf('common.close', '关闭')}
                   </button>
                 </header>
                 <div className="drawer-body">
                   <details className="chat-semantic-drawer-card" open>
                     <summary>
-                      <strong>索引状态</strong>
+                      <strong>{tf('assistant.semanticIndexStatus', '索引状态')}</strong>
                     </summary>
                     <span>
                       {wb.semanticRecallCacheMeta.exists
@@ -3885,7 +3887,7 @@ export function AssistantPage() {
                           wb.setToastState('语义召回索引状态已刷新', 'success');
                         }}
                       >
-                        刷新
+                        {tf('assistant.actions.refresh', '刷新')}
                       </button>
                       <button
                         type="button"
@@ -3900,7 +3902,7 @@ export function AssistantPage() {
                           }
                         }}
                       >
-                        清缓存
+                        {tf('assistant.actions.clearCache', '清缓存')}
                       </button>
                     </div>
                   </details>
@@ -3908,7 +3910,7 @@ export function AssistantPage() {
                   (showEmbeddingDebug && wb.embeddingDebug.enabled) ? (
                     <details className="chat-semantic-drawer-card">
                       <summary>
-                        <strong>当前状态</strong>
+                        <strong>{tf('assistant.currentStatus', '当前状态')}</strong>
                       </summary>
                       {showEmbeddingSummary && wb.embeddingDebug.enabled ? (
                         <p className="chat-semantic-drawer-text">
@@ -3963,22 +3965,22 @@ export function AssistantPage() {
                 </header>
                 <div className="dialog-body chat-dup-compare-body">
                   <p className="chat-dup-compare-tip">
-                    请核对左侧新识别数据与右侧已有账单，确认是否覆盖旧账单。
+                    请核对左侧新识别数据与右侧已有账单，确认是否{tf('assistant.duplicate.overwrite', '覆盖旧账单')}。
                   </p>
                   <div className="chat-dup-compare-grid">
                     <article className="chat-dup-compare-card is-new">
-                      <h4>新数据（AI 识别）</h4>
+                      <h4>{tf('assistant.duplicate.newData', '新数据（AI 识别）')}</h4>
                       <dl>
                         <div>
-                          <dt>日期</dt>
+                          <dt>{tf('transactions.table.col.date', '日期')}</dt>
                           <dd>{currentDuplicateReview.entry.date.slice(0, 10)}</dd>
                         </div>
                         <div>
-                          <dt>类型</dt>
+                          <dt>{tf('transactions.table.col.type', '类型')}</dt>
                           <dd>{getDraftTypeLabel(currentDuplicateReview.entry.type)}</dd>
                         </div>
                         <div>
-                          <dt>金额</dt>
+                          <dt>{tf('transactions.table.col.amount', '金额')}</dt>
                           <dd>
                             {formatMoneyByCurrency(
                               currentDuplicateReview.entry.amount,
@@ -3987,36 +3989,36 @@ export function AssistantPage() {
                           </dd>
                         </div>
                         <div>
-                          <dt>分类</dt>
+                          <dt>{tf('transactions.table.col.category', '分类')}</dt>
                           <dd>{currentDuplicateReview.entry.category || '未分类'}</dd>
                         </div>
                         <div>
-                          <dt>账户</dt>
+                          <dt>{tf('transactions.table.col.account', '账户')}</dt>
                           <dd>{currentDuplicateReview.entry.account || '未指定账户'}</dd>
                         </div>
                         <div>
-                          <dt>备注</dt>
+                          <dt>{tf('transactions.table.col.note', '备注')}</dt>
                           <dd>{currentDuplicateReview.entry.note || '—'}</dd>
                         </div>
                       </dl>
                     </article>
                     <article className="chat-dup-compare-card is-existing">
-                      <h4>已有账单（命中重复）</h4>
+                      <h4>{tf('assistant.duplicate.existingBill', '已有账单（命中重复）')}</h4>
                       <dl>
                         <div>
-                          <dt>日期</dt>
+                          <dt>{tf('transactions.table.col.date', '日期')}</dt>
                           <dd>{currentDuplicateReview.existing.date.slice(0, 10)}</dd>
                         </div>
                         <div>
-                          <dt>类型</dt>
+                          <dt>{tf('transactions.table.col.type', '类型')}</dt>
                           <dd>{getDraftTypeLabel(currentDuplicateReview.existing.type)}</dd>
                         </div>
                         <div>
-                          <dt>金额</dt>
+                          <dt>{tf('transactions.table.col.amount', '金额')}</dt>
                           <dd>{formatMoneyByCurrency(currentDuplicateReview.existing.amount)}</dd>
                         </div>
                         <div>
-                          <dt>分类</dt>
+                          <dt>{tf('transactions.table.col.category', '分类')}</dt>
                           <dd>
                             {categories.find(
                               (item) => item.id === currentDuplicateReview.existing.categoryId
@@ -4024,7 +4026,7 @@ export function AssistantPage() {
                           </dd>
                         </div>
                         <div>
-                          <dt>账户</dt>
+                          <dt>{tf('transactions.table.col.account', '账户')}</dt>
                           <dd>
                             {accounts.find(
                               (item) => item.id === currentDuplicateReview.existing.accountId
@@ -4032,7 +4034,7 @@ export function AssistantPage() {
                           </dd>
                         </div>
                         <div>
-                          <dt>备注</dt>
+                          <dt>{tf('transactions.table.col.note', '备注')}</dt>
                           <dd>{currentDuplicateReview.existing.note || '—'}</dd>
                         </div>
                       </dl>
@@ -4041,21 +4043,21 @@ export function AssistantPage() {
                 </div>
                 <footer className="dialog-footer chat-dup-compare-footer">
                   <button type="button" onClick={handleCancelDuplicateReview}>
-                    取消本次保存
+                    {tf('assistant.duplicate.cancelSave', '取消本次保存')}
                   </button>
                   <button
                     type="button"
                     className="primary"
                     onClick={() => handleDuplicateDecision(false)}
                   >
-                    保留旧账单并新增
+                    {tf('assistant.duplicate.keepBoth', '保留旧账单并新增')}
                   </button>
                   <button
                     type="button"
                     className="danger"
                     onClick={() => handleDuplicateDecision(true)}
                   >
-                    覆盖旧账单
+                    {tf('assistant.duplicate.overwrite', '覆盖旧账单')}
                   </button>
                 </footer>
               </section>
