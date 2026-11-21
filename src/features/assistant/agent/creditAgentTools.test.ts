@@ -202,6 +202,10 @@ describe('creditAgentTools 写入类工具', () => {
     expect(payload.balance).toBe(3200);
     expect(storeDebts.find((item) => item.id === 'debt-card')?.balance).toBe(3200);
     expect(storeRecords.some((record) => record.amount === 1000)).toBe(true);
+    // AI 登记的流水也要带扣减前快照,用户在界面上删除它时才能精确还原。
+    expect(storeRecords.find((record) => record.amount === 1000)).toMatchObject({
+      balanceBefore: 4200
+    });
     expect(result.views[0]).toMatchObject({ kind: 'create', undoable: true });
 
     result.undo[0].run();

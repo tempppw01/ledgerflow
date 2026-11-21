@@ -1098,13 +1098,22 @@ function executeRecordRepayment(
   const paymentAccount = toText(args.paymentAccount) || target.paymentAccount || undefined;
   const note = toText(args.note) || `来自 AI 信贷管家:${target.name}`;
 
+  // 与页面登记保持一致:记下扣减前的负债状态,这样用户在界面上删除这笔
+  // AI 登记的流水时也能精确还原,而不是走估算。
+  const balanceBefore = target.balance;
+  const paidPeriodsBefore = target.paidPeriods;
+  const remainingMonthsBefore = target.remainingMonths;
+
   const recordId = ctx.addRepaymentRecord({
     debtId: target.id,
     amount,
     paidAt,
     paymentAccount,
     note,
-    recordMode: 'manual'
+    recordMode: 'manual',
+    balanceBefore,
+    paidPeriodsBefore,
+    remainingMonthsBefore
   });
   const record: RepaymentRecord = {
     id: recordId,
@@ -1114,7 +1123,10 @@ function executeRecordRepayment(
     paymentAccount,
     note,
     recordMode: 'manual',
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    balanceBefore,
+    paidPeriodsBefore,
+    remainingMonthsBefore
   };
   ctx.repaymentRecords.unshift(record);
 
