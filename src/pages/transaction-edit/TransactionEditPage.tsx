@@ -771,6 +771,9 @@ export function TransactionEditPage() {
                     type="button"
                     onClick={() => void recognizeMerchant()}
                     disabled={recognizing}
+                    /* 文案在按钮上原地切换成「AI 识别中...」,焦点还停在这个按钮上;
+                       aria-busy 让读屏器知道它正忙,而不是只念了个改了名字的按钮。 */
+                    aria-busy={recognizing}
                   >
                     {recognizing
                       ? tf('transactions.edit.aiRecognizing', 'AI 识别中...')

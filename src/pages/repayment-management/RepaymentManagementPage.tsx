@@ -3010,6 +3010,8 @@ export function RepaymentManagementPage() {
                   className="repayment-debt-list-btn"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={extractLoading}
+                  /* 按钮文案会切换成「识别中...」,aria-busy 让读屏器知道它正忙。 */
+                  aria-busy={extractLoading}
                 >
                   {extractLoading
                     ? tf('repayment.extract.running', '识别中…')
@@ -3613,7 +3615,7 @@ export function RepaymentManagementPage() {
                       </div>
                     </form>
                     {repaymentRecordError ? (
-                      <p className="muted finance-debt-form-error">{repaymentRecordError}</p>
+                      <p className="muted finance-debt-form-error" role="alert">{repaymentRecordError}</p>
                     ) : null}
                   </div>
                 ) : null}
@@ -4678,7 +4680,7 @@ export function RepaymentManagementPage() {
                           )}
                         </p>
                       ) : null}
-                      {debtFormError ? <p className="debt-form-error">{debtFormError}</p> : null}
+                      {debtFormError ? <p className="debt-form-error" role="alert">{debtFormError}</p> : null}
                       <div className="debt-form-actions">
                         <button type="submit" className="primary" disabled={!canSubmitDebt}>
                           {addDebtSuccess
@@ -4841,7 +4843,7 @@ export function RepaymentManagementPage() {
                         </span>
                       </label>
                     </div>
-                    {debtFormError ? <p className="debt-form-error">{debtFormError}</p> : null}
+                    {debtFormError ? <p className="debt-form-error" role="alert">{debtFormError}</p> : null}
                     <div className="debt-form-actions">
                       <button type="submit" className="primary" disabled={!canSubmitSimpleDebt}>
                         {addDebtSuccess

@@ -2275,7 +2275,9 @@
       },
       "source": {
         "waiting": "等待行情"
-      }
+      },
+      "historyLoading": "历史数据加载中",
+      "historyEmpty": "暂无历史数据"
     },
     "boards": {
       "aria": "A股行业涨跌监控",

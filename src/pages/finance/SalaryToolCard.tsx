@@ -127,7 +127,7 @@ export function SalaryToolCard() {
       </div>
       </div>
 
-      {salaryErrorText ? <p className="finance-debt-form-error muted">{salaryErrorText}</p> : null}
+      {salaryErrorText ? <p className="finance-debt-form-error muted" role="alert">{salaryErrorText}</p> : null}
 
       <div className="finance-salary-result-grid">
         <article className="finance-salary-metric is-primary">
@@ -173,7 +173,7 @@ export function SalaryToolCard() {
           </label>
         </div>
 
-        {overtimeErrorText ? <p className="finance-debt-form-error muted">{overtimeErrorText}</p> : null}
+        {overtimeErrorText ? <p className="finance-debt-form-error muted" role="alert">{overtimeErrorText}</p> : null}
 
         {salaryMetrics ? (
           <p className="finance-salary-inline-tip muted">

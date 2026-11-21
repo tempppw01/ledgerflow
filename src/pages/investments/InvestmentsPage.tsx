@@ -2336,8 +2336,8 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
               </div>
             </>
           ) : (
-            <div className="investments-market-chart-empty">
-              <strong>{historyStatus === 'loading' ? '历史数据加载中' : '暂无历史数据'}</strong>
+            <div className="investments-market-chart-empty" role="status">
+              <strong>{historyStatus === 'loading' ? tf('investments.market.historyLoading', '历史数据加载中') : tf('investments.market.historyEmpty', '暂无历史数据')}</strong>
               <span>{historyError || '选择区间后会显示日线走势。'}</span>
             </div>
           )}
@@ -2437,7 +2437,7 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
               ? tf('investments.market.sim.running', '模拟中…')
               : tf('investments.market.sim.run', '开始模拟')}
           </button>
-          {simulationError ? <p className="investments-market-error">{simulationError}</p> : null}
+          {simulationError ? <p className="investments-market-error" role="alert">{simulationError}</p> : null}
           {simulationResult ? (
             <div
               className="investments-simulation-result"
@@ -3469,7 +3469,7 @@ function MarketOverviewPanel({
         </details>
       ) : null}
 
-      {error && status === 'error' ? <p className="investments-market-error">{error}</p> : null}
+      {error && status === 'error' ? <p className="investments-market-error" role="alert">{error}</p> : null}
     </section>
   );
 }
@@ -3749,7 +3749,7 @@ function MarketBoardsPanel({
       ) : null}
 
       {error && status === 'error' ? (
-        <p className="investments-market-news-error">{error}</p>
+        <p className="investments-market-news-error" role="alert">{error}</p>
       ) : null}
 
       {view === 'theme' ? (
@@ -4161,7 +4161,7 @@ function MarketNewsPanel({
       </div>
 
       {error && status === 'error' ? (
-        <p className="investments-market-news-error">{error}</p>
+        <p className="investments-market-news-error" role="alert">{error}</p>
       ) : null}
 
       {news.length === 0 && status !== 'loading' ? (
@@ -5663,7 +5663,7 @@ export function InvestmentsPage() {
                   </button>
                 </div>
                 {fundLookupError ? (
-                  <p className="investments-fund-lookup-error">{fundLookupError}</p>
+                  <p className="investments-fund-lookup-error" role="alert">{fundLookupError}</p>
                 ) : null}
               </form>
 
@@ -5703,7 +5703,7 @@ export function InvestmentsPage() {
                   </button>
                 </div>
                 {stockLookupError ? (
-                  <p className="investments-fund-lookup-error">{stockLookupError}</p>
+                  <p className="investments-fund-lookup-error" role="alert">{stockLookupError}</p>
                 ) : null}
                 {stockLookupResults.length > 0 ? (
                   <div

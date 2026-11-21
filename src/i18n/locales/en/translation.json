@@ -2275,7 +2275,9 @@
       },
       "source": {
         "waiting": "Waiting for quotes"
-      }
+      },
+      "historyLoading": "Loading historical data",
+      "historyEmpty": "No historical data"
     },
     "boards": {
       "aria": "A-share sector monitor",

@@ -755,7 +755,7 @@ export function FinancialAnalysisPage() {
               <h3>{t('financialAnalysis.aiCard.title')}</h3>
             </div>
           </header>
-          {aiError ? <p className="financial-analysis-ai-error">{aiError}</p> : null}
+          {aiError ? <p className="financial-analysis-ai-error" role="alert">{aiError}</p> : null}
           {aiResult ? (
             <div className="financial-analysis-ai-grid">
               <div className="financial-analysis-highlight">
