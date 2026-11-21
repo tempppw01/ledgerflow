@@ -703,8 +703,12 @@
         "forecastNamePlaceholder": "名称",
         "forecastNet": "净影响",
         "forecastRemove": "删除 {{name}}",
+        "forecastTitle": "预测账单",
         "calendarLiabilities": "负债：{{amount}}",
-        "forecastTitle": "预测账单"
+        "forecastSave": "保存",
+        "forecastCancel": "取消",
+        "forecastEdit": "编辑 {{name}}",
+        "forecastOutOfRange": "不在当前预测区间内"
       },
       "monthBalance": "本月结余",
       "traceMonth": "点击追溯本月交易",

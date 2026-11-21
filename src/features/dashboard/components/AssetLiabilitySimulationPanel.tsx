@@ -36,6 +36,7 @@ export function AssetLiabilitySimulationPanel({
   onHorizonChange,
   forecastBills,
   onAddForecastBill,
+  onUpdateForecastBill,
   onRemoveForecastBill
 }: {
   rows: AssetLiabilitySimulationRow[];
@@ -53,6 +54,17 @@ export function AssetLiabilitySimulationPanel({
     note?: string;
   }) => string;
   onRemoveForecastBill: (id: string) => void;
+  onUpdateForecastBill: (
+    id: string,
+    payload: {
+      name: string;
+      amount: number;
+      date: string;
+      direction: ForecastBillDirection;
+      repeat: ForecastBillRepeat;
+      note?: string;
+    }
+  ) => void;
 }) {
   const { t, i18n } = useTranslation();
   const [calendarMode, setCalendarMode] = useState<'balance' | 'assets'>('balance');
@@ -62,6 +74,7 @@ export function AssetLiabilitySimulationPanel({
   const [billDirection, setBillDirection] = useState<ForecastBillDirection>('expense');
   const [billRepeat, setBillRepeat] = useState<ForecastBillRepeat>('once');
   const [billError, setBillError] = useState('');
+  const [editingBillId, setEditingBillId] = useState('');
   const width = 720;
   const height = 280;
   const padding = { top: 24, right: 18, bottom: 30, left: 48 };
@@ -126,6 +139,31 @@ export function AssetLiabilitySimulationPanel({
     { income: 0, expense: 0 }
   );
   const forecastNet = forecastTotals.income - forecastTotals.expense;
+  // 每条账单在本区间实际发生几次:0 次说明它整条落在预测区间之外,
+  // 只看汇总会以为「录了没反应」,所以按账单单独统计出来。
+  const forecastOccurrences = rows.reduce<Record<string, number>>((acc, row) => {
+    row.forecastBillIds.forEach((id) => {
+      acc[id] = (acc[id] || 0) + 1;
+    });
+    return acc;
+  }, {});
+
+  const resetForecastForm = () => {
+    setEditingBillId('');
+    setBillName('');
+    setBillAmount('');
+    setBillError('');
+  };
+
+  const beginEditForecastBill = (bill: ForecastBill) => {
+    setEditingBillId(bill.id);
+    setBillName(bill.name);
+    setBillAmount(String(bill.amount));
+    setBillDate(bill.date);
+    setBillDirection(bill.direction);
+    setBillRepeat(bill.repeat);
+    setBillError('');
+  };
 
   const submitForecastBill = () => {
     const amount = Number(billAmount);
@@ -137,16 +175,16 @@ export function AssetLiabilitySimulationPanel({
       setBillError(t('dashboard.ui.simulation.forecastDateInvalid'));
       return;
     }
-    onAddForecastBill({
+    const payload = {
       name: billName.trim() || t('dashboard.ui.simulation.forecastDefaultName'),
       amount,
       date: billDate,
       direction: billDirection,
       repeat: billRepeat
-    });
-    setBillName('');
-    setBillAmount('');
-    setBillError('');
+    };
+    if (editingBillId) onUpdateForecastBill(editingBillId, payload);
+    else onAddForecastBill(payload);
+    resetForecastForm();
   };
 
   return (
@@ -470,8 +508,19 @@ export function AssetLiabilitySimulationPanel({
             {t('dashboard.ui.simulation.forecastMonthly')}
           </button>
           <button type="submit" className="dashboard-forecast-submit">
-            {t('dashboard.ui.simulation.forecastAdd')}
+            {editingBillId
+              ? t('dashboard.ui.simulation.forecastSave')
+              : t('dashboard.ui.simulation.forecastAdd')}
           </button>
+          {editingBillId ? (
+            <button
+              type="button"
+              className="dashboard-forecast-cancel"
+              onClick={resetForecastForm}
+            >
+              {t('dashboard.ui.simulation.forecastCancel')}
+            </button>
+          ) : null}
         </form>
 
         {billError ? (
@@ -483,36 +532,65 @@ export function AssetLiabilitySimulationPanel({
         {forecastBills.length > 0 ? (
           <>
             <ul className="dashboard-forecast-list">
-              {forecastBills.map((bill) => (
-                <li key={bill.id} className="dashboard-forecast-item">
-                  <span className="dashboard-forecast-item-name">{bill.name}</span>
-                  <span className="dashboard-forecast-item-date">
-                    {formatDayMonth(bill.date, locale)}
-                    {bill.repeat === 'monthly'
-                      ? ` · ${t('dashboard.ui.simulation.forecastMonthly')}`
-                      : ''}
-                  </span>
-                  <strong
-                    className={
-                      bill.direction === 'income'
-                        ? 'dashboard-forecast-item-amount is-income'
-                        : 'dashboard-forecast-item-amount is-expense'
+              {forecastBills.map((bill) => {
+                const occurrences = forecastOccurrences[bill.id] || 0;
+                const isEditing = editingBillId === bill.id;
+                return (
+                  <li
+                    key={bill.id}
+                    className={`dashboard-forecast-item ${
+                      occurrences === 0 ? 'is-out-of-range' : ''
+                    } ${isEditing ? 'is-editing' : ''}`.trim()}
+                    title={
+                      occurrences === 0
+                        ? t('dashboard.ui.simulation.forecastOutOfRange')
+                        : undefined
                     }
                   >
-                    {bill.direction === 'income' ? '+' : '−'}
-                    {formatCurrencyAuto(bill.amount)}
-                  </strong>
-                  <button
-                    type="button"
-                    className="dashboard-forecast-item-remove"
-                    aria-label={t('dashboard.ui.simulation.forecastRemove', { name: bill.name })}
-                    title={t('dashboard.ui.simulation.forecastRemove', { name: bill.name })}
-                    onClick={() => onRemoveForecastBill(bill.id)}
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
+                    <button
+                      type="button"
+                      className="dashboard-forecast-item-name"
+                      aria-label={t('dashboard.ui.simulation.forecastEdit', { name: bill.name })}
+                      onClick={() => beginEditForecastBill(bill)}
+                    >
+                      {bill.name}
+                    </button>
+                    <span className="dashboard-forecast-item-date">
+                      {formatDayMonth(bill.date, locale)}
+                      {bill.repeat === 'monthly'
+                        ? ` · ${t('dashboard.ui.simulation.forecastMonthly')}`
+                        : ''}
+                    </span>
+                    <strong
+                      className={
+                        bill.direction === 'income'
+                          ? 'dashboard-forecast-item-amount is-income'
+                          : 'dashboard-forecast-item-amount is-expense'
+                      }
+                    >
+                      {bill.direction === 'income' ? '+' : '−'}
+                      {formatCurrencyAuto(bill.amount)}
+                    </strong>
+                    {occurrences > 1 ? (
+                      <em className="dashboard-forecast-item-times">
+                        ×{occurrences}
+                      </em>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="dashboard-forecast-item-remove"
+                      aria-label={t('dashboard.ui.simulation.forecastRemove', { name: bill.name })}
+                      title={t('dashboard.ui.simulation.forecastRemove', { name: bill.name })}
+                      onClick={() => {
+                        onRemoveForecastBill(bill.id);
+                        if (isEditing) resetForecastForm();
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           </>
         ) : null}

@@ -49,6 +49,7 @@ export function DashboardPage() {
   const repaymentRecords = useAppPreferences((s) => s.repaymentRecords);
   const forecastBills = useAppPreferences((s) => s.forecastBills);
   const addForecastBill = useAppPreferences((s) => s.addForecastBill);
+  const updateForecastBill = useAppPreferences((s) => s.updateForecastBill);
   const removeForecastBill = useAppPreferences((s) => s.removeForecastBill);
 
   const [isWelcomeExpanded, setIsWelcomeExpanded] = useState(true);
@@ -533,6 +534,7 @@ export function DashboardPage() {
           onHorizonChange={setSimulationMonths}
           forecastBills={forecastBills}
           onAddForecastBill={addForecastBill}
+          onUpdateForecastBill={updateForecastBill}
           onRemoveForecastBill={removeForecastBill}
         />
         <div

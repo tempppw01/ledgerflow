@@ -24,6 +24,8 @@ export interface AssetLiabilitySimulationRow {
   events: string[];
   /** 当天由「预测账单」造成的资产变化合计(收入为正、支出为负)。 */
   forecastDelta: number;
+  /** 当天命中的预测账单 id,用于按账单统计本期发生次数。 */
+  forecastBillIds: string[];
 }
 
 export interface AssetLiabilitySimulation {
@@ -42,6 +44,7 @@ type ScheduledEvent = {
   paymentAmount?: number;
   /** 这条事件来自用户录入的预测账单,而非已有流水/订阅/还款。 */
   forecast?: boolean;
+  forecastBillId?: string;
 };
 
 function safeNumber(value: unknown) {
@@ -143,7 +146,8 @@ function buildScheduledEvents(
         assetDelta,
         liabilityDelta: 0,
         label: `${label} · ${bill.name}`,
-        forecast: true
+        forecast: true,
+        forecastBillId: bill.id
       });
       return;
     }
@@ -163,7 +167,8 @@ function buildScheduledEvents(
           assetDelta,
           liabilityDelta: 0,
           label: `${label} · ${bill.name}`,
-          forecast: true
+          forecast: true,
+          forecastBillId: bill.id
         });
       }
       cursor.setMonth(cursor.getMonth() + 1);
@@ -361,7 +366,10 @@ export function buildAssetLiabilitySimulation(input: {
       forecastDelta: dayEvents.reduce(
         (sum, event) => (event.forecast ? sum + event.assetDelta : sum),
         0
-      )
+      ),
+      forecastBillIds: dayEvents
+        .map((event) => event.forecastBillId)
+        .filter((id): id is string => Boolean(id))
     });
     previousNetWorth = netWorth;
   }

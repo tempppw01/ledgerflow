@@ -183,11 +183,14 @@ function normalizeForecastBill(item: {
   updatedAt?: string;
 }): ForecastBill {
   const now = new Date().toISOString();
+  // 金额取绝对值:方向由 direction 表达。这里不能直接用 normalizePositiveNumber,
+  // 它会把负数判成 0,账单就会变成「金额 0」而被推演静默忽略。
+  const rawAmount = Number(item.amount);
 
   return {
     id: item.id || createForecastBillId(),
     name: String(item.name || '').trim() || '预测账单',
-    amount: normalizePositiveNumber(item.amount),
+    amount: Number.isFinite(rawAmount) ? Number(Math.abs(rawAmount).toFixed(2)) : 0,
     date: normalizeDateOnly(item.date),
     direction: item.direction === 'income' ? 'income' : 'expense',
     repeat: item.repeat === 'monthly' ? 'monthly' : 'once',

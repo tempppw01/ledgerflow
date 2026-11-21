@@ -453,6 +453,16 @@
   font-weight: 650;
   cursor: pointer;
 }
+.dashboard-forecast-cancel {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-xs);
+  cursor: pointer;
+}
 .dashboard-forecast-error { margin: 0; color: var(--color-danger); font-size: var(--font-xs); }
 .dashboard-forecast-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .dashboard-forecast-item {
@@ -468,10 +478,29 @@
 .dashboard-forecast-item-name {
   max-width: 12ch;
   overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--color-text);
+  font: inherit;
   font-weight: 600;
+  text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: pointer;
+}
+.dashboard-forecast-item-name:hover { color: var(--color-primary); }
+.dashboard-forecast-item.is-editing {
+  border-color: var(--color-primary-border);
+  background: var(--color-primary-bg);
+}
+.dashboard-forecast-item.is-out-of-range { border-style: dashed; opacity: 0.55; }
+.dashboard-forecast-item-times {
+  color: var(--color-text-tertiary);
+  font-family: var(--font-number);
+  font-size: 10px;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
 }
 .dashboard-forecast-item-date { color: var(--color-text-tertiary); font-family: var(--font-number); }
 .dashboard-forecast-item-amount { font-family: var(--font-number); font-variant-numeric: tabular-nums; }
@@ -517,10 +546,15 @@
   .dashboard-forecast-input,
   .dashboard-forecast-input.is-amount,
   .dashboard-forecast-input.is-date { flex: none; width: 100%; max-width: none; }
+  /* 全局在 ≤640px 给所有 button 兜了 44px 触控高度:这里让输入框和分段按钮对齐到同一高度,
+     并把删除键从 18px 加宽,避免变成又窄又高的细条。 */
   .dashboard-forecast-input,
   .dashboard-forecast-repeat,
-  .dashboard-forecast-submit { height: 38px; }
-  .dashboard-forecast-toggle button { padding: 7px 12px; }
+  .dashboard-forecast-submit,
+  .dashboard-forecast-cancel { height: 44px; }
+  .dashboard-forecast-toggle { align-self: center; padding: 0 2px; }
+  .dashboard-forecast-toggle button { min-height: 42px; padding: 7px 12px; }
+  .dashboard-forecast-item-remove { width: 34px; min-width: 34px; }
   .dashboard-forecast-toggle { justify-content: center; }
 }
 

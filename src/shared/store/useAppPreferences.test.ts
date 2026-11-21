@@ -296,3 +296,99 @@ describe('useAppPreferences credit drafts', () => {
     });
   });
 });
+
+describe('useAppPreferences forecast bills', () => {
+  beforeEach(() => {
+    localStorage.removeItem('ledgerflow-preferences');
+    useAppPreferences.setState({ forecastBills: [] });
+  });
+
+  it('金额始终取正值,方向由 direction 决定', () => {
+    const id = useAppPreferences.getState().addForecastBill({
+      name: '房租',
+      amount: -3200,
+      date: '2026-12-01',
+      direction: 'expense',
+      repeat: 'monthly'
+    });
+
+    const bill = useAppPreferences.getState().forecastBills[0];
+    expect(bill).toMatchObject({
+      id,
+      name: '房租',
+      amount: 3200,
+      date: '2026-12-01',
+      direction: 'expense',
+      repeat: 'monthly'
+    });
+  });
+
+  it('日期非法或缺失时归一化为空串,避免推演按脏日期展开', () => {
+    useAppPreferences.getState().addForecastBill({
+      name: '待定',
+      amount: 100,
+      date: '2026/12/01',
+      direction: 'income',
+      repeat: 'once'
+    });
+
+    expect(useAppPreferences.getState().forecastBills[0].date).toBe('');
+    expect(useAppPreferences.getState().forecastBills[0].repeat).toBe('once');
+  });
+
+  it('改名改金额后保留原 id 与 createdAt,只更新 updatedAt', async () => {
+    const id = useAppPreferences.getState().addForecastBill({
+      name: '房租',
+      amount: 3200,
+      date: '2026-12-01',
+      direction: 'expense',
+      repeat: 'once'
+    });
+    const created = useAppPreferences.getState().forecastBills[0];
+
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    useAppPreferences.getState().updateForecastBill(id, {
+      name: '房租(涨了)',
+      amount: 3500,
+      date: '2026-12-01',
+      direction: 'expense',
+      repeat: 'monthly'
+    });
+
+    const bills = useAppPreferences.getState().forecastBills;
+    expect(bills).toHaveLength(1);
+    expect(bills[0]).toMatchObject({
+      id,
+      name: '房租(涨了)',
+      amount: 3500,
+      repeat: 'monthly',
+      createdAt: created.createdAt
+    });
+    expect(new Date(bills[0].updatedAt).getTime()).toBeGreaterThanOrEqual(
+      new Date(created.updatedAt).getTime()
+    );
+  });
+
+  it('删除只移除目标账单', () => {
+    const keepId = useAppPreferences.getState().addForecastBill({
+      name: '保留',
+      amount: 100,
+      date: '2026-12-02',
+      direction: 'income',
+      repeat: 'once'
+    });
+    const dropId = useAppPreferences.getState().addForecastBill({
+      name: '删除',
+      amount: 200,
+      date: '2026-12-03',
+      direction: 'expense',
+      repeat: 'once'
+    });
+
+    useAppPreferences.getState().removeForecastBill(dropId);
+
+    const bills = useAppPreferences.getState().forecastBills;
+    expect(bills).toHaveLength(1);
+    expect(bills[0].id).toBe(keepId);
+  });
+});

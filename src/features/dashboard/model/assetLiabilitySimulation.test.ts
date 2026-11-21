@@ -134,8 +134,11 @@ describe('buildAssetLiabilitySimulation', () => {
 
     expect(result.rows[1]).toMatchObject({ date: '2026-09-21', forecastDelta: 0, assets: 1000 });
     expect(result.rows[2]).toMatchObject({ date: '2026-09-22', forecastDelta: -600, assets: 400 });
+    expect(result.rows[2].forecastBillIds).toEqual(['bill-rent']);
     expect(result.rows[3]).toMatchObject({ date: '2026-09-23', forecastDelta: 0, assets: 400 });
+    expect(result.rows[3].forecastBillIds).toEqual([]);
     expect(result.rows[4]).toMatchObject({ date: '2026-09-24', forecastDelta: 800, assets: 1200 });
+    expect(result.rows[4].forecastBillIds).toEqual(['bill-bonus']);
     // 预测账单只推演现金流,不会凭空改变负债。
     expect(result.rows[4].liabilities).toBe(result.initialLiabilities);
   });
@@ -167,6 +170,10 @@ describe('buildAssetLiabilitySimulation', () => {
     expect(hits).toEqual(['2026-01-31', '2026-02-28', '2026-03-31']);
     expect(hits.every((date) => result.rows.find((row) => row.date === date)?.forecastDelta === -300))
       .toBe(true);
+    // 每条命中都要带上账单 id,面板才能按账单统计本期次数。
+    expect(
+      result.rows.filter((row) => row.forecastBillIds.length > 0).map((row) => row.date)
+    ).toEqual(['2026-01-31', '2026-02-28', '2026-03-31']);
   });
 
   it('ignores forecast bills that fall outside the simulated window', () => {
@@ -204,6 +211,7 @@ describe('buildAssetLiabilitySimulation', () => {
 
     expect(result.hasEvents).toBe(false);
     expect(result.rows.every((row) => row.forecastDelta === 0)).toBe(true);
+    expect(result.rows.every((row) => row.forecastBillIds.length === 0)).toBe(true);
     expect(result.rows.at(-1)?.assets).toBe(1000);
   });
 });

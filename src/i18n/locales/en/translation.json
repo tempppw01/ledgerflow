@@ -703,8 +703,12 @@
         "forecastNamePlaceholder": "Name",
         "forecastNet": "Net effect",
         "forecastRemove": "Remove {{name}}",
+        "forecastTitle": "Forecast bills",
         "calendarLiabilities": "Liabilities: {{amount}}",
-        "forecastTitle": "Forecast bills"
+        "forecastSave": "Save",
+        "forecastCancel": "Cancel",
+        "forecastEdit": "Edit {{name}}",
+        "forecastOutOfRange": "Outside the current forecast range"
       },
       "monthBalance": "This month's balance",
       "traceMonth": "View this month's transactions",
