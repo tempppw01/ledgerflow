@@ -1794,26 +1794,26 @@ export function RepaymentManagementPage() {
         issues.push({
           id: `${item.id}-day`,
           tone: 'danger',
-          text: `${item.name} 未设置还款日，无法进行严谨提醒。`
+          text: tf('repayment.ai.auditMissingDueDate', '{p0} 未设置还款日，无法进行严谨提醒。').replace('{p0}', String(item.name))
         });
       }
       if (item.type === 'loan' && item.annualRate <= 0) {
         issues.push({
           id: `${item.id}-formula`,
           tone: 'warning',
-          text: `${item.name} 缺少明确年化/总还款依据，当前计算解释性不足。`
+          text: tf('repayment.ai.auditMissingBasis', '{p0} 缺少明确年化/总还款依据，当前计算解释性不足。').replace('{p0}', String(item.name))
         });
       }
       if (!item.repaymentRecordMode) {
         issues.push({
           id: `${item.id}-record`,
           tone: 'info',
-          text: `${item.name} 尚未明确还款记录方式。`
+          text: tf('repayment.ai.auditMissingRecordMode', '{p0} 尚未明确还款记录方式。').replace('{p0}', String(item.name))
         });
       }
       return issues;
     });
-  }, [repaymentLedgerPreview]);
+  }, [repaymentLedgerPreview, tf]);
 
   const repaymentContextSnapshots = useMemo<RepaymentContextSnapshot[]>(() => {
     return debtsWithStatus
@@ -1840,10 +1840,10 @@ export function RepaymentManagementPage() {
     if (dueSoonItems.length >= 3) {
       tags.push({
         id: 'clustered-due-dates',
-        label: '还款日集中',
+        label: tf('repayment.ai.tagClusteredDueDates', '还款日集中'),
         tone: 'warning',
         dimension: 'schedule',
-        explanation: `未来 7 天内有 ${dueSoonItems.length} 笔负债集中到期，建议提前准备账户余额。`
+        explanation: tf('repayment.ai.tagClusteredDueDatesExplanation', '未来 7 天内有 {p0} 笔负债集中到期，建议提前准备账户余额。').replace('{p0}', String(dueSoonItems.length))
       });
     }
 
@@ -1854,65 +1854,65 @@ export function RepaymentManagementPage() {
         tags.push({
           id: `${item.id}-high-rate`,
           debtId: item.id,
-          label: '高利率',
+          label: tf('repayment.ai.tagHighRate', '高利率'),
           tone: 'danger',
           dimension: 'rate',
-          explanation: `${item.name} 的 APR/年化约 ${item.apr.toFixed(2)}%，属于优先压降利息成本的对象。`
+          explanation: tf('repayment.ai.tagHighRateExplanation', '{p0} 的 APR/年化约 {p1}%，属于优先压降利息成本的对象。').replace('{p0}', String(item.name)).replace('{p1}', String(item.apr.toFixed(2)))
         });
       } else if (item.apr >= 15) {
         tags.push({
           id: `${item.id}-rate-watch`,
           debtId: item.id,
-          label: '利率偏高',
+          label: tf('repayment.ai.tagRateWatch', '利率偏高'),
           tone: 'warning',
           dimension: 'rate',
-          explanation: `${item.name} 的 APR/年化约 ${item.apr.toFixed(2)}%，建议和其他负债比较后决定是否提前还。`
+          explanation: tf('repayment.ai.tagRateWatchExplanation', '{p0} 的 APR/年化约 {p1}%，建议和其他负债比较后决定是否提前还。').replace('{p0}', String(item.name)).replace('{p1}', String(item.apr.toFixed(2)))
         });
       }
       if (item.lifecycleStatus === 'paused') {
         tags.push({
           id: `${item.id}-paused`,
           debtId: item.id,
-          label: '已暂缓处理',
+          label: tf('repayment.ai.tagPaused', '已暂缓处理'),
           tone: 'info',
           dimension: 'schedule',
-          explanation: `${item.name} 当前已标记为暂缓处理，默认不会再参与优先还款推荐。`
+          explanation: tf('repayment.ai.tagPausedExplanation', '{p0} 当前已标记为暂缓处理，默认不会再参与优先还款推荐。').replace('{p0}', String(item.name))
         });
       }
       if (!ctx || ctx.actualRepaymentCount === 0) {
         tags.push({
           id: `${item.id}-missing-actual-record`,
           debtId: item.id,
-          label: '缺少已还流水',
+          label: tf('repayment.ai.tagMissingActual', '缺少已还流水'),
           tone: 'info',
           dimension: 'actual',
-          explanation: `${item.name} 当前只有计划信息，没有已发生还款流水，后续查询时需区分“计划应还”和“实际已还”。`
+          explanation: tf('repayment.ai.tagMissingActualExplanation', '{p0} 当前只有计划信息，没有已发生还款流水，后续查询时需区分“计划应还”和“实际已还”。').replace('{p0}', String(item.name))
         });
       }
       if (item.missingFields.length >= 2) {
         tags.push({
           id: `${item.id}-missing-fields`,
           debtId: item.id,
-          label: '信息缺失',
+          label: tf('repayment.ai.tagMissingFields', '信息缺失'),
           tone: 'warning',
           dimension: 'data',
-          explanation: `${item.name} 还缺少 ${item.missingFields.join('、')}，当前测算和提醒都偏保守。`
+          explanation: tf('repayment.ai.tagMissingFieldsExplanation', '{p0} 还缺少 {p1}，当前测算和提醒都偏保守。').replace('{p0}', String(item.name)).replace('{p1}', String(item.missingFields.join('、')))
         });
       }
       if (item.statusTone === 'danger') {
         tags.push({
           id: `${item.id}-due-today`,
           debtId: item.id,
-          label: '今日到期',
+          label: tf('repayment.ai.tagDueToday', '今日到期'),
           tone: 'danger',
           dimension: 'schedule',
-          explanation: `${item.name} 今日应还，若账户余额不足，优先处理这一笔。`
+          explanation: tf('repayment.ai.tagDueTodayExplanation', '{p0} 今日应还，若账户余额不足，优先处理这一笔。').replace('{p0}', String(item.name))
         });
       }
     });
 
     return tags;
-  }, [repaymentContextSnapshots, repaymentLedgerPreview]);
+  }, [repaymentContextSnapshots, repaymentLedgerPreview, tf]);
 
   const selectedDebt = useMemo(
     () => repaymentLedgerPreview.find((item) => item.id === selectedDebtId) || null,
@@ -2685,7 +2685,7 @@ export function RepaymentManagementPage() {
     }
 
     if (!strategyReadiness.isReady) {
-      setError(`暂不生成雪崩/雪球还款方案，请先补齐：${strategyReadiness.missing.join('；')}。`);
+      setError(tf('repayment.ai.avalancheNeedsDetails', '暂不生成雪崩/雪球还款方案，请先补齐：{p0}。').replace('{p0}', strategyReadiness.missing.join('；')));
       return;
     }
 
@@ -3687,7 +3687,7 @@ export function RepaymentManagementPage() {
               <span>{tf('repayment.ai.burdenHeading', '月供压力')}</span>
               <strong>{(debtSummary.pressureRatio * 100).toFixed(1)}%</strong>
               <small>
-                {pressureLevel.label} · 负债/年收入 {(debtToIncomeRatio * 100).toFixed(1)}%
+                {tf(pressureLevel.labelKey, pressureLevel.label)} · {tf('repayment.ai.debtToIncome', '负债/年收入')} {(debtToIncomeRatio * 100).toFixed(1)}%
               </small>
             </div>
             <div className="repayment-ai-summary-item">
@@ -3743,7 +3743,7 @@ export function RepaymentManagementPage() {
                 <h4>{tf('repayment.ai.recommendedOrder', '推荐还款优先级')}</h4>
                 {!strategyReadiness.isReady ? (
                   <p className="muted">
-                    当前不使用默认利率推断优先级。请先补齐 {strategyReadiness.missing.join('；')}。
+                    {tf('repayment.ai.priorityNeedsDetails', '当前不使用默认利率推断优先级。请先补齐 {p0}。').replace('{p0}', strategyReadiness.missing.join('；'))}
                   </p>
                 ) : repaymentPriority.length === 0 ? (
                   <p className="muted">{tf('repayment.ai.createDebtFirst', '请先创建至少一笔负债。')}</p>
