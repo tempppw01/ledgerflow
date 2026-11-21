@@ -48,8 +48,10 @@ export function calculateBudgetHealth(
 
   const overspendPenalty = Math.min(overspentCount * 10, 40);
   const overRate = Math.max(executionRate - 1, 0);
-  const underRate = Math.max(1 - executionRate, 0);
-  const executionPenalty = Math.min(overRate * 100 * 0.5 + underRate * 100 * 0.15, 35);
+  // 只惩罚超支,不惩罚省钱。这里原本还加了 underRate * 100 * 0.15 一项,
+  // 于是「一分钱没花」也会被扣 15 分,和上面那句注释以及下方明细文案
+  // (「节奏可控」)都矛盾 —— 界面上会出现「节奏可控  −15」这种自相矛盾的组合。
+  const executionPenalty = Math.min(overRate * 100 * 0.5, 35);
   const balanceRatio = monthExpense > 0 ? Math.min(monthIncome / monthExpense, 1) : 1;
   const balancePenalty = Math.min((1 - balanceRatio) * 25, 25);
 
