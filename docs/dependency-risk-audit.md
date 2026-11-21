@@ -48,3 +48,34 @@
 - [ ] 依赖契约冒烟测试:对「A 库产出交给 B 库消费」的链路(如 PDF 导出、
   xlsx 导出)至少保留一条不打 mock 的端到端用例
 - [ ] CI 里加 `tsc` / `eslint` / `vitest` / 上述 check 脚本,作为合并前门禁
+
+## 五、尝试用 jsdom 单测守这条链路 —— 不可行(已验证)
+
+想法:写一条不 mock pdf-lib / fontkit 的单测,喂真实 TTF,断言产出合法 PDF。
+实测结论是**这条路走不通**,原因值得记下来:
+
+| 环境 | `pdf-lib@1.17.1` + `fontkit@2.0.4` |
+| --- | --- |
+| 浏览器(生产) | **可用** —— 实际导出 6.13 MB 合法 PDF 并触发下载 |
+| 纯 Node | **失败**:`Cannot read properties of undefined (reading 'tables')` |
+| vitest(jsdom) | **失败**:同上 |
+
+同一套代码在浏览器能跑、在 Node 跑不了,说明 fontkit v2 在不同构建入口
+(Node/browser)下的行为不一致,pdf-lib 1.17 只与浏览器那套对得上。
+因此**任何 jsdom 单测都无法忠实复现这条链路** —— 写出来是红用例,而且红得
+没有产品意义。
+
+顺带还踩到一个坑:该模块用**模块级缓存**保存字体字节
+(`cachedFontBytesPromise`),同一测试文件里的多条用例会互相污染
+(前一条成功了,后一条就走不到 fetch)。真要写多用例,得配合
+`vi.resetModules()`。
+
+**推荐的正确做法**:用仓库已有的 `playwright.config.ts` 写一条真浏览器
+E2E —— 打开交易页、勾选、点导出、断言下载事件 + PDF 文件头。这才是能
+抓住这类断层的手段。
+
+## 六、PDF 体积的后续
+
+当前 `subset: false` 让导出可用但偏大(约 6 MB)。要恢复小体积需要
+`fontkit@1.x` 或 `@pdf-lib/fontkit`,都需要能访问 npm registry —— 本次
+环境不可达,故未做。恢复子集化后,请重跑一次真实浏览器导出验证。
