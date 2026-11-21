@@ -1,3 +1,8 @@
+/** 接口错误文案跟随界面语言。
+ * 这里不在模块顶层引入 i18n 单例(避免模块求值时就初始化 i18n),
+ * 改为在页面启动时由 src/i18n 注册进来;locales 尚未合并时退回中文兜底。
+ */
+import { tApiError } from '../../../shared/lib/apiErrorTranslator';
 export interface EastmoneyMarketIndex {
   secId: string;
   code: string;
@@ -377,7 +382,13 @@ function buildMarketQuoteUrl(secids: string) {
 
 async function fetchMarketQuotePayload(secids: string) {
   const response = await fetch(buildMarketQuoteUrl(secids));
-  if (!response.ok) throw new Error('大盘行情加载失败，请稍后重试。');
+  if (!response.ok)
+    throw new Error(
+      tApiError(
+        'investments.api.market.marketError.大盘行情加载失败请稍后重',
+        '大盘行情加载失败，请稍后重试。'
+      )
+    );
   const body = (await response.json()) as { data?: EastmoneyQuotePayload };
   return body.data || {};
 }
@@ -429,7 +440,12 @@ export async function fetchEastmoneyIndexTrend(
   const response = await fetch(`/api/market/eastmoney/trend?secid=${encodeURIComponent(secId)}`);
 
   if (!response.ok) {
-    throw new Error('大盘分时加载失败，请稍后重试。');
+    throw new Error(
+      tApiError(
+        'investments.api.market.marketError.大盘分时加载失败请稍后重',
+        '大盘分时加载失败，请稍后重试。'
+      )
+    );
   }
 
   const body = (await response.json()) as { data?: EastmoneyTrendPayload };
@@ -465,7 +481,13 @@ export async function fetchEastmoneyIndexHistory(
   if (options.startDate) params.set('start', options.startDate);
   if (options.endDate) params.set('end', options.endDate);
   const response = await fetch(`/api/market/eastmoney/history?${params.toString()}`);
-  if (!response.ok) throw new Error('大盘历史行情加载失败，请稍后重试。');
+  if (!response.ok)
+    throw new Error(
+      tApiError(
+        'investments.api.market.marketError.大盘历史行情加载失败请稍',
+        '大盘历史行情加载失败，请稍后重试。'
+      )
+    );
 
   const body = (await response.json()) as { data?: EastmoneyHistoryPayload };
   return (body.data?.data?.klines || [])
@@ -499,7 +521,12 @@ export async function fetchEastmoneyMarketOverview(
   const trend = trendResult.status === 'fulfilled' ? trendResult.value : [];
 
   if (quotesResult.status === 'rejected' && trendResult.status === 'rejected') {
-    throw new Error('大盘行情加载失败，请稍后重试。');
+    throw new Error(
+      tApiError(
+        'investments.api.market.marketError.大盘行情加载失败请稍后重',
+        '大盘行情加载失败，请稍后重试。'
+      )
+    );
   }
 
   return {
@@ -524,7 +551,12 @@ export async function fetchEastmoneyStockSearch(
   );
 
   if (!response.ok) {
-    throw new Error('个股搜索失败，请稍后重试。');
+    throw new Error(
+      tApiError(
+        'investments.api.market.marketError.个股搜索失败请稍后重试',
+        '个股搜索失败，请稍后重试。'
+      )
+    );
   }
 
   const body = (await response.json()) as { data?: EastmoneyStockSearchPayload };
@@ -544,7 +576,13 @@ export async function fetchEastmoneyStockSearch(
 
 export async function fetchGlobalMarketOverview(): Promise<GlobalMarketOverview> {
   const response = await fetch('/api/market/global-quotes');
-  if (!response.ok) throw new Error('美日韩大盘暂时无法更新。');
+  if (!response.ok)
+    throw new Error(
+      tApiError(
+        'investments.api.market.marketError.美日韩大盘暂时无法更新',
+        '美日韩大盘暂时无法更新。'
+      )
+    );
 
   const payload = (await response.json()) as GlobalMarketPayload;
   const quotes = (payload.data?.quotes || [])
@@ -564,7 +602,13 @@ export async function fetchGlobalMarketOverview(): Promise<GlobalMarketOverview>
     }))
     .filter((item) => item.id && item.value !== null);
 
-  if (quotes.length === 0) throw new Error('美日韩大盘暂时没有可用数据。');
+  if (quotes.length === 0)
+    throw new Error(
+      tApiError(
+        'investments.api.market.marketError.美日韩大盘暂时没有可用数',
+        '美日韩大盘暂时没有可用数据。'
+      )
+    );
 
   return {
     quotes,
@@ -586,7 +630,13 @@ export async function fetchGlobalMarketHistory(
   if (options.startDate) params.set('start', options.startDate);
   if (options.endDate) params.set('end', options.endDate);
   const response = await fetch(`/api/market/global-history?${params.toString()}`);
-  if (!response.ok) throw new Error('国际大盘历史行情加载失败，请稍后重试。');
+  if (!response.ok)
+    throw new Error(
+      tApiError(
+        'investments.api.market.marketError.国际大盘历史行情加载失败',
+        '国际大盘历史行情加载失败，请稍后重试。'
+      )
+    );
 
   const payload = (await response.json()) as GlobalMarketHistoryPayload;
   return (payload.data?.points || [])
@@ -611,7 +661,13 @@ export async function fetchGlobalMarketHistory(
 export async function fetchGlobalMarketTrend(indexId: string): Promise<GlobalMarketTrendPoint[]> {
   const params = new URLSearchParams({ id: indexId });
   const response = await fetch(`/api/market/global-trend?${params.toString()}`);
-  if (!response.ok) throw new Error('国际大盘实时走势加载失败，请稍后重试。');
+  if (!response.ok)
+    throw new Error(
+      tApiError(
+        'investments.api.market.marketError.国际大盘实时走势加载失败',
+        '国际大盘实时走势加载失败，请稍后重试。'
+      )
+    );
 
   const payload = (await response.json()) as GlobalMarketTrendPayload;
   return (payload.data?.points || [])
@@ -647,7 +703,12 @@ export async function fetchEastmoneyMarketNews(
   );
 
   if (!response.ok) {
-    throw new Error('快讯加载失败，请稍后重试。');
+    throw new Error(
+      tApiError(
+        'investments.api.market.marketError.快讯加载失败请稍后重试',
+        '快讯加载失败，请稍后重试。'
+      )
+    );
   }
 
   const body = (await response.json()) as { data?: EastmoneyFastNewsPayload };
@@ -711,7 +772,13 @@ export async function fetchEastmoneyMarketBoardsSnapshot(
 ): Promise<MarketBoardSnapshot> {
   const response = await fetch(`/api/market/eastmoney/boards?type=${type}&pageSize=${pageSize}`);
 
-  if (!response.ok) throw new Error('板块行情加载失败，请稍后重试。');
+  if (!response.ok)
+    throw new Error(
+      tApiError(
+        'investments.api.market.marketError.板块行情加载失败请稍后重',
+        '板块行情加载失败，请稍后重试。'
+      )
+    );
 
   const body = (await response.json()) as MarketBoardResponse;
   return {
@@ -724,13 +791,21 @@ export async function fetchEastmoneyMarketBoardConstituents(
   boardCode: string,
   pageSize = 3
 ): Promise<EastmoneyMarketConstituent[]> {
-  const code = String(boardCode || '').trim().toUpperCase();
+  const code = String(boardCode || '')
+    .trim()
+    .toUpperCase();
   if (!/^BK\d{4}$/.test(code)) return [];
   const response = await fetch(
     `/api/market/eastmoney/board-stocks?code=${encodeURIComponent(code)}&pageSize=${pageSize}`
   );
 
-  if (!response.ok) throw new Error('板块成分股加载失败，请稍后重试。');
+  if (!response.ok)
+    throw new Error(
+      tApiError(
+        'investments.api.market.marketError.板块成分股加载失败请稍后',
+        '板块成分股加载失败，请稍后重试。'
+      )
+    );
 
   const body = (await response.json()) as { data?: EastmoneyBoardConstituentPayload };
   return (body.data?.data?.diff || []).map((item) => ({
@@ -742,11 +817,20 @@ export async function fetchEastmoneyMarketBoardConstituents(
   }));
 }
 
-export async function fetchEastmoneyMarketBoardTrend(code: string): Promise<EastmoneyMarketBoardTrendPoint[]> {
-  const normalizedCode = String(code || '').trim().toUpperCase();
+export async function fetchEastmoneyMarketBoardTrend(
+  code: string
+): Promise<EastmoneyMarketBoardTrendPoint[]> {
+  const normalizedCode = String(code || '')
+    .trim()
+    .toUpperCase();
   if (!/^BK\d{4}$/.test(normalizedCode)) return [];
-  const response = await fetch(`/api/market/eastmoney/board-trend?code=${encodeURIComponent(normalizedCode)}`);
-  if (!response.ok) throw new Error('行业走势图加载失败。');
+  const response = await fetch(
+    `/api/market/eastmoney/board-trend?code=${encodeURIComponent(normalizedCode)}`
+  );
+  if (!response.ok)
+    throw new Error(
+      tApiError('investments.api.market.marketError.行业走势图加载失败', '行业走势图加载失败。')
+    );
   const body = (await response.json()) as { data?: { data?: { trends?: unknown[] } } };
   return (body.data?.data?.trends || []).flatMap((entry) => {
     const [time, value] = String(entry || '').split(',');
@@ -777,7 +861,13 @@ export async function fetchEastmoneyMarketThemeBoardsSnapshot(
     )}`
   );
 
-  if (!response.ok) throw new Error('热门题材加载失败，请稍后重试。');
+  if (!response.ok)
+    throw new Error(
+      tApiError(
+        'investments.api.market.marketError.热门题材加载失败请稍后重',
+        '热门题材加载失败，请稍后重试。'
+      )
+    );
 
   const body = (await response.json()) as MarketBoardResponse;
   const payload = body.data || {};
@@ -811,7 +901,13 @@ export async function fetchEastmoneyMarketThemeBoardsSnapshot(
 
 export async function fetchGlobalMarketSectorBoards(): Promise<MarketBoardSnapshot> {
   const response = await fetch('/api/market/global-sectors');
-  if (!response.ok) throw new Error('全球行业行情加载失败，请稍后重试。');
+  if (!response.ok)
+    throw new Error(
+      tApiError(
+        'investments.api.market.marketError.全球行业行情加载失败请稍',
+        '全球行业行情加载失败，请稍后重试。'
+      )
+    );
   const body = (await response.json()) as MarketBoardResponse;
   return {
     boards: parseMarketBoards(body.data || {}),

@@ -1,6 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
+import { registerApiTranslator } from '../shared/lib/apiErrorTranslator';
 import { setFormattingLocale } from '../shared/lib/format';
 import enTranslation from './locales/en/translation.json';
 import zhTranslation from './locales/zh/translation.json';
@@ -74,5 +75,7 @@ applyDocumentTitle(i18n.language || initialLanguage);
 setFormattingLocale(i18n.language || initialLanguage);
 i18n.off('languageChanged', handleLanguageChanged);
 i18n.on('languageChanged', handleLanguageChanged);
+// API 层的错误文案走同一个 i18n 实例(那边不在模块顶层引入 i18n,避免影响初始化顺序)
+registerApiTranslator((key, options) => i18n.t(key, options));
 
 export default i18n;

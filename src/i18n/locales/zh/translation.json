@@ -1946,7 +1946,7 @@
       "noOpenEyebrow": "交易时段提醒",
       "noOpenTitle": "当前没有市场处于交易中",
       "noOpenDetail": "各市场会按当地交易日历分别开闭市;休市期间不刷新实时价格,走势图仍可查看最近行情。",
-      "weekendDetail": "为周末,A 股、日韩及美股均不进行常规交易。页面展示最近收盘数据,下一交易日开盘后自动恢复更新。",
+      "weekendDetail": "{date} 为周末,A 股、日韩及美股均不进行常规交易。页面展示最近收盘数据,下一交易日开盘后自动恢复更新。",
       "holidayDetail": "{date} 为{holiday}休市日,行情将保留最近收盘数据,自动轮询会在下一交易时段恢复。"
     },
     "state": {
@@ -2057,7 +2057,18 @@
       "candleChartSuffix": "K线图",
       "intradayHintSuffix": "分时线加载后会显示在这里。",
       "averagePrefix": "均价",
-      "boardTrendSuffix": "走势示意"
+      "boardTrendSuffix": "走势示意",
+      "amount": {
+        "hundredMillion": "亿",
+        "tenThousand": "万",
+        "trillion": "万亿"
+      },
+      "newsTime": {
+        "justNow": "刚刚"
+      },
+      "source": {
+        "waiting": "等待行情"
+      }
     },
     "boards": {
       "aria": "A股行业涨跌监控",
@@ -2100,7 +2111,36 @@
       "summary": " 个行业 · 涨 {up} / 跌 {down}",
       "renameAria": "修改 {name} 的显示名称",
       "indexPrefix": "指数",
-      "sectorCount": "{count} 个"
+      "sectorCount": "{count} 个",
+      "breadth": {
+        "insufficient": "板块数据不足",
+        "summary": "上涨 {up} / 下跌 {down} / 样本 {total}"
+      },
+      "concentration": {
+        "maxShare": "{percent}% 最大仓位占比"
+      },
+      "formula": "综合分 = 指数动量×45% + 板块广度×35% + 板块均值×20%；再叠加新闻信号、波动率和集中度计算风险分。",
+      "health": {
+        "neutral": "观望一下",
+        "strong": "偏强，别追高",
+        "waiting": "数据等待中",
+        "weak": "偏弱，先等等"
+      },
+      "newsSignal": {
+        "insufficient": "新闻信号不足",
+        "summary": "利好词 {positive} / 风险词 {negative}"
+      },
+      "regime": {
+        "chop": "震荡分化，精选板块",
+        "strong": "偏强但需防追高",
+        "weak": "偏弱，优先控风险"
+      },
+      "strongest": {
+        "empty": "暂无强势板块"
+      },
+      "weakest": {
+        "empty": "暂无弱势板块"
+      }
     },
     "news": {
       "title": "快讯",
@@ -2120,7 +2160,8 @@
       "catCommodity": "商品",
       "catForex": "外汇",
       "catBond": "债券",
-      "catFund": "基金"
+      "catFund": "基金",
+      "fallbackTitle": "今天最重要的市场消息"
     },
     "detail": {
       "sections": {
@@ -2197,6 +2238,54 @@
       "emptyCategoryTitle": "当前分类没有自选基金",
       "emptyCategoryDesc": "切换到其他分类,或用基金代码添加一只新的。",
       "count": "{count} 只"
+    },
+    "refreshing": "刷新中",
+    "watch": {
+      "assetAllocationAria": "基金资产分布",
+      "assetAllocationTitle": "资产分布",
+      "following": "关注中",
+      "holdingQuotesAria": "基金持仓实时涨跌",
+      "noCode": "未记录代码",
+      "pendingInput": "待填写",
+      "pendingValue": "待更新",
+      "performanceHint": "按不同时间区间连接走势",
+      "performanceLineAria": "历史业绩走线图",
+      "performanceValuesAria": "历史业绩数值",
+      "pickedSummary": "精选摘要",
+      "sharesInputHint": "点击填写持有份额",
+      "summaryTitle": "分析摘要",
+      "topHoldingsTitle": "重仓股票"
+    },
+    "api": {
+      "fund": {
+        "fundError": {
+          "请输入位基金代码": "请输入 6 位基金代码。",
+          "东方财富接口响应超时请稍": "东方财富接口响应超时，请稍后重试。",
+          "东方财富接口加载失败请检": "东方财富接口加载失败，请检查基金代码或网络。",
+          "东方财富实时基金数据加载": "东方财富实时基金数据加载失败，请稍后重试。",
+          "股票实时行情加载失败请稍": "股票实时行情加载失败，请稍后重试。",
+          "东方财富持仓明细加载失败": "东方财富持仓明细加载失败，请稍后重试。",
+          "没有查到这只基金请确认代": "没有查到这只基金，请确认代码是否正确。"
+        }
+      },
+      "market": {
+        "marketError": {
+          "大盘行情加载失败请稍后重": "大盘行情加载失败，请稍后重试。",
+          "大盘分时加载失败请稍后重": "大盘分时加载失败，请稍后重试。",
+          "大盘历史行情加载失败请稍": "大盘历史行情加载失败，请稍后重试。",
+          "个股搜索失败请稍后重试": "个股搜索失败，请稍后重试。",
+          "美日韩大盘暂时无法更新": "美日韩大盘暂时无法更新。",
+          "美日韩大盘暂时没有可用数": "美日韩大盘暂时没有可用数据。",
+          "国际大盘历史行情加载失败": "国际大盘历史行情加载失败，请稍后重试。",
+          "国际大盘实时走势加载失败": "国际大盘实时走势加载失败，请稍后重试。",
+          "快讯加载失败请稍后重试": "快讯加载失败，请稍后重试。",
+          "板块行情加载失败请稍后重": "板块行情加载失败，请稍后重试。",
+          "板块成分股加载失败请稍后": "板块成分股加载失败，请稍后重试。",
+          "行业走势图加载失败": "行业走势图加载失败。",
+          "热门题材加载失败请稍后重": "热门题材加载失败，请稍后重试。",
+          "全球行业行情加载失败请稍": "全球行业行情加载失败，请稍后重试。"
+        }
+      }
     }
   },
   "investmentAi": {
@@ -3193,6 +3282,448 @@
     "disclaimer": {
       "line1": "说明 1：结果仅供税前估算参考，默认不含社保、个税、公积金、补贴、提成与特殊排班。",
       "line2": "说明 2：周薪默认按 5 个工作日折算；加班费按当前时薪做倍数估算，不代表公司最终核算口径。"
+    }
+  },
+  "txDrawer": {
+    "ai": {
+      "action": "AI 重分类",
+      "uploading": "AI 重分类中…"
+    },
+    "alert": {
+      "detail": "该笔支出（{amount}）显著偏高，建议检查是否重复记账，或确认是否为一次性大额消费。",
+      "title": "金额异常提醒"
+    },
+    "closeAria": "关闭详情",
+    "copyJson": "复制 JSON",
+    "copyNote": "复制备注",
+    "delete": "删除",
+    "edit": "编辑",
+    "factsAria": "基础信息",
+    "field": {
+      "account": "账户",
+      "attachment": "附件",
+      "category": "分类",
+      "dateTime": "日期时间",
+      "merchantOrderNo": "商家订单号",
+      "note": "备注",
+      "orderNo": "订单号",
+      "source": "来源",
+      "status": "状态",
+      "tags": "标签",
+      "txStatus": "交易状态",
+      "type": "类型",
+      "updatedAt": "最后修改"
+    },
+    "more": "更多",
+    "moreInfo": "更多信息",
+    "print": {
+      "heading": "账单详情",
+      "noNote": "（无）",
+      "time": "打印时间：{value}",
+      "title": "账单详情打印 - {id}",
+      "txId": "交易编号：{id}"
+    },
+    "printA4": "打印 A4",
+    "quickAdd": "新增账目",
+    "refund": {
+      "action": "↩️ 发起退款",
+      "hint": "为这笔支出发起退款，并自动回补账户余额",
+      "only": "退款或冲正单",
+      "relatedCount": "已关联 {count} 条记录",
+      "section": "退款 / 冲正"
+    },
+    "relatedOrigin": "关联原单：{note}",
+    "resizeAria": "拖拽调整详情抽屉高度",
+    "share": "分享",
+    "summaryAria": "账单摘要",
+    "title": "交易详情",
+    "upload": {
+      "action": "上传附件",
+      "failed": "附件上传失败，请稍后重试。",
+      "success": "附件已上传并关联到账单详情。",
+      "uploading": "上传中…",
+      "webdavRequired": "当前未完成 WebDAV 配置，请先去数据库 / WebDAV 设置页完成配置。"
+    }
+  },
+  "txShare": {
+    "account": "账户：{value}",
+    "amount": "金额：{value}",
+    "attachments": "附件：{value}",
+    "attachmentsCount": "有 {count} 个附件",
+    "attachmentsNone": "无附件",
+    "category": "分类：{value}",
+    "date": "日期：{value}",
+    "maskedHint": "说明：当前为脱敏分享模板。",
+    "note": "备注：{value}",
+    "source": "来源：{value}",
+    "status": "状态：{value}",
+    "summaryHint": "说明：摘要模式默认只保留关键信息，适合直接转发。",
+    "tags": "标签：{value}",
+    "tagsCount": "{count} 个标签",
+    "title": "【账单分享】{type}",
+    "updatedAt": "最后修改：{value}"
+  },
+  "txExport": {
+    "type": {
+      "refund": "退款",
+      "reversal": "冲正",
+      "income": "收入",
+      "budget": "预算",
+      "repayment": "还款",
+      "expense": "支出"
+    },
+    "status": {
+      "pending": "待处理",
+      "completed": "已完成",
+      "refunded": "已退款",
+      "closed": "已关闭",
+      "failed": "失败"
+    },
+    "error": {
+      "fontLoad": "中文字体加载失败，请联网后重试。"
+    },
+    "title": "LedgerFlow 批量交易导出",
+    "meta": {
+      "dateRange": "时间范围：",
+      "generatedAt": "生成时间：",
+      "count": "交易条数：",
+      "countUnit": " 条",
+      "amountTotal": "金额合计：",
+      "incomeTotal": " ｜ 收入合计：",
+      "expenseTotal": " ｜ 支出合计：",
+      "mode": "导出模式：",
+      "template": " ｜ 模板："
+    },
+    "mode": {
+      "privacy": "隐私模式（已脱敏）",
+      "full": "完整模式"
+    },
+    "template": {
+      "summary": "摘要",
+      "full": "完整"
+    },
+    "field": {
+      "category": "分类：",
+      "account": "账户：",
+      "status": "状态：",
+      "orderNo": "订单号：",
+      "merchantOrderNo": "商户单号：",
+      "note": "备注：",
+      "tags": "标签："
+    },
+    "value": {
+      "uncategorized": "未分类",
+      "noAccount": "未指定账户"
+    },
+    "prefix": {
+      "account": "账户：",
+      "orderNo": "订单号：",
+      "merchantOrderNo": "商户单号："
+    }
+  },
+  "txPage": {
+    "bulk": {
+      "labelCategory": "分类",
+      "labelAccount": "账户",
+      "labelAnd": "和",
+      "updatedPrefix": "已批量更新 ",
+      "updatedMiddle": " 条交易的"
+    },
+    "punct": {
+      "period": "。"
+    },
+    "pdf": {
+      "exporting": "PDF 正在导出中，请稍候。",
+      "selectFirst": "请先勾选要导出 PDF 的交易。",
+      "generating": "正在生成 PDF，请稍候…",
+      "downloadStarted": "PDF 已开始下载。",
+      "failed": "导出 PDF 失败。"
+    },
+    "print": {
+      "selectFirst": "请先勾选要打印的交易。",
+      "docTitle": "批量交易打印（A4）",
+      "heading": "批量交易清单",
+      "dateRange": "时间范围",
+      "generatedAt": "｜ 生成时间",
+      "summaryAria": "打印统计摘要",
+      "count": "交易条数",
+      "countUnit": "条",
+      "amountTotal": "金额合计",
+      "incomeTotal": "收入合计",
+      "expenseTotal": "支出合计",
+      "colStatus": "状态",
+      "colOrderNo": "<th>订单号</th>",
+      "colTags": "<th>标签</th>",
+      "privacyNotice": "当前为隐私模式打印，金额/账户/备注等内容已脱敏。",
+      "popupHint": "提示：若未弹出系统打印框，请检查浏览器是否拦截弹窗或静默打印策略。",
+      "footerLabel": "· 批量打印",
+      "privacySuffix": "（隐私模式）",
+      "popupBlockedPdf": "浏览器拦截了弹窗，将使用内嵌打印模式。请在系统打印框里选择“保存为 PDF”。",
+      "popupBlocked": "浏览器拦截了弹窗，将使用内嵌打印模式。",
+      "failed": "打印失败，请检查浏览器权限。",
+      "savePdfHint": "请在系统打印框里选择“保存为 PDF”完成导出。"
+    },
+    "quickAdd": {
+      "draftRestored": "已恢复未完成草稿",
+      "draftSaved": "草稿已自动保存",
+      "aria": "快速新增账目",
+      "cancelAria": "取消快速记账",
+      "title": "记一笔",
+      "done": "完成",
+      "typeGroupAria": "账目类型",
+      "expense": "支出",
+      "income": "收入",
+      "amount": "金额",
+      "total": "合计 ¥",
+      "todaySpent": "当日已支出",
+      "afterEntry": "，记入后 ",
+      "dailyBudget": "当日参考预算",
+      "spent": "已支出",
+      "afterEntryRemaining": "，记入后剩余",
+      "category": "分类",
+      "account": "账户",
+      "date": "日期",
+      "dateAria": "日期",
+      "note": "备注",
+      "optional": "可选",
+      "keypadAria": "金额键盘",
+      "keypadTip": "支持加减乘除；按 Enter 计算",
+      "save": "完成记账",
+      "draftHint": "输入内容会自动保存为草稿"
+    },
+    "error": {
+      "invalidDateRange": "自定义日期范围无效：开始日期不能晚于结束日期。",
+      "copyFailed": "复制失败，请检查浏览器权限。",
+      "unknown": "未知异常"
+    },
+    "undo": {
+      "single": "已撤销这笔记账，可在回收站恢复。",
+      "movedPrefix": "已将 ",
+      "movedSuffix": " 条交易移入回收站。",
+      "movedSingle": "交易已移入回收站。"
+    },
+    "import": {
+      "noReport": "暂无可复制的导入报告。",
+      "reportCopied": "导入报告已复制。",
+      "needCategoryAndAccount": "导入失败：请先创建分类和账户。",
+      "noBillHead": "未识别到可导入账单（数据行 ",
+      "skippedMiddle": "，跳过 ",
+      "noBillTail": "）。",
+      "noHeader": "未识别到可导入账单：未找到有效表头，请检查账单格式。",
+      "step2Head": "第 2 步（预检完成）：识别 ",
+      "rowsMiddle": " 条（数据行 ",
+      "skippedMiddleStep2": "，跳过 ",
+      "step2Tail": "）。请确认后写入。",
+      "failedPrefix": "导入失败：",
+      "completedPrefix": "导入完成：",
+      "duplicatesSkipped": " 条重复记录已跳过（增量模式）。",
+      "reportTitle": "导入报告",
+      "fileLabel": "文件：",
+      "modeLabel": "模式：",
+      "modeOverwrite": "覆盖",
+      "modeMerge": "合并",
+      "modeIncremental": "增量",
+      "resultNoChange": "结果：无新增或更新",
+      "skippedLabel": "跳过重复：",
+      "unitInline": " 条",
+      "actionOverwrite": "覆盖",
+      "actionMerge": "合并",
+      "actionIncrementalImport": "增量导入",
+      "step3Head": "第 3 步（导入完成）：新增 ",
+      "updatedMiddle": " 条，更新 ",
+      "unitMiddleStep3": " 条",
+      "skippedMiddleStep3": "，跳过 ",
+      "unitTailStep3": " 条",
+      "step3Tail": "）。",
+      "reportTitleStep3": "导入报告",
+      "fileLabelStep3": "文件：",
+      "sourceLabel": "来源：",
+      "sourceWechat": "微信",
+      "sourceAlipay": "支付宝",
+      "modeLabelStep3": "模式：",
+      "modeOverwriteFull": "覆盖（清空后导入）",
+      "modeMergeFull": "合并（覆盖重复）",
+      "modeIncrementalFull": "增量（跳过重复）",
+      "parsedLabel": "识别：",
+      "rowsMiddleReport": " 条（数据行 ",
+      "skippedMiddleReport": "，跳过 ",
+      "resultAdded": "结果：新增 ",
+      "updatedMiddleReport": " 条，更新 ",
+      "skippedRepeatsMiddle": " 条，跳过重复 ",
+      "unitTailReport": " 条",
+      "timeLabel": "时间：",
+      "autoLocated": " 已自动定位到最新一条。",
+      "previewModeOverwrite": "覆盖（清空后导入）",
+      "previewModeMerge": "合并（覆盖重复）",
+      "previewModeIncremental": "增量（跳过重复）",
+      "overwriteHintHead": "⚠️ 覆盖模式将先清空当前账本的 ",
+      "overwriteHintTail": " 条交易，再导入新记录。",
+      "mergeHint": "合并模式会覆盖已存在的重复账单。",
+      "incrementalHint": "增量模式会跳过已存在的重复账单。",
+      "previewSourceWechat": "微信",
+      "previewSourceAlipay": "支付宝",
+      "noNote": "无备注",
+      "previewFileLabel": "文件：",
+      "previewSourceLabel": "来源：",
+      "previewModeLabel": "模式：",
+      "previewParsedLabel": "识别结果：",
+      "previewRowsMiddle": " 条（数据行 ",
+      "previewSkippedMiddle": "，跳过 ",
+      "previewImpactHead": "执行影响：新增 ",
+      "previewUpdatedMiddle": " 条，更新 ",
+      "previewSkippedRepeatsMiddle": " 条，跳过重复 ",
+      "previewUnitTail": " 条",
+      "previewSampleHead": "预检样例（前 5 条）：\n",
+      "previewAppendHead": "\n将新增（前 3 条）：\n",
+      "previewUpdateHead": "\n将更新（前 3 条）：\n",
+      "previewEyebrow": "导入预检",
+      "cardSource": "来源",
+      "cardDetected": "识别",
+      "cardUnit": "条",
+      "cardDataLines": "数据行",
+      "cardSkipped": "· 跳过",
+      "cardAppend": "新增",
+      "cardUpdate": "更新",
+      "cardSkippedDuplicates": "跳过重复",
+      "sampleHeading": "预检样例",
+      "sampleBefore": "前",
+      "sampleUnit": "条",
+      "noSamples": "暂无可展示样例",
+      "appendHeading": "将新增",
+      "sampleCountUnit": "条样例",
+      "noAppendSamples": "无新增样例",
+      "updateHeading": "将更新",
+      "noUpdateSamples": "无更新样例",
+      "sampleCountUnitUpdate": "条样例",
+      "confirmStep2Title": "第 2 步：导入预检确认",
+      "confirmOverwrite": "确认进入第 3 步（覆盖写入）",
+      "confirmWrite": "确认进入第 3 步（写入账本）",
+      "step3OpenParen": "（"
+    },
+    "refund": {
+      "notePrefix": "退款：",
+      "originalTransaction": "原始交易",
+      "createdFullHead": "退款已成功创建，",
+      "creditedFullTail": " 元已回补到原账户，原单已标记为已退款。",
+      "createdRemainingHead": "退款已成功创建，",
+      "creditedRemainingMiddle": " 元已回补到原账户，剩余可退 ¥",
+      "period": "。",
+      "failed": "退款失败，请稍后重试。",
+      "confirmTitle": "确认退款并回补账户",
+      "confirmWillCreatePrefix": "将为“",
+      "confirmThisTransaction": "该交易",
+      "confirmWillCreateSuffix": "”创建退款记录。",
+      "originalAmount": "原交易金额",
+      "refundedAmount": "已退款金额",
+      "thisRefundAmount": "本次退款金额",
+      "afterRefundAccount": "退款后回补账户",
+      "detailHint": "退款记录会写入余额变动明细，原交易的可退款金额会同步更新。",
+      "confirmPrefix": "确认退款（"
+    },
+    "share": {
+      "copyFailed": "复制失败，请检查浏览器权限。",
+      "copied": "分享文案已复制。",
+      "title": "分享账单",
+      "dialogTitle": "分享账单",
+      "template": "分享模板",
+      "templateFull": "完整",
+      "templateMasked": "脱敏",
+      "templateSummary": "摘要",
+      "fields": "包含字段",
+      "fieldAccount": "账户",
+      "fieldNote": "备注",
+      "attachmentHint": "附件提示",
+      "preview": "预览",
+      "close": "关闭",
+      "copyText": "复制文案"
+    },
+    "chart": {
+      "uncategorized": "未分类"
+    },
+    "insights": {
+      "quickFiltersAria": "洞察侧栏快速筛选",
+      "quickDate": "快速日期",
+      "dateAll": "全部",
+      "dateThisMonth": "本月",
+      "dateLast30Days": "近30天",
+      "quickType": "快速类型",
+      "typeAll": "全部",
+      "typeExpense": "支出",
+      "typeIncome": "收入",
+      "pieTitle": "分类占比饼图（当前列表）",
+      "noData": "暂无数据",
+      "curveTitle": "累计净额曲线（当前列表）"
+    },
+    "copy": {
+      "note": "备注已复制",
+      "generic": "JSON 已复制"
+    },
+    "ai": {
+      "singleApplied": "已按大模型建议完成重分类。",
+      "singleAppliedFallback": "已按账单信息完成 AI 重分类。",
+      "singleUnchanged": "AI 分类建议未变化，无需替换。",
+      "systemPromptIntro": "你是交易重分类助手。请根据交易信息，从给定分类列表中选择最匹配的一项。仅返回 JSON：",
+      "systemPromptCategoryName": "分类名",
+      "systemPromptTail": "。禁止输出解释。若不确定，返回当前分类。",
+      "promptInfo": "交易信息：",
+      "promptType": "类型",
+      "promptAmount": "\n- 金额: ",
+      "promptNote": "\n- 备注: ",
+      "promptNone": "无",
+      "promptTags": "\n- 标签: ",
+      "promptCurrentCategory": "\n- 当前分类: ",
+      "promptAvailableCategories": "\n可选分类：",
+      "stoppingBulk": "正在停止批量 AI 重分类…",
+      "stoppedHead": "批量 AI 重分类已停止（大模型 ",
+      "stoppedFallback": " 条，规则回退 ",
+      "stoppedCancelled": " 条，已取消 ",
+      "stoppedTail": " 条）。",
+      "bulkDoneHead": "已按大模型建议完成 ",
+      "bulkDoneTail": " 条交易重分类。",
+      "bulkFallbackHead": "已按账单信息完成 ",
+      "bulkFallbackTail": " 条交易重分类。",
+      "bulkUnchanged": "AI 分类建议未变化，无需替换。"
+    },
+    "common": {
+      "cancel": "取消"
+    },
+    "confirm": {
+      "bulkDeleteTitle": "确认批量移入回收站",
+      "deleteTitle": "确认移入回收站",
+      "bulkDeleteHead": "即将把 ",
+      "bulkDeleteTail": " 条交易移入回收站。你之后仍可在回收站恢复或彻底删除。是否继续？",
+      "deleteDescription": "该交易将先移入回收站。你之后仍可在回收站恢复或彻底删除。是否继续？",
+      "bulkDeleteConfirm": "确认移入回收站",
+      "deleteConfirm": "移入回收站",
+      "cancel": "取消"
+    },
+    "toast": {
+      "undo": "撤销"
+    },
+    "dedupe": {
+      "none": "检测完成：未发现重复账单。",
+      "foundHead": "检测完成：发现 ",
+      "foundTail": "条疑似重复账单。",
+      "overwriteHint": "点击“确定”覆盖重复账单（每组保留最新一条）；点击“取消”继续选择删除重复。",
+      "overwritten": "已完成覆盖去重（每组保留最新一条）。",
+      "confirmDelete": "是否删除重复账单？",
+      "deleteHint": "点击“确定”删除重复账单（每组保留最早一条）；点击“取消”不处理。",
+      "deleted": "已删除重复账单（每组保留最早一条）。",
+      "cancelled": "已取消重复账单处理。"
+    },
+    "table": {
+      "anomalyHintHead": "该笔金额明显高于当前均值（均值约 ",
+      "anomalyHintTail": "）。建议检查是否重复记账。",
+      "anomalyTag": "! 高于平均",
+      "moreActionsAria": "更多操作 ",
+      "orderLineLabel": "交易订单：",
+      "merchantOrderLineLabel": "· 商家订单：",
+      "delete": "删除",
+      "share": "分享",
+      "viewDetail": "查看详情",
+      "shareBill": "分享账单",
+      "deleteBill": "删除账单",
+      "cancel": "取消"
     }
   }
 }

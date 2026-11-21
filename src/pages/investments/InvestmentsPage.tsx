@@ -16,7 +16,13 @@ import type {
   InvestmentWatchItem
 } from '../../entities/investment/types';
 import { sendAiChatStream } from '../../features/assistant/api/openaiCompatibleClient';
+import { useTranslation } from 'react-i18next';
 import { useTFallback, type TfFallback } from '../../shared/lib/useTFallback';
+
+/** 跟随界面语言的日期时间 locale(从 useTranslation() 取语言,避免模块级 i18n 单例副作用) */
+function toLocaleLanguage(language: string | undefined): string {
+  return String(language || '').startsWith('en') ? 'en-US' : 'zh-CN';
+}
 import { InvestmentChatPanel } from '../../features/assistant/investment-chat/InvestmentChatPanel';
 import { ChatSparklesIcon } from '../../features/assistant/ui/chatIcons';
 import { DatePicker } from '../../shared/ui/DatePicker';
@@ -191,10 +197,16 @@ type InvestmentWorkspace = 'overview' | 'boards' | 'watchlist' | 'news';
 
 const EMPTY_MARKET_DATA_META: MarketDataMeta = {
   // 数据占位值(不是界面文案),渲染处再做本地化
-  source: '等待行情',
+  source: '',
   updatedAt: '',
   freshness: 'stale'
 };
+
+/** 市场数据来源名;数据端未返回时用本地化占位文案 */
+function formatMarketDataSource(source: string | undefined, tf: TfFallback) {
+  const value = String(source || '').trim();
+  return value || tf('investments.market.source.waiting', '等待行情');
+}
 
 function normalizeTrackedMarketThemes(value: unknown): EastmoneyMarketTheme[] {
   if (!Array.isArray(value)) return EASTMONEY_MARKET_THEMES;
@@ -249,7 +261,8 @@ function formatFundDataFreshness(value: string | undefined, tf: TfFallback) {
     ? value.replace(' ', 'T')
     : value;
   const date = new Date(normalizedValue);
-  if (!Number.isFinite(date.getTime())) return `数据时间：${value}`;
+  if (!Number.isFinite(date.getTime()))
+    return tf('investments.detail.time.rawPrefix', '数据时间：{value}').replace('{value}', value);
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return tf('investments.detail.time.navDate', '净值日期 {year}年{month}月{day}日')
       .replace('{year}', String(date.getFullYear()))
@@ -453,6 +466,7 @@ function parseWatchPerformancePoints(items: string[]): WatchPerformancePoint[] {
 }
 
 function WatchPerformanceLineChart({ points }: { points: WatchPerformancePoint[] }) {
+  const tf = useTFallback();
   const width = 420;
   const height = 150;
   const paddingX = 18;
@@ -479,7 +493,11 @@ function WatchPerformanceLineChart({ points }: { points: WatchPerformancePoint[]
 
   return (
     <div className="investments-watch-performance-line">
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="历史业绩走线图">
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        role="img"
+        aria-label={tf('investments.watch.performanceLineAria', '历史业绩走线图')}
+      >
         <line
           className="investments-watch-performance-zero-line"
           x1={paddingX}
@@ -498,7 +516,10 @@ function WatchPerformanceLineChart({ points }: { points: WatchPerformancePoint[]
           </g>
         ))}
       </svg>
-      <div className="investments-watch-performance-values" aria-label="历史业绩数值">
+      <div
+        className="investments-watch-performance-values"
+        aria-label={tf('investments.watch.performanceValuesAria', '历史业绩数值')}
+      >
         {points.map((point, index) => (
           <span
             className={point.value >= 0 ? 'is-positive' : 'is-negative'}
@@ -575,8 +596,13 @@ function WatchHoldingQuoteList({
   holdings: string[];
   quotesByCode: Map<string, EastmoneyHoldingStockQuote>;
 }) {
+  const tf = useTFallback();
+
   return (
-    <div className="investments-watch-holding-quote-list" aria-label="基金持仓实时涨跌">
+    <div
+      className="investments-watch-holding-quote-list"
+      aria-label={tf('investments.watch.holdingQuotesAria', '基金持仓实时涨跌')}
+    >
       {holdings.map((value) => {
         const stockCode = getFundHoldingStockCode(value);
         const quote = stockCode ? quotesByCode.get(stockCode) : undefined;
@@ -615,33 +641,43 @@ function formatMarketPercent(value?: number | null) {
   return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
 }
 
-function formatMarketAmount(value?: number | null) {
+function formatMarketAmount(value: number | null | undefined, tf: TfFallback) {
   if (typeof value !== 'number' || value <= 0) return '--';
-  if (value >= 1e12) return `${(value / 1e12).toFixed(2)}万亿`;
-  if (value >= 1e8) return `${(value / 1e8).toFixed(value >= 1e10 ? 0 : 1)}亿`;
-  if (value >= 1e4) return `${(value / 1e4).toFixed(0)}万`;
+  const trillion = tf('investments.market.amount.trillion', '万亿');
+  const hundredMillion = tf('investments.market.amount.hundredMillion', '亿');
+  const tenThousand = tf('investments.market.amount.tenThousand', '万');
+  if (value >= 1e12) return `${(value / 1e12).toFixed(2)}${trillion}`;
+  if (value >= 1e8) return `${(value / 1e8).toFixed(value >= 1e10 ? 0 : 1)}${hundredMillion}`;
+  if (value >= 1e4) return `${(value / 1e4).toFixed(0)}${tenThousand}`;
   return value.toFixed(0);
 }
 
-function formatMarketNewsTime(value?: string) {
-  if (!value) return '刚刚';
+function formatMarketNewsTime(value: string | undefined, tf: TfFallback, language?: string) {
+  if (!value) return tf('investments.market.newsTime.justNow', '刚刚');
   const timePart = value.match(/(\d{2}:\d{2})(?::\d{2})?$/)?.[1];
   if (timePart) return timePart;
 
   const date = new Date(value);
   if (!Number.isNaN(date.getTime())) {
-    return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+    return date.toLocaleTimeString(toLocaleLanguage(language), {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
   }
 
   return value;
 }
 
-/** 行情快照的刷新时刻,例如「14:31」;没有可用时间时返回空串。 */
-function formatMarketClock(value?: string) {
+function formatMarketClock(value: string | undefined, language?: string) {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+  return date.toLocaleTimeString(toLocaleLanguage(language), {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
 }
 
 function isPolicySignalText(value: string) {
@@ -675,30 +711,50 @@ function getMovementEmoji(value?: number | null) {
 
 function getPlainMarketLine(change: number | null | undefined, tf: TfFallback) {
   if (typeof change !== 'number')
-    return tf('investments.briefing.line.loading', '行情还在加载,先别急着下结论。');
+    return tf('investments.briefing.line.loading', '行情还在加载，先别急着下结论。');
   if (change >= 1)
-    return tf('investments.briefing.line.strong', '大盘今天挺有劲,热闹归热闹,别一上头就追。');
+    return tf('investments.briefing.line.strong', '大盘今天挺有劲，热闹归热闹，别一上头就追。');
   if (change >= 0.25)
-    return tf('investments.briefing.line.warming', '大盘慢慢回暖,今天不是硬扛的一天。');
+    return tf('investments.briefing.line.warming', '大盘慢慢回暖，今天不是硬扛的一天。');
   if (change <= -1)
-    return tf('investments.briefing.line.dumped', '大盘又被砸了,先把节奏稳住比急着补仓更重要。');
+    return tf('investments.briefing.line.dumped', '大盘又被砸了，先把节奏稳住比急着补仓更重要。');
   if (change <= -0.25)
-    return tf('investments.briefing.line.weakening', '市场有点泄气,今天更适合看,不适合冲动操作。');
+    return tf(
+      'investments.briefing.line.weakening',
+      '市场有点泄气，今天更适合看，不适合冲动操作。'
+    );
   return tf(
     'investments.briefing.line.hesitant',
-    '大盘还在犹豫,今天先看自己持仓,不用被每一根波动带着走。'
+    '大盘还在犹豫，今天先看自己持仓，不用被每一根波动带着走。'
   );
 }
 
-function getBoardHealth(change?: number | null) {
+function getBoardHealth(change: number | null | undefined, tf: TfFallback) {
   if (typeof change !== 'number') {
-    return { emoji: '⚪', label: '数据等待中', className: 'is-neutral' };
+    return {
+      emoji: '⚪',
+      label: tf('investments.boards.health.waiting', '数据等待中'),
+      className: 'is-neutral'
+    };
   }
-  if (change >= 1) return { emoji: '🟢', label: '偏强，别追高', className: 'is-green' };
-  if (change <= -1) return { emoji: '🔴', label: '偏弱，先等等', className: 'is-red' };
-  return { emoji: '🟡', label: '观望一下', className: 'is-yellow' };
+  if (change >= 1)
+    return {
+      emoji: '🟢',
+      label: tf('investments.boards.health.strong', '偏强，别追高'),
+      className: 'is-green'
+    };
+  if (change <= -1)
+    return {
+      emoji: '🔴',
+      label: tf('investments.boards.health.weak', '偏弱，先等等'),
+      className: 'is-red'
+    };
+  return {
+    emoji: '🟡',
+    label: tf('investments.boards.health.neutral', '观望一下'),
+    className: 'is-yellow'
+  };
 }
-
 type MarketAlgorithmSignals = {
   score: number;
   riskScore: number;
@@ -853,23 +909,37 @@ function buildMarketAlgorithmSignals({
     score,
     riskScore,
     regime:
-      score >= 35 ? '偏强但需防追高' : score <= -35 ? '偏弱，优先控风险' : '震荡分化，精选板块',
+      score >= 35
+        ? tf('investments.boards.regime.strong', '偏强但需防追高')
+        : score <= -35
+          ? tf('investments.boards.regime.weak', '偏弱，优先控风险')
+          : tf('investments.boards.regime.chop', '震荡分化，精选板块'),
     breadth: boards.length
-      ? `上涨 ${upBoards} / 下跌 ${downBoards} / 样本 ${boards.length}`
-      : '板块数据不足',
+      ? tf('investments.boards.breadth.summary', '上涨 {up} / 下跌 {down} / 样本 {total}')
+          .replace('{up}', String(upBoards))
+          .replace('{down}', String(downBoards))
+          .replace('{total}', String(boards.length))
+      : tf('investments.boards.breadth.insufficient', '板块数据不足'),
     strongestTheme: strongest
       ? `${strongest.name} ${formatMarketPercent(strongest.changePercent)}`
-      : '暂无强势板块',
+      : tf('investments.boards.strongest.empty', '暂无强势板块'),
     weakestTheme: weakest
       ? `${weakest.name} ${formatMarketPercent(weakest.changePercent)}`
-      : '暂无弱势板块',
+      : tf('investments.boards.weakest.empty', '暂无弱势板块'),
     newsSignal:
       positiveNewsCount || negativeNewsCount
-        ? `利好词 ${positiveNewsCount} / 风险词 ${negativeNewsCount}`
-        : '新闻信号不足',
-    concentration: `${(largestPositionShare * 100).toFixed(0)}% 最大仓位占比`,
-    formula:
+        ? tf('investments.boards.newsSignal.summary', '利好词 {positive} / 风险词 {negative}')
+            .replace('{positive}', String(positiveNewsCount))
+            .replace('{negative}', String(negativeNewsCount))
+        : tf('investments.boards.newsSignal.insufficient', '新闻信号不足'),
+    concentration: tf(
+      'investments.boards.concentration.maxShare',
+      '{percent}% 最大仓位占比'
+    ).replace('{percent}', (largestPositionShare * 100).toFixed(0)),
+    formula: tf(
+      'investments.boards.formula',
       '综合分 = 指数动量×45% + 板块广度×35% + 板块均值×20%；再叠加新闻信号、波动率和集中度计算风险分。'
+    )
   };
 }
 
@@ -990,7 +1060,7 @@ function HoldingsTodayPanel({
       <p className="investments-today-note">
         {tf(
           'investments.holdings.estimateHint',
-          '自选持仓按今日涨跌幅从高到低排列,TOP 3 仅标记有行情的基金;没有基金行情时再按主要指数平均涨跌估算。'
+          '自选持仓按今日涨跌幅从高到低排列，TOP 3 仅标记有行情的基金；没有基金行情时再按主要指数平均涨跌估算。'
         )}
       </p>
 
@@ -1475,20 +1545,31 @@ function getMarketClosureNotice(
     return {
       eyebrow: tf('investments.notice.holidayEyebrow', '休市公告'),
       title: `${tf(holiday.labelKey, holiday.label)}${tf('investments.notice.holidayTitleSuffix', ' · 今日主要市场休市')}`,
-      detail: `${dateKey} 为${holiday.label}休市日，行情将保留最近收盘数据，自动轮询会在下一交易时段恢复。`
+      detail: tf(
+        'investments.notice.holidayDetail',
+        '{date} 为{holiday}休市日，行情将保留最近收盘数据，自动轮询会在下一交易时段恢复。'
+      )
+        .replace('{date}', dateKey)
+        .replace('{holiday}', tf(holiday.labelKey, holiday.label))
     };
   }
   if (isWeekend) {
     return {
       eyebrow: tf('investments.notice.weekendEyebrow', '休市提醒'),
       title: tf('investments.notice.weekendTitle', '周末休市 · 暂无实时行情'),
-      detail: `${dateKey} 为周末，A 股、日韩及美股均不进行常规交易。页面展示最近收盘数据，下一交易日开盘后自动恢复更新。`
+      detail: tf(
+        'investments.notice.weekendDetail',
+        '{date} 为周末，A 股、日韩及美股均不进行常规交易。页面展示最近收盘数据，下一交易日开盘后自动恢复更新。'
+      ).replace('{date}', dateKey)
     };
   }
   return {
-    eyebrow: '交易时段提醒',
-    title: '当前没有市场处于交易中',
-    detail: '各市场会按当地交易日历分别开闭市；休市期间不刷新实时价格，走势图仍可查看最近行情。'
+    eyebrow: tf('investments.notice.noOpenEyebrow', '交易时段提醒'),
+    title: tf('investments.notice.noOpenTitle', '当前没有市场处于交易中'),
+    detail: tf(
+      'investments.notice.noOpenDetail',
+      '各市场会按当地交易日历分别开闭市；休市期间不刷新实时价格，走势图仍可查看最近行情。'
+    )
   };
 }
 
@@ -3030,7 +3111,7 @@ function MarketOverviewPanel({
                     </span>
                     <span>
                       {tf('investments.market.candle.volume', '量')}
-                      <b>{formatMarketAmount(hoveredGlobalCandle.volume)}</b>
+                      <b>{formatMarketAmount(hoveredGlobalCandle.volume, tf)}</b>
                     </span>
                   </div>
                 ) : null}
@@ -3144,7 +3225,7 @@ function MarketOverviewPanel({
                       height={bar.height}
                       rx="1"
                     >
-                      <title>{`${bar.label} · ${tf('investments.market.volume', '成交量')} ${formatMarketAmount(bar.volume)}`}</title>
+                      <title>{`${bar.label} · ${tf('investments.market.volume', '成交量')} ${formatMarketAmount(bar.volume, tf)}`}</title>
                     </rect>
                   ))}
                   <text
@@ -3206,7 +3287,7 @@ function MarketOverviewPanel({
               </span>
               <span>
                 {tf('investments.market.turnover', '成交额')}
-                <strong>{formatMarketAmount(selectedQuoteData?.amount)}</strong>
+                <strong>{formatMarketAmount(selectedQuoteData?.amount, tf)}</strong>
               </span>
             </div>
 
@@ -3338,11 +3419,11 @@ function MarketOverviewPanel({
                 <div>
                   <span>
                     {tf('investments.market.turnover', '成交额')}
-                    <strong>{formatMarketAmount(activeTrendPoint?.amount)}</strong>
+                    <strong>{formatMarketAmount(activeTrendPoint?.amount, tf)}</strong>
                   </span>
                   <span>
                     {tf('investments.market.volume', '成交量')}
-                    <strong>{formatMarketAmount(activeTrendPoint?.volume)}</strong>
+                    <strong>{formatMarketAmount(activeTrendPoint?.volume, tf)}</strong>
                   </span>
                 </div>
               </div>
@@ -3355,7 +3436,7 @@ function MarketOverviewPanel({
           >
             <div className="investments-market-turnover-card">
               <span>{tf('investments.market.topIndicesTurnover', '四大指数成交额')}</span>
-              <strong>{formatMarketAmount(totalAmount)}</strong>
+              <strong>{formatMarketAmount(totalAmount, tf)}</strong>
               <em>
                 {activeIndex?.shortName || tf('investments.market.indexFallback', '指数')}{' '}
                 {formatMarketPercent(selectedQuoteData?.changePercent)}
@@ -3364,7 +3445,7 @@ function MarketOverviewPanel({
             <div className="investments-market-side-grid">
               <span>
                 {tf('investments.market.selectedIndex', '选中指数')}
-                <strong>{formatMarketAmount(selectedQuoteData?.amount)}</strong>
+                <strong>{formatMarketAmount(selectedQuoteData?.amount, tf)}</strong>
               </span>
               <span>
                 {tf('investments.market.previousClose', '昨收')}
@@ -3619,7 +3700,9 @@ function MarketBoardsPanel({
             {tf('investments.boards.aiAction', 'AI 看板块')}
           </button>
           <button type="button" onClick={onRefresh} disabled={status === 'loading'}>
-            {status === 'loading' ? '刷新中' : tf('investments.refresh', '刷新')}
+            {status === 'loading'
+              ? tf('investments.refreshing', '刷新中')
+              : tf('investments.refresh', '刷新')}
           </button>
         </div>
       </div>
@@ -3781,7 +3864,7 @@ function MarketBoardsPanel({
               <span>
                 {tf(
                   'investments.boards.breadthSummary',
-                  '涨 {up} · 平 {flat} · 跌 {down},按涨跌幅展示前 8 个'
+                  '涨 {up} · 平 {flat} · 跌 {down}，按涨跌幅展示前 8 个'
                 )
                   .replace('{up}', String(breadth.up))
                   .replace('{flat}', String(breadth.flat))
@@ -3792,7 +3875,7 @@ function MarketBoardsPanel({
           <div className="investments-market-board-grid">
             {visibleBoards.map((board, index) => {
               const boardConstituents = constituents[board.code] || [];
-              const health = getBoardHealth(board.changePercent);
+              const health = getBoardHealth(board.changePercent, tf);
               return (
                 <article
                   className={`investments-market-board-card ${
@@ -3862,8 +3945,8 @@ function MarketBoardsPanel({
             })}
           </div>
           <p className="investments-market-source-note">
-            {tf('investments.boards.dataSourcePrefix', '数据源:')}
-            {activeMeta.source} ·{' '}
+            {tf('investments.boards.dataSourcePrefix', '数据源：')}
+            {formatMarketDataSource(activeMeta.source, tf)} ·{' '}
             {activeMeta.freshness === 'stale'
               ? tf('investments.boards.snapshotStale', '最近有效快照')
               : tf('investments.boards.snapshotLive', '实时快照')}{' '}
@@ -3986,8 +4069,8 @@ function MarketBoardsPanel({
             })}
           </div>
           <p className="investments-market-source-note">
-            {tf('investments.boards.dataSourcePrefix', '数据源:')}
-            {activeMeta.source} ·{' '}
+            {tf('investments.boards.dataSourcePrefix', '数据源：')}
+            {formatMarketDataSource(activeMeta.source, tf)} ·{' '}
             {activeMeta.freshness === 'stale'
               ? tf('investments.boards.snapshotStale', '最近有效快照')
               : tf('investments.boards.snapshotLive', '实时快照')}{' '}
@@ -4018,6 +4101,8 @@ function MarketNewsPanel({
   onAskAi?: (prompt: string) => void;
 }) {
   const tf = useTFallback();
+  const { i18n: languageSource } = useTranslation();
+  const language = languageSource.resolvedLanguage || languageSource.language;
   return (
     <section
       className={`panel investments-market-news-panel ${status === 'loading' ? 'is-loading' : ''}`}
@@ -4037,7 +4122,8 @@ function MarketNewsPanel({
             onClick={() =>
               onAskAi?.(
                 buildInvestmentNewsAskPrompt({
-                  title: news[0]?.title || '今天最重要的市场消息',
+                  title:
+                    news[0]?.title || tf('investments.news.fallbackTitle', '今天最重要的市场消息'),
                   summary: news[0]?.summary,
                   stocks: news[0]?.stocks
                 })
@@ -4049,7 +4135,9 @@ function MarketNewsPanel({
             {tf('investments.news.aiAction', 'AI 解读')}
           </button>
           <button type="button" onClick={onRefresh} disabled={status === 'loading'}>
-            {status === 'loading' ? '刷新中' : tf('investments.refresh', '刷新')}
+            {status === 'loading'
+              ? tf('investments.refreshing', '刷新中')
+              : tf('investments.refresh', '刷新')}
           </button>
         </div>
       </div>
@@ -4096,7 +4184,7 @@ function MarketNewsPanel({
               rel="noreferrer"
             >
               <span className="investments-market-news-time">
-                {formatMarketNewsTime(item.time)}
+                {formatMarketNewsTime(item.time, tf, language)}
               </span>
               <strong>{item.title}</strong>
               {item.summary ? <p>{item.summary}</p> : null}
@@ -4176,6 +4264,8 @@ function formatHoldingShares(value?: number) {
 }
 
 export function InvestmentsPage() {
+  const { i18n: languageSource } = useTranslation();
+  const language = languageSource.resolvedLanguage || languageSource.language;
   const tf = useTFallback();
   const transactions = useFinanceStore((state) => state.transactions);
   const positions = useAppPreferences((state) => state.investmentPositions);
@@ -4462,7 +4552,7 @@ export function InvestmentsPage() {
       downCount: board.downCount
     });
     const recentMarketNews = marketNews.slice(0, 5).map((item) => ({
-      time: formatMarketNewsTime(item.time),
+      time: formatMarketNewsTime(item.time, tf, language),
       title: item.title,
       summary: item.summary,
       stocks: item.stocks.slice(0, 4)
@@ -4471,7 +4561,7 @@ export function InvestmentsPage() {
       .filter((item) => isPolicySignalText(`${item.title} ${item.summary}`))
       .slice(0, 5)
       .map((item) => ({
-        time: formatMarketNewsTime(item.time),
+        time: formatMarketNewsTime(item.time, tf, language),
         title: item.title,
         summary: item.summary
       }));
@@ -4515,7 +4605,9 @@ export function InvestmentsPage() {
     marketOverview,
     marketThemeBoards,
     selectedMarketThemeCode,
-    selectedNewsCategoryId
+    selectedNewsCategoryId,
+    language,
+    tf
   ]);
 
   const retryMarketInsight = useCallback(() => {
@@ -5041,7 +5133,9 @@ export function InvestmentsPage() {
   }
 
   function handleFollowWatchItem(item: InvestmentWatchItem) {
-    const nextTags = Array.from(new Set(['关注中', ...(item.tags || [])])).slice(0, 6);
+    const nextTags = Array.from(
+      new Set([tf('investments.watch.following', '关注中'), ...(item.tags || [])])
+    ).slice(0, 6);
     upsertInvestmentWatchItem({
       ...item,
       tags: nextTags,
@@ -5316,7 +5410,7 @@ export function InvestmentsPage() {
           </span>
           <small>
             {tf('investments.dataUpdatedPrefix', '数据更新')} ·{' '}
-            {formatMarketClock(marketOverview?.updatedAt) ||
+            {formatMarketClock(marketOverview?.updatedAt, language) ||
               tf('investments.refreshPending', '待刷新')}
           </small>
         </div>
@@ -5346,7 +5440,7 @@ export function InvestmentsPage() {
             )}{' '}
             · {tf('investments.todayPrefix', '今日')} {formatMarketPercent(averageMarketChange)} ·{' '}
             {tf('investments.marketPrefix', '行情')}{' '}
-            {formatMarketClock(marketOverview?.updatedAt) ||
+            {formatMarketClock(marketOverview?.updatedAt, language) ||
               tf('investments.refreshPending', '待刷新')}
           </span>
         </div>
@@ -5768,7 +5862,9 @@ export function InvestmentsPage() {
                           ) || WATCH_CATEGORY_FILTERS[WATCH_CATEGORY_FILTERS.length - 1];
                         const isRefreshing =
                           refreshingAllWatchItems || refreshingWatchItemId === item.id;
-                        const isFollowing = item.tags.includes('关注中');
+                        const isFollowing = item.tags.includes(
+                          tf('investments.watch.following', '关注中')
+                        );
 
                         return (
                           <article
@@ -5783,7 +5879,7 @@ export function InvestmentsPage() {
                               <div>
                                 <strong>{item.name}</strong>
                                 <p>
-                                  {item.code || '未记录代码'}
+                                  {item.code || tf('investments.watch.noCode', '未记录代码')}
                                   {item.platform ? ` · ${item.platform}` : ''}
                                 </p>
                               </div>
@@ -5825,11 +5921,16 @@ export function InvestmentsPage() {
                             >
                               <span>
                                 <em>净值</em>
-                                <strong>{item.netValue || '待更新'}</strong>
+                                <strong>
+                                  {item.netValue || tf('investments.watch.pendingValue', '待更新')}
+                                </strong>
                               </span>
                               <span>
                                 <em>收益</em>
-                                <strong>{item.addedReturn || '待更新'}</strong>
+                                <strong>
+                                  {item.addedReturn ||
+                                    tf('investments.watch.pendingValue', '待更新')}
+                                </strong>
                               </span>
                               <span className="is-holding">
                                 <em>持有</em>
@@ -5868,9 +5969,13 @@ export function InvestmentsPage() {
                                       event.stopPropagation();
                                       handleStartEditingWatchHoldingShares(item);
                                     }}
-                                    title="点击填写持有份额"
+                                    title={tf(
+                                      'investments.watch.sharesInputHint',
+                                      '点击填写持有份额'
+                                    )}
                                   >
-                                    {formatHoldingShares(item.holdingShares) || '待填写'}
+                                    {formatHoldingShares(item.holdingShares) ||
+                                      tf('investments.watch.pendingInput', '待填写')}
                                   </button>
                                 )}
                               </span>
@@ -5940,7 +6045,7 @@ export function InvestmentsPage() {
                               <div className="investments-watch-card-details">
                                 {item.lastSummary ? (
                                   <section className="investments-watch-card-expanded-summary">
-                                    <span>分析摘要</span>
+                                    <span>{tf('investments.watch.summaryTitle', '分析摘要')}</span>
                                     <p>{item.lastSummary}</p>
                                   </section>
                                 ) : null}
@@ -5950,7 +6055,12 @@ export function InvestmentsPage() {
                                       <section className="investments-watch-performance-panel">
                                         <div className="investments-watch-detail-head">
                                           <span>{performanceSection.title}</span>
-                                          <small>按不同时间区间连接走势</small>
+                                          <small>
+                                            {tf(
+                                              'investments.watch.performanceHint',
+                                              '按不同时间区间连接走势'
+                                            )}
+                                          </small>
                                         </div>
                                         <WatchPerformanceLineChart points={performancePoints} />
                                       </section>
@@ -5958,22 +6068,29 @@ export function InvestmentsPage() {
 
                                     <div className="investments-watch-card-split-grid">
                                       <section className="investments-watch-card-split is-holdings">
-                                        <span>重仓股票</span>
+                                        <span>
+                                          {tf('investments.watch.topHoldingsTitle', '重仓股票')}
+                                        </span>
                                         {holdingsPreview.length > 0 ? (
                                           <WatchHoldingQuoteList
                                             holdings={holdingsPreview}
                                             quotesByCode={holdingStockQuotes}
                                           />
                                         ) : (
-                                          <p>待更新</p>
+                                          <p>{tf('investments.watch.pendingValue', '待更新')}</p>
                                         )}
                                       </section>
                                       <section className="investments-watch-card-split is-assets">
-                                        <span>资产分布</span>
+                                        <span>
+                                          {tf('investments.watch.assetAllocationTitle', '资产分布')}
+                                        </span>
                                         {assetAllocationPreview.length > 0 ? (
                                           <div
                                             className="investments-watch-chip-list"
-                                            aria-label="基金资产分布"
+                                            aria-label={tf(
+                                              'investments.watch.assetAllocationAria',
+                                              '基金资产分布'
+                                            )}
                                           >
                                             {assetAllocationPreview.map((value) => {
                                               const displayValue = formatWatchPreviewItem(value);
@@ -5988,7 +6105,7 @@ export function InvestmentsPage() {
                                             })}
                                           </div>
                                         ) : (
-                                          <p>待更新</p>
+                                          <p>{tf('investments.watch.pendingValue', '待更新')}</p>
                                         )}
                                       </section>
                                     </div>
@@ -6004,7 +6121,9 @@ export function InvestmentsPage() {
                                           <div className="investments-watch-detail-head">
                                             <span>{section.title}</span>
                                             {section.kind === 'chips' ? (
-                                              <small>精选摘要</small>
+                                              <small>
+                                                {tf('investments.watch.pickedSummary', '精选摘要')}
+                                              </small>
                                             ) : null}
                                           </div>
                                           {section.title === '基金持仓' ? (

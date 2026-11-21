@@ -9,6 +9,7 @@ import {
   type MouseEvent as ReactMouseEvent
 } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useTFallback, type TfFallback } from '../../shared/lib/useTFallback';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
 import { extractJsonString } from '../../features/assistant/workbench/workbenchUtils';
@@ -155,16 +156,18 @@ const DEFAULT_COLUMN_ORDER: TransactionColumnKey[] = [
   'note'
 ];
 
-const COLUMN_OPTIONS: Array<{ key: TransactionColumnKey; label: string }> = [
-  { key: 'date', label: '日期' },
-  { key: 'type', label: '类型' },
-  { key: 'status', label: '交易状态' },
-  { key: 'category', label: '分类' },
-  { key: 'account', label: '账户' },
-  { key: 'amount', label: '金额' },
-  { key: 'orderNo', label: '交易订单号' },
-  { key: 'merchantOrderNo', label: '商家订单号' },
-  { key: 'note', label: '备注' }
+const buildColumnOptions = (
+  tf: TfFallback
+): Array<{ key: TransactionColumnKey; label: string }> => [
+  { key: 'date', label: tf('transactions.table.col.date', '日期') },
+  { key: 'type', label: tf('transactions.table.col.type', '类型') },
+  { key: 'status', label: tf('transactions.table.col.status', '交易状态') },
+  { key: 'category', label: tf('transactions.table.col.category', '分类') },
+  { key: 'account', label: tf('transactions.table.col.account', '账户') },
+  { key: 'amount', label: tf('transactions.table.col.amount', '金额') },
+  { key: 'orderNo', label: tf('transactions.table.col.orderNo', '交易订单号') },
+  { key: 'merchantOrderNo', label: tf('transactions.table.col.merchantOrderNo', '商家订单号') },
+  { key: 'note', label: tf('transactions.table.col.note', '备注') }
 ];
 
 const TX_VISIBLE_COLUMNS_KEY = 'ledgerflow.transactions.visibleColumns';
@@ -386,7 +389,9 @@ function buildDuplicateGroups(rows: TransactionRowView[]): string[][] {
 
 export function TransactionsPage() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const tf = useTFallback();
+  const columnOptions = useMemo(() => buildColumnOptions(tf), [tf]);
   const { user } = useAuth();
   const transactions = useFinanceStore((s) => s.transactions);
   const categories = useFinanceStore((s) => s.categories);
@@ -557,7 +562,7 @@ export function TransactionsPage() {
   const [quickAddNote, setQuickAddNote] = useState(initialQuickDraft?.note ?? '');
   const [quickAddErrorKey, setQuickAddErrorKey] = useState('');
   const [quickAddDraftStatus, setQuickAddDraftStatus] = useState(
-    initialQuickDraft ? '已恢复未完成草稿' : ''
+    initialQuickDraft ? tf('txPage.quickAdd.draftRestored', '已恢复未完成草稿') : ''
   );
   const quickAddAmountInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [tablePanelWidth, setTablePanelWidth] = useState(860);
@@ -583,11 +588,13 @@ export function TransactionsPage() {
       dateRange.to &&
       dateRange.from > dateRange.to
     ) {
-      setErrorMessage('自定义日期范围无效：开始日期不能晚于结束日期。');
+      setErrorMessage(
+        tf('txPage.error.invalidDateRange', '自定义日期范围无效：开始日期不能晚于结束日期。')
+      );
       return;
     }
     setErrorMessage('');
-  }, [filters.datePreset, dateRange.from, dateRange.to]);
+  }, [filters.datePreset, dateRange.from, dateRange.to, tf]);
 
   useEffect(() => {
     setLoading(true);
@@ -1036,7 +1043,7 @@ export function TransactionsPage() {
       note: quickAddNote
     };
     writeQuickTransactionDraft(user.ledgerUserId, draft);
-    setQuickAddDraftStatus('草稿已自动保存');
+    setQuickAddDraftStatus(tf('txPage.quickAdd.draftSaved', '草稿已自动保存'));
   }, [
     accounts,
     quickAddAccountId,
@@ -1048,7 +1055,8 @@ export function TransactionsPage() {
     quickAddNote,
     quickAddType,
     quickAddCategoryOptions,
-    user.ledgerUserId
+    user.ledgerUserId,
+    tf
   ]);
 
   const resetQuickAddForm = () => {
@@ -1233,7 +1241,7 @@ export function TransactionsPage() {
   const undoLastQuickAdd = () => {
     if (!lastAddedTransactionId) return;
     removeTransaction(lastAddedTransactionId);
-    showToast('已撤销这笔记账，可在回收站恢复。', 'warning');
+    showToast(tf('txPage.undo.single', '已撤销这笔记账，可在回收站恢复。'), 'warning');
   };
 
   const showImportNotice = (message: string, variant: ToastVariant) => {
@@ -1242,14 +1250,14 @@ export function TransactionsPage() {
 
   const copyImportReport = async () => {
     if (!importReportText) {
-      showToast('暂无可复制的导入报告。', 'warning');
+      showToast(tf('txPage.import.noReport', '暂无可复制的导入报告。'), 'warning');
       return;
     }
     try {
       await navigator.clipboard.writeText(importReportText);
-      showToast('导入报告已复制。', 'success');
+      showToast(tf('txPage.import.reportCopied', '导入报告已复制。'), 'success');
     } catch {
-      showToast('复制失败，请检查浏览器权限。', 'error');
+      showToast(tf('txPage.error.copyFailed', '复制失败，请检查浏览器权限。'), 'error');
     }
   };
 
@@ -1270,7 +1278,10 @@ export function TransactionsPage() {
       );
 
       if (!defaultCategoryId || !defaultAccountId) {
-        const message = '导入失败：请先创建分类和账户。';
+        const message = tf(
+          'txPage.import.needCategoryAndAccount',
+          '导入失败：请先创建分类和账户。'
+        );
         showToast(message, 'warning');
         showImportNotice(message, 'warning');
         return;
@@ -1287,8 +1298,8 @@ export function TransactionsPage() {
       if (parsed.length === 0) {
         const summary = parsedResult.summary;
         const message = summary.headerDetected
-          ? `未识别到可导入账单（数据行 ${summary.dataLines}，跳过 ${summary.skippedCount}）。`
-          : '未识别到可导入账单：未找到有效表头，请检查账单格式。';
+          ? `${tf('txPage.import.noBillHead', `未识别到可导入账单（数据行 `)}${summary.dataLines}${tf('txPage.import.skippedMiddle', `，跳过 `)}${summary.skippedCount}${tf('txPage.import.noBillTail', `）。`)}`
+          : tf('txPage.import.noHeader', '未识别到可导入账单：未找到有效表头，请检查账单格式。');
         showToast(message, 'warning');
         showImportNotice(message, 'warning');
         return;
@@ -1314,12 +1325,13 @@ export function TransactionsPage() {
         parseSummary: parsedResult.summary
       });
 
-      const previewMessage = `第 2 步（预检完成）：识别 ${normalizedParsed.length} 条（数据行 ${parsedResult.summary.dataLines}，跳过 ${parsedResult.summary.skippedCount}）。请确认后写入。`;
+      const previewMessage = `${tf('txPage.import.step2Head', `第 2 步（预检完成）：识别 `)}${normalizedParsed.length}${tf('txPage.import.rowsMiddle', ` 条（数据行 `)}${parsedResult.summary.dataLines}${tf('txPage.import.skippedMiddleStep2', `，跳过 `)}${parsedResult.summary.skippedCount}${tf('txPage.import.step2Tail', `）。请确认后写入。`)}`;
       showToast(previewMessage, 'success');
       showImportNotice(previewMessage, 'success');
     } catch (error) {
-      const detail = error instanceof Error ? error.message : '未知异常';
-      const message = `导入失败：${detail}`;
+      const detail =
+        error instanceof Error ? error.message : tf('txPage.error.unknown', '未知异常');
+      const message = `${tf('txPage.import.failedPrefix', `导入失败：`)}${detail}`;
       showToast(message, 'error');
       showImportNotice(message, 'error');
     } finally {
@@ -1349,13 +1361,13 @@ export function TransactionsPage() {
     setPage(expectedPage);
 
     if (changedCount === 0) {
-      const message = `导入完成：${result.skipped} 条重复记录已跳过（增量模式）。`;
+      const message = `${tf('txPage.import.completedPrefix', `导入完成：`)}${result.skipped}${tf('txPage.import.duplicatesSkipped', ` 条重复记录已跳过（增量模式）。`)}`;
       const report = [
-        `导入报告`,
-        `文件：${pendingImport.fileName}`,
-        `模式：${mode === 'overwrite' ? '覆盖' : mode === 'merge' ? '合并' : '增量'}`,
-        `结果：无新增或更新`,
-        `跳过重复：${result.skipped} 条`
+        tf('txPage.import.reportTitle', `导入报告`),
+        `${tf('txPage.import.fileLabel', `文件：`)}${pendingImport.fileName}`,
+        `${tf('txPage.import.modeLabel', `模式：`)}${mode === 'overwrite' ? tf('txPage.import.modeOverwrite', '覆盖') : mode === 'merge' ? tf('txPage.import.modeMerge', '合并') : tf('txPage.import.modeIncremental', '增量')}`,
+        tf('txPage.import.resultNoChange', `结果：无新增或更新`),
+        `${tf('txPage.import.skippedLabel', `跳过重复：`)}${result.skipped}${tf('txPage.import.unitInline', ` 条`)}`
       ].join('\n');
       setImportReportText(report);
       showToast(message, 'warning');
@@ -1364,20 +1376,28 @@ export function TransactionsPage() {
       return;
     }
 
-    const actionLabel = mode === 'overwrite' ? '覆盖' : mode === 'merge' ? '合并' : '增量导入';
-    const message = `第 3 步（导入完成）：新增 ${result.append.length} 条，更新 ${result.update.length} 条${result.skipped ? `，跳过 ${result.skipped} 条` : ''}（${actionLabel}）。`;
+    const actionLabel =
+      mode === 'overwrite'
+        ? tf('txPage.import.actionOverwrite', '覆盖')
+        : mode === 'merge'
+          ? tf('txPage.import.actionMerge', '合并')
+          : tf('txPage.import.actionIncrementalImport', '增量导入');
+    const message = `${tf('txPage.import.step3Head', `第 3 步（导入完成）：新增 `)}${result.append.length}${tf('txPage.import.updatedMiddle', ` 条，更新 `)}${result.update.length}${tf('txPage.import.unitMiddleStep3', ` 条`)}${result.skipped ? `${tf('txPage.import.skippedMiddleStep3', `，跳过 `)}${result.skipped}${tf('txPage.import.unitTailStep3', ` 条`)}` : ''}}${tf('txPage.import.step3OpenParen', '（')}${actionLabel}${tf('txPage.import.step3Tail', `）。`)}`;
     const report = [
-      `导入报告`,
-      `文件：${pendingImport.fileName}`,
-      `来源：${pendingImport.source === 'wechat' ? '微信' : '支付宝'}`,
-      `模式：${mode === 'overwrite' ? '覆盖（清空后导入）' : mode === 'merge' ? '合并（覆盖重复）' : '增量（跳过重复）'}`,
-      `识别：${pendingImport.parseSummary.parsedCount} 条（数据行 ${pendingImport.parseSummary.dataLines}，跳过 ${pendingImport.parseSummary.skippedCount}）`,
-      `结果：新增 ${result.append.length} 条，更新 ${result.update.length} 条，跳过重复 ${result.skipped} 条`,
-      `时间：${new Date().toLocaleString()}`
+      tf('txPage.import.reportTitleStep3', `导入报告`),
+      `${tf('txPage.import.fileLabelStep3', `文件：`)}${pendingImport.fileName}`,
+      `${tf('txPage.import.sourceLabel', `来源：`)}${pendingImport.source === 'wechat' ? tf('txPage.import.sourceWechat', '微信') : tf('txPage.import.sourceAlipay', '支付宝')}`,
+      `${tf('txPage.import.modeLabelStep3', `模式：`)}${mode === 'overwrite' ? tf('txPage.import.modeOverwriteFull', '覆盖（清空后导入）') : mode === 'merge' ? tf('txPage.import.modeMergeFull', '合并（覆盖重复）') : tf('txPage.import.modeIncrementalFull', '增量（跳过重复）')}`,
+      `${tf('txPage.import.parsedLabel', `识别：`)}${pendingImport.parseSummary.parsedCount}${tf('txPage.import.rowsMiddleReport', ` 条（数据行 `)}${pendingImport.parseSummary.dataLines}${tf('txPage.import.skippedMiddleReport', `，跳过 `)}${pendingImport.parseSummary.skippedCount}）`,
+      `${tf('txPage.import.resultAdded', `结果：新增 `)}${result.append.length}${tf('txPage.import.updatedMiddleReport', ` 条，更新 `)}${result.update.length}${tf('txPage.import.skippedRepeatsMiddle', ` 条，跳过重复 `)}${result.skipped}${tf('txPage.import.unitTailReport', ` 条`)}`,
+      `${tf('txPage.import.timeLabel', `时间：`)}${new Date().toLocaleString()}`
     ].join('\n');
     setImportReportText(report);
     showToast(message, 'success');
-    showImportNotice(`${message} 已自动定位到最新一条。`, 'success');
+    showImportNotice(
+      `${message}${tf('txPage.import.autoLocated', ` 已自动定位到最新一条。`)}`,
+      'success'
+    );
 
     if (newestId) {
       const next = new URLSearchParams(searchParams);
@@ -1402,8 +1422,8 @@ export function TransactionsPage() {
     setSelectedIds((prev) => prev.filter((id) => !pendingDeleteIds.includes(id)));
     showToast(
       pendingDeleteIds.length > 1
-        ? `已将 ${pendingDeleteIds.length} 条交易移入回收站。`
-        : '交易已移入回收站。',
+        ? `${tf('txPage.undo.movedPrefix', `已将 `)}${pendingDeleteIds.length}${tf('txPage.undo.movedSuffix', ` 条交易移入回收站。`)}`
+        : tf('txPage.undo.movedSingle', '交易已移入回收站。'),
       'success'
     );
     setPendingDeleteIds([]);
@@ -1418,19 +1438,24 @@ export function TransactionsPage() {
       const refundResult = refundTransaction({
         transactionId: pendingRefundTransaction.id,
         amount: pendingRefundRemainingAmount,
-        note: `退款：${pendingRefundTransaction.note || '原始交易'}`
+        note: `${tf('txPage.refund.notePrefix', `退款：`)}${pendingRefundTransaction.note || tf('txPage.refund.originalTransaction', '原始交易')}`
       });
 
       showToast(
         refundResult.fullyRefunded
-          ? `退款已成功创建，${pendingRefundRemainingAmount.toFixed(2)} 元已回补到原账户，原单已标记为已退款。`
-          : `退款已成功创建，${pendingRefundRemainingAmount.toFixed(2)} 元已回补到原账户，剩余可退 ¥${refundResult.remainingRefundableAmount.toFixed(2)}。`,
+          ? `${tf('txPage.refund.createdFullHead', `退款已成功创建，`)}${pendingRefundRemainingAmount.toFixed(2)}${tf('txPage.refund.creditedFullTail', ` 元已回补到原账户，原单已标记为已退款。`)}`
+          : `${tf('txPage.refund.createdRemainingHead', `退款已成功创建，`)}${pendingRefundRemainingAmount.toFixed(2)}${tf('txPage.refund.creditedRemainingMiddle', ` 元已回补到原账户，剩余可退 ¥`)}${refundResult.remainingRefundableAmount.toFixed(2)}${tf('txPage.refund.period', `。`)}`,
         'success'
       );
       setSelectedId(refundResult.refundTransactionId);
       setPendingRefundTransactionId(null);
     } catch (error) {
-      showToast(error instanceof Error ? error.message : '退款失败，请稍后重试。', 'error');
+      showToast(
+        error instanceof Error
+          ? error.message
+          : tf('txPage.refund.failed', '退款失败，请稍后重试。'),
+        'error'
+      );
     }
   };
 
@@ -1468,11 +1493,11 @@ export function TransactionsPage() {
           fallbackCopyText(text);
           showToast(successMessage, 'success');
         } catch {
-          showToast('复制失败，请检查浏览器权限。', 'error');
+          showToast(tf('txPage.share.copyFailed', '复制失败，请检查浏览器权限。'), 'error');
         }
       }
     },
-    [fallbackCopyText, showToast]
+    [fallbackCopyText, showToast, tf]
   );
 
   useEffect(() => {
@@ -1539,10 +1564,16 @@ export function TransactionsPage() {
     });
 
     if (changed > 0) {
-      const changedLabel = [payload.categoryId ? '分类' : '', payload.accountId ? '账户' : '']
+      const changedLabel = [
+        payload.categoryId ? tf('txPage.bulk.labelCategory', '分类') : '',
+        payload.accountId ? tf('txPage.bulk.labelAccount', '账户') : ''
+      ]
         .filter(Boolean)
-        .join('和');
-      showToast(`已批量更新 ${changed} 条交易的${changedLabel}。`, 'success');
+        .join(tf('txPage.bulk.labelAnd', '和'));
+      showToast(
+        `${tf('txPage.bulk.updatedPrefix', `已批量更新 `)}${changed}${tf('txPage.bulk.updatedMiddle', ` 条交易的`)}${changedLabel}${tf('txPage.punct.period', `。`)}`,
+        'success'
+      );
     }
   };
 
@@ -1556,18 +1587,18 @@ export function TransactionsPage() {
 
   const handleBulkExportPdf = async () => {
     if (bulkExportingPdf) {
-      showToast('PDF 正在导出中，请稍候。', 'warning');
+      showToast(tf('txPage.pdf.exporting', 'PDF 正在导出中，请稍候。'), 'warning');
       return;
     }
 
     const selectedRows = viewRows.filter((row) => selectedIds.includes(row.item.id));
     if (selectedRows.length === 0) {
-      showToast('请先勾选要导出 PDF 的交易。', 'warning');
+      showToast(tf('txPage.pdf.selectFirst', '请先勾选要导出 PDF 的交易。'), 'warning');
       return;
     }
 
     setBulkExportingPdf(true);
-    showToast('正在生成 PDF，请稍候…', 'warning');
+    showToast(tf('txPage.pdf.generating', '正在生成 PDF，请稍候…'), 'warning');
 
     try {
       await exportTransactionsPdf({
@@ -1577,9 +1608,12 @@ export function TransactionsPage() {
         bulkPrintFields,
         maskShareText
       });
-      showToast('PDF 已开始下载。', 'success');
+      showToast(tf('txPage.pdf.downloadStarted', 'PDF 已开始下载。'), 'success');
     } catch (error) {
-      showToast(error instanceof Error ? error.message : '导出 PDF 失败。', 'error');
+      showToast(
+        error instanceof Error ? error.message : tf('txPage.pdf.failed', '导出 PDF 失败。'),
+        'error'
+      );
     } finally {
       setBulkExportingPdf(false);
     }
@@ -1588,7 +1622,7 @@ export function TransactionsPage() {
   const handleBulkPrintA4 = (options?: { preferPdf?: boolean }) => {
     const selectedRows = viewRows.filter((row) => selectedIds.includes(row.item.id));
     if (selectedRows.length === 0) {
-      showToast('请先勾选要打印的交易。', 'warning');
+      showToast(tf('txPage.print.selectFirst', '请先勾选要打印的交易。'), 'warning');
       return;
     }
 
@@ -1612,19 +1646,26 @@ export function TransactionsPage() {
           new Date(Math.max(...dateTimestamps)).toISOString()
         )}`
       : '—';
-    const generatedAtText = new Date().toLocaleString('zh-CN', { hour12: false });
+    const generatedAtText = new Date().toLocaleString(
+      i18n.language?.startsWith('en') ? 'en-US' : 'zh-CN',
+      { hour12: false }
+    );
 
     const tableRows = selectedRows
       .map(({ item, categoryName, accountName }) => {
         const direction = getTransactionDirection(item);
         const typeLabel = isTransactionRefundLike(item)
           ? item.adjustmentKind === 'refund'
-            ? '退款'
-            : '冲正'
+            ? tf('txExport.type.refund', '退款')
+            : tf('txExport.type.reversal', '冲正')
           : txTypeLabel(item.type);
         const amountText = `${direction === 'inflow' ? '+' : '-'}${maskAmountText(item.amount)}`;
-        const safeCategory = maskPrintText(categoryName || '未分类');
-        const safeAccount = maskPrintText(accountName || '未指定账户');
+        const safeCategory = maskPrintText(
+          categoryName || tf('txExport.value.uncategorized', '未分类')
+        );
+        const safeAccount = maskPrintText(
+          accountName || tf('txExport.value.noAccount', '未指定账户')
+        );
         const safeNote = maskPrintText(item.note || '—');
         const safeOrderNo = maskPrintText(item.orderNo || '—');
         const safeMerchantOrderNo = maskPrintText(item.merchantOrderNo || '—');
@@ -1657,55 +1698,55 @@ export function TransactionsPage() {
 
     const html = `
       <!doctype html>
-      <html lang="zh-CN">
+      <html lang="${i18n.language?.startsWith('en') ? 'en' : 'zh-CN'}">
         <head>
           <meta charset="utf-8" />
-          <title>批量交易打印（A4）</title>
+          <title>${tf('txPage.print.docTitle', '批量交易打印（A4）')}</title>
           <style>${buildBulkPrintStyles()}</style>
         </head>
         <body>
           <main class="sheet">
-            <h1 class="title">批量交易清单</h1>
+            <h1 class="title">${tf('txPage.print.heading', '批量交易清单')}</h1>
             <p class="meta">
-              时间范围 ${escapeHtml(dateRangeText)} ｜ 生成时间 ${escapeHtml(generatedAtText)}
+              ${tf('txPage.print.dateRange', '时间范围')} ${escapeHtml(dateRangeText)} ${tf('txPage.print.generatedAt', '｜ 生成时间')} ${escapeHtml(generatedAtText)}
             </p>
-            <section class="summary-grid" aria-label="打印统计摘要">
+            <section class="summary-grid" aria-label="${tf('txPage.print.summaryAria', '打印统计摘要')}">
               <div class="summary-card">
-                <div class="summary-label">交易条数</div>
-                <div class="summary-value">${selectedRows.length} 条</div>
+                <div class="summary-label">${tf('txPage.print.count', '交易条数')}</div>
+                <div class="summary-value">${selectedRows.length} ${tf('txPage.print.countUnit', '条')}</div>
               </div>
               <div class="summary-card">
-                <div class="summary-label">金额合计</div>
+                <div class="summary-label">${tf('txPage.print.amountTotal', '金额合计')}</div>
                 <div class="summary-value">${escapeHtml(maskAmountText(totalAmount))}</div>
               </div>
               <div class="summary-card">
-                <div class="summary-label">收入合计</div>
+                <div class="summary-label">${tf('txPage.print.incomeTotal', '收入合计')}</div>
                 <div class="summary-value">${escapeHtml(maskAmountText(incomeTotal))}</div>
               </div>
               <div class="summary-card">
-                <div class="summary-label">支出合计</div>
+                <div class="summary-label">${tf('txPage.print.expenseTotal', '支出合计')}</div>
                 <div class="summary-value">${escapeHtml(maskAmountText(expenseTotal))}</div>
               </div>
             </section>
             <table>
               <thead>
                 <tr>
-                  <th>日期</th>
-                  <th>类型</th>
-                  <th>分类</th>
-                  ${bulkPrintTemplate === 'summary' ? '' : bulkPrintFields.includeAccount ? '<th>账户</th>' : ''}
-                  <th>金额</th>
-                  <th>状态</th>
-                  ${bulkPrintTemplate === 'summary' ? '' : bulkPrintFields.includeNote ? '<th>备注</th>' : ''}
-                  ${bulkPrintTemplate === 'summary' ? '' : bulkPrintFields.includeOrderNo ? '<th>订单号</th>' : ''}
-                  ${bulkPrintTemplate === 'summary' ? '' : bulkPrintFields.includeTags ? '<th>标签</th>' : ''}
+                  <th>${tf('transactions.table.col.date', '日期')}</th>
+                  <th>${tf('transactions.table.col.type', '类型')}</th>
+                  <th>${tf('transactions.table.col.category', '分类')}</th>
+                  ${bulkPrintTemplate === 'summary' ? '' : bulkPrintFields.includeAccount ? `<th>${tf('transactions.table.col.account', '账户')}</th>` : ''}
+                  <th>${tf('transactions.table.col.amount', '金额')}</th>
+                  <th>${tf('txPage.print.colStatus', '状态')}</th>
+                  ${bulkPrintTemplate === 'summary' ? '' : bulkPrintFields.includeNote ? `<th>${tf('transactions.table.col.note', '备注')}</th>` : ''}
+                  ${bulkPrintTemplate === 'summary' ? '' : bulkPrintFields.includeOrderNo ? `<th>${tf('txPage.print.colOrderNo', '订单号')}</th>` : ''}
+                  ${bulkPrintTemplate === 'summary' ? '' : bulkPrintFields.includeTags ? `<th>${tf('txPage.print.colTags', '标签')}</th>` : ''}
                 </tr>
               </thead>
               <tbody>${tableRows}</tbody>
             </table>
             <footer class="footer">
-              <span>${privacyMode ? '当前为隐私模式打印，金额/账户/备注等内容已脱敏。' : '提示：若未弹出系统打印框，请检查浏览器是否拦截弹窗或静默打印策略。'}</span>
-              <span>LedgerFlow · 批量打印${privacyMode ? '（隐私模式）' : ''}</span>
+              <span>${privacyMode ? tf('txPage.print.privacyNotice', '当前为隐私模式打印，金额/账户/备注等内容已脱敏。') : tf('txPage.print.popupHint', '提示：若未弹出系统打印框，请检查浏览器是否拦截弹窗或静默打印策略。')}</span>
+              <span>LedgerFlow ${tf('txPage.print.footerLabel', '· 批量打印')}${privacyMode ? tf('txPage.print.privacySuffix', '（隐私模式）') : ''}</span>
             </footer>
           </main>
         </body>
@@ -1715,14 +1756,22 @@ export function TransactionsPage() {
     if (popupBlocked) {
       showToast(
         options?.preferPdf
-          ? '浏览器拦截了弹窗，将使用内嵌打印模式。请在系统打印框里选择“保存为 PDF”。'
-          : '浏览器拦截了弹窗，将使用内嵌打印模式。',
+          ? tf(
+              'txPage.print.popupBlockedPdf',
+              '浏览器拦截了弹窗，将使用内嵌打印模式。请在系统打印框里选择“保存为 PDF”。'
+            )
+          : tf('txPage.print.popupBlocked', '浏览器拦截了弹窗，将使用内嵌打印模式。'),
         'warning'
       );
       try {
         printHtmlWithIframe(html);
       } catch (error) {
-        showToast(error instanceof Error ? error.message : '打印失败，请检查浏览器权限。', 'error');
+        showToast(
+          error instanceof Error
+            ? error.message
+            : tf('txPage.print.failed', '打印失败，请检查浏览器权限。'),
+          'error'
+        );
       }
       return;
     }
@@ -1732,7 +1781,10 @@ export function TransactionsPage() {
     printWindow.document.close();
     printWindow.focus();
     if (options?.preferPdf) {
-      showToast('请在系统打印框里选择“保存为 PDF”完成导出。', 'success');
+      showToast(
+        tf('txPage.print.savePdfHint', '请在系统打印框里选择“保存为 PDF”完成导出。'),
+        'success'
+      );
     }
     window.setTimeout(() => {
       printWindow.print();
@@ -1764,15 +1816,16 @@ export function TransactionsPage() {
 
     const txTypeLabel =
       tx.type === 'income'
-        ? '收入'
+        ? tf('txExport.type.income', '收入')
         : tx.type === 'budget'
-          ? '预算'
+          ? tf('txExport.type.budget', '预算')
           : tx.type === 'repayment'
-            ? '还款'
-            : '支出';
+            ? tf('txExport.type.repayment', '还款')
+            : tf('txExport.type.expense', '支出');
     const availableCategories = categories.map((item) => item.name);
     const currentCategoryName =
-      categories.find((item) => item.id === tx.categoryId)?.name || '未分类';
+      categories.find((item) => item.id === tx.categoryId)?.name ||
+      tf('txExport.value.uncategorized', '未分类');
 
     try {
       const reply = await sendAiChat({
@@ -1780,12 +1833,11 @@ export function TransactionsPage() {
         apiKey: aiApiKey,
         model: aiModel,
         signal,
-        systemPrompt:
-          '你是交易重分类助手。请根据交易信息，从给定分类列表中选择最匹配的一项。仅返回 JSON：{"category":"分类名"}。禁止输出解释。若不确定，返回当前分类。',
+        systemPrompt: `${tf('txPage.ai.systemPromptIntro', '你是交易重分类助手。请根据交易信息，从给定分类列表中选择最匹配的一项。仅返回 JSON：')}{"category":"${tf('txPage.ai.systemPromptCategoryName', '分类名')}"}${tf('txPage.ai.systemPromptTail', '。禁止输出解释。若不确定，返回当前分类。')}`,
         messages: [
           {
             role: 'user',
-            text: `交易信息：\n- 类型: ${txTypeLabel}\n- 金额: ${tx.amount}\n- 备注: ${tx.note || '无'}\n- 标签: ${(tx.tags || []).join(',') || '无'}\n- 当前分类: ${currentCategoryName}\n可选分类：${JSON.stringify(availableCategories)}`
+            text: `${tf('txPage.ai.promptInfo', '交易信息：')}\n- ${tf('txPage.ai.promptType', '类型')}: ${txTypeLabel}${tf('txPage.ai.promptAmount', `\n- 金额: `)}${tx.amount}${tf('txPage.ai.promptNote', `\n- 备注: `)}${tx.note || tf('txPage.ai.promptNone', '无')}${tf('txPage.ai.promptTags', `\n- 标签: `)}${(tx.tags || []).join(',') || tf('txPage.ai.promptNone', '无')}${tf('txPage.ai.promptCurrentCategory', `\n- 当前分类: `)}${currentCategoryName}${tf('txPage.ai.promptAvailableCategories', `\n可选分类：`)}${JSON.stringify(availableCategories)}`
           }
         ]
       });
@@ -1814,7 +1866,7 @@ export function TransactionsPage() {
     if (bulkAiRecategorizingRef.current) {
       bulkAiCancelRequestedRef.current = true;
       bulkAiAbortControllersRef.current.forEach((controller) => controller.abort());
-      showToast('正在停止批量 AI 重分类…', 'warning');
+      showToast(tf('txPage.ai.stoppingBulk', '正在停止批量 AI 重分类…'), 'warning');
       return;
     }
 
@@ -1893,15 +1945,21 @@ export function TransactionsPage() {
 
       if (bulkAiCancelRequestedRef.current) {
         showToast(
-          `批量 AI 重分类已停止（大模型 ${changed} 条，规则回退 ${fallbackChanged} 条，已取消 ${aborted} 条）。`,
+          `${tf('txPage.ai.stoppedHead', `批量 AI 重分类已停止（大模型 `)}${changed}${tf('txPage.ai.stoppedFallback', ` 条，规则回退 `)}${fallbackChanged}${tf('txPage.ai.stoppedCancelled', ` 条，已取消 `)}${aborted}${tf('txPage.ai.stoppedTail', ` 条）。`)}`,
           'warning'
         );
       } else if (changed > 0) {
-        showToast(`已按大模型建议完成 ${changed} 条交易重分类。`, 'success');
+        showToast(
+          `${tf('txPage.ai.bulkDoneHead', `已按大模型建议完成 `)}${changed}${tf('txPage.ai.bulkDoneTail', ` 条交易重分类。`)}`,
+          'success'
+        );
       } else if (fallbackChanged > 0) {
-        showToast(`已按账单信息完成 ${fallbackChanged} 条交易重分类。`, 'success');
+        showToast(
+          `${tf('txPage.ai.bulkFallbackHead', `已按账单信息完成 `)}${fallbackChanged}${tf('txPage.ai.bulkFallbackTail', ` 条交易重分类。`)}`,
+          'success'
+        );
       } else {
-        showToast('AI 分类建议未变化，无需替换。', 'warning');
+        showToast(tf('txPage.ai.bulkUnchanged', 'AI 分类建议未变化，无需替换。'), 'warning');
       }
     } finally {
       bulkAiAbortControllersRef.current.clear();
@@ -2006,12 +2064,12 @@ export function TransactionsPage() {
     const duplicateCount = duplicateGroups.reduce((sum, group) => sum + group.length, 0);
 
     if (duplicateCount === 0) {
-      showToast('检测完成：未发现重复账单。', 'success');
+      showToast(tf('txPage.dedupe.none', '检测完成：未发现重复账单。'), 'success');
       return;
     }
 
     const shouldOverwrite = window.confirm(
-      `检测完成：发现 ${duplicateCount} 条疑似重复账单。\n点击“确定”覆盖重复账单（每组保留最新一条）；点击“取消”继续选择删除重复。`
+      `${tf('txPage.dedupe.foundHead', `检测完成：发现 `)}${duplicateCount} ${tf('txPage.dedupe.foundTail', '条疑似重复账单。')}\n${tf('txPage.dedupe.overwriteHint', '点击“确定”覆盖重复账单（每组保留最新一条）；点击“取消”继续选择删除重复。')}`
     );
 
     if (shouldOverwrite) {
@@ -2043,12 +2101,12 @@ export function TransactionsPage() {
         duplicates.forEach((item) => removeTransaction(item.id));
       });
 
-      showToast('已完成覆盖去重（每组保留最新一条）。', 'success');
+      showToast(tf('txPage.dedupe.overwritten', '已完成覆盖去重（每组保留最新一条）。'), 'success');
       return;
     }
 
     const shouldDelete = window.confirm(
-      '是否删除重复账单？\n点击“确定”删除重复账单（每组保留最早一条）；点击“取消”不处理。'
+      `${tf('txPage.dedupe.confirmDelete', '是否删除重复账单？')}\n${tf('txPage.dedupe.deleteHint', '点击“确定”删除重复账单（每组保留最早一条）；点击“取消”不处理。')}`
     );
 
     if (shouldDelete) {
@@ -2060,11 +2118,11 @@ export function TransactionsPage() {
           .sort((a, b) => +new Date(a.date) - +new Date(b.date));
         txs.slice(1).forEach((item) => removeTransaction(item.id));
       });
-      showToast('已删除重复账单（每组保留最早一条）。', 'success');
+      showToast(tf('txPage.dedupe.deleted', '已删除重复账单（每组保留最早一条）。'), 'success');
       return;
     }
 
-    showToast('已取消重复账单处理。', 'warning');
+    showToast(tf('txPage.dedupe.cancelled', '已取消重复账单处理。'), 'warning');
   };
 
   const handleToggleColumn = (key: TransactionColumnKey) => {
@@ -2147,8 +2205,8 @@ export function TransactionsPage() {
     if (!shareText) {
       return;
     }
-    await copyText(shareText, '分享文案已复制。');
-  }, [copyText, shareText]);
+    await copyText(shareText, tf('txPage.share.copied', '分享文案已复制。'));
+  }, [copyText, shareText, tf]);
 
   const handleOpenShareDialog = useCallback(() => {
     if (!selected) {
@@ -2188,7 +2246,10 @@ export function TransactionsPage() {
     const map = new Map<string, number>();
     viewRows.forEach((row) => {
       const amount = Math.abs(Number(row.item.amount) || 0);
-      map.set(row.categoryName || '未分类', (map.get(row.categoryName || '未分类') || 0) + amount);
+      map.set(
+        row.categoryName || tf('txPage.chart.uncategorized', '未分类'),
+        (map.get(row.categoryName || tf('txPage.chart.uncategorized', '未分类')) || 0) + amount
+      );
     });
     const colors = ['#4f8cff', '#6ad7b9', '#f6a623', '#ff6b6b', '#9b6bff', '#14b8a6', '#64748b'];
     const ranked = Array.from(map.entries())
@@ -2204,7 +2265,7 @@ export function TransactionsPage() {
       ...item,
       percent: total > 0 ? (item.amount / total) * 100 : 0
     }));
-  }, [viewRows]);
+  }, [tf, viewRows]);
 
   useEffect(() => {
     let raf = 0;
@@ -2270,17 +2331,17 @@ export function TransactionsPage() {
 
     const modeLabel =
       pendingImport.mode === 'overwrite'
-        ? '覆盖（清空后导入）'
+        ? tf('txPage.import.previewModeOverwrite', '覆盖（清空后导入）')
         : pendingImport.mode === 'merge'
-          ? '合并（覆盖重复）'
-          : '增量（跳过重复）';
+          ? tf('txPage.import.previewModeMerge', '合并（覆盖重复）')
+          : tf('txPage.import.previewModeIncremental', '增量（跳过重复）');
 
     const modeHint =
       pendingImport.mode === 'overwrite'
-        ? `⚠️ 覆盖模式将先清空当前账本的 ${transactions.length} 条交易，再导入新记录。`
+        ? `${tf('txPage.import.overwriteHintHead', `⚠️ 覆盖模式将先清空当前账本的 `)}${transactions.length}${tf('txPage.import.overwriteHintTail', ` 条交易，再导入新记录。`)}`
         : pendingImport.mode === 'merge'
-          ? '合并模式会覆盖已存在的重复账单。'
-          : '增量模式会跳过已存在的重复账单。';
+          ? tf('txPage.import.mergeHint', '合并模式会覆盖已存在的重复账单。')
+          : tf('txPage.import.incrementalHint', '增量模式会跳过已存在的重复账单。');
 
     const previewLines = pendingImport.normalizedParsed.slice(0, 5);
     const appendLines = pendingImport.result.append.slice(0, 3);
@@ -2288,7 +2349,10 @@ export function TransactionsPage() {
 
     return {
       fileName: pendingImport.fileName,
-      sourceLabel: pendingImport.source === 'wechat' ? '微信' : '支付宝',
+      sourceLabel:
+        pendingImport.source === 'wechat'
+          ? tf('txPage.import.previewSourceWechat', '微信')
+          : tf('txPage.import.previewSourceAlipay', '支付宝'),
       modeLabel,
       modeHint,
       parsedCount: pendingImport.parseSummary.parsedCount,
@@ -2301,7 +2365,7 @@ export function TransactionsPage() {
       appendLines,
       updateLines
     };
-  }, [pendingImport, transactions.length]);
+  }, [pendingImport, tf, transactions.length]);
 
   const pendingImportDescription = useMemo(() => {
     if (!pendingImportPreview) {
@@ -2314,39 +2378,41 @@ export function TransactionsPage() {
       marker?: string
     ) => {
       const sign = item.type === 'income' ? '+' : '-';
-      return `${marker || `${index + 1}.`} ${item.date.slice(0, 10)} ${sign}${formatCurrencyAuto(item.amount)} ${item.note || '无备注'}`;
+      return `${marker || `${index + 1}.`} ${item.date.slice(0, 10)} ${sign}${formatCurrencyAuto(item.amount)} ${item.note || tf('txPage.import.noNote', '无备注')}`;
     };
 
     return [
-      `文件：${pendingImportPreview.fileName}`,
-      `来源：${pendingImportPreview.sourceLabel}`,
-      `模式：${pendingImportPreview.modeLabel}`,
+      `${tf('txPage.import.previewFileLabel', `文件：`)}${pendingImportPreview.fileName}`,
+      `${tf('txPage.import.previewSourceLabel', `来源：`)}${pendingImportPreview.sourceLabel}`,
+      `${tf('txPage.import.previewModeLabel', `模式：`)}${pendingImportPreview.modeLabel}`,
       pendingImportPreview.modeHint,
       '',
-      `识别结果：${pendingImportPreview.parsedCount} 条（数据行 ${pendingImportPreview.dataLines}，跳过 ${pendingImportPreview.skippedCount}）`,
-      `执行影响：新增 ${pendingImportPreview.appendCount} 条，更新 ${pendingImportPreview.updateCount} 条，跳过重复 ${pendingImportPreview.skippedDuplicateCount} 条`,
+      `${tf('txPage.import.previewParsedLabel', `识别结果：`)}${pendingImportPreview.parsedCount}${tf('txPage.import.previewRowsMiddle', ` 条（数据行 `)}${pendingImportPreview.dataLines}${tf('txPage.import.previewSkippedMiddle', `，跳过 `)}${pendingImportPreview.skippedCount}）`,
+      `${tf('txPage.import.previewImpactHead', `执行影响：新增 `)}${pendingImportPreview.appendCount}${tf('txPage.import.previewUpdatedMiddle', ` 条，更新 `)}${pendingImportPreview.updateCount}${tf('txPage.import.previewSkippedRepeatsMiddle', ` 条，跳过重复 `)}${pendingImportPreview.skippedDuplicateCount}${tf('txPage.import.previewUnitTail', ` 条`)}`,
       '',
       pendingImportPreview.previewLines.length
-        ? `预检样例（前 5 条）：\n${pendingImportPreview.previewLines.map((item, index) => renderLine(item, index)).join('\n')}`
+        ? `${tf('txPage.import.previewSampleHead', `预检样例（前 5 条）：\n`)}${pendingImportPreview.previewLines.map((item, index) => renderLine(item, index)).join('\n')}`
         : '',
       pendingImportPreview.appendLines.length
-        ? `\n将新增（前 3 条）：\n${pendingImportPreview.appendLines.map((item, index) => renderLine(item, index, `+${index + 1}.`)).join('\n')}`
+        ? `${tf('txPage.import.previewAppendHead', `\n将新增（前 3 条）：\n`)}${pendingImportPreview.appendLines.map((item, index) => renderLine(item, index, `+${index + 1}.`)).join('\n')}`
         : '',
       pendingImportPreview.updateLines.length
-        ? `\n将更新（前 3 条）：\n${pendingImportPreview.updateLines
+        ? `${tf('txPage.import.previewUpdateHead', `\n将更新（前 3 条）：\n`)}${pendingImportPreview.updateLines
             .map(({ payload }, index) => renderLine(payload, index, `~${index + 1}.`))
             .join('\n')}`
         : ''
     ]
       .filter(Boolean)
       .join('\n');
-  }, [pendingImportPreview]);
+  }, [pendingImportPreview, tf]);
 
   const pendingImportDialogDescription = pendingImportPreview ? (
     <div className="import-confirm-dialog">
       <section className="import-confirm-hero">
         <div>
-          <div className="import-confirm-eyebrow">导入预检</div>
+          <div className="import-confirm-eyebrow">
+            {tf('txPage.import.previewEyebrow', `导入预检`)}
+          </div>
           <strong>{pendingImportPreview.fileName}</strong>
           <p>{pendingImportPreview.modeHint}</p>
         </div>
@@ -2359,34 +2425,46 @@ export function TransactionsPage() {
 
       <section className="import-confirm-meta-grid">
         <div className="import-confirm-meta-card">
-          <span>来源</span>
+          <span>{tf('txPage.import.cardSource', `来源`)}</span>
           <strong>{pendingImportPreview.sourceLabel}</strong>
         </div>
         <div className="import-confirm-meta-card">
-          <span>识别</span>
-          <strong>{pendingImportPreview.parsedCount} 条</strong>
+          <span>{tf('txPage.import.cardDetected', `识别`)}</span>
+          <strong>
+            {pendingImportPreview.parsedCount} {tf('txPage.import.cardUnit', `条`)}
+          </strong>
           <small>
-            数据行 {pendingImportPreview.dataLines} · 跳过 {pendingImportPreview.skippedCount}
+            {tf('txPage.import.cardDataLines', `数据行`)} {pendingImportPreview.dataLines}{' '}
+            {tf('txPage.import.cardSkipped', `· 跳过`)} {pendingImportPreview.skippedCount}
           </small>
         </div>
         <div className="import-confirm-meta-card import-confirm-meta-card-accent">
-          <span>新增</span>
-          <strong>{pendingImportPreview.appendCount} 条</strong>
+          <span>{tf('txPage.import.cardAppend', `新增`)}</span>
+          <strong>
+            {pendingImportPreview.appendCount} {tf('txPage.import.cardUnit', `条`)}
+          </strong>
         </div>
         <div className="import-confirm-meta-card">
-          <span>更新</span>
-          <strong>{pendingImportPreview.updateCount} 条</strong>
+          <span>{tf('txPage.import.cardUpdate', `更新`)}</span>
+          <strong>
+            {pendingImportPreview.updateCount} {tf('txPage.import.cardUnit', `条`)}
+          </strong>
         </div>
         <div className="import-confirm-meta-card">
-          <span>跳过重复</span>
-          <strong>{pendingImportPreview.skippedDuplicateCount} 条</strong>
+          <span>{tf('txPage.import.cardSkippedDuplicates', `跳过重复`)}</span>
+          <strong>
+            {pendingImportPreview.skippedDuplicateCount} {tf('txPage.import.cardUnit', `条`)}
+          </strong>
         </div>
       </section>
 
       <section className="import-confirm-section">
         <div className="import-confirm-section-head">
-          <strong>预检样例</strong>
-          <span>前 {pendingImportPreview.previewLines.length} 条</span>
+          <strong>{tf('txPage.import.sampleHeading', `预检样例`)}</strong>
+          <span>
+            {tf('txPage.import.sampleBefore', `前`)} {pendingImportPreview.previewLines.length}{' '}
+            {tf('txPage.import.sampleUnit', `条`)}
+          </span>
         </div>
         <div className="import-confirm-list">
           {pendingImportPreview.previewLines.length ? (
@@ -2399,7 +2477,7 @@ export function TransactionsPage() {
                 >
                   <span className="import-confirm-row-index">{index + 1}</span>
                   <div className="import-confirm-row-main">
-                    <strong>{item.note || '无备注'}</strong>
+                    <strong>{item.note || tf('txPage.import.noNote', '无备注')}</strong>
                     <small>{item.date.slice(0, 10)}</small>
                   </div>
                   <span
@@ -2412,7 +2490,9 @@ export function TransactionsPage() {
               );
             })
           ) : (
-            <div className="import-confirm-empty">暂无可展示样例</div>
+            <div className="import-confirm-empty">
+              {tf('txPage.import.noSamples', `暂无可展示样例`)}
+            </div>
           )}
         </div>
       </section>
@@ -2421,8 +2501,11 @@ export function TransactionsPage() {
         <section className="import-confirm-impact-grid">
           <div className="import-confirm-section">
             <div className="import-confirm-section-head">
-              <strong>将新增</strong>
-              <span>{pendingImportPreview.appendLines.length} 条样例</span>
+              <strong>{tf('txPage.import.appendHeading', `将新增`)}</strong>
+              <span>
+                {pendingImportPreview.appendLines.length}{' '}
+                {tf('txPage.import.sampleCountUnit', `条样例`)}
+              </span>
             </div>
             <div className="import-confirm-list compact">
               {pendingImportPreview.appendLines.length ? (
@@ -2433,7 +2516,7 @@ export function TransactionsPage() {
                   >
                     <span className="import-confirm-row-index positive">+{index + 1}</span>
                     <div className="import-confirm-row-main">
-                      <strong>{item.note || '无备注'}</strong>
+                      <strong>{item.note || tf('txPage.import.noNote', '无备注')}</strong>
                       <small>{item.date.slice(0, 10)}</small>
                     </div>
                     <span
@@ -2445,15 +2528,20 @@ export function TransactionsPage() {
                   </div>
                 ))
               ) : (
-                <div className="import-confirm-empty">无新增样例</div>
+                <div className="import-confirm-empty">
+                  {tf('txPage.import.noAppendSamples', `无新增样例`)}
+                </div>
               )}
             </div>
           </div>
 
           <div className="import-confirm-section">
             <div className="import-confirm-section-head">
-              <strong>将更新</strong>
-              <span>{pendingImportPreview.updateLines.length} 条样例</span>
+              <strong>{tf('txPage.import.updateHeading', `将更新`)}</strong>
+              <span>
+                {pendingImportPreview.updateLines.length}{' '}
+                {tf('txPage.import.sampleCountUnitUpdate', `条样例`)}
+              </span>
             </div>
             <div className="import-confirm-list compact">
               {pendingImportPreview.updateLines.length ? (
@@ -2464,7 +2552,7 @@ export function TransactionsPage() {
                   >
                     <span className="import-confirm-row-index neutral">~{index + 1}</span>
                     <div className="import-confirm-row-main">
-                      <strong>{payload.note || '无备注'}</strong>
+                      <strong>{payload.note || tf('txPage.import.noNote', '无备注')}</strong>
                       <small>{payload.date.slice(0, 10)}</small>
                     </div>
                     <span
@@ -2476,7 +2564,9 @@ export function TransactionsPage() {
                   </div>
                 ))
               ) : (
-                <div className="import-confirm-empty">无更新样例</div>
+                <div className="import-confirm-empty">
+                  {tf('txPage.import.noUpdateSamples', `无更新样例`)}
+                </div>
               )}
             </div>
           </div>
@@ -2505,7 +2595,7 @@ export function TransactionsPage() {
           importMode={importMode}
           onImportModeChange={setImportMode}
           onCheckDuplicates={handleCheckDuplicates}
-          columnOptions={COLUMN_OPTIONS}
+          columnOptions={columnOptions}
           visibleColumns={visibleColumns}
           onToggleColumn={handleToggleColumn}
           bulkSelectionEnabled={bulkSelectionEnabled}
@@ -2712,57 +2802,60 @@ export function TransactionsPage() {
                   </button>
                 </div>
 
-                <div className="transactions-side-quick-filters" aria-label="洞察侧栏快速筛选">
+                <div
+                  className="transactions-side-quick-filters"
+                  aria-label={tf('txPage.insights.quickFiltersAria', '洞察侧栏快速筛选')}
+                >
                   <div className="transactions-side-quick-filter-row">
-                    <small className="muted">快速日期</small>
+                    <small className="muted">{tf('txPage.insights.quickDate', `快速日期`)}</small>
                     <div className="transactions-side-quick-filter-buttons">
                       <button
                         type="button"
                         className={filters.datePreset === 'all' ? 'active' : ''}
                         onClick={() => setDatePreset('all')}
                       >
-                        全部
+                        {tf('txPage.insights.dateAll', `全部`)}
                       </button>
                       <button
                         type="button"
                         className={filters.datePreset === 'thisMonth' ? 'active' : ''}
                         onClick={() => setDatePreset('thisMonth')}
                       >
-                        本月
+                        {tf('txPage.insights.dateThisMonth', `本月`)}
                       </button>
                       <button
                         type="button"
                         className={filters.datePreset === 'last30' ? 'active' : ''}
                         onClick={() => setDatePreset('last30')}
                       >
-                        近30天
+                        {tf('txPage.insights.dateLast30Days', `近30天`)}
                       </button>
                     </div>
                   </div>
 
                   <div className="transactions-side-quick-filter-row">
-                    <small className="muted">快速类型</small>
+                    <small className="muted">{tf('txPage.insights.quickType', `快速类型`)}</small>
                     <div className="transactions-side-quick-filter-buttons">
                       <button
                         type="button"
                         className={filters.type === 'all' ? 'active' : ''}
                         onClick={() => setType('all')}
                       >
-                        全部
+                        {tf('txPage.insights.typeAll', `全部`)}
                       </button>
                       <button
                         type="button"
                         className={filters.type === 'expense' ? 'active' : ''}
                         onClick={() => setType('expense')}
                       >
-                        支出
+                        {tf('txPage.insights.typeExpense', `支出`)}
                       </button>
                       <button
                         type="button"
                         className={filters.type === 'income' ? 'active' : ''}
                         onClick={() => setType('income')}
                       >
-                        收入
+                        {tf('txPage.insights.typeIncome', `收入`)}
                       </button>
                     </div>
                   </div>
@@ -2783,7 +2876,7 @@ export function TransactionsPage() {
               </div>
 
               <div className="transactions-side-chart-card">
-                <h4>分类占比饼图（当前列表）</h4>
+                <h4>{tf('txPage.insights.pieTitle', `分类占比饼图（当前列表）`)}</h4>
                 <div className="transactions-pie-wrap">
                   <div
                     className="transactions-pie"
@@ -2793,7 +2886,9 @@ export function TransactionsPage() {
                     }}
                   />
                   <div className="transactions-pie-legend">
-                    {categoryPieData.length === 0 ? <p className="muted">暂无数据</p> : null}
+                    {categoryPieData.length === 0 ? (
+                      <p className="muted">{tf('txPage.insights.noData', `暂无数据`)}</p>
+                    ) : null}
                     {categoryPieData.map((item) => (
                       <p key={item.name}>
                         <span style={{ color: item.color }}>●</span> {item.name} ·{' '}
@@ -2805,9 +2900,11 @@ export function TransactionsPage() {
               </div>
 
               <div className="transactions-side-chart-card">
-                <h4>累计净额曲线（当前列表）</h4>
+                <h4>{tf('txPage.insights.curveTitle', `累计净额曲线（当前列表）`)}</h4>
                 <div className="transactions-curve-list">
-                  {curveData.length === 0 ? <p className="muted">暂无数据</p> : null}
+                  {curveData.length === 0 ? (
+                    <p className="muted">{tf('txPage.insights.noData', `暂无数据`)}</p>
+                  ) : null}
                   {curveData.map((point, index) => (
                     <div key={`${point.label}-${index}`} className="transactions-curve-row">
                       <span>{point.label}</span>
@@ -2837,8 +2934,10 @@ export function TransactionsPage() {
         relatedOrigin={selectedRelatedOrigin}
         relatedRefunds={selectedRefundChildren}
         onClose={() => setSelectedId(null)}
-        onCopyNote={() => void copyText(selected?.note ?? '', '备注已复制')}
-        onCopyJson={() => void copyText(JSON.stringify(selected, null, 2), 'JSON 已复制')}
+        onCopyNote={() => void copyText(selected?.note ?? '', tf('txPage.copy.note', '备注已复制'))}
+        onCopyJson={() =>
+          void copyText(JSON.stringify(selected, null, 2), tf('txPage.copy.generic', 'JSON 已复制'))
+        }
         onShareBill={handleOpenShareDialog}
         onDelete={() => {
           if (!selected) {
@@ -2860,14 +2959,20 @@ export function TransactionsPage() {
           void recategorizeByAi(selected)
             .then((result) => {
               if (result === 'changed') {
-                showToast('已按大模型建议完成重分类。', 'success');
+                showToast(tf('txPage.ai.singleApplied', '已按大模型建议完成重分类。'), 'success');
                 return;
               }
               if (result === 'fallback-changed') {
-                showToast('已按账单信息完成 AI 重分类。', 'success');
+                showToast(
+                  tf('txPage.ai.singleAppliedFallback', '已按账单信息完成 AI 重分类。'),
+                  'success'
+                );
                 return;
               }
-              showToast('AI 分类建议未变化，无需替换。', 'warning');
+              showToast(
+                tf('txPage.ai.singleUnchanged', 'AI 分类建议未变化，无需替换。'),
+                'warning'
+              );
             })
             .finally(() => {
               setAiRecategorizingId(null);
@@ -2886,7 +2991,7 @@ export function TransactionsPage() {
             className="quick-add-drawer"
             role="dialog"
             aria-modal="true"
-            aria-label="快速新增账目"
+            aria-label={tf('txPage.quickAdd.aria', '快速新增账目')}
             onClick={(event) => event.stopPropagation()}
           >
             <header className="quick-add-header">
@@ -2894,31 +2999,35 @@ export function TransactionsPage() {
                 type="button"
                 className="quick-add-header-action"
                 onClick={closeQuickAddDrawer}
-                aria-label="取消快速记账"
+                aria-label={tf('txPage.quickAdd.cancelAria', '取消快速记账')}
               >
-                取消
+                {tf('txPage.common.cancel', `取消`)}
               </button>
-              <h3>记一笔</h3>
+              <h3>{tf('txPage.quickAdd.title', `记一笔`)}</h3>
               <button
                 type="button"
                 className="quick-add-header-action is-primary"
                 onClick={handleSaveQuickAdd}
               >
-                完成
+                {tf('txPage.quickAdd.done', `完成`)}
               </button>
             </header>
 
             <div className="quick-add-body">
               <section className="quick-add-main">
                 <div className="quick-add-amount-stage">
-                  <div className="quick-add-type-tabs" role="group" aria-label="账目类型">
+                  <div
+                    className="quick-add-type-tabs"
+                    role="group"
+                    aria-label={tf('txPage.quickAdd.typeGroupAria', '账目类型')}
+                  >
                     <button
                       type="button"
                       className={quickAddType === 'expense' ? 'is-active' : ''}
                       aria-pressed={quickAddType === 'expense'}
                       onClick={() => setQuickAddType('expense')}
                     >
-                      支出
+                      {tf('txPage.quickAdd.expense', `支出`)}
                     </button>
                     <button
                       type="button"
@@ -2926,10 +3035,12 @@ export function TransactionsPage() {
                       aria-pressed={quickAddType === 'income'}
                       onClick={() => setQuickAddType('income')}
                     >
-                      收入
+                      {tf('txPage.quickAdd.income', `收入`)}
                     </button>
                   </div>
-                  <label htmlFor="quick-add-expression">金额</label>
+                  <label htmlFor="quick-add-expression">
+                    {tf('txPage.quickAdd.amount', `金额`)}
+                  </label>
                   <div className="quick-add-amount-input">
                     <span aria-hidden="true">¥</span>
                     <textarea
@@ -2948,27 +3059,33 @@ export function TransactionsPage() {
                   {quickAddExpression &&
                   quickAddCalculatedAmount !== null &&
                   quickAddExpression !== String(quickAddCalculatedAmount) ? (
-                    <small>合计 ¥{quickAddCalculatedAmount}</small>
+                    <small>
+                      {tf('txPage.quickAdd.total', `合计 ¥`)}
+                      {quickAddCalculatedAmount}
+                    </small>
                   ) : null}
                 </div>
 
                 <div className="quick-add-budget-hint" id="quick-add-budget-hint">
                   {quickAddBudgetSummary.dailyBudget === null ? (
                     <span>
-                      当日已支出 <strong>{formatCurrency(quickAddBudgetSummary.spent)}</strong>
+                      {tf('txPage.quickAdd.todaySpent', `当日已支出`)}{' '}
+                      <strong>{formatCurrency(quickAddBudgetSummary.spent)}</strong>
                       {quickAddType === 'expense' &&
                       quickAddBudgetSummary.projected !== quickAddBudgetSummary.spent
-                        ? `，记入后 ${formatCurrency(quickAddBudgetSummary.projected)}`
+                        ? `${tf('txPage.quickAdd.afterEntry', `，记入后 `)}${formatCurrency(quickAddBudgetSummary.projected)}`
                         : ''}
                     </span>
                   ) : (
                     <>
                       <span>
-                        当日参考预算{' '}
+                        {tf('txPage.quickAdd.dailyBudget', `当日参考预算`)}{' '}
                         <strong>{formatCurrency(quickAddBudgetSummary.dailyBudget)}</strong>
                       </span>
                       <span>
-                        已支出 {formatCurrency(quickAddBudgetSummary.spent)}，记入后剩余{' '}
+                        {tf('txPage.quickAdd.spent', `已支出`)}{' '}
+                        {formatCurrency(quickAddBudgetSummary.spent)}
+                        {tf('txPage.quickAdd.afterEntryRemaining', `，记入后剩余`)}{' '}
                         <strong
                           className={
                             quickAddBudgetSummary.remaining !== null &&
@@ -2998,7 +3115,9 @@ export function TransactionsPage() {
 
                 <div className="quick-add-meta-grid">
                   <div className="quick-add-meta-field">
-                    <label htmlFor="quick-add-category">分类</label>
+                    <label htmlFor="quick-add-category">
+                      {tf('txPage.quickAdd.category', `分类`)}
+                    </label>
                     <select
                       id="quick-add-category"
                       value={quickAddCategoryId}
@@ -3012,7 +3131,9 @@ export function TransactionsPage() {
                     </select>
                   </div>
                   <div className="quick-add-meta-field">
-                    <label htmlFor="quick-add-account">账户</label>
+                    <label htmlFor="quick-add-account">
+                      {tf('txPage.quickAdd.account', `账户`)}
+                    </label>
                     <select
                       id="quick-add-account"
                       value={quickAddAccountId}
@@ -3026,19 +3147,19 @@ export function TransactionsPage() {
                     </select>
                   </div>
                   <div className="quick-add-meta-field">
-                    <label htmlFor="quick-add-date">日期</label>
+                    <label htmlFor="quick-add-date">{tf('txPage.quickAdd.date', `日期`)}</label>
                     <DatePicker
                       id="quick-add-date"
                       value={quickAddDate}
                       onChange={setQuickAddDate}
-                      ariaLabel="日期"
+                      ariaLabel={tf('txPage.quickAdd.dateAria', '日期')}
                     />
                   </div>
                   <div className="quick-add-meta-field is-note">
-                    <label htmlFor="quick-add-note">备注</label>
+                    <label htmlFor="quick-add-note">{tf('txPage.quickAdd.note', `备注`)}</label>
                     <input
                       id="quick-add-note"
-                      placeholder="可选"
+                      placeholder={tf('txPage.quickAdd.optional', '可选')}
                       value={quickAddNote}
                       onChange={(event) => setQuickAddNote(event.target.value)}
                     />
@@ -3048,17 +3169,25 @@ export function TransactionsPage() {
                 {quickAddErrorKey ? <small className="error">{t(quickAddErrorKey)}</small> : null}
               </section>
 
-              <section className="quick-add-keypad-panel" role="group" aria-label="金额键盘">
+              <section
+                className="quick-add-keypad-panel"
+                role="group"
+                aria-label={tf('txPage.quickAdd.keypadAria', '金额键盘')}
+              >
                 <AmountKeypad onKey={handleQuickAddKeypadInput} />
-                <p className="quick-add-keypad-tip">支持加减乘除；按 Enter 计算</p>
+                <p className="quick-add-keypad-tip">
+                  {tf('txPage.quickAdd.keypadTip', `支持加减乘除；按 Enter 计算`)}
+                </p>
               </section>
             </div>
 
             <footer className="quick-add-footer">
               <button type="button" className="primary" onClick={handleSaveQuickAdd}>
-                完成记账
+                {tf('txPage.quickAdd.save', `完成记账`)}
               </button>
-              <small role="status">{quickAddDraftStatus || '输入内容会自动保存为草稿'}</small>
+              <small role="status">
+                {quickAddDraftStatus || tf('txPage.quickAdd.draftHint', '输入内容会自动保存为草稿')}
+              </small>
             </footer>
           </aside>
         </div>
@@ -3066,14 +3195,14 @@ export function TransactionsPage() {
 
       <ConfirmDialog
         open={Boolean(pendingImport)}
-        title="第 2 步：导入预检确认"
+        title={tf('txPage.import.confirmStep2Title', '第 2 步：导入预检确认')}
         description={pendingImportDialogDescription}
         confirmText={
           pendingImport?.mode === 'overwrite'
-            ? '确认进入第 3 步（覆盖写入）'
-            : '确认进入第 3 步（写入账本）'
+            ? tf('txPage.import.confirmOverwrite', '确认进入第 3 步（覆盖写入）')
+            : tf('txPage.import.confirmWrite', '确认进入第 3 步（写入账本）')
         }
-        cancelText="取消"
+        cancelText={tf('txPage.common.cancel', '取消')}
         danger={pendingImport?.mode === 'overwrite'}
         onConfirm={handleConfirmPendingImport}
         onCancel={() => setPendingImport(null)}
@@ -3085,40 +3214,40 @@ export function TransactionsPage() {
             className="dialog"
             role="dialog"
             aria-modal="true"
-            aria-label="分享账单"
+            aria-label={tf('txPage.share.title', '分享账单')}
             onClick={(event) => event.stopPropagation()}
           >
-            <header className="dialog-header">分享账单</header>
+            <header className="dialog-header">{tf('txPage.share.dialogTitle', `分享账单`)}</header>
             <div className="dialog-body" style={{ display: 'grid', gap: 12 }}>
               <div style={{ display: 'grid', gap: 8 }}>
-                <strong>分享模板</strong>
+                <strong>{tf('txPage.share.template', `分享模板`)}</strong>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button
                     type="button"
                     className={shareTemplate === 'full' ? 'primary' : ''}
                     onClick={() => setShareTemplate('full')}
                   >
-                    完整
+                    {tf('txPage.share.templateFull', `完整`)}
                   </button>
                   <button
                     type="button"
                     className={shareTemplate === 'masked' ? 'primary' : ''}
                     onClick={() => setShareTemplate('masked')}
                   >
-                    脱敏
+                    {tf('txPage.share.templateMasked', `脱敏`)}
                   </button>
                   <button
                     type="button"
                     className={shareTemplate === 'summary' ? 'primary' : ''}
                     onClick={() => setShareTemplate('summary')}
                   >
-                    摘要
+                    {tf('txPage.share.templateSummary', `摘要`)}
                   </button>
                 </div>
               </div>
 
               <div style={{ display: 'grid', gap: 8 }}>
-                <strong>包含字段</strong>
+                <strong>{tf('txPage.share.fields', `包含字段`)}</strong>
                 <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input
                     type="checkbox"
@@ -3126,7 +3255,7 @@ export function TransactionsPage() {
                     onChange={(event) => setShareIncludeAccount(event.target.checked)}
                     disabled={shareTemplate === 'summary'}
                   />
-                  <span>账户</span>
+                  <span>{tf('txPage.share.fieldAccount', `账户`)}</span>
                 </label>
                 <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input
@@ -3134,7 +3263,7 @@ export function TransactionsPage() {
                     checked={shareIncludeNote}
                     onChange={(event) => setShareIncludeNote(event.target.checked)}
                   />
-                  <span>备注</span>
+                  <span>{tf('txPage.share.fieldNote', `备注`)}</span>
                 </label>
                 <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input
@@ -3143,12 +3272,12 @@ export function TransactionsPage() {
                     onChange={(event) => setShareIncludeAttachments(event.target.checked)}
                     disabled={shareTemplate === 'summary'}
                   />
-                  <span>附件提示</span>
+                  <span>{tf('txPage.share.attachmentHint', `附件提示`)}</span>
                 </label>
               </div>
 
               <div style={{ display: 'grid', gap: 8 }}>
-                <strong>预览</strong>
+                <strong>{tf('txPage.share.preview', `预览`)}</strong>
                 <textarea
                   readOnly
                   value={shareText}
@@ -3159,10 +3288,10 @@ export function TransactionsPage() {
             </div>
             <footer className="dialog-footer">
               <button type="button" onClick={handleCloseShareDialog}>
-                关闭
+                {tf('txPage.share.close', `关闭`)}
               </button>
               <button type="button" className="primary" onClick={() => void handleCopyShareText()}>
-                复制文案
+                {tf('txPage.share.copyText', `复制文案`)}
               </button>
             </footer>
           </section>
@@ -3171,42 +3300,52 @@ export function TransactionsPage() {
 
       <ConfirmDialog
         open={Boolean(pendingRefundTransaction)}
-        title="确认退款并回补账户"
+        title={tf('txPage.refund.confirmTitle', '确认退款并回补账户')}
         description={
           pendingRefundTransaction ? (
             <div className="confirm-flow-copy">
-              <p>将为“{pendingRefundTransaction.note || '该交易'}”创建退款记录。</p>
+              <p>
+                {tf('txPage.refund.confirmWillCreatePrefix', `将为“`)}
+                {pendingRefundTransaction.note ||
+                  tf('txPage.refund.confirmThisTransaction', '该交易')}
+                {tf('txPage.refund.confirmWillCreateSuffix', `”创建退款记录。`)}
+              </p>
               <AmountBreakdown
                 rows={[
                   {
-                    label: '原交易金额',
+                    label: tf('txPage.refund.originalAmount', '原交易金额'),
                     amount: formatCurrency(Number(pendingRefundTransaction.amount) || 0)
                   },
                   {
-                    label: '已退款金额',
+                    label: tf('txPage.refund.refundedAmount', '已退款金额'),
                     amount: formatCurrency(pendingRefundedAmount),
                     tone: 'neutral'
                   },
                   {
-                    label: '本次退款金额',
+                    label: tf('txPage.refund.thisRefundAmount', '本次退款金额'),
                     amount: formatCurrency(pendingRefundRemainingAmount),
                     tone: 'warning'
                   }
                 ]}
                 total={{
-                  label: '退款后回补账户',
+                  label: tf('txPage.refund.afterRefundAccount', '退款后回补账户'),
                   amount: formatCurrency(pendingRefundRemainingAmount),
                   tone: 'success'
                 }}
               />
-              <p className="muted">退款记录会写入余额变动明细，原交易的可退款金额会同步更新。</p>
+              <p className="muted">
+                {tf(
+                  'txPage.refund.detailHint',
+                  `退款记录会写入余额变动明细，原交易的可退款金额会同步更新。`
+                )}
+              </p>
             </div>
           ) : (
             ''
           )
         }
-        confirmText={`确认退款（${formatCurrency(pendingRefundRemainingAmount)}）`}
-        cancelText="取消"
+        confirmText={`${tf('txPage.refund.confirmPrefix', `确认退款（`)}${formatCurrency(pendingRefundRemainingAmount)}）`}
+        cancelText={tf('txPage.common.cancel', '取消')}
         danger
         onConfirm={handleRefundConfirm}
         onCancel={() => setPendingRefundTransactionId(null)}
@@ -3214,14 +3353,25 @@ export function TransactionsPage() {
 
       <ConfirmDialog
         open={pendingDeleteIds.length > 0}
-        title={pendingDeleteIds.length > 1 ? '确认批量移入回收站' : '确认移入回收站'}
+        title={
+          pendingDeleteIds.length > 1
+            ? tf('txPage.confirm.bulkDeleteTitle', '确认批量移入回收站')
+            : tf('txPage.confirm.deleteTitle', '确认移入回收站')
+        }
         description={
           pendingDeleteIds.length > 1
-            ? `即将把 ${pendingDeleteIds.length} 条交易移入回收站。你之后仍可在回收站恢复或彻底删除。是否继续？`
-            : '该交易将先移入回收站。你之后仍可在回收站恢复或彻底删除。是否继续？'
+            ? `${tf('txPage.confirm.bulkDeleteHead', `即将把 `)}${pendingDeleteIds.length}${tf('txPage.confirm.bulkDeleteTail', ` 条交易移入回收站。你之后仍可在回收站恢复或彻底删除。是否继续？`)}`
+            : tf(
+                'txPage.confirm.deleteDescription',
+                '该交易将先移入回收站。你之后仍可在回收站恢复或彻底删除。是否继续？'
+              )
         }
-        confirmText={pendingDeleteIds.length > 1 ? '确认移入回收站' : '移入回收站'}
-        cancelText="取消"
+        confirmText={
+          pendingDeleteIds.length > 1
+            ? tf('txPage.confirm.bulkDeleteConfirm', '确认移入回收站')
+            : tf('txPage.confirm.deleteConfirm', '移入回收站')
+        }
+        cancelText={tf('txPage.confirm.cancel', '取消')}
         danger
         onConfirm={handleDeleteConfirm}
         onCancel={() => setPendingDeleteIds([])}
@@ -3232,7 +3382,11 @@ export function TransactionsPage() {
         message={toast.message}
         variant={toast.variant}
         duration={lastAddedTransactionId && toast.variant === 'success' ? 6000 : 2200}
-        actionLabel={lastAddedTransactionId && toast.variant === 'success' ? '撤销' : undefined}
+        actionLabel={
+          lastAddedTransactionId && toast.variant === 'success'
+            ? tf('txPage.toast.undo', '撤销')
+            : undefined
+        }
         onAction={undoLastQuickAdd}
         onClose={() => {
           setToast((prev) => ({ ...prev, visible: false }));

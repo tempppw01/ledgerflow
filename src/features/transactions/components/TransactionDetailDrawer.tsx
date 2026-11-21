@@ -6,7 +6,10 @@ import {
   TransactionSource,
   TransactionStatus
 } from '../../../entities/transaction/types';
-import { formatCurrency, formatDateTime } from '../../../shared/lib/format';
+import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../../shared/lib/format';
+import { getDateLocale } from '../../../shared/lib/i18nDate';
+import { useTFallback, type TfFallback } from '../../../shared/lib/useTFallback';
 import {
   getTransactionDirection,
   isTransactionRefundLike
@@ -24,23 +27,88 @@ import {
   webdavUploadFile
 } from '../../../shared/lib/backup';
 
-const STATUS_LABELS: Record<TransactionStatus, string> = {
-  pending: '待处理',
-  completed: '已完成',
-  refunded: '已退款',
-  closed: '已关闭',
-  failed: '失败'
+/**
+ * 状态与来源的取值这里只放 key + 中文兜底，真正的中英文案在 locale 里。
+ * key 复用交易表格已经建立的同名 key：抽屉是从表格某一行打开的，
+ * 同一笔交易在两处的「已完成 / 手工录入」必须是同一个说法。
+ */
+const STATUS_LABEL_ENTRIES: Record<TransactionStatus, { key: string; fallback: string }> = {
+  pending: { key: 'transactions.table.status.pending', fallback: '待处理' },
+  completed: { key: 'transactions.table.status.completed', fallback: '已完成' },
+  refunded: { key: 'transactions.table.status.refunded', fallback: '已退款' },
+  closed: { key: 'transactions.table.status.closed', fallback: '已关闭' },
+  failed: { key: 'transactions.table.status.failed', fallback: '失败' }
 };
 
-function statusLabel(status: TransactionStatus): string {
-  return STATUS_LABELS[status] || status;
+const SOURCE_LABEL_ENTRIES: Record<TransactionSource, { key: string; fallback: string }> = {
+  ai: { key: 'transactions.filters.sourceAi', fallback: 'AI 记账' },
+  wechat: { key: 'transactions.filters.sourceWechat', fallback: '微信导入' },
+  alipay: { key: 'transactions.filters.sourceAlipay', fallback: '支付宝' },
+  manual: { key: 'transactions.filters.sourceManual', fallback: '手工录入' }
+};
+
+const TYPE_LABEL_ENTRIES: Record<
+  'income' | 'expense' | 'budget' | 'repayment' | 'refund' | 'reversal',
+  { key: string; fallback: string }
+> = {
+  income: { key: 'transactions.table.type.income', fallback: '收入' },
+  expense: { key: 'transactions.table.type.expense', fallback: '支出' },
+  budget: { key: 'transactions.table.type.budget', fallback: '预算' },
+  repayment: { key: 'transactions.table.type.repayment', fallback: '还款' },
+  refund: { key: 'transactions.table.type.refund', fallback: '退款' },
+  reversal: { key: 'transactions.table.type.reversal', fallback: '冲正' }
+};
+
+/** 单字徽标：中文一个字，英文沿用表格已经确定的首字母约定（I/E/Rf/Rv）。 */
+const TYPE_BADGE_ENTRIES = {
+  income: { key: 'transactions.table.badge.income', fallback: '收' },
+  expense: { key: 'transactions.table.badge.expense', fallback: '支' },
+  refund: { key: 'transactions.table.badge.refund', fallback: '退' },
+  reversal: { key: 'transactions.table.badge.reversal', fallback: '冲' }
+} as const;
+
+function statusLabel(status: TransactionStatus, tf: TfFallback): string {
+  const entry = STATUS_LABEL_ENTRIES[status];
+  return entry ? tf(entry.key, entry.fallback) : status;
 }
 
-function sourceLabel(source: TransactionSource): string {
-  if (source === 'ai') return 'AI 记账';
-  if (source === 'wechat') return '微信导入';
-  if (source === 'alipay') return '支付宝';
-  return '手工录入';
+function sourceLabel(source: TransactionSource, tf: TfFallback): string {
+  const entry = SOURCE_LABEL_ENTRIES[source];
+  return entry ? tf(entry.key, entry.fallback) : source;
+}
+
+function typeLabel(transaction: TransactionItem, tf: TfFallback): string {
+  if (isTransactionRefundLike(transaction)) {
+    const kind = transaction.adjustmentKind === 'refund' ? 'refund' : 'reversal';
+    return tf(TYPE_LABEL_ENTRIES[kind].key, TYPE_LABEL_ENTRIES[kind].fallback);
+  }
+  if (transaction.type === 'income' || transaction.type === 'expense') {
+    return tf(
+      TYPE_LABEL_ENTRIES[transaction.type].key,
+      TYPE_LABEL_ENTRIES[transaction.type].fallback
+    );
+  }
+  const kind = transaction.type === 'budget' ? 'budget' : 'repayment';
+  return tf(TYPE_LABEL_ENTRIES[kind].key, TYPE_LABEL_ENTRIES[kind].fallback);
+}
+
+function formatDrawerTime(date: Date, language?: string): string {
+  return new Intl.DateTimeFormat(getDateLocale(language), {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).format(date);
+}
+
+/** 抽屉里的日期时间跟随界面语言（中英不同习惯），不再写死 zh-CN。 */
+function formatDrawerDateTime(value: string, language?: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return formatDrawerTime(date, language);
 }
 
 const ALIPAY_ACCOUNT_PATTERN = /(支付宝|alipay)/i;
@@ -118,10 +186,15 @@ function renderAccountLabel(accountName: string): ReactNode {
   );
 }
 
-function renderTypeLabel(transaction: TransactionItem) {
+function typeBadge(kind: keyof typeof TYPE_BADGE_ENTRIES, tf: TfFallback): string {
+  return tf(TYPE_BADGE_ENTRIES[kind].key, TYPE_BADGE_ENTRIES[kind].fallback);
+}
+
+function renderTypeLabel(transaction: TransactionItem, tf: TfFallback) {
   const { type } = transaction;
   if (isTransactionRefundLike(transaction)) {
-    const label = transaction.adjustmentKind === 'refund' ? '退款' : '冲正';
+    const kind = transaction.adjustmentKind === 'refund' ? 'refund' : 'reversal';
+    const label = tf(TYPE_LABEL_ENTRIES[kind].key, TYPE_LABEL_ENTRIES[kind].fallback);
     return (
       <span
         className={`transaction-type-badge transaction-type-badge-${
@@ -130,7 +203,7 @@ function renderTypeLabel(transaction: TransactionItem) {
         aria-label={label}
         title={label}
       >
-        {transaction.adjustmentKind === 'refund' ? '退' : '冲'}
+        {typeBadge(kind, tf)}
       </span>
     );
   }
@@ -139,14 +212,14 @@ function renderTypeLabel(transaction: TransactionItem) {
     return (
       <span
         className={`transaction-type-badge transaction-type-badge-${type}`}
-        aria-label={type === 'income' ? '收入' : '支出'}
+        aria-label={tf(TYPE_LABEL_ENTRIES[type].key, TYPE_LABEL_ENTRIES[type].fallback)}
       >
-        {type === 'income' ? '收' : '支'}
+        {typeBadge(type, tf)}
       </span>
     );
   }
 
-  return type === 'budget' ? '预算' : '还款';
+  return typeLabel(transaction, tf);
 }
 
 function maskAmount(): string {
@@ -169,12 +242,18 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
-function buildAbnormalAlert(input: TransactionItem): { title: string; detail: string } | null {
+function buildAbnormalAlert(
+  input: TransactionItem,
+  tf: TfFallback
+): { title: string; detail: string } | null {
   const amount = Number(input.amount) || 0;
   if (input.type !== 'expense' || isTransactionRefundLike(input) || amount < 500) return null;
   return {
-    title: '金额异常提醒',
-    detail: `该笔支出（${formatCurrency(amount)}）显著偏高，建议检查是否重复记账，或确认是否为一次性大额消费。`
+    title: tf('txDrawer.alert.title', '金额异常提醒'),
+    detail: tf(
+      'txDrawer.alert.detail',
+      '该笔支出（{amount}）显著偏高，建议检查是否重复记账，或确认是否为一次性大额消费。'
+    ).replace('{amount}', formatCurrency(amount))
   };
 }
 
@@ -385,6 +464,10 @@ export function TransactionDetailDrawer({
   const resizeStateRef = useRef<{ startY: number; startHeight: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
+  const tf = useTFallback();
+  const { i18n } = useTranslation();
+  const language = i18n.resolvedLanguage || i18n.language || 'zh';
+  const htmlLang = language.startsWith('en') ? 'en' : 'zh-CN';
 
   const handleAttachmentSelect = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -395,7 +478,10 @@ export function TransactionDetailDrawer({
 
     if (!isWebdavReady()) {
       onAttachmentUploadStatus?.(
-        '当前未完成 WebDAV 配置，请先去数据库 / WebDAV 设置页完成配置。',
+        tf(
+          'txDrawer.upload.webdavRequired',
+          '当前未完成 WebDAV 配置，请先去数据库 / WebDAV 设置页完成配置。'
+        ),
         'warning'
       );
       return;
@@ -414,10 +500,15 @@ export function TransactionDetailDrawer({
         mimeType: file.type || undefined,
         size: file.size
       });
-      onAttachmentUploadStatus?.('附件已上传并关联到账单详情。', 'success');
+      onAttachmentUploadStatus?.(
+        tf('txDrawer.upload.success', '附件已上传并关联到账单详情。'),
+        'success'
+      );
     } catch (error) {
       onAttachmentUploadStatus?.(
-        error instanceof Error ? error.message : '附件上传失败，请稍后重试。',
+        error instanceof Error
+          ? error.message
+          : tf('txDrawer.upload.failed', '附件上传失败，请稍后重试。'),
         'error'
       );
     } finally {
@@ -428,7 +519,10 @@ export function TransactionDetailDrawer({
   const triggerAttachmentSelect = () => {
     if (!isWebdavReady()) {
       onAttachmentUploadStatus?.(
-        '当前未完成 WebDAV 配置，请先去数据库 / WebDAV 设置页完成配置。',
+        tf(
+          'txDrawer.upload.webdavRequired',
+          '当前未完成 WebDAV 配置，请先去数据库 / WebDAV 设置页完成配置。'
+        ),
         'warning'
       );
       return;
@@ -448,66 +542,56 @@ export function TransactionDetailDrawer({
 
     const direction = getTransactionDirection(transaction);
     const amountText = `${direction === 'inflow' ? '+' : '-'}${formatCurrency(transaction.amount)}`;
-    const typeText = isTransactionRefundLike(transaction)
-      ? transaction.adjustmentKind === 'refund'
-        ? '退款'
-        : '冲正'
-      : transaction.type === 'income'
-        ? '收入'
-        : transaction.type === 'expense'
-          ? '支出'
-          : transaction.type === 'budget'
-            ? '预算'
-            : '还款';
+    const typeText = typeLabel(transaction, tf);
 
-    const statusText = transaction.status ? statusLabel(transaction.status) : '—';
-    const noteText = transaction.note?.trim() || '（无）';
+    const statusText = transaction.status ? statusLabel(transaction.status, tf) : '—';
+    const noteText = transaction.note?.trim() || tf('txDrawer.print.noNote', '（无）');
     const tagsHtml =
       transaction.tags.length > 0
         ? transaction.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join('')
-        : '<span>（无）</span>';
+        : `<span>${tf('txDrawer.print.noNote', '（无）')}</span>`;
 
     const html = `
       <!doctype html>
-      <html lang="zh-CN">
+      <html lang="${escapeHtml(htmlLang)}">
         <head>
           <meta charset="utf-8" />
-          <title>账单详情打印 - ${escapeHtml(transaction.id)}</title>
+          <title>${escapeHtml(tf('txDrawer.print.title', '账单详情打印 - {id}').replace('{id}', transaction.id))}</title>
           <style>${buildPrintStyles()}</style>
         </head>
         <body>
           <main class="sheet">
             <header class="header">
               <div>
-                <h1 class="title">账单详情</h1>
-                <p class="sub">交易编号：${escapeHtml(transaction.id)}</p>
+                <h1 class="title">${escapeHtml(tf('txDrawer.print.heading', '账单详情'))}</h1>
+                <p class="sub">${escapeHtml(tf('txDrawer.print.txId', '交易编号：{id}').replace('{id}', transaction.id))}</p>
               </div>
               <div class="amount ${direction === 'inflow' ? 'income' : 'expense'}">${escapeHtml(amountText)}</div>
             </header>
 
             <section class="grid">
-              <div class="kv"><label>日期时间</label><strong>${escapeHtml(formatDateTime(transaction.date))}</strong></div>
-              <div class="kv"><label>最后修改</label><strong>${escapeHtml(formatDateTime(transaction.updatedAt || transaction.date))}</strong></div>
-              <div class="kv"><label>类型</label><strong>${escapeHtml(typeText)}</strong></div>
-              <div class="kv"><label>分类</label><strong>${escapeHtml(categoryName)}</strong></div>
-              <div class="kv"><label>账户</label><strong>${escapeHtml(accountName)}</strong></div>
-              <div class="kv"><label>来源</label><strong>${escapeHtml(sourceLabel(source))}</strong></div>
-              <div class="kv"><label>交易状态</label><strong>${escapeHtml(statusText)}</strong></div>
-              <div class="kv"><label>订单号</label><strong>${escapeHtml(transaction.orderNo || '—')}</strong></div>
-              <div class="kv"><label>商家订单号</label><strong>${escapeHtml(transaction.merchantOrderNo || '—')}</strong></div>
+              <div class="kv"><label>${escapeHtml(tf('txDrawer.field.dateTime', '日期时间'))}</label><strong>${escapeHtml(formatDrawerDateTime(transaction.date, language))}</strong></div>
+              <div class="kv"><label>${escapeHtml(tf('txDrawer.field.updatedAt', '最后修改'))}</label><strong>${escapeHtml(formatDrawerDateTime(transaction.updatedAt || transaction.date, language))}</strong></div>
+              <div class="kv"><label>${escapeHtml(tf('txDrawer.field.type', '类型'))}</label><strong>${escapeHtml(typeText)}</strong></div>
+              <div class="kv"><label>${escapeHtml(tf('txDrawer.field.category', '分类'))}</label><strong>${escapeHtml(categoryName)}</strong></div>
+              <div class="kv"><label>${escapeHtml(tf('txDrawer.field.account', '账户'))}</label><strong>${escapeHtml(accountName)}</strong></div>
+              <div class="kv"><label>${escapeHtml(tf('txDrawer.field.source', '来源'))}</label><strong>${escapeHtml(sourceLabel(source, tf))}</strong></div>
+              <div class="kv"><label>${escapeHtml(tf('txDrawer.field.txStatus', '交易状态'))}</label><strong>${escapeHtml(statusText)}</strong></div>
+              <div class="kv"><label>${escapeHtml(tf('txDrawer.field.orderNo', '订单号'))}</label><strong>${escapeHtml(transaction.orderNo || '—')}</strong></div>
+              <div class="kv"><label>${escapeHtml(tf('txDrawer.field.merchantOrderNo', '商家订单号'))}</label><strong>${escapeHtml(transaction.merchantOrderNo || '—')}</strong></div>
             </section>
 
             <section class="section">
-              <h3>备注</h3>
+              <h3>${escapeHtml(tf('txDrawer.field.note', '备注'))}</h3>
               <p>${escapeHtml(noteText)}</p>
             </section>
 
             <section class="section">
-              <h3>标签</h3>
+              <h3>${escapeHtml(tf('txDrawer.field.tags', '标签'))}</h3>
               <div class="tags">${tagsHtml}</div>
             </section>
 
-            <footer class="footer">打印时间：${escapeHtml(new Date().toLocaleString('zh-CN', { hour12: false }))}</footer>
+            <footer class="footer">${escapeHtml(tf('txDrawer.print.time', '打印时间：{value}').replace('{value}', formatDrawerTime(new Date(), language)))}</footer>
           </main>
         </body>
       </html>
@@ -565,7 +649,7 @@ export function TransactionDetailDrawer({
 
   if (!open || !transaction) return null;
 
-  const abnormalAlert = buildAbnormalAlert(transaction);
+  const abnormalAlert = buildAbnormalAlert(transaction, tf);
   const isRefundOrReversal =
     transaction.adjustmentKind === 'refund' || transaction.adjustmentKind === 'reversal';
   const hasMoreInformation = Boolean(
@@ -584,32 +668,40 @@ export function TransactionDetailDrawer({
         className="drawer-panel transaction-detail-drawer"
         role="dialog"
         aria-modal="true"
-        aria-label="交易详情"
+        aria-label={tf('txDrawer.title', '交易详情')}
         style={drawerHeight ? { height: `${drawerHeight}px` } : undefined}
         onClick={(event) => event.stopPropagation()}
       >
         <button
           type="button"
           className="drawer-resize-handle"
-          aria-label="拖拽调整详情抽屉高度"
+          aria-label={tf('txDrawer.resizeAria', '拖拽调整详情抽屉高度')}
           onPointerDown={handleResizeStart}
         >
           <span />
         </button>
         <header className="drawer-header">
           <div>
-            <h3>交易详情</h3>
+            <h3>{tf('txDrawer.title', '交易详情')}</h3>
           </div>
-          <button type="button" className="icon-btn" onClick={onClose} aria-label="关闭详情">
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={onClose}
+            aria-label={tf('txDrawer.closeAria', '关闭详情')}
+          >
             ✕
           </button>
         </header>
 
         <div className="drawer-body">
-          <section className="transaction-detail-summary" aria-label="账单摘要">
+          <section
+            className="transaction-detail-summary"
+            aria-label={tf('txDrawer.summaryAria', '账单摘要')}
+          >
             <div>
               <p className="transaction-detail-kicker">
-                {renderTypeLabel(transaction)}
+                {renderTypeLabel(transaction, tf)}
                 <span>{categoryName}</span>
               </p>
               <strong
@@ -623,29 +715,32 @@ export function TransactionDetailDrawer({
               </strong>
             </div>
             <p>
-              {formatDateTime(transaction.date)} · {renderAccountLabel(accountName)}
+              {formatDrawerDateTime(transaction.date, language)} · {renderAccountLabel(accountName)}
             </p>
           </section>
 
           {transaction.note ? <p className="transaction-detail-note">{transaction.note}</p> : null}
 
-          <section className="transaction-detail-facts" aria-label="基础信息">
+          <section
+            className="transaction-detail-facts"
+            aria-label={tf('txDrawer.factsAria', '基础信息')}
+          >
             <div>
-              <span>分类</span>
+              <span>{tf('txDrawer.field.category', '分类')}</span>
               <strong>{categoryName}</strong>
             </div>
             <div>
-              <span>账户</span>
+              <span>{tf('txDrawer.field.account', '账户')}</span>
               <strong>{renderAccountLabel(accountName)}</strong>
             </div>
             <div>
-              <span>来源</span>
-              <strong>{sourceLabel(source)}</strong>
+              <span>{tf('txDrawer.field.source', '来源')}</span>
+              <strong>{sourceLabel(source, tf)}</strong>
             </div>
             {transaction.status ? (
               <div>
-                <span>状态</span>
-                <strong>{statusLabel(transaction.status)}</strong>
+                <span>{tf('txDrawer.field.status', '状态')}</span>
+                <strong>{statusLabel(transaction.status, tf)}</strong>
               </div>
             ) : null}
           </section>
@@ -656,17 +751,17 @@ export function TransactionDetailDrawer({
 
           {hasMoreInformation ? (
             <details className="transaction-detail-more">
-              <summary>更多信息</summary>
+              <summary>{tf('txDrawer.moreInfo', '更多信息')}</summary>
               <div className="transaction-detail-more-content">
                 {transaction.orderNo ? (
                   <p>
-                    <span>订单号</span>
+                    <span>{tf('txDrawer.field.orderNo', '订单号')}</span>
                     <strong>{transaction.orderNo}</strong>
                   </p>
                 ) : null}
                 {transaction.merchantOrderNo ? (
                   <p>
-                    <span>商家订单号</span>
+                    <span>{tf('txDrawer.field.merchantOrderNo', '商家订单号')}</span>
                     <strong>
                       {privacyMode
                         ? maskMerchant(transaction.merchantOrderNo)
@@ -685,13 +780,19 @@ export function TransactionDetailDrawer({
                 ) : null}
                 {isRefundOrReversal || relatedRefunds.length ? (
                   <p>
-                    <span>退款 / 冲正</span>
+                    <span>{tf('txDrawer.refund.section', '退款 / 冲正')}</span>
                     <strong>
                       {isRefundOrReversal
                         ? relatedOrigin
-                          ? `关联原单：${relatedOrigin.note || relatedOrigin.id}`
-                          : '退款或冲正单'
-                        : `已关联 ${relatedRefunds.length} 条记录`}
+                          ? tf('txDrawer.relatedOrigin', '关联原单：{note}').replace(
+                              '{note}',
+                              relatedOrigin.note || relatedOrigin.id
+                            )
+                          : tf('txDrawer.refund.only', '退款或冲正单')
+                        : tf('txDrawer.refund.relatedCount', '已关联 {count} 条记录').replace(
+                            '{count}',
+                            String(relatedRefunds.length)
+                          )}
                     </strong>
                   </p>
                 ) : null}
@@ -699,15 +800,17 @@ export function TransactionDetailDrawer({
                   <div className="transaction-detail-attachments">
                     {transaction.attachments.map((item) => (
                       <p key={item.id}>
-                        <span>附件</span>
+                        <span>{tf('txDrawer.field.attachment', '附件')}</span>
                         <strong>{item.name}</strong>
                       </p>
                     ))}
                   </div>
                 ) : null}
                 <p>
-                  <span>最后修改</span>
-                  <strong>{formatDateTime(transaction.updatedAt || transaction.date)}</strong>
+                  <span>{tf('txDrawer.field.updatedAt', '最后修改')}</span>
+                  <strong>
+                    {formatDrawerDateTime(transaction.updatedAt || transaction.date, language)}
+                  </strong>
                 </p>
               </div>
             </details>
@@ -717,13 +820,13 @@ export function TransactionDetailDrawer({
             type="file"
             style={{ display: 'none' }}
             onChange={handleAttachmentSelect}
-            aria-label="上传附件"
+            aria-label={tf('txDrawer.upload.action', '上传附件')}
           />
         </div>
 
         <footer className="drawer-footer">
           <button type="button" onClick={onShareBill}>
-            分享
+            {tf('txDrawer.share', '分享')}
           </button>
           {onRefund &&
           transaction &&
@@ -734,9 +837,9 @@ export function TransactionDetailDrawer({
               type="button"
               className="drawer-refund-btn"
               onClick={onRefund}
-              title="为这笔支出发起退款，并自动回补账户余额"
+              title={tf('txDrawer.refund.hint', '为这笔支出发起退款，并自动回补账户余额')}
             >
-              ↩️ 发起退款
+              {tf('txDrawer.refund.action', '↩️ 发起退款')}
             </button>
           ) : null}
           <button
@@ -745,35 +848,39 @@ export function TransactionDetailDrawer({
             onClick={() => navigate(`/transactions/${transaction.id}`)}
           >
             <img src={PEN_TOOL_ICON_URL} alt="" aria-hidden="true" />
-            编辑
+            {tf('txDrawer.edit', '编辑')}
           </button>
           <button type="button" className="danger" onClick={onDelete}>
-            删除
+            {tf('txDrawer.delete', '删除')}
           </button>
           <details className="transaction-detail-actions-more">
-            <summary>更多</summary>
+            <summary>{tf('txDrawer.more', '更多')}</summary>
             <div>
               <button type="button" onClick={onCopyNote}>
-                复制备注
+                {tf('txDrawer.copyNote', '复制备注')}
               </button>
               <button type="button" onClick={onCopyJson}>
-                复制 JSON
+                {tf('txDrawer.copyJson', '复制 JSON')}
               </button>
               <button type="button" onClick={handlePrint}>
-                打印 A4
+                {tf('txDrawer.printA4', '打印 A4')}
               </button>
               <button
                 type="button"
                 onClick={triggerAttachmentSelect}
                 disabled={attachmentUploading}
               >
-                {attachmentUploading ? '上传中…' : '上传附件'}
+                {attachmentUploading
+                  ? tf('txDrawer.upload.uploading', '上传中…')
+                  : tf('txDrawer.upload.action', '上传附件')}
               </button>
               <button type="button" onClick={onAiRecategorize} disabled={aiRecategorizing}>
-                {aiRecategorizing ? 'AI 重分类中…' : 'AI 重分类'}
+                {aiRecategorizing
+                  ? tf('txDrawer.ai.uploading', 'AI 重分类中…')
+                  : tf('txDrawer.ai.action', 'AI 重分类')}
               </button>
               <button type="button" onClick={onQuickAdd}>
-                新增账目
+                {tf('txDrawer.quickAdd', '新增账目')}
               </button>
             </div>
           </details>

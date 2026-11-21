@@ -1,7 +1,9 @@
 import { formatCurrencyAuto, formatDate } from '../../../shared/lib/format';
+import i18next from 'i18next';
 import type {
   TransactionItem,
   TransactionSource,
+  TransactionStatus,
   TransactionType
 } from '../../../entities/transaction/types';
 import {
@@ -9,42 +11,63 @@ import {
   isTransactionRefundLike
 } from '../../../shared/lib/transactionMetrics';
 
+/**
+ * 分享文案是纯函数（调用方在 TransactionsPage），拿不到 hook，所以直接用 i18next 单例。
+ * key 缺失时回落到中文兜底：单测环境没有初始化 i18n 时，拿到的还是原来的中文。
+ */
+function tf(key: string, fallback: string) {
+  const translated = i18next.t(key);
+  return !translated || translated === key ? fallback : translated;
+}
+
 export type BillShareTemplate = 'full' | 'masked' | 'summary';
 
 /**
  * 获取交易类型标签
  */
 export function txTypeLabel(type: TransactionType) {
-  return type === 'income'
-    ? '收入'
-    : type === 'budget'
-      ? '预算'
-      : type === 'repayment'
-        ? '还款'
-        : '支出';
+  if (type === 'income') return tf('transactions.table.type.income', '收入');
+  if (type === 'budget') return tf('transactions.table.type.budget', '预算');
+  if (type === 'repayment') return tf('transactions.table.type.repayment', '还款');
+  return tf('transactions.table.type.expense', '支出');
 }
 
 function transactionTypeLabel(transaction: TransactionItem) {
   if (isTransactionRefundLike(transaction)) {
-    return transaction.adjustmentKind === 'refund' ? '退款' : '冲正';
+    return transaction.adjustmentKind === 'refund'
+      ? tf('transactions.table.type.refund', '退款')
+      : tf('transactions.table.type.reversal', '冲正');
   }
   return txTypeLabel(transaction.type);
 }
+
+const STATUS_LABEL_ENTRIES: Record<TransactionStatus, { key: string; fallback: string }> = {
+  pending: { key: 'transactions.table.status.pending', fallback: '待处理' },
+  completed: { key: 'transactions.table.status.completed', fallback: '已完成' },
+  refunded: { key: 'transactions.table.status.refunded', fallback: '已退款' },
+  closed: { key: 'transactions.table.status.closed', fallback: '已关闭' },
+  failed: { key: 'transactions.table.status.failed', fallback: '失败' }
+};
+
+const SOURCE_LABEL_ENTRIES: Record<TransactionSource, { key: string; fallback: string }> = {
+  ai: { key: 'transactions.filters.sourceAi', fallback: 'AI 记账' },
+  wechat: { key: 'transactions.filters.sourceWechat', fallback: '微信导入' },
+  alipay: { key: 'transactions.filters.sourceAlipay', fallback: '支付宝' },
+  manual: { key: 'transactions.filters.sourceManual', fallback: '手工录入' }
+};
 
 /**
  * 获取交易状态标签
  */
 export function txStatusLabel(status?: TransactionItem['status']) {
   if (!status) return '—';
-  return (
-    {
-      pending: '待处理',
-      completed: '已完成',
-      refunded: '已退款',
-      closed: '已关闭',
-      failed: '失败'
-    }[status] || status
-  );
+  const entry = STATUS_LABEL_ENTRIES[status];
+  return entry ? tf(entry.key, entry.fallback) : status;
+}
+
+function txSourceLabel(source: TransactionSource) {
+  const entry = SOURCE_LABEL_ENTRIES[source];
+  return entry ? tf(entry.key, entry.fallback) : source;
 }
 
 /**
@@ -90,45 +113,89 @@ export function buildTransactionShareText(input: {
   const noteText = transaction.note?.trim() || '—';
   const attachmentCount = transaction.attachments?.length || 0;
   const lines = [
-    `【账单分享】${transactionTypeLabel(transaction)}`,
-    `金额：${amountText}`,
-    `日期：${formatDate(transaction.date)}`,
-    `分类：${isMasked ? maskShareText(categoryName) : categoryName || '—'}`
+    tf('txShare.title', '【账单分享】{type}').replace(
+      '{type}',
+      transactionTypeLabel(transaction)
+    ),
+    tf('txShare.amount', '金额：{value}').replace('{value}', amountText),
+    tf('txShare.date', '日期：{value}').replace('{value}', formatDate(transaction.date)),
+    tf('txShare.category', '分类：{value}').replace(
+      '{value}',
+      isMasked ? maskShareText(categoryName) : categoryName || '—'
+    )
   ];
 
   if (!isSummary && includeAccount) {
-    lines.push(`账户：${isMasked ? maskShareText(accountName) : accountName || '—'}`);
+    lines.push(
+      tf('txShare.account', '账户：{value}').replace(
+        '{value}',
+        isMasked ? maskShareText(accountName) : accountName || '—'
+      )
+    );
   }
 
   if (!isSummary) {
-    lines.push(`状态：${txStatusLabel(transaction.status)}`);
     lines.push(
-      `来源：${source === 'ai' ? 'AI 记账' : source === 'wechat' ? '微信导入' : source === 'alipay' ? '支付宝' : '手工录入'}`
+      tf('txShare.status', '状态：{value}').replace(
+        '{value}',
+        txStatusLabel(transaction.status)
+      )
+    );
+    lines.push(
+      tf('txShare.source', '来源：{value}').replace('{value}', txSourceLabel(source))
     );
   }
 
   if (includeNote) {
-    lines.push(`备注：${isMasked ? maskShareText(noteText) : noteText}`);
+    lines.push(
+      tf('txShare.note', '备注：{value}').replace(
+        '{value}',
+        isMasked ? maskShareText(noteText) : noteText
+      )
+    );
   }
 
   if (!isSummary && transaction.tags?.length) {
     lines.push(
-      `标签：${isMasked ? `${transaction.tags.length} 个标签` : transaction.tags.join(' / ')}`
+      tf('txShare.tags', '标签：{value}').replace(
+        '{value}',
+        isMasked
+          ? tf('txShare.tagsCount', '{count} 个标签').replace(
+              '{count}',
+              String(transaction.tags.length)
+            )
+          : transaction.tags.join(' / ')
+      )
     );
   }
 
   if (!isSummary && includeAttachments) {
-    lines.push(`附件：${attachmentCount > 0 ? `有 ${attachmentCount} 个附件` : '无附件'}`);
+    lines.push(
+      tf('txShare.attachments', '附件：{value}').replace(
+        '{value}',
+        attachmentCount > 0
+          ? tf(
+              'txShare.attachmentsCount',
+              '有 {count} 个附件'
+            ).replace('{count}', String(attachmentCount))
+          : tf('txShare.attachmentsNone', '无附件')
+      )
+    );
   }
 
   if (!isSummary && transaction.updatedAt) {
-    lines.push(`最后修改：${formatDate(transaction.updatedAt)}`);
+    lines.push(
+      tf('txShare.updatedAt', '最后修改：{value}').replace(
+        '{value}',
+        formatDate(transaction.updatedAt)
+      )
+    );
   }
 
   if (isSummary) {
-    lines.push('说明：摘要模式默认只保留关键信息，适合直接转发。');
+    lines.push(tf('txShare.summaryHint', '说明：摘要模式默认只保留关键信息，适合直接转发。'));
   } else if (isMasked) {
-    lines.push('说明：当前为脱敏分享模板。');
+    lines.push(tf('txShare.maskedHint', '说明：当前为脱敏分享模板。'));
   }
 
   return lines.join('\n');

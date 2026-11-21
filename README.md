@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/tempppw01/ledgerflow/releases"><img src="https://img.shields.io/github/v/release/tempppw01/ledgerflow?display_name=tag&style=flat-square&color=f59e0b" alt="Release" /></a>
-  <img src="https://img.shields.io/badge/version-0.8.5-0f766e?style=flat-square" alt="Version 0.8.5" />
+  <img src="https://img.shields.io/badge/version-0.8.6-0f766e?style=flat-square" alt="Version 0.8.6" />
   <img src="https://img.shields.io/badge/Node.js-20%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js 20+" />
   <img src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker ready" />
   <a href="https://ledgerflow.shuaihong.fun"><img src="https://img.shields.io/badge/Live%20demo-open-f59e0b?style=flat-square" alt="Live demo" /></a>
@@ -16,7 +16,7 @@
 <p align="center"><a href="#快速部署">快速部署</a> · <a href="#主要能力">主要能力</a> · <a href="#备份与同步">数据与备份</a> · <a href="https://github.com/tempppw01/ledgerflow/releases">版本发布</a></p>
 
 > [!NOTE]
-> 当前版本：`0.8.5`。项目仍在快速迭代，重要数据请保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
+> 当前版本：`0.8.6`。项目仍在快速迭代，重要数据请保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
 
 > 说明：项目仍处于快速迭代阶段，功能、界面和数据结构会持续调整。重要数据请务必保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
 
@@ -57,6 +57,17 @@
 </table>
 
 </details>
+
+### 0.8.6 功能亮点
+
+- 交易详情抽屉支持英文。此前点开任意一笔流水,抽屉整块是中文——这是交易页最主要的交互面,而按页面加载做的巡检扫不到它(只有点击后才渲染)。
+- 交易页隐藏区域补齐英文:批量操作面板、Insights 侧栏、账单导入预检与报告、工具栏菜单、退款与去重确认框、快速记账与分享抽屉、全部 toast。
+- 明细抽屉与交易表格现在对同一笔交易使用同一套说法(类型/状态/来源复用同一组 key),但导出 PDF 与 A4 打印的标题、表头、生成时间也跟随语言。
+- 投资理财页休市公告、时段标签、板卡健康标签与算法信号文案支持英文;行情接口的错误文案也跟随语言。
+- 收支方向徽标从单字母(I/E)改为 In/Out 等可读写法;原本"E"这种写法对英文用户含义不明。
+- 修复 `investments.notice.weekendDetail` / `holidayDetail` 缺失 `{date}` 占位符的问题:英文界面下会渲染成 " is a weekend…",现在正确显示日期。
+- 接口错误文案的翻译器改为放在 `src/shared/lib/apiErrorTranslator.ts`。此前它被定义在 feature 内部,导致 i18n 反向依赖 feature 模块,且基金接口的那一份注册从未生效。
+- 中英文 locale 各 3029 个 key,集合完全一致。
 
 ### 0.8.5 功能亮点
 

@@ -928,12 +928,12 @@
         "spending": "Spending"
       },
       "badge": {
-        "income": "I",
-        "expense": "E",
-        "budget": "B",
-        "repayment": "R",
-        "refund": "Rf",
-        "reversal": "Rv"
+        "income": "In",
+        "expense": "Out",
+        "budget": "Bud",
+        "repayment": "Rep",
+        "refund": "Ref",
+        "reversal": "Rev"
       },
       "attachment": {
         "has": "Has attachment",
@@ -1946,7 +1946,7 @@
       "noOpenEyebrow": "Trading hours",
       "noOpenTitle": "No market is trading right now",
       "noOpenDetail": "Each market follows its own local calendar; live prices pause while closed, and charts still show the latest session.",
-      "weekendDetail": " is a weekend: A-shares, Japan, Korea and the US all skip regular trading. The page shows the latest close and resumes automatically next session.",
+      "weekendDetail": "{date} is a weekend: A-shares, Japan, Korea and the US all skip regular trading. The page shows the latest close and resumes automatically next session.",
       "holidayDetail": "{date} is a {holiday} holiday: quotes keep the latest close and auto-refresh resumes next session."
     },
     "state": {
@@ -2057,7 +2057,18 @@
       "candleChartSuffix": " candlestick chart",
       "intradayHintSuffix": " intraday data will appear here once loaded.",
       "averagePrefix": "Avg",
-      "boardTrendSuffix": " trend sketch"
+      "boardTrendSuffix": " trend sketch",
+      "amount": {
+        "hundredMillion": "billion",
+        "tenThousand": "ten-thousand",
+        "trillion": "trillion"
+      },
+      "newsTime": {
+        "justNow": "Just now"
+      },
+      "source": {
+        "waiting": "Waiting for quotes"
+      }
     },
     "boards": {
       "aria": "A-share sector monitor",
@@ -2100,7 +2111,36 @@
       "summary": " sectors · {up} up / {down} down",
       "renameAria": "Rename {name}",
       "indexPrefix": "Index",
-      "sectorCount": "{count} sectors"
+      "sectorCount": "{count} sectors",
+      "breadth": {
+        "insufficient": "Not enough sector data",
+        "summary": "Up {up} / Down {down} / {total} in sample"
+      },
+      "concentration": {
+        "maxShare": "{percent}% largest position share"
+      },
+      "formula": "Composite = index momentum × 45% + sector breadth × 35% + sector average × 20%; news signals, volatility and concentration feed the risk score.",
+      "health": {
+        "neutral": "Wait and see",
+        "strong": "Firm, do not chase",
+        "waiting": "Waiting for data",
+        "weak": "Weak, hold off"
+      },
+      "newsSignal": {
+        "insufficient": "Not enough news signal",
+        "summary": "Bullish terms {positive} / risk terms {negative}"
+      },
+      "regime": {
+        "chop": "Choppy and split, be selective",
+        "strong": "Firm but do not chase",
+        "weak": "Weak, control risk first"
+      },
+      "strongest": {
+        "empty": "No strong sector yet"
+      },
+      "weakest": {
+        "empty": "No weak sector yet"
+      }
     },
     "news": {
       "title": "News",
@@ -2120,7 +2160,8 @@
       "catCommodity": "Commodities",
       "catForex": "Forex",
       "catBond": "Bonds",
-      "catFund": "Funds"
+      "catFund": "Funds",
+      "fallbackTitle": "The most important market news today"
     },
     "detail": {
       "sections": {
@@ -2197,6 +2238,54 @@
       "emptyCategoryTitle": "No funds in this category",
       "emptyCategoryDesc": "Switch to another category, or add one with a fund code.",
       "count": "{count}"
+    },
+    "refreshing": "Refreshing",
+    "watch": {
+      "assetAllocationAria": "Fund asset allocation",
+      "assetAllocationTitle": "Asset allocation",
+      "following": "Watching",
+      "holdingQuotesAria": "Live moves of fund holdings",
+      "noCode": "No code recorded",
+      "pendingInput": "Not set yet",
+      "pendingValue": "Pending update",
+      "performanceHint": "Connect the trend across time ranges",
+      "performanceLineAria": "Historical performance line chart",
+      "performanceValuesAria": "Historical performance values",
+      "pickedSummary": "Highlights",
+      "sharesInputHint": "Click to enter the number of shares",
+      "summaryTitle": "Analysis summary",
+      "topHoldingsTitle": "Top holdings"
+    },
+    "api": {
+      "fund": {
+        "fundError": {
+          "请输入位基金代码": "Enter a 6-digit fund code.",
+          "东方财富接口响应超时请稍": "Eastmoney request timed out. Please try again later.",
+          "东方财富接口加载失败请检": "Failed to load from Eastmoney. Check the fund code or your network.",
+          "东方财富实时基金数据加载": "Failed to load live fund data from Eastmoney. Please try again later.",
+          "股票实时行情加载失败请稍": "Failed to load live stock quotes. Please try again later.",
+          "东方财富持仓明细加载失败": "Failed to load holdings detail from Eastmoney. Please try again later.",
+          "没有查到这只基金请确认代": "No fund found. Please check the code."
+        }
+      },
+      "market": {
+        "marketError": {
+          "大盘行情加载失败请稍后重": "Failed to load market overview. Please try again later.",
+          "大盘分时加载失败请稍后重": "Failed to load intraday chart. Please try again later.",
+          "大盘历史行情加载失败请稍": "Failed to load market history. Please try again later.",
+          "个股搜索失败请稍后重试": "Stock search failed. Please try again later.",
+          "美日韩大盘暂时无法更新": "US, Japan and Korea markets cannot be updated right now.",
+          "美日韩大盘暂时没有可用数": "No data available for US, Japan and Korea markets right now.",
+          "国际大盘历史行情加载失败": "Failed to load global market history. Please try again later.",
+          "国际大盘实时走势加载失败": "Failed to load the global market live trend. Please try again later.",
+          "快讯加载失败请稍后重试": "Failed to load news. Please try again later.",
+          "板块行情加载失败请稍后重": "Failed to load sector quotes. Please try again later.",
+          "板块成分股加载失败请稍后": "Failed to load sector constituents. Please try again later.",
+          "行业走势图加载失败": "Failed to load the industry trend chart.",
+          "热门题材加载失败请稍后重": "Failed to load hot themes. Please try again later.",
+          "全球行业行情加载失败请稍": "Failed to load global sector quotes. Please try again later."
+        }
+      }
     }
   },
   "investmentAi": {
@@ -3193,6 +3282,448 @@
     "disclaimer": {
       "line1": "Note 1: results are pre-tax estimates only, excluding social insurance, income tax, housing fund, allowances, commissions and special shift patterns.",
       "line2": "Note 2: weekly pay assumes 5 working days; overtime pay is a multiple of your current hourly rate and may differ from your employer's final calculation."
+    }
+  },
+  "txDrawer": {
+    "ai": {
+      "action": "AI recategorize",
+      "uploading": "Recategorizing…"
+    },
+    "alert": {
+      "detail": "This expense ({amount}) is unusually high. Check whether it was recorded twice, or confirm it was a one-off large purchase.",
+      "title": "Unusual amount"
+    },
+    "closeAria": "Close details",
+    "copyJson": "Copy JSON",
+    "copyNote": "Copy note",
+    "delete": "Delete",
+    "edit": "Edit",
+    "factsAria": "Basic information",
+    "field": {
+      "account": "Account",
+      "attachment": "Attachment",
+      "category": "Category",
+      "dateTime": "Date and time",
+      "merchantOrderNo": "Merchant order no.",
+      "note": "Note",
+      "orderNo": "Order no.",
+      "source": "Source",
+      "status": "Status",
+      "tags": "Tags",
+      "txStatus": "Transaction status",
+      "type": "Type",
+      "updatedAt": "Last updated"
+    },
+    "more": "More",
+    "moreInfo": "More information",
+    "print": {
+      "heading": "Bill details",
+      "noNote": "(None)",
+      "time": "Printed at: {value}",
+      "title": "Bill details print - {id}",
+      "txId": "Transaction ID: {id}"
+    },
+    "printA4": "Print A4",
+    "quickAdd": "New transaction",
+    "refund": {
+      "action": "↩️ Issue refund",
+      "hint": "Issue a refund for this expense and restore the account balance automatically",
+      "only": "Refund or reversal entry",
+      "relatedCount": "Linked to {count} records",
+      "section": "Refund / reversal"
+    },
+    "relatedOrigin": "Linked original: {note}",
+    "resizeAria": "Drag to resize the details drawer",
+    "share": "Share",
+    "summaryAria": "Bill summary",
+    "title": "Transaction details",
+    "upload": {
+      "action": "Upload attachment",
+      "failed": "Attachment upload failed. Please try again later.",
+      "success": "Attachment uploaded and linked to this bill.",
+      "uploading": "Uploading…",
+      "webdavRequired": "WebDAV is not configured yet. Set it up in the Database / WebDAV settings page first."
+    }
+  },
+  "txShare": {
+    "account": "Account: {value}",
+    "amount": "Amount: {value}",
+    "attachments": "Attachments: {value}",
+    "attachmentsCount": "{count} attachment(s)",
+    "attachmentsNone": "No attachments",
+    "category": "Category: {value}",
+    "date": "Date: {value}",
+    "maskedHint": "Note: this is the masked sharing template.",
+    "note": "Note: {value}",
+    "source": "Source: {value}",
+    "status": "Status: {value}",
+    "summaryHint": "Note: summary mode keeps only the essentials, ready to forward.",
+    "tags": "Tags: {value}",
+    "tagsCount": "{count} tags",
+    "title": "[Bill share] {type}",
+    "updatedAt": "Last updated: {value}"
+  },
+  "txExport": {
+    "type": {
+      "refund": "Refund",
+      "reversal": "Adjustment",
+      "income": "Income",
+      "budget": "Budget",
+      "repayment": "Repayment",
+      "expense": "Expense"
+    },
+    "status": {
+      "pending": "Pending",
+      "completed": "Completed",
+      "refunded": "Refunded",
+      "closed": "Closed",
+      "failed": "Failed"
+    },
+    "error": {
+      "fontLoad": "Failed to load the Chinese font. Check your connection and try again."
+    },
+    "title": "LedgerFlow bulk transaction export",
+    "meta": {
+      "dateRange": "Date range:",
+      "generatedAt": "Generated:",
+      "count": "Transactions:",
+      "countUnit": " items",
+      "amountTotal": "Amount total:",
+      "incomeTotal": " | Income:",
+      "expenseTotal": " | Expense:",
+      "mode": "Export mode:",
+      "template": " | Template:"
+    },
+    "mode": {
+      "privacy": "Privacy mode (masked)",
+      "full": "Full mode"
+    },
+    "template": {
+      "summary": "Summary",
+      "full": "Full"
+    },
+    "field": {
+      "category": "Category:",
+      "account": "Account:",
+      "status": "Status:",
+      "orderNo": "Order no.:",
+      "merchantOrderNo": "Merchant order no.:",
+      "note": "Note:",
+      "tags": "Tags:"
+    },
+    "value": {
+      "uncategorized": "Uncategorized",
+      "noAccount": "No account"
+    },
+    "prefix": {
+      "account": "Account:",
+      "orderNo": "Order no.:",
+      "merchantOrderNo": "Merchant order no.:"
+    }
+  },
+  "txPage": {
+    "bulk": {
+      "labelCategory": "category",
+      "labelAccount": "account",
+      "labelAnd": " and ",
+      "updatedPrefix": "Updated ",
+      "updatedMiddle": " transactions' "
+    },
+    "punct": {
+      "period": "."
+    },
+    "pdf": {
+      "exporting": "A PDF export is already running, please wait.",
+      "selectFirst": "Select the transactions to export to PDF first.",
+      "generating": "Generating the PDF, please wait...",
+      "downloadStarted": "The PDF download has started.",
+      "failed": "Failed to export the PDF."
+    },
+    "print": {
+      "selectFirst": "Select the transactions to print first.",
+      "docTitle": "Bulk transaction printout (A4)",
+      "heading": "Bulk transaction list",
+      "dateRange": "Date range",
+      "generatedAt": "| Generated",
+      "summaryAria": "Print summary",
+      "count": "Transactions",
+      "countUnit": "items",
+      "amountTotal": "Amount total",
+      "incomeTotal": "Income total",
+      "expenseTotal": "Expense total",
+      "colStatus": "Status",
+      "colOrderNo": "Order no.",
+      "colTags": "Tags",
+      "privacyNotice": "Privacy mode is on: amounts, accounts and notes are masked in this printout.",
+      "popupHint": "Tip: if the system print dialog does not appear, check whether your browser blocks pop-ups or prints silently.",
+      "footerLabel": "· Bulk print",
+      "privacySuffix": " (privacy mode)",
+      "popupBlockedPdf": "The pop-up was blocked, so the embedded print view is used. Choose 'Save as PDF' in the system print dialog.",
+      "popupBlocked": "The pop-up was blocked, so the embedded print view is used.",
+      "failed": "Printing failed. Check the browser permissions.",
+      "savePdfHint": "Choose 'Save as PDF' in the system print dialog to finish the export."
+    },
+    "quickAdd": {
+      "draftRestored": "Unfinished draft restored",
+      "draftSaved": "Draft saved automatically",
+      "aria": "Quick add entry",
+      "cancelAria": "Cancel quick add",
+      "title": "New entry",
+      "done": "Done",
+      "typeGroupAria": "Entry type",
+      "expense": "Expense",
+      "income": "Income",
+      "amount": "Amount",
+      "total": "Total ¥",
+      "todaySpent": "Spent today",
+      "afterEntry": ", after entry ",
+      "dailyBudget": "Daily budget",
+      "spent": "Spent",
+      "afterEntryRemaining": ", remaining after entry",
+      "category": "Category",
+      "account": "Account",
+      "date": "Date",
+      "dateAria": "Date",
+      "note": "Note",
+      "optional": "Optional",
+      "keypadAria": "Amount keypad",
+      "keypadTip": "Supports + - * /; press Enter to calculate",
+      "save": "Save entry",
+      "draftHint": "Your input is saved as a draft automatically"
+    },
+    "error": {
+      "invalidDateRange": "Invalid custom date range: the start date cannot be later than the end date.",
+      "copyFailed": "Copy failed. Check the browser permissions.",
+      "unknown": "Unknown error"
+    },
+    "undo": {
+      "single": "This entry was undone. You can restore it from the recycle bin.",
+      "movedPrefix": "Moved ",
+      "movedSuffix": " transaction(s) to the recycle bin.",
+      "movedSingle": "The transaction was moved to the recycle bin."
+    },
+    "import": {
+      "noReport": "There is no import report to copy.",
+      "reportCopied": "The import report has been copied.",
+      "needCategoryAndAccount": "Import failed: create a category and an account first.",
+      "noBillHead": "No importable bill found (data lines ",
+      "skippedMiddle": ", skipped ",
+      "noBillTail": ").",
+      "noHeader": "No importable bill found: no valid header row. Check the file format.",
+      "step2Head": "Step 2 (pre-check complete): detected ",
+      "rowsMiddle": " rows (data lines ",
+      "skippedMiddleStep2": ", skipped ",
+      "step2Tail": "). Please confirm to write.",
+      "failedPrefix": "Import failed: ",
+      "completedPrefix": "Import complete: ",
+      "duplicatesSkipped": " duplicate records skipped (incremental mode).",
+      "reportTitle": "Import report",
+      "fileLabel": "File: ",
+      "modeLabel": "Mode: ",
+      "modeOverwrite": "Overwrite",
+      "modeMerge": "Merge",
+      "modeIncremental": "Incremental",
+      "resultNoChange": "Result: nothing added or updated",
+      "skippedLabel": "Skipped duplicates: ",
+      "unitInline": " items",
+      "actionOverwrite": "Overwrite",
+      "actionMerge": "Merge",
+      "actionIncrementalImport": "Incremental import",
+      "step3Head": "Step 3 (import complete): added ",
+      "updatedMiddle": " items, updated ",
+      "unitMiddleStep3": " items",
+      "skippedMiddleStep3": ", skipped ",
+      "unitTailStep3": " items",
+      "step3Tail": ").",
+      "reportTitleStep3": "Import report",
+      "fileLabelStep3": "File: ",
+      "sourceLabel": "Source: ",
+      "sourceWechat": "WeChat",
+      "sourceAlipay": "Alipay",
+      "modeLabelStep3": "Mode: ",
+      "modeOverwriteFull": "Overwrite (clear then import)",
+      "modeMergeFull": "Merge (overwrite duplicates)",
+      "modeIncrementalFull": "Incremental (skip duplicates)",
+      "parsedLabel": "Detected: ",
+      "rowsMiddleReport": " rows (data lines ",
+      "skippedMiddleReport": ", skipped ",
+      "resultAdded": "Result: added ",
+      "updatedMiddleReport": " items, updated ",
+      "skippedRepeatsMiddle": " items, skipped duplicates ",
+      "unitTailReport": " items",
+      "timeLabel": "Time: ",
+      "autoLocated": " Jumped to the newest entry.",
+      "previewModeOverwrite": "Overwrite (clear then import)",
+      "previewModeMerge": "Merge (overwrite duplicates)",
+      "previewModeIncremental": "Incremental (skip duplicates)",
+      "overwriteHintHead": "⚠️ Overwrite mode clears all ",
+      "overwriteHintTail": " transactions in this ledger, then imports the new records.",
+      "mergeHint": "Merge mode overwrites existing duplicate bills.",
+      "incrementalHint": "Incremental mode skips existing duplicate bills.",
+      "previewSourceWechat": "WeChat",
+      "previewSourceAlipay": "Alipay",
+      "noNote": "No note",
+      "previewFileLabel": "File: ",
+      "previewSourceLabel": "Source: ",
+      "previewModeLabel": "Mode: ",
+      "previewParsedLabel": "Detected: ",
+      "previewRowsMiddle": " rows (data lines ",
+      "previewSkippedMiddle": ", skipped ",
+      "previewImpactHead": "Impact: added ",
+      "previewUpdatedMiddle": " items, updated ",
+      "previewSkippedRepeatsMiddle": " items, skipped duplicates ",
+      "previewUnitTail": " items",
+      "previewSampleHead": "Pre-check samples (first 5):\n",
+      "previewAppendHead": "\nTo add (first 3):\n",
+      "previewUpdateHead": "\nTo update (first 3):\n",
+      "previewEyebrow": "Import pre-check",
+      "cardSource": "Source",
+      "cardDetected": "Detected",
+      "cardUnit": "items",
+      "cardDataLines": "Data lines",
+      "cardSkipped": "· skipped",
+      "cardAppend": "To add",
+      "cardUpdate": "To update",
+      "cardSkippedDuplicates": "Skipped duplicates",
+      "sampleHeading": "Pre-check samples",
+      "sampleBefore": "First",
+      "sampleUnit": "items",
+      "noSamples": "No samples to show",
+      "appendHeading": "To add",
+      "sampleCountUnit": "samples to add",
+      "noAppendSamples": "No new samples",
+      "updateHeading": "To update",
+      "noUpdateSamples": "No updated samples",
+      "sampleCountUnitUpdate": "samples to update",
+      "confirmStep2Title": "Step 2: confirm import pre-check",
+      "confirmOverwrite": "Continue to step 3 (overwrite)",
+      "confirmWrite": "Continue to step 3 (write to ledger)",
+      "step3OpenParen": " ("
+    },
+    "refund": {
+      "notePrefix": "Refund: ",
+      "originalTransaction": "Original transaction",
+      "createdFullHead": "Refund created. ",
+      "creditedFullTail": " CNY was credited back to the original account and the original entry is marked as refunded.",
+      "createdRemainingHead": "Refund created. ",
+      "creditedRemainingMiddle": " CNY was credited back to the original account. Refundable remaining: ¥",
+      "period": ".",
+      "failed": "Refund failed. Please try again later.",
+      "confirmTitle": "Confirm refund and credit back",
+      "confirmWillCreatePrefix": "A refund record will be created for \"",
+      "confirmThisTransaction": "this transaction",
+      "confirmWillCreateSuffix": "\".",
+      "originalAmount": "Original amount",
+      "refundedAmount": "Refunded amount",
+      "thisRefundAmount": "This refund",
+      "afterRefundAccount": "Account after refund",
+      "detailHint": "The refund is written to the balance history, and the refundable amount of the original transaction is updated.",
+      "confirmPrefix": "Confirm refund ("
+    },
+    "share": {
+      "copyFailed": "Copy failed. Check the browser permissions.",
+      "copied": "The share text has been copied.",
+      "title": "Share bill",
+      "dialogTitle": "Share bill",
+      "template": "Share template",
+      "templateFull": "Full",
+      "templateMasked": "Masked",
+      "templateSummary": "Summary",
+      "fields": "Included fields",
+      "fieldAccount": "Account",
+      "fieldNote": "Note",
+      "attachmentHint": "Attachment hint",
+      "preview": "Preview",
+      "close": "Close",
+      "copyText": "Copy text"
+    },
+    "chart": {
+      "uncategorized": "Uncategorized"
+    },
+    "insights": {
+      "quickFiltersAria": "Insights sidebar quick filters",
+      "quickDate": "Quick date",
+      "dateAll": "All",
+      "dateThisMonth": "This month",
+      "dateLast30Days": "Last 30 days",
+      "quickType": "Quick type",
+      "typeAll": "All",
+      "typeExpense": "Expense",
+      "typeIncome": "Income",
+      "pieTitle": "Category share (current list)",
+      "noData": "No data",
+      "curveTitle": "Cumulative net curve (current list)"
+    },
+    "copy": {
+      "note": "Note copied",
+      "generic": "JSON copied"
+    },
+    "ai": {
+      "singleApplied": "Reclassified following the model suggestion.",
+      "singleAppliedFallback": "Reclassified from the bill text (AI fallback).",
+      "singleUnchanged": "The suggestion did not change, nothing to replace.",
+      "systemPromptIntro": "You are a transaction re-categorisation assistant. Pick the best match for the transaction from the given category list. Return JSON only:",
+      "systemPromptCategoryName": "category name",
+      "systemPromptTail": ". Do not explain. If unsure, return the current category.",
+      "promptInfo": "Transaction info:",
+      "promptType": "Type",
+      "promptAmount": "\n- Amount: ",
+      "promptNote": "\n- Note: ",
+      "promptNone": "none",
+      "promptTags": "\n- Tags: ",
+      "promptCurrentCategory": "\n- Current category: ",
+      "promptAvailableCategories": "\nAvailable categories:",
+      "stoppingBulk": "Stopping the bulk AI re-categorisation...",
+      "stoppedHead": "Bulk AI re-categorisation stopped (model: ",
+      "stoppedFallback": ", rule fallback: ",
+      "stoppedCancelled": ", cancelled: ",
+      "stoppedTail": ").",
+      "bulkDoneHead": "Re-categorised ",
+      "bulkDoneTail": " transactions using the model suggestion.",
+      "bulkFallbackHead": "Re-categorised ",
+      "bulkFallbackTail": " transactions from the bill text (rule fallback).",
+      "bulkUnchanged": "The AI suggestion did not change, nothing to replace."
+    },
+    "common": {
+      "cancel": "Cancel"
+    },
+    "confirm": {
+      "bulkDeleteTitle": "Move multiple transactions to the recycle bin?",
+      "deleteTitle": "Move to the recycle bin?",
+      "bulkDeleteHead": "About to move ",
+      "bulkDeleteTail": " transactions to the recycle bin. You can restore or permanently delete them there afterwards. Continue?",
+      "deleteDescription": "This transaction will be moved to the recycle bin first. You can restore or permanently delete it there afterwards. Continue?",
+      "bulkDeleteConfirm": "Move all",
+      "deleteConfirm": "Move to recycle bin",
+      "cancel": "Cancel"
+    },
+    "toast": {
+      "undo": "Undo"
+    },
+    "dedupe": {
+      "none": "Check complete: no duplicate bills found.",
+      "foundHead": "Check complete: found ",
+      "foundTail": "suspected duplicate bills.",
+      "overwriteHint": "Click \"OK\" to overwrite the duplicates (keeping the newest entry in each group); click \"Cancel\" to continue and pick which duplicates to delete.",
+      "overwritten": "Duplicates overwritten (the newest entry in each group was kept).",
+      "confirmDelete": "Delete the duplicate bills?",
+      "deleteHint": "Click \"OK\" to delete the duplicates (keeping the oldest entry in each group); click \"Cancel\" to skip.",
+      "deleted": "Duplicate bills deleted (the oldest entry in each group was kept).",
+      "cancelled": "Duplicate handling cancelled."
+    },
+    "table": {
+      "anomalyHintHead": "This amount is well above the current average (average about ",
+      "anomalyHintTail": "). Check whether it was recorded twice.",
+      "anomalyTag": "! Above average",
+      "moreActionsAria": "More actions ",
+      "orderLineLabel": "Order:",
+      "merchantOrderLineLabel": "· Merchant order:",
+      "delete": "Delete",
+      "share": "Share",
+      "viewDetail": "View details",
+      "shareBill": "Share bill",
+      "deleteBill": "Delete bill",
+      "cancel": "Cancel"
     }
   }
 }

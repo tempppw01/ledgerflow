@@ -1,3 +1,4 @@
+import i18n from '../../../i18n';
 import { formatCurrency, formatDate } from '../../../shared/lib/format';
 import { TransactionItem } from '../../../entities/transaction/types';
 import { PDF_CHINESE_FONT_URL } from '../../../shared/config/brandAssets';
@@ -33,29 +34,38 @@ export type ExportTransactionsPdfInput = {
 let pdfRuntimePromise: Promise<[typeof import('pdf-lib'), typeof import('fontkit')]> | null = null;
 let cachedFontBytesPromise: Promise<ArrayBuffer> | null = null;
 
+/**
+ * 非组件模块(不能调 hook)的 i18n:与 useTFallback 的 tf 同语义 —— key 命中就用翻译,否则用中文兜底。
+ * 这样 PDF 导出(可能在 i18n 未初始化的单测环境里调用)仍会得到中文。
+ */
+function tf(key: string, fallback: string) {
+  const translated = i18n.t(key, { defaultValue: fallback });
+  return typeof translated === 'string' ? translated : fallback;
+}
+
 function txTypeLabel(item: TransactionItem) {
   if (isTransactionRefundLike(item)) {
-    return item.adjustmentKind === 'refund' ? '退款' : '冲正';
+    return item.adjustmentKind === 'refund' ? tf('txExport.type.refund', '退款') : tf('txExport.type.reversal', '冲正');
   }
   const { type } = item;
   return type === 'income'
-    ? '收入'
+    ? tf('txExport.type.income', '收入')
     : type === 'budget'
-      ? '预算'
+      ? tf('txExport.type.budget', '预算')
       : type === 'repayment'
-        ? '还款'
-        : '支出';
+        ? tf('txExport.type.repayment', '还款')
+        : tf('txExport.type.expense', '支出');
 }
 
 function txStatusLabel(status?: TransactionItem['status']) {
   if (!status) return '—';
   return (
     {
-      pending: '待处理',
-      completed: '已完成',
-      refunded: '已退款',
-      closed: '已关闭',
-      failed: '失败'
+      pending: tf('txExport.status.pending', '待处理'),
+      completed: tf('txExport.status.completed', '已完成'),
+      refunded: tf('txExport.status.refunded', '已退款'),
+      closed: tf('txExport.status.closed', '已关闭'),
+      failed: tf('txExport.status.failed', '失败')
     }[status] || status
   );
 }
@@ -76,7 +86,7 @@ async function getCachedChineseFontBytes() {
     cachedFontBytesPromise = (async () => {
       const fontResponse = await fetch(PDF_CHINESE_FONT_URL);
       if (!fontResponse.ok) {
-        throw new Error('中文字体加载失败，请联网后重试。');
+        throw new Error(tf('txExport.error.fontLoad', '中文字体加载失败，请联网后重试。'));
       }
       return fontResponse.arrayBuffer();
     })().catch((error) => {
@@ -126,7 +136,10 @@ export async function exportTransactionsPdf(input: ExportTransactionsPdfInput) {
         new Date(Math.max(...dateTimestamps)).toISOString()
       )}`
     : '—';
-  const generatedAtText = new Date().toLocaleString('zh-CN', { hour12: false });
+  const generatedAtText = new Date().toLocaleString(
+    i18n.language?.startsWith('en') ? 'en-US' : 'zh-CN',
+    { hour12: false }
+  );
 
   let page = pdfDoc.addPage([pageWidth, pageHeight]);
   let cursorY = pageHeight - margin;
@@ -148,7 +161,7 @@ export async function exportTransactionsPdf(input: ExportTransactionsPdfInput) {
     cursorY -= lineHeight;
   };
 
-  page.drawText('LedgerFlow 批量交易导出', {
+  page.drawText(tf('txExport.title', 'LedgerFlow 批量交易导出'), {
     x: margin,
     y: cursorY,
     size: titleSize,
@@ -156,36 +169,36 @@ export async function exportTransactionsPdf(input: ExportTransactionsPdfInput) {
     color: rgb(0.07, 0.09, 0.15)
   });
   cursorY -= 26;
-  drawLine(`时间范围：${dateRangeText}`);
-  drawLine(`生成时间：${generatedAtText}`);
-  drawLine(`交易条数：${rows.length} 条`);
+  drawLine(`${tf('txExport.meta.dateRange', `时间范围：`)}${dateRangeText}`);
+  drawLine(`${tf('txExport.meta.generatedAt', `生成时间：`)}${generatedAtText}`);
+  drawLine(`${tf('txExport.meta.count', `交易条数：`)}${rows.length}${tf('txExport.meta.countUnit', ` 条`)}`);
   drawLine(
-    `金额合计：${maskAmountText(totalAmount)} ｜ 收入合计：${maskAmountText(incomeTotal)} ｜ 支出合计：${maskAmountText(expenseTotal)}`
+    `${tf('txExport.meta.amountTotal', `金额合计：`)}${maskAmountText(totalAmount)}${tf('txExport.meta.incomeTotal', ` ｜ 收入合计：`)}${maskAmountText(incomeTotal)}${tf('txExport.meta.expenseTotal', ` ｜ 支出合计：`)}${maskAmountText(expenseTotal)}`
   );
   drawLine(
-    `导出模式：${privacyMode ? '隐私模式（已脱敏）' : '完整模式'} ｜ 模板：${bulkPrintTemplate === 'summary' ? '摘要' : '完整'}`
+    `${tf('txExport.meta.mode', `导出模式：`)}${privacyMode ? tf('txExport.mode.privacy', '隐私模式（已脱敏）') : tf('txExport.mode.full', '完整模式')}${tf('txExport.meta.template', ` ｜ 模板：`)}${bulkPrintTemplate === 'summary' ? tf('txExport.template.summary', '摘要') : tf('txExport.template.full', '完整')}`
   );
   cursorY -= 6;
 
   rows.forEach(({ item, categoryName, accountName }, index) => {
     const detailLineParts = [
-      `分类：${maskPrintText(categoryName || '未分类')}`,
-      bulkPrintFields.includeAccount ? `账户：${maskPrintText(accountName || '未指定账户')}` : '',
-      `状态：${txStatusLabel(item.status)}`,
+      `${tf('txExport.field.category', `分类：`)}${maskPrintText(categoryName || tf('txExport.value.uncategorized', '未分类'))}`,
+      bulkPrintFields.includeAccount ? `${tf('txExport.field.account', `账户：`)}${maskPrintText(accountName || tf('txExport.value.noAccount', '未指定账户'))}` : '',
+      `${tf('txExport.field.status', `状态：`)}${txStatusLabel(item.status)}`,
       bulkPrintFields.includeOrderNo && item.orderNo
-        ? `订单号：${maskPrintText(item.orderNo)}`
+        ? `${tf('txExport.field.orderNo', `订单号：`)}${maskPrintText(item.orderNo)}`
         : '',
       bulkPrintFields.includeOrderNo && item.merchantOrderNo
-        ? `商户单号：${maskPrintText(item.merchantOrderNo)}`
+        ? `${tf('txExport.field.merchantOrderNo', `商户单号：`)}${maskPrintText(item.merchantOrderNo)}`
         : ''
     ].filter(Boolean);
 
     const extraLines = [
       bulkPrintFields.includeNote && bulkPrintTemplate !== 'summary'
-        ? `备注：${maskPrintText(item.note || '—')}`
+        ? `${tf('txExport.field.note', `备注：`)}${maskPrintText(item.note || '—')}`
         : '',
       bulkPrintFields.includeTags && item.tags?.length
-        ? `标签：${maskPrintText(item.tags.join(' / '))}`
+        ? `${tf('txExport.field.tags', `标签：`)}${maskPrintText(item.tags.join(' / '))}`
         : ''
     ].filter(Boolean);
 
@@ -196,9 +209,9 @@ export async function exportTransactionsPdf(input: ExportTransactionsPdfInput) {
             detailLineParts
               .filter(
                 (part) =>
-                  !part.startsWith('账户：') &&
-                  !part.startsWith('订单号：') &&
-                  !part.startsWith('商户单号：')
+                  !part.startsWith(tf('txExport.prefix.account', '账户：')) &&
+                  !part.startsWith(tf('txExport.prefix.orderNo', '订单号：')) &&
+                  !part.startsWith(tf('txExport.prefix.merchantOrderNo', '商户单号：'))
               )
               .join(' ｜ ')
           ]

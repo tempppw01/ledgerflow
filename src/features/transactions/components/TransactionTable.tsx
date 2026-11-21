@@ -215,18 +215,22 @@ export interface TransactionRowView {
   accountName: string;
 }
 
-const STATUS_LABEL_ENTRIES: Record<TransactionStatus, { key: string; fallback: string }> = {
-  pending: { key: 'transactions.table.status.pending', fallback: '待处理' },
-  completed: { key: 'transactions.table.status.completed', fallback: '已完成' },
-  refunded: { key: 'transactions.table.status.refunded', fallback: '已退款' },
-  closed: { key: 'transactions.table.status.closed', fallback: '已关闭' },
-  failed: { key: 'transactions.table.status.failed', fallback: '失败' }
-};
-
 function formatStatus(status: TransactionStatus | undefined, tf: TfFallback): string {
   if (!status) return '-';
-  const entry = STATUS_LABEL_ENTRIES[status];
-  return entry ? tf(entry.key, entry.fallback) : status;
+  switch (status) {
+    case 'pending':
+      return tf('transactions.table.status.pending', '待处理');
+    case 'completed':
+      return tf('transactions.table.status.completed', '已完成');
+    case 'refunded':
+      return tf('transactions.table.status.refunded', '已退款');
+    case 'closed':
+      return tf('transactions.table.status.closed', '已关闭');
+    case 'failed':
+      return tf('transactions.table.status.failed', '失败');
+    default:
+      return status;
+  }
 }
 
 export type TransactionColumnKey =
@@ -1124,7 +1128,7 @@ export function TransactionTable({
                               Number(item.amount) >= highExpenseThreshold;
                             const shouldShowAnomaly = isHighExpense && highExpenseThreshold > 0;
                             const anomalyHint = shouldShowAnomaly
-                              ? `该笔金额明显高于当前均值（均值约 ${formatCurrencyAuto(expenseAverage)}）。建议检查是否重复记账。`
+                              ? `${tf('txPage.table.anomalyHintHead', `该笔金额明显高于当前均值（均值约 `)}${formatCurrencyAuto(expenseAverage)}${tf('txPage.table.anomalyHintTail', `）。建议检查是否重复记账。`)}`
                               : '';
 
                             if (badge) {
@@ -1390,7 +1394,7 @@ export function TransactionTable({
                                 '高于平均，建议检查是否重复记账。'
                               )}
                             >
-                              ! 高于平均
+                              {tf('txPage.table.anomalyTag', `! 高于平均`)}
                             </span>
                           ) : null}
                         </div>
@@ -1400,7 +1404,7 @@ export function TransactionTable({
                             className="transaction-mobile-more"
                             aria-haspopup="menu"
                             aria-expanded={contextMenu?.id === item.id}
-                            aria-label={`更多操作 ${item.note || formatDate(item.date)}`}
+                            aria-label={`${tf('txPage.table.moreActionsAria', `更多操作 `)}${item.note || formatDate(item.date)}`}
                             title={tf('transactions.table.moreActions.label', '更多操作')}
                             onClick={(event) => {
                               event.stopPropagation();
@@ -1423,7 +1427,7 @@ export function TransactionTable({
                       </p>
                       {item.orderNo || item.merchantOrderNo ? (
                         <small>
-                          交易订单：{item.orderNo || '-'} · 商家订单：
+                          {tf('txPage.table.orderLineLabel', `交易订单：`)}{item.orderNo || '-'} {tf('txPage.table.merchantOrderLineLabel', `· 商家订单：`)}
                           {privacyMode
                             ? maskMerchant(item.merchantOrderNo || '-')
                             : item.merchantOrderNo || '-'}
@@ -1444,7 +1448,7 @@ export function TransactionTable({
                         onDelete(item.id);
                       }}
                     >
-                      删除
+                      {tf('txPage.table.delete', `删除`)}
                     </button>
                     <button
                       type="button"
@@ -1457,7 +1461,7 @@ export function TransactionTable({
                         onShare(item.id);
                       }}
                     >
-                      分享
+                      {tf('txPage.table.share', `分享`)}
                     </button>
                   </div>
                 </article>
@@ -1560,7 +1564,7 @@ export function TransactionTable({
                       setContextMenu(null);
                     }}
                   >
-                    查看详情
+                    {tf('txPage.table.viewDetail', `查看详情`)}
                   </button>
                   <button
                     type="button"
@@ -1570,7 +1574,7 @@ export function TransactionTable({
                       setContextMenu(null);
                     }}
                   >
-                    分享账单
+                    {tf('txPage.table.shareBill', `分享账单`)}
                   </button>
                   <button
                     type="button"
@@ -1581,10 +1585,10 @@ export function TransactionTable({
                       setContextMenu(null);
                     }}
                   >
-                    删除账单
+                    {tf('txPage.table.deleteBill', `删除账单`)}
                   </button>
                   <button type="button" role="menuitem" onClick={() => setContextMenu(null)}>
-                    取消
+                    {tf('txPage.table.cancel', `取消`)}
                   </button>
                 </div>,
                 document.body

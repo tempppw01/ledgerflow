@@ -1,3 +1,8 @@
+/** 接口错误文案跟随界面语言。
+ * 这里不在模块顶层引入 i18n 单例(避免模块求值时就初始化 i18n),
+ * 改为在页面启动时由 src/i18n 注册进来;locales 尚未合并时退回中文兜底。
+ */
+import { tApiError } from '../../../shared/lib/apiErrorTranslator';
 export interface EastmoneyFundSnapshot {
   code: string;
   name: string;
@@ -49,9 +54,13 @@ interface EastmoneyHoldingStockQuoteResponse {
 const EASTMONEY_SCRIPT_TIMEOUT_MS = 12000;
 
 function normalizeFundCode(input: string): string {
-  const code = String(input || '').replace(/\D/g, '').slice(0, 6);
+  const code = String(input || '')
+    .replace(/\D/g, '')
+    .slice(0, 6);
   if (!/^\d{6}$/.test(code)) {
-    throw new Error('请输入 6 位基金代码。');
+    throw new Error(
+      tApiError('investments.api.fund.fundError.请输入位基金代码', '请输入 6 位基金代码。')
+    );
   }
   return code;
 }
@@ -61,7 +70,14 @@ function appendScript(src: string, timeoutMs = EASTMONEY_SCRIPT_TIMEOUT_MS): Pro
     const script = document.createElement('script');
     const timer = window.setTimeout(() => {
       script.remove();
-      reject(new Error('东方财富接口响应超时，请稍后重试。'));
+      reject(
+        new Error(
+          tApiError(
+            'investments.api.fund.fundError.东方财富接口响应超时请稍',
+            '东方财富接口响应超时，请稍后重试。'
+          )
+        )
+      );
     }, timeoutMs);
 
     script.src = src;
@@ -74,7 +90,14 @@ function appendScript(src: string, timeoutMs = EASTMONEY_SCRIPT_TIMEOUT_MS): Pro
     script.onerror = () => {
       window.clearTimeout(timer);
       script.remove();
-      reject(new Error('东方财富接口加载失败，请检查基金代码或网络。'));
+      reject(
+        new Error(
+          tApiError(
+            'investments.api.fund.fundError.东方财富接口加载失败请检',
+            '东方财富接口加载失败，请检查基金代码或网络。'
+          )
+        )
+      );
     };
 
     document.head.appendChild(script);
@@ -107,7 +130,12 @@ function parseHoldingsPageContent(raw: string): string {
 async function fetchRealtimeSnapshot(code: string): Promise<EastmoneyRealtimePayload | null> {
   const response = await fetch(`/api/market/fund-realtime?code=${encodeURIComponent(code)}`);
   if (!response.ok) {
-    throw new Error('东方财富实时基金数据加载失败，请稍后重试。');
+    throw new Error(
+      tApiError(
+        'investments.api.fund.fundError.东方财富实时基金数据加载',
+        '东方财富实时基金数据加载失败，请稍后重试。'
+      )
+    );
   }
   const body = (await response.json()) as { data?: EastmoneyRealtimePayload };
   return body.data || null;
@@ -118,9 +146,7 @@ export async function fetchEastmoneyHoldingStockQuotes(
 ): Promise<EastmoneyHoldingStockQuote[]> {
   const normalizedSecIds = Array.from(
     new Set(
-      secIds
-        .map((item) => String(item || '').trim())
-        .filter((item) => /^[01]\.\d{6}$/.test(item))
+      secIds.map((item) => String(item || '').trim()).filter((item) => /^[01]\.\d{6}$/.test(item))
     )
   ).slice(0, 32);
 
@@ -130,7 +156,12 @@ export async function fetchEastmoneyHoldingStockQuotes(
     `/api/market/stock-quotes?secids=${encodeURIComponent(normalizedSecIds.join(','))}`
   );
   if (!response.ok) {
-    throw new Error('股票实时行情加载失败，请稍后重试。');
+    throw new Error(
+      tApiError(
+        'investments.api.fund.fundError.股票实时行情加载失败请稍',
+        '股票实时行情加载失败，请稍后重试。'
+      )
+    );
   }
 
   const body = (await response.json()) as EastmoneyHoldingStockQuoteResponse;
@@ -155,7 +186,12 @@ async function fetchHoldingsDetailPage(code: string): Promise<string> {
   );
 
   if (!response.ok) {
-    throw new Error('东方财富持仓明细加载失败，请稍后重试。');
+    throw new Error(
+      tApiError(
+        'investments.api.fund.fundError.东方财富持仓明细加载失败',
+        '东方财富持仓明细加载失败，请稍后重试。'
+      )
+    );
   }
 
   const raw = await response.text();
@@ -200,7 +236,9 @@ async function fetchStockNameMap(secIds: string[]): Promise<Map<string, string>>
   }
 }
 
-export async function fetchEastmoneyFundSnapshot(inputCode: string): Promise<EastmoneyFundSnapshot> {
+export async function fetchEastmoneyFundSnapshot(
+  inputCode: string
+): Promise<EastmoneyFundSnapshot> {
   const code = normalizeFundCode(inputCode);
   const realtime = await fetchRealtimeSnapshot(code);
   await loadFundDetailGlobals(code).catch(() => undefined);
@@ -248,7 +286,9 @@ export async function fetchEastmoneyFundSnapshot(inputCode: string): Promise<Eas
         const nameText = String(cells[2]?.textContent || '').trim();
         const pctText = String(cells[4]?.textContent || '').trim();
         if (!nameText) return '';
-        return codeText && pctText ? `${nameText}（${codeText}） ${pctText}` : `${nameText} ${pctText}`;
+        return codeText && pctText
+          ? `${nameText}（${codeText}） ${pctText}`
+          : `${nameText} ${pctText}`;
       })
       .filter(Boolean)
       .slice(0, 8);
@@ -273,7 +313,12 @@ export async function fetchEastmoneyFundSnapshot(inputCode: string): Promise<Eas
     .filter(Boolean)
     .slice(0, 4);
   if (!name && !realtime?.fundcode && !detailCode) {
-    throw new Error('没有查到这只基金，请确认代码是否正确。');
+    throw new Error(
+      tApiError(
+        'investments.api.fund.fundError.没有查到这只基金请确认代',
+        '没有查到这只基金，请确认代码是否正确。'
+      )
+    );
   }
 
   const netValue = String(realtime?.dwjz || '').trim();
