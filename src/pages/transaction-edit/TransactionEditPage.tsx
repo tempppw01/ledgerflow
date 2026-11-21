@@ -664,6 +664,10 @@ export function TransactionEditPage() {
                 <input
                   id="tx-amount"
                   aria-label={tf('transactions.edit.amountAria', '交易金额')}
+                  // 校验失败时把错误连到输入框上:读屏用户不会「点保存后什么都没发生」,
+                  // 焦点回到金额框时能听到为什么没保存。
+                  aria-invalid={amountError ? true : undefined}
+                  aria-describedby={amountError ? 'tx-amount-error' : undefined}
                   ref={amountInputRef}
                   value={amount}
                   onChange={(e) => {
@@ -683,7 +687,11 @@ export function TransactionEditPage() {
                   )}
                   maxLength={16}
                 />
-                {amountError ? <small className="error">{amountError}</small> : null}
+                {amountError ? (
+                  <small className="error" id="tx-amount-error" role="alert">
+                    {amountError}
+                  </small>
+                ) : null}
               </div>
 
               <div className="field">
@@ -830,7 +838,11 @@ export function TransactionEditPage() {
               </div>
             </section>
 
-            {formError ? <p className="error">{formError}</p> : null}
+            {formError ? (
+              <p className="error" role="alert">
+                {formError}
+              </p>
+            ) : null}
 
             <button className="primary" type="submit">
               {tf('common.save', '保存')}
