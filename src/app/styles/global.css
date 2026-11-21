@@ -16493,6 +16493,14 @@ body.categories-accounts-resizing {
   cursor: help;
 }
 
+/* 和 .exchange-fav-btn 同一套处理:这是 18px 的图标按钮,鼠标没问题,
+   触屏上手指点不准,只在粗指针下加宽。 */
+@media (pointer: coarse) {
+  .finance-metric-help {
+    width: 32px;
+  }
+}
+
 .finance-overview-value {
   margin: 6px 0 0;
   display: flex;

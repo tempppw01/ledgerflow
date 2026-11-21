@@ -1253,6 +1253,15 @@
   .repayment-agent-input-row {
     flex-direction: column;
   }
+  /* 竖排后输入框在这个 column 容器里成了主轴方向的 flex 项,`flex: 1` 会把
+     flex-basis 覆写成 0,height: 38px 直接失效 —— 实测输入框塌成 20px,
+     旁边按钮却因通用 button 的 min-height 撑到 44px,一行两件高矮不齐。
+     这里把 input 放回非弹性尺寸,并与按钮统一到 44px。 */
+  .repayment-agent-input-row input {
+    flex: none;
+    width: 100%;
+    height: 44px;
+  }
   .repayment-agent-input-row button {
     width: 100%;
   }
