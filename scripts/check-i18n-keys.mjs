@@ -70,28 +70,72 @@ function flatten(tree, prefix = '', out = new Map()) {
  */
 const STATIC_KEY = /^(?![0-9])[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/;
 
-const CALL_RE = /(?:^|[^\w$.])(?:t|tf|t2|i18n\.t)\(\s*(['"])([^'"\\]+)\1/g;
+/**
+ * 会被当成「取文案」的函数名。
+ *
+ * 漏掉一个别名不会报 MISSING,而是把用到的 key 全部误报成 UNUSED ——
+ * 于是「死 key 清理」会照着错的清单删掉还在用的 key。
+ * `tFallback`(AppLayout / DashboardPage 里的本地包装)就漏过一次:
+ * 79 处调用点、319 个 UNUSED 里绝大多数是这么来的。
+ * 新增包装函数时把它加进来,下面的 UNKNOWN_CALLEE 会提示漏掉的。
+ */
+const TRANSLATE_ALIASES = ['i18n.t', 'tFallback', 'tf', 't2', 't'];
+const ALIAS_PATTERN = TRANSLATE_ALIASES.map((name) =>
+  name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+).join('|');
+
+const CALL_RE = new RegExp(
+  `(?:^|[^\\w$.])(?:${ALIAS_PATTERN})\\(\\s*(['"])([^'"\\\\]+)\\1`,
+  'g'
+);
 const CONST_KEY_RE =
   /\b(?:key|i18nKey|translationKey|titleKey|labelKey|messageKey)\s*:\s*(['"])([^'"\\]+)\1/g;
-const DYNAMIC_RE = /(?:^|[^\w$.])(?:t|tf|t2|i18n\.t)\(\s*`/g;
+/**
+ * key 先存进 state、渲染时再 t(stateKey) 的写法:
+ * `setErrorKey('finance.ui.loadFailed')` -> 这个 key 在别处被 t() 取用,
+ * 但静态扫描看不到「变量当参数」的那一次,不补这条就会误报成 UNUSED。
+ */
+const KEY_SETTER_RE = /\b[A-Za-z_$][\w$]*Key\(\s*(['"])([^'"\\]+)\1/g;
+const DYNAMIC_RE = new RegExp(`(?:^|[^\\w$.])(?:${ALIAS_PATTERN})\\(\\s*\``, 'g');
+
+/**
+ * 「名字没在别名表里,但第一个参数是一个点号 key」的调用。
+ * 这类调用要么是漏登记的新包装函数(会让 key 被误报成死 key),
+ * 要么只是恰好长得像 key 的普通参数,人工过一眼就能分。
+ */
+const UNKNOWN_CALLEE_RE = /(?:^|[^\w$.])([A-Za-z_$][\w$]*)\(\s*(['"])([^'"\\]+)\2/g;
+
+/**
+ * 拼 key 的模板前缀,不必出现在 t() 里面:
+ * `function getCurrencyNameKey(code) { return \`exchange.currency.${code}\`; }`
+ * 之后 `tf(getCurrencyNameKey(base), ...)` —— key 是变量,静态扫描看不到。
+ * 这类 helper 很常见,所以直接在整份源码里收集「像 key 前缀的模板字面量」,
+ * 前缀确实命中资源树时才登记,避免把无关字符串当成前缀。
+ */
+const KEY_TEMPLATE_RE = /`([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+\.)\$\{/g;
+/** 同样的拼接,写成字符串相加: `const key = 'a.b.' + name;` */
+const KEY_CONCAT_RE = /(['"])([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+\.)\1\s*\+/g;
 /**
  * 动态 key 的静态前缀: `t(\`help.${section}.title\`)` -> `help.`,
  * `t('dashboard.greeting.' + slot)` -> `dashboard.greeting.`
  * 这些前缀下的所有资源 key 都算「已被引用」,否则 UNUSED 会把整棵子树误报成死 key。
  */
-const DYNAMIC_PREFIX_RE =
-  /(?:^|[^\w$.])(?:t|tf|t2|i18n\.t)\(\s*(?:`([^`$]*)|\s*(['"])([^'"\\]+)\2\s*\+)/g;
+const DYNAMIC_PREFIX_RE = new RegExp(
+  `(?:^|[^\\w$.])(?:${ALIAS_PATTERN})\\(\\s*(?:\`([^\`$]*)|\\s*(['"])([^'"\\\\]+)\\2\\s*\\+)`,
+  'g'
+);
 
 const files = listSourceFiles(srcDir);
 const used = new Map();
 const dynamic = [];
 const dynamicPrefixes = new Set();
+const unknownCallees = [];
 
 for (const file of files) {
   const source = readFileSync(file, 'utf8');
   const rel = path.relative(root, file).replace(/\\/g, '/');
 
-  for (const re of [CALL_RE, CONST_KEY_RE]) {
+  for (const re of [CALL_RE, CONST_KEY_RE, KEY_SETTER_RE]) {
     re.lastIndex = 0;
     let match;
     while ((match = re.exec(source)) !== null) {
@@ -115,6 +159,33 @@ for (const file of files) {
     const raw = pre[1] !== undefined ? pre[1] : pre[3];
     const prefix = String(raw || '').trim();
     if (prefix.includes('.') && STATIC_KEY.test(`${prefix}x`)) dynamicPrefixes.add(prefix);
+  }
+
+  UNKNOWN_CALLEE_RE.lastIndex = 0;
+  let unknown;
+  while ((unknown = UNKNOWN_CALLEE_RE.exec(source)) !== null) {
+    const callee = unknown[1];
+    const key = unknown[3];
+    if (TRANSLATE_ALIASES.includes(callee)) continue;
+    // 名字以 Key 结尾的 setter 已由 KEY_SETTER_RE 收录,不必再单独提示。
+    if (callee.endsWith('Key')) continue;
+    if (!STATIC_KEY.test(key)) continue;
+    const line = source.slice(0, unknown.index).split('\n').length;
+    unknownCallees.push(`${rel}:${line}  ${callee}('${key}')`);
+  }
+
+  KEY_TEMPLATE_RE.lastIndex = 0;
+  let tpl;
+  while ((tpl = KEY_TEMPLATE_RE.exec(source)) !== null) {
+    const prefix = tpl[1];
+    if (STATIC_KEY.test(`${prefix}x`)) dynamicPrefixes.add(prefix);
+  }
+
+  KEY_CONCAT_RE.lastIndex = 0;
+  let concat;
+  while ((concat = KEY_CONCAT_RE.exec(source)) !== null) {
+    const prefix = concat[2];
+    if (STATIC_KEY.test(`${prefix}x`)) dynamicPrefixes.add(prefix);
   }
 }
 
@@ -178,6 +249,7 @@ const result = {
   missing,
   dynamicCallSites: dynamic,
   dynamicPrefixes: [...dynamicPrefixes].sort(),
+  unknownCallees,
   zhKeys: zh.size,
   enKeys: en.size,
   onlyZh,
@@ -210,6 +282,13 @@ if (asJson) {
 
   if (dynamic.length) {
     section('DYNAMIC — 模板字符串拼 key,需人工确认', dynamic);
+  }
+
+  if (unknownCallees.length) {
+    section(
+      'UNKNOWN-CALLEE — 函数名不在别名表里、但第一个参数像 i18n key(漏登记会让 key 被误报成 UNUSED)',
+      unknownCallees
+    );
   }
 
   if (hardcodedLabels.length) {

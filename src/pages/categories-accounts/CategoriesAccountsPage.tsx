@@ -650,11 +650,10 @@ export function CategoriesAccountsPage() {
               type="button"
               className="category-node-caret"
               aria-expanded={!isCollapsed}
-              aria-label={tf(
+              aria-label={(
                 isCollapsed
-                  ? 'categoriesAccounts.expandCategoryAria'
-                  : 'categoriesAccounts.collapseCategoryAria',
-                isCollapsed ? '展开 {name} 的子分类' : '收起 {name} 的子分类'
+                  ? tf('categoriesAccounts.expandCategoryAria', '展开 {name} 的子分类')
+                  : tf('categoriesAccounts.collapseCategoryAria', '收起 {name} 的子分类')
               ).replace('{name}', String(item.name))}
               onClick={() =>
                 setCollapsedCategoryIds((prev) =>

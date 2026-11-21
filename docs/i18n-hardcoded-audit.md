@@ -2,6 +2,9 @@
 
 统计口径:模板字符串 + `label/text/explanation/...` 字段值中含中文者;排除测试与 locale 文件。
 
+> 注意:`tf(key, '中文')` 的第二个参数是**兜底文案**,与资源里的值重复是这条写法的本意,
+> 不是「漏译」。下面的统计会把这类 fallback 也算进来,看数量时先扣掉它们。
+
 **按出现次数分类**,不按文件 —— 同一个文件里往往既有 prompt 也有 UI 文案。
 
 | 分类 | 出现次数 | 说明 |
@@ -89,3 +92,32 @@
 - `src/features/assistant/agent/assistantAgentTools.ts` — 校准余额必须是有效数字。
 - `src/features/assistant/agent/assistantAgentTools.ts` — 已校准账户余额
 - `src/features/assistant/agent/assistantAgentTools.ts` — 笔关联流水。请先向用户说明影响并取得明确确认。
+
+## 死 key(UNUSED)清理流程
+
+`scripts/check-i18n-keys.mjs --unused` 会列出「资源里有、代码里搜不到」的 key。
+但**它曾经把用到的 key 误报成死 key**,照着删就会删掉还在用的文案。已经被修掉的三个盲点:
+
+| 盲点 | 例子 | 影响 |
+| --- | --- | --- |
+| 别名表漏登记 | `tFallback('dashboard.ui.densityTitle', ...)`(79 处) | 一开始报 319 条 UNUSED,其中 49 条其实在用 |
+| key 先存进 state | `setErrorKey('finance.ui.loadFailed')`,渲染时 `t(errorKey)` | 4 条在用 key 被误报 |
+| helper 拼 key | `getCurrencyNameKey(code)` 返回 `` `exchange.currency.${code}` `` | 30 条币种 key 被误报 |
+
+现在除了别名表,脚本还会收集:`*Key(...)` setter、源码里任何 `xxx.yyy.${...}` / `'xxx.yyy.' + ...`
+形式的 key 前缀;并且会把「函数名不在别名表、但第一个参数像 key」的调用单列成
+`UNKNOWN-CALLEE`,提示可能又多了个没登记的包装函数。
+
+`--unused` 只是提示,不会让 CI 失败。真要去删,用:
+
+```bash
+node scripts/check-i18n-keys.mjs --json --unused > .i18n-report.json
+node scripts/audit-unused-i18n.mjs          # 输出「可以安全删除」与「需要人工确认」两堆
+```
+
+`audit-unused-i18n.mjs` 的五道门(任一不过就退回人工)见脚本头部注释;其中
+「中文值出现在生产代码里」经常因为 `tf(key, '中文')` 的 fallback 命中,属于误报,不必当回事;
+真正要小心的是「key 字面量 / 末段 / 父路径出现在代码里」。
+
+删除后必须做一次冒烟:`t('key')` 取不到会把原始 key 渲染到界面上,所以逐个路由扫一遍
+页面文本与 DOM 里有没有出现被删的 key 字符串(实测 18 个路由共 0 泄漏)。

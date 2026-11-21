@@ -33,3 +33,6 @@ test-results/
 /screenshot.png
 /OPTIMIZATION_COMPLETE.md
 /OPTIMIZATION_SUMMARY.md
+
+# check-i18n-keys.mjs --json 的输出,按需生成
+.i18n-report.json
