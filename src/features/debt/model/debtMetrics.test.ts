@@ -129,4 +129,42 @@ describe('debtMetrics', () => {
     expect(result.minimumPayment).toBeGreaterThan(0);
     expect(result.remainingTotalCost).toBeGreaterThan(result.remainingInterestCost || 0);
   });
+
+  /**
+   * 最低还款额不能超过欠款本身。
+   * 以前是 Math.max(欠款 × 比例, 规则下限),下限 100 元会原样套到小额欠款上:
+   * 欠 30 元的信用卡被算出「最低还款 100 元」,比欠款还多。连带把汇总里的
+   * totalMinimumPayment、pressureRatio 与健康分一起算歪。
+   */
+  it('never asks for a minimum payment larger than the balance', () => {
+    const problems: string[] = [];
+
+    for (const type of ['credit-card', 'consumer-loan'] as const) {
+      for (let balance = 0.01; balance <= 5000; balance += balance < 200 ? 0.5 : 25) {
+        const safeBalance = Math.round(balance * 100) / 100;
+        const minimum = calculateDebtMinimumPayment({
+          id: 'debt',
+          name: '测试',
+          type,
+          balance: safeBalance
+        });
+        if (minimum > safeBalance + 1e-9) {
+          problems.push(`${type} 欠款 ${safeBalance} 算出最低还款 ${minimum}`);
+        }
+      }
+    }
+
+    expect(problems).toEqual([]);
+  });
+
+  it('keeps the percentage rule for balances above the floor', () => {
+    // 大额不受影响:1200 × 10% = 120
+    expect(
+      calculateDebtMinimumPayment({ id: 'a', name: '信用卡', type: 'credit-card', balance: 1200 })
+    ).toBe(120);
+    // 小额:下限被欠款本身压住,等于一次还清
+    expect(
+      calculateDebtMinimumPayment({ id: 'b', name: '信用卡', type: 'credit-card', balance: 30 })
+    ).toBe(30);
+  });
 });

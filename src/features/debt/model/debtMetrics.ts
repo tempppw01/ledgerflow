@@ -252,7 +252,13 @@ export function calculateDebtMinimumPayment(debt: DebtItem): number {
   }
 
   const rule = debtRules[normalizedType];
-  return Math.max(principal * rule.rate, rule.minFloor);
+  // 最低还款额不能超过欠款本身:以前直接 Math.max(principal * rate, minFloor),
+  // 于是欠 30 元的信用卡也会给出「最低还款 100 元」——比欠款还多。这还会连带把
+  // 汇总里的 totalMinimumPayment、pressureRatio 和健康分一起算歪。
+  // 底线取 min(规则下限, 欠款),欠款小于下限时就等于「一次还清」。
+  const percentagePayment = principal * rule.rate;
+  const floorPayment = Math.min(rule.minFloor, principal);
+  return Math.max(percentagePayment, floorPayment);
 }
 
 /**
