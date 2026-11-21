@@ -708,7 +708,17 @@
         "forecastSave": "保存",
         "forecastCancel": "取消",
         "forecastEdit": "编辑 {{name}}",
-        "forecastOutOfRange": "不在当前预测区间内"
+        "forecastOutOfRange": "不在当前预测区间内",
+        "event": {
+          "plannedIncome": "计划收入",
+          "plannedExpense": "计划支出",
+          "subscription": "续费",
+          "debtReminder": "还款提醒",
+          "plannedRepayment": "计划还款",
+          "monthlyRepayment": "每月还款",
+          "forecastIncome": "预测收入",
+          "forecastExpense": "预测支出"
+        }
       },
       "monthBalance": "本月结余",
       "traceMonth": "点击追溯本月交易",

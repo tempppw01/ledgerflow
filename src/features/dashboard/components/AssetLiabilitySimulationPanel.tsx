@@ -8,7 +8,8 @@ import {
   formatWeekdayNarrow
 } from '../../../shared/lib/i18nDate';
 import type { AssetLiabilitySimulationRow } from '../model/assetLiabilitySimulation';
-import { formatCalendarAmount } from '../model/assetLiabilitySimulationFormat';
+import { aggregateRowsByMonth } from '../model/assetLiabilitySimulation';
+import { formatCalendarAmount, describeSimulationEvent } from '../model/assetLiabilitySimulationFormat';
 import type {
   ForecastBill,
   ForecastBillDirection,
@@ -95,11 +96,7 @@ export function AssetLiabilitySimulationPanel({
     ...rows.flatMap((row) => [Math.abs(row.delta), Math.abs(row.netWorth)]),
     1
   );
-  const monthlyRows = rows.filter((row, index) => {
-    const next = rows[index + 1];
-    return !next || next.date.slice(0, 7) !== row.date.slice(0, 7);
-  });
-  const calendarRows = horizonMonths === 1 ? rows : monthlyRows;
+  const calendarRows = horizonMonths === 1 ? rows : aggregateRowsByMonth(rows);
   const lowestBalance = rows.reduce(
     (lowest, row) => (row.netWorth < lowest.netWorth ? row : lowest),
     rows[0]
@@ -301,6 +298,28 @@ export function AssetLiabilitySimulationPanel({
               className="dashboard-asset-liability-liability-line"
               d={smoothPath(liabilityPoints)}
             />
+            {/* 有安排的日子在曲线上点一下:光看折线看不出「为什么这天掉了」。
+                12 个月视图里事件点会连成一串珠子盖住折线,那种尺度下改由月度格子
+                (带点和 tooltip)承担,曲线只保留趋势。 */}
+            {horizonMonths <= 3
+              ? rows.map((row, index) =>
+                  row.events.length > 0 ? (
+                    <circle
+                      key={`event-${row.key}`}
+                      className="dashboard-asset-liability-event-dot"
+                      cx={assetPoints[index]?.x}
+                      cy={assetPoints[index]?.y}
+                      r={2.6}
+                    >
+                      <title>
+                        {`${formatDayMonth(row.date, locale)}\n${row.events
+                          .map((event) => describeSimulationEvent(event, t))
+                          .join('\n')}`}
+                      </title>
+                    </circle>
+                  ) : null
+                )
+              : null}
           </svg>
           <div className="dashboard-asset-liability-axis" aria-hidden="true">
             <span>{formatDayMonth(rows[0]?.date || new Date(), locale)}</span>
@@ -383,13 +402,24 @@ export function AssetLiabilitySimulationPanel({
                 <div
                   className={`dashboard-calendar-day ${
                     amount > 0 ? 'is-positive' : amount < 0 ? 'is-negative' : 'is-neutral'
-                  } ${isMonthStart ? 'is-month-start' : ''}`.trim()}
+                  } ${isMonthStart ? 'is-month-start' : ''} ${
+                    row.events.length > 0 ? 'has-events' : ''
+                  }`.trim()}
                   key={row.key}
                   style={style}
                   aria-label={`${formatDayMonth(row.date, locale)},${amountLabel} ${formatCurrency(
                     amount
-                  )}`}
-                  title={formatCurrency(amount)}
+                  )}${
+                    row.events.length > 0
+                      ? `,${row.events
+                          .map((event) => describeSimulationEvent(event, t))
+                          .join(';')}`
+                      : ''
+                  }`}
+                  title={[
+                    `${formatDayMonth(row.date, locale)} · ${formatCurrency(amount)}`,
+                    ...row.events.map((event) => describeSimulationEvent(event, t))
+                  ].join('\n')}
                 >
                   {isMonthStart || horizonMonths > 1 ? (
                     <em>{formatMonth(row.date, locale)}</em>
@@ -400,6 +430,9 @@ export function AssetLiabilitySimulationPanel({
                       ? formatCalendarAmount(row.netWorth)
                       : formatCalendarAmount(row.delta)}
                   </small>
+                  {row.events.length > 0 ? (
+                    <i className="dashboard-calendar-day-event-dot" aria-hidden="true" />
+                  ) : null}
                 </div>
               );
             })}

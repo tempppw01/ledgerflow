@@ -708,7 +708,17 @@
         "forecastSave": "Save",
         "forecastCancel": "Cancel",
         "forecastEdit": "Edit {{name}}",
-        "forecastOutOfRange": "Outside the current forecast range"
+        "forecastOutOfRange": "Outside the current forecast range",
+        "event": {
+          "plannedIncome": "Planned income",
+          "plannedExpense": "Planned expense",
+          "subscription": "Renewal",
+          "debtReminder": "Repayment reminder",
+          "plannedRepayment": "Planned repayment",
+          "monthlyRepayment": "Monthly repayment",
+          "forecastIncome": "Forecast income",
+          "forecastExpense": "Forecast expense"
+        }
       },
       "monthBalance": "This month's balance",
       "traceMonth": "View this month's transactions",

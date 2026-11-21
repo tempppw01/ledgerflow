@@ -300,6 +300,17 @@
 .dashboard-calendar-day.is-negative small { color: var(--color-income); }
 .dashboard-calendar-grid.is-monthly { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .dashboard-calendar-grid.is-monthly .dashboard-calendar-day { min-height: 42px; }
+.dashboard-calendar-day.has-events { box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--color-primary) 55%, transparent); }
+.dashboard-calendar-day-event-dot {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  transform: translateX(-50%);
+}
 
 /* The dashboard's two core review tools share one visual rhythm on desktop. */
 .dashboard-analysis-workspace.dashboard-dynamic-grid {

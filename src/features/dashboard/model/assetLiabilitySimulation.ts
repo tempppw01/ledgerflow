@@ -10,6 +10,28 @@ import {
   type RepaymentRecord
 } from '../../debt/model/debtMetrics';
 
+/**
+ * 这一天为什么动:每种来源单独一种 kind,由界面负责翻成当前语言。
+ * 模型层不拼中文,否则英文界面会把「续费 · 中国移动」这类中文直接露出来。
+ */
+export type SimulationEventKind =
+  | 'plannedIncome'
+  | 'plannedExpense'
+  | 'subscription'
+  | 'debtReminder'
+  | 'plannedRepayment'
+  | 'monthlyRepayment'
+  | 'forecastIncome'
+  | 'forecastExpense';
+
+export interface SimulationEvent {
+  kind: SimulationEventKind;
+  /** 续费/还款/预测账单会带上具体名称,计划收支没有。 */
+  name?: string;
+  /** 月视图里同一条事件当月出现几次;单日行不带这个字段。 */
+  count?: number;
+}
+
 export interface AssetLiabilitySimulationRow {
   key: string;
   date: string;
@@ -21,7 +43,7 @@ export interface AssetLiabilitySimulationRow {
   delta: number;
   assetDelta: number;
   liabilityDelta: number;
-  events: string[];
+  events: SimulationEvent[];
   /** 当天由「预测账单」造成的资产变化合计(收入为正、支出为负)。 */
   forecastDelta: number;
   /** 当天命中的预测账单 id,用于按账单统计本期发生次数。 */
@@ -39,7 +61,8 @@ type ScheduledEvent = {
   date: string;
   assetDelta: number;
   liabilityDelta: number;
-  label: string;
+  kind: SimulationEventKind;
+  name?: string;
   debtId?: string;
   paymentAmount?: number;
   /** 这条事件来自用户录入的预测账单,而非已有流水/订阅/还款。 */
@@ -139,13 +162,15 @@ function buildScheduledEvents(
     const first = parseDate(bill.date);
     if (!amount || !first) return;
     const assetDelta = bill.direction === 'income' ? amount : -amount;
-    const label = bill.direction === 'income' ? '预测收入' : '预测支出';
+    const kind: SimulationEventKind =
+      bill.direction === 'income' ? 'forecastIncome' : 'forecastExpense';
 
     if (bill.repeat !== 'monthly') {
       include(bill.date, {
         assetDelta,
         liabilityDelta: 0,
-        label: `${label} · ${bill.name}`,
+        kind,
+        name: bill.name,
         forecast: true,
         forecastBillId: bill.id
       });
@@ -166,7 +191,8 @@ function buildScheduledEvents(
           date: dateKey(date),
           assetDelta,
           liabilityDelta: 0,
-          label: `${label} · ${bill.name}`,
+          kind,
+          name: bill.name,
           forecast: true,
           forecastBillId: bill.id
         });
@@ -190,7 +216,7 @@ function buildScheduledEvents(
     include(transaction.date, {
       assetDelta,
       liabilityDelta: 0,
-      label: transaction.type === 'income' ? '计划收入' : '计划支出'
+      kind: transaction.type === 'income' ? 'plannedIncome' : 'plannedExpense'
     });
   });
 
@@ -200,7 +226,8 @@ function buildScheduledEvents(
     include(dueDate, {
       assetDelta: -Math.abs(safeNumber(subscription.amount)),
       liabilityDelta: 0,
-      label: `续费 · ${subscription.name}`
+      kind: 'subscription',
+      name: subscription.name
     });
   });
 
@@ -210,7 +237,8 @@ function buildScheduledEvents(
       include(debt.simpleDueDate, {
         assetDelta: -Math.abs(safeNumber(debt.simpleAmount)),
         liabilityDelta: 0,
-        label: `还款提醒 · ${debt.name}`
+        kind: 'debtReminder',
+        name: debt.name
       });
       return;
     }
@@ -228,7 +256,8 @@ function buildScheduledEvents(
         liabilityDelta: 0,
         debtId: debt.id,
         paymentAmount: amount,
-        label: `计划还款 · ${repayment.label || debt.name}`
+        kind: 'plannedRepayment',
+        name: repayment.label || debt.name
       });
     });
 
@@ -252,7 +281,8 @@ function buildScheduledEvents(
           liabilityDelta: 0,
           debtId: debt.id,
           paymentAmount: monthlyPayment,
-          label: `每月还款 · ${debt.name}`
+          kind: 'monthlyRepayment',
+          name: debt.name
         });
       });
     }
@@ -362,7 +392,7 @@ export function buildAssetLiabilitySimulation(input: {
       delta: netWorth - previousNetWorth,
       assetDelta,
       liabilityDelta,
-      events: dayEvents.map((event) => event.label),
+      events: dayEvents.map((event) => ({ kind: event.kind, name: event.name })),
       forecastDelta: dayEvents.reduce(
         (sum, event) => (event.forecast ? sum + event.assetDelta : sum),
         0
@@ -380,4 +410,59 @@ export function buildAssetLiabilitySimulation(input: {
     initialLiabilities,
     hasEvents: scheduledEvents.length > 0
   };
+}
+
+/** 同一个 (kind, name) 合并成一条并记次数:一个月里同一条订阅只写一行「×N」。 */
+function mergeEvents(events: SimulationEvent[]): SimulationEvent[] {
+  const merged: SimulationEvent[] = [];
+  events.forEach((event) => {
+    const hit = merged.find(
+      (item) => item.kind === event.kind && item.name === event.name
+    );
+    if (hit) hit.count = (hit.count || 1) + 1;
+    else merged.push({ ...event });
+  });
+  return merged;
+}
+
+/**
+ * 把逐日推演行压成「每月一格」。
+ *
+ * 月视图原先直接取当月最后一天的 delta,于是只要安排不在月末那天发生,
+ * 整列就全是 0(12 个月概览里 12 个格子全是 0,和折线一路下滑自相矛盾)。
+ * 这里把当月所有天的变化累加,日期/快照仍取月末那天:
+ * 于是 delta === 本月末净资产 − 上月末净资产,和折线保持同一口径。
+ */
+export function aggregateRowsByMonth(
+  rows: AssetLiabilitySimulationRow[]
+): AssetLiabilitySimulationRow[] {
+  const aggregated: AssetLiabilitySimulationRow[] = [];
+
+  rows.forEach((row) => {
+    const month = row.date.slice(0, 7);
+    const current = aggregated.at(-1);
+    if (!current || current.date.slice(0, 7) !== month) {
+      aggregated.push({ ...row, events: [...row.events] });
+      return;
+    }
+
+    // 同一月份:快照换成更晚的那天,金额类字段累加,事件合并去重。
+    current.key = row.key;
+    current.date = row.date;
+    current.label = row.label;
+    current.weekday = row.weekday;
+    current.assets = row.assets;
+    current.liabilities = row.liabilities;
+    current.netWorth = row.netWorth;
+    current.delta += row.delta;
+    current.assetDelta += row.assetDelta;
+    current.liabilityDelta += row.liabilityDelta;
+    current.forecastDelta += row.forecastDelta;
+    current.events = mergeEvents([...current.events, ...row.events]);
+    current.forecastBillIds = [
+      ...new Set([...current.forecastBillIds, ...row.forecastBillIds])
+    ];
+  });
+
+  return aggregated;
 }

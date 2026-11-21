@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildAssetLiabilitySimulation } from './assetLiabilitySimulation';
+import { aggregateRowsByMonth, buildAssetLiabilitySimulation } from './assetLiabilitySimulation';
+import { describeSimulationEvent } from './assetLiabilitySimulationFormat';
 
 describe('buildAssetLiabilitySimulation', () => {
   it('projects scheduled income, repayment and subscription changes by date', () => {
@@ -62,6 +63,10 @@ describe('buildAssetLiabilitySimulation', () => {
       assets: 2870,
       liabilities: 1300
     });
+    // 事件只带 kind 与名称(i18n 友好的枚举),不预拼中文文案。
+    expect(result.rows[2].events).toEqual([{ kind: 'plannedIncome' }]);
+    expect(result.rows[3].events).toEqual([{ kind: 'subscription', name: '音乐会员' }]);
+    expect(result.rows[4].events).toEqual([{ kind: 'plannedRepayment', name: '消费贷' }]);
     expect(result.hasEvents).toBe(true);
   });
 
@@ -139,6 +144,10 @@ describe('buildAssetLiabilitySimulation', () => {
     expect(result.rows[3].forecastBillIds).toEqual([]);
     expect(result.rows[4]).toMatchObject({ date: '2026-09-24', forecastDelta: 800, assets: 1200 });
     expect(result.rows[4].forecastBillIds).toEqual(['bill-bonus']);
+    // 事件只带 kind 与名称,模型层不拼展示文案。
+    expect(result.rows[2].events).toEqual([{ kind: 'forecastExpense', name: '房租' }]);
+    expect(result.rows[3].events).toEqual([]);
+    expect(result.rows[4].events).toEqual([{ kind: 'forecastIncome', name: '奖金' }]);
     // 预测账单只推演现金流,不会凭空改变负债。
     expect(result.rows[4].liabilities).toBe(result.initialLiabilities);
   });
@@ -213,5 +222,115 @@ describe('buildAssetLiabilitySimulation', () => {
     expect(result.rows.every((row) => row.forecastDelta === 0)).toBe(true);
     expect(result.rows.every((row) => row.forecastBillIds.length === 0)).toBe(true);
     expect(result.rows.at(-1)?.assets).toBe(1000);
+  });
+});
+
+describe('aggregateRowsByMonth', () => {
+  const buildSimulation = () =>
+    buildAssetLiabilitySimulation({
+      now: new Date('2026-11-20T08:00:00'),
+      accounts: [{ id: 'cash', name: '现金', type: 'cash', balance: 10000 }],
+      investmentPositions: [],
+      transactions: [],
+      subscriptions: [
+        {
+          id: 'sub-1',
+          name: '云盘',
+          kind: 'digital',
+          amount: 100,
+          currency: 'CNY',
+          billingCycle: 'monthly',
+          renewalDate: '2026-12-05',
+          status: 'active',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01'
+        }
+      ],
+      debts: [
+        {
+          id: 'loan',
+          name: '消费贷',
+          type: 'consumer-loan',
+          balance: 3000,
+          customMinPayment: 1000,
+          repaymentDay: 25,
+          annualRate: 0
+        }
+      ],
+      days: 90
+    });
+
+  it('把当月所有天的变化累加,而不是只取月末那天', () => {
+    const simulation = buildSimulation();
+    const monthly = aggregateRowsByMonth(simulation.rows);
+    const december = monthly.find((row) => row.date.startsWith('2026-12'));
+    const dailyDecember = simulation.rows.filter((row) => row.date.startsWith('2026-12'));
+
+    expect(dailyDecember.length).toBeGreaterThan(1);
+    expect(december?.delta).toBe(dailyDecember.reduce((sum, row) => sum + row.delta, 0));
+    expect(december?.date).toBe('2026-12-31');
+
+    // 12/5 订阅 −100、12/25 还款 −1000:还款让现金和负债同时减少,对净资产是 0,
+    // 所以净变化只有订阅那 100;但资产口径把两笔都算进去,合计 −1100。
+    expect(december?.delta).toBe(-100);
+    expect(december?.assetDelta).toBe(-1100);
+    // 旧实现取的是 12/31 当天(没有任何安排)的 delta,也就是 0。
+    expect(simulation.rows.find((row) => row.date === '2026-12-31')?.delta).toBe(0);
+  });
+
+  it('月度 delta 与月末净资产之差始终一致(和折线同口径)', () => {
+    const simulation = buildSimulation();
+    const monthly = aggregateRowsByMonth(simulation.rows);
+    const initialNetWorth = simulation.initialAssets - simulation.initialLiabilities;
+
+    expect(monthly[0].delta).toBe(monthly[0].netWorth - initialNetWorth);
+    monthly.slice(1).forEach((row, index) => {
+      const previous = monthly[index];
+      expect(row.delta).toBeCloseTo(row.netWorth - previous.netWorth, 6);
+    });
+  });
+
+  it('同一条事件在月内出现多次时合并成一条并记次数', () => {
+    const monthly = aggregateRowsByMonth(
+      buildAssetLiabilitySimulation({
+        now: new Date('2026-11-20T08:00:00'),
+        accounts: [{ id: 'cash', name: '现金', type: 'cash', balance: 10000 }],
+        investmentPositions: [],
+        transactions: [],
+        subscriptions: [],
+        debts: [
+          {
+            id: 'loan-a',
+            name: '消费贷',
+            type: 'consumer-loan',
+            balance: 3000,
+            customMinPayment: 500,
+            repaymentDay: 25,
+            annualRate: 0
+          },
+          {
+            id: 'loan-b',
+            name: '消费贷',
+            type: 'consumer-loan',
+            balance: 3000,
+            customMinPayment: 500,
+            repaymentDay: 25,
+            annualRate: 0
+          }
+        ],
+        days: 40
+      }).rows
+    );
+    const november = monthly.find((row) => row.date.startsWith('2026-11'));
+
+    // 同名同日的两笔都在 11/25 扣款 → 合并成一条,次数记 2。
+    expect(november?.events).toEqual([{ kind: 'monthlyRepayment', name: '消费贷', count: 2 }]);
+    expect(describeSimulationEvent(november!.events[0], (key) => key)).toBe(
+      'dashboard.ui.simulation.event.monthlyRepayment · 消费贷 ×2'
+    );
+  });
+
+  it('空区间返回空数组,不抛错', () => {
+    expect(aggregateRowsByMonth([])).toEqual([]);
   });
 });
