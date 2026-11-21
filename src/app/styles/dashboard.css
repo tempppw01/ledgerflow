@@ -177,6 +177,9 @@
 .dashboard-cashflow-event-main small { font-size: 10px; }
 .dashboard-finance-todos { padding: 10px 0 0 12px; }
 .dashboard-cashflow-timeline { display: grid; align-content: start; border-top: 1px solid var(--color-divider); }
+/* 出现订阅条目时插一列放品牌 logo;其余条目渲染空槽,保证整列对齐。 */
+.dashboard-cashflow-timeline.has-brand-logos .dashboard-cashflow-event { grid-template-columns: 58px 26px minmax(0, 1fr) auto; }
+.dashboard-cashflow-event-logo { display: grid; place-items: center; }
 .dashboard-cashflow-event { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; gap: var(--space-3); align-items: center; width: 100%; padding: 11px 0; border: 0; border-bottom: 1px solid var(--color-divider); background: transparent; color: var(--color-text); text-align: left; cursor: pointer; }
 .dashboard-cashflow-event:hover strong { color: var(--color-primary); }
 .dashboard-cashflow-event-date { color: var(--color-text-secondary); font-size: var(--font-xs); font-variant-numeric: tabular-nums; }

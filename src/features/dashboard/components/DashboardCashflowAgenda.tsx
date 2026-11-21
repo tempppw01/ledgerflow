@@ -3,6 +3,9 @@ import type { SubscriptionItem } from '../../../entities/subscription/types';
 import { formatCurrency } from '../../../shared/lib/format';
 import { formatDayMonth } from '../../../shared/lib/i18nDate';
 import type { DebtItem } from '../../debt/model/debtMetrics';
+import { resolveBrandMark } from '../../subscriptions/model/brandMark';
+import type { BrandMark } from '../../subscriptions/model/brandMarks';
+import { SubscriptionBrandLogo } from '../../subscriptions/ui/SubscriptionBrandLogo';
 
 type AgendaDetailKey =
   | 'debtReminder'
@@ -17,6 +20,8 @@ type AgendaItem = {
   amount: number;
   kind: 'income' | 'expense';
   detailKey: AgendaDetailKey;
+  /** 订阅类条目带上品牌标识,和订阅清单里的 logo 保持一致;其余条目为 null。 */
+  brand?: BrandMark | null;
 };
 
 export interface DashboardCashflowAgendaProps {
@@ -103,12 +108,15 @@ export function DashboardCashflowAgenda({
         detailKey:
           date < start || subscription.status === 'expired'
             ? 'overdueRenewal'
-            : 'subscriptionRenewal'
+            : 'subscriptionRenewal',
+        brand: resolveBrandMark(subscription.name, subscription.provider)
       });
     }
   });
 
   const agenda = items.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5);
+  // 只有出现订阅条目时才多留一列放 logo,避免全是负债/还款时白占一段空白。
+  const hasBrandLogos = agenda.some((item) => Boolean(item.brand));
   const unresolved = debts.filter(
     (item) => item.entryMode === 'simple' && !item.simpleAmount
   ).length;
@@ -138,7 +146,7 @@ export function DashboardCashflowAgenda({
         </strong>
       </div>
       <div className="dashboard-cashflow-agenda-body">
-        <div className="dashboard-cashflow-timeline">
+        <div className={`dashboard-cashflow-timeline${hasBrandLogos ? ' has-brand-logos' : ''}`}>
           {agenda.length ? (
             agenda.map((item) => (
               <button
@@ -157,6 +165,11 @@ export function DashboardCashflowAgenda({
                   {formatDayMonth(item.date, i18n.resolvedLanguage) ||
                     t('dashboard.ui.cashflow.dateUnknown')}
                 </span>
+                {hasBrandLogos ? (
+                  <span className="dashboard-cashflow-event-logo">
+                    {item.brand ? <SubscriptionBrandLogo mark={item.brand} size="sm" /> : null}
+                  </span>
+                ) : null}
                 <span className="dashboard-cashflow-event-main">
                   <strong>{item.label}</strong>
                   <small>{t(`dashboard.ui.cashflow.${item.detailKey}`)}</small>
@@ -172,10 +185,7 @@ export function DashboardCashflowAgenda({
             <p className="dashboard-cashflow-empty">{t('dashboard.ui.cashflow.empty')}</p>
           )}
         </div>
-        <div
-          className="dashboard-finance-todos"
-          aria-label={t('dashboard.ui.cashflow.todoAria')}
-        >
+        <div className="dashboard-finance-todos" aria-label={t('dashboard.ui.cashflow.todoAria')}>
           <span className="dashboard-cashflow-todo-title">
             {t('dashboard.ui.cashflow.todoTitle')}
           </span>
@@ -191,9 +201,7 @@ export function DashboardCashflowAgenda({
               <span>{t('dashboard.ui.cashflow.unclassifiedLabel')}</span>
             </button>
           ) : null}
-          {!unresolved && !unclassified ? (
-            <p>{t('dashboard.ui.cashflow.noTodos')}</p>
-          ) : null}
+          {!unresolved && !unclassified ? <p>{t('dashboard.ui.cashflow.noTodos')}</p> : null}
         </div>
       </div>
     </section>
