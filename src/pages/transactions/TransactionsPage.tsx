@@ -90,6 +90,7 @@ import {
   writeQuickTransactionDraft,
   type QuickTransactionDraft
 } from '../transaction-edit/transactionDraft';
+import { useDialogFocus } from '../../shared/lib/useDialogFocus';
 
 const DEFAULT_PAGE_SIZE = 8;
 const PAGE_SIZE_OPTIONS = [8, 20, 50, 100] as const;
@@ -564,6 +565,10 @@ export function TransactionsPage() {
     initialQuickDraft ? tf('txPage.quickAdd.draftRestored', '已恢复未完成草稿') : ''
   );
   const quickAddAmountInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const quickAddDrawerRef = useRef<HTMLElement | null>(null);
+  // 抽屉自己已经处理了 Escape(见下面的 keydown effect),这里只管焦点:
+  // 打开时收进抽屉、Tab 循环、关闭后还给「记一笔」按钮。
+  useDialogFocus(quickAddOpen, quickAddDrawerRef);
   const [tablePanelWidth, setTablePanelWidth] = useState(860);
   const [sidePanelVisible, setSidePanelVisible] = useState(() => restoreSidePanelVisible());
   const [pieAnimationProgress, setPieAnimationProgress] = useState(1);
@@ -2966,6 +2971,7 @@ export function TransactionsPage() {
       {quickAddOpen ? (
         <div className="quick-add-overlay" role="presentation" onClick={closeQuickAddDrawer}>
           <aside
+            ref={quickAddDrawerRef}
             className="quick-add-drawer"
             role="dialog"
             aria-modal="true"

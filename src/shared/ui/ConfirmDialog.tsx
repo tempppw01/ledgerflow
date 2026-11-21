@@ -1,5 +1,6 @@
-import { useEffect, type ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useDialogFocus } from '../lib/useDialogFocus';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -25,21 +26,9 @@ export function ConfirmDialog({
   onCancel
 }: ConfirmDialogProps) {
   const { t } = useTranslation();
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onCancel();
-      }
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, onCancel]);
+  const dialogRef = useRef<HTMLElement | null>(null);
+  // Escape 关闭 + 焦点收进弹层 / 关闭后还给触发按钮。
+  useDialogFocus(open, dialogRef, onCancel);
 
   if (!open) {
     return null;
@@ -51,6 +40,7 @@ export function ConfirmDialog({
   return (
     <div className="dialog-overlay" role="presentation" onClick={onCancel}>
       <section
+        ref={dialogRef}
         className="dialog"
         role="dialog"
         aria-modal="true"
