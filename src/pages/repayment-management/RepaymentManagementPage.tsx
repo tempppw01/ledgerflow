@@ -3659,52 +3659,52 @@ export function RepaymentManagementPage() {
         <section className="repayment-ai-section">
           <div className="repayment-ai-header">
             <div>
-              <span className="repayment-ai-eyebrow">智能策略</span>
-              <h3>🤖 AI 还款策略</h3>
+              <span className="repayment-ai-eyebrow">{tf('repayment.ai.eyebrow', '智能策略')}</span>
+              <h3>{tf('repayment.ai.title', '🤖 AI 还款策略')}</h3>
             </div>
             <button type="button" onClick={onGenerateRepaymentAdvice} disabled={repaymentLoading}>
-              {repaymentLoading ? '生成中…' : repaymentAdvice ? '更新建议' : '生成建议'}
+              {repaymentLoading ? tf('repayment.ai.generating', '生成中…') : repaymentAdvice ? tf('repayment.ai.updateAdvice', '更新建议') : tf('repayment.ai.generateAdvice', '生成建议')}
             </button>
           </div>
 
-          <div className="repayment-ai-summary" aria-label="AI 还款策略摘要">
+          <div className="repayment-ai-summary" aria-label={tf('repayment.ai.summaryTitle', 'AI 还款策略摘要')}>
             <div className="repayment-ai-summary-item">
-              <span>优先处理</span>
+              <span>{tf('repayment.ai.priorityHeading', '优先处理')}</span>
               <strong>
                 {strategyReadiness.isReady
-                  ? repaymentPriority[0]?.name || '暂无负债'
-                  : '先补齐资料'}
+                  ? repaymentPriority[0]?.name || tf('repayment.ai.noDebts', '暂无负债')
+                  : tf('repayment.ai.fillDetailsFirst', '先补齐资料')}
               </strong>
               <small>
                 {!strategyReadiness.isReady
                   ? strategyReadiness.missing.slice(0, 2).join(' · ')
                   : repaymentPriority[0]
                     ? `APR ${repaymentPriority[0].annualRate.toFixed(1)}% · ¥${repaymentPriority[0].balance.toFixed(0)}`
-                    : '录入负债后自动排序'}
+                    : tf('repayment.ai.autoSortHint', '录入负债后自动排序')}
               </small>
             </div>
             <div className={`repayment-ai-summary-item tone-${pressureLevel.tone}`}>
-              <span>月供压力</span>
+              <span>{tf('repayment.ai.burdenHeading', '月供压力')}</span>
               <strong>{(debtSummary.pressureRatio * 100).toFixed(1)}%</strong>
               <small>
                 {pressureLevel.label} · 负债/年收入 {(debtToIncomeRatio * 100).toFixed(1)}%
               </small>
             </div>
             <div className="repayment-ai-summary-item">
-              <span>推荐方案</span>
+              <span>{tf('repayment.ai.planHeading', '推荐方案')}</span>
               <strong>
                 {strategyReadiness.isReady && simulatorResult.best
                   ? REPAYMENT_STRATEGY_LABELS[simulatorResult.best.strategy].split('（')[0]
-                  : '暂不测算'}
+                  : tf('repayment.ai.notEstimated', '暂不测算')}
               </strong>
               <small>
                 {strategyReadiness.isReady && simulatorResult.best
                   ? `少 ${simulatorResult.best.savedMonths} 个月 · 省 ¥${simulatorResult.best.savedInterest.toFixed(0)}`
-                  : '年化利率、还款日和期供完整后再比较'}
+                  : tf('repayment.ai.completeThenCompare', '年化利率、还款日和期供完整后再比较')}
               </small>
             </div>
             <label className="repayment-ai-extra" htmlFor="simulator-extra">
-              <span>每月多还</span>
+              <span>{tf('repayment.ai.extraHeading', '每月多还')}</span>
               <div className="repayment-ai-extra-input">
                 <span>¥</span>
                 <input
@@ -3736,17 +3736,17 @@ export function RepaymentManagementPage() {
             }}
           >
             <summary>
-              <span>查看完整分析</span>
+              <span>{tf('repayment.ai.viewFullAnalysis', '查看完整分析')}</span>
             </summary>
             <div className="repayment-ai-details-body">
               <section className="repayment-ai-detail-block">
-                <h4>推荐还款优先级</h4>
+                <h4>{tf('repayment.ai.recommendedOrder', '推荐还款优先级')}</h4>
                 {!strategyReadiness.isReady ? (
                   <p className="muted">
                     当前不使用默认利率推断优先级。请先补齐 {strategyReadiness.missing.join('；')}。
                   </p>
                 ) : repaymentPriority.length === 0 ? (
-                  <p className="muted">请先创建至少一笔负债。</p>
+                  <p className="muted">{tf('repayment.ai.createDebtFirst', '请先创建至少一笔负债。')}</p>
                 ) : (
                   <ol className="repayment-ai-priority-list">
                     {repaymentPriority.map((item) => (
@@ -3763,9 +3763,9 @@ export function RepaymentManagementPage() {
               </section>
 
               <section className="repayment-ai-detail-block">
-                <h4>策略对比</h4>
+                <h4>{tf('repayment.ai.comparisonHeading', '策略对比')}</h4>
                 {!strategyReadiness.isReady ? (
-                  <p className="muted">资料不完整，暂不展示可能误导的节省金额。</p>
+                  <p className="muted">{tf('repayment.ai.incompleteNote', '资料不完整，暂不展示可能误导的节省金额。')}</p>
                 ) : (
                   <div className="repayment-ai-comparison">
                     {simulatorResult.strategyComparison.map((result) => (
@@ -3782,10 +3782,10 @@ export function RepaymentManagementPage() {
               </section>
 
               <section className="repayment-ai-detail-block">
-                <h4>风险标签与解释</h4>
+                <h4>{tf('repayment.ai.riskHeading', '风险标签与解释')}</h4>
                 {debtRiskTags.length === 0 ? (
                   <p className="muted" style={{ margin: 0 }}>
-                    当前未发现明显的高利率、到期集中或已还流水缺口。
+                    {tf('repayment.ai.riskNone', '当前未发现明显的高利率、到期集中或已还流水缺口。')}
                   </p>
                 ) : (
                   <div className="finance-risk-tag-grid">
@@ -3798,12 +3798,12 @@ export function RepaymentManagementPage() {
                           <strong>{tag.label}</strong>
                           <span>
                             {tag.dimension === 'rate'
-                              ? '利率'
+                              ? tf('repayment.ai.chipInterest', '利率')
                               : tag.dimension === 'schedule'
-                                ? '计划'
+                                ? tf('repayment.ai.chipPlan', '计划')
                                 : tag.dimension === 'actual'
-                                  ? '流水'
-                                  : '资料'}
+                                  ? tf('repayment.ai.chipHistory', '流水')
+                                  : tf('repayment.ai.chipDetails', '资料')}
                           </span>
                         </div>
                         <p className="muted" style={{ margin: '8px 0 0' }}>
@@ -3816,10 +3816,10 @@ export function RepaymentManagementPage() {
               </section>
 
               <section className="repayment-ai-detail-block">
-                <h4>严谨性审计提醒</h4>
+                <h4>{tf('repayment.ai.auditHeading', '严谨性审计提醒')}</h4>
                 {repaymentAuditItems.length === 0 ? (
                   <p className="muted" style={{ margin: 0 }}>
-                    当前负债条目已具备基础的还款日期与计算依据字段。
+                    {tf('repayment.ai.auditOk', '当前负债条目已具备基础的还款日期与计算依据字段。')}
                   </p>
                 ) : (
                   <ul className="finance-audit-list">
@@ -3833,10 +3833,10 @@ export function RepaymentManagementPage() {
               </section>
 
               <section className="repayment-ai-detail-block">
-                <h4>还款计划与已还流水</h4>
+                <h4>{tf('repayment.ai.planHistoryHeading', '还款计划与已还流水')}</h4>
                 {repaymentContextSnapshots.length === 0 ? (
                   <p className="muted" style={{ margin: 0 }}>
-                    请先录入至少一笔负债。
+                    {tf('repayment.ai.enterDebtFirst', '请先录入至少一笔负债。')}
                   </p>
                 ) : (
                   <div className="finance-risk-tag-grid">
@@ -3847,7 +3847,7 @@ export function RepaymentManagementPage() {
                       >
                         <div className="finance-risk-tag-head">
                           <strong>{item.debtName}</strong>
-                          <span>3.4 预留</span>
+                          <span>{tf('repayment.ai.reserved', '3.4 预留')}</span>
                         </div>
                         <p className="muted" style={{ margin: '8px 0 0' }}>
                           计划还款日：{item.plannedRepaymentDay || '--'} 日
@@ -3865,10 +3865,10 @@ export function RepaymentManagementPage() {
               </section>
 
               <section className="repayment-ai-detail-block">
-                <h4>到期提醒</h4>
+                <h4>{tf('repayment.ai.dueReminderHeading', '到期提醒')}</h4>
                 {repaymentLedgerPreview.length === 0 ? (
                   <p className="muted" style={{ margin: 0 }}>
-                    请先在负债列表中创建至少一条记录。
+                    {tf('repayment.ai.createRecordFirst', '请先在负债列表中创建至少一条记录。')}
                   </p>
                 ) : (
                   <ul style={{ margin: 0, paddingInlineStart: 18 }}>
@@ -3876,18 +3876,18 @@ export function RepaymentManagementPage() {
                       <li key={item.id}>
                         {item.isSimpleReminder ? (
                           <>
-                            {item.name}：{item.simpleDueDate || '日期待补充'}，
+                            {item.name}：{item.simpleDueDate || tf('repayment.ai.datePending', '日期待补充')}，
                             {Number.isFinite(item.dueInDays)
                               ? item.dueInDays < 0
                                 ? `已逾期 ${Math.abs(item.dueInDays)} 天`
                                 : item.dueInDays === 0
-                                  ? '今天待处理'
+                                  ? tf('repayment.ai.dueTodayAction', '今天待处理')
                                   : `${item.dueInDays} 天后待处理`
-                              : '待补还款日期'}
+                              : tf('repayment.ai.dueDateMissing', '待补还款日期')}
                             （
                             {item.simpleAmount !== undefined
                               ? `¥${item.simpleAmount.toFixed(2)}`
-                              : '金额待补充'}
+                              : tf('repayment.ai.amountPending', '金额待补充')}
                             ）
                           </>
                         ) : (
@@ -3895,9 +3895,9 @@ export function RepaymentManagementPage() {
                             {item.name}：还款日 {item.repaymentDay || '--'} 日，
                             {Number.isFinite(item.dueInDays)
                               ? item.dueInDays === 0
-                                ? '今天到期'
+                                ? tf('repayment.ai.dueToday', '今天到期')
                                 : `${item.dueInDays} 天后到期`
-                              : '待补还款日'}
+                              : tf('repayment.ai.repaymentDayMissing', '待补还款日')}
                             （最低 ¥{item.minimumPayment.toFixed(0)}）
                           </>
                         )}
@@ -3910,13 +3910,13 @@ export function RepaymentManagementPage() {
               {repaymentAdvice ? (
                 <>
                   <p className="finance-generate-done">
-                    ✅ AI建议已生成，可继续调整参数后重新生成。
+                    {tf('repayment.ai.adviceReady', '✅ AI建议已生成，可继续调整参数后重新生成。')}
                   </p>
                   <div className="finance-ai-result">{renderAiStructuredText(repaymentAdvice)}</div>
                 </>
               ) : (
                 <p className="muted" style={{ marginBottom: 0 }}>
-                  还没有策略建议，点击“生成 AI 还款建议”继续。
+                  {tf('repayment.ai.adviceEmpty', '还没有策略建议，点击“生成 AI 还款建议”继续。')}
                 </p>
               )}
               {repaymentReasoning ? (
@@ -3931,7 +3931,7 @@ export function RepaymentManagementPage() {
                     }));
                   }}
                 >
-                  <summary style={{ cursor: 'pointer' }}>查看模型思考摘要</summary>
+                  <summary style={{ cursor: 'pointer' }}>{tf('repayment.ai.viewReasoning', '查看模型思考摘要')}</summary>
                   <div className="finance-ai-result">
                     {renderAiStructuredText(repaymentReasoning)}
                   </div>
