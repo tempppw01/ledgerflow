@@ -768,6 +768,17 @@ export function TransactionTable({
                     return (
                       <th
                         key={`head-${column.key}`}
+                        /* scope="col" + aria-sort:排序状态原来只有视觉箭头(⇅/↑/↓),
+                           读屏器听不出「当前按哪列排、升序还是降序」。aria-sort 必须挂在
+                           表头单元格上,button 上不生效。 */
+                        scope="col"
+                        aria-sort={
+                          sortKey === column.key
+                            ? sortDirection === 'asc'
+                              ? 'ascending'
+                              : 'descending'
+                            : 'none'
+                        }
                         className={`transaction-col-${column.key} ${
                           isLongTextColumn(column.key)
                             ? 'transaction-col-long-text'
@@ -795,7 +806,9 @@ export function TransactionTable({
                           onClick={() => onSortChange(column.key)}
                         >
                           {column.label}{' '}
-                          <span>{sortIndicator(sortKey === column.key, sortDirection)}</span>
+                          <span aria-hidden="true">
+                            {sortIndicator(sortKey === column.key, sortDirection)}
+                          </span>
                         </button>
                         <span
                           className="transaction-col-resizer"

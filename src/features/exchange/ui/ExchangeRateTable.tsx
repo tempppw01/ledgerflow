@@ -202,10 +202,10 @@ export function ExchangeRateTable({
       <table className="exchange-table">
         <thead>
           <tr>
-            <th style={{ width: 40 }}>★</th>
-            <th>{tf('exchange.table.columnCode', '货币')}</th>
-            <th>{tf('exchange.table.columnName', '货币名称')}</th>
-            <th style={{ textAlign: 'right' }}>
+            <th scope="col" style={{ width: 40 }}>★</th>
+            <th scope="col">{tf('exchange.table.columnCode', '货币')}</th>
+            <th scope="col">{tf('exchange.table.columnName', '货币名称')}</th>
+            <th scope="col" style={{ textAlign: 'right' }}>
               {tf('exchange.table.columnRate', '汇率')} (1 {base})
             </th>
           </tr>

@@ -1749,15 +1749,15 @@ export function TransactionsPage() {
             <table>
               <thead>
                 <tr>
-                  <th>${tf('transactions.table.col.date', '日期')}</th>
-                  <th>${tf('transactions.table.col.type', '类型')}</th>
-                  <th>${tf('transactions.table.col.category', '分类')}</th>
-                  ${bulkPrintTemplate === 'summary' ? '' : bulkPrintFields.includeAccount ? `<th>${tf('transactions.table.col.account', '账户')}</th>` : ''}
-                  <th>${tf('transactions.table.col.amount', '金额')}</th>
-                  <th>${tf('txPage.print.colStatus', '状态')}</th>
-                  ${bulkPrintTemplate === 'summary' ? '' : bulkPrintFields.includeNote ? `<th>${tf('transactions.table.col.note', '备注')}</th>` : ''}
-                  ${bulkPrintTemplate === 'summary' ? '' : bulkPrintFields.includeOrderNo ? `<th>${tf('txPage.print.colOrderNo', '订单号')}</th>` : ''}
-                  ${bulkPrintTemplate === 'summary' ? '' : bulkPrintFields.includeTags ? `<th>${tf('txPage.print.colTags', '标签')}</th>` : ''}
+                  <th scope="col">${tf('transactions.table.col.date', '日期')}</th>
+                  <th scope="col">${tf('transactions.table.col.type', '类型')}</th>
+                  <th scope="col">${tf('transactions.table.col.category', '分类')}</th>
+                  ${bulkPrintTemplate === 'summary' ? '' : bulkPrintFields.includeAccount ? `<th scope="col">${tf('transactions.table.col.account', '账户')}</th>` : ''}
+                  <th scope="col">${tf('transactions.table.col.amount', '金额')}</th>
+                  <th scope="col">${tf('txPage.print.colStatus', '状态')}</th>
+                  ${bulkPrintTemplate === 'summary' ? '' : bulkPrintFields.includeNote ? `<th scope="col">${tf('transactions.table.col.note', '备注')}</th>` : ''}
+                  ${bulkPrintTemplate === 'summary' ? '' : bulkPrintFields.includeOrderNo ? `<th scope="col">${tf('txPage.print.colOrderNo', '订单号')}</th>` : ''}
+                  ${bulkPrintTemplate === 'summary' ? '' : bulkPrintFields.includeTags ? `<th scope="col">${tf('txPage.print.colTags', '标签')}</th>` : ''}
                 </tr>
               </thead>
               <tbody>${tableRows}</tbody>

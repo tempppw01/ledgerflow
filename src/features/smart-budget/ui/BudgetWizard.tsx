@@ -330,9 +330,9 @@ export function BudgetWizard(props: BudgetWizardProps) {
             <table className="sb-category-table">
               <thead>
                 <tr>
-                  <th>{tf('smartBudget.wizard.table.category', '分类')}</th>
-                  <th>{tf('smartBudget.wizard.table.amount', '金额')}</th>
-                  <th>{tf('smartBudget.wizard.table.share', '占收入')}</th>
+                  <th scope="col">{tf('smartBudget.wizard.table.category', '分类')}</th>
+                  <th scope="col">{tf('smartBudget.wizard.table.amount', '金额')}</th>
+                  <th scope="col">{tf('smartBudget.wizard.table.share', '占收入')}</th>
                 </tr>
               </thead>
               <tbody>
