@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTFallback, type TfFallback } from '../../../shared/lib/useTFallback';
 import type { DraftBillEntry } from '../workbench/workbenchTypes';
 import type { Account } from '../../../entities/account/types';
 import {
@@ -21,11 +22,11 @@ interface BillPreviewCardProps {
   onSaved?: () => void;
 }
 
-const typeOptions: Array<{ value: DraftBillEntry['type']; label: string }> = [
-  { value: 'expense', label: '支出' },
-  { value: 'income', label: '收入' },
-  { value: 'budget', label: '预算' },
-  { value: 'repayment', label: '还款' }
+const typeOptions: Array<{ value: DraftBillEntry['type']; key: string; label: string }> = [
+  { value: 'expense', key: 'billPreview.type.expense', label: '支出' },
+  { value: 'income', key: 'billPreview.type.income', label: '收入' },
+  { value: 'budget', key: 'billPreview.type.budget', label: '预算' },
+  { value: 'repayment', key: 'billPreview.type.repayment', label: '还款' }
 ];
 
 const currencyLabels: Record<string, string> = {
@@ -46,18 +47,25 @@ const currencyLabels: Record<string, string> = {
 const currencyOptions = [
   ...LEDGER_CURRENCY_CODES.map((value) => ({
     value,
+    key: `billPreview.currency.${value}`,
     label: `${value} ${currencyLabels[value] || ''}`.trim()
   })),
-  { value: 'UNKNOWN', label: '待确认' }
+  { value: 'UNKNOWN', key: 'billPreview.currency.unknown', label: '待确认' }
 ];
 
-function getTypeLabel(type: DraftBillEntry['type']) {
-  return typeOptions.find((option) => option.value === type)?.label || '待确认类型';
+function getTypeLabel(type: DraftBillEntry['type'], tf: TfFallback) {
+  const option = typeOptions.find((item) => item.value === type);
+  if (!option) return tf('billPreview.type.unknown', '待确认类型');
+  return tf(option.key, option.label);
 }
 
-function issueText(entry: DraftBillEntry): string {
+function issueText(entry: DraftBillEntry, tf: TfFallback): string {
   return entry.issues
-    .map((item) => (item.needsReview ? `需人工确认：${item.message}` : item.message))
+    .map((item) =>
+      item.needsReview
+        ? tf('billPreview.issue.needsReview', '需人工确认：{message}').replace('{message}', item.message)
+        : item.message
+    )
     .join('；');
 }
 
@@ -73,6 +81,7 @@ export function BillPreviewCard({
   onCreateSubscription,
   onSaved
 }: BillPreviewCardProps) {
+  const tf = useTFallback();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [conversionInputs, setConversionInputs] = useState<Record<string, string>>({});
 
@@ -106,7 +115,9 @@ export function BillPreviewCard({
   };
 
   const currencyConfirmationLabel = (item: DraftBillEntry) =>
-    isForeignCurrency(item) ? '确认人民币金额' : '确认币种为 CNY';
+    isForeignCurrency(item)
+      ? tf('billPreview.confirmCnyAmount', '确认人民币金额')
+      : tf('billPreview.confirmCurrencyCny', '确认币种为 CNY');
 
   const convertForeignCurrency = (item: DraftBillEntry) => {
     const currency = normalizedCurrencyFor(item);
@@ -135,24 +146,26 @@ export function BillPreviewCard({
   };
 
   return (
-    <section className="chat-bill-preview" aria-label="账单确认">
+    <section className="chat-bill-preview" aria-label={tf('billPreview.cardAria', '账单确认')}>
       <header className="chat-bill-preview-header">
         <div>
-          <span className="chat-bill-preview-kicker">账单已整理好</span>
-          <h3>{entries.length} 笔待确认</h3>
+          <span className="chat-bill-preview-kicker">{tf('billPreview.kicker', '账单已整理好')}</span>
+          <h3>
+          {tf('billPreview.pendingCount', '{count} 笔待确认').replace('{count}', String(entries.length))}
+        </h3>
         </div>
         <button type="button" className="chat-bill-check-duplicates" onClick={onCheckDuplicates}>
-          检查重复
+          {tf('billPreview.checkDuplicates', '检查重复')}
         </button>
       </header>
 
       {duplicateCount > 0 ? (
         <p className="chat-dup-alert" role="status">
-          有 {duplicateCount} 笔可能已记过，保存前建议核对一下。
+          {tf('billPreview.duplicateWarning', '有 {count} 笔可能已记过，保存前建议核对一下。').replace('{count}', String(duplicateCount))}
         </p>
       ) : (
         <p className="chat-dup-alert subtle" role="status">
-          暂未发现重复记录
+          {tf('billPreview.noDuplicates', '暂未发现重复记录')}
         </p>
       )}
 
@@ -176,31 +189,35 @@ export function BillPreviewCard({
             >
               <label
                 className="chat-bill-row-check"
-                title={item.selected ? '取消勾选，不保存这笔' : '勾选后保存这笔'}
+                title={
+                  item.selected
+                    ? tf('billPreview.uncheckTitle', '取消勾选，不保存这笔')
+                    : tf('billPreview.checkTitle', '勾选后保存这笔')
+                }
               >
                 <input
                   type="checkbox"
                   checked={item.selected}
                   onChange={(event) => onUpdateEntry?.(item.id, { selected: event.target.checked })}
-                  aria-label={`勾选第 ${index + 1} 笔账单`}
+                  aria-label={tf('billPreview.rowCheckboxAria', '勾选第 {index} 笔账单').replace('{index}', String(index + 1))}
                 />
               </label>
 
               <div className="chat-bill-row-copy">
-                <strong>{item.note?.trim() || item.category || '未填写备注'}</strong>
+                <strong>{item.note?.trim() || item.category || tf('billPreview.emptyNote', '未填写备注')}</strong>
                 <small>
                   {item.date.slice(0, 10)} <span aria-hidden="true">·</span>{' '}
-                  {getTypeLabel(item.type)}
-                  <span aria-hidden="true">·</span> {item.category || '未分类'}
-                  <span aria-hidden="true">·</span> {accountLabel.label || '未指定账户'}
-                  {accountLabel.label && accountLabel.inferred ? '(自动匹配)' : ''}
+                  {getTypeLabel(item.type, tf)}
+                  <span aria-hidden="true">·</span> {item.category || tf('billPreview.uncategorized', '未分类')}
+                  <span aria-hidden="true">·</span> {accountLabel.label || tf('billPreview.noAccount', '未指定账户')}
+                  {accountLabel.label && accountLabel.inferred ? tf('billPreview.autoMatched', '(自动匹配)') : ''}
                 </small>
                 {item.originalAmountText || item.subscriptionSuggestion ? (
                   <div className="chat-bill-row-extra">
                     {item.originalAmountText ? (
-                      <span>原始金额：{item.originalAmountText}</span>
+                      <span>{tf('billPreview.originalAmount', '原始金额：{value}').replace('{value}', item.originalAmountText)}</span>
                     ) : null}
-                    {item.subscriptionSuggestion ? <span>可加入订阅管理</span> : null}
+                    {item.subscriptionSuggestion ? <span>{tf('billPreview.subscriptionHint', '可加入订阅管理')}</span> : null}
                   </div>
                 ) : null}
               </div>
@@ -214,12 +231,14 @@ export function BillPreviewCard({
                 </strong>
                 {foreignCurrency ? (
                   <small className="chat-bill-row-currency">
-                    {item.currencyConfirmed ? '人民币入账' : '原币金额'}
+                    {item.currencyConfirmed
+                      ? tf('billPreview.bookedInCny', '人民币入账')
+                      : tf('billPreview.originalCurrencyAmount', '原币金额')}
                   </small>
                 ) : null}
-                {item.duplicateTxId ? <span className="chat-dup-badge">可能重复</span> : null}
+                {item.duplicateTxId ? <span className="chat-dup-badge">{tf('billPreview.duplicateBadge', '可能重复')}</span> : null}
                 {item.duplicateReason === 'batch' ? (
-                  <span className="chat-dup-badge">同批次重复</span>
+                  <span className="chat-dup-badge">{tf('billPreview.duplicateBatchBadge', '同批次重复')}</span>
                 ) : null}
                 {onUpdateEntry || onRemoveEntry ? (
                   <div className="chat-bill-row-actions">
@@ -229,12 +248,12 @@ export function BillPreviewCard({
                         onClick={() => setEditingId(editing ? null : item.id)}
                         aria-expanded={editing}
                       >
-                        {editing ? '收起' : '编辑'}
+                        {editing ? tf('billPreview.collapse', '收起') : tf('billPreview.edit', '编辑')}
                       </button>
                     ) : null}
                     {onRemoveEntry ? (
                       <button type="button" onClick={() => onRemoveEntry(item.id)}>
-                        删除
+                        {tf('billPreview.delete', '删除')}
                       </button>
                     ) : null}
                   </div>
@@ -243,14 +262,14 @@ export function BillPreviewCard({
 
               {item.issues.length > 0 || showCurrencyConfirmation ? (
                 <div className="chat-bill-issue">
-                  <span>{item.issues.length > 0 ? issueText(item) : '需人工确认:币种'}</span>
+                  <span>{item.issues.length > 0 ? issueText(item, tf) : tf('billPreview.currencyReview', '需人工确认:币种')}</span>
                   {showCurrencyConfirmation && foreignCurrency && onUpdateEntry ? (
                     <div
                       className="chat-bill-currency-convert"
                       role="group"
-                      aria-label={`${normalizedCurrency} 折算为人民币`}
+                      aria-label={tf('billPreview.convertAria', '{currency} 折算为人民币').replace('{currency}', normalizedCurrency)}
                     >
-                      <label htmlFor={`conversion-${item.id}`}>人民币入账金额</label>
+                      <label htmlFor={`conversion-${item.id}`}>{tf('billPreview.cnyAmountLabel', '人民币入账金额')}</label>
                       <input
                         id={`conversion-${item.id}`}
                         type="number"
@@ -258,9 +277,13 @@ export function BillPreviewCard({
                         step="0.01"
                         inputMode="decimal"
                         value={conversionInputs[item.id] || ''}
-                        placeholder={`请输入 ${
+                        placeholder={tf(
+                          'billPreview.cnyPlaceholder',
+                          '请输入 {value} 折合多少元'
+                        ).replace(
+                          '{value}',
                           item.originalAmountText || formatAmount(item.amount, normalizedCurrency)
-                        } 折合多少元`}
+                        )}
                         onChange={(event) =>
                           setConversionInputs((prev) => ({
                             ...prev,
@@ -292,7 +315,7 @@ export function BillPreviewCard({
               {editing ? (
                 <div className="chat-bill-edit-grid">
                   <label>
-                    类型
+                    {tf('billPreview.field.type', '类型')}
                     <select
                       value={item.type === 'unknown' ? 'expense' : item.type}
                       onChange={(event) =>
@@ -303,13 +326,15 @@ export function BillPreviewCard({
                     >
                       {typeOptions.map((option) => (
                         <option key={option.value} value={option.value}>
-                          {option.label}
+                          {tf(option.key, option.label)}
                         </option>
                       ))}
                     </select>
                   </label>
                   <label>
-                    {foreignCurrency && !item.currencyConfirmed ? '原币金额' : '人民币金额'}
+                    {foreignCurrency && !item.currencyConfirmed
+                      ? tf('billPreview.originalCurrencyAmount', '原币金额')
+                      : tf('billPreview.field.cnyAmount', '人民币金额')}
                     <input
                       type="number"
                       min="0"
@@ -321,7 +346,7 @@ export function BillPreviewCard({
                     />
                   </label>
                   <label>
-                    日期
+                    {tf('billPreview.field.date', '日期')}
                     <input
                       type="date"
                       value={item.date.slice(0, 10)}
@@ -329,7 +354,7 @@ export function BillPreviewCard({
                     />
                   </label>
                   <label>
-                    币种
+                    {tf('billPreview.field.currency', '币种')}
                     <select
                       value={normalizedCurrency}
                       aria-invalid={!currencyIsValid}
@@ -345,18 +370,21 @@ export function BillPreviewCard({
                     >
                       {!currencyIsValid ? (
                         <option value={normalizedCurrency}>
-                          {normalizedCurrency}（无效,请重选）
+                          {tf('billPreview.invalidCurrency', '{currency}（无效,请重选）').replace(
+                            '{currency}',
+                            normalizedCurrency
+                          )}
                         </option>
                       ) : null}
                       {currencyOptions.map((option) => (
                         <option key={option.value} value={option.value}>
-                          {option.label}
+                          {tf(option.key, option.label)}
                         </option>
                       ))}
                     </select>
                   </label>
                   <label>
-                    分类
+                    {tf('billPreview.field.category', '分类')}
                     <input
                       value={item.category}
                       onChange={(event) =>
@@ -365,11 +393,16 @@ export function BillPreviewCard({
                     />
                   </label>
                   <label>
-                    账户
+                    {tf('billPreview.field.account', '账户')}
                     <input
                       value={item.account}
                       placeholder={
-                        accountLabel.label ? `自动匹配：${accountLabel.label}` : '如 招商银行储蓄卡'
+                        accountLabel.label
+                          ? tf('billPreview.autoMatchPrefix', '自动匹配：{name}').replace(
+                              '{name}',
+                              accountLabel.label
+                            )
+                          : tf('billPreview.accountPlaceholder', '如 招商银行储蓄卡')
                       }
                       onChange={(event) =>
                         onUpdateEntry?.(item.id, { account: event.target.value })
@@ -377,7 +410,7 @@ export function BillPreviewCard({
                     />
                   </label>
                   <label className="chat-bill-edit-wide">
-                    备注
+                    {tf('billPreview.field.note', '备注')}
                     <input
                       value={item.note}
                       onChange={(event) => onUpdateEntry?.(item.id, { note: event.target.value })}
@@ -389,7 +422,7 @@ export function BillPreviewCard({
               {item.subscriptionSuggestion ? (
                 <div className="chat-bill-row-subscription">
                   <button type="button" onClick={() => onCreateSubscription?.(item.id)}>
-                    加入订阅管理
+                    {tf('billPreview.addToSubscriptions', '加入订阅管理')}
                   </button>
                 </div>
               ) : null}
@@ -401,8 +434,13 @@ export function BillPreviewCard({
       <footer className="chat-bill-preview-footer">
         <span>
           {skippedCount > 0
-            ? `已勾选可保存 ${saveableCount} 笔，另有 ${skippedCount} 笔未勾选或需修正。`
-            : '核对无误后再保存，可避免重复记账。'}
+            ? tf(
+                'billPreview.footerCounts',
+                '已勾选可保存 {saveable} 笔，另有 {skipped} 笔未勾选或需修正。'
+              )
+                .replace('{saveable}', String(saveableCount))
+                .replace('{skipped}', String(skippedCount))
+            : tf('billPreview.footerHint', '核对无误后再保存，可避免重复记账。')}
         </span>
         <button
           type="button"
@@ -411,10 +449,14 @@ export function BillPreviewCard({
           disabled={saving || saveableCount === 0}
           aria-busy={saving}
           title={
-            saving ? '正在保存,请稍候' : saveableCount === 0 ? '请先勾选或修正账单' : undefined
+            saving
+              ? tf('billPreview.savingTitle', '正在保存,请稍候')
+              : saveableCount === 0
+                ? tf('billPreview.nothingToSaveTitle', '请先勾选或修正账单')
+                : undefined
           }
         >
-          {saving ? '保存中' : '保存到账本'}
+          {saving ? tf('billPreview.saving', '保存中') : tf('billPreview.save', '保存到账本')}
         </button>
       </footer>
     </section>

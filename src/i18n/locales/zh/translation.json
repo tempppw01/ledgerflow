@@ -1660,7 +1660,11 @@
     "reset": {
       "title": "一键清空所有账户账单",
       "desc": "清空所有账户账单(交易记录),保留账户与分类。",
-      "section": "数据重制"
+      "section": "数据重制",
+      "confirmBody": "将清空全部 {count} 条交易，账户余额会按初始值重算。此操作不可恢复。",
+      "confirmInputPrefix": " 输入 ",
+      "confirmOk": "确认清空",
+      "confirmWord": "清空账单"
     },
     "billImport": {
       "wechat": "导入微信账单",
@@ -1695,7 +1699,44 @@
       "restoreSelect": "选择要恢复的 WebDAV 备份版本",
       "restoreSelected": "恢复所选版本",
       "latest": "(最新)",
-      "lastBackupPrefix": "上次备份:"
+      "lastBackupPrefix": "上次备份:",
+      "action": {
+        "createDirectory": "创建目录",
+        "download": "下载",
+        "upload": "上传"
+      },
+      "backupFailed": "WebDAV 备份失败",
+      "backupSucceeded": "WebDAV 备份成功：{scope}",
+      "configSaved": "WebDAV 配置已保存",
+      "downloadFailed": "WebDAV 下载失败",
+      "error": {
+        "blockedByBrowser": "WebDAV {action}失败：请求被浏览器拦截（常见于跨域 CORS / HTTPS 混合内容）。",
+        "createDirectoryFailed": "WebDAV 目录创建失败（{path}，HTTP {status}）",
+        "deleteFailed": "WebDAV 删除失败（{path}，HTTP {status}）",
+        "downloadFailed": "WebDAV 下载失败（HTTP {status}）",
+        "invalidConfig": "WebDAV 配置不合法",
+        "listFailed": "WebDAV 列目录失败（HTTP {status}）",
+        "moveFailed": "WebDAV 移动失败（{path}，HTTP {status}）",
+        "passwordRequired": "请填写 WebDAV 密码",
+        "proxyPathRelative": "代理入口路径仅允许同源相对路径，例如 /api/webdav",
+        "proxyPathRequired": "已启用同源代理，请填写代理入口路径",
+        "proxyPathSlash": "代理入口路径必须以 / 开头，例如 /api/webdav",
+        "proxySuggestion": "可尝试将 endpoint 改为同源代理地址（例如 /api/webdav）并在服务端转发到真实 WebDAV。",
+        "realUrlRequired": "请填写真实 WebDAV 地址（用于代理转发）",
+        "remotePathInvalid": "远程文件路径不合法，请避免使用空段或 . / ..",
+        "remotePathRequired": "请填写远程文件路径",
+        "retryLater": "WebDAV {action}失败，请稍后重试",
+        "uploadFailed": "WebDAV 上传失败（HTTP {status}）",
+        "urlFormat": "WebDAV 地址格式无效，请使用完整 HTTPS URL",
+        "urlHttpsOnly": "WebDAV 地址仅支持 HTTPS 协议",
+        "urlNoCredentials": "WebDAV 地址中不应包含用户名或密码",
+        "urlNoLocalHost": "WebDAV 地址不允许使用本地或内网地址",
+        "urlRequired": "请填写 WebDAV 地址",
+        "usernameRequired": "请填写 WebDAV 用户名"
+      },
+      "stage": {
+        "preparing": "准备 WebDAV 备份..."
+      }
     },
     "objectStorage": {
       "section": "对象存储备份",
@@ -1707,7 +1748,42 @@
       "s3": "S3 兼容",
       "s3Desc": "适合 MinIO、R2、COS 等兼容服务",
       "lastBackupPrefix": "上次备份:",
-      "currentPrefix": "当前:"
+      "currentPrefix": "当前:",
+      "action": {
+        "delete": "删除",
+        "download": "下载",
+        "list": "列目录",
+        "upload": "上传"
+      },
+      "backupFailed": "{provider} 备份失败",
+      "backupSucceeded": "{provider} 备份成功：{scope}",
+      "configSaved": "{provider} 配置已保存",
+      "downloadFailed": "{provider} 下载失败",
+      "error": {
+        "accessKeyIdRequired": "请填写 AccessKey ID",
+        "accessKeySecretRequired": "请填写 AccessKey Secret",
+        "blockedByBrowser": "{provider} {action}失败：请求被浏览器拦截，通常是 Bucket CORS 未放行。",
+        "bucketInvalid": "Bucket 名称不应包含空格或斜杠",
+        "bucketRequired": "请填写 Bucket 名称",
+        "corsHint": "请允许 Authorization、x-oss-date/x-amz-date、Content-Type 请求头，以及 PUT/GET/DELETE 方法。",
+        "deleteFailed": "{provider} 删除失败（{path}，HTTP {status}）",
+        "downloadFailed": "{provider} 下载失败（HTTP {status}）",
+        "endpointFormat": "对象存储 Endpoint 格式无效，请使用完整 HTTPS URL",
+        "endpointHttpsOnly": "对象存储 Endpoint 仅支持 HTTPS 协议",
+        "endpointNoAccessKey": "对象存储 Endpoint 中不应包含 AccessKey",
+        "endpointNoLocalHost": "对象存储 Endpoint 不允许使用本地或内网地址",
+        "endpointRootOnly": "对象存储 Endpoint 请填写服务根地址，不要带路径",
+        "listFailed": "{provider} 列目录失败（HTTP {status}）",
+        "ossEndpointRequired": "请填写 OSS Endpoint",
+        "retryLater": "{provider} {action}失败，请稍后重试",
+        "s3EndpointRequired": "请填写 S3 Endpoint",
+        "uploadFailed": "{provider} 上传失败（HTTP {status}）"
+      },
+      "invalidConfig": "{provider} 配置不合法",
+      "s3Storage": "S3 兼容存储",
+      "stage": {
+        "preparing": "准备 {provider} 备份..."
+      }
     },
     "common": {
       "save": "保存",
@@ -1726,7 +1802,19 @@
       "exporting": "正在导出...",
       "cleared": "已清空所有账户账单",
       "loading": "读取中...",
-      "noRecord": "暂无记录"
+      "noRecord": "暂无记录",
+      "backupDone": "备份完成",
+      "backupFailed": "备份失败",
+      "downloadingRestore": "正在下载并恢复...",
+      "fetchFailed": "获取失败",
+      "fetchingVersions": "拉取备份列表...",
+      "generatingSqlExport": "正在生成数据库文件...",
+      "packing": "正在打包备份...",
+      "restoreDone": "恢复完成",
+      "restoreFailed": "恢复失败",
+      "sqlExportFailed": "SQL 数据库导出失败",
+      "sqlExported": "已下载 {filename}",
+      "versionsLoaded": "已获取备份列表"
     },
     "placeholder": {
       "username": "请输入用户名",
@@ -1788,7 +1876,10 @@
       "confirmTitle": "确认从数据库恢复",
       "confirmBody": "将用数据库最新快照覆盖当前本地数据。建议确认已经导出本地备份后再继续。",
       "confirmOk": "确认恢复",
-      "cancel": "取消"
+      "cancel": "取消",
+      "sizeLabel": " · 大小： ",
+      "synced": "已同步到数据库：{size}",
+      "timeLabel": " 快照时间："
     },
     "provider": {
       "sqliteDesc": "适合单机和轻量自托管,数据保存为部署卷中的文件。",
@@ -1806,7 +1897,10 @@
       "mismatch": "部署环境与已锁定类型不一致,请恢复原部署配置或迁移到新实例。",
       "selectAria": "选择数据存储类型",
       "initializing": "正在初始化...",
-      "currentUsing": "当前使用 {provider}。如需更换,请导出数据并在新部署中导入。"
+      "currentUsing": "当前使用 {provider}。如需更换,请导出数据并在新部署中导入。",
+      "confirmInitialize": "确定初始化为 {provider} 吗？初始化后不能直接切换。",
+      "initializeAction": "初始化 {provider}",
+      "lockedAs": "已锁定为 {provider}。"
     },
     "message": {
       "ledgerSection": "账本 {transactions} 条交易 / {categories} 个分类 / {accounts} 个账户",
@@ -1817,6 +1911,148 @@
       "actionRestore": "恢复",
       "successDetail": "备份{action}成功:已更新{scope}({sections})",
       "success": "备份{action}成功"
+    },
+    "backup": {
+      "action": {
+        "createDirectory": "创建目录",
+        "delete": "删除",
+        "download": "下载",
+        "list": "列目录",
+        "upload": "上传"
+      },
+      "fixedEntry": "当前固定备份文件",
+      "fixedEntryNoListing": "当前固定备份文件（目录列表不可用）",
+      "fixedEntrySuffix": "{label} · 固定入口",
+      "stage": {
+        "cleaningOld": "清理旧版本...",
+        "updatingLatest": "更新最新版本...",
+        "uploadingVersion": "上传版本备份..."
+      }
+    },
+    "bill": {
+      "alipay": "支付宝",
+      "error": {
+        "tooLarge": "账单导入失败：文件过大，请上传不超过 10MB 的账单文件",
+        "unsupportedType": "账单导入失败：仅支持 CSV/TXT/XLSX 文件"
+      },
+      "imported": "{source}账单导入成功：新增 {added} 条，更新 {updated} 条{skipped}",
+      "importedSkipped": "，跳过 {skipped} 条",
+      "noChange": "导入完成：增量模式下未发现可新增或更新的账单",
+      "noRows": "未识别到可导入账单记录",
+      "parseFailed": "账单导入失败：文件解析异常",
+      "wechat": "微信"
+    },
+    "currentScopePrefix": " 当前备份范围：",
+    "defaultAccountName": "默认账户",
+    "error": {
+      "stillLoading": "本地数据仍在加载中，请稍后重试"
+    },
+    "import": {
+      "error": {
+        "field": {
+          "accountsObject": "备份文件字段无效：data.accounts[{index}] 应为对象",
+          "accountsType": "备份文件字段无效：data.accounts[{index}].type 枚举值不合法",
+          "balanceChangeEntriesObject": "备份文件字段无效：data.balanceChangeEntries[{index}] 应为对象",
+          "balanceChangeEntriesType": "备份文件字段无效：data.balanceChangeEntries[{index}].type 枚举值不合法",
+          "categoriesKind": "备份文件字段无效：data.categories[{index}].kind 枚举值不合法",
+          "categoriesObject": "备份文件字段无效：data.categories[{index}] 应为对象",
+          "dataBalanceChangeEntriesArray": "备份文件字段无效：data.balanceChangeEntries 应为数组",
+          "dataGlobalMemoriesArray": "备份文件字段无效：data.globalMemories 应为数组",
+          "dataInvestmentAiMessagesArray": "备份文件字段无效：data.investmentAiMessages 应为数组",
+          "dataInvestmentGoalsArray": "备份文件字段无效：data.investmentGoals 应为数组",
+          "dataInvestmentPositionHistoryArray": "备份文件字段无效：data.investmentPositionHistory 应为数组",
+          "dataInvestmentPositionsArray": "备份文件字段无效：data.investmentPositions 应为数组",
+          "dataInvestmentWatchlistArray": "备份文件字段无效：data.investmentWatchlist 应为数组",
+          "dataSubscriptionsArray": "备份文件字段无效：data.subscriptions 应为数组",
+          "dataTrashedAccountsArray": "备份文件字段无效：data.trashedAccounts 应为数组",
+          "dataTrashedCategoriesArray": "备份文件字段无效：data.trashedCategories 应为数组",
+          "dataTrashedSubscriptionsArray": "备份文件字段无效：data.trashedSubscriptions 应为数组",
+          "dataTrashedTransactionsArray": "备份文件字段无效：data.trashedTransactions 应为数组",
+          "dateString": "备份文件字段无效：{path} 应为日期字符串（YYYY-MM-DD）",
+          "investmentAiMessagesFeedback": "备份文件字段无效：data.investmentAiMessages[{index}].feedback 枚举值不合法",
+          "investmentAiMessagesObject": "备份文件字段无效：data.investmentAiMessages[{index}] 应为对象",
+          "investmentAiMessagesRole": "备份文件字段无效：data.investmentAiMessages[{index}].role 枚举值不合法",
+          "investmentGoalsKind": "备份文件字段无效：data.investmentGoals[{index}].kind 枚举值不合法",
+          "investmentGoalsObject": "备份文件字段无效：data.investmentGoals[{index}] 应为对象",
+          "investmentGoalsPriority": "备份文件字段无效：data.investmentGoals[{index}].priority 枚举值不合法",
+          "investmentPositionHistoryAction": "备份文件字段无效：data.investmentPositionHistory[{index}].action 枚举值不合法",
+          "investmentPositionHistoryCategory": "备份文件字段无效：data.investmentPositionHistory[{index}].category 枚举值不合法",
+          "investmentPositionHistoryIsActive": "备份文件字段无效：data.investmentPositionHistory[{index}].isActive 应为布尔值",
+          "investmentPositionHistoryObject": "备份文件字段无效：data.investmentPositionHistory[{index}] 应为对象",
+          "investmentPositionsCategory": "备份文件字段无效：data.investmentPositions[{index}].category 枚举值不合法",
+          "investmentPositionsIsActive": "备份文件字段无效：data.investmentPositions[{index}].isActive 应为布尔值",
+          "investmentPositionsObject": "备份文件字段无效：data.investmentPositions[{index}] 应为对象",
+          "investmentPositionsRiskLevel": "备份文件字段无效：data.investmentPositions[{index}].riskLevel 枚举值不合法",
+          "investmentWatchlistLastRiskLevel": "备份文件字段无效：data.investmentWatchlist[{index}].lastRiskLevel 枚举值不合法",
+          "investmentWatchlistObject": "备份文件字段无效：data.investmentWatchlist[{index}] 应为对象",
+          "number": "备份文件字段无效：{path} 应为有限数字",
+          "object": "备份文件字段无效：{path} 应为对象",
+          "riskLevelEnum": "备份文件字段无效：{path}.riskLevel 枚举值不合法",
+          "string": "备份文件字段无效：{path} 应为字符串",
+          "stringArray": "备份文件字段无效：{path} 应为字符串数组",
+          "subscriptionsAutoRenew": "备份文件字段无效：data.subscriptions[{index}].autoRenew 应为布尔值",
+          "subscriptionsBillingCycle": "备份文件字段无效：data.subscriptions[{index}].billingCycle 枚举值不合法",
+          "subscriptionsKind": "备份文件字段无效：data.subscriptions[{index}].kind 枚举值不合法",
+          "subscriptionsObject": "备份文件字段无效：data.subscriptions[{index}] 应为对象",
+          "subscriptionsStatus": "备份文件字段无效：data.subscriptions[{index}].status 枚举值不合法",
+          "transactionsAdjustmentKind": "备份文件字段无效：data.transactions[{index}].adjustmentKind 枚举值不合法",
+          "transactionsAttachmentObject": "备份文件字段无效：data.transactions[{transactionIndex}].attachments[{attachmentIndex}] 应为对象",
+          "transactionsAttachmentsArray": "备份文件字段无效：data.transactions[{index}].attachments 应为数组",
+          "transactionsObject": "备份文件字段无效：data.transactions[{index}] 应为对象",
+          "transactionsSource": "备份文件字段无效：data.transactions[{index}].source 枚举值不合法",
+          "transactionsStatus": "备份文件字段无效：data.transactions[{index}].status 枚举值不合法",
+          "transactionsType": "备份文件字段无效：data.transactions[{index}].type 枚举值不合法"
+        },
+        "format": "备份文件格式无效",
+        "jsonParse": "备份文件格式无效：JSON 解析失败",
+        "missingData": "备份文件缺少 data 字段",
+        "missingRequiredData": "备份文件缺少必要数据（transactions/categories/accounts）",
+        "notJson": "备份导入失败：仅支持 JSON 文件（.json）",
+        "tooLarge": "备份导入失败：文件过大，请上传不超过 {max}MB 的 JSON 备份"
+      }
+    },
+    "investment": {
+      "legacyNoContent": "旧备份未记录消息正文",
+      "legacyNoSummary": "旧备份未记录分析摘要",
+      "reviewPending": "待复盘"
+    },
+    "password": {
+      "hide": "隐藏密码",
+      "show": "显示密码"
+    },
+    "progress": {
+      "remaining": " · 剩余 {remaining} 条",
+      "rowsSuffix": " 条 "
+    },
+    "restore": {
+      "error": {
+        "versionRequired": "请选择一个可恢复版本"
+      },
+      "objectStorageAria": "选择 {provider} 恢复版本",
+      "objectStorageTitlePrefix": "选择要恢复的 ",
+      "objectStorageTitleSuffix": " 备份版本"
+    },
+    "secret": {
+      "hide": "隐藏",
+      "hideValue": "隐藏密钥",
+      "show": "显示",
+      "showValue": "显示密钥"
+    },
+    "sync": {
+      "cloudEmptyBody": " 浏览器里还有一份本机账本。只有确认它属于当前部署时才导入,否则请使用空白账本。 ",
+      "cloudEmptyTitle": "当前部署的云端账本为空",
+      "importLocalLedger": "导入本机账本到当前账号",
+      "importing": "正在导入...",
+      "initDescription": "完成数据库类型初始化后，才能使用 LedgerFlow 的记账、分析和备份功能。",
+      "ledgerInitFailed": "账本初始化失败。",
+      "sqlLoadFailed": "SQL 数据库载入失败。",
+      "sqlWriteFailed": "SQL 数据库写入失败。",
+      "useBlankLedger": " 使用空白账本 "
+    },
+    "toast": {
+      "exported": "备份导出成功：{scope}",
+      "importFailed": "备份导入失败",
+      "scopeRequired": "请至少勾选一个备份范围"
     }
   },
   "investments": {
@@ -2360,7 +2596,50 @@
     "uploadHint": "支持上传或粘贴最多 {count} 张截图",
     "currentModel": "当前模型",
     "welcomeHint": "可以从你的持仓、基金定投或今天的市场开始问。我会把结论和判断依据说清楚。",
-    "quickPromptsAria": "快捷问题"
+    "quickPromptsAria": "快捷问题",
+    "currentModelAria": "当前模型：{name}",
+    "send": "发送",
+    "focusLabel": "正在看：{name}",
+    "welcomeEyebrow": "看懂市场，也看懂自己的持仓",
+    "welcomeHeadlineLead": "投资上的问题，",
+    "welcomeDescription": "聊基金、股票和资产配置；结合你的持仓与公开信息分析，不承诺收益。",
+    "welcomeFeatureMarket": "看市场",
+    "welcomeFeatureHoldings": "看持仓",
+    "welcomeFeatureJudge": "做判断",
+    "welcomeHeadlineAccent": "一起理清楚",
+    "welcomeFeatureMarketNote": "梳理行情与近期变化",
+    "welcomeFeatureHoldingsNote": "结合你的自选与投资组合",
+    "welcomeFeatureJudgeNote": "说明依据与需要留意的风险",
+    "historyNavAria": "投资聊天记录导航",
+    "historyTurns": "{count} 轮",
+    "historySelectAria": "跳转到历史提问",
+    "backToLatest": "回到最新消息",
+    "latest": "最新",
+    "clearContext": "清空上下文",
+    "roleUser": "你",
+    "agentActionsAria": "AI 已执行的操作",
+    "agentActionUpdated": "已更新",
+    "agentActionUndo": "撤销",
+    "attachedImageAlt": "附带图片 {index}",
+    "attachedImagesNote": "附带 {count} 张图片",
+    "emptyCompactAria": "投资理财空状态",
+    "emptyCompactTitle": "先丢一个基金问题给我",
+    "emptyCompactHint": "例如：这只基金现在适合继续定投吗？",
+    "starterHeader": "投资助手",
+    "clearDialogTitle": "清空聊天上下文",
+    "clearDialogDescription": "确定清空本次投资聊天上下文吗？此操作不可恢复。",
+    "clearDialogConfirm": "清空",
+    "historyTurnLabel": "第 {round} 轮",
+    "roleAssistant": "助手",
+    "agentActionRead": "已读取",
+    "details": {
+      "reasoningTitle": "思考过程",
+      "reasoningNote": "模型推理摘要",
+      "webTitle": "联网过程",
+      "webNote": "检索与核验状态",
+      "newsTitle": "相关资讯数据",
+      "newsNote": "新闻、政策与市场上下文"
+    }
   },
   "repayment": {
     "eyebrow": "资产负债 / 还款管理",
@@ -3145,6 +3424,10 @@
     "month": {
       "short": "{month}月",
       "yearMonth": "{year} 年 {month} 月"
+    },
+    "coreCategory": {
+      "fixed": "固定支出",
+      "savings": "储蓄/投资"
     }
   },
   "exchange": {
@@ -3725,5 +4008,168 @@
       "deleteBill": "删除账单",
       "cancel": "取消"
     }
+  },
+  "dbSettings": {
+    "connection": {
+      "actionsTitle": "连接操作",
+      "addConnection": "新增连接",
+      "advancedTitle": "连接池与 TLS（默认收起）",
+      "cancel": " 取消 ",
+      "collapseCreate": "收起新增",
+      "collapseLog": "收起日志",
+      "delete": " 删除 ",
+      "edit": "编辑",
+      "elapsedPrefix": "（耗时 ",
+      "empty": "暂无连接配置，需要时点“新增连接”即可。",
+      "enabled": " 启用 ",
+      "error": {
+        "configIncomplete": "请先完善连接配置后再测试连接",
+        "connectionStringInvalid": "连接串格式不正确，请检查协议、主机、端口和路径",
+        "databaseRequired": "数据库名必填",
+        "hostRequired": "主机必填",
+        "nameMin": "名称至少 2 个字符",
+        "poolMinMax": "pool.min 不能大于 pool.max",
+        "portRange": "端口必须在 1-65535",
+        "protocolMismatch": "协议不匹配：{type} 连接应使用 {protocols}://",
+        "timeout": "连接超时（>{timeout}ms）"
+      },
+      "expandLog": "展开日志",
+      "field": {
+        "caCert": "CA 证书",
+        "caCertHint": "可选 CA 证书",
+        "connectionString": "连接串（可选）",
+        "connectionStringHint": "有连接串时可直接粘贴并自动回填字段",
+        "currentPrefix": "（当前 ",
+        "databaseName": "库名",
+        "enabledHint": "保存后默认作为启用连接",
+        "hidePassword": "隐藏密码",
+        "hostHint": "数据库服务地址",
+        "hostPlaceholder": "默认 localhost",
+        "hostPortPrefix": " 主机 / 端口 / ",
+        "idleHint": "空闲连接回收时间",
+        "mysqlDatabase": "MySQL 数据库名",
+        "mysqlDatabasePlaceholder": "默认 ledgerflow",
+        "mysqlUsernameHint": "MySQL 用户名，例如 ledgerflow",
+        "name": "名称",
+        "nameHint": "用于区分不同环境连接",
+        "namePlaceholder": "例如：Redis 生产实例",
+        "password": "密码",
+        "passwordHint": "密码仅用于连接，不会以明文持久化",
+        "passwordPlaceholder": "请输入密码",
+        "poolMax": "连接池 max",
+        "poolMaxHint": "连接池最大连接数",
+        "poolMin": "连接池 min",
+        "poolMinHint": "连接池最小连接数",
+        "portHint": "会按数据库类型自动带入默认端口",
+        "portPlaceholderMysql": "默认 3306",
+        "portPlaceholderRedis": "默认 6379",
+        "redisDatabase": "Redis DB 编号",
+        "redisDatabasePlaceholder": "默认 0",
+        "redisUsernameHint": "Redis 用户名通常可留空",
+        "showPassword": "显示密码",
+        "timeout": "超时（ms）",
+        "timeoutHint": "连接超时时间，单位毫秒",
+        "type": "数据库类型",
+        "typeHint": "支持 MySQL / Redis，切换后会自动带入默认值",
+        "username": " 用户名 ",
+        "usernameExample": "例如：ledgerflow",
+        "usernamePlaceholder": "可选，默认留空",
+        "verifyCert": " 校验证书 "
+      },
+      "formHint": "默认值已为本机常用场景预填，只有在需要覆盖时再展开修改。",
+      "formTitleEdit": "编辑连接配置",
+      "formTitleNew": "新增连接配置",
+      "hint": {
+        "mysqlDefaults": "默认 localhost / 3306 / 库 ledgerflow，不改也能直接测试本机 MySQL。",
+        "redisDefaults": "默认 localhost / 6379 / DB 0，不改也能直接测试本机 Redis。"
+      },
+      "managerHint": " 常用默认已预填：localhost、默认端口，以及 MySQL 库名 ledgerflow / Redis DB 0。只在需要时再改。 ",
+      "managerTitle": "连接配置管理（MySQL / Redis）",
+      "parseConnectionString": " 解析连接串 ",
+      "saveConfig": "保存配置",
+      "saveFailed": "保存失败",
+      "saved": "{type} 配置已保存",
+      "saving": "保存中...",
+      "test": {
+        "serverFailed": "服务端连接失败",
+        "serverOk": "服务端连接成功"
+      },
+      "testConnection": "测试连接",
+      "testing": "连接中..."
+    }
+  },
+  "billPreview": {
+    "type": {
+      "expense": "支出",
+      "income": "收入",
+      "budget": "预算",
+      "repayment": "还款",
+      "unknown": "待确认类型"
+    },
+    "currency": {
+      "unknown": "待确认",
+      "CNY": "CNY 人民币",
+      "USD": "USD 美元",
+      "HKD": "HKD 港币",
+      "JPY": "JPY 日元",
+      "EUR": "EUR 欧元",
+      "GBP": "GBP 英镑",
+      "KRW": "KRW 韩元",
+      "SGD": "SGD 新加坡元",
+      "AUD": "AUD 澳元",
+      "CAD": "CAD 加元",
+      "CHF": "CHF 瑞郎",
+      "TWD": "TWD 新台币"
+    },
+    "issue": {
+      "needsReview": "需人工确认：{message}"
+    },
+    "confirmCnyAmount": "确认人民币金额",
+    "cardAria": "账单确认",
+    "kicker": "账单已整理好",
+    "pendingCount": "{count} 笔待确认",
+    "checkDuplicates": "检查重复",
+    "duplicateWarning": "有 {count} 笔可能已记过，保存前建议核对一下。",
+    "noDuplicates": "暂未发现重复记录",
+    "uncheckTitle": "取消勾选，不保存这笔",
+    "rowCheckboxAria": "勾选第 {index} 笔账单",
+    "emptyNote": "未填写备注",
+    "uncategorized": "未分类",
+    "noAccount": "未指定账户",
+    "autoMatched": "(自动匹配)",
+    "originalAmount": "原始金额：{value}",
+    "subscriptionHint": "可加入订阅管理",
+    "bookedInCny": "人民币入账",
+    "duplicateBadge": "可能重复",
+    "duplicateBatchBadge": "同批次重复",
+    "collapse": "收起",
+    "delete": "删除",
+    "currencyReview": "需人工确认:币种",
+    "convertAria": "{currency} 折算为人民币",
+    "cnyAmountLabel": "人民币入账金额",
+    "cnyPlaceholder": "请输入 {value} 折合多少元",
+    "confirmCurrencyCny": "确认币种为 CNY",
+    "checkTitle": "勾选后保存这笔",
+    "originalCurrencyAmount": "原币金额",
+    "edit": "编辑",
+    "field": {
+      "type": "类型",
+      "date": "日期",
+      "currency": "币种",
+      "category": "分类",
+      "account": "账户",
+      "note": "备注",
+      "cnyAmount": "人民币金额"
+    },
+    "addToSubscriptions": "加入订阅管理",
+    "invalidCurrency": "{currency}（无效,请重选）",
+    "autoMatchPrefix": "自动匹配：{name}",
+    "footerCounts": "已勾选可保存 {saveable} 笔，另有 {skipped} 笔未勾选或需修正。",
+    "footerHint": "核对无误后再保存，可避免重复记账。",
+    "savingTitle": "正在保存,请稍候",
+    "nothingToSaveTitle": "请先勾选或修正账单",
+    "saving": "保存中",
+    "save": "保存到账本",
+    "accountPlaceholder": "如 招商银行储蓄卡"
   }
 }

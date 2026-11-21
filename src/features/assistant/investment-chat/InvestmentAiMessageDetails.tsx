@@ -1,3 +1,4 @@
+import { useTFallback } from '../../../shared/lib/useTFallback';
 import {
   BRAIN_ICON_URL,
   GLOBE_ICON_URL,
@@ -47,6 +48,7 @@ export function InvestmentAiMessageDetails({
   webTrace,
   auxiliaryInfo
 }: InvestmentAiMessageDetailsProps) {
+  const tf = useTFallback();
   const hasReasoning = Boolean(reasoning?.trim());
   const hasWebTrace = Boolean(webTrace?.trim());
   const hasAuxiliaryInfo = Boolean(auxiliaryInfo?.trim());
@@ -59,8 +61,8 @@ export function InvestmentAiMessageDetails({
     <div className="investment-ai-message-details">
       {hasReasoning ? (
         <DetailBlock
-          title="思考过程"
-          description="模型推理摘要"
+          title={tf('investmentAi.details.reasoningTitle', '思考过程')}
+          description={tf('investmentAi.details.reasoningNote', '模型推理摘要')}
           iconSrc={BRAIN_ICON_URL}
           variant="reasoning"
           content={reasoning!.trim()}
@@ -68,8 +70,8 @@ export function InvestmentAiMessageDetails({
       ) : null}
       {hasWebTrace ? (
         <DetailBlock
-          title="联网过程"
-          description="检索与核验状态"
+          title={tf('investmentAi.details.webTitle', '联网过程')}
+          description={tf('investmentAi.details.webNote', '检索与核验状态')}
           iconSrc={GLOBE_ICON_URL}
           variant="web"
           content={webTrace!.trim()}
@@ -77,8 +79,8 @@ export function InvestmentAiMessageDetails({
       ) : null}
       {hasAuxiliaryInfo ? (
         <DetailBlock
-          title="相关资讯数据"
-          description="新闻、政策与市场上下文"
+          title={tf('investmentAi.details.newsTitle', '相关资讯数据')}
+          description={tf('investmentAi.details.newsNote', '新闻、政策与市场上下文')}
           iconSrc={INFO_ICON_URL}
           variant="news"
           content={auxiliaryInfo!.trim()}

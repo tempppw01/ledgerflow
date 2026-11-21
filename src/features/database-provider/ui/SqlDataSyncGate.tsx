@@ -9,6 +9,7 @@ import { type FinanceDataSnapshot, useFinanceStore } from '../../../shared/store
 import { useGlobalMemoryStore } from '../../../shared/store/useGlobalMemoryStore';
 import { useSmartBudgetStore } from '../../../shared/store/useSmartBudgetStore';
 import { clearScopedBrowserData } from '../model/deploymentScope';
+import { useTFallback } from '../../../shared/lib/useTFallback';
 
 interface SqlDataSyncGateProps {
   children: ReactNode;
@@ -85,6 +86,7 @@ function hasMeaningfulLocalLedgerData() {
 
 export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
   const { t } = useTranslation();
+  const tf = useTFallback();
   const financeHydrated = useFinanceStore((state) => state.hasHydrated);
   const [ready, setReady] = useState(false);
   const [pendingEmptyCloudImport, setPendingEmptyCloudImport] = useState(false);
@@ -113,7 +115,7 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
           bootstrap = await getRelationalBootstrap();
         } catch (reason) {
           if (cancelled) return;
-          const message = reason instanceof Error ? reason.message : 'SQL 数据库载入失败。';
+          const message = reason instanceof Error ? reason.message : tf('dataBackup.sync.sqlLoadFailed', 'SQL 数据库载入失败。');
           console.warn('[SqlDataSyncGate] Failed to read cloud ledger, pausing sync:', message);
           setError('readFailed');
           return;
@@ -182,7 +184,7 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
             await importRelationalData(getPayload());
           } catch (reason) {
             if (cancelled) return;
-            const message = reason instanceof Error ? reason.message : 'SQL 数据库写入失败。';
+            const message = reason instanceof Error ? reason.message : tf('dataBackup.sync.sqlWriteFailed', 'SQL 数据库写入失败。');
             console.warn(
               '[SqlDataSyncGate] Initial cloud import failed, continuing offline:',
               message
@@ -207,14 +209,14 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
 
     void initialize().catch((reason) => {
       if (cancelled) return;
-      const message = reason instanceof Error ? reason.message : '账本初始化失败。';
+      const message = reason instanceof Error ? reason.message : tf('dataBackup.sync.ledgerInitFailed', '账本初始化失败。');
       console.warn('[SqlDataSyncGate] Failed to initialize ledger:', message);
       setError('initFailed');
     });
     return () => {
       cancelled = true;
     };
-  }, [financeHydrated, loadAttempt]);
+  }, [financeHydrated, loadAttempt, tf]);
 
   const retryInitialLoad = () => {
     initializedRef.current = false;
@@ -236,7 +238,7 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
       setReady(true);
       setNotice(null);
     } catch (reason) {
-      const message = reason instanceof Error ? reason.message : 'SQL 数据库写入失败。';
+      const message = reason instanceof Error ? reason.message : tf('dataBackup.sync.sqlWriteFailed', 'SQL 数据库写入失败。');
       setNotice(
         isLedgerIdConflict(message)
           ? { kind: 'initialConflict' }
@@ -317,10 +319,8 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
         <div className="auth-card">
           <div className="auth-card-head">
             <div>
-              <h1>当前部署的云端账本为空</h1>
-              <p>
-                浏览器里还有一份本机账本。只有确认它属于当前部署时才导入,否则请使用空白账本。
-              </p>
+              <h1>{tf('dataBackup.sync.cloudEmptyTitle', "当前部署的云端账本为空")}</h1>
+              <p>{tf('dataBackup.sync.cloudEmptyBody', " 浏览器里还有一份本机账本。只有确认它属于当前部署时才导入,否则请使用空白账本。 ")}</p>
             </div>
           </div>
           <button
@@ -329,16 +329,14 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
             disabled={importingLocalData}
             onClick={() => void importLocalLedgerData()}
           >
-            {importingLocalData ? '正在导入...' : '导入本机账本到当前账号'}
+            {importingLocalData ? tf('dataBackup.sync.importing', '正在导入...') : tf('dataBackup.sync.importLocalLedger', '导入本机账本到当前账号')}
           </button>
           <button
             type="button"
             className="auth-mode-button"
             disabled={importingLocalData}
             onClick={useBlankCloudLedger}
-          >
-            使用空白账本
-          </button>
+          >{tf('dataBackup.sync.useBlankLedger', " 使用空白账本 ")}</button>
         </div>
       </section>
     );

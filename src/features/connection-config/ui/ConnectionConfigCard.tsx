@@ -1,5 +1,6 @@
 import { ConnectionConfig } from '../../../entities/connection/types';
 import { ConnectionConfigForm } from './ConnectionConfigForm';
+import { useTFallback } from '../../../shared/lib/useTFallback';
 import { ConnectionFormValues } from '../model/connectionFormSchema';
 
 interface ConnectionConfigCardProps {
@@ -14,6 +15,7 @@ interface ConnectionConfigCardProps {
 
 export function ConnectionConfigCard(props: ConnectionConfigCardProps) {
   const { item, editing, onEdit, onDelete, onToggle, onSave, onCancelEdit } = props;
+  const tf = useTFallback();
 
   if (editing) {
     return (
@@ -31,9 +33,7 @@ export function ConnectionConfigCard(props: ConnectionConfigCardProps) {
         <strong>
           {item.name} <small className="mono">({item.type})</small>
         </strong>
-        <label>
-          启用
-          <input checked={item.enabled} onChange={(e) => onToggle(e.target.checked)} type="checkbox" />
+        <label>{tf('dbSettings.connection.enabled', " 启用 ")}<input checked={item.enabled} onChange={(e) => onToggle(e.target.checked)} type="checkbox" />
         </label>
       </div>
       <p>
@@ -41,10 +41,8 @@ export function ConnectionConfigCard(props: ConnectionConfigCardProps) {
       </p>
       <small className="mono">updated: {item.updatedAt}</small>
       <div className="row" style={{ marginTop: 10 }}>
-        <button onClick={onEdit}>编辑</button>
-        <button onClick={onDelete} className="danger">
-          删除
-        </button>
+        <button onClick={onEdit}>{tf('dbSettings.connection.edit', "编辑")}</button>
+        <button onClick={onDelete} className="danger">{tf('dbSettings.connection.delete', " 删除 ")}</button>
       </div>
     </section>
   );

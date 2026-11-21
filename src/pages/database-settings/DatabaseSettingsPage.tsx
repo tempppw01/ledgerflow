@@ -1,4 +1,5 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useTFallback, type TfFallback } from '../../shared/lib/useTFallback';
 import { MysqlSnapshotPanel } from '../../features/mysql-snapshot/ui/MysqlSnapshotPanel';
 import { DatabaseProviderSetupPanel } from '../../features/database-provider/ui/DatabaseProviderSetupPanel';
@@ -63,30 +64,24 @@ const LAST_WEBDAV_BACKUP_KEY = 'ledgerflow-webdav-last-backup-v1';
 const LAST_OBJECT_STORAGE_BACKUP_KEY = 'ledgerflow-object-storage-last-backup-v1';
 const BACKUP_SCOPE_STORAGE_KEY = 'ledgerflow-backup-scope-v1';
 const UNCATEGORIZED_CATEGORY_ID = '';
-const CLEAR_BILLS_CONFIRM_TEXT = '清空账单';
+const CLEAR_BILLS_CONFIRM_WORD_KEY = 'dataBackup.reset.confirmWord';
 
 const BACKUP_ACCEPTED_MIME_TYPES = new Set(['application/json', 'text/json']);
 const BILL_ACCEPTED_EXTENSIONS = new Set(['.csv', '.txt', '.xlsx']);
 const OBJECT_STORAGE_OPTIONS: Array<{
   value: BackupObjectStorageProvider;
-  label: string;
-  labelKey: string;
-  description: string;
-  descriptionKey: string;
+  label: (tf: TfFallback) => string;
+  description: (tf: TfFallback) => string;
 }> = [
   {
     value: 'aliyun-oss',
-    label: '阿里云 OSS',
-    labelKey: 'dataBackup.objectStorage.oss',
-    description: '适合已开通 OSS Bucket 的用户',
-    descriptionKey: 'dataBackup.objectStorage.ossDesc'
+    label: (tf) => tf('dataBackup.objectStorage.oss', '阿里云 OSS'),
+    description: (tf) => tf('dataBackup.objectStorage.ossDesc', '适合已开通 OSS Bucket 的用户')
   },
   {
     value: 's3-compatible',
-    label: 'S3 兼容',
-    labelKey: 'dataBackup.objectStorage.s3',
-    description: '适合 MinIO、R2、COS 等兼容服务',
-    descriptionKey: 'dataBackup.objectStorage.s3Desc'
+    label: (tf) => tf('dataBackup.objectStorage.s3', 'S3 兼容'),
+    description: (tf) => tf('dataBackup.objectStorage.s3Desc', '适合 MinIO、R2、COS 等兼容服务')
   }
 ];
 function getFileExtension(fileName: string): string {
@@ -95,30 +90,30 @@ function getFileExtension(fileName: string): string {
   return fileName.slice(index).toLowerCase();
 }
 
-function validateBackupFile(file: File): void {
+function validateBackupFile(file: File, tf: TfFallback): void {
   const ext = getFileExtension(file.name);
   const hasValidMime = !file.type || BACKUP_ACCEPTED_MIME_TYPES.has(file.type);
   const hasValidExt = ext === '.json';
 
   if (!hasValidMime && !hasValidExt) {
-    throw new Error('备份导入失败：仅支持 JSON 文件（.json）');
+    throw new Error(tf('dataBackup.import.error.notJson', '备份导入失败：仅支持 JSON 文件（.json）'));
   }
 
   if (file.size > MAX_BACKUP_FILE_SIZE_BYTES) {
     throw new Error(
-      `备份导入失败：文件过大，请上传不超过 ${MAX_BACKUP_FILE_SIZE_MB}MB 的 JSON 备份`
+      tf('dataBackup.import.error.tooLarge', "备份导入失败：文件过大，请上传不超过 {max}MB 的 JSON 备份").replace("{max}", String(MAX_BACKUP_FILE_SIZE_MB))
     );
   }
 }
 
-function validateBillFile(file: File): void {
+function validateBillFile(file: File, tf: TfFallback): void {
   const ext = getFileExtension(file.name);
   if (!BILL_ACCEPTED_EXTENSIONS.has(ext)) {
-    throw new Error('账单导入失败：仅支持 CSV/TXT/XLSX 文件');
+    throw new Error(tf('dataBackup.bill.error.unsupportedType', '账单导入失败：仅支持 CSV/TXT/XLSX 文件'));
   }
 
   if (file.size > MAX_BILL_FILE_SIZE_BYTES) {
-    throw new Error('账单导入失败：文件过大，请上传不超过 10MB 的账单文件');
+    throw new Error(tf('dataBackup.bill.error.tooLarge', '账单导入失败：文件过大，请上传不超过 10MB 的账单文件'));
   }
 }
 
@@ -172,7 +167,7 @@ function getLatestWebdavBackupAt(versions: WebdavBackupVersionItem[]): string {
 function getObjectStorageLabel(provider: BackupObjectStorageProvider, tf: TfFallback): string {
   const option = OBJECT_STORAGE_OPTIONS.find((item) => item.value === provider);
   return option
-    ? tf(option.labelKey, option.label)
+    ? option.label(tf)
     : tf('dataBackup.tabs.objectStorage', '对象存储');
 }
 
@@ -278,17 +273,17 @@ function hasSelectedBackupScope(scope: FinanceBackupScope): boolean {
   return scope.ledger || scope.subscriptions || scope.globalMemories || scope.investments;
 }
 
-const BACKUP_SCOPE_ENTRIES: Record<keyof FinanceBackupScope, { key: string; fallback: string }> = {
-  ledger: { key: 'dataBackup.scope.ledger', fallback: '账本数据' },
-  subscriptions: { key: 'dataBackup.scope.subscriptions', fallback: '订阅数据' },
-  globalMemories: { key: 'dataBackup.scope.memories', fallback: 'AI 记忆' },
-  investments: { key: 'dataBackup.scope.investments', fallback: '投资理财' }
+const BACKUP_SCOPE_ENTRIES: Record<keyof FinanceBackupScope, (tf: TfFallback) => string> = {
+  ledger: (tf) => tf('dataBackup.scope.ledger', '账本数据'),
+  subscriptions: (tf) => tf('dataBackup.scope.subscriptions', '订阅数据'),
+  globalMemories: (tf) => tf('dataBackup.scope.memories', 'AI 记忆'),
+  investments: (tf) => tf('dataBackup.scope.investments', '投资理财')
 };
 
 function getBackupScopeSummary(scope: FinanceBackupScope, tf: TfFallback): string {
   const labels = (Object.keys(scope) as Array<keyof FinanceBackupScope>)
     .filter((key) => scope[key])
-    .map((key) => tf(BACKUP_SCOPE_ENTRIES[key].key, BACKUP_SCOPE_ENTRIES[key].fallback));
+    .map((key) => BACKUP_SCOPE_ENTRIES[key](tf));
   if (!labels.length) {
     return tf('dataBackup.scope.noneSelected', '未选择');
   }
@@ -296,7 +291,7 @@ function getBackupScopeSummary(scope: FinanceBackupScope, tf: TfFallback): strin
 }
 
 function buildBackupRestoreSuccessMessage(
-  action: '导入' | '恢复',
+  action: 'import' | 'restore',
   payload: FinanceBackupPayload,
   tf: TfFallback
 ) {
@@ -346,7 +341,7 @@ function buildBackupRestoreSuccessMessage(
   }
 
   const actionLabel = tf(
-    action === '导入' ? 'dataBackup.message.actionImport' : 'dataBackup.message.actionRestore',
+    action === 'import' ? 'dataBackup.message.actionImport' : 'dataBackup.message.actionRestore',
     action
   );
   return sections.length
@@ -358,7 +353,16 @@ function buildBackupRestoreSuccessMessage(
 }
 
 export function DatabaseSettingsPage() {
+  const { t } = useTranslation();
   const tf = useTFallback();
+  // Destructive confirm word follows the UI language; the literal fallback only applies when i18n is not ready.
+  const clearBillsConfirmWord = tf(CLEAR_BILLS_CONFIRM_WORD_KEY, '清空账单');
+  // Accept the confirm word of either language, so an English user can never be locked out by wording.
+  const isClearBillsConfirmMatched = (value: string) =>
+    (['zh', 'en'] as const).some(
+      (lng) =>
+        t(CLEAR_BILLS_CONFIRM_WORD_KEY, { lng }).trim().toLowerCase() === value.trim().toLowerCase()
+    );
   const hasHydrated = useFinanceStore((s) => s.hasHydrated);
   const transactions = useFinanceStore((s) => s.transactions);
   const categories = useFinanceStore((s) => s.categories);
@@ -509,11 +513,11 @@ export function DatabaseSettingsPage() {
   const handleSqlDatabaseExport = async () => {
     try {
       setSqlExporting(true);
-      setSqlExportStatus('正在生成数据库文件...');
+      setSqlExportStatus(tf('dataBackup.status.generatingSqlExport', '正在生成数据库文件...'));
       const result = await downloadSqlDatabaseExport();
-      setSqlExportStatus(`已下载 ${result.filename}`);
+      setSqlExportStatus(tf('dataBackup.status.sqlExported', "已下载 {filename}").replace("{filename}", String(result.filename)));
     } catch (error) {
-      setSqlExportStatus(error instanceof Error ? error.message : 'SQL 数据库导出失败');
+      setSqlExportStatus(error instanceof Error ? error.message : tf('dataBackup.status.sqlExportFailed', 'SQL 数据库导出失败'));
     } finally {
       setSqlExporting(false);
     }
@@ -540,7 +544,7 @@ export function DatabaseSettingsPage() {
   const createScopedBackupPayload = () =>
     createFinanceBackupPayload(getCurrentBackupSnapshot(), backupScope);
 
-  const applyParsedBackup = async (payload: FinanceBackupPayload, action: '导入' | '恢复') => {
+  const applyParsedBackup = async (payload: FinanceBackupPayload, action: 'import' | 'restore') => {
     const restored = applyFinanceBackupPayload(getCurrentBackupSnapshot(), payload);
     const {
       globalMemories: nextGlobalMemories,
@@ -677,7 +681,7 @@ export function DatabaseSettingsPage() {
   };
 
   const ensureDefaultRefs = (source?: BillSource) => {
-    const fallbackAccountId = accounts[0]?.id || addAccount('默认账户', undefined, 0);
+    const fallbackAccountId = accounts[0]?.id || addAccount(tf('dataBackup.defaultAccountName', '默认账户'), undefined, 0);
     const accountId = source
       ? resolveImportDefaultAccountId(accounts, source, fallbackAccountId)
       : fallbackAccountId;
@@ -686,13 +690,13 @@ export function DatabaseSettingsPage() {
 
   const handleExportJson = () => {
     if (!canCreateBackup) {
-      showToast('请至少勾选一个备份范围', 'warning');
+      showToast(tf('dataBackup.toast.scopeRequired', '请至少勾选一个备份范围'), 'warning');
       return;
     }
 
     const payload = createScopedBackupPayload();
     downloadBackupJson(payload);
-    showToast(`备份导出成功：${backupScopeSummary}`, 'success');
+    showToast(tf('dataBackup.toast.exported', "备份导出成功：{scope}").replace("{scope}", String(backupScopeSummary)), 'success');
   };
 
   const handleBackupFileImport = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -705,13 +709,13 @@ export function DatabaseSettingsPage() {
     let total = 0;
     try {
       setBusy(true);
-      validateBackupFile(file);
+      validateBackupFile(file, tf);
       ensureHydrated();
       const text = await file.text();
       const payload = parseFinanceBackupPayload(text);
       total = countFinanceBackupRecords(payload);
       setBackupImportProgress({ phase: 'importing', completed: 0, total });
-      await applyParsedBackup(payload, '导入');
+      await applyParsedBackup(payload, 'import');
       setBackupImportProgress({ phase: 'complete', completed: total, total });
     } catch (error) {
       setBackupImportProgress((current) => ({
@@ -719,7 +723,7 @@ export function DatabaseSettingsPage() {
         completed: current?.completed || 0,
         total: current?.total || total
       }));
-      showToast(error instanceof Error ? error.message : '备份导入失败', 'error');
+      showToast(error instanceof Error ? error.message : tf('dataBackup.toast.importFailed', '备份导入失败'), 'error');
     } finally {
       setBusy(false);
       window.setTimeout(() => setBackupImportProgress(null), 4000);
@@ -737,7 +741,7 @@ export function DatabaseSettingsPage() {
     }
 
     try {
-      validateBillFile(file);
+      validateBillFile(file, tf);
       ensureHydrated();
       const refs = ensureDefaultRefs(source);
       const rows = await parseBillFileToTransactions({
@@ -748,7 +752,7 @@ export function DatabaseSettingsPage() {
       });
 
       if (rows.length === 0) {
-        showToast('未识别到可导入账单记录', 'warning');
+        showToast(tf('dataBackup.bill.noRows', '未识别到可导入账单记录'), 'warning');
         return;
       }
 
@@ -767,45 +771,49 @@ export function DatabaseSettingsPage() {
 
       const changedCount = result.append.length + result.update.length;
       if (changedCount === 0) {
-        showToast('导入完成：增量模式下未发现可新增或更新的账单', 'warning');
+        showToast(tf('dataBackup.bill.noChange', '导入完成：增量模式下未发现可新增或更新的账单'), 'warning');
         return;
       }
 
       showToast(
-        `${source === 'wechat' ? '微信' : '支付宝'}账单导入成功：新增 ${result.append.length} 条，更新 ${result.update.length} 条${result.skipped ? `，跳过 ${result.skipped} 条` : ''}`,
+        tf('dataBackup.bill.imported', "{source}账单导入成功：新增 {added} 条，更新 {updated} 条{skipped}")
+          .replace('{source}', source === 'wechat' ? tf('dataBackup.bill.wechat', '微信') : tf('dataBackup.bill.alipay', '支付宝'))
+          .replace('{added}', String(result.append.length))
+          .replace('{updated}', String(result.update.length))
+          .replace('{skipped}', result.skipped ? tf('dataBackup.bill.importedSkipped', "，跳过 {skipped} 条").replace('{skipped}', String(result.skipped)) : ''),
         'success'
       );
     } catch {
-      showToast('账单导入失败：文件解析异常', 'error');
+      showToast(tf('dataBackup.bill.parseFailed', '账单导入失败：文件解析异常'), 'error');
     }
   };
 
   const handleSaveWebdavConfig = () => {
     saveWebdavConfig(webdav);
     setLastWebdavBackupAt(readStoredLastWebdavBackupAt(webdav));
-    showToast('WebDAV 配置已保存', 'success');
+    showToast(tf('dataBackup.webdav.configSaved', 'WebDAV 配置已保存'), 'success');
   };
 
   const validateWebdav = () => {
     if (!webdav.endpoint.trim()) {
       throw new Error(
-        webdav.proxyEnabled ? '请填写真实 WebDAV 地址（用于代理转发）' : '请填写 WebDAV 地址'
+        webdav.proxyEnabled ? tf('dataBackup.webdav.error.realUrlRequired', '请填写真实 WebDAV 地址（用于代理转发）') : tf('dataBackup.webdav.error.urlRequired', '请填写 WebDAV 地址')
       );
     }
     if (!webdav.username.trim()) {
-      throw new Error('请填写 WebDAV 用户名');
+      throw new Error(tf('dataBackup.webdav.error.usernameRequired', '请填写 WebDAV 用户名'));
     }
     if (!webdav.password.trim()) {
-      throw new Error('请填写 WebDAV 密码');
+      throw new Error(tf('dataBackup.webdav.error.passwordRequired', '请填写 WebDAV 密码'));
     }
     if (!webdav.remoteFilePath.trim()) {
-      throw new Error('请填写远程文件路径');
+      throw new Error(tf('dataBackup.webdav.error.remotePathRequired', '请填写远程文件路径'));
     }
 
     try {
       sanitizeWebdavConfig(webdav);
     } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'WebDAV 配置不合法');
+      throw new Error(error instanceof Error ? error.message : tf('dataBackup.webdav.error.invalidConfig', 'WebDAV 配置不合法'));
     }
   };
 
@@ -816,10 +824,10 @@ export function DatabaseSettingsPage() {
         ...prev,
         [objectStorageProvider]: readStoredLastObjectStorageBackupAt(objectStorage)
       }));
-      showToast(`${objectStorageLabel} 配置已保存`, 'success');
+      showToast(tf('dataBackup.objectStorage.configSaved', "{provider} 配置已保存").replace("{provider}", String(objectStorageLabel)), 'success');
     } catch (error) {
       showToast(
-        error instanceof Error ? error.message : `${objectStorageLabel} 配置不合法`,
+        error instanceof Error ? error.message : tf('dataBackup.objectStorage.invalidConfig', "{provider} 配置不合法").replace("{provider}", String(objectStorageLabel)),
         'error'
       );
     }
@@ -828,32 +836,32 @@ export function DatabaseSettingsPage() {
   const validateObjectStorage = () => {
     if (!objectStorage.endpoint.trim()) {
       throw new Error(
-        objectStorageProvider === 'aliyun-oss' ? '请填写 OSS Endpoint' : '请填写 S3 Endpoint'
+        objectStorageProvider === 'aliyun-oss' ? tf('dataBackup.objectStorage.error.ossEndpointRequired', '请填写 OSS Endpoint') : tf('dataBackup.objectStorage.error.s3EndpointRequired', '请填写 S3 Endpoint')
       );
     }
     if (!objectStorage.bucket.trim()) {
-      throw new Error('请填写 Bucket 名称');
+      throw new Error(tf('dataBackup.objectStorage.error.bucketRequired', '请填写 Bucket 名称'));
     }
     if (!objectStorage.accessKeyId.trim()) {
-      throw new Error('请填写 AccessKey ID');
+      throw new Error(tf('dataBackup.objectStorage.error.accessKeyIdRequired', '请填写 AccessKey ID'));
     }
     if (!objectStorage.accessKeySecret.trim()) {
-      throw new Error('请填写 AccessKey Secret');
+      throw new Error(tf('dataBackup.objectStorage.error.accessKeySecretRequired', '请填写 AccessKey Secret'));
     }
     if (!objectStorage.remoteFilePath.trim()) {
-      throw new Error('请填写远程文件路径');
+      throw new Error(tf('dataBackup.webdav.error.remotePathRequired', '请填写远程文件路径'));
     }
 
     try {
       sanitizeObjectStorageConfig(objectStorage);
     } catch (error) {
-      throw new Error(error instanceof Error ? error.message : `${objectStorageLabel} 配置不合法`);
+      throw new Error(error instanceof Error ? error.message : tf('dataBackup.objectStorage.invalidConfig', "{provider} 配置不合法").replace("{provider}", String(objectStorageLabel)));
     }
   };
 
   const ensureHydrated = () => {
     if (!hasHydrated) {
-      throw new Error('本地数据仍在加载中，请稍后重试');
+      throw new Error(tf('dataBackup.error.stillLoading', '本地数据仍在加载中，请稍后重试'));
     }
   };
 
@@ -862,10 +870,10 @@ export function DatabaseSettingsPage() {
       ensureHydrated();
       validateWebdav();
       if (!canCreateBackup) {
-        throw new Error('请至少勾选一个备份范围');
+        throw new Error(tf('dataBackup.toast.scopeRequired', '请至少勾选一个备份范围'));
       }
       setBusy(true);
-      showWebdavStatus('正在打包备份...');
+      showWebdavStatus(tf('dataBackup.status.packing', '正在打包备份...'));
       const payload = createScopedBackupPayload();
       await webdavUploadBackup(webdav, payload, (stage) => {
         showWebdavStatus(stage);
@@ -873,11 +881,11 @@ export function DatabaseSettingsPage() {
       saveWebdavConfig(webdav);
       setLastWebdavBackupAt(payload.exportedAt);
       writeStoredLastWebdavBackupAt(webdav, payload.exportedAt);
-      showWebdavStatus('备份完成');
-      showToast(`WebDAV 备份成功：${backupScopeSummary}`, 'success');
+      showWebdavStatus(tf('dataBackup.status.backupDone', '备份完成'));
+      showToast(tf('dataBackup.webdav.backupSucceeded', "WebDAV 备份成功：{scope}").replace("{scope}", String(backupScopeSummary)), 'success');
     } catch (error) {
-      showWebdavStatus('备份失败');
-      showToast(error instanceof Error ? error.message : 'WebDAV 备份失败', 'error');
+      showWebdavStatus(tf('dataBackup.status.backupFailed', '备份失败'));
+      showToast(error instanceof Error ? error.message : tf('dataBackup.webdav.backupFailed', 'WebDAV 备份失败'), 'error');
     } finally {
       setBusy(false);
       window.setTimeout(() => setWebdavStatus(''), 2400);
@@ -889,7 +897,7 @@ export function DatabaseSettingsPage() {
       ensureHydrated();
       validateWebdav();
       setBusy(true);
-      showWebdavStatus('拉取备份列表...');
+      showWebdavStatus(tf('dataBackup.status.fetchingVersions', '拉取备份列表...'));
       const versions = await listWebdavBackupVersions(webdav);
       const backupAt = getLatestWebdavBackupAt(versions);
       if (backupAt) {
@@ -899,10 +907,10 @@ export function DatabaseSettingsPage() {
       setWebdavRestoreVersions(versions);
       setSelectedRestorePath(versions[0]?.remotePath || '');
       setWebdavRestoreDialogOpen(true);
-      showWebdavStatus('已获取备份列表');
+      showWebdavStatus(tf('dataBackup.status.versionsLoaded', '已获取备份列表'));
     } catch (error) {
-      showWebdavStatus('获取失败');
-      showToast(error instanceof Error ? error.message : 'WebDAV 下载失败', 'error');
+      showWebdavStatus(tf('dataBackup.status.fetchFailed', '获取失败'));
+      showToast(error instanceof Error ? error.message : tf('dataBackup.webdav.downloadFailed', 'WebDAV 下载失败'), 'error');
     } finally {
       setBusy(false);
       window.setTimeout(() => setWebdavStatus(''), 2400);
@@ -914,18 +922,18 @@ export function DatabaseSettingsPage() {
       ensureHydrated();
       validateWebdav();
       if (!selectedRestorePath) {
-        throw new Error('请选择一个可恢复版本');
+        throw new Error(tf('dataBackup.restore.error.versionRequired', '请选择一个可恢复版本'));
       }
       setBusy(true);
-      showWebdavStatus('正在下载并恢复...');
+      showWebdavStatus(tf('dataBackup.status.downloadingRestore', '正在下载并恢复...'));
       const payload = await webdavDownloadBackup(webdav, selectedRestorePath);
-      await applyParsedBackup(payload, '恢复');
+      await applyParsedBackup(payload, 'restore');
       saveWebdavConfig(webdav);
       setWebdavRestoreDialogOpen(false);
-      showWebdavStatus('恢复完成');
+      showWebdavStatus(tf('dataBackup.status.restoreDone', '恢复完成'));
     } catch (error) {
-      showWebdavStatus('恢复失败');
-      showToast(error instanceof Error ? error.message : 'WebDAV 下载失败', 'error');
+      showWebdavStatus(tf('dataBackup.status.restoreFailed', '恢复失败'));
+      showToast(error instanceof Error ? error.message : tf('dataBackup.webdav.downloadFailed', 'WebDAV 下载失败'), 'error');
     } finally {
       setBusy(false);
       window.setTimeout(() => setWebdavStatus(''), 2400);
@@ -937,10 +945,10 @@ export function DatabaseSettingsPage() {
       ensureHydrated();
       validateObjectStorage();
       if (!canCreateBackup) {
-        throw new Error('请至少勾选一个备份范围');
+        throw new Error(tf('dataBackup.toast.scopeRequired', '请至少勾选一个备份范围'));
       }
       setBusy(true);
-      showObjectStorageStatus('正在打包备份...');
+      showObjectStorageStatus(tf('dataBackup.status.packing', '正在打包备份...'));
       const payload = createScopedBackupPayload();
       await objectStorageUploadBackup(objectStorage, payload, (stage) => {
         showObjectStorageStatus(stage);
@@ -951,11 +959,11 @@ export function DatabaseSettingsPage() {
         [objectStorageProvider]: payload.exportedAt
       }));
       writeStoredLastObjectStorageBackupAt(objectStorage, payload.exportedAt);
-      showObjectStorageStatus('备份完成');
-      showToast(`${objectStorageLabel} 备份成功：${backupScopeSummary}`, 'success');
+      showObjectStorageStatus(tf('dataBackup.status.backupDone', '备份完成'));
+      showToast(tf('dataBackup.objectStorage.backupSucceeded', "{provider} 备份成功：{scope}").replace("{provider}", String(objectStorageLabel)).replace("{scope}", String(backupScopeSummary)), 'success');
     } catch (error) {
-      showObjectStorageStatus('备份失败');
-      showToast(error instanceof Error ? error.message : `${objectStorageLabel} 备份失败`, 'error');
+      showObjectStorageStatus(tf('dataBackup.status.backupFailed', '备份失败'));
+      showToast(error instanceof Error ? error.message : tf('dataBackup.objectStorage.backupFailed', "{provider} 备份失败").replace("{provider}", String(objectStorageLabel)), 'error');
     } finally {
       setBusy(false);
       window.setTimeout(() => setObjectStorageStatus(''), 2400);
@@ -967,7 +975,7 @@ export function DatabaseSettingsPage() {
       ensureHydrated();
       validateObjectStorage();
       setBusy(true);
-      showObjectStorageStatus('拉取备份列表...');
+      showObjectStorageStatus(tf('dataBackup.status.fetchingVersions', '拉取备份列表...'));
       const versions = await listObjectStorageBackupVersions(objectStorage);
       const backupAt = getLatestObjectStorageBackupAt(versions);
       if (backupAt) {
@@ -980,10 +988,10 @@ export function DatabaseSettingsPage() {
       setObjectStorageRestoreVersions(versions);
       setSelectedObjectStorageRestorePath(versions[0]?.remotePath || '');
       setObjectStorageRestoreDialogOpen(true);
-      showObjectStorageStatus('已获取备份列表');
+      showObjectStorageStatus(tf('dataBackup.status.versionsLoaded', '已获取备份列表'));
     } catch (error) {
-      showObjectStorageStatus('获取失败');
-      showToast(error instanceof Error ? error.message : `${objectStorageLabel} 下载失败`, 'error');
+      showObjectStorageStatus(tf('dataBackup.status.fetchFailed', '获取失败'));
+      showToast(error instanceof Error ? error.message : tf('dataBackup.objectStorage.downloadFailed', "{provider} 下载失败").replace("{provider}", String(objectStorageLabel)), 'error');
     } finally {
       setBusy(false);
       window.setTimeout(() => setObjectStorageStatus(''), 2400);
@@ -995,21 +1003,21 @@ export function DatabaseSettingsPage() {
       ensureHydrated();
       validateObjectStorage();
       if (!selectedObjectStorageRestorePath) {
-        throw new Error('请选择一个可恢复版本');
+        throw new Error(tf('dataBackup.restore.error.versionRequired', '请选择一个可恢复版本'));
       }
       setBusy(true);
-      showObjectStorageStatus('正在下载并恢复...');
+      showObjectStorageStatus(tf('dataBackup.status.downloadingRestore', '正在下载并恢复...'));
       const payload = await objectStorageDownloadBackup(
         objectStorage,
         selectedObjectStorageRestorePath
       );
-      await applyParsedBackup(payload, '恢复');
+      await applyParsedBackup(payload, 'restore');
       saveObjectStorageConfig(objectStorage);
       setObjectStorageRestoreDialogOpen(false);
-      showObjectStorageStatus('恢复完成');
+      showObjectStorageStatus(tf('dataBackup.status.restoreDone', '恢复完成'));
     } catch (error) {
-      showObjectStorageStatus('恢复失败');
-      showToast(error instanceof Error ? error.message : `${objectStorageLabel} 下载失败`, 'error');
+      showObjectStorageStatus(tf('dataBackup.status.restoreFailed', '恢复失败'));
+      showToast(error instanceof Error ? error.message : tf('dataBackup.objectStorage.downloadFailed', "{provider} 下载失败").replace("{provider}", String(objectStorageLabel)), 'error');
     } finally {
       setBusy(false);
       window.setTimeout(() => setObjectStorageStatus(''), 2400);
@@ -1119,9 +1127,8 @@ export function DatabaseSettingsPage() {
                         : tf('dataBackup.status.writing', '正在写入数据库')}
                   </strong>
                   <span>
-                    {backupImportProgress.completed} / {backupImportProgress.total} 条
-                    {backupImportProgress.phase === 'importing'
-                      ? ` · 剩余 ${Math.max(backupImportProgress.total - backupImportProgress.completed, 0)} 条`
+                    {backupImportProgress.completed} / {backupImportProgress.total}{tf('dataBackup.progress.rowsSuffix', " 条 ")}{backupImportProgress.phase === 'importing'
+                      ? tf('dataBackup.progress.remaining', " · 剩余 {remaining} 条").replace("{remaining}", String(Math.max(backupImportProgress.total - backupImportProgress.completed, 0)))
                       : ''}
                   </span>
                 </div>
@@ -1281,7 +1288,7 @@ export function DatabaseSettingsPage() {
             apiToken={serverApiToken}
             onApiTokenChange={handleServerApiTokenChange}
             createPayload={createScopedBackupPayload}
-            onRestore={(payload) => applyParsedBackup(payload, '恢复')}
+            onRestore={(payload) => applyParsedBackup(payload, 'restore')}
           />
         </div>
       ) : null}
@@ -1367,8 +1374,8 @@ export function DatabaseSettingsPage() {
                     placeholder={tf('dataBackup.placeholder.password', '请输入密码')}
                     value={webdav.password}
                     onChange={(e) => setWebdav((prev) => ({ ...prev, password: e.target.value }))}
-                    showLabel="显示密码"
-                    hideLabel="隐藏密码"
+                    showLabel={tf('dataBackup.password.show', "显示密码")}
+                    hideLabel={tf('dataBackup.password.hide', "隐藏密码")}
                   />
                 </div>
               </div>
@@ -1434,8 +1441,8 @@ export function DatabaseSettingsPage() {
                         )}
                         value={serverApiToken}
                         onChange={(e) => handleServerApiTokenChange(e.target.value)}
-                        showLabel="显示"
-                        hideLabel="隐藏"
+                        showLabel={tf('dataBackup.secret.show', "显示")}
+                        hideLabel={tf('dataBackup.secret.hide', "隐藏")}
                       />
                     </div>
                   ) : null}
@@ -1447,8 +1454,7 @@ export function DatabaseSettingsPage() {
                   ? tf('dataBackup.webdav.modeProxy', '当前：同源代理已启用。')
                   : tf('dataBackup.webdav.modeDirect', '当前：浏览器直连，可能受跨域限制。')}
               </p>
-              <p className="sync-tip" style={{ margin: '6px 0 0' }}>
-                当前备份范围：{backupScopeSummary}
+              <p className="sync-tip" style={{ margin: '6px 0 0' }}>{tf('dataBackup.currentScopePrefix', " 当前备份范围：")}{backupScopeSummary}
               </p>
               <div style={{ marginTop: 10 }}>
                 <BackupScopeSelector scope={backupScope} onChange={setBackupScope} />
@@ -1531,14 +1537,14 @@ export function DatabaseSettingsPage() {
                     className={objectStorageProvider === item.value ? 'primary' : undefined}
                     onClick={() => setObjectStorageProvider(item.value)}
                   >
-                    {item.label}
+                    {item.label(tf)}
                   </button>
                 ))}
               </div>
               <p className="sync-tip" style={{ margin: '8px 0 0' }}>
                 {
                   OBJECT_STORAGE_OPTIONS.find((item) => item.value === objectStorageProvider)
-                    ?.description
+                    ?.description(tf)
                 }
               </p>
 
@@ -1598,8 +1604,8 @@ export function DatabaseSettingsPage() {
                     )}
                     value={objectStorage.accessKeySecret}
                     onChange={(e) => updateObjectStorage({ accessKeySecret: e.target.value })}
-                    showLabel="显示密钥"
-                    hideLabel="隐藏密钥"
+                    showLabel={tf('dataBackup.secret.showValue', "显示密钥")}
+                    hideLabel={tf('dataBackup.secret.hideValue', "隐藏密钥")}
                   />
                 </div>
               </div>
@@ -1661,8 +1667,7 @@ export function DatabaseSettingsPage() {
                   '如遇到跨域提示，需要在 Bucket 里允许网页访问；密钥不会长期保存到本地。'
                 )}
               </p>
-              <p className="sync-tip" style={{ margin: '6px 0 0' }}>
-                当前备份范围：{backupScopeSummary}
+              <p className="sync-tip" style={{ margin: '6px 0 0' }}>{tf('dataBackup.currentScopePrefix', " 当前备份范围：")}{backupScopeSummary}
               </p>
               <div style={{ marginTop: 10 }}>
                 <BackupScopeSelector scope={backupScope} onChange={setBackupScope} />
@@ -1782,10 +1787,10 @@ export function DatabaseSettingsPage() {
             className="dialog"
             role="dialog"
             aria-modal="true"
-            aria-label={`选择 ${objectStorageLabel} 恢复版本`}
+            aria-label={tf('dataBackup.restore.objectStorageAria', "选择 {provider} 恢复版本").replace("{provider}", String(objectStorageLabel))}
             onClick={(event) => event.stopPropagation()}
           >
-            <header className="dialog-header">选择要恢复的 {objectStorageLabel} 备份版本</header>
+            <header className="dialog-header">{tf('dataBackup.restore.objectStorageTitlePrefix', "选择要恢复的 ")}{objectStorageLabel}{tf('dataBackup.restore.objectStorageTitleSuffix', " 备份版本")}</header>
             <div className="dialog-body">
               <div className="webdav-restore-list">
                 {objectStorageRestoreVersions.map((item) => (
@@ -1836,31 +1841,30 @@ export function DatabaseSettingsPage() {
         title={tf('dataBackup.aria.confirmClear', '确认清空账单')}
         description={
           <div className="danger-confirm-copy">
-            <p>将清空全部 {transactions.length} 条交易，账户余额会按初始值重算。此操作不可恢复。</p>
+            <p>{tf('dataBackup.reset.confirmBody', "将清空全部 " + '{count}' + " 条交易，账户余额会按初始值重算。此操作不可恢复。").replace('{count}', String(transactions.length))}</p>
             <label className="danger-confirm-field">
-              <span>
-                输入 <strong>{CLEAR_BILLS_CONFIRM_TEXT}</strong>{' '}
+              <span>{tf('dataBackup.reset.confirmInputPrefix', " 输入 ")}<strong>{clearBillsConfirmWord}</strong>{' '}
                 {tf('dataBackup.confirmSuffix', '后才能确认')}
               </span>
               <input
                 value={clearBillsConfirmText}
                 onChange={(event) => setClearBillsConfirmText(event.target.value)}
-                placeholder={CLEAR_BILLS_CONFIRM_TEXT}
+                placeholder={clearBillsConfirmWord}
                 autoFocus
               />
             </label>
           </div>
         }
-        confirmText="确认清空"
-        cancelText="取消"
+        confirmText={tf('dataBackup.reset.confirmOk', "确认清空")}
+        cancelText={tf('dataBackup.common.cancel', "取消")}
         danger
-        confirmDisabled={clearBillsConfirmText !== CLEAR_BILLS_CONFIRM_TEXT}
+        confirmDisabled={!isClearBillsConfirmMatched(clearBillsConfirmText)}
         onCancel={() => {
           setClearBillsOpen(false);
           setClearBillsConfirmText('');
         }}
         onConfirm={() => {
-          if (clearBillsConfirmText !== CLEAR_BILLS_CONFIRM_TEXT) return;
+          if (!isClearBillsConfirmMatched(clearBillsConfirmText)) return;
           clearAllAccountBills();
           setClearBillsOpen(false);
           setClearBillsConfirmText('');

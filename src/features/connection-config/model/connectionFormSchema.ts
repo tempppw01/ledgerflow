@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { tApiError as t } from '../../../shared/lib/apiErrorTranslator';
 import { parseConnectionString } from './connectionString';
 
 const poolSchema = z.object({
@@ -16,10 +17,10 @@ const tlsSchema = z.object({
 export const connectionFormSchema = z
   .object({
     id: z.string().optional(),
-    name: z.string().min(2, '名称至少 2 个字符'),
+    name: z.string().min(2, t('dbSettings.connection.error.nameMin', '名称至少 2 个字符')),
     type: z.enum(['redis', 'mysql']),
-    host: z.string().min(1, '主机必填'),
-    port: z.coerce.number().int().min(1, '端口必须在 1-65535').max(65535, '端口必须在 1-65535'),
+    host: z.string().min(1, t('dbSettings.connection.error.hostRequired', '主机必填')),
+    port: z.coerce.number().int().min(1, t('dbSettings.connection.error.portRange', '端口必须在 1-65535')).max(65535, t('dbSettings.connection.error.portRange', '端口必须在 1-65535')),
     username: z.string().optional(),
     password: z.string().optional(),
     database: z.string().optional(),
@@ -34,7 +35,7 @@ export const connectionFormSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['pool', 'min'],
-        message: 'pool.min 不能大于 pool.max'
+        message: t('dbSettings.connection.error.poolMinMax', 'pool.min 不能大于 pool.max')
       });
     }
 
@@ -51,7 +52,7 @@ export const connectionFormSchema = z
     }
 
     if (!value.database) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['database'], message: '数据库名必填' });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['database'], message: t('dbSettings.connection.error.databaseRequired', '数据库名必填') });
     }
   });
 

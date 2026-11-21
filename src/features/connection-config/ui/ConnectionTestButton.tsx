@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ConnectionTestResult } from '../../../entities/connection/types';
 import { ConnectionFormValues } from '../model/connectionFormSchema';
 import { testConnection } from '../model/connectionTest';
+import { useTFallback } from '../../../shared/lib/useTFallback';
 
 interface ConnectionTestButtonProps {
   values: ConnectionFormValues;
@@ -17,6 +18,7 @@ export function ConnectionTestButton({
   onTestingChange,
   onResult
 }: ConnectionTestButtonProps) {
+  const tf = useTFallback();
   const [expanded, setExpanded] = useState(false);
   const mutation = useMutation<ConnectionTestResult, Error>({
     mutationFn: () => testConnection(values),
@@ -49,12 +51,12 @@ export function ConnectionTestButton({
         disabled={disabled || mutation.isPending}
         type="button"
       >
-        {mutation.isPending ? '连接中...' : '测试连接'}
+        {mutation.isPending ? tf('dbSettings.connection.testing', '连接中...') : tf('dbSettings.connection.testConnection', '测试连接')}
       </button>
 
       {mutation.isSuccess ? (
         <p className={mutation.data.ok ? 'connection-test-success' : 'connection-test-error'}>
-          {mutation.data.message}（耗时 {mutation.data.elapsedMs}ms）
+          {mutation.data.message}{tf('dbSettings.connection.elapsedPrefix', "（耗时 ")}{mutation.data.elapsedMs}ms）
         </p>
       ) : null}
 
@@ -63,7 +65,7 @@ export function ConnectionTestButton({
       {mutation.isSuccess || mutation.isError ? (
         <div>
           <button type="button" onClick={() => setExpanded((value) => !value)}>
-            {expanded ? '收起日志' : '展开日志'}
+            {expanded ? tf('dbSettings.connection.collapseLog', '收起日志') : tf('dbSettings.connection.expandLog', '展开日志')}
           </button>
           {expanded ? (
             <pre className="connection-test-log">

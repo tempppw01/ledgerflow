@@ -2,6 +2,7 @@ import { formatCurrency } from '../../../shared/lib/format';
 import { useTFallback } from '../../../shared/lib/useTFallback';
 import { BudgetTrackingRow } from '../model/budgetInsights';
 import { BudgetCategoryDetail } from '../model/budgetDetail';
+import { resolveBudgetCategoryLabel } from '../model/budgetCategoryLabels';
 import { formatBudgetMonthShortLabel } from '../model/budgetPacing';
 import { BudgetCloseIcon, BudgetTrendIcon } from './budgetIcons';
 
@@ -20,14 +21,14 @@ export function BudgetDetailDrawer({ row, detail, onClose }: BudgetDetailDrawerP
       className="sb-drawer"
       aria-label={tf('smartBudget.detail.aria', '{category}预算详情').replace(
         '{category}',
-        String(row.category)
+        resolveBudgetCategoryLabel(row.category, tf)
       )}
     >
       <div className="sb-drawer-panel">
         <header className="sb-drawer-head">
           <div>
             <span className="sb-drawer-kicker">{tf('smartBudget.detail.title', '分类详情')}</span>
-            <h3>{row.category}</h3>
+            <h3>{resolveBudgetCategoryLabel(row.category, tf)}</h3>
           </div>
           <button
             type="button"
@@ -108,7 +109,7 @@ export function BudgetDetailDrawer({ row, detail, onClose }: BudgetDetailDrawerP
                     {detail.recentTransactions.map((item) => (
                       <li key={item.id}>
                         <div>
-                          <strong>{item.note || row.category}</strong>
+                          <strong>{item.note || resolveBudgetCategoryLabel(row.category, tf)}</strong>
                           <span>{item.date}</span>
                         </div>
                         <span className="sb-number">-{formatCurrency(item.amount)}</span>

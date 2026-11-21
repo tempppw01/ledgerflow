@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/tempppw01/ledgerflow/releases"><img src="https://img.shields.io/github/v/release/tempppw01/ledgerflow?display_name=tag&style=flat-square&color=f59e0b" alt="Release" /></a>
-  <img src="https://img.shields.io/badge/version-0.8.6-0f766e?style=flat-square" alt="Version 0.8.6" />
+  <img src="https://img.shields.io/badge/version-0.8.7-0f766e?style=flat-square" alt="Version 0.8.7" />
   <img src="https://img.shields.io/badge/Node.js-20%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js 20+" />
   <img src="https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker ready" />
   <a href="https://ledgerflow.shuaihong.fun"><img src="https://img.shields.io/badge/Live%20demo-open-f59e0b?style=flat-square" alt="Live demo" /></a>
@@ -16,7 +16,7 @@
 <p align="center"><a href="#快速部署">快速部署</a> · <a href="#主要能力">主要能力</a> · <a href="#备份与同步">数据与备份</a> · <a href="https://github.com/tempppw01/ledgerflow/releases">版本发布</a></p>
 
 > [!NOTE]
-> 当前版本：`0.8.6`。项目仍在快速迭代，重要数据请保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
+> 当前版本：`0.8.7`。项目仍在快速迭代，重要数据请保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
 
 > 说明：项目仍处于快速迭代阶段，功能、界面和数据结构会持续调整。重要数据请务必保留本地 JSON / WebDAV / OSS / MySQL 快照等备份。
 
@@ -57,6 +57,14 @@
 </table>
 
 </details>
+
+### 0.8.7 功能亮点
+
+- 销毁型确认框支持英文。此前英文界面下「清空账单」「清空投资对话上下文」等危险操作的说明与按钮仍是中文——用户很可能没看懂就确认了。
+- 「清空账单」要求手输确认词,现在中英文两种确认词都接受,英文用户不会再因为界面语言而卡死无法确认。
+- 数据与备份页五个标签页、连接配置、快照、备份范围选择器全部英文,包括只有点了「测试连接 / 立即备份」才会出现的错误与成功提示。
+- 修复对象存储选项直接渲染硬编码标签的问题(阿里云 OSS / S3 兼容 现在正确显示为 Alibaba Cloud OSS / S3-compatible)。
+- 投资 AI 对话面板与账单预览卡片支持英文;发给模型的系统提示词按设计保留中文。
 
 ### 0.8.6 功能亮点
 

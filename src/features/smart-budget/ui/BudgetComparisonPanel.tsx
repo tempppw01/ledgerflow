@@ -1,6 +1,7 @@
 import { formatCurrency } from '../../../shared/lib/format';
 import { useTFallback } from '../../../shared/lib/useTFallback';
 import { BudgetComparison } from '../model/budgetComparison';
+import { resolveBudgetCategoryLabel } from '../model/budgetCategoryLabels';
 import { formatBudgetMonthLabel } from '../model/budgetPacing';
 
 export type BudgetComparisonPanelProps = {
@@ -51,7 +52,9 @@ export function BudgetComparisonPanel({
                   className="sb-compare-row"
                   onClick={() => onSelectCategory(row.category)}
                 >
-                  <span className="sb-compare-name">{row.category}</span>
+                  <span className="sb-compare-name">
+                    {resolveBudgetCategoryLabel(row.category, tf)}
+                  </span>
                   <span className="sb-compare-track">
                     <span
                       className={`sb-compare-bar ${delta > 0 ? 'is-up' : 'is-down'}`}

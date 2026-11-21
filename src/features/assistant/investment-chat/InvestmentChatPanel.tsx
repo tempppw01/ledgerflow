@@ -11,7 +11,7 @@ import {
   useState
 } from 'react';
 import type { CSSProperties } from 'react';
-import { useTFallback } from '../../../shared/lib/useTFallback';
+import { useTFallback, type TfFallback } from '../../../shared/lib/useTFallback';
 import { Link } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import type { InvestmentAiAgentAction } from '../../../entities/investment/types';
@@ -1040,7 +1040,10 @@ export function InvestmentChatComposer({
                     }}
                     aria-haspopup="listbox"
                     aria-expanded={modelOpen}
-                    aria-label={`当前模型：${getModelDisplayLabel(model || tf('investmentAi.modelFallback', '选择模型'))}`}
+                    aria-label={tf('investmentAi.currentModelAria', '当前模型：{name}').replace(
+                      '{name}',
+                      getModelDisplayLabel(model || tf('investmentAi.modelFallback', '选择模型'))
+                    )}
                     title={getModelDisplayLabel(
                       model || tf('investmentAi.modelFallback', '选择模型')
                     )}
@@ -1139,7 +1142,7 @@ export function InvestmentChatComposer({
                   type="submit"
                   className="chat-send-btn investments-ai-submit-btn"
                   disabled={!input.trim() && images.length === 0}
-                  title="发送"
+                  title={tf('investmentAi.send', '发送')}
                   aria-label={tf('investmentAi.sendAria', '开始分析')}
                 >
                   <ChatSendIcon className="chat-svg-icon" />
@@ -1630,7 +1633,11 @@ export function InvestmentChatPanel({
               ? tf('investmentAi.agentReady', 'Agent 已连接')
               : tf('investmentAi.agentPending', '待配置 AI Key')}
           </span>
-          {focus ? <strong title={focus.label}>正在看：{focus.label}</strong> : null}
+          {focus ? (
+            <strong title={focus.label}>
+              {tf('investmentAi.focusLabel', '正在看：{name}').replace('{name}', focus.label)}
+            </strong>
+          ) : null}
         </div>
 
         {showHero && messages.length === 0 ? (
@@ -1641,29 +1648,38 @@ export function InvestmentChatPanel({
             <div className="chat-mode-welcome-copy">
               <div className="chat-mode-welcome-eyebrow">
                 {tf('investmentAi.title', 'AI 投资助手')}
-                <span>·</span> 看懂市场，也看懂自己的持仓
+                <span>·</span> {tf('investmentAi.welcomeEyebrow', '看懂市场，也看懂自己的持仓')}
               </div>
               <h2>
-                投资上的问题，<em>一起理清楚</em>
+                {tf('investmentAi.welcomeHeadlineLead', '投资上的问题，')}
+                <em>{tf('investmentAi.welcomeHeadlineAccent', '一起理清楚')}</em>
               </h2>
-              <p>聊基金、股票和资产配置；结合你的持仓与公开信息分析，不承诺收益。</p>
+              <p>
+                {tf(
+                  'investmentAi.welcomeDescription',
+                  '聊基金、股票和资产配置；结合你的持仓与公开信息分析，不承诺收益。'
+                )}
+              </p>
               <div className="chat-mode-welcome-features">
                 <div>
                   <b>01</b>
                   <span>
-                    看市场<small>梳理行情与近期变化</small>
+                    {tf('investmentAi.welcomeFeatureMarket', '看市场')}
+                    <small>{tf('investmentAi.welcomeFeatureMarketNote', '梳理行情与近期变化')}</small>
                   </span>
                 </div>
                 <div>
                   <b>02</b>
                   <span>
-                    看持仓<small>结合你的自选与投资组合</small>
+                    {tf('investmentAi.welcomeFeatureHoldings', '看持仓')}
+                    <small>{tf('investmentAi.welcomeFeatureHoldingsNote', '结合你的自选与投资组合')}</small>
                   </span>
                 </div>
                 <div>
                   <b>03</b>
                   <span>
-                    做判断<small>说明依据与需要留意的风险</small>
+                    {tf('investmentAi.welcomeFeatureJudge', '做判断')}
+                    <small>{tf('investmentAi.welcomeFeatureJudgeNote', '说明依据与需要留意的风险')}</small>
                   </span>
                 </div>
               </div>
@@ -1683,10 +1699,18 @@ export function InvestmentChatPanel({
               className={`investments-ai-history-actions ${historyTurns.length > 2 ? '' : 'is-compact'}`}
             >
               {historyTurns.length > 2 ? (
-                <nav className="investments-ai-history-nav" aria-label="投资聊天记录导航">
-                  <span>{historyTurns.length} 轮</span>
+                <nav
+                  className="investments-ai-history-nav"
+                  aria-label={tf('investmentAi.historyNavAria', '投资聊天记录导航')}
+                >
+                  <span>
+                    {tf('investmentAi.historyTurns', '{count} 轮').replace(
+                      '{count}',
+                      String(historyTurns.length)
+                    )}
+                  </span>
                   <select
-                    aria-label="跳转到历史提问"
+                    aria-label={tf('investmentAi.historySelectAria', '跳转到历史提问')}
                     value={selectedHistoryMessageId}
                     onChange={(event) => {
                       const messageId = event.target.value;
@@ -1696,17 +1720,17 @@ export function InvestmentChatPanel({
                   >
                     {historyTurns.map((item, index) => (
                       <option key={item.id} value={item.id}>
-                        {getInvestmentChatHistoryLabel(item.text, index)}
+                        {getInvestmentChatHistoryLabel(item.text, index, tf)}
                       </option>
                     ))}
                   </select>
                   <button
                     type="button"
                     onClick={() => scrollToMessage(latestMessageId, 'end')}
-                    aria-label="回到最新消息"
-                    title="回到最新消息"
+                    aria-label={tf('investmentAi.backToLatest', '回到最新消息')}
+                    title={tf('investmentAi.backToLatest', '回到最新消息')}
                   >
-                    最新
+                    {tf('investmentAi.latest', '最新')}
                   </button>
                 </nav>
               ) : null}
@@ -1714,10 +1738,10 @@ export function InvestmentChatPanel({
                 type="button"
                 className="investments-ai-clear-context"
                 onClick={() => setClearContextConfirmOpen(true)}
-                aria-label="清空上下文"
-                title="清空上下文"
+                aria-label={tf('investmentAi.clearContext', '清空上下文')}
+                title={tf('investmentAi.clearContext', '清空上下文')}
               >
-                清空上下文
+                {tf('investmentAi.clearContext', '清空上下文')}
               </button>
             </div>
             <div className="chat-messages-inner">
@@ -1732,7 +1756,11 @@ export function InvestmentChatPanel({
                 >
                   <Avatar user={item.role === 'user'} />
                   <div className="chat-msg-body">
-                    <div className="chat-msg-header">{item.role === 'user' ? '你' : '助手'}</div>
+                    <div className="chat-msg-header">
+                      {item.role === 'user'
+                        ? tf('investmentAi.roleUser', '你')
+                        : tf('investmentAi.roleAssistant', '助手')}
+                    </div>
                     <div className="chat-msg-content chat-msg-content-rich">
                       {renderMarkdownContent(
                         item.role === 'assistant'
@@ -1741,7 +1769,10 @@ export function InvestmentChatPanel({
                       )}
                     </div>
                     {item.role === 'assistant' && item.agentActions?.length ? (
-                      <div className="investment-ai-agent-actions" aria-label="AI 已执行的操作">
+                      <div
+                        className="investment-ai-agent-actions"
+                        aria-label={tf('investmentAi.agentActionsAria', 'AI 已执行的操作')}
+                      >
                         {item.agentActions.map((action) => (
                           <span
                             key={action.id}
@@ -1749,7 +1780,11 @@ export function InvestmentChatPanel({
                               action.undone ? 'is-undone' : ''
                             }`}
                           >
-                            <b>{action.kind === 'update' ? '已更新' : '已读取'}</b>
+                            <b>
+                              {action.kind === 'update'
+                                ? tf('investmentAi.agentActionUpdated', '已更新')
+                                : tf('investmentAi.agentActionRead', '已读取')}
+                            </b>
                             <span className="investment-ai-agent-action-label">{action.label}</span>
                             {action.kind === 'update' &&
                             action.undoable &&
@@ -1760,7 +1795,7 @@ export function InvestmentChatPanel({
                                 className="investment-ai-agent-action-undo"
                                 onClick={() => handleUndoAgentAction(item.id, action.id)}
                               >
-                                撤销
+                                {tf('investmentAi.agentActionUndo', '撤销')}
                               </button>
                             ) : null}
                           </span>
@@ -1783,13 +1818,22 @@ export function InvestmentChatPanel({
                             target="_blank"
                             rel="noreferrer"
                           >
-                            <img src={url} alt={`附带图片 ${index + 1}`} />
+                            <img
+                              src={url}
+                              alt={tf('investmentAi.attachedImageAlt', '附带图片 {index}').replace(
+                                '{index}',
+                                String(index + 1)
+                              )}
+                            />
                           </a>
                         ))}
                       </div>
                     ) : item.attachmentCount ? (
                       <p className="investments-ai-attachment-note">
-                        附带 {item.attachmentCount} 张图片
+                        {tf('investmentAi.attachedImagesNote', '附带 {count} 张图片').replace(
+                          '{count}',
+                          String(item.attachmentCount)
+                        )}
                       </p>
                     ) : null}
                   </div>
@@ -1799,16 +1843,21 @@ export function InvestmentChatPanel({
             </div>
           </div>
         ) : isCompact ? (
-          <div className="investments-ai-empty-compact" aria-label="投资理财空状态">
+          <div
+            className="investments-ai-empty-compact"
+            aria-label={tf('investmentAi.emptyCompactAria', '投资理财空状态')}
+          >
             <img src={INVESTMENT_HERO_ILLUSTRATION_URL} alt="" aria-hidden="true" />
-            <strong>先丢一个基金问题给我</strong>
-            <p>例如：这只基金现在适合继续定投吗？</p>
+            <strong>{tf('investmentAi.emptyCompactTitle', '先丢一个基金问题给我')}</strong>
+            <p>
+              {tf('investmentAi.emptyCompactHint', '例如：这只基金现在适合继续定投吗？')}
+            </p>
           </div>
         ) : (
           <article className="chat-msg chat-investment-starter">
             <Avatar />
             <div className="chat-msg-body">
-              <div className="chat-msg-header">投资助手</div>
+              <div className="chat-msg-header">{tf('investmentAi.starterHeader', '投资助手')}</div>
               <div className="chat-msg-content">
                 <p>
                   {tf(
@@ -1851,9 +1900,12 @@ export function InvestmentChatPanel({
 
         <ConfirmDialog
           open={clearContextConfirmOpen}
-          title="清空聊天上下文"
-          description="确定清空本次投资聊天上下文吗？此操作不可恢复。"
-          confirmText="清空"
+          title={tf('investmentAi.clearDialogTitle', '清空聊天上下文')}
+          description={tf(
+            'investmentAi.clearDialogDescription',
+            '确定清空本次投资聊天上下文吗？此操作不可恢复。'
+          )}
+          confirmText={tf('investmentAi.clearDialogConfirm', '清空')}
           danger
           onConfirm={clearContext}
           onCancel={() => setClearContextConfirmOpen(false)}
@@ -1863,7 +1915,11 @@ export function InvestmentChatPanel({
   );
 }
 
-function getInvestmentChatHistoryLabel(text: string, index: number) {
+function getInvestmentChatHistoryLabel(text: string, index: number, tf: TfFallback) {
   const preview = text.replace(/\s+/g, ' ').trim().slice(0, 20);
-  return `第 ${index + 1} 轮${preview ? ` · ${preview}` : ''}`;
+  const roundLabel = tf('investmentAi.historyTurnLabel', '第 {round} 轮').replace(
+    '{round}',
+    String(index + 1)
+  );
+  return `${roundLabel}${preview ? ` · ${preview}` : ''}`;
 }

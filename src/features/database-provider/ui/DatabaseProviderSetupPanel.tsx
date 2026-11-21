@@ -9,20 +9,17 @@ import {
 
 const PROVIDER_COPY: Record<
   DatabaseProvider,
-  { label: string; description: string; descriptionKey: string }
+  { label: string; description: (tf: TfFallback) => string }
 > = {
   sqlite: {
     label: 'SQLite',
-    description: '适合单机和轻量自托管,数据保存为部署卷中的文件。',
-    descriptionKey: 'dataBackup.provider.sqliteDesc'
+    description: (tf) => tf('dataBackup.provider.sqliteDesc', '适合单机和轻量自托管,数据保存为部署卷中的文件。')
   },
   mysql: {
     label: 'MySQL',
-    description: '适合阿里云 RDS、多设备同步和后续多用户部署。',
-    descriptionKey: 'dataBackup.provider.mysqlDesc'
+    description: (tf) => tf('dataBackup.provider.mysqlDesc', '适合阿里云 RDS、多设备同步和后续多用户部署。')
   }
 };
-const MYSQL_NOT_CONFIGURED_MESSAGE = '未检测到 MySQL 配置，请先设置 MYSQL_URL 或 MYSQL_HOST。';
 const MYSQL_NOT_CONFIGURED_KEY = 'dataBackup.provider.mysqlNotConfigured';
 
 interface DatabaseProviderSetupPanelProps {
@@ -55,7 +52,7 @@ export function DatabaseProviderSetupPanel({ onInitialized }: DatabaseProviderSe
       configured: provider === 'sqlite',
       // 服务端只在 MySQL 未配置时给出这句提示,这里提供本地化的等价文案
       message:
-        provider === 'mysql' ? tf(MYSQL_NOT_CONFIGURED_KEY, MYSQL_NOT_CONFIGURED_MESSAGE) : ''
+        provider === 'mysql' ? tf(MYSQL_NOT_CONFIGURED_KEY, '未检测到 MySQL 配置，请先设置 MYSQL_URL 或 MYSQL_HOST。') : ''
     };
   };
   const selectedProviderIsConfigured = getProviderAvailability(selectedProvider).configured;
@@ -100,7 +97,7 @@ export function DatabaseProviderSetupPanel({ onInitialized }: DatabaseProviderSe
 
     if (
       !window.confirm(
-        `确定初始化为 ${PROVIDER_COPY[selectedProvider].label} 吗？初始化后不能直接切换。`
+        tf('dataBackup.provider.confirmInitialize', "确定初始化为 {provider} 吗？初始化后不能直接切换。").replace("{provider}", String(PROVIDER_COPY[selectedProvider].label))
       )
     ) {
       return;
@@ -114,7 +111,7 @@ export function DatabaseProviderSetupPanel({ onInitialized }: DatabaseProviderSe
       });
       setStatus(nextStatus);
       onInitialized?.(nextStatus);
-      setMessage(`已锁定为 ${PROVIDER_COPY[nextStatus.provider!].label}。`);
+      setMessage(tf('dataBackup.provider.lockedAs', "已锁定为 {provider}。").replace("{provider}", String(PROVIDER_COPY[nextStatus.provider!].label)));
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -190,10 +187,7 @@ export function DatabaseProviderSetupPanel({ onInitialized }: DatabaseProviderSe
                     <span>
                       <strong>{PROVIDER_COPY[provider].label}</strong>
                       <small>
-                        {tf(
-                          PROVIDER_COPY[provider].descriptionKey,
-                          PROVIDER_COPY[provider].description
-                        )}
+                        {PROVIDER_COPY[provider].description(tf)}
                       </small>
                       {!availability.configured ? <em>{availability.message}</em> : null}
                     </span>
@@ -211,7 +205,7 @@ export function DatabaseProviderSetupPanel({ onInitialized }: DatabaseProviderSe
               >
                 {busy
                   ? tf('dataBackup.provider.initializing', '正在初始化...')
-                  : `初始化 ${PROVIDER_COPY[selectedProvider].label}`}
+                  : tf('dataBackup.provider.initializeAction', "初始化 {provider}").replace("{provider}", String(PROVIDER_COPY[selectedProvider].label))}
               </button>
             </div>
           </>

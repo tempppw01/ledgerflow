@@ -1660,7 +1660,11 @@
     "reset": {
       "title": "Clear all account transactions",
       "desc": "Clears all account transactions while keeping accounts and categories.",
-      "section": "Data reset"
+      "section": "Data reset",
+      "confirmBody": "All {count} transactions will be cleared and account balances recalculated from their opening values. This cannot be undone.",
+      "confirmInputPrefix": " Type ",
+      "confirmOk": "Clear transactions",
+      "confirmWord": "Clear bills"
     },
     "billImport": {
       "wechat": "Import WeChat bills",
@@ -1695,7 +1699,44 @@
       "restoreSelect": "Choose a WebDAV backup version to restore",
       "restoreSelected": "Restore selected version",
       "latest": "(latest)",
-      "lastBackupPrefix": "Last backup: "
+      "lastBackupPrefix": "Last backup: ",
+      "action": {
+        "createDirectory": "create directory",
+        "download": "download",
+        "upload": "upload"
+      },
+      "backupFailed": "WebDAV backup failed",
+      "backupSucceeded": "WebDAV backup succeeded: {scope}",
+      "configSaved": "WebDAV configuration saved",
+      "downloadFailed": "WebDAV download failed",
+      "error": {
+        "blockedByBrowser": "WebDAV {action} failed: the request was blocked by the browser (usually CORS or mixed HTTPS content).",
+        "createDirectoryFailed": "WebDAV could not create the directory ({path}, HTTP {status})",
+        "deleteFailed": "WebDAV could not delete the file ({path}, HTTP {status})",
+        "downloadFailed": "WebDAV download failed (HTTP {status})",
+        "invalidConfig": "Invalid WebDAV configuration",
+        "listFailed": "WebDAV could not list the directory (HTTP {status})",
+        "moveFailed": "WebDAV could not move the file ({path}, HTTP {status})",
+        "passwordRequired": "Enter the WebDAV password",
+        "proxyPathRelative": "The proxy entry path must be a same-origin relative path, for example /api/webdav",
+        "proxyPathRequired": "The same-origin proxy is enabled; enter the proxy entry path",
+        "proxyPathSlash": "The proxy entry path must start with /, for example /api/webdav",
+        "proxySuggestion": "Try changing the endpoint to a same-origin proxy path (for example /api/webdav) and forward it to the real WebDAV on the server.",
+        "realUrlRequired": "Enter the real WebDAV URL (used for proxy forwarding)",
+        "remotePathInvalid": "Invalid remote file path. Avoid empty segments or . / ..",
+        "remotePathRequired": "Enter the remote file path",
+        "retryLater": "WebDAV {action} failed, please try again later",
+        "uploadFailed": "WebDAV upload failed (HTTP {status})",
+        "urlFormat": "Invalid WebDAV URL. Use a full HTTPS URL",
+        "urlHttpsOnly": "The WebDAV URL must use HTTPS",
+        "urlNoCredentials": "The WebDAV URL must not contain a username or password",
+        "urlNoLocalHost": "The WebDAV URL cannot point to a local or private address",
+        "urlRequired": "Enter the WebDAV URL",
+        "usernameRequired": "Enter the WebDAV username"
+      },
+      "stage": {
+        "preparing": "Preparing the WebDAV backup..."
+      }
     },
     "objectStorage": {
       "section": "Object storage backup",
@@ -1707,7 +1748,42 @@
       "s3": "S3-compatible",
       "s3Desc": "For MinIO, R2, COS and similar services",
       "lastBackupPrefix": "Last backup: ",
-      "currentPrefix": "Current: "
+      "currentPrefix": "Current: ",
+      "action": {
+        "delete": "delete",
+        "download": "download",
+        "list": "list",
+        "upload": "upload"
+      },
+      "backupFailed": "{provider} backup failed",
+      "backupSucceeded": "{provider} backup succeeded: {scope}",
+      "configSaved": "{provider} configuration saved",
+      "downloadFailed": "{provider} download failed",
+      "error": {
+        "accessKeyIdRequired": "Enter the AccessKey ID",
+        "accessKeySecretRequired": "Enter the AccessKey Secret",
+        "blockedByBrowser": "{provider} {action} failed: the request was blocked by the browser, usually because the bucket CORS rules do not allow it.",
+        "bucketInvalid": "The bucket name must not contain spaces or slashes",
+        "bucketRequired": "Enter the bucket name",
+        "corsHint": "Allow the Authorization, x-oss-date/x-amz-date and Content-Type request headers, plus the PUT/GET/DELETE methods.",
+        "deleteFailed": "{provider} could not delete the file ({path}, HTTP {status})",
+        "downloadFailed": "{provider} download failed (HTTP {status})",
+        "endpointFormat": "Invalid object storage endpoint. Use a full HTTPS URL",
+        "endpointHttpsOnly": "The object storage endpoint must use HTTPS",
+        "endpointNoAccessKey": "The object storage endpoint must not contain an AccessKey",
+        "endpointNoLocalHost": "The object storage endpoint cannot point to a local or private address",
+        "endpointRootOnly": "Enter the service root address of the object storage endpoint, without a path",
+        "listFailed": "{provider} could not list the directory (HTTP {status})",
+        "ossEndpointRequired": "Enter the OSS Endpoint",
+        "retryLater": "{provider} {action} failed, please try again later",
+        "s3EndpointRequired": "Enter the S3 Endpoint",
+        "uploadFailed": "{provider} upload failed (HTTP {status})"
+      },
+      "invalidConfig": "Invalid {provider} configuration",
+      "s3Storage": "S3-compatible storage",
+      "stage": {
+        "preparing": "Preparing the {provider} backup..."
+      }
     },
     "common": {
       "save": "Save",
@@ -1726,7 +1802,19 @@
       "exporting": "Exporting…",
       "cleared": "All account transactions cleared",
       "loading": "Loading…",
-      "noRecord": "No record"
+      "noRecord": "No record",
+      "backupDone": "Backup finished",
+      "backupFailed": "Backup failed",
+      "downloadingRestore": "Downloading and restoring...",
+      "fetchFailed": "Could not load the list",
+      "fetchingVersions": "Loading the backup list...",
+      "generatingSqlExport": "Generating the database file...",
+      "packing": "Packing the backup...",
+      "restoreDone": "Restore finished",
+      "restoreFailed": "Restore failed",
+      "sqlExportFailed": "SQL database export failed",
+      "sqlExported": "Downloaded {filename}",
+      "versionsLoaded": "Backup list loaded"
     },
     "placeholder": {
       "username": "Enter the username",
@@ -1788,7 +1876,10 @@
       "confirmTitle": "Confirm restoring from the database",
       "confirmBody": "The latest database snapshot will overwrite your current local data. Export a local backup first if you are unsure.",
       "confirmOk": "Restore",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "sizeLabel": " · Size: ",
+      "synced": "Synced to the database: {size}",
+      "timeLabel": " Snapshot time:"
     },
     "provider": {
       "sqliteDesc": "Great for single-server and lightweight self-hosting; data is stored as a file in the deployment volume.",
@@ -1806,7 +1897,10 @@
       "mismatch": "This deployment does not match the locked type. Restore the original configuration or migrate to a new instance.",
       "selectAria": "Choose the storage type",
       "initializing": "Initializing…",
-      "currentUsing": "Currently using {provider}. To switch, export your data and import it in a new deployment."
+      "currentUsing": "Currently using {provider}. To switch, export your data and import it in a new deployment.",
+      "confirmInitialize": "Initialize as {provider}? The storage type cannot be switched afterwards.",
+      "initializeAction": "Initialize {provider}",
+      "lockedAs": "Locked to {provider}."
     },
     "message": {
       "ledgerSection": "Ledger: {transactions} transactions / {categories} categories / {accounts} accounts",
@@ -1817,6 +1911,148 @@
       "actionRestore": "restore",
       "successDetail": "Backup {action} finished — updated {scope} ({sections})",
       "success": "Backup {action} finished"
+    },
+    "backup": {
+      "action": {
+        "createDirectory": "create directory",
+        "delete": "delete",
+        "download": "download",
+        "list": "list",
+        "upload": "upload"
+      },
+      "fixedEntry": "Current fixed backup file",
+      "fixedEntryNoListing": "Current fixed backup file (directory listing unavailable)",
+      "fixedEntrySuffix": "{label} · fixed entry",
+      "stage": {
+        "cleaningOld": "Cleaning up old versions...",
+        "updatingLatest": "Updating the latest version...",
+        "uploadingVersion": "Uploading the versioned backup..."
+      }
+    },
+    "bill": {
+      "alipay": "Alipay",
+      "error": {
+        "tooLarge": "Bill import failed: upload a bill file no larger than 10MB",
+        "unsupportedType": "Bill import failed: only CSV/TXT/XLSX files are supported"
+      },
+      "imported": "{source} bill import finished: {added} added, {updated} updated{skipped}",
+      "importedSkipped": ", {skipped} skipped",
+      "noChange": "Import finished: no new or changed bills in incremental mode",
+      "noRows": "No importable bill records found",
+      "parseFailed": "Bill import failed: the file could not be parsed",
+      "wechat": "WeChat"
+    },
+    "currentScopePrefix": " Current backup scope:",
+    "defaultAccountName": "Default account",
+    "error": {
+      "stillLoading": "Local data is still loading, try again in a moment"
+    },
+    "import": {
+      "error": {
+        "field": {
+          "accountsObject": "Invalid backup field: data.accounts[{index}] must be an object",
+          "accountsType": "Invalid backup field: data.accounts[{index}].type has an invalid value",
+          "balanceChangeEntriesObject": "Invalid backup field: data.balanceChangeEntries[{index}] must be an object",
+          "balanceChangeEntriesType": "Invalid backup field: data.balanceChangeEntries[{index}].type has an invalid value",
+          "categoriesKind": "Invalid backup field: data.categories[{index}].kind has an invalid value",
+          "categoriesObject": "Invalid backup field: data.categories[{index}] must be an object",
+          "dataBalanceChangeEntriesArray": "Invalid backup field: data.balanceChangeEntries must be an array",
+          "dataGlobalMemoriesArray": "Invalid backup field: data.globalMemories must be an array",
+          "dataInvestmentAiMessagesArray": "Invalid backup field: data.investmentAiMessages must be an array",
+          "dataInvestmentGoalsArray": "Invalid backup field: data.investmentGoals must be an array",
+          "dataInvestmentPositionHistoryArray": "Invalid backup field: data.investmentPositionHistory must be an array",
+          "dataInvestmentPositionsArray": "Invalid backup field: data.investmentPositions must be an array",
+          "dataInvestmentWatchlistArray": "Invalid backup field: data.investmentWatchlist must be an array",
+          "dataSubscriptionsArray": "Invalid backup field: data.subscriptions must be an array",
+          "dataTrashedAccountsArray": "Invalid backup field: data.trashedAccounts must be an array",
+          "dataTrashedCategoriesArray": "Invalid backup field: data.trashedCategories must be an array",
+          "dataTrashedSubscriptionsArray": "Invalid backup field: data.trashedSubscriptions must be an array",
+          "dataTrashedTransactionsArray": "Invalid backup field: data.trashedTransactions must be an array",
+          "dateString": "Invalid backup field: {path} must be a date string (YYYY-MM-DD)",
+          "investmentAiMessagesFeedback": "Invalid backup field: data.investmentAiMessages[{index}].feedback has an invalid value",
+          "investmentAiMessagesObject": "Invalid backup field: data.investmentAiMessages[{index}] must be an object",
+          "investmentAiMessagesRole": "Invalid backup field: data.investmentAiMessages[{index}].role has an invalid value",
+          "investmentGoalsKind": "Invalid backup field: data.investmentGoals[{index}].kind has an invalid value",
+          "investmentGoalsObject": "Invalid backup field: data.investmentGoals[{index}] must be an object",
+          "investmentGoalsPriority": "Invalid backup field: data.investmentGoals[{index}].priority has an invalid value",
+          "investmentPositionHistoryAction": "Invalid backup field: data.investmentPositionHistory[{index}].action has an invalid value",
+          "investmentPositionHistoryCategory": "Invalid backup field: data.investmentPositionHistory[{index}].category has an invalid value",
+          "investmentPositionHistoryIsActive": "Invalid backup field: data.investmentPositionHistory[{index}].isActive must be a boolean",
+          "investmentPositionHistoryObject": "Invalid backup field: data.investmentPositionHistory[{index}] must be an object",
+          "investmentPositionsCategory": "Invalid backup field: data.investmentPositions[{index}].category has an invalid value",
+          "investmentPositionsIsActive": "Invalid backup field: data.investmentPositions[{index}].isActive must be a boolean",
+          "investmentPositionsObject": "Invalid backup field: data.investmentPositions[{index}] must be an object",
+          "investmentPositionsRiskLevel": "Invalid backup field: data.investmentPositions[{index}].riskLevel has an invalid value",
+          "investmentWatchlistLastRiskLevel": "Invalid backup field: data.investmentWatchlist[{index}].lastRiskLevel has an invalid value",
+          "investmentWatchlistObject": "Invalid backup field: data.investmentWatchlist[{index}] must be an object",
+          "number": "Invalid backup field: {path} must be a finite number",
+          "object": "Invalid backup field: {path} must be an object",
+          "riskLevelEnum": "Invalid backup field: {path}.riskLevel has an invalid value",
+          "string": "Invalid backup field: {path} must be a string",
+          "stringArray": "Invalid backup field: {path} must be an array of strings",
+          "subscriptionsAutoRenew": "Invalid backup field: data.subscriptions[{index}].autoRenew must be a boolean",
+          "subscriptionsBillingCycle": "Invalid backup field: data.subscriptions[{index}].billingCycle has an invalid value",
+          "subscriptionsKind": "Invalid backup field: data.subscriptions[{index}].kind has an invalid value",
+          "subscriptionsObject": "Invalid backup field: data.subscriptions[{index}] must be an object",
+          "subscriptionsStatus": "Invalid backup field: data.subscriptions[{index}].status has an invalid value",
+          "transactionsAdjustmentKind": "Invalid backup field: data.transactions[{index}].adjustmentKind has an invalid value",
+          "transactionsAttachmentObject": "Invalid backup field: data.transactions[{transactionIndex}].attachments[{attachmentIndex}] must be an object",
+          "transactionsAttachmentsArray": "Invalid backup field: data.transactions[{index}].attachments must be an array",
+          "transactionsObject": "Invalid backup field: data.transactions[{index}] must be an object",
+          "transactionsSource": "Invalid backup field: data.transactions[{index}].source has an invalid value",
+          "transactionsStatus": "Invalid backup field: data.transactions[{index}].status has an invalid value",
+          "transactionsType": "Invalid backup field: data.transactions[{index}].type has an invalid value"
+        },
+        "format": "Invalid backup file format",
+        "jsonParse": "Invalid backup file: JSON parsing failed",
+        "missingData": "The backup file has no data field",
+        "missingRequiredData": "The backup file is missing required data (transactions/categories/accounts)",
+        "notJson": "Backup import failed: only JSON files (.json) are supported",
+        "tooLarge": "Backup import failed: upload a JSON backup no larger than {max}MB"
+      }
+    },
+    "investment": {
+      "legacyNoContent": "This backup predates message bodies",
+      "legacyNoSummary": "This backup predates analysis summaries",
+      "reviewPending": "Pending review"
+    },
+    "password": {
+      "hide": "Hide password",
+      "show": "Show password"
+    },
+    "progress": {
+      "remaining": " · {remaining} remaining",
+      "rowsSuffix": " rows "
+    },
+    "restore": {
+      "error": {
+        "versionRequired": "Select a version to restore"
+      },
+      "objectStorageAria": "Choose the {provider} version to restore",
+      "objectStorageTitlePrefix": "Choose the ",
+      "objectStorageTitleSuffix": " backup version to restore"
+    },
+    "secret": {
+      "hide": "Hide",
+      "hideValue": "Hide secret",
+      "show": "Show",
+      "showValue": "Show secret"
+    },
+    "sync": {
+      "cloudEmptyBody": "This browser also holds a local ledger. Import it only if you are sure it belongs to this deployment; otherwise start with a blank ledger.",
+      "cloudEmptyTitle": "This deployment has an empty cloud ledger",
+      "importLocalLedger": "Import the local ledger into this account",
+      "importing": "Importing...",
+      "initDescription": "Initialize the database type before you can use LedgerFlow's bookkeeping, analysis and backup features.",
+      "ledgerInitFailed": "Ledger initialization failed.",
+      "sqlLoadFailed": "Could not load from the SQL database.",
+      "sqlWriteFailed": "Could not write to the SQL database.",
+      "useBlankLedger": "Use a blank ledger"
+    },
+    "toast": {
+      "exported": "Backup exported: {scope}",
+      "importFailed": "Backup import failed",
+      "scopeRequired": "Select at least one backup scope first"
     }
   },
   "investments": {
@@ -2360,7 +2596,50 @@
     "uploadHint": "Upload or paste up to {count} screenshots",
     "currentModel": "Current model",
     "welcomeHint": "Ask about your holdings, SIP plans or today’s market. I will state the conclusion and the evidence behind it.",
-    "quickPromptsAria": "Quick questions"
+    "quickPromptsAria": "Quick questions",
+    "currentModelAria": "Current model: {name}",
+    "send": "Send",
+    "focusLabel": "Looking at: {name}",
+    "welcomeEyebrow": "Read the market and your own holdings",
+    "welcomeHeadlineLead": "Investment questions,",
+    "welcomeDescription": "Ask about funds, stocks and asset allocation; I combine your holdings with public information and never promise returns.",
+    "welcomeFeatureMarket": "Read the market",
+    "welcomeFeatureHoldings": "Read your holdings",
+    "welcomeFeatureJudge": "Form a view",
+    "welcomeHeadlineAccent": "sorted out together",
+    "welcomeFeatureMarketNote": "Prices and recent moves",
+    "welcomeFeatureHoldingsNote": "Your watchlist and portfolio",
+    "welcomeFeatureJudgeNote": "The evidence behind it, and the risks",
+    "historyNavAria": "Investment chat history navigation",
+    "historyTurns": "{count} rounds",
+    "historySelectAria": "Jump to an earlier question",
+    "backToLatest": "Back to the latest message",
+    "latest": "Latest",
+    "clearContext": "Clear context",
+    "roleUser": "You",
+    "agentActionsAria": "Actions the AI performed",
+    "agentActionUpdated": "Updated",
+    "agentActionUndo": "Undo",
+    "attachedImageAlt": "Attached image {index}",
+    "attachedImagesNote": "{count} attached images",
+    "emptyCompactAria": "Investment empty state",
+    "emptyCompactTitle": "Drop a fund question on me",
+    "emptyCompactHint": "For example: is this fund still worth an automatic monthly plan?",
+    "starterHeader": "Investment assistant",
+    "clearDialogTitle": "Clear chat context",
+    "clearDialogDescription": "Clear this investment chat context? This cannot be undone.",
+    "clearDialogConfirm": "Clear",
+    "historyTurnLabel": "Round {round}",
+    "roleAssistant": "Assistant",
+    "agentActionRead": "Read",
+    "details": {
+      "reasoningTitle": "Reasoning process",
+      "reasoningNote": "Model reasoning summary",
+      "webTitle": "Web verification",
+      "webNote": "Search and verification status",
+      "newsTitle": "Related news data",
+      "newsNote": "News, policy and market context"
+    }
   },
   "repayment": {
     "eyebrow": "Assets & debt / Repayment",
@@ -3145,6 +3424,10 @@
     "month": {
       "short": "{month}",
       "yearMonth": "{month}/{year}"
+    },
+    "coreCategory": {
+      "fixed": "Fixed costs",
+      "savings": "Savings & investments"
     }
   },
   "exchange": {
@@ -3725,5 +4008,168 @@
       "deleteBill": "Delete bill",
       "cancel": "Cancel"
     }
+  },
+  "dbSettings": {
+    "connection": {
+      "actionsTitle": "Connection actions",
+      "addConnection": "New connection",
+      "advancedTitle": "Pool and TLS (collapsed by default)",
+      "cancel": "Cancel",
+      "collapseCreate": "Hide new connection",
+      "collapseLog": "Hide log",
+      "delete": "Delete",
+      "edit": "Edit",
+      "elapsedPrefix": "(took ",
+      "empty": "No connections yet. Click \"New connection\" when you need one.",
+      "enabled": "Enabled",
+      "error": {
+        "configIncomplete": "Complete the connection settings before testing",
+        "connectionStringInvalid": "Invalid connection string. Check the protocol, host, port and path",
+        "databaseRequired": "Database name is required",
+        "hostRequired": "Host is required",
+        "nameMin": "Name must be at least 2 characters",
+        "poolMinMax": "pool.min cannot be greater than pool.max",
+        "portRange": "Port must be between 1 and 65535",
+        "protocolMismatch": "Protocol mismatch: a {type} connection must use {protocols}://",
+        "timeout": "Connection timed out (>{timeout}ms)"
+      },
+      "expandLog": "Show log",
+      "field": {
+        "caCert": "CA certificate",
+        "caCertHint": "Optional CA certificate",
+        "connectionString": "Connection string (optional)",
+        "connectionStringHint": "Paste a connection string here to fill the fields automatically",
+        "currentPrefix": " (currently ",
+        "databaseName": "Database",
+        "enabledHint": "Saved as an enabled connection by default",
+        "hidePassword": "Hide password",
+        "hostHint": "Database service address",
+        "hostPlaceholder": "Defaults to localhost",
+        "hostPortPrefix": " Host / port / ",
+        "idleHint": "Idle connection reclaim time",
+        "mysqlDatabase": "MySQL database",
+        "mysqlDatabasePlaceholder": "Defaults to ledgerflow",
+        "mysqlUsernameHint": "MySQL username, e.g. ledgerflow",
+        "name": "Name",
+        "nameHint": "Used to tell connections in different environments apart",
+        "namePlaceholder": "e.g. Redis production",
+        "password": "Password",
+        "passwordHint": "The password is used only for the connection and is never stored in clear text",
+        "passwordPlaceholder": "Enter the password",
+        "poolMax": "Pool max",
+        "poolMaxHint": "Maximum number of pooled connections",
+        "poolMin": "Pool min",
+        "poolMinHint": "Minimum number of pooled connections",
+        "portHint": "The default port is filled in from the database type",
+        "portPlaceholderMysql": "Defaults to 3306",
+        "portPlaceholderRedis": "Defaults to 6379",
+        "redisDatabase": "Redis DB number",
+        "redisDatabasePlaceholder": "Defaults to 0",
+        "redisUsernameHint": "The Redis username is usually left empty",
+        "showPassword": "Show password",
+        "timeout": "Timeout (ms)",
+        "timeoutHint": "Connection timeout in milliseconds",
+        "type": "Database type",
+        "typeHint": "MySQL and Redis are supported; switching fills in the defaults",
+        "username": "Username",
+        "usernameExample": "e.g. ledgerflow",
+        "usernamePlaceholder": "Optional, empty by default",
+        "verifyCert": " Verify certificate "
+      },
+      "formHint": "Defaults are pre-filled for local use. Expand only when you need to override them.",
+      "formTitleEdit": "Edit connection",
+      "formTitleNew": "New connection settings",
+      "hint": {
+        "mysqlDefaults": "Defaults to localhost / 3306 / database ledgerflow. You can test a local MySQL without changing them.",
+        "redisDefaults": "Defaults to localhost / 6379 / DB 0. You can test a local Redis without changing them."
+      },
+      "managerHint": "Common defaults are pre-filled: localhost, the default ports, the MySQL database ledgerflow and Redis DB 0. Change them only when you need to.",
+      "managerTitle": "Connection settings (MySQL / Redis)",
+      "parseConnectionString": "Parse connection string",
+      "saveConfig": "Save settings",
+      "saveFailed": "Could not save",
+      "saved": "{type} settings saved",
+      "saving": "Saving...",
+      "test": {
+        "serverFailed": "Server connection failed",
+        "serverOk": "Server connection succeeded"
+      },
+      "testConnection": "Test connection",
+      "testing": "Testing..."
+    }
+  },
+  "billPreview": {
+    "type": {
+      "expense": "Expense",
+      "income": "Income",
+      "budget": "Budget",
+      "repayment": "Repayment",
+      "unknown": "Type to confirm"
+    },
+    "currency": {
+      "unknown": "To confirm",
+      "CNY": "CNY Chinese Yuan",
+      "USD": "USD US Dollar",
+      "HKD": "HKD Hong Kong Dollar",
+      "JPY": "JPY Japanese Yen",
+      "EUR": "EUR Euro",
+      "GBP": "GBP British Pound",
+      "KRW": "KRW Korean Won",
+      "SGD": "SGD Singapore Dollar",
+      "AUD": "AUD Australian Dollar",
+      "CAD": "CAD Canadian Dollar",
+      "CHF": "CHF Swiss Franc",
+      "TWD": "TWD New Taiwan Dollar"
+    },
+    "issue": {
+      "needsReview": "Needs review: {message}"
+    },
+    "confirmCnyAmount": "Confirm the CNY amount",
+    "cardAria": "Bill confirmation",
+    "kicker": "Bills are ready",
+    "pendingCount": "{count} to confirm",
+    "checkDuplicates": "Check duplicates",
+    "duplicateWarning": "{count} entries may already be recorded; worth a look before saving.",
+    "noDuplicates": "No duplicates found",
+    "uncheckTitle": "Uncheck to skip this entry",
+    "rowCheckboxAria": "Select entry {index}",
+    "emptyNote": "No note",
+    "uncategorized": "Uncategorized",
+    "noAccount": "No account",
+    "autoMatched": "(auto-matched)",
+    "originalAmount": "Original amount: {value}",
+    "subscriptionHint": "Can be added to subscriptions",
+    "bookedInCny": "Booked in CNY",
+    "duplicateBadge": "Possible duplicate",
+    "duplicateBatchBadge": "Duplicate in batch",
+    "collapse": "Collapse",
+    "delete": "Delete",
+    "currencyReview": "Needs review: currency",
+    "convertAria": "Convert {currency} to CNY",
+    "cnyAmountLabel": "CNY amount to book",
+    "cnyPlaceholder": "Enter how much {value} is in CNY",
+    "confirmCurrencyCny": "Confirm currency is CNY",
+    "checkTitle": "Check to save this entry",
+    "originalCurrencyAmount": "Original currency amount",
+    "edit": "Edit",
+    "field": {
+      "type": "Type",
+      "date": "Date",
+      "currency": "Currency",
+      "category": "Category",
+      "account": "Account",
+      "note": "Note",
+      "cnyAmount": "CNY amount"
+    },
+    "addToSubscriptions": "Add to subscriptions",
+    "invalidCurrency": "{currency} (invalid, choose again)",
+    "autoMatchPrefix": "Auto-matched: {name}",
+    "footerCounts": "{saveable} selected and ready to save; {skipped} unchecked or needing fixes.",
+    "footerHint": "Double-check before saving to avoid duplicate entries.",
+    "savingTitle": "Saving, please wait",
+    "nothingToSaveTitle": "Select or fix the entries first",
+    "saving": "Saving",
+    "save": "Save to ledger",
+    "accountPlaceholder": "e.g. CMB debit card"
   }
 }

@@ -1,5 +1,6 @@
 import { formatCurrency } from '../../../shared/lib/format';
 import { useTFallback } from '../../../shared/lib/useTFallback';
+import { resolveBudgetCategoryLabel } from '../model/budgetCategoryLabels';
 import { formatBudgetMonthShortLabel } from '../model/budgetPacing';
 import { BudgetTrendIcon } from './budgetIcons';
 
@@ -50,7 +51,7 @@ export function BudgetTrendPanel({ series }: BudgetTrendPanelProps) {
             return (
               <article key={item.category} className="sb-trend-item">
                 <header>
-                  <strong>{item.category}</strong>
+                  <strong>{resolveBudgetCategoryLabel(item.category, tf)}</strong>
                   <span>{latest ? formatCurrency(latest.spent) : '-'}</span>
                 </header>
                 <div className="sb-trend-chart">

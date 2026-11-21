@@ -7,6 +7,7 @@ import { DatabaseProviderSetupPanel } from './DatabaseProviderSetupPanel';
 import { SqlDataSyncGate } from './SqlDataSyncGate';
 import { AuthGate } from '../../auth/ui/AuthGate';
 import { ensureDeploymentScope } from '../model/deploymentScope';
+import { useTFallback } from '../../../shared/lib/useTFallback';
 
 interface DatabaseInitializationGateProps {
   children: ReactNode;
@@ -64,6 +65,7 @@ export function DatabaseInitializationGate({ children }: DatabaseInitializationG
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(() => !readCachedStatus());
   const requestIdRef = useRef(0);
+  const tf = useTFallback();
 
   const loadStatus = useCallback(async () => {
     const requestId = ++requestIdRef.current;
@@ -101,9 +103,9 @@ export function DatabaseInitializationGate({ children }: DatabaseInitializationG
     }
 
     if (requestId !== requestIdRef.current) return;
-    setError(lastError instanceof Error ? lastError.message : '无法连接数据库初始化服务。');
+    setError(lastError instanceof Error ? lastError.message : tf('databaseSetup.statusFailed', '无法连接数据库初始化服务。'));
     setLoading(false);
-  }, []);
+  }, [tf]);
 
   useEffect(() => {
     void loadStatus();
@@ -130,10 +132,8 @@ export function DatabaseInitializationGate({ children }: DatabaseInitializationG
         {error ? (
           <div className="sql-sync-notice is-error" role="status" aria-live="polite">
             <span className="sql-sync-notice-dot" aria-hidden="true" />
-            <span>数据库状态检查暂时失败，已继续使用上次确认的配置。</span>
-            <button type="button" onClick={() => void loadStatus()}>
-              重试
-            </button>
+            <span>{tf('databaseSetup.statusCheckFailed', "数据库状态检查暂时失败，已继续使用上次确认的配置。")}</span>
+            <button type="button" onClick={() => void loadStatus()}>{tf('databaseSetup.retry', " 重试 ")}</button>
           </div>
         ) : null}
       </>
@@ -144,22 +144,20 @@ export function DatabaseInitializationGate({ children }: DatabaseInitializationG
     <main className="database-initialization-gate">
       <div className="database-initialization-gate-inner">
         <header className="database-initialization-gate-head">
-          <h1>初始化数据存储</h1>
-          <p>完成数据库类型初始化后，才能使用 LedgerFlow 的记账、分析和备份功能。</p>
+          <h1>{tf('databaseSetup.initializationTitle', "初始化数据存储")}</h1>
+          <p>{tf('dataBackup.sync.initDescription', "完成数据库类型初始化后，才能使用 LedgerFlow 的记账、分析和备份功能。")}</p>
         </header>
 
-        {loading ? <p className="sync-tip">正在检查数据库初始化状态...</p> : null}
+        {loading ? <p className="sync-tip">{tf('databaseSetup.checkingStatus', "正在检查数据库初始化状态...")}</p> : null}
         {error ? (
           <section className="panel database-initialization-error">
             <p>{error}</p>
-            <button type="button" onClick={() => void loadStatus()}>
-              重新检查
-            </button>
+            <button type="button" onClick={() => void loadStatus()}>{tf('databaseSetup.retryCheck', " 重新检查 ")}</button>
           </section>
         ) : null}
         {status?.configurationMismatch ? (
           <section className="panel database-initialization-error">
-            <p>部署环境指定的数据库类型与已锁定类型不一致，必须恢复部署配置或迁移到新实例。</p>
+            <p>{tf('databaseSetup.mismatch', "部署环境指定的数据库类型与已锁定类型不一致，必须恢复部署配置或迁移到新实例。")}</p>
           </section>
         ) : null}
         {status && !status.initialized ? (

@@ -1,5 +1,6 @@
 import { formatCurrency } from '../../../shared/lib/format';
 import { useTFallback } from '../../../shared/lib/useTFallback';
+import { resolveBudgetCategoryLabel } from '../model/budgetCategoryLabels';
 import {
   BudgetAnswers,
   BudgetRecommendation,
@@ -343,7 +344,7 @@ export function BudgetWizard(props: BudgetWizardProps) {
               <tbody>
                 {draftRecommendation.categoryBudgets.map((row) => (
                   <tr key={row.category}>
-                    <td>{row.category}</td>
+                    <td>{resolveBudgetCategoryLabel(row.category, tf)}</td>
                     <td>
                       <div className="sb-amount-input is-compact">
                         <span aria-hidden="true">¥</span>
@@ -351,7 +352,7 @@ export function BudgetWizard(props: BudgetWizardProps) {
                           aria-label={tf(
                             'smartBudget.wizard.categoryAmountAria',
                             '{category}预算金额'
-                          ).replace('{category}', String(row.category))}
+                          ).replace('{category}', resolveBudgetCategoryLabel(row.category, tf))}
                           type="number"
                           min={0}
                           step={100}

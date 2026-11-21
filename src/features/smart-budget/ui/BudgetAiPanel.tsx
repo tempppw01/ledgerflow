@@ -1,6 +1,7 @@
 import { formatCurrency } from '../../../shared/lib/format';
 import { useTFallback } from '../../../shared/lib/useTFallback';
 import { BudgetTrackingRow } from '../model/budgetInsights';
+import { resolveBudgetCategoryLabel } from '../model/budgetCategoryLabels';
 import { BudgetRefreshIcon, BudgetSparkIcon } from './budgetIcons';
 
 export type BudgetAiAdvice = {
@@ -75,7 +76,7 @@ export function BudgetAiPanel(props: BudgetAiPanelProps) {
       {topOverspent ? (
         <div className="sb-ai-highlight">
           <p>
-            <strong>{topOverspent.category}</strong>{' '}
+            <strong>{resolveBudgetCategoryLabel(topOverspent.category, tf)}</strong>{' '}
             {tf('smartBudget.aiPanel.usedPrefix', '已经花到预算的')}{' '}
             <strong>{(topOverspent.ratio * 100).toFixed(0)}%</strong>
           </p>
@@ -117,7 +118,7 @@ export function BudgetAiPanel(props: BudgetAiPanelProps) {
                   key={`${item.category}-${item.action}`}
                   className={`sb-tag is-${item.action}`}
                 >
-                  {item.category}
+                  {resolveBudgetCategoryLabel(item.category, tf)}
                   {tf('smartBudget.aiPanel.tagColon', '：')}
                   {item.action === 'decrease'
                     ? tf('smartBudget.aiPanel.action.decrease', '建议收紧')

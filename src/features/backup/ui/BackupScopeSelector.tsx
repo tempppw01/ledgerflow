@@ -1,40 +1,30 @@
 import type { FinanceBackupScope } from '../../../shared/lib/backup';
-import { useTFallback } from '../../../shared/lib/useTFallback';
+import { useTFallback, type TfFallback } from '../../../shared/lib/useTFallback';
 
 const BACKUP_SCOPE_OPTIONS: Array<{
   key: keyof FinanceBackupScope;
-  label: string;
-  labelKey: string;
-  description: string;
-  descriptionKey: string;
+  label: (tf: TfFallback) => string;
+  description: (tf: TfFallback) => string;
 }> = [
   {
     key: 'ledger',
-    label: '账本数据',
-    description: '交易、分类、账户、回收站和余额记录',
-    labelKey: 'dataBackup.scope.ledger',
-    descriptionKey: 'dataBackup.scope.ledgerDesc'
+    label: (tf) => tf('dataBackup.scope.ledger', '账本数据'),
+    description: (tf) => tf('dataBackup.scope.ledgerDesc', '交易、分类、账户、回收站和余额记录')
   },
   {
     key: 'subscriptions',
-    label: '订阅数据',
-    description: '订阅项目和已归档订阅',
-    labelKey: 'dataBackup.scope.subscriptions',
-    descriptionKey: 'dataBackup.scope.subscriptionsDesc'
+    label: (tf) => tf('dataBackup.scope.subscriptions', '订阅数据'),
+    description: (tf) => tf('dataBackup.scope.subscriptionsDesc', '订阅项目和已归档订阅')
   },
   {
     key: 'globalMemories',
-    label: 'AI 记忆',
-    description: '助手偏好、记忆和上下文资料',
-    labelKey: 'dataBackup.scope.memories',
-    descriptionKey: 'dataBackup.scope.memoriesDesc'
+    label: (tf) => tf('dataBackup.scope.memories', 'AI 记忆'),
+    description: (tf) => tf('dataBackup.scope.memoriesDesc', '助手偏好、记忆和上下文资料')
   },
   {
     key: 'investments',
-    label: '投资理财',
-    description: '投资持仓、理财目标、基金自选和 AI 基金分析记录',
-    labelKey: 'dataBackup.scope.investments',
-    descriptionKey: 'dataBackup.scope.investmentsDesc'
+    label: (tf) => tf('dataBackup.scope.investments', '投资理财'),
+    description: (tf) => tf('dataBackup.scope.investmentsDesc', '投资持仓、理财目标、基金自选和 AI 基金分析记录')
   }
 ];
 
@@ -77,8 +67,8 @@ export function BackupScopeSelector({
               }
             />
             <span className="database-backup-scope-copy">
-              <strong>{tf(item.labelKey, item.label)}</strong>
-              <small>{tf(item.descriptionKey, item.description)}</small>
+              <strong>{item.label(tf)}</strong>
+              <small>{item.description(tf)}</small>
             </span>
           </label>
         ))}

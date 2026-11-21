@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { formatCurrency } from '../../../shared/lib/format';
 import { useTFallback } from '../../../shared/lib/useTFallback';
+import { resolveBudgetCategoryLabel } from '../model/budgetCategoryLabels';
 import { BudgetTrackingRow } from '../model/budgetInsights';
 import { BudgetComparisonRow } from '../model/budgetComparison';
 import { BudgetEditIcon, BudgetTargetIcon } from './budgetIcons';
@@ -64,7 +65,7 @@ function CategoryRow(props: {
       }}
     >
       <header className="sb-category-card-head">
-        <h4>{row.category}</h4>
+        <h4>{resolveBudgetCategoryLabel(row.category, tf)}</h4>
         <span className={`sb-status-tag is-${status.key}`}>
           {tf(`smartBudget.categoryList.status.${status.key}`, status.label)}
         </span>
@@ -86,7 +87,7 @@ function CategoryRow(props: {
               <input
                 aria-label={tf('smartBudget.categoryList.amountAria', '{category}预算金额').replace(
                   '{category}',
-                  String(row.category)
+                  String(resolveBudgetCategoryLabel(row.category, tf))
                 )}
                 type="number"
                 min={0}

@@ -28,6 +28,7 @@ import {
 import { GlobalMemoryItem, sanitizePersistedGlobalMemoryItem } from '../store/globalMemory';
 import type { FinanceDataSnapshot } from '../store/useFinanceStore';
 import { readStoredLedgerflowApiToken } from './ledgerflowApiToken';
+import { tApiError as t } from './apiErrorTranslator';
 
 const BACKUP_KEY = 'ledgerflow-backup-webdav-v1';
 const BACKUP_PASSWORD_SESSION_KEY = 'ledgerflow-backup-webdav-password';
@@ -96,13 +97,13 @@ function isPrivateOrLocalHost(hostname: string): boolean {
 function normalizeProxyBasePath(path: string): string {
   const trimmed = path.trim();
   if (!trimmed) {
-    throw new Error('已启用同源代理，请填写代理入口路径');
+    throw new Error(t('dataBackup.webdav.error.proxyPathRequired', '已启用同源代理，请填写代理入口路径'));
   }
   if (!trimmed.startsWith('/')) {
-    throw new Error('代理入口路径必须以 / 开头，例如 /api/webdav');
+    throw new Error(t('dataBackup.webdav.error.proxyPathSlash', '代理入口路径必须以 / 开头，例如 /api/webdav'));
   }
   if (trimmed.startsWith('//') || trimmed.includes('://')) {
-    throw new Error('代理入口路径仅允许同源相对路径，例如 /api/webdav');
+    throw new Error(t('dataBackup.webdav.error.proxyPathRelative', '代理入口路径仅允许同源相对路径，例如 /api/webdav'));
   }
   return trimmed.replace(/\/+$/, '') || '/api/webdav';
 }
@@ -110,26 +111,26 @@ function normalizeProxyBasePath(path: string): string {
 function normalizeWebdavEndpoint(endpoint: string): string {
   const trimmed = endpoint.trim();
   if (!trimmed) {
-    throw new Error('请填写 WebDAV 地址');
+    throw new Error(t('dataBackup.webdav.error.urlRequired', '请填写 WebDAV 地址'));
   }
 
   let parsed: URL;
   try {
     parsed = new URL(trimmed);
   } catch {
-    throw new Error('WebDAV 地址格式无效，请使用完整 HTTPS URL');
+    throw new Error(t('dataBackup.webdav.error.urlFormat', 'WebDAV 地址格式无效，请使用完整 HTTPS URL'));
   }
 
   if (parsed.protocol !== 'https:') {
-    throw new Error('WebDAV 地址仅支持 HTTPS 协议');
+    throw new Error(t('dataBackup.webdav.error.urlHttpsOnly', 'WebDAV 地址仅支持 HTTPS 协议'));
   }
 
   if (parsed.username || parsed.password) {
-    throw new Error('WebDAV 地址中不应包含用户名或密码');
+    throw new Error(t('dataBackup.webdav.error.urlNoCredentials', 'WebDAV 地址中不应包含用户名或密码'));
   }
 
   if (isPrivateOrLocalHost(parsed.hostname)) {
-    throw new Error('WebDAV 地址不允许使用本地或内网地址');
+    throw new Error(t('dataBackup.webdav.error.urlNoLocalHost', 'WebDAV 地址不允许使用本地或内网地址'));
   }
 
   return parsed.toString().replace(/\/$/, '');
@@ -138,12 +139,12 @@ function normalizeWebdavEndpoint(endpoint: string): string {
 function normalizeRemoteFilePath(path: string): string {
   const trimmed = path.trim().replace(/^\/+/, '').replace(/\/+$/, '');
   if (!trimmed) {
-    throw new Error('请填写远程文件路径');
+    throw new Error(t('dataBackup.webdav.error.remotePathRequired', '请填写远程文件路径'));
   }
 
   const segments = trimmed.split('/').map((item) => item.trim());
   if (segments.some((item) => !item || item === '.' || item === '..')) {
-    throw new Error('远程文件路径不合法，请避免使用空段或 . / ..');
+    throw new Error(t('dataBackup.webdav.error.remotePathInvalid', '远程文件路径不合法，请避免使用空段或 . / ..'));
   }
 
   return segments.join('/');
@@ -205,30 +206,30 @@ function normalizeObjectStorageEndpoint(
 ): string {
   const trimmed = endpoint.trim();
   if (!trimmed) {
-    throw new Error(provider === 'aliyun-oss' ? '请填写 OSS Endpoint' : '请填写 S3 Endpoint');
+    throw new Error(provider === 'aliyun-oss' ? t('dataBackup.objectStorage.error.ossEndpointRequired', '请填写 OSS Endpoint') : t('dataBackup.objectStorage.error.s3EndpointRequired', '请填写 S3 Endpoint'));
   }
 
   let parsed: URL;
   try {
     parsed = new URL(trimmed);
   } catch {
-    throw new Error('对象存储 Endpoint 格式无效，请使用完整 HTTPS URL');
+    throw new Error(t('dataBackup.objectStorage.error.endpointFormat', '对象存储 Endpoint 格式无效，请使用完整 HTTPS URL'));
   }
 
   if (parsed.protocol !== 'https:') {
-    throw new Error('对象存储 Endpoint 仅支持 HTTPS 协议');
+    throw new Error(t('dataBackup.objectStorage.error.endpointHttpsOnly', '对象存储 Endpoint 仅支持 HTTPS 协议'));
   }
 
   if (parsed.username || parsed.password) {
-    throw new Error('对象存储 Endpoint 中不应包含 AccessKey');
+    throw new Error(t('dataBackup.objectStorage.error.endpointNoAccessKey', '对象存储 Endpoint 中不应包含 AccessKey'));
   }
 
   if (isPrivateOrLocalHost(parsed.hostname)) {
-    throw new Error('对象存储 Endpoint 不允许使用本地或内网地址');
+    throw new Error(t('dataBackup.objectStorage.error.endpointNoLocalHost', '对象存储 Endpoint 不允许使用本地或内网地址'));
   }
 
   if (parsed.pathname !== '/' && parsed.pathname.replace(/\/+$/, '') !== '') {
-    throw new Error('对象存储 Endpoint 请填写服务根地址，不要带路径');
+    throw new Error(t('dataBackup.objectStorage.error.endpointRootOnly', '对象存储 Endpoint 请填写服务根地址，不要带路径'));
   }
 
   parsed.pathname = '/';
@@ -240,10 +241,10 @@ function normalizeObjectStorageEndpoint(
 function normalizeObjectStorageBucket(bucket: string): string {
   const trimmed = bucket.trim();
   if (!trimmed) {
-    throw new Error('请填写 Bucket 名称');
+    throw new Error(t('dataBackup.objectStorage.error.bucketRequired', '请填写 Bucket 名称'));
   }
   if (/[\\/\s]/.test(trimmed)) {
-    throw new Error('Bucket 名称不应包含空格或斜杠');
+    throw new Error(t('dataBackup.objectStorage.error.bucketInvalid', 'Bucket 名称不应包含空格或斜杠'));
   }
   return trimmed;
 }
@@ -526,14 +527,14 @@ function assertString(
   if (!required && (value === undefined || value === null)) {
     return;
   }
-  throw new Error(`备份文件字段无效：${path} 应为字符串`);
+  throw new Error(t('dataBackup.import.error.field.string', "备份文件字段无效：{path} 应为字符串").replace("{path}", String(path)));
 }
 
 function assertNumber(value: unknown, path: string): asserts value is number {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return;
   }
-  throw new Error(`备份文件字段无效：${path} 应为有限数字`);
+  throw new Error(t('dataBackup.import.error.field.number', "备份文件字段无效：{path} 应为有限数字").replace("{path}", String(path)));
 }
 
 function assertDateString(
@@ -547,13 +548,13 @@ function assertDateString(
   assertString(value, path, { required });
   const text = String(value).trim();
   if (!/^\d{4}-\d{2}-\d{2}/.test(text)) {
-    throw new Error(`备份文件字段无效：${path} 应为日期字符串（YYYY-MM-DD）`);
+    throw new Error(t('dataBackup.import.error.field.dateString', "备份文件字段无效：{path} 应为日期字符串（YYYY-MM-DD）").replace("{path}", String(path)));
   }
 }
 
 function assertStringArray(value: unknown, path: string): asserts value is string[] {
   if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
-    throw new Error(`备份文件字段无效：${path} 应为字符串数组`);
+    throw new Error(t('dataBackup.import.error.field.stringArray', "备份文件字段无效：{path} 应为字符串数组").replace("{path}", String(path)));
   }
 }
 
@@ -564,7 +565,7 @@ function validateTransactionAttachmentItem(
 ): TransactionAttachmentItem {
   if (!isObjectRecord(item)) {
     throw new Error(
-      `备份文件字段无效：data.transactions[${transactionIndex}].attachments[${attachmentIndex}] 应为对象`
+      t('dataBackup.import.error.field.transactionsAttachmentObject', "备份文件字段无效：data.transactions[{transactionIndex}].attachments[{attachmentIndex}] 应为对象").replace("{transactionIndex}", String(transactionIndex)).replace("{attachmentIndex}", String(attachmentIndex))
     );
   }
 
@@ -608,7 +609,7 @@ function validateTransactionAttachmentItem(
 
 function validateTransactionItem(item: unknown, index: number): TransactionItem {
   if (!isObjectRecord(item)) {
-    throw new Error(`备份文件字段无效：data.transactions[${index}] 应为对象`);
+    throw new Error(t('dataBackup.import.error.field.transactionsObject', "备份文件字段无效：data.transactions[{index}] 应为对象").replace("{index}", String(index)));
   }
 
   assertString(item.id, `data.transactions[${index}].id`);
@@ -623,7 +624,7 @@ function validateTransactionItem(item: unknown, index: number): TransactionItem 
     typeof item.type !== 'string' ||
     !TRANSACTION_TYPES.has(item.type as TransactionItem['type'])
   ) {
-    throw new Error(`备份文件字段无效：data.transactions[${index}].type 枚举值不合法`);
+    throw new Error(t('dataBackup.import.error.field.transactionsType', "备份文件字段无效：data.transactions[{index}].type 枚举值不合法").replace("{index}", String(index)));
   }
 
   if (
@@ -631,7 +632,7 @@ function validateTransactionItem(item: unknown, index: number): TransactionItem 
     (typeof item.source !== 'string' ||
       !TRANSACTION_SOURCES.has(item.source as NonNullable<TransactionItem['source']>))
   ) {
-    throw new Error(`备份文件字段无效：data.transactions[${index}].source 枚举值不合法`);
+    throw new Error(t('dataBackup.import.error.field.transactionsSource', "备份文件字段无效：data.transactions[{index}].source 枚举值不合法").replace("{index}", String(index)));
   }
 
   if (
@@ -639,7 +640,7 @@ function validateTransactionItem(item: unknown, index: number): TransactionItem 
     (typeof item.status !== 'string' ||
       !TRANSACTION_STATUS.has(item.status as NonNullable<TransactionItem['status']>))
   ) {
-    throw new Error(`备份文件字段无效：data.transactions[${index}].status 枚举值不合法`);
+    throw new Error(t('dataBackup.import.error.field.transactionsStatus', "备份文件字段无效：data.transactions[{index}].status 枚举值不合法").replace("{index}", String(index)));
   }
 
   assertString(item.orderNo, `data.transactions[${index}].orderNo`, { required: false });
@@ -659,12 +660,12 @@ function validateTransactionItem(item: unknown, index: number): TransactionItem 
         item.adjustmentKind as NonNullable<TransactionItem['adjustmentKind']>
       ))
   ) {
-    throw new Error(`备份文件字段无效：data.transactions[${index}].adjustmentKind 枚举值不合法`);
+    throw new Error(t('dataBackup.import.error.field.transactionsAdjustmentKind', "备份文件字段无效：data.transactions[{index}].adjustmentKind 枚举值不合法").replace("{index}", String(index)));
   }
 
   const attachments = item.attachments;
   if (attachments !== undefined && !Array.isArray(attachments)) {
-    throw new Error(`备份文件字段无效：data.transactions[${index}].attachments 应为数组`);
+    throw new Error(t('dataBackup.import.error.field.transactionsAttachmentsArray', "备份文件字段无效：data.transactions[{index}].attachments 应为数组").replace("{index}", String(index)));
   }
 
   return {
@@ -694,7 +695,7 @@ function validateTransactionItem(item: unknown, index: number): TransactionItem 
 
 function validateCategoryItem(item: unknown, index: number): Category {
   if (!isObjectRecord(item)) {
-    throw new Error(`备份文件字段无效：data.categories[${index}] 应为对象`);
+    throw new Error(t('dataBackup.import.error.field.categoriesObject', "备份文件字段无效：data.categories[{index}] 应为对象").replace("{index}", String(index)));
   }
 
   assertString(item.id, `data.categories[${index}].id`);
@@ -712,7 +713,7 @@ function validateCategoryItem(item: unknown, index: number): Category {
     (typeof item.kind !== 'string' ||
       !CATEGORY_KINDS.has(item.kind as NonNullable<Category['kind']>))
   ) {
-    throw new Error(`备份文件字段无效：data.categories[${index}].kind 枚举值不合法`);
+    throw new Error(t('dataBackup.import.error.field.categoriesKind', "备份文件字段无效：data.categories[{index}].kind 枚举值不合法").replace("{index}", String(index)));
   }
 
   return {
@@ -728,7 +729,7 @@ function validateCategoryItem(item: unknown, index: number): Category {
 
 function validateAccountItem(item: unknown, index: number): Account {
   if (!isObjectRecord(item)) {
-    throw new Error(`备份文件字段无效：data.accounts[${index}] 应为对象`);
+    throw new Error(t('dataBackup.import.error.field.accountsObject', "备份文件字段无效：data.accounts[{index}] 应为对象").replace("{index}", String(index)));
   }
 
   assertString(item.id, `data.accounts[${index}].id`);
@@ -749,7 +750,7 @@ function validateAccountItem(item: unknown, index: number): Account {
     item.type !== undefined &&
     (typeof item.type !== 'string' || !ACCOUNT_TYPES.has(item.type as NonNullable<Account['type']>))
   ) {
-    throw new Error(`备份文件字段无效：data.accounts[${index}].type 枚举值不合法`);
+    throw new Error(t('dataBackup.import.error.field.accountsType', "备份文件字段无效：data.accounts[{index}].type 枚举值不合法").replace("{index}", String(index)));
   }
 
   return {
@@ -766,7 +767,7 @@ function validateAccountItem(item: unknown, index: number): Account {
 
 function validateBalanceChangeEntry(item: unknown, index: number): BalanceChangeEntry {
   if (!isObjectRecord(item)) {
-    throw new Error(`备份文件字段无效：data.balanceChangeEntries[${index}] 应为对象`);
+    throw new Error(t('dataBackup.import.error.field.balanceChangeEntriesObject', "备份文件字段无效：data.balanceChangeEntries[{index}] 应为对象").replace("{index}", String(index)));
   }
 
   assertString(item.id, `data.balanceChangeEntries[${index}].id`);
@@ -790,7 +791,7 @@ function validateBalanceChangeEntry(item: unknown, index: number): BalanceChange
     typeof item.type !== 'string' ||
     !BALANCE_CHANGE_TYPES.has(item.type as BalanceChangeEntry['type'])
   ) {
-    throw new Error(`备份文件字段无效：data.balanceChangeEntries[${index}].type 枚举值不合法`);
+    throw new Error(t('dataBackup.import.error.field.balanceChangeEntriesType', "备份文件字段无效：data.balanceChangeEntries[{index}].type 枚举值不合法").replace("{index}", String(index)));
   }
 
   return {
@@ -814,7 +815,7 @@ function validateSubscriptionItem(
   fallbackDate = LEGACY_BACKUP_FALLBACK_DATE
 ): SubscriptionItem {
   if (!isObjectRecord(item)) {
-    throw new Error(`备份文件字段无效：data.subscriptions[${index}] 应为对象`);
+    throw new Error(t('dataBackup.import.error.field.subscriptionsObject', "备份文件字段无效：data.subscriptions[{index}] 应为对象").replace("{index}", String(index)));
   }
 
   assertString(item.id, `data.subscriptions[${index}].id`);
@@ -846,7 +847,7 @@ function validateSubscriptionItem(
     item.kind !== undefined &&
     (typeof item.kind !== 'string' || !SUBSCRIPTION_KINDS.has(item.kind as SubscriptionKind))
   ) {
-    throw new Error(`备份文件字段无效：data.subscriptions[${index}].kind 枚举值不合法`);
+    throw new Error(t('dataBackup.import.error.field.subscriptionsKind', "备份文件字段无效：data.subscriptions[{index}].kind 枚举值不合法").replace("{index}", String(index)));
   }
 
   if (
@@ -854,14 +855,14 @@ function validateSubscriptionItem(
     (typeof item.billingCycle !== 'string' ||
       !SUBSCRIPTION_BILLING_CYCLES.has(item.billingCycle as SubscriptionBillingCycle))
   ) {
-    throw new Error(`备份文件字段无效：data.subscriptions[${index}].billingCycle 枚举值不合法`);
+    throw new Error(t('dataBackup.import.error.field.subscriptionsBillingCycle', "备份文件字段无效：data.subscriptions[{index}].billingCycle 枚举值不合法").replace("{index}", String(index)));
   }
 
   if (
     item.status !== undefined &&
     (typeof item.status !== 'string' || !SUBSCRIPTION_STATUS.has(item.status as SubscriptionStatus))
   ) {
-    throw new Error(`备份文件字段无效：data.subscriptions[${index}].status 枚举值不合法`);
+    throw new Error(t('dataBackup.import.error.field.subscriptionsStatus', "备份文件字段无效：data.subscriptions[{index}].status 枚举值不合法").replace("{index}", String(index)));
   }
 
   if (item.customCycleDays !== undefined) {
@@ -869,7 +870,7 @@ function validateSubscriptionItem(
   }
 
   if (item.autoRenew !== undefined && typeof item.autoRenew !== 'boolean') {
-    throw new Error(`备份文件字段无效：data.subscriptions[${index}].autoRenew 应为布尔值`);
+    throw new Error(t('dataBackup.import.error.field.subscriptionsAutoRenew', "备份文件字段无效：data.subscriptions[{index}].autoRenew 应为布尔值").replace("{index}", String(index)));
   }
 
   return {
@@ -910,7 +911,7 @@ function validateInvestmentPositionItem(
   fallbackDate = LEGACY_BACKUP_FALLBACK_DATE
 ): InvestmentPosition {
   if (!isObjectRecord(item)) {
-    throw new Error(`备份文件字段无效：data.investmentPositions[${index}] 应为对象`);
+    throw new Error(t('dataBackup.import.error.field.investmentPositionsObject', "备份文件字段无效：data.investmentPositions[{index}] 应为对象").replace("{index}", String(index)));
   }
 
   assertString(item.id, `data.investmentPositions[${index}].id`);
@@ -938,7 +939,7 @@ function validateInvestmentPositionItem(
     (typeof item.category !== 'string' ||
       !INVESTMENT_CATEGORIES.has(item.category as InvestmentCategory))
   ) {
-    throw new Error(`备份文件字段无效：data.investmentPositions[${index}].category 枚举值不合法`);
+    throw new Error(t('dataBackup.import.error.field.investmentPositionsCategory', "备份文件字段无效：data.investmentPositions[{index}].category 枚举值不合法").replace("{index}", String(index)));
   }
 
   if (
@@ -946,7 +947,7 @@ function validateInvestmentPositionItem(
     (typeof item.riskLevel !== 'string' ||
       !INVESTMENT_RISK_LEVELS.has(item.riskLevel as InvestmentRiskLevel))
   ) {
-    throw new Error(`备份文件字段无效：data.investmentPositions[${index}].riskLevel 枚举值不合法`);
+    throw new Error(t('dataBackup.import.error.field.investmentPositionsRiskLevel', "备份文件字段无效：data.investmentPositions[{index}].riskLevel 枚举值不合法").replace("{index}", String(index)));
   }
 
   if (item.monthlyContribution !== undefined) {
@@ -959,7 +960,7 @@ function validateInvestmentPositionItem(
     assertNumber(item.targetAllocation, `data.investmentPositions[${index}].targetAllocation`);
   }
   if (item.isActive !== undefined && typeof item.isActive !== 'boolean') {
-    throw new Error(`备份文件字段无效：data.investmentPositions[${index}].isActive 应为布尔值`);
+    throw new Error(t('dataBackup.import.error.field.investmentPositionsIsActive', "备份文件字段无效：data.investmentPositions[{index}].isActive 应为布尔值").replace("{index}", String(index)));
   }
 
   return {
@@ -988,7 +989,7 @@ function validateInvestmentPositionHistoryItem(
   fallbackDate = LEGACY_BACKUP_FALLBACK_DATE
 ): InvestmentPositionHistoryEntry {
   if (!isObjectRecord(item)) {
-    throw new Error(`备份文件字段无效：data.investmentPositionHistory[${index}] 应为对象`);
+    throw new Error(t('dataBackup.import.error.field.investmentPositionHistoryObject', "备份文件字段无效：data.investmentPositionHistory[{index}] 应为对象").replace("{index}", String(index)));
   }
 
   assertString(item.id, `data.investmentPositionHistory[${index}].id`);
@@ -1020,7 +1021,7 @@ function validateInvestmentPositionHistoryItem(
       !INVESTMENT_CATEGORIES.has(item.category as InvestmentCategory))
   ) {
     throw new Error(
-      `备份文件字段无效：data.investmentPositionHistory[${index}].category 枚举值不合法`
+      t('dataBackup.import.error.field.investmentPositionHistoryCategory', "备份文件字段无效：data.investmentPositionHistory[{index}].category 枚举值不合法").replace("{index}", String(index))
     );
   }
 
@@ -1032,7 +1033,7 @@ function validateInvestmentPositionHistoryItem(
     item.action !== 'snapshot'
   ) {
     throw new Error(
-      `备份文件字段无效：data.investmentPositionHistory[${index}].action 枚举值不合法`
+      t('dataBackup.import.error.field.investmentPositionHistoryAction', "备份文件字段无效：data.investmentPositionHistory[{index}].action 枚举值不合法").replace("{index}", String(index))
     );
   }
 
@@ -1050,7 +1051,7 @@ function validateInvestmentPositionHistoryItem(
   }
   if (item.isActive !== undefined && typeof item.isActive !== 'boolean') {
     throw new Error(
-      `备份文件字段无效：data.investmentPositionHistory[${index}].isActive 应为布尔值`
+      t('dataBackup.import.error.field.investmentPositionHistoryIsActive', "备份文件字段无效：data.investmentPositionHistory[{index}].isActive 应为布尔值").replace("{index}", String(index))
     );
   }
 
@@ -1085,7 +1086,7 @@ function validateInvestmentGoalItem(
   fallbackDate = LEGACY_BACKUP_FALLBACK_DATE
 ): InvestmentGoal {
   if (!isObjectRecord(item)) {
-    throw new Error(`备份文件字段无效：data.investmentGoals[${index}] 应为对象`);
+    throw new Error(t('dataBackup.import.error.field.investmentGoalsObject', "备份文件字段无效：data.investmentGoals[{index}] 应为对象").replace("{index}", String(index)));
   }
 
   assertString(item.id, `data.investmentGoals[${index}].id`);
@@ -1105,7 +1106,7 @@ function validateInvestmentGoalItem(
     item.kind !== undefined &&
     (typeof item.kind !== 'string' || !INVESTMENT_GOAL_KINDS.has(item.kind as InvestmentGoalKind))
   ) {
-    throw new Error(`备份文件字段无效：data.investmentGoals[${index}].kind 枚举值不合法`);
+    throw new Error(t('dataBackup.import.error.field.investmentGoalsKind', "备份文件字段无效：data.investmentGoals[{index}].kind 枚举值不合法").replace("{index}", String(index)));
   }
 
   if (
@@ -1113,7 +1114,7 @@ function validateInvestmentGoalItem(
     (typeof item.priority !== 'string' ||
       !INVESTMENT_GOAL_PRIORITIES.has(item.priority as InvestmentGoalPriority))
   ) {
-    throw new Error(`备份文件字段无效：data.investmentGoals[${index}].priority 枚举值不合法`);
+    throw new Error(t('dataBackup.import.error.field.investmentGoalsPriority', "备份文件字段无效：data.investmentGoals[{index}].priority 枚举值不合法").replace("{index}", String(index)));
   }
 
   if (item.monthlyContribution !== undefined) {
@@ -1144,7 +1145,7 @@ function validateInvestmentFundAnalysis(
     return undefined;
   }
   if (!isObjectRecord(item)) {
-    throw new Error(`备份文件字段无效：${path} 应为对象`);
+    throw new Error(t('dataBackup.import.error.field.object', "备份文件字段无效：{path} 应为对象").replace("{path}", String(path)));
   }
 
   assertString(item.verdict, `${path}.verdict`, { required: false });
@@ -1164,14 +1165,14 @@ function validateInvestmentFundAnalysis(
     (typeof item.riskLevel !== 'string' ||
       !INVESTMENT_ANALYSIS_RISK_LEVELS.has(item.riskLevel as InvestmentAnalysisRiskLevel))
   ) {
-    throw new Error(`备份文件字段无效：${path}.riskLevel 枚举值不合法`);
+    throw new Error(t('dataBackup.import.error.field.riskLevelEnum', "备份文件字段无效：{path}.riskLevel 枚举值不合法").replace("{path}", String(path)));
   }
 
   return {
     fundName: asSafeString(item.fundName) || undefined,
     fundCode: asSafeString(item.fundCode) || undefined,
-    verdict: asSafeString(item.verdict) || '待复盘',
-    summary: asSafeString(item.summary) || asSafeString(item.note) || '旧备份未记录分析摘要',
+    verdict: asSafeString(item.verdict) || t('dataBackup.investment.reviewPending', '待复盘'),
+    summary: asSafeString(item.summary) || asSafeString(item.note) || t('dataBackup.investment.legacyNoSummary', '旧备份未记录分析摘要'),
     riskLevel: (item.riskLevel as InvestmentAnalysisRiskLevel | undefined) || 'unknown',
     highlights: readOptionalStringArray(item.highlights, `${path}.highlights`),
     risks: readOptionalStringArray(item.risks, `${path}.risks`),
@@ -1204,7 +1205,7 @@ function validateInvestmentWatchItem(
   fallbackDate = LEGACY_BACKUP_FALLBACK_DATE
 ): InvestmentWatchItem {
   if (!isObjectRecord(item)) {
-    throw new Error(`备份文件字段无效：data.investmentWatchlist[${index}] 应为对象`);
+    throw new Error(t('dataBackup.import.error.field.investmentWatchlistObject', "备份文件字段无效：data.investmentWatchlist[{index}] 应为对象").replace("{index}", String(index)));
   }
 
   assertString(item.id, `data.investmentWatchlist[${index}].id`);
@@ -1255,7 +1256,7 @@ function validateInvestmentWatchItem(
       !INVESTMENT_ANALYSIS_RISK_LEVELS.has(item.lastRiskLevel as InvestmentAnalysisRiskLevel))
   ) {
     throw new Error(
-      `备份文件字段无效：data.investmentWatchlist[${index}].lastRiskLevel 枚举值不合法`
+      t('dataBackup.import.error.field.investmentWatchlistLastRiskLevel', "备份文件字段无效：data.investmentWatchlist[{index}].lastRiskLevel 枚举值不合法").replace("{index}", String(index))
     );
   }
 
@@ -1321,7 +1322,7 @@ function validateInvestmentAiMessage(
   fallbackDate = LEGACY_BACKUP_FALLBACK_DATE
 ): InvestmentAiMessage {
   if (!isObjectRecord(item)) {
-    throw new Error(`备份文件字段无效：data.investmentAiMessages[${index}] 应为对象`);
+    throw new Error(t('dataBackup.import.error.field.investmentAiMessagesObject', "备份文件字段无效：data.investmentAiMessages[{index}] 应为对象").replace("{index}", String(index)));
   }
 
   assertString(item.id, `data.investmentAiMessages[${index}].id`);
@@ -1334,10 +1335,10 @@ function validateInvestmentAiMessage(
   });
 
   if (item.role !== undefined && item.role !== 'user' && item.role !== 'assistant') {
-    throw new Error(`备份文件字段无效：data.investmentAiMessages[${index}].role 枚举值不合法`);
+    throw new Error(t('dataBackup.import.error.field.investmentAiMessagesRole', "备份文件字段无效：data.investmentAiMessages[{index}].role 枚举值不合法").replace("{index}", String(index)));
   }
   if (item.feedback !== undefined && item.feedback !== 'up' && item.feedback !== 'down') {
-    throw new Error(`备份文件字段无效：data.investmentAiMessages[${index}].feedback 枚举值不合法`);
+    throw new Error(t('dataBackup.import.error.field.investmentAiMessagesFeedback', "备份文件字段无效：data.investmentAiMessages[{index}].feedback 枚举值不合法").replace("{index}", String(index)));
   }
   if (item.attachmentCount !== undefined) {
     assertNumber(item.attachmentCount, `data.investmentAiMessages[${index}].attachmentCount`);
@@ -1352,7 +1353,7 @@ function validateInvestmentAiMessage(
   return {
     id: asSafeString(item.id),
     role: item.role === 'user' ? 'user' : 'assistant',
-    text: asSafeString(item.text) || '旧备份未记录消息正文',
+    text: asSafeString(item.text) || t('dataBackup.investment.legacyNoContent', '旧备份未记录消息正文'),
     feedback: item.feedback as InvestmentAiMessage['feedback'] | undefined,
     reasoning: asSafeString(item.reasoning) || undefined,
     attachmentCount:
@@ -1452,16 +1453,16 @@ export function parseFinanceBackupPayload(raw: string): FinanceBackupPayload {
   try {
     parsed = JSON.parse(normalizedRaw);
   } catch {
-    throw new Error('备份文件格式无效：JSON 解析失败');
+    throw new Error(t('dataBackup.import.error.jsonParse', '备份文件格式无效：JSON 解析失败'));
   }
 
   if (!isObjectRecord(parsed)) {
-    throw new Error('备份文件格式无效');
+    throw new Error(t('dataBackup.import.error.format', '备份文件格式无效'));
   }
 
   const data = parsed.data;
   if (!isObjectRecord(data)) {
-    throw new Error('备份文件缺少 data 字段');
+    throw new Error(t('dataBackup.import.error.missingData', '备份文件缺少 data 字段'));
   }
 
   if (
@@ -1469,58 +1470,58 @@ export function parseFinanceBackupPayload(raw: string): FinanceBackupPayload {
     !Array.isArray(data.categories) ||
     !Array.isArray(data.accounts)
   ) {
-    throw new Error('备份文件缺少必要数据（transactions/categories/accounts）');
+    throw new Error(t('dataBackup.import.error.missingRequiredData', '备份文件缺少必要数据（transactions/categories/accounts）'));
   }
 
   if (data.subscriptions !== undefined && !Array.isArray(data.subscriptions)) {
-    throw new Error('备份文件字段无效：data.subscriptions 应为数组');
+    throw new Error(t('dataBackup.import.error.field.dataSubscriptionsArray', '备份文件字段无效：data.subscriptions 应为数组'));
   }
 
   if (data.trashedTransactions !== undefined && !Array.isArray(data.trashedTransactions)) {
-    throw new Error('备份文件字段无效：data.trashedTransactions 应为数组');
+    throw new Error(t('dataBackup.import.error.field.dataTrashedTransactionsArray', '备份文件字段无效：data.trashedTransactions 应为数组'));
   }
 
   if (data.trashedCategories !== undefined && !Array.isArray(data.trashedCategories)) {
-    throw new Error('备份文件字段无效：data.trashedCategories 应为数组');
+    throw new Error(t('dataBackup.import.error.field.dataTrashedCategoriesArray', '备份文件字段无效：data.trashedCategories 应为数组'));
   }
 
   if (data.trashedAccounts !== undefined && !Array.isArray(data.trashedAccounts)) {
-    throw new Error('备份文件字段无效：data.trashedAccounts 应为数组');
+    throw new Error(t('dataBackup.import.error.field.dataTrashedAccountsArray', '备份文件字段无效：data.trashedAccounts 应为数组'));
   }
 
   if (data.balanceChangeEntries !== undefined && !Array.isArray(data.balanceChangeEntries)) {
-    throw new Error('备份文件字段无效：data.balanceChangeEntries 应为数组');
+    throw new Error(t('dataBackup.import.error.field.dataBalanceChangeEntriesArray', '备份文件字段无效：data.balanceChangeEntries 应为数组'));
   }
 
   if (data.trashedSubscriptions !== undefined && !Array.isArray(data.trashedSubscriptions)) {
-    throw new Error('备份文件字段无效：data.trashedSubscriptions 应为数组');
+    throw new Error(t('dataBackup.import.error.field.dataTrashedSubscriptionsArray', '备份文件字段无效：data.trashedSubscriptions 应为数组'));
   }
 
   if (data.globalMemories !== undefined && !Array.isArray(data.globalMemories)) {
-    throw new Error('备份文件字段无效：data.globalMemories 应为数组');
+    throw new Error(t('dataBackup.import.error.field.dataGlobalMemoriesArray', '备份文件字段无效：data.globalMemories 应为数组'));
   }
 
   if (data.investmentPositions !== undefined && !Array.isArray(data.investmentPositions)) {
-    throw new Error('备份文件字段无效：data.investmentPositions 应为数组');
+    throw new Error(t('dataBackup.import.error.field.dataInvestmentPositionsArray', '备份文件字段无效：data.investmentPositions 应为数组'));
   }
 
   if (
     data.investmentPositionHistory !== undefined &&
     !Array.isArray(data.investmentPositionHistory)
   ) {
-    throw new Error('备份文件字段无效：data.investmentPositionHistory 应为数组');
+    throw new Error(t('dataBackup.import.error.field.dataInvestmentPositionHistoryArray', '备份文件字段无效：data.investmentPositionHistory 应为数组'));
   }
 
   if (data.investmentGoals !== undefined && !Array.isArray(data.investmentGoals)) {
-    throw new Error('备份文件字段无效：data.investmentGoals 应为数组');
+    throw new Error(t('dataBackup.import.error.field.dataInvestmentGoalsArray', '备份文件字段无效：data.investmentGoals 应为数组'));
   }
 
   if (data.investmentWatchlist !== undefined && !Array.isArray(data.investmentWatchlist)) {
-    throw new Error('备份文件字段无效：data.investmentWatchlist 应为数组');
+    throw new Error(t('dataBackup.import.error.field.dataInvestmentWatchlistArray', '备份文件字段无效：data.investmentWatchlist 应为数组'));
   }
 
   if (data.investmentAiMessages !== undefined && !Array.isArray(data.investmentAiMessages)) {
-    throw new Error('备份文件字段无效：data.investmentAiMessages 应为数组');
+    throw new Error(t('dataBackup.import.error.field.dataInvestmentAiMessagesArray', '备份文件字段无效：data.investmentAiMessages 应为数组'));
   }
 
   const fallbackDate =
@@ -1767,17 +1768,24 @@ function buildWebdavHeaders(
   return headers;
 }
 
-function normalizeWebdavError(action: '上传' | '下载' | '创建目录', error: unknown): Error {
+type BackupActionKind = 'upload' | 'download' | 'createDirectory' | 'list' | 'delete';
+
+// Localized verb for transfer actions; the token itself is the fallback (only used before i18n is ready).
+function backupActionLabel(action: BackupActionKind) {
+  return t(`dataBackup.backup.action.${action}`, action);
+}
+
+function normalizeWebdavError(action: BackupActionKind, error: unknown): Error {
   if (error instanceof Error) {
     if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
       return new Error(
-        `WebDAV ${action}失败：请求被浏览器拦截（常见于跨域 CORS / HTTPS 混合内容）。` +
-          `可尝试将 endpoint 改为同源代理地址（例如 /api/webdav）并在服务端转发到真实 WebDAV。`
+        t('dataBackup.webdav.error.blockedByBrowser', "WebDAV {action}失败：请求被浏览器拦截（常见于跨域 CORS / HTTPS 混合内容）。").replace('{action}', backupActionLabel(action)) +
+          t('dataBackup.webdav.error.proxySuggestion', `可尝试将 endpoint 改为同源代理地址（例如 /api/webdav）并在服务端转发到真实 WebDAV。`)
       );
     }
     return error;
   }
-  return new Error(`WebDAV ${action}失败，请稍后重试`);
+  return new Error(t('dataBackup.webdav.error.retryLater', "WebDAV {action}失败，请稍后重试").replace('{action}', backupActionLabel(action)));
 }
 
 async function ensureWebdavDirectoriesByPath(
@@ -1805,7 +1813,7 @@ async function ensureWebdavDirectoriesByPath(
     }
 
     if (![200, 201, 204, 301, 302, 400, 403, 405, 409].includes(response.status)) {
-      throw new Error(`WebDAV 目录创建失败（${current}，HTTP ${response.status}）`);
+      throw new Error(t('dataBackup.webdav.error.createDirectoryFailed', "WebDAV 目录创建失败（{path}，HTTP {status}）").replace("{path}", String(current)).replace("{status}", String(response.status)));
     }
   }
 }
@@ -1993,7 +2001,7 @@ async function listWebdavRemoteFileEntries(
   });
 
   if (!response.ok) {
-    throw new Error(`WebDAV 列目录失败（HTTP ${response.status}）`);
+    throw new Error(t('dataBackup.webdav.error.listFailed', "WebDAV 列目录失败（HTTP {status}）").replace("{status}", String(response.status)));
   }
 
   const text = await response.text();
@@ -2026,7 +2034,7 @@ async function deleteWebdavFile(config: BackupWebdavConfig, remoteFilePath: stri
     headers: buildWebdavHeaders(sanitized)
   });
   if (![200, 202, 204, 404].includes(response.status)) {
-    throw new Error(`WebDAV 删除失败（${remoteFilePath}，HTTP ${response.status}）`);
+    throw new Error(t('dataBackup.webdav.error.deleteFailed', "WebDAV 删除失败（{path}，HTTP {status}）").replace("{path}", String(remoteFilePath)).replace("{status}", String(response.status)));
   }
 }
 
@@ -2045,7 +2053,7 @@ async function moveWebdavFile(
   });
 
   if (![200, 201, 204].includes(response.status)) {
-    throw new Error(`WebDAV 移动失败（${targetRemotePath}，HTTP ${response.status}）`);
+    throw new Error(t('dataBackup.webdav.error.moveFailed', "WebDAV 移动失败（{path}，HTTP {status}）").replace("{path}", String(targetRemotePath)).replace("{status}", String(response.status)));
   }
 }
 
@@ -2082,7 +2090,7 @@ async function putWebdavFileAtomically(
     });
 
     if (!response.ok) {
-      throw new Error(`WebDAV 上传失败（HTTP ${response.status}）`);
+      throw new Error(t('dataBackup.webdav.error.uploadFailed', "WebDAV 上传失败（HTTP {status}）").replace("{status}", String(response.status)));
     }
 
     await moveWebdavFile(sanitized, temporaryRemotePath, normalizedRemotePath);
@@ -2174,7 +2182,7 @@ export async function listWebdavBackupVersions(
         {
           remotePath: sanitized.remoteFilePath,
           fileName: splitRemoteDirAndFile(sanitized.remoteFilePath).file,
-          label: '当前固定备份文件',
+          label: t('dataBackup.backup.fixedEntry', '当前固定备份文件'),
           isLatest: true,
           backupAt: fixedEntry?.updatedAt
         }
@@ -2202,8 +2210,8 @@ export async function listWebdavBackupVersions(
         fileName,
         label: isFixedEntry
           ? latestVersionedLabel
-            ? `${latestVersionedLabel} · 固定入口`
-            : '当前固定备份文件'
+            ? t('dataBackup.backup.fixedEntrySuffix', "{label} · 固定入口").replace("{label}", String(latestVersionedLabel))
+            : t('dataBackup.backup.fixedEntry', '当前固定备份文件')
           : buildWebdavBackupVersionLabel(item.remotePath, sanitized.remoteFilePath),
         isLatest: index === 0,
         backupAt: versionTime?.backupAt || item.updatedAt
@@ -2214,7 +2222,7 @@ export async function listWebdavBackupVersions(
       {
         remotePath: sanitized.remoteFilePath,
         fileName: splitRemoteDirAndFile(sanitized.remoteFilePath).file,
-        label: '当前固定备份文件（目录列表不可用）',
+        label: t('dataBackup.backup.fixedEntryNoListing', '当前固定备份文件（目录列表不可用）'),
         isLatest: true
       }
     ];
@@ -2254,7 +2262,7 @@ export async function webdavUploadBackup(
 ): Promise<void> {
   try {
     const sanitized = sanitizeWebdavConfig(config);
-    onProgress?.('准备 WebDAV 备份...');
+    onProgress?.(t('dataBackup.webdav.stage.preparing', '准备 WebDAV 备份...'));
     const versionedRemotePath = buildVersionedBackupPath(
       sanitized.remoteFilePath,
       payload.exportedAt
@@ -2262,7 +2270,7 @@ export async function webdavUploadBackup(
     const latestRemotePath = sanitized.remoteFilePath;
     await ensureWebdavDirectoriesByPath(sanitized, versionedRemotePath);
     const body = JSON.stringify(payload, null, 2);
-    onProgress?.('上传版本备份...');
+    onProgress?.(t('dataBackup.backup.stage.uploadingVersion', '上传版本备份...'));
     await putWebdavFileAtomically(
       sanitized,
       versionedRemotePath,
@@ -2272,7 +2280,7 @@ export async function webdavUploadBackup(
 
     if (latestRemotePath !== versionedRemotePath) {
       await ensureWebdavDirectoriesByPath(sanitized, latestRemotePath);
-      onProgress?.('更新最新版本...');
+      onProgress?.(t('dataBackup.backup.stage.updatingLatest', '更新最新版本...'));
       await putWebdavFileAtomically(
         sanitized,
         latestRemotePath,
@@ -2282,13 +2290,13 @@ export async function webdavUploadBackup(
     }
 
     try {
-      onProgress?.('清理旧版本...');
+      onProgress?.(t('dataBackup.backup.stage.cleaningOld', '清理旧版本...'));
       await pruneWebdavBackupVersions(sanitized);
     } catch {
       // 版本清理失败不阻断主上传成功，避免代理 / WebDAV 实现差异导致上传整体失败。
     }
   } catch (error) {
-    throw normalizeWebdavError('上传', error);
+    throw normalizeWebdavError('upload', error);
   }
 }
 
@@ -2310,7 +2318,7 @@ export async function webdavUploadFile(
 
     return { remotePath: normalizedRemotePath };
   } catch (error) {
-    throw normalizeWebdavError('上传', error);
+    throw normalizeWebdavError('upload', error);
   }
 }
 
@@ -2330,18 +2338,18 @@ export async function webdavDownloadBackup(
     });
 
     if (!response.ok) {
-      throw new Error(`WebDAV 下载失败（HTTP ${response.status}）`);
+      throw new Error(t('dataBackup.webdav.error.downloadFailed', "WebDAV 下载失败（HTTP {status}）").replace("{status}", String(response.status)));
     }
 
     const text = await response.text();
     return parseFinanceBackupPayload(text);
   } catch (error) {
-    throw normalizeWebdavError('下载', error);
+    throw normalizeWebdavError('download', error);
   }
 }
 
 function getObjectStorageProviderLabel(provider: BackupObjectStorageProvider): string {
-  return provider === 'aliyun-oss' ? '阿里云 OSS' : 'S3 兼容存储';
+  return provider === 'aliyun-oss' ? t('dataBackup.objectStorage.oss', '阿里云 OSS') : t('dataBackup.objectStorage.s3Storage', 'S3 兼容存储');
 }
 
 function encodeRfc3986(value: string): string {
@@ -2591,20 +2599,20 @@ async function buildObjectStorageHeaders(
 
 function normalizeObjectStorageError(
   provider: BackupObjectStorageProvider,
-  action: '上传' | '下载' | '列目录' | '删除',
+  action: BackupActionKind,
   error: unknown
 ): Error {
   const label = getObjectStorageProviderLabel(provider);
   if (error instanceof Error) {
     if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
       return new Error(
-        `${label} ${action}失败：请求被浏览器拦截，通常是 Bucket CORS 未放行。` +
-          '请允许 Authorization、x-oss-date/x-amz-date、Content-Type 请求头，以及 PUT/GET/DELETE 方法。'
+        t('dataBackup.objectStorage.error.blockedByBrowser', "{provider} {action}失败：请求被浏览器拦截，通常是 Bucket CORS 未放行。").replace('{provider}', String(label)).replace('{action}', backupActionLabel(action)) +
+          t('dataBackup.objectStorage.error.corsHint', '请允许 Authorization、x-oss-date/x-amz-date、Content-Type 请求头，以及 PUT/GET/DELETE 方法。')
       );
     }
     return error;
   }
-  return new Error(`${label} ${action}失败，请稍后重试`);
+  return new Error(t('dataBackup.objectStorage.error.retryLater', "{provider} {action}失败，请稍后重试").replace('{provider}', String(label)).replace('{action}', backupActionLabel(action)));
 }
 
 function decodeXmlText(value: string): string {
@@ -2669,7 +2677,7 @@ async function listObjectStorageRemoteFileEntries(
 
   if (!response.ok) {
     throw new Error(
-      `${getObjectStorageProviderLabel(sanitized.provider)} 列目录失败（HTTP ${response.status}）`
+      t('dataBackup.objectStorage.error.listFailed', "{provider} 列目录失败（HTTP {status}）").replace("{provider}", String(getObjectStorageProviderLabel(sanitized.provider))).replace("{status}", String(response.status))
     );
   }
 
@@ -2699,7 +2707,7 @@ async function deleteObjectStorageFile(
 
   if (![200, 202, 204, 404].includes(response.status)) {
     throw new Error(
-      `${getObjectStorageProviderLabel(sanitized.provider)} 删除失败（${remoteFilePath}，HTTP ${response.status}）`
+      t('dataBackup.objectStorage.error.deleteFailed', "{provider} 删除失败（{path}，HTTP {status}）").replace("{provider}", String(getObjectStorageProviderLabel(sanitized.provider))).replace("{path}", String(remoteFilePath)).replace("{status}", String(response.status))
     );
   }
 }
@@ -2741,7 +2749,7 @@ export async function listObjectStorageBackupVersions(
         {
           remotePath: sanitized.remoteFilePath,
           fileName: splitRemoteDirAndFile(sanitized.remoteFilePath).file,
-          label: '当前固定备份文件',
+          label: t('dataBackup.backup.fixedEntry', '当前固定备份文件'),
           isLatest: true,
           backupAt: fixedEntry?.updatedAt
         }
@@ -2769,8 +2777,8 @@ export async function listObjectStorageBackupVersions(
         fileName,
         label: isFixedEntry
           ? latestVersionedLabel
-            ? `${latestVersionedLabel} · 固定入口`
-            : '当前固定备份文件'
+            ? t('dataBackup.backup.fixedEntrySuffix', "{label} · 固定入口").replace("{label}", String(latestVersionedLabel))
+            : t('dataBackup.backup.fixedEntry', '当前固定备份文件')
           : buildWebdavBackupVersionLabel(item.remotePath, sanitized.remoteFilePath),
         isLatest: index === 0,
         backupAt: versionTime?.backupAt || item.updatedAt
@@ -2781,7 +2789,7 @@ export async function listObjectStorageBackupVersions(
       {
         remotePath: sanitized.remoteFilePath,
         fileName: splitRemoteDirAndFile(sanitized.remoteFilePath).file,
-        label: '当前固定备份文件（目录列表不可用）',
+        label: t('dataBackup.backup.fixedEntryNoListing', '当前固定备份文件（目录列表不可用）'),
         isLatest: true
       }
     ];
@@ -2816,7 +2824,7 @@ export async function objectStorageUploadBackup(
   try {
     const sanitized = sanitizeObjectStorageConfig(config);
     const label = getObjectStorageProviderLabel(sanitized.provider);
-    onProgress?.(`准备 ${label} 备份...`);
+    onProgress?.(t('dataBackup.objectStorage.stage.preparing', "准备 {provider} 备份...").replace("{provider}", String(label)));
     const versionedRemotePath = buildVersionedBackupPath(
       sanitized.remoteFilePath,
       payload.exportedAt
@@ -2844,23 +2852,23 @@ export async function objectStorageUploadBackup(
       });
 
       if (!response.ok) {
-        throw new Error(`${label} 上传失败（HTTP ${response.status}）`);
+        throw new Error(t('dataBackup.objectStorage.error.uploadFailed', "{provider} 上传失败（HTTP {status}）").replace("{provider}", String(label)).replace("{status}", String(response.status)));
       }
     };
 
-    await uploadOne(versionedRemotePath, '上传版本备份...');
+    await uploadOne(versionedRemotePath, t('dataBackup.backup.stage.uploadingVersion', '上传版本备份...'));
     if (sanitized.remoteFilePath !== versionedRemotePath) {
-      await uploadOne(sanitized.remoteFilePath, '更新最新版本...');
+      await uploadOne(sanitized.remoteFilePath, t('dataBackup.backup.stage.updatingLatest', '更新最新版本...'));
     }
 
     try {
-      onProgress?.('清理旧版本...');
+      onProgress?.(t('dataBackup.backup.stage.cleaningOld', '清理旧版本...'));
       await pruneObjectStorageBackupVersions(sanitized);
     } catch {
       // 版本清理失败不阻断主上传成功，避免不同对象存储的权限差异导致整体失败。
     }
   } catch (error) {
-    throw normalizeObjectStorageError(provider, '上传', error);
+    throw normalizeObjectStorageError(provider, 'upload', error);
   }
 }
 
@@ -2891,12 +2899,12 @@ export async function objectStorageDownloadBackup(
 
     if (!response.ok) {
       throw new Error(
-        `${getObjectStorageProviderLabel(sanitized.provider)} 下载失败（HTTP ${response.status}）`
+        t('dataBackup.objectStorage.error.downloadFailed', "{provider} 下载失败（HTTP {status}）").replace("{provider}", String(getObjectStorageProviderLabel(sanitized.provider))).replace("{status}", String(response.status))
       );
     }
 
     return parseFinanceBackupPayload(await response.text());
   } catch (error) {
-    throw normalizeObjectStorageError(provider, '下载', error);
+    throw normalizeObjectStorageError(provider, 'download', error);
   }
 }

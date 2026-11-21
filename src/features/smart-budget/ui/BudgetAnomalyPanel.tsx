@@ -1,5 +1,6 @@
 import { formatCurrency } from '../../../shared/lib/format';
 import { useTFallback } from '../../../shared/lib/useTFallback';
+import { resolveBudgetCategoryLabel } from '../model/budgetCategoryLabels';
 import { BudgetAlertIcon } from './budgetIcons';
 
 export type BudgetAnomaly = {
@@ -47,7 +48,7 @@ export function BudgetAnomalyPanel({ anomalies, onSelectCategory }: BudgetAnomal
                 onClick={() => onSelectCategory(item.category)}
               >
                 <div>
-                  <strong>{item.category}</strong>
+                  <strong>{resolveBudgetCategoryLabel(item.category, tf)}</strong>
                   <span>
                     {tf('smartBudget.anomaly.projected', '预计月末支出')}{' '}
                     {formatCurrency(item.projectedSpent)}
