@@ -1536,6 +1536,9 @@
     }
   },
   "dataBackup": {
+    "billKicker": "账单导入",
+    "eyebrow": "数据管理",
+    "jsonKicker": "JSON 归档",
     "title": "数据与备份",
     "managedRowsSuffix": "条已纳管数据",
     "backupMethod": "备份方式",
@@ -1942,6 +1945,7 @@
     "currentScopePrefix": " 当前备份范围："
   },
   "investments": {
+    "eyebrow": "投资管理",
     "title": "投资理财",
     "overviewAria": "当前投资概览",
     "todayPrefix": "今日",
@@ -2834,6 +2838,7 @@
   "categoriesAccounts": {
     "accountName": "账户名称",
     "accountNamePlaceholder": "如：招商银行卡 / 零钱 / 花呗",
+    "accountsKicker": "账户与资金",
     "accountType": {
       "cash": "现金",
       "credit": "信用卡",
@@ -2864,6 +2869,7 @@
     "balanceAutoHint": "按交易自动汇总，双击可校准",
     "balanceEditTitle": "双击编辑余额",
     "balancePlaceholder": "输入余额",
+    "categoriesKicker": "分类与标签",
     "categoriesMetricsAria": "分类统计",
     "categoriesTitle": "分类与标签管理",
     "childBadge": "子分类",
@@ -2898,6 +2904,7 @@
       "categoryName": "分类名称需为 1-24 个字符，且不能包含 < 或 >。"
     },
     "expandRemaining": "展开剩余 {count} 项",
+    "eyebrow": "记账设置",
     "initialBalance": "初始余额",
     "initialPrefix": "初始：",
     "kindExpense": "支出分类",

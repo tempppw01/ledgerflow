@@ -704,7 +704,9 @@ export function CategoriesAccountsPage() {
     <div className="categories-accounts-page vi-page">
       <header className="categories-console-header">
         <div>
-          <p className="categories-console-eyebrow">BOOKKEEPING SETUP</p>
+          <p className="categories-console-eyebrow">
+            {tf('categoriesAccounts.eyebrow', '记账设置')}
+          </p>
           <h1>{tf('nav.categoriesAccounts', '账户与分类')}</h1>
         </div>
         <div
@@ -743,7 +745,9 @@ export function CategoriesAccountsPage() {
         <section className="categories-console-workspace">
           <header className="categories-accounts-head">
             <div>
-              <span className="categories-console-kicker">CATEGORIES & TAGS</span>
+              <span className="categories-console-kicker">
+                {tf('categoriesAccounts.categoriesKicker', '分类与标签')}
+              </span>
               <h2>{tf('categoriesAccounts.categoriesTitle', '分类与标签管理')}</h2>
             </div>
             <div
@@ -999,7 +1003,9 @@ export function CategoriesAccountsPage() {
         <section className="accounts-console-workspace">
           <header className="categories-accounts-head">
             <div>
-              <span className="categories-console-kicker">CASH & ACCOUNTS</span>
+              <span className="categories-console-kicker">
+                {tf('categoriesAccounts.accountsKicker', '账户与资金')}
+              </span>
               <h2>{tf('categoriesAccounts.accountsTitle', '账户管理')}</h2>
             </div>
             <div

@@ -5379,7 +5379,9 @@ export function InvestmentsPage() {
     <div className="page-stack investments-page investments-management-page investments-console-page vi-page">
       <header className="investments-console-header">
         <div>
-          <p className="investments-console-eyebrow">INVESTMENT CONTROL</p>
+          <p className="investments-console-eyebrow">
+            {tf('investments.eyebrow', '投资管理')}
+          </p>
           <h1>{tf('investments.title', '投资理财')}</h1>
         </div>
         <div

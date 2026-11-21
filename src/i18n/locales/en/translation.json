@@ -1536,6 +1536,9 @@
     }
   },
   "dataBackup": {
+    "billKicker": "BILL INGESTION",
+    "eyebrow": "DATA CONTROL",
+    "jsonKicker": "JSON ARCHIVE",
     "title": "Data & backup",
     "managedRowsSuffix": "managed rows",
     "backupMethod": "Backup method",
@@ -1942,6 +1945,7 @@
     "currentScopePrefix": " Current backup scope:"
   },
   "investments": {
+    "eyebrow": "INVESTMENT CONTROL",
     "title": "Investments",
     "overviewAria": "Current investment overview",
     "todayPrefix": "Today",
@@ -2834,6 +2838,7 @@
   "categoriesAccounts": {
     "accountName": "Account name",
     "accountNamePlaceholder": "e.g. Chase debit card / Wallet / Alipay",
+    "accountsKicker": "CASH & ACCOUNTS",
     "accountType": {
       "cash": "Cash",
       "credit": "Credit card",
@@ -2864,6 +2869,7 @@
     "balanceAutoHint": "Summed from transactions · double-click to calibrate",
     "balanceEditTitle": "Double-click to edit the balance",
     "balancePlaceholder": "Enter balance",
+    "categoriesKicker": "CATEGORIES & TAGS",
     "categoriesMetricsAria": "Category statistics",
     "categoriesTitle": "Category & tag management",
     "childBadge": "Subcategory",
@@ -2898,6 +2904,7 @@
       "categoryName": "Category names must be 1–24 characters and cannot contain < or >."
     },
     "expandRemaining": "Show {count} more",
+    "eyebrow": "BOOKKEEPING SETUP",
     "initialBalance": "Opening balance",
     "initialPrefix": "Opening:",
     "kindExpense": "Expense categories",

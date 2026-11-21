@@ -1036,7 +1036,9 @@ export function DatabaseSettingsPage() {
     <div className="database-settings-page vi-page">
       <header className="database-console-header">
         <div>
-          <p className="database-console-eyebrow">DATA CONTROL</p>
+          <p className="database-console-eyebrow">
+            {tf('dataBackup.eyebrow', '数据管理')}
+          </p>
           <h1>{tf('dataBackup.title', '数据与备份')}</h1>
         </div>
         <div
@@ -1072,7 +1074,9 @@ export function DatabaseSettingsPage() {
         <section className="database-console-workspace">
           <div className="database-console-workspace-head">
             <div>
-              <span className="database-console-kicker">JSON ARCHIVE</span>
+              <span className="database-console-kicker">
+                {tf('dataBackup.jsonKicker', 'JSON 归档')}
+              </span>
               <h2>{tf('dataBackup.tabs.local', '本地备份')}</h2>
             </div>
             <span className="database-data-section-meta">
@@ -1161,7 +1165,9 @@ export function DatabaseSettingsPage() {
         <section className="database-console-workspace">
           <div className="database-console-workspace-head">
             <div>
-              <span className="database-console-kicker">BILL INGESTION</span>
+              <span className="database-console-kicker">
+                {tf('dataBackup.billKicker', '账单导入')}
+              </span>
               <h2>{tf('dataBackup.tabs.billImport', '账单导入')}</h2>
             </div>
           </div>
