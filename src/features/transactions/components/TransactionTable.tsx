@@ -960,6 +960,8 @@ export function TransactionTable({
                             onChange={(event) => {
                               onQuickFilterChange('amountMin', event.target.value);
                             }}
+                            // 占位符不是可访问名称,读屏需要 aria-label 才能说清这一格筛什么。
+                            aria-label={tf('transactions.table.filterAria.minAmount', '最小金额')}
                             placeholder={tf(
                               'transactions.table.filterAria.minAmount',
                               tf('transactions.table.filterAria.minAmount', '最小金额')
@@ -981,6 +983,10 @@ export function TransactionTable({
                                 ];
                               onQuickFilterChange(filterKey, event.target.value);
                             }}
+                            aria-label={tf(
+                              'transactions.table.filterColumnPlaceholder',
+                              '筛选{label}'
+                            ).replace('{label}', column.label)}
                             placeholder={tf(
                               'transactions.table.filterColumnPlaceholder',
                               '筛选{label}'
@@ -1411,7 +1417,9 @@ export function TransactionTable({
                       </p>
                       {item.orderNo || item.merchantOrderNo ? (
                         <small>
-                          {tf('txPage.table.orderLineLabel', `交易订单：`)}{item.orderNo || '-'} {tf('txPage.table.merchantOrderLineLabel', `· 商家订单：`)}
+                          {tf('txPage.table.orderLineLabel', `交易订单：`)}
+                          {item.orderNo || '-'}{' '}
+                          {tf('txPage.table.merchantOrderLineLabel', `· 商家订单：`)}
                           {privacyMode
                             ? maskMerchant(item.merchantOrderNo || '-')
                             : item.merchantOrderNo || '-'}

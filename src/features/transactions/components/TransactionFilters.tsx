@@ -141,8 +141,9 @@ export function TransactionFilters({
           className="field transaction-filter-field transaction-filter-field-keyword"
           style={{ marginBottom: 0 }}
         >
-          <label>{tf('transactions.filters.keyword', '关键词')}</label>
+          <label htmlFor="tx-filter-keyword">{tf('transactions.filters.keyword', '关键词')}</label>
           <input
+            id="tx-filter-keyword"
             placeholder={tf(
               'transactions.filters.keywordPlaceholder',
               tf('transactions.filters.keywordPlaceholder', '搜索备注或标签')

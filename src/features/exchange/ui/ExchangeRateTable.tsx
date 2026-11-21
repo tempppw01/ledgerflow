@@ -131,6 +131,7 @@ export function ExchangeRateTable({
       <div className="exchange-toolbar">
         <input
           className="exchange-search"
+          aria-label={tf('exchange.table.searchPlaceholder', '搜索货币代码或名称…')}
           placeholder={tf('exchange.table.searchPlaceholder', '搜索货币代码或名称…')}
           value={search}
           onChange={(event) => {
