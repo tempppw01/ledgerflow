@@ -1532,6 +1532,7 @@
       "cancel": "取消"
     },
     "error": {
+      "customCycleDaysRequired": "选择自定义周期时,请填写大于 0 的天数。",
       "nameRequired": "请输入订阅名称。",
       "amountRequired": "订阅金额必须大于 0。",
       "generateFailed": "生成订阅支出失败，请稍后重试。"

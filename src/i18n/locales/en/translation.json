@@ -1532,6 +1532,7 @@
       "cancel": "Cancel"
     },
     "error": {
+      "customCycleDaysRequired": "Enter a day count greater than 0 for a custom cycle.",
       "nameRequired": "Please enter a subscription name.",
       "amountRequired": "The amount must be greater than 0.",
       "generateFailed": "Failed to generate the expense. Please try again later."

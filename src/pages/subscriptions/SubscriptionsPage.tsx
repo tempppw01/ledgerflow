@@ -74,6 +74,9 @@ function toMonthlyAmount(
   if (item.billingCycle === 'custom' && item.customCycleDays && item.customCycleDays > 0) {
     return (amount / item.customCycleDays) * 30;
   }
+  // 走到这里的是「自定义周期但没填天数」的历史数据 —— 界面已不再允许保存这种
+  // 状态(见 handleSubmit 的校验),这里按「每月」处理只是兜底,并不准确。
+  // 没有改成 0 或抛错,是因为那会静默改动既有用户的月合计。
   return amount;
 }
 
@@ -450,6 +453,12 @@ export function SubscriptionsPage() {
     }
     if (!Number.isFinite(amount) || amount <= 0) {
       setError(tf('subscriptions.error.amountRequired', '订阅金额必须大于 0。'));
+      return;
+    }
+    // 自定义周期必须给出天数:否则卡片只会渲染出「每 — 天」这种残句,
+    // 而且折算月均会走 fallback 把整笔金额当成「每月」,把月合计放大好几倍。
+    if (form.billingCycle === 'custom' && !(Number(form.customCycleDays) > 0)) {
+      setError(tf('subscriptions.error.customCycleDaysRequired', '选择自定义周期时,请填写大于 0 的天数。'));
       return;
     }
 
@@ -893,10 +902,10 @@ export function SubscriptionsPage() {
                   ? accounts.find((row) => row.id === item.accountId)
                   : null;
                 const billingCycleText =
-                  item.billingCycle === 'custom'
+                  item.billingCycle === 'custom' && item.customCycleDays && item.customCycleDays > 0
                     ? tf('subscriptions.card.everyDays', '每 {days} 天').replace(
                         '{days}',
-                        String(item.customCycleDays || '—')
+                        String(item.customCycleDays)
                       )
                     : labelOf(CYCLE_LABEL_ENTRIES, tf, item.billingCycle);
                 const nextDateText = item.renewalDate
