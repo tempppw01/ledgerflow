@@ -133,7 +133,7 @@ export function DatabaseInitializationGate({ children }: DatabaseInitializationG
           <div className="sql-sync-notice is-error" role="status" aria-live="polite">
             <span className="sql-sync-notice-dot" aria-hidden="true" />
             <span>{tf('databaseSetup.statusCheckFailed', "数据库状态检查暂时失败，已继续使用上次确认的配置。")}</span>
-            <button type="button" onClick={() => void loadStatus()}>{tf('databaseSetup.retry', " 重试 ")}</button>
+            <button type="button" onClick={() => void loadStatus()}>{tf('databaseSetup.retry', '重试')}</button>
           </div>
         ) : null}
       </>
@@ -152,7 +152,7 @@ export function DatabaseInitializationGate({ children }: DatabaseInitializationG
         {error ? (
           <section className="panel database-initialization-error">
             <p>{error}</p>
-            <button type="button" onClick={() => void loadStatus()}>{tf('databaseSetup.retryCheck', " 重新检查 ")}</button>
+            <button type="button" onClick={() => void loadStatus()}>{tf('databaseSetup.retryCheck', '重新检查')}</button>
           </section>
         ) : null}
         {status?.configurationMismatch ? (
