@@ -788,7 +788,7 @@ export function SettingsPage({
             <div className="settings-data-panel">
               <div className="settings-data-head">
                 <div>
-                  <p className="settings-data-eyebrow">DATABASE</p>
+                  <p className="settings-data-eyebrow">{t('settings.data.eyebrow')}</p>
                   <h3 id="data-settings-title">{t('settings.data.title')}</h3>
                 </div>
                 <button
@@ -851,7 +851,7 @@ export function SettingsPage({
               <img className="settings-account-avatar" src={CIRCLE_USER_ICON_URL} alt="" />
               <div className="settings-account-heading">
                 <div>
-                  <p className="settings-account-eyebrow">ACCOUNT</p>
+                  <p className="settings-account-eyebrow">{t('settings.account.eyebrow')}</p>
                   <h3 id="account-settings-title">{t('settings.account.title')}</h3>
                   <span className="settings-account-email" title={user.email}>
                     {user.email}

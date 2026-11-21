@@ -163,6 +163,7 @@
       "advanced": "Advanced"
     },
     "data": {
+      "eyebrow": "DATABASE",
       "title": "Database",
       "refresh": "Refresh",
       "refreshing": "Refreshing…",
@@ -197,6 +198,7 @@
       "siliconflow": "SiliconFlow"
     },
     "account": {
+      "eyebrow": "ACCOUNT",
       "title": "Account & Security",
       "current": "Signed in",
       "displayName": "Display name",

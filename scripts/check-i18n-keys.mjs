@@ -148,6 +148,26 @@ for (const [key, where] of [...used.entries()].sort()) {
 
 const onlyZh = [...zh.keys()].filter((key) => !hasKey(en, key)).sort();
 const onlyEn = [...en.keys()].filter((key) => !hasKey(zh, key)).sort();
+
+// 标签类元素(-eyebrow / -kicker / -badge)里直接写死的文案。
+// 这些元素永远是界面文案、不会是用户数据,所以出现字面量就是「绕过 i18n」,
+// 无法翻译。历史上这里漏过 9 处(BOOKKEEPING SETUP / Agent 等),此规则用于锁住。
+const HARDCODED_LABEL_RE =
+  /className="[^"]*-(?:eyebrow|kicker|badge)(?:[\s"][^"]*)?"\s*>\s*([^<>{]+?)\s*</g;
+const hardcodedLabels = [];
+for (const file of files) {
+  if (!file.endsWith('.tsx')) continue;
+  const src = readFileSync(file, 'utf8');
+  HARDCODED_LABEL_RE.lastIndex = 0;
+  let m;
+  while ((m = HARDCODED_LABEL_RE.exec(src)) !== null) {
+    const text = m[1].replace(/\s+/g, ' ').trim();
+    if (!text) continue;
+    if (!/[A-Za-z\u4e00-\u9fa5]/.test(text)) continue;
+    const line = src.slice(0, m.index).split('\n').length;
+    hardcodedLabels.push(`${path.relative(root, file)}:${line}  "${text}"`);
+  }
+}
 const unused = [...zh.keys()]
   .filter((key) => !used.has(key) && !isCoveredByDynamicPrefix(key))
   .sort();
@@ -191,6 +211,12 @@ if (asJson) {
   if (dynamic.length) {
     section('DYNAMIC — 模板字符串拼 key,需人工确认', dynamic);
   }
+
+  if (hardcodedLabels.length) {
+    section('HARDCODED — 标签类元素里写死的文案(无法翻译)', hardcodedLabels);
+  }
 }
 
-process.exit(missing.length || onlyZh.length || onlyEn.length ? 1 : 0);
+process.exit(
+  missing.length || onlyZh.length || onlyEn.length || hardcodedLabels.length ? 1 : 0
+);

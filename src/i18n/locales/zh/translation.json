@@ -163,6 +163,7 @@
       "advanced": "高级设置"
     },
     "data": {
+      "eyebrow": "数据库",
       "title": "数据库",
       "refresh": "刷新",
       "refreshing": "刷新中…",
@@ -197,6 +198,7 @@
       "siliconflow": "硅基流动"
     },
     "account": {
+      "eyebrow": "账号",
       "title": "账号与安全",
       "current": "已登录",
       "displayName": "显示名称",
