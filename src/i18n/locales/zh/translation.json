@@ -11,11 +11,11 @@
   },
   "errors": {
     "notFoundTitle": "这个页面不存在",
-    "notFoundDescription": "链接可能已经失效,或者地址被输错了。回到工作台继续记账吧。",
+    "notFoundDescription": "链接可能已经失效，或者地址被输错了。回到工作台继续记账吧。",
     "genericTitle": "页面出了点问题",
-    "genericDescription": "渲染这个页面时发生了错误。可以先返回首页,或回到上一页重试。",
+    "genericDescription": "渲染这个页面时发生了错误。可以先返回首页，或回到上一页重试。",
     "chunkTitle": "页面资源已更新",
-    "chunkDescription": "应用版本已经更新,当前页面还在使用旧资源。刷新一次即可继续。",
+    "chunkDescription": "应用版本已经更新，当前页面还在使用旧资源。刷新一次即可继续。",
     "backHome": "返回首页",
     "backPrevious": "返回上一页"
   },
@@ -42,11 +42,11 @@
     "retry": "重新检查账号服务",
     "forgotButton": "忘记密码?",
     "forgotTitle": "找回密码",
-    "forgotDescription": "输入注册邮箱,我们会发送一个 30 分钟内有效的一次性重置链接。",
+    "forgotDescription": "输入注册邮箱，我们会发送一个 30 分钟内有效的一次性重置链接。",
     "sendResetEmail": "发送重置邮件",
     "backToLogin": "返回登录",
     "resetTitle": "设置新密码",
-    "resetDescription": "重置链接只能使用一次。设置成功后,所有已登录设备都需要重新登录。",
+    "resetDescription": "重置链接只能使用一次。设置成功后，所有已登录设备都需要重新登录。",
     "newPassword": "新密码",
     "saveNewPassword": "保存新密码",
     "passwordConfirmation": "确认新密码",
@@ -56,8 +56,8 @@
     "showPasswordConfirmation": "显示确认密码",
     "hidePasswordConfirmation": "隐藏确认密码",
     "passwordMismatch": "两次输入的新密码不一致。",
-    "resetEmailSent": "如果该邮箱已注册,密码重置邮件将在几分钟内送达。",
-    "resetSucceeded": "密码已重置,请使用新密码登录。"
+    "resetEmailSent": "如果该邮箱已注册，密码重置邮件将在几分钟内送达。",
+    "resetSucceeded": "密码已重置，请使用新密码登录。"
   },
   "databaseSetup": {
     "initializationTitle": "初始化数据存储",
@@ -240,7 +240,7 @@
       "missingKey": "待配置",
       "providerGroupLabel": "搜索服务",
       "keyLabel": "{{provider}} API Key",
-      "keyHint": "密钥只保存在当前浏览器,换设备或清理浏览器数据后需要重新填写。",
+      "keyHint": "密钥只保存在当前浏览器，换设备或清理浏览器数据后需要重新填写。",
       "guideTitle": "快速获取 {{provider}} API Key",
       "openConsole": "打开获取页面",
       "viewDocs": "查看官方文档",
@@ -248,26 +248,26 @@
       "engineIdLabel": "搜索引擎 ID(CX)",
       "engineIdPlaceholder": "例如 012345678901234567890:abc123def",
       "tipsTitle": "使用提示",
-      "tipLocalOnly": "密钥仅写入当前浏览器,不会上传到服务器。",
-      "tipBilling": "多数服务按搜索次数计费,建议在控制台设置额度提醒。",
-      "tipTest": "保存后先问一个实时性问题,确认识别到最新信息。",
+      "tipLocalOnly": "密钥仅写入当前浏览器，不会上传到服务器。",
+      "tipBilling": "多数服务按搜索次数计费，建议在控制台设置额度提醒。",
+      "tipTest": "保存后先问一个实时性问题，确认识别到最新信息。",
       "connectionOptions": "高级连接选项",
-      "connectionHint": "默认值可直接使用,仅在自建代理或特殊部署环境时修改。",
+      "connectionHint": "默认值可直接使用，仅在自建代理或特殊部署环境时修改。",
       "endpointLabel": "{{provider}} 服务地址",
-      "endpointHint": "默认使用官方地址,自建代理时替换为你的地址。",
+      "endpointHint": "默认使用官方地址，自建代理时替换为你的地址。",
       "localEndpointLabel": "本地备用搜索地址",
-      "localEndpointHint": "所选服务不可用时,自动回退到该地址。",
+      "localEndpointHint": "所选服务不可用时，自动回退到该地址。",
       "maxResultsLabel": "每次返回条数",
-      "maxResultsHint": "建议 5 条左右,条数越多消耗的额度越高。",
+      "maxResultsHint": "建议 5 条左右，条数越多消耗的额度越高。",
       "providers": {
         "tavily": {
           "badge": "AI 搜索",
-          "description": "为 AI 场景优化的搜索接口,自带摘要。",
+          "description": "为 AI 场景优化的搜索接口，自带摘要。",
           "tip": "适合希望 AI 直接给出检索摘要的场景。"
         },
         "brave": {
           "badge": "隐私索引",
-          "description": "独立索引,默认不追踪用户。",
+          "description": "独立索引，默认不追踪用户。",
           "tip": "适合重视隐私、同时需要常规网页结果的场景。"
         },
         "serper": {
@@ -282,7 +282,7 @@
         },
         "google": {
           "badge": "可自定义",
-          "description": "官方 CSE,可限定检索站点范围。",
+          "description": "官方 CSE，可限定检索站点范围。",
           "tip": "适合只需要检索指定网站的场景。"
         }
       }
@@ -402,7 +402,7 @@
   "assistant": {
     "placeholders": {
       "needApiKey": "请先在设置中配置 API 密钥",
-      "assistantHint": "例如:今天午饭15元,用支付宝(自动识别分类)\n例如:新建一张招商银行储蓄卡,初始余额5000元\n例如:把微信钱包改名为微信零钱",
+      "assistantHint": "例如:今天午饭15元，用支付宝(自动识别分类)\n例如:新建一张招商银行储蓄卡，初始余额5000元\n例如:把微信钱包改名为微信零钱",
       "bookkeepingHint": "比如：今天午饭15元，用支付宝（会自动识别分类）",
       "idleBookkeeping": "等待输入内容 · {{hint}}",
       "readyAssistant": "支持记账、查账和改账 · 按 Enter 发送，Shift + Enter 换行\n{{hint}}",
@@ -473,7 +473,7 @@
       "featureBillTitle": "识别账单",
       "featureDueTitle": "核对本期应还",
       "featureLogTitle": "登记与核对",
-      "description": "贷款、花呗、分期和信用账单都可以交给我。我会先理清本期应还、还款日和还缺哪些资料,也能直接帮你记一笔还款。",
+      "description": "贷款、花呗、分期和信用账单都可以交给我。我会先理清本期应还、还款日和还缺哪些资料，也能直接帮你记一笔还款。",
       "featureBillNote": "提取金额、日期和期数",
       "featureDueNote": "把待确认的信息标出来",
       "featureLogNote": "说一句就能记还款"
@@ -634,8 +634,8 @@
       "densityLabel": "首页信息密度",
       "densityCore": "核心信息",
       "densityFull": "完整分析",
-      "chartEmptyTitle": "记下一笔,趋势就会开始出现",
-      "chartEmptyDesc": "有了真实收支后,这里会展示花钱节奏和分类结构。",
+      "chartEmptyTitle": "记下一笔，趋势就会开始出现",
+      "chartEmptyDesc": "有了真实收支后，这里会展示花钱节奏和分类结构。",
       "densityHint": "已显示完整趋势与分类分析;切换到“核心信息”可收起次要图表。",
       "cashflow": {
         "aria": "未来三十天现金流与财务待办",
@@ -964,7 +964,7 @@
       "orderNoPlaceholder": "如：202602100001",
       "merchantOrderPlaceholder": "如：MCH-20260210-01",
       "notePlaceholder": "例如：工作日午餐",
-      "tagsPlaceholder": "如：餐饮,工作日",
+      "tagsPlaceholder": "如：餐饮，工作日",
       "aiRecognizing": "AI 识别中...",
       "aiRecognize": "AI 识别商户与分类",
       "suggestionPrefix": "建议:商户「",
@@ -989,7 +989,7 @@
         "categoryRequired": "分类不能为空，请先选择或新建分类。",
         "accountRequired": "请先选择账户。"
       },
-      "suggestionMiddle": "」,分类「",
+      "suggestionMiddle": "」，分类「",
       "suggestionSuffix": "」。"
     }
   },
@@ -1578,7 +1578,7 @@
       "proxyOn": "代理已启用",
       "direct": "浏览器直连",
       "modeProxy": "当前:同源代理已启用。",
-      "modeDirect": "当前:浏览器直连,可能受跨域限制。",
+      "modeDirect": "当前:浏览器直连，可能受跨域限制。",
       "url": "WebDAV 地址",
       "realUrl": "真实 WebDAV 地址",
       "username": "用户名",
@@ -1764,7 +1764,7 @@
       "timeLabel": " 快照时间："
     },
     "provider": {
-      "sqliteDesc": "适合单机和轻量自托管,数据保存为部署卷中的文件。",
+      "sqliteDesc": "适合单机和轻量自托管，数据保存为部署卷中的文件。",
       "mysqlDesc": "适合阿里云 RDS、多设备同步和后续多用户部署。",
       "mysqlNotConfigured": "未检测到 MySQL 配置,请先设置 MYSQL_URL 或 MYSQL_HOST。",
       "uninitialized": "未初始化",
@@ -1920,7 +1920,7 @@
       "showValue": "显示密钥"
     },
     "sync": {
-      "cloudEmptyBody": " 浏览器里还有一份本机账本。只有确认它属于当前部署时才导入,否则请使用空白账本。 ",
+      "cloudEmptyBody": " 浏览器里还有一份本机账本。只有确认它属于当前部署时才导入，否则请使用空白账本。 ",
       "cloudEmptyTitle": "当前部署的云端账本为空",
       "importLocalLedger": "导入本机账本到当前账号",
       "importing": "正在导入...",
@@ -1988,7 +1988,7 @@
       "todayEstimateShort": "今日估算",
       "count": "{count} 笔",
       "askAiNamed": "让 AI 分析 {name}",
-      "subtitle": "先看自己的持仓,别让大盘替你做决定。"
+      "subtitle": "先看自己的持仓，别让大盘替你做决定。"
     },
     "briefing": {
       "aria": "今日行情播报",
@@ -2024,7 +2024,7 @@
         "weakening": "市场有点泄气，今天更适合看，不适合冲动操作。",
         "hesitant": "大盘还在犹豫，今天先看自己持仓，不用被每一根波动带着走。"
       },
-      "subtitle": "把涨跌、板块和新闻拎成几句,够用就好。"
+      "subtitle": "把涨跌、板块和新闻拎成几句，够用就好。"
     },
     "clock": {
       "eyebrow": "全球市场接力",
@@ -2240,7 +2240,7 @@
       "weakest": {
         "empty": "暂无弱势板块"
       },
-      "subtitle": "行业强弱一眼看清,点击行业可查看领涨公司。"
+      "subtitle": "行业强弱一眼看清，点击行业可查看领涨公司。"
     },
     "news": {
       "title": "快讯",
@@ -2386,7 +2386,7 @@
         }
       }
     },
-    "subtitle": "把今日判断、行情监控和基金自选放进一个工作台,按需切换,不再上下堆叠。"
+    "subtitle": "把今日判断、行情监控和基金自选放进一个工作台，按需切换，不再上下堆叠。"
   },
   "investmentAi": {
     "suggest": {
@@ -2444,8 +2444,8 @@
     "pinTitle": "置顶，点击外围不收起",
     "collapse": "收起 AI 投资助手",
     "contextAria": "AI 已同步的投资上下文",
-    "readyHint": "已配置 AI 模型,可直接读取持仓、自选与今日行情",
-    "notReadyHint": "尚未配置 AI 模型 Key,配置后助手才能生成分析",
+    "readyHint": "已配置 AI 模型，可直接读取持仓、自选与今日行情",
+    "notReadyHint": "尚未配置 AI 模型 Key，配置后助手才能生成分析",
     "agentReady": "Agent 已连接",
     "agentPending": "待配置 AI Key",
     "context": {
@@ -2582,12 +2582,12 @@
       },
       "error": {
         "noKey": "请先在设置页配置可用的 AI 模型与 API Key。",
-        "failed": "处理失败,请检查模型配置后重试。",
+        "failed": "处理失败，请检查模型配置后重试。",
         "undo": "撤销失败"
       },
-      "noResult": "没有可返回的结果,请换个说法再试。",
+      "noResult": "没有可返回的结果，请换个说法再试。",
       "title": "AI 台账助手",
-      "placeholder": "直接说,例如“花呗今天还了 300”“哪笔最该先还”",
+      "placeholder": "直接说，例如“花呗今天还了 300”“哪笔最该先还”",
       "running": "处理中...",
       "run": "执行",
       "thisAction": "本次操作",
@@ -2869,7 +2869,7 @@
       "accountUsage": "该账户下存在 {count} 条交易记录，移入回收站后仅移除账户本身，交易仍会保留。是否继续？",
       "categoryChildren": "其中 {count} 个子分类会提升为一级分类,",
       "categoryTrashed": "移入回收站后这些交易会继续保留并归入“未分类”。是否继续?",
-      "categoryTrashedOnly": "该分类将先移入回收站,你之后仍可恢复或彻底删除。是否继续?",
+      "categoryTrashedOnly": "该分类将先移入回收站，你之后仍可恢复或彻底删除。是否继续?",
       "categoryUsage": "该分类下存在 {count} 条交易记录,",
       "tagRemovePlain": "移除后将无法恢复，是否继续？",
       "tagUsage": "该标签已用于 {count} 条交易，移除后将从这些交易中清除。是否继续？"
@@ -2884,14 +2884,14 @@
     "edit": "编辑",
     "emptyAccountsDescription": "请添加第一个资金账户。",
     "emptyAccountsTitle": "暂无账户",
-    "emptyCategoriesDescription": "先添加一个一级分类,再往下挂子分类。",
+    "emptyCategoriesDescription": "先添加一个一级分类，再往下挂子分类。",
     "emptyCategoriesTitle": "暂无分类",
     "emptyTagsDescription": "在交易里加标签后会自动汇总到这里。",
     "emptyTagsTitle": "暂无标签",
     "error": {
       "accountName": "账户名称需为 1-24 个字符，且不能包含 < 或 >。",
       "accountType": "请选择账户类型后再添加账户。",
-      "categoryName": "分类名称需为 1-24 个字符,且不能包含 < 或 >。"
+      "categoryName": "分类名称需为 1-24 个字符，且不能包含 < 或 >。"
     },
     "expandRemaining": "展开剩余 {count} 项",
     "initialBalance": "初始余额",
@@ -3072,7 +3072,7 @@
     "anomaly": {
       "aboutBudget": "，约为预算的",
       "aria": "异常提醒",
-      "empty": "目前没有临近超支的分类,保持当前节奏即可。",
+      "empty": "目前没有临近超支的分类，保持当前节奏即可。",
       "projected": "预计月末支出",
       "title": "异常提醒与调整建议",
       "trim": "建议少花"
@@ -3189,7 +3189,7 @@
     "trend": {
       "aria": "预算执行趋势",
       "barTitle": "{month} 支出 {amount}",
-      "empty": "记录满两个月后,这里会显示分类预算与实际支出的趋势对比。",
+      "empty": "记录满两个月后，这里会显示分类预算与实际支出的趋势对比。",
       "subtitle": "柱子是实际支出，虚线是当月预算线。",
       "title": "最近几个月，钱主要花在哪里"
     },
@@ -3224,7 +3224,7 @@
       "keypadAria": "计算器键盘",
       "resultAria": "换算结果",
       "invalidExpression": "表达式无效，无法计算",
-      "screenSeparator": ","
+      "screenSeparator": "，"
     },
     "table": {
       "trendUp": "上涨",
@@ -3246,7 +3246,7 @@
       "columnCode": "货币",
       "columnName": "货币名称",
       "columnRate": "汇率",
-      "emptySearch": "没有匹配的货币,换个代码或名称试试",
+      "emptySearch": "没有匹配的货币，换个代码或名称试试",
       "emptyAll": "无匹配货币",
       "emptyCommon": "当前仅展示常见货币（含收藏），可点击“展开全部货币”查看全部",
       "favoriteAdd": "收藏",
@@ -3849,7 +3849,7 @@
     "autoMatchPrefix": "自动匹配：{name}",
     "footerCounts": "已勾选可保存 {saveable} 笔，另有 {skipped} 笔未勾选或需修正。",
     "footerHint": "核对无误后再保存，可避免重复记账。",
-    "savingTitle": "正在保存,请稍候",
+    "savingTitle": "正在保存，请稍候",
     "nothingToSaveTitle": "请先勾选或修正账单",
     "saving": "保存中",
     "save": "保存到账本",
