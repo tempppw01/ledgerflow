@@ -1166,7 +1166,7 @@
   border: 1px solid transparent;
   border-radius: 6px;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
   font-weight: 600;
   cursor: pointer;
 }

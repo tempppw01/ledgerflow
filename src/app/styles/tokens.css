@@ -160,6 +160,11 @@
 
   --color-primary: #f59e0b;
   --color-primary-hover: #d97706;
+  /* 琥珀底上的文字色:白字只有 2.15:1(WCAG AA 要求 4.5),近黑字约 7.8:1。
+     注意两处历史代码已经在用 var(--color-on-primary, #fff),这里补上定义。 */
+  --color-on-primary: #1c1917;
+  /* 历史代码里还用过这个名字表示同一件事;统一成别名,避免两套 token 各自漂移。 */
+  --color-primary-contrast: var(--color-on-primary);
   --color-primary-bg: rgba(245, 158, 11, 0.14);
   --color-primary-border: rgba(245, 158, 11, 0.34);
 
@@ -425,6 +430,7 @@
   --color-divider: #383838;
 
   --color-primary: #f59e0b;
+  --color-on-primary: #1c1917;
   --color-primary-hover: #f97316;
   --color-primary-bg: rgba(245, 158, 11, 0.13);
   --color-primary-border: rgba(245, 158, 11, 0.34);
@@ -525,13 +531,15 @@
   --color-primary-hover: #059669;
   --color-primary-bg: rgba(16, 185, 129, 0.12);
   --color-primary-border: rgba(16, 185, 129, 0.32);
+  --color-on-primary: #1c1917;
 }
 
 [data-accent-theme='violet'] {
-  --color-primary: #8b5cf6;
-  --color-primary-hover: #7c3aed;
+  --color-primary: #7c3aed;
+  --color-primary-hover: #6d28d9;
   --color-primary-bg: rgba(139, 92, 246, 0.12);
   --color-primary-border: rgba(139, 92, 246, 0.32);
+  --color-on-primary: #ffffff;
 }
 
 [data-accent-theme='rose'] {
@@ -539,6 +547,7 @@
   --color-primary-hover: #e11d48;
   --color-primary-bg: rgba(244, 63, 94, 0.12);
   --color-primary-border: rgba(244, 63, 94, 0.32);
+  --color-on-primary: #1c1917;
 }
 
 [data-accent-theme='amber'] {
@@ -546,6 +555,7 @@
   --color-primary-hover: #d97706;
   --color-primary-bg: rgba(245, 158, 11, 0.14);
   --color-primary-border: rgba(245, 158, 11, 0.34);
+  --color-on-primary: #1c1917;
 }
 
 [data-accent-theme='aurora'] {
@@ -574,4 +584,5 @@
     color-mix(in srgb, #22c55e 8%, var(--color-bg-elevated)) 48%,
     color-mix(in srgb, #ec4899 14%, var(--color-bg-elevated)) 100%
   );
+  --color-on-primary: #ffffff;
 }

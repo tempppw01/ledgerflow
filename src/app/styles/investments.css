@@ -2459,7 +2459,7 @@
   padding: 0 5px;
   border-radius: 5px;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
   font-size: 11px;
   font-weight: 900;
   line-height: 1;
@@ -4311,7 +4311,8 @@
   height: 28px;
   border-radius: 50%;
   background: var(--color-warning);
-  color: #fff;
+  /* 白色「!」在琥珀底上只有 1.67:1,图标也需要 3:1 —— 用主色底上的同一套墨色。 */
+  color: var(--color-on-primary);
   font-size: 16px;
   font-weight: 800;
 }
@@ -4895,7 +4896,7 @@
 .investments-watch-grid-controls button:hover,
 .investments-watch-grid-controls button:focus-visible {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
   box-shadow: none;
   transform: none;
 }
@@ -5499,7 +5500,7 @@
   flex: 0 0 30px;
   border-color: var(--color-primary);
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 .investments-watch-card-ai-actions .investments-watch-follow-btn {
@@ -5829,7 +5830,7 @@
 .investment-chat-floating-pin.is-active {
   border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border-light));
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
   box-shadow: 0 5px 14px color-mix(in srgb, var(--color-primary) 24%, transparent);
 }
 
@@ -8097,7 +8098,7 @@
 .investments-ai-inline-btn:focus-visible {
   border-color: var(--color-primary);
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
   transform: translateY(-1px);
 }
 
@@ -8167,7 +8168,7 @@
 .investments-position-ai-btn:hover,
 .investments-position-ai-btn:focus-visible {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 .investments-position-ai-btn .chat-svg-icon {
@@ -8442,7 +8443,7 @@
 .investments-ai-settings-hint a:hover,
 .investments-ai-settings-hint a:focus-visible {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 .investment-ai-agent-action {
@@ -8487,7 +8488,7 @@
 .investment-ai-agent-action-undo:hover,
 .investment-ai-agent-action-undo:focus-visible {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 .investment-ai-agent-action.is-update {
