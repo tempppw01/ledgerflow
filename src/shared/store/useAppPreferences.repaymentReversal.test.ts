@@ -88,3 +88,23 @@ describe('useAppPreferences removeRepaymentRecord reverses the debt mutation', (
     expect(next.debts[0].balance).toBe(11360.4);
   });
 });
+
+describe('useAppPreferences removeDebt drops the debt repayment history', () => {
+  beforeEach(() => {
+    localStorage.removeItem('ledgerflow-preferences');
+    seed([], []);
+  });
+
+  it('removes only the deleted debt records and keeps the other debt history', () => {
+    seed(
+      [debt({}), debt({ id: 'd2', name: '消费分期贷' })],
+      [record({}), record({ id: 'r2', debtId: 'd2', amount: 400 })]
+    );
+
+    useAppPreferences.getState().removeDebt('d1');
+
+    const next = useAppPreferences.getState();
+    expect(next.debts.map((item) => item.id)).toEqual(['d2']);
+    expect(next.repaymentRecords.map((item) => item.id)).toEqual(['r2']);
+  });
+});

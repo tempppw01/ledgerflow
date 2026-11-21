@@ -871,7 +871,11 @@ export const useAppPreferences = create<AppPreferencesState>()(
       },
       removeDebt: (id) => {
         set((state) => ({
-          debts: state.debts.filter((item) => item.id !== id)
+          debts: state.debts.filter((item) => item.id !== id),
+          // Drop the debt's repayment history with it: the server already skips
+          // records whose debt no longer exists, so keeping them here would only
+          // make the local snapshot drift from what is actually stored.
+          repaymentRecords: state.repaymentRecords.filter((item) => item.debtId !== id)
         }));
       },
       addRepaymentRecord: (payload) => {
