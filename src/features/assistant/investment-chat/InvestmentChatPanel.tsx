@@ -1554,7 +1554,9 @@ export function InvestmentChatPanel({
               <div>
                 <strong>
                   {tf('investmentAi.title', 'AI 投资助手')}
-                  <em className="investment-chat-agent-badge">Agent</em>
+                  <em className="investment-chat-agent-badge">
+                    {tf('investmentAi.agentBadge', 'Agent')}
+                  </em>
                 </strong>
                 <small>{tf('investmentAi.syncedHint', '已同步持仓、自选与今日行情')}</small>
               </div>

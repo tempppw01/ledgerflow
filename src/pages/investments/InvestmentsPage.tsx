@@ -5419,7 +5419,9 @@ export function InvestmentsPage() {
         <div className="investments-ai-context-copy">
           <strong>
             {tf('investments.aiBarTitle', 'AI 投资助手已接入这页数据')}
-            <em className="investment-chat-agent-badge">Agent</em>
+            <em className="investment-chat-agent-badge">
+              {tf('investmentAi.agentBadge', 'Agent')}
+            </em>
           </strong>
           <span>
             {tf('investments.stat.positionCount', '{count} 笔持仓').replace(

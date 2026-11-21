@@ -2397,6 +2397,7 @@
     "subtitle": "Today’s read, market monitoring and your watchlist live in one workspace, switched on demand instead of stacked up."
   },
   "investmentAi": {
+    "agentBadge": "Agent",
     "suggest": {
       "risk": "Review the main risks in my current holdings",
       "stance": "Should I attack or defend in today’s market?",
@@ -3527,7 +3528,11 @@
       "popupBlockedPdf": "The pop-up was blocked, so the embedded print view is used. Choose 'Save as PDF' in the system print dialog.",
       "popupBlocked": "The pop-up was blocked, so the embedded print view is used.",
       "failed": "Printing failed. Check the browser permissions.",
-      "savePdfHint": "Choose 'Save as PDF' in the system print dialog to finish the export."
+      "savePdfHint": "Choose 'Save as PDF' in the system print dialog to finish the export.",
+      "previewTitle": "Print preview",
+      "previewHint": "Review the document before printing. To save it as a PDF, choose 'Save as PDF' in the system dialog.",
+      "previewPrint": "Print",
+      "previewCancel": "Cancel"
     },
     "quickAdd": {
       "draftRestored": "Unfinished draft restored",

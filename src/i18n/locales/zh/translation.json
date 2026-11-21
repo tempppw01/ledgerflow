@@ -2397,6 +2397,7 @@
     "subtitle": "把今日判断、行情监控和基金自选放进一个工作台，按需切换，不再上下堆叠。"
   },
   "investmentAi": {
+    "agentBadge": "Agent",
     "suggest": {
       "risk": "帮我看当前持仓的主要风险",
       "stance": "今天市场该进攻还是防守?",
@@ -3527,7 +3528,11 @@
       "popupBlockedPdf": "浏览器拦截了弹窗，将使用内嵌打印模式。请在系统打印框里选择“保存为 PDF”。",
       "popupBlocked": "浏览器拦截了弹窗，将使用内嵌打印模式。",
       "failed": "打印失败，请检查浏览器权限。",
-      "savePdfHint": "请在系统打印框里选择“保存为 PDF”完成导出。"
+      "savePdfHint": "请在系统打印框里选择“保存为 PDF”完成导出。",
+      "previewTitle": "打印预览",
+      "previewHint": "确认内容无误后再打印;需要另存为 PDF 时,请在系统打印框里选择“保存为 PDF”。",
+      "previewPrint": "打印",
+      "previewCancel": "取消"
     },
     "quickAdd": {
       "draftRestored": "已恢复未完成草稿",
