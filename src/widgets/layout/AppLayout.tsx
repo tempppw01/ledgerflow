@@ -12,6 +12,7 @@ import { ThemeSwitcher } from '../../features/theme-switcher/ThemeSwitcher';
 import { LanguageSwitcher } from '../../features/language-switcher/LanguageSwitcher';
 import { useAuth } from '../../features/auth/ui/authContext';
 import { useMenuKeyboard } from '../../shared/lib/useMenuKeyboard';
+import { useDialogFocus } from '../../shared/lib/useDialogFocus';
 import { SettingsPage } from '../../pages/settings/SettingsPage';
 import { APP_LOGO_URL } from '../../shared/config/app';
 import {
@@ -100,6 +101,13 @@ export function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [settingsOverlayOpen, setSettingsOverlayOpen] = useState(false);
+  const settingsOverlayDialogRef = useRef<HTMLElement | null>(null);
+  const mobileNavDrawerRef = useRef<HTMLElement | null>(null);
+  // 设置浮层与移动端导航抽屉都是 aria-modal:焦点收进来、关闭后还给触发按钮。
+  useDialogFocus(settingsOverlayOpen, settingsOverlayDialogRef, () =>
+    setSettingsOverlayOpen(false)
+  );
+  useDialogFocus(mobileNavOpen, mobileNavDrawerRef, () => setMobileNavOpen(false));
   const [isMobileViewport, setIsMobileViewport] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px)').matches : false
   );
@@ -710,6 +718,7 @@ export function AppLayout() {
   };
 
   const closeSettingsOverlay = () => {
+
     setSettingsOverlayOpen(false);
   };
 
@@ -950,6 +959,7 @@ export function AppLayout() {
       {settingsOverlayOpen ? (
         <div className="settings-overlay" role="presentation" onClick={closeSettingsOverlay}>
           <section
+            ref={settingsOverlayDialogRef}
             className="settings-overlay-dialog"
             role="dialog"
             aria-modal="true"
@@ -968,6 +978,7 @@ export function AppLayout() {
           onClick={() => setMobileNavOpen(false)}
         >
           <aside
+            ref={mobileNavDrawerRef}
             className="mobile-nav-drawer"
             role="dialog"
             aria-modal="true"

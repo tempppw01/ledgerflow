@@ -10,6 +10,7 @@ import {
   useRef,
   useState
 } from 'react';
+import { useMenuKeyboard } from '../../../shared/lib/useMenuKeyboard';
 import type { CSSProperties } from 'react';
 import { useTFallback, type TfFallback } from '../../../shared/lib/useTFallback';
 import { Link } from 'react-router-dom';
@@ -220,6 +221,8 @@ export function InvestmentChatComposer({
   const modelSelectorRef = useRef<HTMLDivElement | null>(null);
   const modelTriggerRef = useRef<HTMLButtonElement | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  // role="menu" 需要有方向键;关闭后焦点还给触发按钮。
+  useMenuKeyboard(modelOpen, dropdownRef, () => setModelOpen(false));
   const abortControllerRef = useRef<AbortController | null>(null);
   const requestVersionRef = useRef(0);
   const inFlightRef = useRef(false);
@@ -1065,7 +1068,7 @@ export function InvestmentChatComposer({
                         <div
                           ref={dropdownRef}
                           className="chat-model-dropdown investments-ai-model-dropdown"
-                          role="dialog"
+                          role="menu"
                           aria-label={tf('investmentAi.modelListAria', '模型列表')}
                           style={dropdownStyle}
                         >
@@ -1083,6 +1086,7 @@ export function InvestmentChatComposer({
                                 <button
                                   key={item}
                                   type="button"
+                                  role="menuitem"
                                   className={`chat-model-option ${item === model ? 'active' : ''}`}
                                   onClick={() => selectModel(item)}
                                 >

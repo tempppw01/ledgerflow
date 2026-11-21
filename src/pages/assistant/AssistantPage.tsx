@@ -1,4 +1,5 @@
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useDialogFocus } from '../../shared/lib/useDialogFocus';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 
@@ -1046,6 +1047,10 @@ export function AssistantPage() {
   const [duplicateReviewIndex, setDuplicateReviewIndex] = useState(0);
   const [overwriteEntryIds, setOverwriteEntryIds] = useState<string[]>([]);
   const [semanticPanelOpen, setSemanticPanelOpen] = useState(false);
+  const semanticDrawerRef = useRef<HTMLElement | null>(null);
+  const duplicateDialogRef = useRef<HTMLElement | null>(null);
+  // 两个 aria-modal 弹层:焦点收进来、关闭后还给触发按钮。
+  useDialogFocus(semanticPanelOpen, semanticDrawerRef, () => setSemanticPanelOpen(false));
 
   useEffect(() => {
     try {
@@ -1125,6 +1130,9 @@ export function AssistantPage() {
     setOverwriteEntryIds([]);
     wb.setToastState('已取消重复账单处理，本次未保存', 'warning');
   };
+
+  // 重复账单对比确认也是 aria-modal 弹层。
+  useDialogFocus(duplicateReviewOpen && Boolean(currentDuplicateReview), duplicateDialogRef, handleCancelDuplicateReview);
 
   const handleCreateSubscriptionFromEntry = (entryId: string) => {
     const entry = wb.entries.find((item) => item.id === entryId);
@@ -3845,6 +3853,7 @@ export function AssistantPage() {
               onClick={() => setSemanticPanelOpen(false)}
             >
               <aside
+                ref={semanticDrawerRef}
                 className="drawer-panel chat-semantic-drawer"
                 role="dialog"
                 aria-modal="true"
@@ -3942,6 +3951,7 @@ export function AssistantPage() {
               onClick={handleCancelDuplicateReview}
             >
               <section
+                ref={duplicateDialogRef}
                 className="dialog chat-dup-compare-dialog"
                 role="dialog"
                 aria-modal="true"

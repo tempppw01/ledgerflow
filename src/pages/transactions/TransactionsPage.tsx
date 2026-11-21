@@ -566,6 +566,7 @@ export function TransactionsPage() {
   );
   const quickAddAmountInputRef = useRef<HTMLTextAreaElement | null>(null);
   const quickAddDrawerRef = useRef<HTMLElement | null>(null);
+  const shareDialogRef = useRef<HTMLElement | null>(null);
   // 抽屉自己已经处理了 Escape(见下面的 keydown effect),这里只管焦点:
   // 打开时收进抽屉、Tab 循环、关闭后还给「记一笔」按钮。
   useDialogFocus(quickAddOpen, quickAddDrawerRef);
@@ -2207,6 +2208,9 @@ export function TransactionsPage() {
     setShareDialogOpen(false);
   }, []);
 
+  // 分享弹层是 aria-modal:焦点收进来、关闭后还给触发按钮。
+  useDialogFocus(shareDialogOpen, shareDialogRef, handleCloseShareDialog);
+
   const availableDateBounds = useMemo(() => {
     let min = '';
     let max = '';
@@ -3190,6 +3194,7 @@ export function TransactionsPage() {
       {shareDialogOpen && selected ? (
         <div className="dialog-overlay" role="presentation" onClick={handleCloseShareDialog}>
           <section
+            ref={shareDialogRef}
             className="dialog"
             role="dialog"
             aria-modal="true"

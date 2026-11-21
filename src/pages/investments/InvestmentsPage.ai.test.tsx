@@ -935,8 +935,9 @@ describe('Investment assistant chat', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /当前模型/ }));
 
+    // 模型列表现在是 role="menu"(下拉列表不该冒充 dialog),选项是 menuitem。
     expect(
-      await screen.findByRole('button', { name: 'remote-investment-model' })
+      await screen.findByRole('menuitem', { name: 'remote-investment-model' })
     ).toBeInTheDocument();
     expect(fetchAiModelsMock).toHaveBeenCalledWith('https://api.example.com/v1', 'sk-test');
   });

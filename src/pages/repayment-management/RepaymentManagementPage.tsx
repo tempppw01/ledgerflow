@@ -1,6 +1,7 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMenuKeyboard } from '../../shared/lib/useMenuKeyboard';
+import { useDialogFocus } from '../../shared/lib/useDialogFocus';
 import { useTFallback, type TfFallback } from '../../shared/lib/useTFallback';
 import { useLocation } from 'react-router-dom';
 import { formatMonthKey, getDateLocale } from '../../shared/lib/i18nDate';
@@ -1360,6 +1361,9 @@ export function RepaymentManagementPage() {
   );
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const debtContextMenuRef = useRef<HTMLDivElement | null>(null);
+  const debtModalRef = useRef<HTMLDivElement | null>(null);
+  // 新增/编辑负债的弹层:焦点收进来、关闭后还给触发按钮。
+  useDialogFocus(showAddDebtModal, debtModalRef, () => setShowAddDebtModal(false));
   // role="menu" 的方向键导航 + 关闭后归还焦点。
   useMenuKeyboard(Boolean(debtContextMenu), debtContextMenuRef, () => setDebtContextMenu(null));
 
@@ -3957,6 +3961,7 @@ export function RepaymentManagementPage() {
             }}
           >
             <div
+              ref={debtModalRef}
               className="dialog repayment-debt-modal"
               role="dialog"
               aria-label={

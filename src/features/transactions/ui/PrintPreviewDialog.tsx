@@ -1,5 +1,6 @@
-import { useEffect, useId } from 'react';
+import { useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useDialogFocus } from '../../../shared/lib/useDialogFocus';
 
 export interface PrintPreviewDialogProps {
   open: boolean;
@@ -31,19 +32,9 @@ export function PrintPreviewDialog({
 }: PrintPreviewDialogProps) {
   const { t } = useTranslation();
   const frameTitle = useId();
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onCancel();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, onCancel]);
+  const dialogRef = useRef<HTMLElement | null>(null);
+  // Escape 关闭 + 焦点收进弹层 / 关闭后还给触发按钮(原来只处理了 Escape)。
+  useDialogFocus(open, dialogRef, onCancel);
 
   if (!open) {
     return null;
@@ -55,6 +46,7 @@ export function PrintPreviewDialog({
   return (
     <div className="dialog-overlay" role="presentation" onClick={onCancel}>
       <section
+        ref={dialogRef}
         className="dialog dialog-print-preview"
         role="dialog"
         aria-modal="true"

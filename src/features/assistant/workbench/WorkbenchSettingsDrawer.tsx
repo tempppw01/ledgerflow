@@ -1,4 +1,6 @@
+import { useRef } from 'react';
 import { PasswordInput } from '../../../shared/ui/PasswordInput';
+import { useDialogFocus } from '../../../shared/lib/useDialogFocus';
 import { DEFAULT_AI_MODEL } from '../../../shared/config/aiModels';
 
 interface WorkbenchSettingsDrawerProps {
@@ -36,11 +38,16 @@ export function WorkbenchSettingsDrawer(props: WorkbenchSettingsDrawerProps) {
     onResetWorkbench
   } = props;
 
+  const drawerRef = useRef<HTMLElement | null>(null);
+  // Escape 关闭 + 焦点收进抽屉 / 关闭后还给触发按钮。
+  useDialogFocus(open, drawerRef, onClose);
+
   if (!open) return null;
 
   return (
     <div className="drawer-overlay" role="presentation" onClick={onClose}>
       <aside
+        ref={drawerRef}
         className="drawer-panel"
         role="dialog"
         aria-modal="true"

@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useDialogFocus } from '../../../shared/lib/useDialogFocus';
 import { useNavigate } from 'react-router-dom';
 import {
   TransactionAttachmentItem,
@@ -457,6 +458,8 @@ export function TransactionDetailDrawer({
   /** 单笔打印也先给预览:之前这里 window.open 带 noopener 返回值恒为 null,点了等于没反应。 */
   const [printPreviewHtml, setPrintPreviewHtml] = useState<string | null>(null);
   const drawerRef = useRef<HTMLDivElement | null>(null);
+  // Escape 关闭 + 焦点收进抽屉 / 关闭后还给触发按钮。
+  useDialogFocus(open && Boolean(transaction), drawerRef, onClose);
   const resizeStateRef = useRef<{ startY: number; startHeight: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();

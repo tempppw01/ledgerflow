@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useDialogFocus } from '../../../shared/lib/useDialogFocus';
 import { createPortal } from 'react-dom';
 import {
   TransactionDatePreset,
@@ -79,6 +80,9 @@ export function TransactionFilters({
   const tf = useTFallback();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const filterDialogRef = useRef<HTMLDivElement | null>(null);
+  // 筛选面板是 aria-modal 的弹层:焦点收进来、Tab 留在里面、关闭后还给「筛选设置」按钮。
+  useDialogFocus(menuOpen, filterDialogRef, () => setMenuOpen(false));
   const hiddenColumnCount = columnOptions.reduce(
     (count, option) => count + (visibleColumns[option.key] ? 0 : 1),
     0
@@ -440,6 +444,7 @@ export function TransactionFilters({
                   onClick={() => setMenuOpen(false)}
                 >
                   <div
+                    ref={filterDialogRef}
                     className="transaction-filter-popover-panel"
                     role="dialog"
                     aria-modal="true"

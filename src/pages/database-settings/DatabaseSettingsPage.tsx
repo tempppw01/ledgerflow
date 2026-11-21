@@ -1,4 +1,5 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useDialogFocus } from '../../shared/lib/useDialogFocus';
 import { useTranslation } from 'react-i18next';
 import { useTFallback, type TfFallback } from '../../shared/lib/useTFallback';
 import { MysqlSnapshotPanel } from '../../features/mysql-snapshot/ui/MysqlSnapshotPanel';
@@ -386,6 +387,8 @@ export function DatabaseSettingsPage() {
 
   const backupInputRef = useRef<HTMLInputElement | null>(null);
   const billInputRef = useRef<HTMLInputElement | null>(null);
+  const webdavRestoreDialogRef = useRef<HTMLElement | null>(null);
+  const objectStorageRestoreDialogRef = useRef<HTMLElement | null>(null);
 
   const [importSource, setImportSource] = useState<BillSource | null>(null);
   const [importMode, setImportMode] = useState<BillImportMode>('incremental');
@@ -434,6 +437,13 @@ export function DatabaseSettingsPage() {
   const [webdavRestoreDialogOpen, setWebdavRestoreDialogOpen] = useState(false);
   const [webdavRestoreVersions, setWebdavRestoreVersions] = useState<WebdavBackupVersionItem[]>([]);
   const [objectStorageRestoreDialogOpen, setObjectStorageRestoreDialogOpen] = useState(false);
+  // 两个版本选择弹层都是 aria-modal:焦点收进来、关闭后还给触发按钮。
+  useDialogFocus(webdavRestoreDialogOpen, webdavRestoreDialogRef, () =>
+    setWebdavRestoreDialogOpen(false)
+  );
+  useDialogFocus(objectStorageRestoreDialogOpen, objectStorageRestoreDialogRef, () =>
+    setObjectStorageRestoreDialogOpen(false)
+  );
   const [objectStorageRestoreVersions, setObjectStorageRestoreVersions] = useState<
     ObjectStorageBackupVersionItem[]
   >([]);
@@ -1687,6 +1697,7 @@ export function DatabaseSettingsPage() {
           onClick={() => setWebdavRestoreDialogOpen(false)}
         >
           <section
+            ref={webdavRestoreDialogRef}
             className="dialog"
             role="dialog"
             aria-modal="true"
@@ -1741,6 +1752,7 @@ export function DatabaseSettingsPage() {
           onClick={() => setObjectStorageRestoreDialogOpen(false)}
         >
           <section
+            ref={objectStorageRestoreDialogRef}
             className="dialog"
             role="dialog"
             aria-modal="true"
