@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { useTFallback } from '../../../shared/lib/useTFallback';
 import type { ClipboardEvent, DragEvent, FormEvent } from 'react';
 import { SMART_TRANSACTION_COMMANDS } from './workbenchTypes';
 
@@ -19,6 +20,7 @@ interface WorkbenchInputPanelProps {
 }
 
 export function WorkbenchInputPanel(props: WorkbenchInputPanelProps) {
+  const tf = useTFallback();
   const {
     hasApiKey,
     submitting,
@@ -49,7 +51,7 @@ export function WorkbenchInputPanel(props: WorkbenchInputPanelProps) {
         <small>支持文本、多图粘贴/拖拽</small>
       </header>
 
-      <div className="chat-smart-command-row" aria-label="常用智能命令">
+      <div className="chat-smart-command-row" aria-label={tf('assistant.workbench.commonCommands', '常用智能命令')}>
         {SMART_TRANSACTION_COMMANDS.map((item) => (
           <button
             key={item.key}
@@ -68,7 +70,7 @@ export function WorkbenchInputPanel(props: WorkbenchInputPanelProps) {
 
       {imageDataUrls.length > 0 ? (
         <div className="chat-image-strip">
-          <div className="chat-thumb-list" aria-label="待发送图片列表">
+          <div className="chat-thumb-list" aria-label={tf('assistant.attachments.pendingList', '待发送图片列表')}>
             {imageDataUrls.map((url, idx) => (
               <div key={`pending-img-${idx}`} className="chat-thumb-item">
                 <img src={url} alt={`待发送图片 ${idx + 1}`} className="chat-thumb" />
@@ -96,7 +98,7 @@ export function WorkbenchInputPanel(props: WorkbenchInputPanelProps) {
           accept="image/*"
           multiple
           className="chat-file-input-hidden"
-          aria-label="上传记账图片"
+          aria-label={tf('assistant.attachments.uploadReceipt', '上传记账图片')}
           aria-hidden="true"
           tabIndex={-1}
           hidden
@@ -111,8 +113,8 @@ export function WorkbenchInputPanel(props: WorkbenchInputPanelProps) {
         <button
           type="button"
           className="chat-upload-btn"
-          aria-label="上传记账图片"
-          title="上传记账图片"
+          aria-label={tf('assistant.attachments.uploadReceipt', '上传记账图片')}
+          title={tf('assistant.attachments.uploadReceipt', '上传记账图片')}
           disabled={!hasApiKey}
           onClick={() => fileInputRef.current?.click()}
         >
@@ -123,7 +125,7 @@ export function WorkbenchInputPanel(props: WorkbenchInputPanelProps) {
           rows={2}
           value={textInput}
           className="chat-input-textarea"
-          aria-label="AI 记账输入"
+          aria-label={tf('assistant.workbench.bookkeepingInput', 'AI 记账输入')}
           placeholder={hasApiKey ? '请输入交易内容，或粘贴图片后点击识别' : '请先配置 API Key'}
           disabled={!hasApiKey || submitting}
           onChange={(e) => onTextChange(e.target.value)}

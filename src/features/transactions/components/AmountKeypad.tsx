@@ -1,3 +1,4 @@
+import { useTFallback } from '../../../shared/lib/useTFallback';
 interface AmountKeypadProps {
   onKey: (key: string) => void;
   className?: string;
@@ -7,6 +8,7 @@ interface AmountKeypadProps {
 const DIGIT_KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '00', '0', '.'];
 
 export function AmountKeypad({ onKey, className = '', label = '金额键盘' }: AmountKeypadProps) {
+  const tf = useTFallback();
   return (
     <div className={`amount-keypad ${className}`.trim()} role="group" aria-label={label}>
       <button type="button" className="amount-keypad-action is-clear" onClick={() => onKey('clear')}>
@@ -16,15 +18,15 @@ export function AmountKeypad({ onKey, className = '', label = '金额键盘' }: 
         type="button"
         className="amount-keypad-action is-backspace"
         onClick={() => onKey('backspace')}
-        aria-label="退格"
-        title="退格"
+        aria-label={tf('common.calc.backspace', '退格')}
+        title={tf('common.calc.backspace', '退格')}
       >
         ⌫
       </button>
-      <button type="button" className="amount-keypad-action" onClick={() => onKey('+')} aria-label="加">
+      <button type="button" className="amount-keypad-action" onClick={() => onKey('+')} aria-label={tf('common.calc.plus', '加')}>
         +
       </button>
-      <button type="button" className="amount-keypad-action" onClick={() => onKey('-')} aria-label="减">
+      <button type="button" className="amount-keypad-action" onClick={() => onKey('-')} aria-label={tf('common.calc.minus', '减')}>
         −
       </button>
       {DIGIT_KEYS.map((key) => (
@@ -36,7 +38,7 @@ export function AmountKeypad({ onKey, className = '', label = '金额键盘' }: 
         type="button"
         className="amount-keypad-confirm"
         onClick={() => onKey('=')}
-        aria-label="计算结果"
+        aria-label={tf('common.calc.result', '计算结果')}
       >
         =
       </button>

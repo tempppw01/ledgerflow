@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { useTFallback } from '../../../shared/lib/useTFallback';
 import { PasswordInput } from '../../../shared/ui/PasswordInput';
 import { useDialogFocus } from '../../../shared/lib/useDialogFocus';
 import { DEFAULT_AI_MODEL } from '../../../shared/config/aiModels';
@@ -21,6 +22,7 @@ interface WorkbenchSettingsDrawerProps {
 }
 
 export function WorkbenchSettingsDrawer(props: WorkbenchSettingsDrawerProps) {
+  const tf = useTFallback();
   const {
     open,
     baseUrl,
@@ -51,7 +53,7 @@ export function WorkbenchSettingsDrawer(props: WorkbenchSettingsDrawerProps) {
         className="drawer-panel"
         role="dialog"
         aria-modal="true"
-        aria-label="AI 设置抽屉"
+        aria-label={tf('assistant.workbench.settingsDrawer', 'AI 设置抽屉')}
         onClick={(e) => e.stopPropagation()}
       >
         <header className="drawer-header">

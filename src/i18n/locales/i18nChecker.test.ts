@@ -13,12 +13,22 @@ function runChecker(): {
   missing: { key: string }[];
   unused: string[];
   dynamicPrefixes: string[];
+  hardcodedAttrs: string[];
 } {
-  const raw = execFileSync(
-    process.execPath,
-    ['scripts/check-i18n-keys.mjs', '--json', '--unused'],
-    { cwd: process.cwd(), encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 }
-  );
+  // 脚本发现问题时退出码是 1。这里要把 stdout 解析出来做断言,
+  // 否则 execFileSync 会抛错、整个测试文件变成「收集失败」,看不出是哪条规则挂了。
+  let raw = '';
+  try {
+    raw = execFileSync(process.execPath, ['scripts/check-i18n-keys.mjs', '--json', '--unused'], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      maxBuffer: 32 * 1024 * 1024
+    });
+  } catch (error) {
+    const stdout = (error as { stdout?: string }).stdout;
+    if (!stdout) throw error;
+    raw = stdout;
+  }
   return JSON.parse(raw);
 }
 
@@ -39,6 +49,11 @@ describe('i18n checker', () => {
   it('识别先存进 state 再渲染的 key', () => {
     expect(report.unused).not.toContain('finance.ui.loadFailed');
     expect(report.unused).not.toContain('transactions.quickAdd.error.selectCategory');
+  });
+
+  it('aria-label / title / placeholder 里没有写死的中文', () => {
+    // 写死之后英文界面里就是中文,读屏器还会用中文念出来。
+    expect(report.hardcodedAttrs).toEqual([]);
   });
 
   it('识别被 helper 拼出来的 key 前缀', () => {

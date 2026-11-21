@@ -1,3 +1,4 @@
+import { useTFallback } from '../../../shared/lib/useTFallback';
 export interface DashboardAnomalyInsightsProps {
   anomalyInsight: {
     anomalies: string[];
@@ -13,6 +14,7 @@ export function DashboardAnomalyInsights({
   onNavigateToSmartBudget,
   onNavigateToTransactions
 }: DashboardAnomalyInsightsProps) {
+  const tf = useTFallback();
   return (
     <section className="panel" style={{ marginTop: 12 }}>
       <div className="dashboard-section-header">
@@ -21,7 +23,7 @@ export function DashboardAnomalyInsights({
       </div>
 
       {anomalyInsight.supportFacts.length > 0 ? (
-        <div className="dashboard-anomaly-facts" aria-label="今日财务雷达依据">
+        <div className="dashboard-anomaly-facts" aria-label={tf('dashboard.financeRadarBasis', '今日财务雷达依据')}>
           {anomalyInsight.supportFacts.map((fact) => (
             <span key={fact} className="metric-chip">
               {fact}

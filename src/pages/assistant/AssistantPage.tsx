@@ -2264,8 +2264,8 @@ export function AssistantPage() {
       onDrop={(e) => void wb.handleDropImage(e)}
     >
       <header className="chat-topbar chat-topbar-no-title">
-        <div className="chat-mode-switch" aria-label="模式切换">
-          <div className="chat-mode-switch-options" role="tablist" aria-label="AI 助手模式">
+        <div className="chat-mode-switch" aria-label={tf('assistant.modeSwitch', '模式切换')}>
+          <div className="chat-mode-switch-options" role="tablist" aria-label={tf('assistant.modeAria', 'AI 助手模式')}>
             <button
               ref={(node) => {
                 modeTabRefs.current.assistant = node;
@@ -2317,7 +2317,7 @@ export function AssistantPage() {
               type="button"
               className="chat-icon-topbar-btn"
               onClick={() => setSemanticPanelOpen(true)}
-              aria-label="语义召回"
+              aria-label={tf('assistant.semanticRecall', '语义召回')}
               title={`语义召回 · ${wb.semanticRecallCacheMeta.indexedDocs} 条`}
             >
               语
@@ -2807,7 +2807,7 @@ export function AssistantPage() {
                             </div>
                             <details className="chat-credit-card-details">
                               <summary>查看识别明细</summary>
-                              <div className="chat-credit-progress" aria-label="字段补全进度">
+                              <div className="chat-credit-progress" aria-label={tf('assistant.fieldFillProgress', '字段补全进度')}>
                                 <div className="chat-credit-progress-head">
                                   <span>{creditItem.completionLabel || '0/7 项字段已补齐'}</span>
                                   <strong>{creditItem.completionRatio || 0}%</strong>
@@ -3270,8 +3270,8 @@ export function AssistantPage() {
                             type="button"
                             className={`chat-icon-action-btn${item.feedback === 'up' ? ' is-active' : ''}`}
                             onClick={() => setMessageFeedback(item.id, 'up')}
-                            aria-label="点赞这条回复"
-                            title="点赞这条回复"
+                            aria-label={tf('assistant.chatActions.like', '点赞这条回复')}
+                            title={tf('assistant.chatActions.like', '点赞这条回复')}
                           >
                             <ChatThumbsUpIcon className="chat-icon-action-svg" />
                           </button>
@@ -3279,8 +3279,8 @@ export function AssistantPage() {
                             type="button"
                             className={`chat-icon-action-btn${item.feedback === 'down' ? ' is-active' : ''}`}
                             onClick={() => setMessageFeedback(item.id, 'down')}
-                            aria-label="点踩这条回复"
-                            title="点踩这条回复"
+                            aria-label={tf('assistant.chatActions.dislike', '点踩这条回复')}
+                            title={tf('assistant.chatActions.dislike', '点踩这条回复')}
                           >
                             <ChatThumbsDownIcon className="chat-icon-action-svg" />
                           </button>
@@ -3290,8 +3290,8 @@ export function AssistantPage() {
                         type="button"
                         className="chat-icon-action-btn"
                         onClick={() => copyMessage(item.text)}
-                        aria-label="复制消息"
-                        title="复制消息"
+                        aria-label={tf('assistant.chatActions.copy', '复制消息')}
+                        title={tf('assistant.chatActions.copy', '复制消息')}
                       >
                         <ChatCopyIcon className="chat-icon-action-svg" />
                       </button>
@@ -3299,8 +3299,8 @@ export function AssistantPage() {
                         type="button"
                         className="chat-icon-action-btn"
                         onClick={() => removeMessage(item.id)}
-                        aria-label="删除消息"
-                        title="删除消息"
+                        aria-label={tf('assistant.chatActions.delete', '删除消息')}
+                        title={tf('assistant.chatActions.delete', '删除消息')}
                       >
                         <ChatClearIcon className="chat-icon-action-svg" />
                       </button>
@@ -3310,8 +3310,8 @@ export function AssistantPage() {
                           className="chat-icon-action-btn"
                           onClick={() => retryMessage(index + 1)}
                           disabled={wb.status === 'recognizing'}
-                          aria-label="重新生成"
-                          title="重新生成"
+                          aria-label={tf('assistant.chatActions.regenerate', '重新生成')}
+                          title={tf('assistant.chatActions.regenerate', '重新生成')}
                         >
                           <ChatRotateCcwIcon className="chat-icon-action-svg" />
                         </button>
@@ -3322,8 +3322,8 @@ export function AssistantPage() {
                           className="chat-icon-action-btn"
                           onClick={() => retryMessage(index)}
                           disabled={wb.status === 'recognizing'}
-                          aria-label="重新生成"
-                          title="重新生成"
+                          aria-label={tf('assistant.chatActions.regenerate', '重新生成')}
+                          title={tf('assistant.chatActions.regenerate', '重新生成')}
                         >
                           <ChatRotateCcwIcon className="chat-icon-action-svg" />
                         </button>
@@ -3638,7 +3638,7 @@ export function AssistantPage() {
             <p className="chat-disclaimer">AI 生成内容仅供参考，请结合原始账单核对后再保存。</p>
 
             {mode === 'credit' && wb.hasApiKey && !wb.textInput.trim() ? (
-              <div className="chat-credit-quick-commands" aria-label="信贷管家快捷指令">
+              <div className="chat-credit-quick-commands" aria-label={tf('assistant.creditQuickCommands', '信贷管家快捷指令')}>
                 {CREDIT_QUICK_COMMANDS.map((command) => (
                   <button
                     key={command}
@@ -3657,7 +3657,7 @@ export function AssistantPage() {
               <div className="chat-input-meta">
                 <div
                   className={`chat-input-context ${wb.textInput.trim() ? 'is-collapsed' : ''}`}
-                  aria-label="最近一笔账单"
+                  aria-label={tf('assistant.latestBill', '最近一笔账单')}
                 >
                   <span>{latestContextLabel}</span>
                   <strong>
@@ -3711,7 +3711,7 @@ export function AssistantPage() {
                       <button
                         type="button"
                         className="chat-upload-btn"
-                        title="上传图片/PDF"
+                        title={tf('assistant.attachments.uploadGeneric', '上传图片/PDF')}
                         onClick={() => wb.fileInputRef.current?.click()}
                         disabled={wb.status === 'recognizing'}
                       >
@@ -3753,7 +3753,7 @@ export function AssistantPage() {
                             id="assistant-model-menu"
                             className={`chat-model-dropdown ${modelPickerSource === 'command' ? 'is-command-open' : ''}`}
                             role="menu"
-                            aria-label="模型列表"
+                            aria-label={tf('assistant.modelList', '模型列表')}
                             onKeyDown={onModelMenuKeyDown}
                           >
                             <div className="chat-model-list">
@@ -3835,8 +3835,8 @@ export function AssistantPage() {
                   className="chat-file-input-hidden"
                   type="file"
                   accept="image/*,application/pdf"
-                  title="上传账单图片或 PDF"
-                  aria-label="上传账单图片或 PDF"
+                  title={tf('assistant.attachments.uploadBill', '上传账单图片或 PDF')}
+                  aria-label={tf('assistant.attachments.uploadBill', '上传账单图片或 PDF')}
                   aria-hidden="true"
                   tabIndex={-1}
                   hidden
@@ -3857,7 +3857,7 @@ export function AssistantPage() {
                 className="drawer-panel chat-semantic-drawer"
                 role="dialog"
                 aria-modal="true"
-                aria-label="语义召回详情"
+                aria-label={tf('assistant.semanticRecallDetail', '语义召回详情')}
                 onClick={(event) => event.stopPropagation()}
               >
                 <header className="drawer-header">
@@ -3955,7 +3955,7 @@ export function AssistantPage() {
                 className="dialog chat-dup-compare-dialog"
                 role="dialog"
                 aria-modal="true"
-                aria-label="重复账单对比确认"
+                aria-label={tf('assistant.duplicateCompare', '重复账单对比确认')}
                 onClick={(event) => event.stopPropagation()}
               >
                 <header className="dialog-header">
@@ -4064,7 +4064,7 @@ export function AssistantPage() {
 
           <ConfirmDialog
             open={Boolean(pendingDeleteCreditItem)}
-            title="删除这笔负债？"
+            title={tf('assistant.confirmDeleteDebt', '删除这笔负债？')}
             description={`将从还款管理删除“${
               pendingDeleteCreditItem?.matchedDebtName ||
               pendingDeleteCreditItem?.title ||
@@ -4083,7 +4083,7 @@ export function AssistantPage() {
 
           <ConfirmDialog
             open={Boolean(pendingQuickRepay)}
-            title="登记这笔已还？"
+            title={tf('assistant.confirmMarkPaid', '登记这笔已还？')}
             description={
               pendingQuickRepay
                 ? `将从“${pendingQuickRepay.debtName}”登记一笔 ¥${pendingQuickRepay.amount.toFixed(

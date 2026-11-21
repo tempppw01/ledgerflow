@@ -4,7 +4,13 @@
     "close": "关闭",
     "save": "保存",
     "justNow": "刚刚",
-    "retry": "重试"
+    "retry": "重试",
+    "calc": {
+      "backspace": "退格",
+      "result": "计算结果",
+      "plus": "加",
+      "minus": "减"
+    }
   },
   "app": {
     "title": "LedgerFlow 记账软件"
@@ -502,8 +508,36 @@
         "saving": "保存中",
         "saved": "已保存",
         "error": "异常"
-      }
-    }
+      },
+      "commonCommands": "常用智能命令",
+      "bookkeepingInput": "AI 记账输入",
+      "settingsDrawer": "AI 设置抽屉",
+      "settingsTitle": "AI 设置"
+    },
+    "chatActions": {
+      "regenerate": "重新生成",
+      "like": "点赞这条回复",
+      "dislike": "点踩这条回复",
+      "copy": "复制消息",
+      "delete": "删除消息"
+    },
+    "attachments": {
+      "uploadReceipt": "上传记账图片",
+      "uploadBill": "上传账单图片或 PDF",
+      "uploadGeneric": "上传图片/PDF",
+      "pendingList": "待发送图片列表"
+    },
+    "modeSwitch": "模式切换",
+    "modeAria": "AI 助手模式",
+    "semanticRecall": "语义召回",
+    "semanticRecallDetail": "语义召回详情",
+    "fieldFillProgress": "字段补全进度",
+    "creditQuickCommands": "信贷管家快捷指令",
+    "latestBill": "最近一笔账单",
+    "modelList": "模型列表",
+    "duplicateCompare": "重复账单对比确认",
+    "confirmDeleteDebt": "删除这笔负债？",
+    "confirmMarkPaid": "登记这笔已还？"
   },
   "about": {
     "kicker": "关于 LedgerFlow",
@@ -724,7 +758,8 @@
       "traceMonth": "点击追溯本月交易",
       "densityTitle": "首页显示",
       "chartEmptyCta": "记第一笔"
-    }
+    },
+    "financeRadarBasis": "今日财务雷达依据"
   },
   "transactions": {
     "quickAdd": {
@@ -2388,7 +2423,9 @@
       "pickedSummary": "精选摘要",
       "sharesInputHint": "点击填写持有份额",
       "summaryTitle": "分析摘要",
-      "topHoldingsTitle": "重仓股票"
+      "topHoldingsTitle": "重仓股票",
+      "add": "添加关注",
+      "analyzeAria": "让 AI 分析这只自选"
     },
     "api": {
       "fund": {
@@ -2421,7 +2458,15 @@
         }
       }
     },
-    "subtitle": "把今日判断、行情监控和基金自选放进一个工作台，按需切换，不再上下堆叠。"
+    "subtitle": "把今日判断、行情监控和基金自选放进一个工作台，按需切换，不再上下堆叠。",
+    "marketHistoryAria": "大盘历史行情和投资模拟",
+    "marketHistoryTarget": "历史模拟标的",
+    "marketHistoryRange": "历史行情区间",
+    "planWeekday": "定投每周几",
+    "planMonthDay": "定投每月几号",
+    "fundKeyData": "基金关键数据",
+    "shares": "份额",
+    "refreshFundProfile": "刷新基金资料"
   },
   "investmentAi": {
     "agentBadge": "Agent",
@@ -2925,7 +2970,9 @@
       "description": "确定删除“{name}”吗?删除后无法恢复。",
       "confirm": "确认删除",
       "cancel": "取消"
-    }
+    },
+    "actualAmount": "实际还款金额",
+    "noteAria": "备注"
   },
   "categoriesAccounts": {
     "accountName": "账户名称",
@@ -4017,5 +4064,11 @@
       "saving": "保存中...",
       "testing": "连接中..."
     }
+  },
+  "debugLog": {
+    "scrollArea": "调试日志滚动容器"
+  },
+  "tags": {
+    "emptyAria": "暂无标签数据"
   }
 }

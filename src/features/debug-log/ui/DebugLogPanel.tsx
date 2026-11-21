@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useTFallback } from '../../../shared/lib/useTFallback';
 import { formatDateTime } from '../../../shared/lib/format';
 import { useDebugLogStore } from '../../../shared/store/useDebugLogStore';
 
 export function DebugLogPanel() {
+  const tf = useTFallback();
   const logs = useDebugLogStore((s) => s.logs);
   const clearLogs = useDebugLogStore((s) => s.clearLogs);
   const [open, setOpen] = useState(false);
@@ -39,7 +41,7 @@ export function DebugLogPanel() {
           {logs.length === 0 ? (
             <p className="debug-log-empty">暂无调试日志</p>
           ) : (
-            <div className="debug-log-scroll" aria-label="调试日志滚动容器">
+            <div className="debug-log-scroll" aria-label={tf('debugLog.scrollArea', '调试日志滚动容器')}>
               {logs
                 .slice()
                 .reverse()

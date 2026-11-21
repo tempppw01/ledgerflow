@@ -2221,7 +2221,7 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
   }
 
   return (
-    <section className="investments-market-history-section" aria-label="大盘历史行情和投资模拟">
+    <section className="investments-market-history-section" aria-label={tf('investments.marketHistoryAria', '大盘历史行情和投资模拟')}>
       <div className="investments-market-history-head">
         <div>
           <h4>{historyTarget.label.replace(/^.+?·\s*/, '')}历史走势</h4>
@@ -2239,7 +2239,7 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
                 setHistoryTargetId(event.target.value);
                 setSimulationResult(null);
               }}
-              aria-label="历史模拟标的"
+              aria-label={tf('investments.marketHistoryTarget', '历史模拟标的')}
             >
               {MARKET_HISTORY_TARGETS.map((item) => (
                 <option key={item.id} value={item.id}>
@@ -2251,7 +2251,7 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
           <div
             className="investments-market-history-range-tabs"
             role="tablist"
-            aria-label="历史行情区间"
+            aria-label={tf('investments.marketHistoryRange', '历史行情区间')}
           >
             {MARKET_HISTORY_RANGES.map((item) => (
               <button
@@ -2368,7 +2368,7 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
                 <select
                   value={simulationWeekday}
                   onChange={(event) => setSimulationWeekday(Number(event.target.value))}
-                  aria-label="定投每周几"
+                  aria-label={tf('investments.planWeekday', '定投每周几')}
                 >
                   {SIMULATION_WEEKDAYS.map((item) => (
                     <option key={item.value} value={item.value}>
@@ -2384,7 +2384,7 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
                 <select
                   value={simulationDayOfMonth}
                   onChange={(event) => setSimulationDayOfMonth(Number(event.target.value))}
-                  aria-label="定投每月几号"
+                  aria-label={tf('investments.planMonthDay', '定投每月几号')}
                 >
                   {SIMULATION_MONTH_DAYS.map((day) => (
                     <option key={day} value={day}>
@@ -5912,7 +5912,7 @@ export function InvestmentsPage() {
                             ) : null}
                             <div
                               className="investments-watch-card-mini-stats"
-                              aria-label="基金关键数据"
+                              aria-label={tf('investments.fundKeyData', '基金关键数据')}
                             >
                               <span>
                                 <em>净值</em>
@@ -5950,7 +5950,7 @@ export function InvestmentsPage() {
                                         handleCancelEditingWatchHoldingShares();
                                       }
                                     }}
-                                    placeholder="份额"
+                                    placeholder={tf('investments.shares', '份额')}
                                     type="text"
                                     value={editingWatchHoldingValue}
                                   />
@@ -5980,7 +5980,7 @@ export function InvestmentsPage() {
                                 type="button"
                                 className="investments-watch-analyze-btn"
                                 aria-label={`让 AI 分析 ${item.name}`}
-                                title="让 AI 分析这只自选"
+                                title={tf('investments.watch.analyzeAria', '让 AI 分析这只自选')}
                                 onClick={(event) => {
                                   event.stopPropagation();
                                   askInvestmentAi(
@@ -6008,8 +6008,8 @@ export function InvestmentsPage() {
                                 <button
                                   type="button"
                                   className="investments-watch-follow-btn"
-                                  aria-label="添加关注"
-                                  title="添加关注"
+                                  aria-label={tf('investments.watch.add', '添加关注')}
+                                  title={tf('investments.watch.add', '添加关注')}
                                   onClick={(event) => {
                                     event.stopPropagation();
                                     handleFollowWatchItem(item);
@@ -6022,7 +6022,7 @@ export function InvestmentsPage() {
                                 type="button"
                                 className={`investments-watch-refresh-btn ${isRefreshing ? 'is-loading' : ''}`}
                                 aria-label={`刷新 ${item.name} 基金资料`}
-                                title="刷新基金资料"
+                                title={tf('investments.refreshFundProfile', '刷新基金资料')}
                                 disabled={isRefreshing}
                                 onClick={(event) => {
                                   event.stopPropagation();

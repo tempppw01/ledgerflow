@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTFallback } from '../../shared/lib/useTFallback';
 import { Link } from 'react-router-dom';
 import { formatCurrency, formatDate } from '../../shared/lib/format';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
@@ -20,6 +21,7 @@ function buildTransactionsLink(tag: string, highlightId?: string): string {
 }
 
 export function TagsPage() {
+  const tf = useTFallback();
   const transactions = useFinanceStore((s) => s.transactions);
   const categories = useFinanceStore((s) => s.categories);
 
@@ -68,7 +70,7 @@ export function TagsPage() {
 
       {groups.length === 0 ? (
         <EmptyState
-          title="暂无标签数据"
+          title={tf('tags.emptyAria', '暂无标签数据')}
           description="先通过交易详情或 AI 助手写入标签后，这里会自动聚合展示。"
           icon="🏷️"
         />

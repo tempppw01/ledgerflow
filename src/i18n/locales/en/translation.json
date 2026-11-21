@@ -4,7 +4,13 @@
     "close": "Close",
     "save": "Save",
     "justNow": "Just now",
-    "retry": "Retry"
+    "retry": "Retry",
+    "calc": {
+      "backspace": "Backspace",
+      "result": "Result",
+      "plus": "Plus",
+      "minus": "Minus"
+    }
   },
   "app": {
     "title": "LedgerFlow Bookkeeping"
@@ -502,8 +508,36 @@
         "saving": "Saving",
         "saved": "Saved",
         "error": "Error"
-      }
-    }
+      },
+      "commonCommands": "Common smart commands",
+      "bookkeepingInput": "AI bookkeeping input",
+      "settingsDrawer": "AI settings drawer",
+      "settingsTitle": "AI settings"
+    },
+    "chatActions": {
+      "regenerate": "Regenerate",
+      "like": "Like this reply",
+      "dislike": "Dislike this reply",
+      "copy": "Copy message",
+      "delete": "Delete message"
+    },
+    "attachments": {
+      "uploadReceipt": "Upload a receipt image",
+      "uploadBill": "Upload bill image or PDF",
+      "uploadGeneric": "Upload image / PDF",
+      "pendingList": "Pending image attachments"
+    },
+    "modeSwitch": "Switch mode",
+    "modeAria": "AI assistant mode",
+    "semanticRecall": "Semantic recall",
+    "semanticRecallDetail": "Semantic recall details",
+    "fieldFillProgress": "Field completion progress",
+    "creditQuickCommands": "Credit assistant quick commands",
+    "latestBill": "Most recent bill",
+    "modelList": "Model list",
+    "duplicateCompare": "Confirm duplicate bill",
+    "confirmDeleteDebt": "Delete this debt?",
+    "confirmMarkPaid": "Mark this repayment as paid?"
   },
   "about": {
     "kicker": "About LedgerFlow",
@@ -724,7 +758,8 @@
       "traceMonth": "View this month's transactions",
       "densityTitle": "Show on dashboard",
       "chartEmptyCta": "Add first entry"
-    }
+    },
+    "financeRadarBasis": "What the daily radar is based on"
   },
   "transactions": {
     "quickAdd": {
@@ -2388,7 +2423,9 @@
       "pickedSummary": "Highlights",
       "sharesInputHint": "Click to enter the number of shares",
       "summaryTitle": "Analysis summary",
-      "topHoldingsTitle": "Top holdings"
+      "topHoldingsTitle": "Top holdings",
+      "add": "Add to watchlist",
+      "analyzeAria": "Ask AI to analyze this watchlist item"
     },
     "api": {
       "fund": {
@@ -2421,7 +2458,15 @@
         }
       }
     },
-    "subtitle": "Today’s read, market monitoring and your watchlist live in one workspace, switched on demand instead of stacked up."
+    "subtitle": "Today’s read, market monitoring and your watchlist live in one workspace, switched on demand instead of stacked up.",
+    "marketHistoryAria": "Market history and investment simulation",
+    "marketHistoryTarget": "Historical simulation target",
+    "marketHistoryRange": "Market history range",
+    "planWeekday": "Investment plan weekday",
+    "planMonthDay": "Investment plan day of month",
+    "fundKeyData": "Key fund data",
+    "shares": "Shares",
+    "refreshFundProfile": "Refresh fund profile"
   },
   "investmentAi": {
     "agentBadge": "Agent",
@@ -2925,7 +2970,9 @@
       "description": "Delete \"{name}\"? This cannot be undone.",
       "confirm": "Delete",
       "cancel": "Cancel"
-    }
+    },
+    "actualAmount": "Actual repayment amount",
+    "noteAria": "Note"
   },
   "categoriesAccounts": {
     "accountName": "Account name",
@@ -4017,5 +4064,11 @@
       "saving": "Saving...",
       "testing": "Testing..."
     }
+  },
+  "debugLog": {
+    "scrollArea": "Debug log scroll area"
+  },
+  "tags": {
+    "emptyAria": "No tag data yet"
   }
 }

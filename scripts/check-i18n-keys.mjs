@@ -243,6 +243,33 @@ const unused = [...zh.keys()]
   .filter((key) => !used.has(key) && !isCoveredByDynamicPrefix(key))
   .sort();
 
+/**
+ * `aria-label` / `title` / `placeholder` 里写死的中文。
+ *
+ * 这三个属性永远是界面文案、不可能是用户数据:写死之后英文界面里就是中文,
+ * 读屏器还会用中文念出来。历史上一共 55 处(43 种文案),集中在 AI 助手与投资页。
+ * 单独的 `placeholder="—"` 这类纯符号不算(正则要求含汉字)。
+ *
+ * 注意:像 `querySelector('[aria-label="实际还款金额"]')` 这种「按文案找元素」的写法
+ * 也会被这条规则命中 —— 那本身就是脆弱写法(文案翻译后选择器就失效),应改成 id。
+ */
+const HARDCODED_ATTR_RE = /\b(aria-label|title|placeholder)="([^"]*[\u4e00-\u9fa5][^"]*)"/g;
+const hardcodedAttrs = [];
+for (const file of files) {
+  if (!file.endsWith('.tsx')) continue;
+  // 测试文件里的字面量是用来做断言的,不是界面文案。
+  if (/.test.tsx$/.test(file)) continue;
+  const src = readFileSync(file, 'utf8');
+  HARDCODED_ATTR_RE.lastIndex = 0;
+  let a;
+  while ((a = HARDCODED_ATTR_RE.exec(src)) !== null) {
+    // 模板字符串里已经包了 tf(...) 的不算写死(如打印 HTML 片段)。
+    if (a[2].includes('${tf(') || a[2].includes('${t(')) continue;
+    const line = src.slice(0, a.index).split('\n').length;
+    hardcodedAttrs.push(`${path.relative(root, file)}:${line}  ${a[1]}="${a[2]}"`);
+  }
+}
+
 const result = {
   scannedFiles: files.length,
   usedKeys: used.size,
@@ -254,7 +281,8 @@ const result = {
   enKeys: en.size,
   onlyZh,
   onlyEn,
-  unused
+  unused,
+  hardcodedAttrs
 };
 
 if (asJson) {
@@ -294,8 +322,14 @@ if (asJson) {
   if (hardcodedLabels.length) {
     section('HARDCODED — 标签类元素里写死的文案(无法翻译)', hardcodedLabels);
   }
+
+  if (hardcodedAttrs.length) {
+    section('HARDCODED-ATTR — aria-label/title/placeholder 里写死的中文', hardcodedAttrs);
+  }
 }
 
 process.exit(
-  missing.length || onlyZh.length || onlyEn.length || hardcodedLabels.length ? 1 : 0
+  missing.length || onlyZh.length || onlyEn.length || hardcodedLabels.length || hardcodedAttrs.length
+    ? 1
+    : 0
 );

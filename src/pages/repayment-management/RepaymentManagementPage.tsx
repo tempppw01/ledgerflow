@@ -1200,6 +1200,7 @@ function simulateRepaymentPlan(input: {
 }
 
 function RepaymentUnitInput(props: {
+  id?: string;
   value: string;
   onChange: (value: string) => void;
   unit: string;
@@ -1211,13 +1212,14 @@ function RepaymentUnitInput(props: {
   inputMode?: 'decimal' | 'numeric';
   disabled?: boolean;
 }) {
-  const { value, onChange, unit, ariaLabel, min, max, step, inputMode, disabled } = props;
+  const { id, value, onChange, unit, ariaLabel, min, max, step, inputMode, disabled } = props;
   return (
     <label
       className={`finance-unit-input ${disabled ? 'is-disabled' : ''} ${value.trim() ? 'is-filled' : ''}`}
     >
       <span className="finance-input-floating-label">{ariaLabel}</span>
       <input
+        id={id}
         className="finance-debt-form-control"
         type="number"
         min={min}
@@ -3195,9 +3197,7 @@ export function RepaymentManagementPage() {
                       setDebtContextMenu(null);
                       window.setTimeout(
                         () =>
-                          document
-                            .querySelector<HTMLInputElement>('[aria-label="实际还款金额"]')
-                            ?.focus(),
+                          document.getElementById('repayment-actual-amount')?.focus(),
                         0
                       );
                     }}
@@ -3534,6 +3534,7 @@ export function RepaymentManagementPage() {
                     <form onSubmit={onAddRepaymentRecord} className="repayment-record-form">
                       <div className="repayment-record-primary-fields">
                         <RepaymentUnitInput
+                          id="repayment-actual-amount"
                           value={repaymentAmount}
                           onChange={(value) => {
                             setRepaymentAmount(value);
@@ -3599,7 +3600,7 @@ export function RepaymentManagementPage() {
                             setRepaymentRecordError('');
                           }}
                           placeholder={tf('repayment.record.notePlaceholder', '备注（可选）')}
-                          aria-label="备注"
+                          aria-label={tf('repayment.noteAria', '备注')}
                         />
                         <button
                           type="submit"
