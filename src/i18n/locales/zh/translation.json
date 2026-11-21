@@ -2069,7 +2069,8 @@
       "marketAria": "大盘和市场监控"
     },
     "empty": {
-      "generic": "暂无数据"
+      "generic": "暂无数据",
+      "moreProfile": "暂无更多资料。"
     },
     "refresh": "刷新",
     "stat": {
@@ -2461,7 +2462,8 @@
       "summaryTitle": "分析摘要",
       "topHoldingsTitle": "重仓股票",
       "add": "添加关注",
-      "analyzeAria": "让 AI 分析这只自选"
+      "analyzeAria": "让 AI 分析这只自选",
+      "remove": "移除"
     },
     "api": {
       "fund": {
@@ -2502,7 +2504,28 @@
     "planMonthDay": "定投每月几号",
     "fundKeyData": "基金关键数据",
     "shares": "份额",
-    "refreshFundProfile": "刷新基金资料"
+    "refreshFundProfile": "刷新基金资料",
+    "simulation": {
+      "start": "起点",
+      "title": "定投模拟",
+      "subtitle": "用历史收盘价估算:按计划投入后,期末大约剩多少。",
+      "frequency": "频率",
+      "everyTradingDay": "每个交易日",
+      "monthly": "每月",
+      "weekly": "每周",
+      "method": "计算口径:按计划日在历史日线中顺延到下一个可用交易日买入,期末按结束日前最后收盘价估值;收益率为模拟盈亏 ÷ 累计投入,",
+      "samples": "样本"
+    },
+    "quote": {
+      "up": "涨",
+      "flat": "平",
+      "down": "跌"
+    },
+    "metric": {
+      "netValue": "净值",
+      "return": "收益",
+      "holding": "持有"
+    }
   },
   "investmentAi": {
     "agentBadge": "Agent",

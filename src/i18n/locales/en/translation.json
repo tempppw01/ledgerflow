@@ -2069,7 +2069,8 @@
       "marketAria": "Market and sector monitoring"
     },
     "empty": {
-      "generic": "No data"
+      "generic": "No data",
+      "moreProfile": "No further profile data."
     },
     "refresh": "Refresh",
     "stat": {
@@ -2461,7 +2462,8 @@
       "summaryTitle": "Analysis summary",
       "topHoldingsTitle": "Top holdings",
       "add": "Add to watchlist",
-      "analyzeAria": "Ask AI to analyze this watchlist item"
+      "analyzeAria": "Ask AI to analyze this watchlist item",
+      "remove": "Remove"
     },
     "api": {
       "fund": {
@@ -2502,7 +2504,28 @@
     "planMonthDay": "Investment plan day of month",
     "fundKeyData": "Key fund data",
     "shares": "Shares",
-    "refreshFundProfile": "Refresh fund profile"
+    "refreshFundProfile": "Refresh fund profile",
+    "simulation": {
+      "start": "Start",
+      "title": "Plan simulation",
+      "subtitle": "Estimated from historical closes: what your plan would be worth at the end.",
+      "frequency": "Frequency",
+      "everyTradingDay": "Every trading day",
+      "monthly": "Monthly",
+      "weekly": "Weekly",
+      "method": "Method: each planned date rolls forward to the next available trading day; the end value uses the last close before the end date; return = simulated P/L ÷ total invested,",
+      "samples": "Samples"
+    },
+    "quote": {
+      "up": "Up",
+      "flat": "Flat",
+      "down": "Down"
+    },
+    "metric": {
+      "netValue": "NAV",
+      "return": "Return",
+      "holding": "Holding"
+    }
   },
   "investmentAi": {
     "agentBadge": "Agent",

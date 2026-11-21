@@ -2232,7 +2232,7 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
         </div>
         <div className="investments-market-history-controls">
           <label className="investments-market-history-target">
-            <span>历史模拟标的</span>
+            <span>{tf('investments.marketHistoryTarget', '历史模拟标的')}</span>
             <select
               value={historyTargetId}
               onChange={(event) => {
@@ -2274,7 +2274,7 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
             <>
               <div className="investments-market-history-summary">
                 <span>
-                  起点 <strong>{formatMarketIndexValue(firstHistoryPoint?.value)}</strong>
+                  {tf('investments.simulation.start', '起点')} <strong>{formatMarketIndexValue(firstHistoryPoint?.value)}</strong>
                 </span>
                 <span>
                   {tf('investments.market.latest', '最新')}
@@ -2345,26 +2345,26 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
 
         <form className="investments-simulation-panel" onSubmit={runSimulation}>
           <div>
-            <h4>定投模拟</h4>
+            <h4>{tf('investments.simulation.title', '定投模拟')}</h4>
             <p>用历史收盘价估算：按计划投入后，期末大约剩多少。</p>
           </div>
           <div className="investments-simulation-fields">
             <label>
-              <span>频率</span>
+              <span>{tf('investments.simulation.frequency', '频率')}</span>
               <select
                 value={simulationFrequency}
                 onChange={(event) =>
                   setSimulationFrequency(event.target.value as InvestmentSimulationFrequency)
                 }
               >
-                <option value="trading-daily">每个交易日</option>
-                <option value="monthly">每月</option>
-                <option value="weekly">每周</option>
+                <option value="trading-daily">{tf('investments.simulation.everyTradingDay', '每个交易日')}</option>
+                <option value="monthly">{tf('investments.simulation.monthly', '每月')}</option>
+                <option value="weekly">{tf('investments.simulation.weekly', '每周')}</option>
               </select>
             </label>
             {simulationFrequency === 'weekly' ? (
               <label>
-                <span>每周几</span>
+                <span>{tf('investments.simulation.weekly', '每周')}几</span>
                 <select
                   value={simulationWeekday}
                   onChange={(event) => setSimulationWeekday(Number(event.target.value))}
@@ -2380,7 +2380,7 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
             ) : null}
             {simulationFrequency === 'monthly' ? (
               <label>
-                <span>每月几号</span>
+                <span>{tf('investments.simulation.monthly', '每月')}几号</span>
                 <select
                   value={simulationDayOfMonth}
                   onChange={(event) => setSimulationDayOfMonth(Number(event.target.value))}
@@ -2468,7 +2468,7 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
         </form>
       </div>
       <p className="investments-market-source-note investments-simulation-method-note">
-        计算口径：按计划日在历史日线中顺延到下一个可用交易日买入，期末按结束日前最后收盘价估值；收益率为模拟盈亏
+        计算口径：按计划日在历史日线中顺延到下一个可用交易日买入，期末按结束日前最后收盘价估值；{tf('investments.metric.return', '收益')}率为模拟盈亏
         ÷ 累计投入，未年化。仅模拟指数点位，不代表实际基金收益，且不含申购费、分红、税费和滑点。
       </p>
     </section>
@@ -3546,6 +3546,8 @@ function getMarketBreadth(boards: EastmoneyMarketBoard[]): MarketBreadth {
 }
 
 function MarketBreadthDonut({ breadth, label }: { breadth: MarketBreadth; label: string }) {
+  // 独立子组件:顶层的 tf 不在作用域里,自己取一次。
+  const tf = useTFallback();
   const total = breadth.up + breadth.flat + breadth.down;
   const segments = [
     { id: 'up', value: breadth.up, color: 'var(--color-danger)' },
@@ -3583,18 +3585,18 @@ function MarketBreadthDonut({ breadth, label }: { breadth: MarketBreadth; label:
         </svg>
         <div>
           <strong>{total || '--'}</strong>
-          <span>样本</span>
+          <span>{tf('investments.simulation.samples', '样本')}</span>
         </div>
       </div>
       <div className="investments-market-breadth-legend">
         <span className="is-up">
-          涨 <b>{breadth.up || '--'}</b>
+          {tf('investments.quote.up', '涨')} <b>{breadth.up || '--'}</b>
         </span>
         <span>
-          平 <b>{breadth.flat || '--'}</b>
+          {tf('investments.quote.flat', '平')} <b>{breadth.flat || '--'}</b>
         </span>
         <span className="is-down">
-          跌 <b>{breadth.down || '--'}</b>
+          {tf('investments.quote.down', '跌')} <b>{breadth.down || '--'}</b>
         </span>
       </div>
     </div>
@@ -5901,7 +5903,7 @@ export function InvestmentsPage() {
                                   }}
                                   aria-label={`移除 ${item.name}`}
                                 >
-                                  移除
+                                  {tf('investments.watch.remove', '移除')}
                                 </button>
                               </div>
                             </div>
@@ -5915,20 +5917,20 @@ export function InvestmentsPage() {
                               aria-label={tf('investments.fundKeyData', '基金关键数据')}
                             >
                               <span>
-                                <em>净值</em>
+                                <em>{tf('investments.metric.netValue', '净值')}</em>
                                 <strong>
                                   {item.netValue || tf('investments.watch.pendingValue', '待更新')}
                                 </strong>
                               </span>
                               <span>
-                                <em>收益</em>
+                                <em>{tf('investments.metric.return', '收益')}</em>
                                 <strong>
                                   {item.addedReturn ||
                                     tf('investments.watch.pendingValue', '待更新')}
                                 </strong>
                               </span>
                               <span className="is-holding">
-                                <em>持有</em>
+                                <em>{tf('investments.metric.holding', '持有')}</em>
                                 {editingWatchHoldingId === item.id ? (
                                   <input
                                     autoFocus
@@ -6156,7 +6158,7 @@ export function InvestmentsPage() {
                                   </>
                                 ) : (
                                   <p className="investments-watch-card-empty-detail">
-                                    暂无更多资料。
+                                    {tf('investments.empty.moreProfile', '暂无更多资料。')}
                                   </p>
                                 )}
                               </div>
