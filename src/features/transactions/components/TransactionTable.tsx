@@ -1035,6 +1035,10 @@ export function TransactionTable({
                       <tr
                         key={item.id}
                         id={`transaction-row-${item.id}`}
+                        /* -1 而不是 0:让行能被「程序化聚焦」,但不把每一行塞进 Tab 顺序
+                           (表格几十行,全进 Tab 链会变得极难走)。点击时先聚焦本行,
+                           抽屉关闭后焦点才能回到这一行,而不是掉到 body。 */
+                        tabIndex={-1}
                         className={`transaction-row-clickable ${
                           highlightId === item.id ? 'transaction-row-highlight' : ''
                         } ${
@@ -1042,7 +1046,10 @@ export function TransactionTable({
                             ? 'transaction-row-refund-like'
                             : ''
                         }`.trim()}
-                        onClick={() => onOpenDetail(item.id)}
+                        onClick={(event) => {
+                          event.currentTarget.focus();
+                          onOpenDetail(item.id);
+                        }}
                         onContextMenu={(event) => {
                           event.preventDefault();
                           setContextMenu({ x: event.clientX, y: event.clientY, id: item.id });
@@ -1294,10 +1301,13 @@ export function TransactionTable({
               return (
                 <article
                   key={`mobile-${item.id}`}
+                  /* 和桌面行同样的处理:能被程序化聚焦,但不进 Tab 顺序,
+                     这样详情抽屉关闭后焦点能回到这张卡片。 */
+                  tabIndex={-1}
                   className={`transaction-mobile-item ${isSwiped ? 'is-swiped' : ''} ${
                     checked ? 'is-selected' : ''
                   }`.trim()}
-                  onClick={() => {
+                  onClick={(event) => {
                     if (bulkSelectionEnabled) {
                       onToggleSelect(item.id, !checked);
                       return;
@@ -1306,6 +1316,7 @@ export function TransactionTable({
                       setSwipedId(null);
                       return;
                     }
+                    event.currentTarget.focus();
                     onOpenDetail(item.id);
                   }}
                   onTouchStart={(event) => {
