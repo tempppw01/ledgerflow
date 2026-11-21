@@ -61,6 +61,7 @@ import {
   buildBulkPrintStyles,
   printHtmlWithIframe
 } from '../../features/transactions/model/printUtils';
+import { PrintPreviewDialog } from '../../features/transactions/ui/PrintPreviewDialog';
 import {
   txTypeLabel,
   txStatusLabel,
@@ -441,6 +442,10 @@ export function TransactionsPage() {
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
   const [pendingRefundTransactionId, setPendingRefundTransactionId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  /** 批量打印的预览内容:先生成 HTML 给用户看,确认后才真正打印。 */
+  const [printPreview, setPrintPreview] = useState<{ html: string; preferPdf: boolean } | null>(
+    null
+  );
   const [aiRecategorizingId, setAiRecategorizingId] = useState<string | null>(null);
   const [bulkAiRecategorizing, setBulkAiRecategorizing] = useState(false);
   const [bulkAiProgress, setBulkAiProgress] = useState<{
@@ -1626,9 +1631,6 @@ export function TransactionsPage() {
       return;
     }
 
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1120,height=860');
-    const popupBlocked = !printWindow;
-
     const printSummary = summarizeTransactions(selectedRows.map((row) => row.item));
     const totalAmount = printSummary.overallTotal;
     const incomeTotal = printSummary.incomeTotal;
@@ -1753,42 +1755,8 @@ export function TransactionsPage() {
       </html>
     `;
 
-    if (popupBlocked) {
-      showToast(
-        options?.preferPdf
-          ? tf(
-              'txPage.print.popupBlockedPdf',
-              '浏览器拦截了弹窗，将使用内嵌打印模式。请在系统打印框里选择“保存为 PDF”。'
-            )
-          : tf('txPage.print.popupBlocked', '浏览器拦截了弹窗，将使用内嵌打印模式。'),
-        'warning'
-      );
-      try {
-        printHtmlWithIframe(html);
-      } catch (error) {
-        showToast(
-          error instanceof Error
-            ? error.message
-            : tf('txPage.print.failed', '打印失败，请检查浏览器权限。'),
-          'error'
-        );
-      }
-      return;
-    }
-
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.focus();
-    if (options?.preferPdf) {
-      showToast(
-        tf('txPage.print.savePdfHint', '请在系统打印框里选择“保存为 PDF”完成导出。'),
-        'success'
-      );
-    }
-    window.setTimeout(() => {
-      printWindow.print();
-    }, 120);
+    // 先给用户看预览,确认后再打印:不再直接弹系统打印框,也不再误报「弹窗被拦截」。
+    setPrintPreview({ html, preferPdf: Boolean(options?.preferPdf) });
   };
 
   const recategorizeByAi = async (
@@ -3182,9 +3150,7 @@ export function TransactionsPage() {
               <button type="button" className="primary" onClick={handleSaveQuickAdd}>
                 {tf('txPage.quickAdd.save', `完成记账`)}
               </button>
-              <small role="status">
-                {quickAddDraftStatus }
-              </small>
+              <small role="status">{quickAddDraftStatus}</small>
             </footer>
           </aside>
         </div>
@@ -3372,6 +3338,35 @@ export function TransactionsPage() {
         danger
         onConfirm={handleDeleteConfirm}
         onCancel={() => setPendingDeleteIds([])}
+      />
+
+      <PrintPreviewDialog
+        open={printPreview !== null}
+        html={printPreview?.html ?? ''}
+        onCancel={() => setPrintPreview(null)}
+        onPrint={() => {
+          const preview = printPreview;
+          setPrintPreview(null);
+          if (!preview) {
+            return;
+          }
+          try {
+            printHtmlWithIframe(preview.html);
+            if (preview.preferPdf) {
+              showToast(
+                tf('txPage.print.savePdfHint', '请在系统打印框里选择“保存为 PDF”完成导出。'),
+                'success'
+              );
+            }
+          } catch (error) {
+            showToast(
+              error instanceof Error
+                ? error.message
+                : tf('txPage.print.failed', '打印失败,请检查浏览器权限。'),
+              'error'
+            );
+          }
+        }}
       />
 
       <Toast

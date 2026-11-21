@@ -7118,6 +7118,41 @@ small.mono {
   gap: var(--space-2);
 }
 
+/* 打印预览:比普通确认框宽,内容区自己滚动,页脚按钮始终可见。 */
+.dialog-print-preview {
+  width: min(940px, 100%);
+  max-height: min(88vh, 900px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.dialog-print-preview-body {
+  display: grid;
+  gap: var(--space-2);
+  min-height: 0;
+  overflow: auto;
+}
+
+.dialog-print-preview-hint {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-xs);
+}
+
+.dialog-print-preview-frame {
+  width: 100%;
+  height: min(58vh, 560px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+
+@media (max-width: 720px) {
+  .dialog-print-preview-frame {
+    height: 48vh;
+  }
+}
+
 .drawer-overlay {
   position: fixed;
   inset: 0;
