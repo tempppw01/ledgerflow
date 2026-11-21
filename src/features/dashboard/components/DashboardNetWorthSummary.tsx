@@ -16,10 +16,7 @@ export function DashboardNetWorthSummary({
   const { t } = useTranslation();
 
   return (
-    <div
-      className="dashboard-net-worth-summary"
-      aria-label={t('dashboard.ui.netWorthBreakdown')}
-    >
+    <div className="dashboard-net-worth-summary" aria-label={t('dashboard.ui.netWorthBreakdown')}>
       <div className="dashboard-net-worth-summary-head">
         <span>{t('dashboard.ui.breakdown')}</span>
       </div>
@@ -37,7 +34,12 @@ export function DashboardNetWorthSummary({
         <span>
           <i className="is-debt" />
           <em>{t('dashboard.ui.liabilities')}</em>
-          <b>−{formatCurrencyAuto(debtBalance)}</b>
+          {/* 负号只在真有负债时加:负债为 0 时写死「−」会渲染出「−¥0.00」。 */}
+          <b>
+            {debtBalance > 0
+              ? `−${formatCurrencyAuto(debtBalance)}`
+              : formatCurrencyAuto(debtBalance)}
+          </b>
         </span>
       </div>
     </div>
