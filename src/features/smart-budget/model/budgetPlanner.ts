@@ -218,7 +218,14 @@ export function generateBudgetRecommendation(answers: BudgetAnswers): BudgetReco
   }
 
   const disposableIncome = monthlyIncome - monthlyFixedExpense;
-  const savingsAmount = roundToTen(disposableIncome * answers.savingsRatio);
+  // 储蓄额取四舍五入到 10 的倍数,但可支配收入很小时会「进」到超过可支配收入
+  // (例如可支配 9 元、比例 0.6 时 roundToTen(5.4) = 10),导致 flexibleBudget
+  // 变成负数,分类预算随之出错。储蓄不允许超过可支配收入,超出时向下取整。
+  const roundedSavings = roundToTen(disposableIncome * answers.savingsRatio);
+  const savingsAmount =
+    roundedSavings > disposableIncome
+      ? Math.floor(disposableIncome / 10) * 10
+      : roundedSavings;
   const flexibleBudget = monthlyIncome - monthlyFixedExpense - savingsAmount;
 
   const dynamicWeights = normalizeWeights(FLEXIBLE_CATEGORY_WEIGHT[answers.identity]);
@@ -232,10 +239,34 @@ export function generateBudgetRecommendation(answers: BudgetAnswers): BudgetReco
   const dynamicBudgetUsed = dynamicPlans.reduce((sum, item) => sum + item.amount, 0);
   const dynamicDelta = flexibleBudget - dynamicBudgetUsed;
   if (dynamicPlans.length > 0 && dynamicDelta !== 0) {
-    dynamicPlans[0] = {
-      ...dynamicPlans[0],
-      amount: dynamicPlans[0].amount + dynamicDelta
-    };
+    if (dynamicDelta > 0) {
+      // 差值为正:直接补给第一个分类即可,不会出现负数。
+      dynamicPlans[0] = {
+        ...dynamicPlans[0],
+        amount: dynamicPlans[0].amount + dynamicDelta
+      };
+    } else {
+      // 差值为负:roundToTen 会把各份都四舍五入到 10 的倍数,预算小的时候
+      // 各份「向上进位」之和可能超过灵活预算,差值就成了负数。以前把这笔负数
+      // 全压在第一个分类上,于是小额预算会出现「餐饮 −2」这种负额度
+      // (实测收入 ≤ 2619 元时可复现,最差 −8)。
+      // 改成从金额最大的分类开始扣,并且谁都不会被扣到 0 以下。
+      let remaining = -dynamicDelta;
+      const order = dynamicPlans
+        .map((item, index) => ({ index, amount: item.amount }))
+        .sort((a, b) => b.amount - a.amount);
+      for (const { index } of order) {
+        if (remaining <= 0) break;
+        const take = Math.min(dynamicPlans[index].amount, remaining);
+        dynamicPlans[index] = {
+          ...dynamicPlans[index],
+          amount: dynamicPlans[index].amount - take
+        };
+        remaining -= take;
+      }
+      // 各份四舍五入之和必然不小于需要扣掉的数额(和就是 dynamicBudgetUsed),
+      // 因此 remaining 到这里一定已经归零,不存在扣不动的兜底分支。
+    }
   }
 
   const categoryBudgets = [
