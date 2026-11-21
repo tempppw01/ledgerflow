@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMenuKeyboard } from '../../../shared/lib/useMenuKeyboard';
 import { createPortal } from 'react-dom';
 import { TransactionItem, TransactionStatus } from '../../../entities/transaction/types';
 import { EMPTY_CATEGORY_FILTER_VALUE } from '../model/categoryQuickFilter';
@@ -390,6 +391,8 @@ export function TransactionTable({
     null
   );
   const contextMenuRef = useRef<HTMLDivElement | null>(null);
+  // role="menu" 得配方向键:打开时焦点落在第一项,↑↓ 循环,关闭后还给触发按钮。
+  useMenuKeyboard(Boolean(contextMenu), contextMenuRef, () => setContextMenu(null));
   const touchStartXRef = useRef<number | null>(null);
   const dragColumnRef = useRef<TransactionColumnKey | null>(null);
   const resizeStateRef = useRef<{

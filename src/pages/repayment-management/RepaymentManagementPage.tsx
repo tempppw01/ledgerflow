@@ -1,5 +1,6 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useMenuKeyboard } from '../../shared/lib/useMenuKeyboard';
 import { useTFallback, type TfFallback } from '../../shared/lib/useTFallback';
 import { useLocation } from 'react-router-dom';
 import { formatMonthKey, getDateLocale } from '../../shared/lib/i18nDate';
@@ -1358,6 +1359,9 @@ export function RepaymentManagementPage() {
     readRepaymentCollapseState
   );
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const debtContextMenuRef = useRef<HTMLDivElement | null>(null);
+  // role="menu" 的方向键导航 + 关闭后归还焦点。
+  useMenuKeyboard(Boolean(debtContextMenu), debtContextMenuRef, () => setDebtContextMenu(null));
 
   useEffect(() => {
     writeRepaymentCollapseState(repaymentCollapseState);
@@ -3141,12 +3145,14 @@ export function RepaymentManagementPage() {
             )}
             {debtContextMenu ? (
               <div
+                ref={debtContextMenuRef}
                 className="repayment-debt-context-menu"
                 style={{ left: debtContextMenu.x, top: debtContextMenu.y }}
                 role="menu"
                 onClick={(event) => event.stopPropagation()}
               >
                 <button
+                  role="menuitem"
                   type="button"
                   onClick={() => {
                     const item = debtsWithStatus.find((debt) => debt.id === debtContextMenu.id);
@@ -3157,6 +3163,7 @@ export function RepaymentManagementPage() {
                   {tf('repayment.card.edit', '编辑')}
                 </button>
                 <button
+                  role="menuitem"
                   type="button"
                   onClick={() => {
                     setSelectedDebtId(debtContextMenu.id);
@@ -3175,6 +3182,7 @@ export function RepaymentManagementPage() {
                   debtsWithStatus.find((debt) => debt.id === debtContextMenu.id) as DebtItem
                 ) ? (
                   <button
+                    role="menuitem"
                     type="button"
                     onClick={() => {
                       setSelectedDebtId(debtContextMenu.id);

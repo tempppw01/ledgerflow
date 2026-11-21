@@ -11,6 +11,7 @@ import {
 import { ThemeSwitcher } from '../../features/theme-switcher/ThemeSwitcher';
 import { LanguageSwitcher } from '../../features/language-switcher/LanguageSwitcher';
 import { useAuth } from '../../features/auth/ui/authContext';
+import { useMenuKeyboard } from '../../shared/lib/useMenuKeyboard';
 import { SettingsPage } from '../../pages/settings/SettingsPage';
 import { APP_LOGO_URL } from '../../shared/config/app';
 import {
@@ -118,6 +119,7 @@ export function AppLayout() {
   );
   const recycleBinIconUrl = recycleBinItemCount > 0 ? TRASH_2_ICON_URL : TRASH_ICON_URL;
   const accountMenuRef = useRef<HTMLDivElement>(null);
+  const accountMenuListRef = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
 
   const navSections: Array<{ title: string; items: NavItem[] }> = useMemo(
@@ -669,6 +671,9 @@ export function AppLayout() {
     };
   }, [accountMenuOpen]);
 
+  // role="menu" 的方向键导航 + 关闭后归还焦点。
+  useMenuKeyboard(accountMenuOpen, accountMenuListRef, () => setAccountMenuOpen(false));
+
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 768px)');
     const onViewportChange = (event: MediaQueryListEvent) => {
@@ -872,6 +877,7 @@ export function AppLayout() {
 
               {accountMenuOpen ? (
                 <div
+                  ref={accountMenuListRef}
                   className="topbar-account-menu"
                   role="menu"
                   aria-label={tFallback('layout.accountMenuAria', '账号菜单')}

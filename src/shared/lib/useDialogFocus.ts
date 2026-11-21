@@ -1,6 +1,5 @@
 import { useEffect, useRef, type RefObject } from 'react';
-
-const OPENER_IGNORE_SELECTOR = '[role="dialog"], [aria-modal="true"]';
+import { useFocusOrigin } from './useFocusOrigin';
 
 const FOCUSABLE_SELECTOR = [
   'a[href]',
@@ -47,15 +46,7 @@ export function useDialogFocus(
   containerRef: RefObject<HTMLElement | null>,
   onEscape?: () => void
 ) {
-  /**
-   * 最近几个「弹层外」的焦点目标。只记一个不够:从行内菜单里点「删除」时,
-   * 菜单随弹层打开而卸载,那个来源节点已经不在了,关闭后焦点只能掉到 body。
-   * 记一串就有机会退回菜单的触发按钮。
-   */
-  const openerStackRef = useRef<HTMLElement[]>([]);
-  // 最近的、仍然挂在文档里的来源。菜单项这类会随弹层卸载,于是退回上一级触发按钮。
-  const findOpener = () =>
-    [...openerStackRef.current].reverse().find((el) => el.isConnected) || null;
+  const findOrigin = useFocusOrigin(containerRef);
 
   /**
    * onEscape 通常写成内联箭头函数,每次渲染都是新引用。放进依赖数组会让
@@ -64,31 +55,6 @@ export function useDialogFocus(
    */
   const onEscapeRef = useRef(onEscape);
   onEscapeRef.current = onEscape;
-
-  // 常驻监听:记录最后一次「落在弹层外」的焦点元素。
-  useEffect(() => {
-    const onFocusIn = (event: FocusEvent) => {
-      const target = event.target;
-      if (!(target instanceof HTMLElement)) return;
-      // 弹层内部的焦点不算来源。这里判 aria-modal/role 而不是只看自己的容器:
-      // 弹层里的输入框常在同一提交里就 autoFocus,那一刻容器 ref 可能还没挂上,
-      // 于是「来源」会被记成一个马上要卸载的 textarea,关闭后焦点只能掉到 body。
-      if (target.closest(OPENER_IGNORE_SELECTOR)) return;
-      const container = containerRef.current;
-      if (container && container.contains(target)) return;
-      const stack = openerStackRef.current;
-      if (stack.at(-1) === target) return;
-      stack.push(target);
-      if (stack.length > 4) stack.shift();
-    };
-
-    const initial = document.activeElement;
-    if (initial instanceof HTMLElement && !initial.closest(OPENER_IGNORE_SELECTOR)) {
-      openerStackRef.current.push(initial);
-    }
-    document.addEventListener('focusin', onFocusIn, true);
-    return () => document.removeEventListener('focusin', onFocusIn, true);
-  }, [containerRef]);
 
   // 打开状态:收拢焦点、Tab 循环。
   useEffect(() => {
@@ -139,7 +105,7 @@ export function useDialogFocus(
     window.addEventListener('keydown', onKeyDown);
     return () => {
       window.removeEventListener('keydown', onKeyDown);
-      const opener = findOpener();
+      const opener = findOrigin();
       // 只在焦点仍留在弹层(或已随弹层被移除)时才拉回,避免打断用户主动的跳转。
       const current = document.activeElement;
       const stillInside = container ? container.contains(current) : true;
@@ -147,5 +113,5 @@ export function useDialogFocus(
         opener.focus();
       }
     };
-  }, [open, containerRef]);
+  }, [open, containerRef, findOrigin]);
 }

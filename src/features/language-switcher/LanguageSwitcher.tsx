@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CHEVRON_DOWN_ICON_URL, GLOBE_ICON_URL } from '../../shared/config/brandAssets';
+import { useMenuKeyboard } from '../../shared/lib/useMenuKeyboard';
 import './language-switcher.css';
 
 type Language = 'zh' | 'en';
@@ -22,6 +23,8 @@ export function LanguageSwitcher() {
   const activeLanguage: Language = (i18n.resolvedLanguage || i18n.language || 'zh').startsWith('en')
     ? 'en'
     : 'zh';
+  // role="menu" 的方向键导航 + 关闭后归还焦点(下面自己的 Escape 处理保持不变)。
+  useMenuKeyboard(open, menuRef, () => setOpen(false));
   const current = LANGUAGES.find((language) => language.value === activeLanguage) ?? LANGUAGES[0];
   const title = t('layout.languageSwitch', { defaultValue: '切换语言' });
   const visibleLabel = t('layout.language', { defaultValue: '语言' });
