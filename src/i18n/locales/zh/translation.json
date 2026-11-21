@@ -1469,7 +1469,7 @@
     },
     "form": {
       "editTitle": "编辑订阅",
-      "createTitle": "新增订阅 ",
+      "createTitle": "新增订阅",
       "monthlyAverage": "折算月均",
       "customCycleHint": "按自定义周期折算",
       "templatesAria": "订阅预设模板",
@@ -2043,7 +2043,7 @@
     },
     "notice": {
       "holidayEyebrow": "休市公告",
-      "holidayTitleSuffix": "今日主要市场休市",
+      "holidayTitleSuffix": " · 今日主要市场休市",
       "weekendEyebrow": "休市提醒",
       "weekendTitle": "周末休市 · 暂无实时行情",
       "noOpenEyebrow": "交易时段提醒",
