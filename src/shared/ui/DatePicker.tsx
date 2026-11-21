@@ -1,6 +1,15 @@
-import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { useDialogFocus } from '../lib/useDialogFocus';
 
 type DatePickerProps = {
   id?: string;
@@ -131,6 +140,116 @@ export function DatePicker({
 
   const isDisabled = (date: Date) =>
     Boolean((minDate && date < minDate) || (maxDate && date > maxDate));
+
+  // 弹层是 role="dialog":焦点收进来、Tab 留在里面、关闭还给触发按钮。
+  useDialogFocus(open, popoverRef, () => setOpen(false));
+
+  /**
+   * 把焦点放到某一天;那天不在当前月就先翻月,等渲染完再聚焦。
+   *
+   * `step` 用来在越过 min/max 边界时找最近的可用日 —— 直接 focus 一个 disabled
+   * 的格子是静默失败的(浏览器不会聚焦 disabled 按钮),表现就是「方向键按了没反应」。
+   */
+  const focusDay = useCallback(
+    (target: Date, step = 0) => {
+      let candidate = target;
+      if (step !== 0) {
+        let guard = 0;
+        while (isDisabled(candidate) && guard < 400) {
+          candidate = new Date(candidate);
+          candidate.setDate(candidate.getDate() + step);
+          guard += 1;
+        }
+      }
+      if (isDisabled(candidate)) return;
+
+      const key = formatDate(candidate);
+      const find = () =>
+        popoverRef.current?.querySelector<HTMLButtonElement>(`[data-date="${key}"]`) ?? null;
+      const node = find();
+      if (node) {
+        node.focus();
+        return;
+      }
+      setViewDate(new Date(candidate.getFullYear(), candidate.getMonth(), 1));
+      // 等这一轮渲染出新的月份再聚焦。用 setTimeout 而不是 requestAnimationFrame:
+      // 无头/后台页面会把 rAF 挂起,焦点就永远不落下来(实测 Playwright 里如此)。
+      window.setTimeout(() => find()?.focus(), 0);
+    },
+    // isDisabled 依赖 minDate / maxDate
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [minDate, maxDate]
+  );
+
+  /**
+   * 日期网格的键盘导航(ARIA date grid 的常用键位):
+   * ←/→ 前后一天,↑/↓ 前后一周,PageUp/PageDown 前后一月,Home/End 本周首尾。
+   * 之前这个弹层只处理了 Escape,方向键完全没反应。
+   */
+  const handleGridKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const key = (event.target as HTMLElement | null)?.getAttribute('data-date');
+    if (!key) return;
+    const current = parseDate(key) ?? selected ?? today;
+
+    const move = (next: Date, step = 0) => {
+      event.preventDefault();
+      focusDay(next, step);
+    };
+    const addDays = (amount: number) => {
+      const next = new Date(current);
+      next.setDate(next.getDate() + amount);
+      return next;
+    };
+
+    switch (event.key) {
+      case 'ArrowLeft':
+        move(addDays(-1), -1);
+        break;
+      case 'ArrowRight':
+        move(addDays(1), 1);
+        break;
+      case 'ArrowUp':
+        move(addDays(-7), -1);
+        break;
+      case 'ArrowDown':
+        move(addDays(7), 1);
+        break;
+      case 'PageUp':
+        move(new Date(current.getFullYear(), current.getMonth() - 1, current.getDate()), -1);
+        break;
+      case 'PageDown':
+        move(new Date(current.getFullYear(), current.getMonth() + 1, current.getDate()), 1);
+        break;
+      case 'Home':
+        // 一周从周一开始,和上面的 WEEKDAY_KEYS 一致。
+        move(addDays(-((current.getDay() + 6) % 7)), -1);
+        break;
+      case 'End':
+        move(addDays(6 - ((current.getDay() + 6) % 7)), 1);
+        break;
+      default:
+        break;
+    }
+  };
+
+  // 打开时把焦点放在当前选中日(空值则今天),比停在「上个月」按钮上更好用。
+  // 依赖用字符串:selected 每次渲染都是新的 Date 对象,放进依赖会让这个 effect
+  // 每次重渲染都重跑,翻月后焦点又被拽回原来的日子。
+  const anchorKey = formatDate(selected || today);
+  useEffect(() => {
+    if (!open) return;
+    const find = () =>
+      popoverRef.current?.querySelector<HTMLButtonElement>(`[data-date="${anchorKey}"]`) ?? null;
+    // 目标日通常已经在网格里,同步聚焦即可;需要翻月时才等一轮渲染。
+    const node = find();
+    if (node) {
+      node.focus();
+      return;
+    }
+    const timer = window.setTimeout(() => find()?.focus(), 0);
+    return () => window.clearTimeout(timer);
+  }, [open, anchorKey]);
+
   return (
     <div
       ref={rootRef}
@@ -194,7 +313,7 @@ export function DatePicker({
                   <span key={day}>{t(`datePicker.weekdays.${day}`)}</span>
                 ))}
               </div>
-              <div className="lf-date-grid">
+              <div className="lf-date-grid" onKeyDown={handleGridKeyDown}>
                 {days.map((date) => {
                   const dateValue = formatDate(date);
                   const outside = date.getMonth() !== viewDate.getMonth();
@@ -204,6 +323,7 @@ export function DatePicker({
                     <button
                       type="button"
                       key={dateValue}
+                      data-date={dateValue}
                       className={`lf-date-day${outside ? ' is-outside' : ''}${active ? ' is-selected' : ''}${!active && dateValue === formatDate(today) ? ' is-today' : ''}`}
                       disabled={disabledDay}
                       aria-label={dateValue}
