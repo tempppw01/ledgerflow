@@ -175,10 +175,26 @@ export function syncRecommendationWithExpenseCategories(
   const allocatedFlexibleBudget = flexibleRows.reduce((sum, item) => sum + item.amount, 0);
   const delta = baseFlexibleBudget - allocatedFlexibleBudget;
   if (flexibleRows.length > 0 && delta !== 0) {
-    flexibleRows[0] = {
-      ...flexibleRows[0],
-      amount: Math.max(0, flexibleRows[0].amount + delta)
-    };
+    if (delta > 0) {
+      flexibleRows[0] = {
+        ...flexibleRows[0],
+        amount: flexibleRows[0].amount + delta
+      };
+    } else {
+      // 差值为负时不能简单夹到 0:Math.max(0, ...) 会把没吸收掉的负数直接丢掉,
+      // 分类合计因此超过灵活预算(实测在某些权重形状下多出 1~3 元)。
+      // 与 budgetPlanner 里的做法保持一致:从金额最大的分类开始扣,不让任何一项为负。
+      let remaining = -delta;
+      const order = flexibleRows
+        .map((item, index) => ({ index, amount: item.amount }))
+        .sort((a, b) => b.amount - a.amount);
+      for (const { index } of order) {
+        if (remaining <= 0) break;
+        const take = Math.min(flexibleRows[index].amount, remaining);
+        flexibleRows[index] = { ...flexibleRows[index], amount: flexibleRows[index].amount - take };
+        remaining -= take;
+      }
+    }
   }
 
   const normalizedFlexibleBudget = flexibleRows.reduce((sum, item) => sum + item.amount, 0);
