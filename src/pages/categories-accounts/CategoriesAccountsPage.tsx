@@ -138,7 +138,7 @@ export function CategoriesAccountsPage() {
     const normalized = normalizeNameInput(categoryName);
     if (!isValidName(normalized)) {
       setCategoryError(
-        tf('categoriesAccounts.error.categoryName', '分类名称需为 1-24 个字符，且不能包含 < 或 >。')
+        tf('categoriesAccounts.error.categoryName', '分类名称需为 1-24 个字符,且不能包含 < 或 >。')
       );
       return;
     }

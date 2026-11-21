@@ -20,7 +20,7 @@
     "backPrevious": "返回上一页"
   },
   "auth": {
-    "checkingStatus": "正在检查账号状态…",
+    "checkingStatus": "正在检查账号状态...",
     "statusFailed": "无法连接账号服务。",
     "operationFailed": "账号操作失败。",
     "kicker": "LEDGERFLOW ACCOUNT",
@@ -33,7 +33,7 @@
     "email": "邮箱",
     "password": "密码",
     "passwordPlaceholder": "至少 10 个字符",
-    "submitting": "请稍候…",
+    "submitting": "请稍候...",
     "createAccount": "创建账号并接管账本",
     "login": "登录",
     "switchToLogin": "已有账号？去登录",
@@ -2891,7 +2891,7 @@
     "error": {
       "accountName": "账户名称需为 1-24 个字符，且不能包含 < 或 >。",
       "accountType": "请选择账户类型后再添加账户。",
-      "categoryName": "分类名称需为 1-24 个字符，且不能包含 < 或 >。"
+      "categoryName": "分类名称需为 1-24 个字符,且不能包含 < 或 >。"
     },
     "expandRemaining": "展开剩余 {count} 项",
     "initialBalance": "初始余额",
