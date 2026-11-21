@@ -2071,6 +2071,16 @@
 .help-guide-content > a:hover {
   color: var(--color-primary);
 }
+
+/* 目录链接原先只有 19px 的文本高度,触屏上很容易点到隔壁。
+   粗指针下给足 40px 的可点高度(靠居中而不是放大字号来撑开)。 */
+@media (pointer: coarse) {
+  .help-jump-nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+  }
+}
 .help-start-strip {
   display: flex;
   align-items: center;

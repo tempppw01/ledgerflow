@@ -8534,6 +8534,14 @@ body.exchange-resizing {
   opacity: 1;
 }
 
+/* 收藏是个 16px 的图标按钮:桌面用鼠标没问题,触屏上手指根本点不准。
+   只在粗指针(触屏)下加宽到 32px,桌面版密度保持不变。 */
+@media (pointer: coarse) {
+  .exchange-fav-btn {
+    padding: 0 8px;
+  }
+}
+
 .exchange-fav-btn:hover {
   opacity: 0.72;
   transform: translateY(-1px);

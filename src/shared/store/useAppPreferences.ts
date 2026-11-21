@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AppAccentTheme, AppTheme } from '../types/app';
 import {
@@ -12,6 +12,7 @@ import {
   InvestmentWatchItem
 } from '../../entities/investment/types';
 import {
+  calculateDebtMinimumPayment,
   DebtItem,
   DebtLifecycleStatus,
   DebtType,
@@ -889,9 +890,39 @@ export const useAppPreferences = create<AppPreferencesState>()(
         return id;
       },
       removeRepaymentRecord: (id) => {
-        set((state) => ({
-          repaymentRecords: state.repaymentRecords.filter((item) => item.id !== id)
-        }));
+        set((state) => {
+          const record = state.repaymentRecords.find((item) => item.id === id);
+          if (!record) return { repaymentRecords: state.repaymentRecords };
+
+          // Recording a repayment also reduced the debt's principal and advanced
+          // its period counters, so deleting the record has to undo exactly that.
+          // Without this the principal stayed permanently understated and the
+          // user "gained" debt reduction they never actually paid.
+          const amount = Math.max(0, Number(record.amount) || 0);
+          const debts = state.debts.map((debt) => {
+            if (debt.id !== record.debtId) return debt;
+            const shouldRestorePeriod =
+              amount >= Math.max(1, calculateDebtMinimumPayment(debt) * 0.98);
+            return {
+              ...debt,
+              balance: Number(
+                (Math.max(0, Number(debt.balance) || 0) + amount).toFixed(2)
+              ),
+              paidPeriods: debt.totalPeriods
+                ? Math.max(0, (debt.paidPeriods || 0) - (shouldRestorePeriod ? 1 : 0))
+                : debt.paidPeriods,
+              remainingMonths:
+                typeof debt.remainingMonths === 'number'
+                  ? debt.remainingMonths + (shouldRestorePeriod ? 1 : 0)
+                  : debt.remainingMonths
+            };
+          });
+
+          return {
+            debts,
+            repaymentRecords: state.repaymentRecords.filter((item) => item.id !== id)
+          };
+        });
       },
       upsertCreditDraft: (payload) => {
         const state = get();

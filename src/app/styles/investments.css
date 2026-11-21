@@ -8150,6 +8150,20 @@
   opacity: 1;
 }
 
+/* 20px 的「让 AI 分析」小按钮在触屏上点不准,粗指针下放大到 28px,图标同步放大。 */
+@media (pointer: coarse) {
+  .investments-position-ai-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+  }
+
+  .investments-position-ai-btn .chat-svg-icon {
+    width: 14px;
+    height: 14px;
+  }
+}
+
 .investments-position-ai-btn:hover,
 .investments-position-ai-btn:focus-visible {
   background: var(--color-primary);

@@ -230,6 +230,14 @@ export function ExchangeRateTable({
                     type="button"
                     className={`exchange-fav-btn${favorites.includes(rate.code) ? ' is-active' : ''}`}
                     onClick={() => toggleFavorite(rate.code)}
+                    // 这是开关按钮:除了 title,还要有 aria-label 与 aria-pressed,
+                    // 否则读屏软件只会念到一个没有名字的按钮,也不知道当前是否已收藏。
+                    aria-pressed={favorites.includes(rate.code)}
+                    aria-label={
+                      favorites.includes(rate.code)
+                        ? tf('exchange.table.favoriteRemove', '取消收藏')
+                        : tf('exchange.table.favoriteAdd', '收藏')
+                    }
                     title={
                       favorites.includes(rate.code)
                         ? tf('exchange.table.favoriteRemove', '取消收藏')
