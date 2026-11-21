@@ -240,4 +240,36 @@ describe('TransactionDetailDrawer', () => {
     renderDrawer('pending');
     expect(screen.queryByRole('button', { name: /发起退款/ })).not.toBeInTheDocument();
   });
+  it('点打印先打开应用内预览,不再依赖会被拦的 window.open', () => {
+    // 回归:handlePrint 曾用 window.open(..., 'noopener', ...) 并直接 return,
+    // 而带 noopener 时返回值恒为 null,于是点「打印 A4」什么都不会发生。
+    const openSpy = vi.spyOn(window, 'open');
+
+    render(
+      <MemoryRouter>
+        <TransactionDetailDrawer
+          open
+          transaction={sample}
+          categoryName="餐饮"
+          accountName="现金"
+          source="manual"
+          onClose={() => undefined}
+          onCopyNote={() => undefined}
+          onCopyJson={() => undefined}
+          onShareBill={() => undefined}
+          onDelete={() => undefined}
+          onAiRecategorize={() => undefined}
+          onQuickAdd={() => undefined}
+        />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '打印 A4' }));
+
+    const preview = screen.getByRole('dialog', { name: '打印预览' });
+    expect(preview).toBeInTheDocument();
+    expect(preview.querySelector('iframe')?.getAttribute('srcdoc')).toContain('账单详情');
+    expect(openSpy).not.toHaveBeenCalled();
+    openSpy.mockRestore();
+  });
 });

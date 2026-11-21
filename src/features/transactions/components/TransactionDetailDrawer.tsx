@@ -15,6 +15,8 @@ import {
   isTransactionRefundLike
 } from '../../../shared/lib/transactionMetrics';
 import { buildA4PrintBaseStyles, buildA4PrintSheetStyles } from '../../../shared/lib/printStyles';
+import { printHtmlWithIframe } from '../model/printUtils';
+import { PrintPreviewDialog } from '../ui/PrintPreviewDialog';
 import {
   ALIPAY_LOGO_URL,
   LANDMARK_ICON_URL,
@@ -460,6 +462,8 @@ export function TransactionDetailDrawer({
 }: TransactionDetailDrawerProps) {
   const [attachmentUploading, setAttachmentUploading] = useState(false);
   const [drawerHeight, setDrawerHeight] = useState<number | null>(null);
+  /** 单笔打印也先给预览:之前这里 window.open 带 noopener 返回值恒为 null,点了等于没反应。 */
+  const [printPreviewHtml, setPrintPreviewHtml] = useState<string | null>(null);
   const drawerRef = useRef<HTMLDivElement | null>(null);
   const resizeStateRef = useRef<{ startY: number; startHeight: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -535,11 +539,6 @@ export function TransactionDetailDrawer({
       return;
     }
 
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=980,height=760');
-    if (!printWindow) {
-      return;
-    }
-
     const direction = getTransactionDirection(transaction);
     const amountText = `${direction === 'inflow' ? '+' : '-'}${formatCurrency(transaction.amount)}`;
     const typeText = typeLabel(transaction, tf);
@@ -597,17 +596,21 @@ export function TransactionDetailDrawer({
       </html>
     `;
 
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
+    // 与批量打印一致:先预览,确认后再走隐藏 iframe 打印。
+    setPrintPreviewHtml(html);
   };
 
   useEffect(() => {
     if (!open) return;
     setDrawerHeight(null);
   }, [open, transaction?.id]);
+
+  // 抽屉关闭时把预览一起收起,避免下次打开残留上一笔的打印内容。
+  useEffect(() => {
+    if (!open) {
+      setPrintPreviewHtml(null);
+    }
+  }, [open]);
 
   useEffect(() => {
     const onPointerMove = (event: PointerEvent) => {
@@ -886,6 +889,26 @@ export function TransactionDetailDrawer({
           </details>
         </footer>
       </aside>
+
+      <PrintPreviewDialog
+        open={printPreviewHtml !== null}
+        html={printPreviewHtml ?? ''}
+        title={tf('txPage.print.previewTitle', '打印预览')}
+        onCancel={() => setPrintPreviewHtml(null)}
+        onPrint={() => {
+          const html = printPreviewHtml;
+          if (!html) {
+            return;
+          }
+          try {
+            printHtmlWithIframe(html);
+            setPrintPreviewHtml(null);
+          } catch (error) {
+            // 打印失败时保留预览让用户重试,不再像以前那样点了毫无反应。
+            console.error('[ledgerflow] transaction print failed', error);
+          }
+        }}
+      />
     </div>
   );
 }
