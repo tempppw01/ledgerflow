@@ -78,9 +78,27 @@ export function resolveRepaymentCycleWindow(
       ? previousAnchor
       : upcoming;
 
+  // 窗口 = 「本期归属的还款区间」,必须满足两条:
+  //   1. 宽限期内的迟还也要算进本期。以前窗口是 [上次到期日, 到期日当天],
+  //      而上面的宽限期有 10 天 —— 结果是:到期后第 1~10 天明明还在这期里
+  //      (界面也还显示这期),但那些天还的钱一分都不计入,直接判成逾期。
+  //      宽限期等于白设。
+  //   2. 相邻两期不能重叠。以前本期窗口从「上次到期日」当天开始,于是上次
+  //      到期日当天的还款同时落进本期和上期的窗口:在到期日还款(最常见的
+  //      做法)会让下一期也被标成已还,整月被跳过。
+  // 现在取 (上次到期日 + 宽限期, 本到期日 + 宽限期] 这一段:与下一期首尾相接,
+  // 既不重叠也不留缝;到期后 10 天内的迟还会正常归入本期。
+  const graceMs = REPAYMENT_CYCLE_GRACE_DAYS * DAY_IN_MS;
+  // 起点要按「本到期日的上一期」算,不能用上面的 previousAnchor:在宽限期内
+  // 处于活动状态的那一期,previousAnchor 恰好就等于 dueDate 本身,拿它当基准
+  // 会把窗口推到到期日之后,迟还反而更算不进来。
+  const anchorBeforeDue = buildRepaymentDate(dueDate.getFullYear(), dueDate.getMonth() - 1, anchorDay);
+  const cycleStart = new Date(anchorBeforeDue.getTime() + graceMs + DAY_IN_MS);
+  const cycleEnd = new Date(dueDate.getTime() + graceMs + DAY_IN_MS - 1);
+
   return {
-    start: buildRepaymentDate(dueDate.getFullYear(), dueDate.getMonth() - 1, anchorDay),
-    end: new Date(dueDate.getTime() + DAY_IN_MS - 1),
+    start: cycleStart,
+    end: cycleEnd,
     dueDate
   };
 }
