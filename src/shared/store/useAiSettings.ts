@@ -470,7 +470,7 @@ export const useAiSettings = create<AiSettingsState>()(
       apiKey: readLocalApiKey() || readSessionApiKey() || ENV.aiApiKey,
       model: ENV.aiDefaultModel,
       embeddingModel: 'jina-embeddings-v3',
-      enableEmbeddingModel: true,
+      enableEmbeddingModel: false,
       rerankModel: 'bge-reranker-v2-m3',
       enableRerankModel: true,
       memoryDays: 3,
@@ -619,7 +619,7 @@ export const useAiSettings = create<AiSettingsState>()(
           next.embeddingModel = 'jina-embeddings-v3';
         }
         if (typeof next.enableEmbeddingModel !== 'boolean') {
-          next.enableEmbeddingModel = true;
+          next.enableEmbeddingModel = Boolean(next.embeddingModel?.trim());
         }
         if (!next.rerankModel?.trim()) {
           next.rerankModel = 'bge-reranker-v2-m3';

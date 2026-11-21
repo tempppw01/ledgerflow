@@ -914,7 +914,8 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
 
       const now = Date.now();
       const embeddingCooldownActive = now > 0 && now < embeddingCooldownUntilRef.current;
-      const effectiveEnableEmbeddingModel = enableEmbeddingModel && !embeddingCooldownActive;
+      const effectiveEnableEmbeddingModel =
+    enableEmbeddingModel && !embeddingCooldownActive && Boolean(effectiveEmbeddingModel.trim());
 
       setEmbeddingDebug(
         createIdleEmbeddingDebug(
