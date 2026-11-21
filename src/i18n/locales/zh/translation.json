@@ -3,7 +3,6 @@
     "pageLoading": "页面加载中…",
     "close": "关闭",
     "save": "保存",
-    "saving": "保存中…",
     "justNow": "刚刚",
     "retry": "重试"
   },
@@ -62,33 +61,12 @@
   },
   "databaseSetup": {
     "initializationTitle": "初始化数据存储",
-    "initializationDescription": "完成数据存储类型初始化后，才能使用 LedgerFlow 的记账、分析和备份功能。",
     "checkingStatus": "正在检查数据库初始化状态...",
     "statusFailed": "无法连接数据库初始化服务。",
     "statusCheckFailed": "数据库状态检查暂时失败，已继续使用上次确认的配置。",
     "retryCheck": "重新检查",
     "retry": "重试",
-    "mismatch": "部署环境指定的数据库类型与已锁定类型不一致，必须恢复部署配置或迁移到新实例。",
-    "setupTitle": "数据存储类型",
-    "locked": "已锁定",
-    "pending": "等待初始化",
-    "notInitialized": "未初始化",
-    "currentProvider": "当前使用 {{provider}}。如需更换，请导出数据并在新部署中导入。",
-    "initialLockHint": "首次初始化后不能直接切换数据存储类型。",
-    "readingStatus": "正在读取服务端初始化状态...",
-    "radioAria": "选择数据存储类型",
-    "providerDescription": {
-      "sqlite": "适合单机部署和轻量自托管，数据保存为部署卷中的文件。",
-      "mysql": "适合阿里云 RDS、多设备同步和后续多用户部署。"
-    },
-    "mysqlNotConfigured": "未检测到 MySQL 配置，请先设置 MYSQL_URL 或 MYSQL_HOST。",
-    "confirmInitialize": "确定初始化为 {{provider}} 吗？初始化后不能直接切换。",
-    "locking": "正在校验并锁定数据存储类型...",
-    "initializing": "正在初始化...",
-    "initializeProvider": "初始化 {{provider}}",
-    "initializedAs": "已锁定为 {{provider}}。",
-    "initializeFailed": "初始化数据库类型失败。",
-    "statusReadFailed": "无法读取数据库初始化状态。"
+    "mismatch": "部署环境指定的数据库类型与已锁定类型不一致，必须恢复部署配置或迁移到新实例。"
   },
   "theme": {
     "switchLabel": "主题切换",
@@ -129,30 +107,14 @@
     "brand": "LedgerFlow",
     "toggleSidebarExpand": "展开侧边栏",
     "toggleSidebarCollapse": "折叠侧边栏",
-    "assistantTodayAria": "AI 助手今日概览",
-    "assistantTodayTitle": "AI 助手 · 今日概览",
-    "todayIncome": "今日收入",
-    "todayExpense": "今日支出",
-    "todayNet": "今日净额",
-    "overviewHint": "1 AI 识别记账 · 2 快速补录 · 3 处理任务清单",
-    "actionAi": "AI 识别记账",
-    "actionQuickAdd": "快速记一笔",
-    "actionTaskList": "看任务清单",
     "openDrawer": "打开功能抽屉",
-    "userAvatar": "用户头像",
-    "workspaceTitle": "AI 记账工作台",
     "drawerAria": "功能抽屉",
-    "drawerUser": "LedgerFlow 用户",
     "drawerSubtitle": "{{today}} · 让今天的账目保持清晰",
     "closeDrawer": "关闭功能抽屉",
     "monthlyBalance": "结余 {{amount}}",
     "monthlyIncomeExpense": "收入 {{income}} · 支出 {{expense}}",
-    "tip": "💡 小提示：先让 AI 识别，再快速补录，最后在任务清单中处理待办。",
-    "themeMode": "主题模式",
     "language": "语言",
     "languageSwitch": "切换语言",
-    "switchToEnglish": "切换到 English",
-    "switchToChinese": "切换到简体中文",
     "accountMenuAria": "账号菜单",
     "currentAccount": "当前账号",
     "accountSettings": "账号设置",
@@ -164,7 +126,6 @@
     "incomeExpense": "收支管理",
     "assetsDebt": "资产负债",
     "toolsInfo": "工具资讯",
-    "assistantBookkeeping": "AI 记账助手",
     "smartBudget": "智能预算",
     "transactions": "交易流水",
     "dashboard": "财务概览",
@@ -189,15 +150,6 @@
   "settings": {
     "title": "设置",
     "back": "← 返回",
-    "intro": "同一套 Base URL 和 API 密钥可用于对话、嵌入和重排序，统一支持交易检索与趋势分析。",
-    "intros": {
-      "account": "管理显示名称、登录密码与已登录设备。",
-      "data": "查看当前账号的数据库状态，必要时可以把账本重置回空状态。",
-      "openai": "同一套 Base URL 和 API 密钥可用于对话、嵌入和重排序，统一支持交易检索与趋势分析。",
-      "tavily": "联网检索使用独立的搜索服务密钥,可在 Tavily、Brave、Serper、Exa、Google CSE 之间切换。",
-      "embedding": "嵌入模型把账目文本转成向量，用于语义检索和相似交易匹配。",
-      "advanced": "调整默认模型、嵌入/重排序开关与批量并发等进阶选项，不确定时保持默认即可。"
-    },
     "baseUrl": "服务商 Base URL",
     "apiKey": "API 密钥",
     "show": "显示",
@@ -212,7 +164,6 @@
     },
     "data": {
       "title": "数据库",
-      "desc": "这里能看到当前账号在数据库里存了多少数据，也可以把账本重置回空状态。",
       "refresh": "刷新",
       "refreshing": "刷新中…",
       "loading": "正在读取数据库状态…",
@@ -263,7 +214,6 @@
       "updatePassword": "更新密码",
       "updating": "更新中…",
       "devicesTitle": "登录设备",
-      "devicesDesc": "可随时退出不再使用的设备。",
       "revokeOthers": "退出其他设备",
       "loadingSessions": "正在读取登录设备…",
       "noSessions": "暂无已登录设备。",
@@ -286,20 +236,17 @@
     },
     "tavily": {
       "title": "联网搜索",
-      "desc": "选择一家搜索服务,为 AI 补充实时资讯、公告与政策,随时可以切换。",
       "configured": "已配置",
       "missingKey": "待配置",
       "providerGroupLabel": "搜索服务",
       "keyLabel": "{{provider}} API Key",
       "keyHint": "密钥只保存在当前浏览器,换设备或清理浏览器数据后需要重新填写。",
       "guideTitle": "快速获取 {{provider}} API Key",
-      "guideDesc": "在对应控制台注册并创建密钥,粘贴到左侧输入框即可生效。",
       "openConsole": "打开获取页面",
       "viewDocs": "查看官方文档",
       "createEngine": "创建搜索引擎",
       "engineIdLabel": "搜索引擎 ID(CX)",
       "engineIdPlaceholder": "例如 012345678901234567890:abc123def",
-      "engineIdHint": "在可编程搜索引擎控制台创建后,复制其中的 CX 值。",
       "tipsTitle": "使用提示",
       "tipLocalOnly": "密钥仅写入当前浏览器,不会上传到服务器。",
       "tipBilling": "多数服务按搜索次数计费,建议在控制台设置额度提醒。",
@@ -343,20 +290,7 @@
     "language": {
       "label": "语言 / Language",
       "zh": "简体中文",
-      "en": "English",
-      "hint": "切换后立即生效，已自动保存到本地。"
-    },
-    "accent": {
-      "label": "界面主题色",
-      "hint": "切换后立即生效，并统一影响按钮、强调色与图标高亮。",
-      "options": {
-        "blue": "默认蓝",
-        "emerald": "翡翠绿",
-        "violet": "紫罗兰",
-        "rose": "玫瑰粉",
-        "amber": "琥珀橙",
-        "aurora": "极光渐变"
-      }
+      "en": "English"
     },
     "model": {
       "defaultLabel": "默认对话模型",
@@ -365,11 +299,7 @@
       "embeddingHint": "用于交易向量化检索与语义召回。",
       "rerankLabel": "重排序模型",
       "rerankHint": "用于检索结果重排，提高匹配准确度。",
-      "refresh": "刷新模型列表",
-      "refreshing": "获取中…",
-      "errorMissingBaseUrl": "请先填写 Base URL，再获取模型列表。",
-      "errorEmptyList": "模型列表为空，已改用本地预设。",
-      "errorFetchFailed": "获取模型列表失败"
+      "refreshing": "获取中…"
     },
     "embeddingToggle": {
       "label": "启用嵌入模型",
@@ -403,19 +333,9 @@
       "aria": "批量 AI 重分类并发数",
       "hint": "拖动滑块可调整并发数（5–30）。并发越高速度越快，但也更容易触发模型限流。"
     },
-    "privacy": {
-      "title": "数据安全与隐私说明",
-      "l1": "数据存储：交易、账户、分类等核心数据默认保存在你配置的本地或自托管数据库中，不会由 LedgerFlow 自动上传。",
-      "l2": "传输加密：调用 AI 服务时建议使用 HTTPS，API 密钥仅用于你配置的服务商请求。",
-      "l3": "数据最小化：仅在你主动使用 AI 功能时发送必要上下文，避免外发冗余数据。",
-      "l4": "隐私保护：导出或分享前，可检查并删除备注中的敏感信息。"
-    },
     "toastSaved": "设置已自动保存",
     "embeddingChannel": {
       "title": "独立嵌入服务",
-      "desc": "需要为语义检索使用独立模型时，可在此单独配置。",
-      "enabledLabel": "启用嵌入服务覆盖",
-      "enabledHint": "开启后，只要填写 Base URL、API 密钥或模型中的任意一项，就会优先使用此处的嵌入配置。",
       "modelLabel": "嵌入模型（覆盖）",
       "modelHint": "留空则回退到下方“嵌入模型”的全局默认值。",
       "baseUrlLabel": "Base URL（覆盖）",
@@ -487,7 +407,6 @@
       "emptyModels": "暂无模型，请先获取",
       "quickAdd": "记一笔",
       "clearContext": "清空上下文",
-      "defaultProvider": "默认服务地址",
       "needApiKeyTitle": "请先配置 API 密钥",
       "needApiKeyDesc": "未检测到可用密钥，助手暂时不能请求模型。",
       "goSettings": "前往设置",
@@ -510,13 +429,9 @@
       "eyebrowScope": "记账、问答、改账",
       "headlineLead": "记一笔、查一笔，",
       "headlineAccent": "直接说就行",
-      "description": "说“午饭 28 元”直接记账，贴账单截图自动识别；也可以问账本、看趋势，或者让我修改、删除某一笔账单。",
       "featureVoiceNlTitle": "一句话记账",
-      "featureVoiceNlNote": "自然语言直接入账",
       "featureOcrTitle": "截图识别",
-      "featureOcrNote": "保存前逐笔核对",
       "featureEditTitle": "查账改账",
-      "featureEditNote": "增删改都能交给它",
       "briefPrefix": "本月",
       "briefExpense": "支出",
       "briefIncome": "收入",
@@ -532,13 +447,9 @@
       "eyebrowScope": "从看清开始",
       "headlineLead": "每一笔该还什么，",
       "headlineAccent": "心里都有数",
-      "description": "贷款、花呗、分期和信用账单都可以交给我。我会先理清本期应还、还款日和还缺哪些资料,也能直接帮你记一笔还款。",
       "featureBillTitle": "识别账单",
-      "featureBillNote": "提取金额、日期和期数",
       "featureDueTitle": "核对本期应还",
-      "featureDueNote": "把待确认的信息标出来",
-      "featureLogTitle": "登记与核对",
-      "featureLogNote": "说一句就能记还款"
+      "featureLogTitle": "登记与核对"
     },
     "greeting": {
       "date": "今天 {{date}}，",
@@ -548,6 +459,19 @@
     "composer": {
       "ariaCredit": "AI 信贷管家输入",
       "ariaDefault": "AI 助手输入"
+    },
+    "workbench": {
+      "title": "AI 记账工作台",
+      "settings": "AI 设置",
+      "status": {
+        "idle": "待输入",
+        "ready": "可识别",
+        "recognizing": "识别中",
+        "preview": "可预览",
+        "saving": "保存中",
+        "saved": "已保存",
+        "error": "异常"
+      }
     }
   },
   "about": {
@@ -599,8 +523,7 @@
       "title": "隐私与安全策略",
       "l1": "账本默认保存在本地或自托管数据库中。",
       "l2": "AI 请求建议使用 HTTPS。",
-      "l3": "仅主动调用 AI 时发送必要上下文。",
-      "l4": "导出前可清理备注里的敏感字段。"
+      "l3": "仅主动调用 AI 时发送必要上下文。"
     }
   },
   "dashboard": {
@@ -621,30 +544,13 @@
       "6": "试试深色模式，在侧边栏底部的主题切换器中选择"
     },
     "ui": {
-      "currentVersion": "当前版本",
       "welcome": "LedgerFlow",
       "welcomeSubtitle": "今天的钱花在哪、还剩多少、哪里能省一点，这里直接告诉你。",
-      "gettingStartedTitle": "新手三步",
-      "gettingStartedSubtitle": "先完成基础设置，趋势洞察会更准确。",
-      "step1": "① 添加交易：先记录收入和支出，建立基础数据。",
-      "step2": "② 设置预算：为高频分类设上限，及时提醒超支风险。",
-      "step3": "③ 查看分析：在趋势与洞察里识别波动原因。",
-      "addEntry": "新增账目",
-      "openBudget": "打开预算",
-      "viewAnalysis": "查看分析",
-      "shortcutsPrefix": "键盘快捷键",
-      "shortcutAdd": "新增账目",
-      "shortcutBudget": "打开预算",
-      "shortcutSearch": "快速搜索",
       "corePanel": "今日财务看板",
-      "moduleCustomize": "首页卡片开关",
-      "moduleCustomizeHint": "按你的习惯排一下",
       "emptyTitle": "还没有任何账目记录",
       "emptyDesc": "开始记第一笔交易，也可以让 AI 助手帮你自动识别。",
       "findAssistant": "找 AI 助手",
       "quickAdd": "记一笔",
-      "thisMonthTrend": "本月钱流",
-      "futureTrend": "下月预告",
       "expenseTrend": "花钱节奏",
       "previousMonth": "上个月",
       "nextMonth": "下个月",
@@ -667,8 +573,6 @@
       "netStructure": "收支",
       "categoryDonutChart": "分类结构环形图",
       "categoryLinkageList": "分类结构联动列表",
-      "环比": "环比",
-      "环比NoChange": "环比 暂无对比",
       "anomalyAndHighlight": "财务雷达",
       "cardScrollHint": "横向滑动查看",
       "anomalyCardList": "财务雷达卡片列表",
@@ -682,7 +586,6 @@
       "topTransactions": "大额交易",
       "uncategorized": "未分类",
       "noNote": "没写备注",
-      "other": "其他",
       "greetingFormat": "{{greeting}}，{{welcomeTitle}}",
       "statusBadge": "今天也适合把账说清楚 ✨",
       "monthlyBalance": "本月结余",
@@ -698,17 +601,14 @@
       "expandWelcome": "展开欢迎横幅",
       "addTransaction": "记一笔",
       "askAi": "去问 AI 助手",
-      "traceThisMonth": "点击追溯本月交易",
       "weekLabel": "{{month}}第{{week}}周",
       "weekShort": "第{{week}}周",
       "categoryShareThisMonth": "本月占比",
-      "densityAria": "首页信息密度",
       "densityLabel": "首页信息密度",
       "densityCore": "核心信息",
       "densityFull": "完整分析",
       "chartEmptyTitle": "记下一笔,趋势就会开始出现",
       "chartEmptyDesc": "有了真实收支后,这里会展示花钱节奏和分类结构。",
-      "firstEntry": "记第一笔",
       "densityHint": "已显示完整趋势与分类分析;切换到“核心信息”可收起次要图表。",
       "cashflow": {
         "aria": "未来三十天现金流与财务待办",
@@ -737,8 +637,6 @@
         "title": "资产负债预测",
         "subtitle": "按已登记安排推演未来 {{count}} 个月，帮助你提前看到现金压力。",
         "rangeAria": "模拟时间范围",
-        "horizonMonths_one": "{{count}} 个月",
-        "horizonMonths_other": "{{count}} 个月",
         "lowestBalanceDate": "预计余额最低日",
         "noData": "暂无数据",
         "registerAccounts": "先登记账户或安排",
@@ -803,11 +701,6 @@
       "clearSelection": "清空选择"
     },
     "ui": {
-      "billFilterState": "当前交易筛选状态",
-      "billPeriod": "交易周期",
-      "filteredCount": "筛选后",
-      "items": "笔",
-      "totalCount": "总笔数",
       "aiRecategorize": "AI 重分类",
       "processed": "已处理",
       "modelCount": "大模型",
@@ -834,7 +727,6 @@
     },
     "filters": {
       "title": "交易记录",
-      "caption": "把首屏注意力放在流水本身,筛选与操作保持就近、克制、可展开。",
       "keyword": "关键词",
       "keywordPlaceholder": "搜索备注或标签",
       "type": "类型",
@@ -865,10 +757,8 @@
       "settings": "筛选设置",
       "dialogEyebrow": "交易记录 · 个性化",
       "dialogTitle": "筛选与显示设置",
-      "dialogDesc": "按来源整理流水,并自定义表格信息。",
       "dialogClose": "关闭筛选设置",
       "sourceTitle": "来源筛选",
-      "sourceDesc": "只查看来自特定渠道的记录",
       "source": "交易来源",
       "sourceAria": "按来源筛选",
       "sourceAll": "全部来源",
@@ -878,7 +768,6 @@
       "sourceAi": "AI 记账",
       "columnsTitle": "表格显示",
       "importTitle": "导入与整理",
-      "importDesc": "管理账单导入方式及重复记录",
       "importMode": "账单导入模式",
       "importIncremental": "增量(跳过重复)",
       "importMerge": "合并(覆盖重复)",
@@ -889,7 +778,6 @@
       "shortBulk": "批量",
       "shortPrivacy": "隐私",
       "shortFilter": "筛选",
-      "chooseFields": "选择需要展示的信息",
       "exportCsv": "导出 CSV",
       "checkDuplicates": "检测重复",
       "importWechat": "导入微信",
@@ -1080,7 +968,6 @@
   },
   "finance": {
     "ui": {
-      "justNow": "刚刚",
       "title": "同花顺资讯",
       "subtitle": "市场资讯来自同花顺财经，可按栏目快速浏览最新动态。",
       "tipTitle": "聚焦市场，不再维护 RSS",
@@ -1135,8 +1022,7 @@
       "secondary": "查看交易记录"
     },
     "hero": {
-      "title": "财务分析",
-      "description": "看清过去、理解现在、规划未来。分析页会先整理本地账目，再交给大模型生成更贴近决策的解释与动作建议。"
+      "title": "财务分析"
     },
     "ai": {
       "model": "模型：{{model}}",
@@ -1154,7 +1040,6 @@
     },
     "market": {
       "title": "资金动态看板",
-      "description": "像看行情一样，先看本月，再看最近 6 个月的变化节奏。",
       "badge": "动态判断",
       "headlineUp": "资金动能回升",
       "headlineDown": "资金动能转弱",
@@ -1167,7 +1052,6 @@
     },
     "aiCard": {
       "title": "AI 综合解读",
-      "description": "让模型基于当前账本快照，把数字翻译成更适合执行的判断。",
       "summaryLabel": "一句总判断",
       "past": "过去",
       "present": "现在",
@@ -1178,7 +1062,6 @@
     },
     "behavior": {
       "title": "行为洞察：消费习惯与画像",
-      "description": "先展示本地规则结果；生成 AI 解读后，这里会补充更细的消费语境判断。以下结论属于行为推测，不等同于人格定论。",
       "badge": "可优化项",
       "aiTitle": "AI 补充判断",
       "aiHabits": "AI 看见的习惯",
@@ -1204,7 +1087,6 @@
     },
     "previous": {
       "title": "过去：复盘支出变化",
-      "description": "先看主要流向，再看哪些波动值得回头翻账单。",
       "badge": "支出变化",
       "notEnough": "样本不足",
       "categoriesTitle": "主要支出分类",
@@ -1218,7 +1100,6 @@
     },
     "present": {
       "title": "现在：诊断当前结构",
-      "description": "把固定成本、负债压力和当前可支配空间放到同一视图里。",
       "badge": "健康度",
       "fixedCost": "固定成本",
       "subscriptionCost": "订阅月成本",
@@ -1229,7 +1110,6 @@
     },
     "future": {
       "title": "未来：提前预判压力",
-      "description": "先做保守估算，再决定是控支、留缓冲，还是优先处理固定扣款。",
       "badge": "预测结余",
       "buffer": "建议缓冲",
       "bufferHint": "用于固定扣款与突发波动",
@@ -1328,7 +1208,6 @@
   },
   "recycleBin": {
     "title": "回收站",
-    "description": "删除的交易、分类、账户和订阅会先进入这里。回收站每页最多显示 10 条，可翻页查看。",
     "count": "共 {{count}} 项",
     "clear": "清空回收站",
     "clearConfirm": "确认清空回收站吗？将永久删除其中的 {{count}} 项内容，且无法恢复。",
@@ -1375,7 +1254,6 @@
   "globalMemory": {
     "eyebrow": "陪你用得更顺手",
     "title": "你的偏好",
-    "description": "我会记住这些小习惯，之后少问你几次。",
     "filters": {
       "all": "全部",
       "contentLabel": "按内容筛选",
@@ -1451,7 +1329,6 @@
   },
   "balanceChanges": {
     "title": "余额变动明细",
-    "description": "按余额增加和减少归类，展开可查看每笔变动前后的余额。",
     "unknownAccount": "未知账户",
     "boardAria": "按类型分组的余额变动记录",
     "collapse": "收起",
@@ -1532,7 +1409,6 @@
   "subscriptions": {
     "kicker": "周期支出总览",
     "title": "订阅管理",
-    "subtitle": "统一管理数字订阅、话费、会员卡等周期性项目,支持多币种、续费日和到期状态追踪。",
     "summaryAria": "订阅概览",
     "summary": {
       "total": "总数",
@@ -1545,8 +1421,7 @@
       "monthlyCost": "预计月度固定成本",
       "groupedByCurrency": "按币种分组",
       "normalizedMonthly": "折算到每月",
-      "reminders": "待处理提醒",
-      "remindersHint": "优先处理到期项"
+      "reminders": "待处理提醒"
     },
     "card": {
       "noDate": "日期未设置",
@@ -1568,14 +1443,11 @@
     "form": {
       "editTitle": "编辑订阅",
       "createTitle": "新增订阅 ",
-      "subtitle": "先录入基础信息,再补充账户、续费和备注,后续生成支出会更顺手。",
       "monthlyAverage": "折算月均",
       "customCycleHint": "按自定义周期折算",
       "templatesAria": "订阅预设模板",
       "templatesTitle": "从常用模板开始",
-      "templatesHint": "点一下能把常见服务自动填好,金额和日期还可继续调整。",
       "basicTitle": "基础信息",
-      "basicHint": "先定义是什么、多少钱、多久扣一次",
       "name": "名称",
       "namePlaceholder": "例如:Spotify / 中国移动 / 健身月卡",
       "kind": "类型",
@@ -1584,7 +1456,6 @@
       "cycle": "计费周期",
       "customDays": "自定义天数",
       "billingTitle": "扣费与日期",
-      "billingHint": "把账户、平台和续费时间补完整,后面更好追踪",
       "account": "扣费账户",
       "accountNone": "未指定",
       "provider": "所属平台 / 商户",
@@ -1619,7 +1490,6 @@
     },
     "list": {
       "title": "订阅清单",
-      "subtitle": "按到期时间排序,优先把需要处理的项目放到前面。",
       "count": "已录入",
       "emptyTitle": "还没有订阅项目",
       "emptyDesc": "先添加第一个数字订阅、话费套餐或会员卡,后面就能统一看费用和到期情况。",
@@ -1636,7 +1506,6 @@
   },
   "dataBackup": {
     "title": "数据与备份",
-    "subtitle": "管理账本数据、恢复点和异地副本。",
     "managedRowsSuffix": "条已纳管数据",
     "backupMethod": "备份方式",
     "currentVolume": "当前数据量",
@@ -1648,13 +1517,11 @@
     },
     "local": {
       "export": "导出备份文件",
-      "import": "导入备份文件",
-      "desc": "导出的备份可直接恢复,也可作为迁移至新数据库实例的原始文件。"
+      "import": "导入备份文件"
     },
     "database": {
       "exportTitle": "导出 SQL 数据库",
       "exportFormat": "SQLite 导出 .sqlite · MySQL 导出 .sql",
-      "exportHint": "仅导出当前登录账号及其关联数据,并保留可导入所需的表结构。请妥善保管导出文件。",
       "download": "下载 SQL 数据库"
     },
     "reset": {
@@ -1669,7 +1536,6 @@
     "billImport": {
       "wechat": "导入微信账单",
       "alipay": "导入支付宝账单",
-      "desc": "支持微信、支付宝官方账单 CSV / TXT(含制表符)和微信 XLSX。",
       "duplicateStrategy": "遇到重复账单时",
       "strategyKeep": "保留旧账单,重复但有变更时更新为最新",
       "strategyOverwrite": "用新账单覆盖重复账单的导入字段",
@@ -1679,7 +1545,6 @@
     },
     "webdav": {
       "section": "WebDAV 备份",
-      "desc": "用于远程备份与恢复,默认通过同源代理连接。",
       "proxyEnable": "启用同源代理",
       "proxyPath": "代理入口路径",
       "proxyToken": "代理令牌",
@@ -1700,11 +1565,6 @@
       "restoreSelected": "恢复所选版本",
       "latest": "(最新)",
       "lastBackupPrefix": "上次备份:",
-      "action": {
-        "createDirectory": "创建目录",
-        "download": "下载",
-        "upload": "上传"
-      },
       "backupFailed": "WebDAV 备份失败",
       "backupSucceeded": "WebDAV 备份成功：{scope}",
       "configSaved": "WebDAV 配置已保存",
@@ -1740,21 +1600,11 @@
     },
     "objectStorage": {
       "section": "对象存储备份",
-      "desc": "支持阿里云 OSS 与 S3 兼容服务,适合把备份放到自己的 Bucket。",
       "region": "地域",
-      "hint": "如遇到跨域提示,需要在 Bucket 里允许网页访问;密钥不会长期保存到本地。",
       "oss": "阿里云 OSS",
-      "ossDesc": "适合已开通 OSS Bucket 的用户",
       "s3": "S3 兼容",
-      "s3Desc": "适合 MinIO、R2、COS 等兼容服务",
       "lastBackupPrefix": "上次备份:",
       "currentPrefix": "当前:",
-      "action": {
-        "delete": "删除",
-        "download": "下载",
-        "list": "列目录",
-        "upload": "上传"
-      },
       "backupFailed": "{provider} 备份失败",
       "backupSucceeded": "{provider} 备份成功：{scope}",
       "configSaved": "{provider} 配置已保存",
@@ -1836,16 +1686,11 @@
     "scope": {
       "aria": "备份范围设置",
       "title": "选择备份内容",
-      "hint": "所有备份方式共用此范围",
       "emptyWarning": "请至少勾选一个备份范围。",
       "ledger": "账本数据",
-      "ledgerDesc": "交易、分类、账户、回收站和余额记录",
       "subscriptions": "订阅数据",
-      "subscriptionsDesc": "订阅项目和已归档订阅",
       "memories": "AI 记忆",
-      "memoriesDesc": "助手偏好、记忆和上下文资料",
       "investments": "投资理财",
-      "investmentsDesc": "投资持仓、理财目标、基金自选和 AI 基金分析记录",
       "noneSelected": "未选择",
       "separator": "、"
     },
@@ -1862,7 +1707,6 @@
       "readFailed": "读取数据库快照失败",
       "restored": "已从数据库快照恢复到本地。",
       "title": "手动恢复点",
-      "desc": "日常数据已自动保存到当前数据库。需要额外保险时,在这里创建一个可手动恢复的副本。",
       "scopePrefix": "恢复点将保存:",
       "create": "创建恢复点",
       "restoreLatest": "恢复最近副本",
@@ -1942,7 +1786,6 @@
       "parseFailed": "账单导入失败：文件解析异常",
       "wechat": "微信"
     },
-    "currentScopePrefix": " 当前备份范围：",
     "defaultAccountName": "默认账户",
     "error": {
       "stillLoading": "本地数据仍在加载中，请稍后重试"
@@ -2057,15 +1900,12 @@
   },
   "investments": {
     "title": "投资理财",
-    "subtitle": "把今日判断、行情监控和基金自选放进一个工作台,按需切换,不再上下堆叠。",
     "overviewAria": "当前投资概览",
-    "watchlistCountSuffix": "只自选",
     "todayPrefix": "今日",
     "dataUpdatedPrefix": "数据更新",
     "refreshPending": "待刷新",
     "aiBarAria": "AI 投资助手入口",
     "aiBarTitle": "AI 投资助手已接入这页数据",
-    "positionsSuffix": "笔持仓",
     "marketPrefix": "行情",
     "tab": {
       "checkup": "持仓体检",
@@ -2083,27 +1923,16 @@
       "todayAria": "今日投资看板",
       "marketAria": "大盘和市场监控"
     },
-    "loading": {
-      "market": "市场数据加载中...",
-      "positions": "持仓数据加载中..."
-    },
     "empty": {
-      "positions": "暂无持仓数据",
-      "watchlist": "暂无自选基金",
       "generic": "暂无数据"
     },
-    "retry": "重试",
     "refresh": "刷新",
-    "expand": "展开",
-    "collapse": "收起",
-    "viewMore": "查看更多",
     "stat": {
       "watchCount": "{count} 只自选",
       "positionCount": "{count} 笔持仓"
     },
     "holdings": {
       "title": "今日持仓",
-      "subtitle": "先看自己的持仓,别让大盘替你做决定。",
       "aiCheckupAria": "让 AI 体检我的持仓",
       "aiCheckup": "AI 体检",
       "unrealizedPl": "账面盈亏",
@@ -2124,7 +1953,6 @@
     "briefing": {
       "aria": "今日行情播报",
       "title": "今天的市场,说人话",
-      "subtitle": "把涨跌、板块和新闻拎成几句,够用就好。",
       "aiAria": "让 AI 复盘今日市场",
       "aiAction": "AI 复盘",
       "noPriceSignal": "价格信号暂缺,先结合新闻热度观察,不做追涨判断。",
@@ -2141,13 +1969,11 @@
         "sectorWeak": ",今天偏弱,别急着接。"
       },
       "regenerate": "重新生成",
-      "scoreLabel": "综合",
       "riskLabel": "风险",
       "status": {
         "live": "结合行情、新闻和板块 · 每 15 分钟更新 · 综合",
         "localOnly": "先用本地信号 · 配置 AI 后每 15 分钟更新 · 综合",
         "needModel": "本地信号可用 · 请先选择 AI 模型再生成简报 · 综合",
-        "aiUnavailable": "本地信号可用,AI 暂不可用 · 综合",
         "collecting": "正在整理行情和新闻 · 综合"
       },
       "line": {
@@ -2229,9 +2055,7 @@
         "contributed": "累计投入",
         "finalValue": "期末资产",
         "profit": "模拟盈亏",
-        "returnRate": "收益率",
-        "methodLine1": "计算口径:按计划日在历史日线中顺延到下一个可用交易日买入,期末按结束日前最后收盘价估值;收益率为模拟盈亏",
-        "methodLine2": "÷ 累计投入,未年化。仅模拟指数点位,不代表实际基金收益,且不含申购费、分红、税费和滑点。"
+        "returnRate": "收益率"
       },
       "globalTrendError": "国际大盘走势加载失败,请稍后重试。",
       "current": "当前",
@@ -2272,7 +2096,6 @@
       "candleWaiting": "等待 K 线数据",
       "candleHint": "Yahoo Finance 历史 K 线加载后会显示在这里。",
       "marketFallback": "大盘",
-      "keyDataAria": "关键数据",
       "latest": "最新",
       "high": "最高",
       "low": "最低",
@@ -2309,7 +2132,6 @@
     "boards": {
       "aria": "A股行业涨跌监控",
       "title": "A 股行业涨跌",
-      "subtitle": "行业强弱一眼看清,点击行业可查看领涨公司。",
       "aiAria": "让 AI 分析板块强弱",
       "aiAction": "AI 看板块",
       "globalAria": "全球行业交叉参照",
@@ -2386,7 +2208,6 @@
       "emptyTitle": "暂无快讯",
       "emptyDesc": "稍后刷新,或切换其他分类看看。",
       "tagsAria": "关联代码",
-      "refreshing": "刷新中",
       "sourceNote": "数据源:东方财富 7×24 快讯 · 服务端同源代理,避免部署环境浏览器跨域拦截",
       "catAllDay": "7×24",
       "catFocus": "焦点",
@@ -2572,7 +2393,6 @@
     "sendAria": "开始分析",
     "launcherOpen": "打开 AI 投资助手",
     "title": "AI 投资助手",
-    "subtitle": "持仓 · 行情 · 目标",
     "syncedHint": "已同步持仓、自选与今日行情",
     "openFull": "打开完整 AI 投资助手",
     "unpin": "取消置顶 AI 投资助手",
@@ -2594,7 +2414,6 @@
     "imageAlt": "待分析图片 {index}",
     "removeImage": "移除第 {index} 张图片",
     "uploadHint": "支持上传或粘贴最多 {count} 张截图",
-    "currentModel": "当前模型",
     "welcomeHint": "可以从你的持仓、基金定投或今天的市场开始问。我会把结论和判断依据说清楚。",
     "quickPromptsAria": "快捷问题",
     "currentModelAria": "当前模型：{name}",
@@ -2644,14 +2463,11 @@
   "repayment": {
     "eyebrow": "资产负债 / 还款管理",
     "title": "还款管理",
-    "subtitle": "把每一笔应还和已还放在同一条清晰的时间线上,按自己的节奏维护负债。",
     "statusAria": "还款管理概况",
     "debtUnit": "笔负债",
     "card": {
       "totalDebt": "💰 总负债",
-      "totalDebtHint": "仅统计进行中的负债",
       "monthlyDue": "📉 每月应还",
-      "pressure": "⚠️ 负债率",
       "health": "🩺 负债健康度",
       "archived": "🗂️ 历史负债",
       "archivedTotal": "余额合计",
@@ -2693,7 +2509,6 @@
     "unitDebtShort": "笔",
     "income": {
       "title": "月收入设置",
-      "subtitle": "用于计算负债压力和还款建议",
       "placeholder": "输入每月税后收入",
       "aria": "手动月收入",
       "save": "保存收入"
@@ -2809,7 +2624,6 @@
       "addTitle": "新增负债",
       "apr": "年化利率",
       "balancePlaceholder": "输入剩余本金",
-      "basicHint": "先填写名称和剩余本金;贷款可再补充期数,自动估算后续还款。",
       "custom": "自定义",
       "dayUnit": "日",
       "editTitle": "编辑负债",
@@ -2818,23 +2632,19 @@
       "extracted": "识别完成",
       "extracting": "正在识别...",
       "fixedMonthly": "按月固定扣款(期数和具体金额见下方)",
-      "imageHint": "支持支付宝/银行/信用卡账单截图。",
       "imagePreviewAlt": "负债截图预览",
       "manualAmountKept": "已保留手动填写金额",
       "modeAria": "录入方式",
       "modeFull": "完整录入",
       "modeSimple": "简单录入",
       "moreSettings": "更多设置",
-      "moreSettingsHint": "还款日和记录方式",
       "nameAria": "负债名称",
       "namePlaceholder": "招商信用卡",
       "paymentMethod": "还款方式",
-      "planHint": "不知道总还款时,选择手动逐期计划最方便。",
       "planManual": "手动逐期",
       "planMode": "还款计划方式",
       "planStructured": "按总期数",
       "presetsAria": "常用贷款模板",
-      "presetsHint": "先选模板,再按你的合同补充金额和期限",
       "presetsTitle": "常用贷款",
       "recordMode": "记录方式",
       "status": "状态",
@@ -2858,7 +2668,6 @@
       "loanAmount": "借款金额",
       "totalRepaymentLabel": "总还款",
       "manualScheduleTitle": "手动还款计划",
-      "manualScheduleHint": "从下一笔待还（第 {count} 期）开始填写；日期默认按还款日生成。",
       "addPeriod": "+ 添加期数",
       "manualSummaryPeriods": "共 {count} 期",
       "manualSummaryRemaining": "剩余",
@@ -2878,8 +2687,6 @@
       "cancelEdit": "取消编辑",
       "continueAdding": "继续添加负债",
       "doneAndClose": "完成并关闭",
-      "simpleIntro": "先记下项目、日期和本期金额；需要时可以升级为完整负债管理。",
-      "simpleDraftHint": "填写内容会自动保存，稍后可继续",
       "simpleDraftSaving": "输入内容会自动保存",
       "simpleDraftRestored": "已恢复未完成草稿",
       "simpleProject": "还款项目",
@@ -2890,78 +2697,11 @@
       "addReminder": "添加还款提醒",
       "debtAddedToast": "负债已添加"
     },
-    "repayment": {
-      "record": {
-        "heading": "登记本期还款",
-        "hint": "先填金额和日期,备注可以稍后补充。",
-        "fillPlanned": "带入计划金额",
-        "dateAria": "实际还款日期",
-        "todayAria": "设为今天",
-        "today": "今天",
-        "modeAria": "还款记录方式",
-        "modeManual": "手动登记",
-        "modeMatch": "交易匹配",
-        "modeAuto": "自动扣款",
-        "notePlaceholder": "备注（可选）",
-        "submit": "记录还款",
-        "listTitle": "还款记录",
-        "empty": "还没有还款记录,先登记一笔。",
-        "notePrefix": "备注:"
-      },
-      "detail": {
-        "selectPrompt": "从左侧列表选择一笔负债查看详情"
-      },
-      "form": {
-        "editTitle": "编辑负债",
-        "addTitle": "新增负债",
-        "modeAria": "录入方式",
-        "modeSimple": "简单录入",
-        "modeFull": "完整录入",
-        "presetsAria": "常用贷款模板",
-        "presetsTitle": "常用贷款",
-        "presetsHint": "先选模板,再按你的合同补充金额和期限",
-        "extracting": "正在识别...",
-        "extracted": "识别完成",
-        "uploadRecognize": "上传账单自动识别",
-        "imageHint": "支持支付宝/银行/信用卡账单截图。",
-        "imagePreviewAlt": "负债截图预览",
-        "basicHint": "先填写名称和剩余本金;贷款可再补充期数,自动估算后续还款。",
-        "nameAria": "负债名称",
-        "namePlaceholder": "招商信用卡",
-        "type": "类型",
-        "typeAria": "负债类型",
-        "typeCredit": "信用类负债",
-        "typeConsumer": "消费/信用分期",
-        "balancePlaceholder": "输入剩余本金",
-        "estimatedPrefix": "已自动估算:",
-        "manualAmountKept": "已保留手动填写金额",
-        "planMode": "还款计划方式",
-        "planHint": "不知道总还款时,选择手动逐期计划最方便。",
-        "planStructured": "按总期数",
-        "planManual": "手动逐期",
-        "moreSettings": "更多设置",
-        "moreSettingsHint": "还款日和记录方式",
-        "dayUnit": "日",
-        "paymentMethod": "还款方式",
-        "fixedMonthly": "按月固定扣款(期数和具体金额见下方)",
-        "equalPayment": "等额本息",
-        "equalPrincipal": "等额本金",
-        "custom": "自定义",
-        "recordMode": "记录方式",
-        "status": "状态",
-        "statusActive": "进行中",
-        "statusSettled": "已结清",
-        "statusClosed": "已关闭",
-        "statusPaused": "暂缓处理",
-        "apr": "年化利率"
-      }
-    },
     "record": {
       "dateAria": "实际还款日期",
       "empty": "还没有还款记录,先登记一笔。",
       "fillPlanned": "带入计划金额",
       "heading": "登记本期还款",
-      "hint": "先填金额和日期,备注可以稍后补充。",
       "modeAria": "还款记录方式",
       "modeAuto": "自动扣款",
       "modeManual": "手动登记",
@@ -3012,14 +2752,12 @@
       "pressureAria": "还款压力曲线",
       "previewAria": "还款压力预览",
       "previewTitle": "还款压力曲线",
-      "previewHint": "查看每期还款与还款后本金",
       "previewTag": "已生成",
       "previewPeriods": "计划期数 {count} 期",
       "previewTotal": "总计划还款",
       "previewFirst": "首期压力",
       "previewRemaining": "剩余",
       "moreDetails": "更多详情",
-      "moreDetailsHint": "利息、账户、期数等",
       "trendAriaSuffix": "还款走势"
     },
     "quickConfirm": {
@@ -3063,9 +2801,7 @@
     },
     "accountTypePlaceholder": "请选择类型",
     "accountsMetricsAria": "账户统计",
-    "accountsSubtitle": "余额会随交易自动汇总；需要时双击金额进行校准。",
     "accountsTitle": "账户管理",
-    "accountsToolbarHint": "集中管理银行卡、现金和虚拟账户，方便交易记录与余额追踪。",
     "add": "添加",
     "addAccount": "＋ 新增账户",
     "addAdjustment": "添加单笔调整",
@@ -3077,7 +2813,6 @@
     "balanceEditTitle": "双击编辑余额",
     "balancePlaceholder": "输入余额",
     "categoriesMetricsAria": "分类统计",
-    "categoriesSubtitle": "支出和收入分开管理,一级分类下面还能再挂子分类。",
     "categoriesTitle": "分类与标签管理",
     "childBadge": "子分类",
     "collapse": "收起",
@@ -3132,7 +2867,6 @@
     "moveToTrash": "移入回收站",
     "moveUp": "↑ 上移",
     "negativeBalance": "负余额",
-    "newAccountHint": "新账户将参与交易汇总和余额统计。",
     "newCategoryNameAria": "新增分类名称",
     "newExpensePlaceholder": "新增支出分类",
     "newIncomePlaceholder": "新增收入分类",
@@ -3149,15 +2883,12 @@
     "statAria": "账户与分类概览",
     "statUnit": "项基础设置",
     "structureTitle": "分类结构",
-    "subtitle": "在一个清爽的工作区里，管理记账的分类、标签和资金账户。",
     "tabAccounts": "资金账户",
     "tabCategories": "分类与标签",
     "tabsAria": "账户与分类工作区",
-    "tagLibraryHint": "标签来自交易备注和 AI 识别,可合并、清理",
     "tagLibraryTitle": "标签库",
     "toolsSummary": "管理",
     "totalBalance": "当前总余额",
-    "treeHintSuffix": "树 · 点「＋子分类」可以继续分层",
     "viewCategoryTxAria": "查看分类 {name} 的 {count} 条交易"
   },
   "smartBudget": {
@@ -3173,7 +2904,6 @@
       "notConfigured": "未配置 AI 模型，请先在设置页完成模型地址、密钥与模型名称。"
     },
     "backToDashboard": "返回预算看板",
-    "categorySectionHint": "点开任意分类可以看明细，也可以直接在卡片上微调预算额度。",
     "categorySectionTitle": "分类预算执行",
     "clearButton": "清除预算",
     "error": {
@@ -3200,14 +2930,12 @@
       "student": "固定支出少，时间比较灵活"
     },
     "logAria": "建议动作执行记录",
-    "logHint": "最近执行过的调整都会留在这里，方便回看。",
     "logTitle": "动作记录",
     "monthLabel": "统计月份",
     "monthlyIncomeSuffix": "· 月收入",
     "needSetup": "请先完成预算设置并确认后，再查看智能预算看板。",
     "restartButton": "重新设置",
     "savingsSuffix": "· 储蓄",
-    "subtitle": "回答五个问题，生成一份能直接执行下去的月度预算。",
     "title": "智能预算",
     "wizard": {
       "categoryAmountAria": "{category}预算金额",
@@ -3229,7 +2957,6 @@
       "incomeLabel": "每月到手收入",
       "incomeShortcutsAria": "收入快捷选择",
       "introAria": "当前步骤说明",
-      "introHint": "五步就能算出可执行的月度预算，中途离开也可以随时回来。",
       "next": "下一步",
       "prev": "上一步",
       "preview": {
@@ -3290,7 +3017,6 @@
       "orTrimPrefix": "，或者这个月先少花",
       "reanalyze": "重新分析",
       "remindMe": "这个月提醒我",
-      "subtitle": "按当前执行情况给出下一步该盯住的地方。",
       "tagColon": "：",
       "title": "AI 预算观察",
       "usedPrefix": "已经花到预算的"
@@ -3300,7 +3026,6 @@
       "aria": "异常提醒",
       "empty": "目前没有临近超支的分类,保持当前节奏即可。",
       "projected": "预计月末支出",
-      "subtitle": "按当前速度，月底可能超支的分类。",
       "title": "异常提醒与调整建议",
       "trim": "建议少花"
     },
@@ -3391,8 +3116,7 @@
       "current": "当前版本",
       "empty": "确认预算后，这里会自动留下可回溯版本。",
       "incomeSavings": "月收入 · 储蓄",
-      "restore": "恢复此版本",
-      "subtitle": "每次确认都会保留一份版本，随时恢复，不用重新填写。"
+      "restore": "恢复此版本"
     },
     "overview": {
       "aria": "预算总览",
@@ -3546,21 +3270,15 @@
       "daily": "日薪参考",
       "dailyNote": "按月薪 ÷ 计薪天数估算",
       "hourly": "时薪参考",
-      "hourlyNote": "按日薪 ÷ 每日工时估算",
-      "weekly": "周薪参考（按 5 天）",
-      "weeklyNote": "默认按 5 个工作日折算"
+      "weekly": "周薪参考（按 5 天）"
     },
     "overtime": {
       "title": "加班工资估算",
-      "hint": "按当前时薪估算工作日 1.5 倍、休息日 2 倍、法定节假日 3 倍。",
       "basePrefix": "当前时薪基准：",
       "baseSuffix": "，加班费按这个时薪做倍数估算。",
       "workday": "工作日加班费（1.5x）",
-      "workdayNote": "适用于工作日延时加班估算",
       "restDay": "休息日加班费（2x）",
-      "restDayNote": "适用于休息日加班估算",
-      "holiday": "法定节假日加班费（3x）",
-      "holidayNote": "适用于法定节假日加班估算"
+      "holiday": "法定节假日加班费（3x）"
     },
     "disclaimer": {
       "line1": "说明 1：结果仅供税前估算参考，默认不含社保、个税、公积金、补贴、提成与特殊排班。",
@@ -3770,9 +3488,7 @@
       "note": "备注",
       "optional": "可选",
       "keypadAria": "金额键盘",
-      "keypadTip": "支持加减乘除；按 Enter 计算",
-      "save": "完成记账",
-      "draftHint": "输入内容会自动保存为草稿"
+      "save": "完成记账"
     },
     "error": {
       "invalidDateRange": "自定义日期范围无效：开始日期不能晚于结束日期。",

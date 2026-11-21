@@ -3,7 +3,6 @@
     "pageLoading": "Loading…",
     "close": "Close",
     "save": "Save",
-    "saving": "Saving…",
     "justNow": "Just now",
     "retry": "Retry"
   },
@@ -62,33 +61,12 @@
   },
   "databaseSetup": {
     "initializationTitle": "Initialize data storage",
-    "initializationDescription": "Initialize a data storage type before you can use LedgerFlow’s bookkeeping, analysis, and backup features.",
     "checkingStatus": "Checking database initialization status…",
     "statusFailed": "Unable to connect to the database initialization service.",
     "statusCheckFailed": "Database status check temporarily failed. The last confirmed configuration is still in use.",
     "retryCheck": "Check again",
     "retry": "Retry",
-    "mismatch": "The database type specified by this deployment does not match the locked type. Restore the original deployment configuration or migrate to a new instance.",
-    "setupTitle": "Data storage type",
-    "locked": "Locked",
-    "pending": "Waiting for initialization",
-    "notInitialized": "Not initialized",
-    "currentProvider": "Currently using {{provider}}. To change it, export the data and import it into a new deployment.",
-    "initialLockHint": "The data storage type cannot be changed directly after the first initialization.",
-    "readingStatus": "Reading server initialization status…",
-    "radioAria": "Choose data storage type",
-    "providerDescription": {
-      "sqlite": "Best for single-machine and lightweight self-hosting. Data is stored as a file in the deployment volume.",
-      "mysql": "Best for Alibaba Cloud RDS, multi-device sync, and future multi-user deployments."
-    },
-    "mysqlNotConfigured": "MySQL is not configured. Set MYSQL_URL or MYSQL_HOST first.",
-    "confirmInitialize": "Initialize as {{provider}}? You cannot switch directly after initialization.",
-    "locking": "Validating and locking the data storage type…",
-    "initializing": "Initializing…",
-    "initializeProvider": "Initialize {{provider}}",
-    "initializedAs": "Locked to {{provider}}.",
-    "initializeFailed": "Failed to initialize the database type.",
-    "statusReadFailed": "Unable to read the database initialization status."
+    "mismatch": "The database type specified by this deployment does not match the locked type. Restore the original deployment configuration or migrate to a new instance."
   },
   "theme": {
     "switchLabel": "Theme",
@@ -129,30 +107,14 @@
     "brand": "LedgerFlow",
     "toggleSidebarExpand": "Expand sidebar",
     "toggleSidebarCollapse": "Collapse sidebar",
-    "assistantTodayAria": "AI assistant daily overview",
-    "assistantTodayTitle": "AI Assistant · Today",
-    "todayIncome": "Today’s income",
-    "todayExpense": "Today’s expense",
-    "todayNet": "Today’s net balance",
-    "overviewHint": "1 AI bookkeeping · 2 Quick add · 3 Review tasks",
-    "actionAi": "AI bookkeeping",
-    "actionQuickAdd": "Quick add",
-    "actionTaskList": "Open task list",
     "openDrawer": "Open feature drawer",
-    "userAvatar": "User avatar",
-    "workspaceTitle": "AI Bookkeeping Workspace",
     "drawerAria": "Feature drawer",
-    "drawerUser": "LedgerFlow User",
     "drawerSubtitle": "{{today}} · Keep today’s records in order",
     "closeDrawer": "Close feature drawer",
     "monthlyBalance": "Balance {{amount}}",
     "monthlyIncomeExpense": "Income {{income}} · Expense {{expense}}",
-    "tip": "💡 Tip: Start with AI bookkeeping, add anything missing, then review your tasks.",
-    "themeMode": "Theme mode",
     "language": "Language",
     "languageSwitch": "Switch language",
-    "switchToEnglish": "Switch to English",
-    "switchToChinese": "Switch to Simplified Chinese",
     "accountMenuAria": "Account menu",
     "currentAccount": "Current account",
     "accountSettings": "Account settings",
@@ -164,7 +126,6 @@
     "incomeExpense": "Income & Expense",
     "assetsDebt": "Assets & Debt",
     "toolsInfo": "Tools & Insights",
-    "assistantBookkeeping": "AI Bookkeeping Assistant",
     "smartBudget": "Smart Budget",
     "transactions": "Transactions",
     "dashboard": "Overview",
@@ -189,15 +150,6 @@
   "settings": {
     "title": "Settings",
     "back": "← Back",
-    "intros": {
-      "account": "Manage your display name, password, and signed-in devices.",
-      "data": "Check how much data this account stores, and reset the ledger back to empty when you need to.",
-      "openai": "The same Base URL and API key can be used for chat, embedding, and reranking, powering transaction search and trend analysis.",
-      "tavily": "Web search uses its own provider key, so you can switch between Tavily, Brave, Serper, Exa, and Google CSE.",
-      "embedding": "Embedding models turn ledger text into vectors for semantic search and similar-transaction matching.",
-      "advanced": "Tune default models, embedding/rerank toggles, and batch concurrency. The defaults are fine for most setups."
-    },
-    "intro": "The same Base URL and API key can be used for chat, embedding, and reranking, powering transaction search and trend analysis.",
     "baseUrl": "Provider Base URL",
     "apiKey": "API key",
     "show": "👁 Show",
@@ -212,7 +164,6 @@
     },
     "data": {
       "title": "Database",
-      "desc": "See how much this account stores in the database, and reset the ledger back to empty when you need to.",
       "refresh": "Refresh",
       "refreshing": "Refreshing…",
       "loading": "Reading database status…",
@@ -263,7 +214,6 @@
       "updatePassword": "Update password",
       "updating": "Updating…",
       "devicesTitle": "Signed-in devices",
-      "devicesDesc": "You can sign out devices you no longer use at any time.",
       "revokeOthers": "Sign out other devices",
       "loadingSessions": "Loading signed-in devices…",
       "noSessions": "No active devices found.",
@@ -286,20 +236,17 @@
     },
     "tavily": {
       "title": "Web search",
-      "desc": "Pick a search provider so the AI can cite live news, filings, and policy updates. You can switch anytime.",
       "configured": "Configured",
       "missingKey": "Not configured",
       "providerGroupLabel": "Search provider",
       "keyLabel": "{{provider}} API Key",
       "keyHint": "The key stays in this browser only; re-enter it on another device or after clearing browser data.",
       "guideTitle": "Get a {{provider}} API Key",
-      "guideDesc": "Register in the provider console, create a key, then paste it into the field on the left.",
       "openConsole": "Open signup page",
       "viewDocs": "View official docs",
       "createEngine": "Create search engine",
       "engineIdLabel": "Search engine ID (CX)",
       "engineIdPlaceholder": "e.g. 012345678901234567890:abc123def",
-      "engineIdHint": "Create a Programmable Search Engine, then copy its CX value.",
       "tipsTitle": "Tips",
       "tipLocalOnly": "Keys are written to this browser's local storage and are never uploaded to the server.",
       "tipBilling": "Most providers bill per search; set a quota alert in their console.",
@@ -343,20 +290,7 @@
     "language": {
       "label": "Language / 语言",
       "zh": "Simplified Chinese",
-      "en": "English",
-      "hint": "Takes effect immediately and is saved locally."
-    },
-    "accent": {
-      "label": "Global UI Accent",
-      "hint": "Applies immediately and affects buttons, highlights, and icon emphasis across the app.",
-      "options": {
-        "blue": "Default Blue",
-        "emerald": "Emerald",
-        "violet": "Violet",
-        "rose": "Rose",
-        "amber": "Amber",
-        "aurora": "Aurora Gradient"
-      }
+      "en": "English"
     },
     "model": {
       "defaultLabel": "Default Chat Model",
@@ -365,11 +299,7 @@
       "embeddingHint": "Used for transaction embedding and semantic search.",
       "rerankLabel": "Rerank Model",
       "rerankHint": "Used to rerank retrieval results for better precision.",
-      "refresh": "Refresh models",
-      "refreshing": "Fetching…",
-      "errorMissingBaseUrl": "Please enter a Base URL before fetching the model list.",
-      "errorEmptyList": "The model list is empty. Using local presets instead.",
-      "errorFetchFailed": "Failed to fetch model list"
+      "refreshing": "Fetching…"
     },
     "embeddingToggle": {
       "label": "Enable Embedding Model",
@@ -403,19 +333,9 @@
       "aria": "Bulk AI Recategorization Concurrency",
       "hint": "Drag the slider to adjust concurrency (5–30). Higher concurrency is faster but more likely to hit model rate limits."
     },
-    "privacy": {
-      "title": "Data Security & Privacy",
-      "l1": "Storage: core data such as transactions, accounts, and categories is stored in your local or self-hosted database by default, and is not uploaded automatically by LedgerFlow.",
-      "l2": "Encrypted transport: use HTTPS for AI requests whenever possible; the API key is used only for requests to your configured provider.",
-      "l3": "Minimal context: only necessary context is sent when you trigger AI features, avoiding redundant data exposure.",
-      "l4": "Privacy protection: review and remove sensitive notes before export/sharing."
-    },
     "toastSaved": "Settings saved automatically",
     "embeddingChannel": {
       "title": "Dedicated embedding service",
-      "desc": "Use a separate model and provider for semantic search when needed.",
-      "enabledLabel": "Enable embedding override",
-      "enabledHint": "When enabled, this embedding configuration takes precedence as soon as any of the Base URL, API key, or model fields are populated.",
       "modelLabel": "Embedding model (override)",
       "modelHint": "Leave empty to fall back to the global Embedding model below.",
       "baseUrlLabel": "Base URL (override)",
@@ -487,7 +407,6 @@
       "emptyModels": "No models available. Load the list first.",
       "quickAdd": "Quick add",
       "clearContext": "Clear context",
-      "defaultProvider": "Default provider endpoint",
       "needApiKeyTitle": "Please configure the API key first",
       "needApiKeyDesc": "No valid key was detected. The assistant cannot call a model right now.",
       "goSettings": "Go to Settings",
@@ -510,13 +429,9 @@
       "eyebrowScope": "Bookkeeping, Q&A, edits",
       "headlineLead": "Log it, look it up —",
       "headlineAccent": "just say it",
-      "description": "Say \"lunch 28 yuan\" and it is recorded; paste a bill screenshot and I read it for you. You can also ask about the ledger, look at trends, or have me edit or delete a specific entry.",
       "featureVoiceNlTitle": "One-line logging",
-      "featureVoiceNlNote": "Plain language goes straight to the books",
       "featureOcrTitle": "Screenshot capture",
-      "featureOcrNote": "Check each entry before saving",
       "featureEditTitle": "Look up and edit",
-      "featureEditNote": "Add, remove or change any entry",
       "briefPrefix": "This month: ",
       "briefExpense": "Spending",
       "briefIncome": "Income",
@@ -532,13 +447,9 @@
       "eyebrowScope": "Start with clarity",
       "headlineLead": "Know what each bill needs —",
       "headlineAccent": "no surprises",
-      "description": "Hand me your loans, Huabei, installments and credit card bills. I will sort out what is due this period, the due dates and the missing details, and can log a repayment for you right away.",
       "featureBillTitle": "Read the bill",
-      "featureBillNote": "Pull out amounts, dates and terms",
       "featureDueTitle": "Check what is due",
-      "featureDueNote": "Flag what still needs confirming",
-      "featureLogTitle": "Log and verify",
-      "featureLogNote": "One sentence logs a repayment"
+      "featureLogTitle": "Log and verify"
     },
     "greeting": {
       "date": "Today is {{date}}, ",
@@ -548,6 +459,19 @@
     "composer": {
       "ariaCredit": "AI credit manager input",
       "ariaDefault": "AI assistant input"
+    },
+    "workbench": {
+      "title": "AI Bookkeeping Workbench",
+      "settings": "AI Settings",
+      "status": {
+        "idle": "Awaiting input",
+        "ready": "Ready to recognize",
+        "recognizing": "Recognizing",
+        "preview": "Preview ready",
+        "saving": "Saving",
+        "saved": "Saved",
+        "error": "Error"
+      }
     }
   },
   "about": {
@@ -599,8 +523,7 @@
       "title": "Privacy & Security Strategy",
       "l1": "Ledger data is stored in your local or self-hosted database by default.",
       "l2": "Use HTTPS when connecting AI services.",
-      "l3": "Only necessary context is sent when you use AI features.",
-      "l4": "Review and remove sensitive notes before exporting or sharing."
+      "l3": "Only necessary context is sent when you use AI features."
     }
   },
   "dashboard": {
@@ -621,30 +544,13 @@
       "6": "Try dark mode from the theme switcher at the bottom of the sidebar"
     },
     "ui": {
-      "currentVersion": "Current version",
       "welcome": "LedgerFlow",
       "welcomeSubtitle": "See where today’s money went, what’s left, and where you can save a little.",
-      "gettingStartedTitle": "Getting started in 3 steps",
-      "gettingStartedSubtitle": "Complete these basics first to make trend insights more accurate.",
-      "step1": "① Add transactions: record income and expenses to build baseline data.",
-      "step2": "② Set budgets: set limits for frequent categories and catch overspending early.",
-      "step3": "③ Review insights: see what is driving changes in your finances.",
-      "addEntry": "Add transaction",
-      "openBudget": "Open budget",
-      "viewAnalysis": "View analysis",
-      "shortcutsPrefix": "Keyboard shortcuts",
-      "shortcutAdd": "Add transaction",
-      "shortcutBudget": "Open budget",
-      "shortcutSearch": "Quick search",
       "corePanel": "Today’s Financial Snapshot",
-      "moduleCustomize": "Dashboard Cards",
-      "moduleCustomizeHint": "Arrange it your way",
       "emptyTitle": "No transaction records yet",
       "emptyDesc": "Add your first transaction, or let the AI assistant recognize one for you.",
       "findAssistant": "Open AI Assistant",
       "quickAdd": "Quick add",
-      "thisMonthTrend": "Money Flow",
-      "futureTrend": "Next Month Preview",
       "expenseTrend": "Spending rhythm",
       "previousMonth": "Previous month",
       "nextMonth": "Next month",
@@ -667,8 +573,6 @@
       "netStructure": "Net",
       "categoryDonutChart": "Category structure donut chart",
       "categoryLinkageList": "Category structure linked list",
-      "环比": "Month over month",
-      "环比NoChange": "Month over month - no comparison",
       "anomalyAndHighlight": "Financial Radar",
       "cardScrollHint": "Swipe horizontally",
       "anomalyCardList": "Financial radar card list",
@@ -682,7 +586,6 @@
       "topTransactions": "Large transactions",
       "uncategorized": "Uncategorized",
       "noNote": "No note",
-      "other": "Other",
       "greetingFormat": "{{greeting}}, {{welcomeTitle}}",
       "statusBadge": "A good day to make the numbers clear ✨",
       "monthlyBalance": "This month’s balance",
@@ -698,17 +601,14 @@
       "expandWelcome": "Expand welcome banner",
       "addTransaction": "Add transaction",
       "askAi": "Ask AI Assistant",
-      "traceThisMonth": "View this month’s transactions",
       "weekLabel": "{{month}}, week {{week}}",
       "weekShort": "Week {{week}}",
       "categoryShareThisMonth": "This month’s share",
-      "densityAria": "Dashboard information density",
       "densityLabel": "Dashboard density",
       "densityCore": "Core",
       "densityFull": "Full analysis",
       "chartEmptyTitle": "Add a transaction and trends will appear",
       "chartEmptyDesc": "Once there is real income and spending, the pacing and category mix show up here.",
-      "firstEntry": "Add your first transaction",
       "densityHint": "Full trend and category analysis are shown; switch to Core to collapse the secondary charts.",
       "cashflow": {
         "aria": "Cash flow and financial tasks for the next 30 days",
@@ -737,8 +637,6 @@
         "title": "Asset & Liability Forecast",
         "subtitle": "Projects your schedules over the next {{count}} months to help you spot cash pressure early.",
         "rangeAria": "Simulation time range",
-        "horizonMonths_one": "{{count}} month",
-        "horizonMonths_other": "{{count}} months",
         "lowestBalanceDate": "Projected lowest-balance date",
         "noData": "No data",
         "registerAccounts": "Add accounts or schedules first",
@@ -803,11 +701,6 @@
       "clearSelection": "Clear selection"
     },
     "ui": {
-      "billFilterState": "Current transaction filter state",
-      "billPeriod": "Transaction period",
-      "filteredCount": "Filtered",
-      "items": "items",
-      "totalCount": "Total",
       "aiRecategorize": "AI recategorization",
       "processed": "Processed",
       "modelCount": "Model",
@@ -834,7 +727,6 @@
     },
     "filters": {
       "title": "Transaction log",
-      "caption": "Keep the focus on the records themselves; filters and actions stay close at hand and expand only when needed.",
       "keyword": "Keyword",
       "keywordPlaceholder": "Search notes or tags",
       "type": "Type",
@@ -865,10 +757,8 @@
       "settings": "Filter settings",
       "dialogEyebrow": "Transaction log · Personalize",
       "dialogTitle": "Filters & display",
-      "dialogDesc": "Organize records by source and customize what the table shows.",
       "dialogClose": "Close filter settings",
       "sourceTitle": "Source filter",
-      "sourceDesc": "Only show records from specific channels",
       "source": "Source",
       "sourceAria": "Filter by source",
       "sourceAll": "All sources",
@@ -878,7 +768,6 @@
       "sourceAi": "AI bookkeeping",
       "columnsTitle": "Table columns",
       "importTitle": "Import & cleanup",
-      "importDesc": "Manage import mode and duplicate handling",
       "importMode": "Import mode",
       "importIncremental": "Incremental (skip duplicates)",
       "importMerge": "Merge (overwrite duplicates)",
@@ -889,7 +778,6 @@
       "shortBulk": "Bulk",
       "shortPrivacy": "Privacy",
       "shortFilter": "Filter",
-      "chooseFields": "Choose what to show",
       "exportCsv": "Export CSV",
       "checkDuplicates": "Check duplicates",
       "importWechat": "Import WeChat",
@@ -1080,7 +968,6 @@
   },
   "finance": {
     "ui": {
-      "justNow": "Just now",
       "title": "Tonghuashun Finance",
       "subtitle": "Market news from Tonghuashun Finance, organized into categories for quick browsing.",
       "tipTitle": "Focus on markets, not RSS maintenance",
@@ -1135,8 +1022,7 @@
       "secondary": "View transactions"
     },
     "hero": {
-      "title": "Financial analysis",
-      "description": "Understand the past, read the present, and plan the future. The page first organizes your local ledger, then asks the model for decision-ready explanations and next steps."
+      "title": "Financial analysis"
     },
     "ai": {
       "model": "Model: {{model}}",
@@ -1154,7 +1040,6 @@
     },
     "market": {
       "title": "Cash flow board",
-      "description": "Read it like a market board: start with this month, then follow the rhythm of the last 6 months.",
       "badge": "Momentum",
       "headlineUp": "Cash momentum is recovering",
       "headlineDown": "Cash momentum is weakening",
@@ -1167,7 +1052,6 @@
     },
     "aiCard": {
       "title": "AI summary",
-      "description": "Let the model turn the current ledger snapshot into judgments that are easier to act on.",
       "summaryLabel": "Bottom line",
       "past": "Past",
       "present": "Present",
@@ -1178,7 +1062,6 @@
     },
     "behavior": {
       "title": "Behavior insights: habits and profile",
-      "description": "Local rules are shown first. After AI generation, more nuanced spending context appears here. These findings are behavioral inferences, not statements about your personality.",
       "badge": "Optimization signals",
       "aiTitle": "AI supplement",
       "aiHabits": "Habits AI noticed",
@@ -1204,7 +1087,6 @@
     },
     "previous": {
       "title": "Past: review spending changes",
-      "description": "Start with where the money went, then decide which swings are worth reviewing in the ledger.",
       "badge": "Spending change",
       "notEnough": "Not enough samples",
       "categoriesTitle": "Top expense categories",
@@ -1218,7 +1100,6 @@
     },
     "present": {
       "title": "Present: diagnose the current structure",
-      "description": "See fixed costs, debt pressure, and disposable room in one view.",
       "badge": "Health score",
       "fixedCost": "Fixed costs",
       "subscriptionCost": "Monthly subscriptions",
@@ -1229,7 +1110,6 @@
     },
     "future": {
       "title": "Future: anticipate pressure early",
-      "description": "Make a conservative estimate first, then decide whether to cut spending, keep a buffer, or prioritize fixed charges.",
       "badge": "Projected balance",
       "buffer": "Suggested buffer",
       "bufferHint": "For fixed charges and unexpected swings",
@@ -1328,7 +1208,6 @@
   },
   "recycleBin": {
     "title": "Recycle Bin",
-    "description": "Deleted transactions, categories, accounts, and subscriptions are moved here first. The recycle bin shows up to 10 items per page.",
     "count": "{{count}} items",
     "clear": "Empty recycle bin",
     "clearConfirm": "Empty the recycle bin? This permanently deletes all {{count}} items and cannot be undone.",
@@ -1375,7 +1254,6 @@
   "globalMemory": {
     "eyebrow": "Less repetition, more flow",
     "title": "Your preferences",
-    "description": "I remember these small habits so I do not have to ask as often.",
     "filters": {
       "all": "All",
       "contentLabel": "Filter by content",
@@ -1451,7 +1329,6 @@
   },
   "balanceChanges": {
     "title": "Balance Changes",
-    "description": "Grouped by increases and decreases. Expand a group to see the balance before and after each change.",
     "unknownAccount": "Unknown account",
     "boardAria": "Balance changes grouped by type",
     "collapse": "Collapse",
@@ -1532,7 +1409,6 @@
   "subscriptions": {
     "kicker": "Recurring spend overview",
     "title": "Subscriptions",
-    "subtitle": "Manage digital subscriptions, mobile plans and memberships in one place, with multi-currency, renewal and expiry tracking.",
     "summaryAria": "Subscription overview",
     "summary": {
       "total": "Total",
@@ -1545,8 +1421,7 @@
       "monthlyCost": "Estimated monthly fixed cost",
       "groupedByCurrency": "Grouped by currency",
       "normalizedMonthly": "Normalized per month",
-      "reminders": "Pending reminders",
-      "remindersHint": "Handle expired items first"
+      "reminders": "Pending reminders"
     },
     "card": {
       "noDate": "No date set",
@@ -1568,14 +1443,11 @@
     "form": {
       "editTitle": "Edit subscription",
       "createTitle": "New subscription",
-      "subtitle": "Start with the basics, then add account, renewal and notes so generating expenses is easier later.",
       "monthlyAverage": "Monthly average",
       "customCycleHint": "Prorated by your custom cycle",
       "templatesAria": "Subscription templates",
       "templatesTitle": "Start from a template",
-      "templatesHint": "One tap fills in a common service; amounts and dates stay editable.",
       "basicTitle": "Basics",
-      "basicHint": "Define what it is, how much it costs, and how often it bills",
       "name": "Name",
       "namePlaceholder": "e.g. Netflix / mobile plan",
       "kind": "Type",
@@ -1584,7 +1456,6 @@
       "cycle": "Billing cycle",
       "customDays": "Custom days",
       "billingTitle": "Billing & dates",
-      "billingHint": "Fill in account, platform and renewal time for easier tracking",
       "account": "Billing account",
       "accountNone": "Not specified",
       "provider": "Platform / merchant",
@@ -1619,7 +1490,6 @@
     },
     "list": {
       "title": "Subscriptions",
-      "subtitle": "Sorted by expiry, with items that need attention first.",
       "count": "Recorded",
       "emptyTitle": "No subscriptions yet",
       "emptyDesc": "Add your first digital subscription, mobile plan or membership; costs and expiry will be tracked together.",
@@ -1636,7 +1506,6 @@
   },
   "dataBackup": {
     "title": "Data & backup",
-    "subtitle": "Manage ledger data, restore points and off-site copies.",
     "managedRowsSuffix": "managed rows",
     "backupMethod": "Backup method",
     "currentVolume": "Current volume",
@@ -1648,13 +1517,11 @@
     },
     "local": {
       "export": "Export backup file",
-      "import": "Import backup file",
-      "desc": "Exported backups can be restored directly, or used to migrate to a new database instance."
+      "import": "Import backup file"
     },
     "database": {
       "exportTitle": "Export SQL database",
       "exportFormat": "SQLite exports .sqlite · MySQL exports .sql",
-      "exportHint": "Only the signed-in account and its data are exported, keeping the table structure needed for re-import. Store the file safely.",
       "download": "Download SQL database"
     },
     "reset": {
@@ -1669,7 +1536,6 @@
     "billImport": {
       "wechat": "Import WeChat bills",
       "alipay": "Import Alipay bills",
-      "desc": "Supports official WeChat / Alipay CSV and TXT bills (tab separated), plus WeChat XLSX.",
       "duplicateStrategy": "When a bill already exists",
       "strategyKeep": "Keep the old bill, update when it changed",
       "strategyOverwrite": "Overwrite the imported fields with the new bill",
@@ -1679,7 +1545,6 @@
     },
     "webdav": {
       "section": "WebDAV backup",
-      "desc": "For remote backup and restore; connects through the same-origin proxy by default.",
       "proxyEnable": "Enable same-origin proxy",
       "proxyPath": "Proxy entry path",
       "proxyToken": "Proxy token",
@@ -1700,11 +1565,6 @@
       "restoreSelected": "Restore selected version",
       "latest": "(latest)",
       "lastBackupPrefix": "Last backup: ",
-      "action": {
-        "createDirectory": "create directory",
-        "download": "download",
-        "upload": "upload"
-      },
       "backupFailed": "WebDAV backup failed",
       "backupSucceeded": "WebDAV backup succeeded: {scope}",
       "configSaved": "WebDAV configuration saved",
@@ -1740,21 +1600,11 @@
     },
     "objectStorage": {
       "section": "Object storage backup",
-      "desc": "Works with Alibaba Cloud OSS and S3-compatible services, so backups can live in your own bucket.",
       "region": "Region",
-      "hint": "If you hit CORS errors, allow web access on the bucket; keys are not stored locally long term.",
       "oss": "Alibaba Cloud OSS",
-      "ossDesc": "For users with an OSS bucket already",
       "s3": "S3-compatible",
-      "s3Desc": "For MinIO, R2, COS and similar services",
       "lastBackupPrefix": "Last backup: ",
       "currentPrefix": "Current: ",
-      "action": {
-        "delete": "delete",
-        "download": "download",
-        "list": "list",
-        "upload": "upload"
-      },
       "backupFailed": "{provider} backup failed",
       "backupSucceeded": "{provider} backup succeeded: {scope}",
       "configSaved": "{provider} configuration saved",
@@ -1836,16 +1686,11 @@
     "scope": {
       "aria": "Backup scope",
       "title": "What to back up",
-      "hint": "Applies to every backup method",
       "emptyWarning": "Select at least one backup scope.",
       "ledger": "Ledger data",
-      "ledgerDesc": "Transactions, categories, accounts, recycle bin and balance records",
       "subscriptions": "Subscriptions",
-      "subscriptionsDesc": "Subscriptions and archived subscriptions",
       "memories": "AI memory",
-      "memoriesDesc": "Assistant preferences, memories and context",
       "investments": "Investments",
-      "investmentsDesc": "Holdings, goals, watchlist and AI analysis history",
       "noneSelected": "None selected",
       "separator": ", "
     },
@@ -1862,7 +1707,6 @@
       "readFailed": "Failed to read the database snapshot",
       "restored": "Restored local data from the database snapshot.",
       "title": "Manual restore points",
-      "desc": "Your data is saved to the current database automatically. Create a manual copy here when you want extra safety.",
       "scopePrefix": "A restore point keeps: ",
       "create": "Create restore point",
       "restoreLatest": "Restore latest copy",
@@ -1942,7 +1786,6 @@
       "parseFailed": "Bill import failed: the file could not be parsed",
       "wechat": "WeChat"
     },
-    "currentScopePrefix": " Current backup scope:",
     "defaultAccountName": "Default account",
     "error": {
       "stillLoading": "Local data is still loading, try again in a moment"
@@ -2057,15 +1900,12 @@
   },
   "investments": {
     "title": "Investments",
-    "subtitle": "Today’s read, market monitoring and your watchlist live in one workspace, switched on demand instead of stacked up.",
     "overviewAria": "Current investment overview",
-    "watchlistCountSuffix": "watchlist items",
     "todayPrefix": "Today",
     "dataUpdatedPrefix": "Data updated",
     "refreshPending": "Waiting to refresh",
     "aiBarAria": "AI investment assistant entry",
     "aiBarTitle": "The AI investment assistant is connected to this page",
-    "positionsSuffix": "positions",
     "marketPrefix": "Market",
     "tab": {
       "checkup": "Position checkup",
@@ -2083,27 +1923,16 @@
       "todayAria": "Today’s investment board",
       "marketAria": "Market and sector monitoring"
     },
-    "loading": {
-      "market": "Loading market data…",
-      "positions": "Loading holdings…"
-    },
     "empty": {
-      "positions": "No holdings yet",
-      "watchlist": "No funds in the watchlist",
       "generic": "No data"
     },
-    "retry": "Retry",
     "refresh": "Refresh",
-    "expand": "Expand",
-    "collapse": "Collapse",
-    "viewMore": "View more",
     "stat": {
       "watchCount": "{count} watchlist",
       "positionCount": "{count} positions"
     },
     "holdings": {
       "title": "Today’s holdings",
-      "subtitle": "Start with your own positions; do not let the index decide for you.",
       "aiCheckupAria": "Ask AI to check my holdings",
       "aiCheckup": "AI checkup",
       "unrealizedPl": "Unrealized P/L",
@@ -2124,7 +1953,6 @@
     "briefing": {
       "aria": "Today’s market briefing",
       "title": "Today’s market, in plain words",
-      "subtitle": "Moves, sectors and news boiled down to a few lines — enough to act on.",
       "aiAria": "Ask AI to review today’s market",
       "aiAction": "AI review",
       "noPriceSignal": "No price signal yet — watch news momentum instead of chasing strength.",
@@ -2141,13 +1969,11 @@
         "sectorWeak": " — weak today, do not rush in."
       },
       "regenerate": "Regenerate",
-      "scoreLabel": "score",
       "riskLabel": "risk",
       "status": {
         "live": "Prices, news and sectors combined · updates every 15 min · score",
         "localOnly": "Local signals only · configure AI for 15-minute updates · score",
         "needModel": "Local signals ready · pick an AI model to generate briefings · score",
-        "aiUnavailable": "Local signals ready, AI unavailable · score",
         "collecting": "Collecting prices and news · score"
       },
       "line": {
@@ -2229,9 +2055,7 @@
         "contributed": "Total contributed",
         "finalValue": "Final value",
         "profit": "Simulated P/L",
-        "returnRate": "Return",
-        "methodLine1": "Method: each scheduled date rolls forward to the next trading day in the daily history; the end value uses the last close before the end date; return is simulated P/L",
-        "methodLine2": " ÷ total contributed, not annualized. Index points only — not actual fund returns, and fees, dividends, taxes and slippage are excluded."
+        "returnRate": "Return"
       },
       "globalTrendError": "Failed to load global market trend. Try again later.",
       "current": "Now",
@@ -2272,7 +2096,6 @@
       "candleWaiting": "Waiting for candle data",
       "candleHint": "Yahoo Finance historical candles will appear here once loaded.",
       "marketFallback": "Market",
-      "keyDataAria": "Key data",
       "latest": "Latest",
       "high": "High",
       "low": "Low",
@@ -2309,7 +2132,6 @@
     "boards": {
       "aria": "A-share sector monitor",
       "title": "A-share sectors",
-      "subtitle": "See sector strength at a glance; tap a sector to see its top movers.",
       "aiAria": "Ask AI about sector strength",
       "aiAction": "AI sector view",
       "globalAria": "Global sector cross-reference",
@@ -2386,7 +2208,6 @@
       "emptyTitle": "No headlines yet",
       "emptyDesc": "Refresh later, or try another category.",
       "tagsAria": "Related tickers",
-      "refreshing": "Refreshing",
       "sourceNote": "Source: Eastmoney 7×24 news · same-origin proxy on the server to avoid browser CORS issues",
       "catAllDay": "7×24",
       "catFocus": "Focus",
@@ -2572,7 +2393,6 @@
     "sendAria": "Start analysis",
     "launcherOpen": "Open the AI investment assistant",
     "title": "AI investment assistant",
-    "subtitle": "Holdings · Market · Goals",
     "syncedHint": "Holdings, watchlist and today’s quotes are in sync",
     "openFull": "Open the full AI investment assistant",
     "unpin": "Unpin the AI investment assistant",
@@ -2594,7 +2414,6 @@
     "imageAlt": "Image to analyse {index}",
     "removeImage": "Remove image {index}",
     "uploadHint": "Upload or paste up to {count} screenshots",
-    "currentModel": "Current model",
     "welcomeHint": "Ask about your holdings, SIP plans or today’s market. I will state the conclusion and the evidence behind it.",
     "quickPromptsAria": "Quick questions",
     "currentModelAria": "Current model: {name}",
@@ -2644,14 +2463,11 @@
   "repayment": {
     "eyebrow": "Assets & debt / Repayment",
     "title": "Repayment",
-    "subtitle": "Keep every due and paid amount on one clear timeline, and manage debt at your own pace.",
     "statusAria": "Repayment overview",
     "debtUnit": "debts",
     "card": {
       "totalDebt": "💰 Total debt",
-      "totalDebtHint": "Active debts only",
       "monthlyDue": "📉 Monthly due",
-      "pressure": "⚠️ Debt-to-income",
       "health": "🩺 Debt health",
       "archived": "🗂️ Archived debt",
       "archivedTotal": "Balance total",
@@ -2693,7 +2509,6 @@
     "unitDebtShort": "items",
     "income": {
       "title": "Monthly income",
-      "subtitle": "Used for debt pressure and repayment advice",
       "placeholder": "Enter your monthly after-tax income",
       "aria": "Manual monthly income",
       "save": "Save income"
@@ -2809,7 +2624,6 @@
       "addTitle": "Add debt",
       "apr": "Annual interest rate",
       "balancePlaceholder": "Enter remaining principal",
-      "basicHint": "Enter a name and remaining principal first; add the loan term for an estimate.",
       "custom": "Custom",
       "dayUnit": "day",
       "editTitle": "Edit debt",
@@ -2818,23 +2632,19 @@
       "extracted": "Recognized",
       "extracting": "Reading…",
       "fixedMonthly": "Fixed monthly payment (term and amount below)",
-      "imageHint": "Supports Alipay, bank and credit card statement screenshots.",
       "imagePreviewAlt": "Debt screenshot preview",
       "manualAmountKept": "manual amount kept",
       "modeAria": "Entry mode",
       "modeFull": "Full entry",
       "modeSimple": "Quick entry",
       "moreSettings": "More settings",
-      "moreSettingsHint": "Due day and record method",
       "nameAria": "Debt name",
       "namePlaceholder": "e.g. Bank credit card",
       "paymentMethod": "Payment method",
-      "planHint": "If you do not know the total repayment, enter each instalment manually.",
       "planManual": "Manual instalments",
       "planMode": "Repayment plan",
       "planStructured": "By total term",
       "presetsAria": "Common loan templates",
-      "presetsHint": "Choose a template, then fill in the amounts and terms from your agreement.",
       "presetsTitle": "Common loans",
       "recordMode": "Record method",
       "status": "Status",
@@ -2858,7 +2668,6 @@
       "loanAmount": "Loan amount",
       "totalRepaymentLabel": "Total repayment",
       "manualScheduleTitle": "Manual repayment plan",
-      "manualScheduleHint": "Fill in from the next due payment (period {count}); dates follow your repayment day by default.",
       "addPeriod": "+ Add period",
       "manualSummaryPeriods": "{count} periods",
       "manualSummaryRemaining": "Remaining",
@@ -2878,8 +2687,6 @@
       "cancelEdit": "Cancel editing",
       "continueAdding": "Add another debt",
       "doneAndClose": "Done and close",
-      "simpleIntro": "Note the item, date and this period's amount first; upgrade to full debt tracking when needed.",
-      "simpleDraftHint": "Your input is saved automatically; continue anytime",
       "simpleDraftSaving": "Your input is saved automatically",
       "simpleDraftRestored": "Restored your unfinished draft",
       "simpleProject": "Repayment item",
@@ -2890,78 +2697,11 @@
       "addReminder": "Add repayment reminder",
       "debtAddedToast": "Debt added"
     },
-    "repayment": {
-      "record": {
-        "heading": "Record this period’s payment",
-        "hint": "Enter the amount and date first; notes can be added later.",
-        "fillPlanned": "Use planned amount",
-        "dateAria": "Actual payment date",
-        "todayAria": "Set to today",
-        "today": "Today",
-        "modeAria": "Repayment record method",
-        "modeManual": "Manual entry",
-        "modeMatch": "Match transaction",
-        "modeAuto": "Auto debit",
-        "notePlaceholder": "Note (optional)",
-        "submit": "Record payment",
-        "listTitle": "Repayment history",
-        "empty": "No payment records yet. Record one to start.",
-        "notePrefix": "Note:"
-      },
-      "detail": {
-        "selectPrompt": "Select a debt from the list to view details"
-      },
-      "form": {
-        "editTitle": "Edit debt",
-        "addTitle": "Add debt",
-        "modeAria": "Entry mode",
-        "modeSimple": "Quick entry",
-        "modeFull": "Full entry",
-        "presetsAria": "Common loan templates",
-        "presetsTitle": "Common loans",
-        "presetsHint": "Choose a template, then fill in the amounts and terms from your agreement.",
-        "extracting": "Reading…",
-        "extracted": "Recognized",
-        "uploadRecognize": "Upload a statement to recognize automatically",
-        "imageHint": "Supports Alipay, bank and credit card statement screenshots.",
-        "imagePreviewAlt": "Debt screenshot preview",
-        "basicHint": "Enter a name and remaining principal first; add the loan term for an estimate.",
-        "nameAria": "Debt name",
-        "namePlaceholder": "e.g. Bank credit card",
-        "type": "Type",
-        "typeAria": "Debt type",
-        "typeCredit": "Credit debt",
-        "typeConsumer": "Consumer / instalment loan",
-        "balancePlaceholder": "Enter remaining principal",
-        "estimatedPrefix": "Estimated:",
-        "manualAmountKept": "manual amount kept",
-        "planMode": "Repayment plan",
-        "planHint": "If you do not know the total repayment, enter each instalment manually.",
-        "planStructured": "By total term",
-        "planManual": "Manual instalments",
-        "moreSettings": "More settings",
-        "moreSettingsHint": "Due day and record method",
-        "dayUnit": "day",
-        "paymentMethod": "Payment method",
-        "fixedMonthly": "Fixed monthly payment (term and amount below)",
-        "equalPayment": "Equal payment",
-        "equalPrincipal": "Equal principal",
-        "custom": "Custom",
-        "recordMode": "Record method",
-        "status": "Status",
-        "statusActive": "Active",
-        "statusSettled": "Settled",
-        "statusClosed": "Closed",
-        "statusPaused": "Paused",
-        "apr": "Annual interest rate"
-      }
-    },
     "record": {
       "dateAria": "Actual payment date",
       "empty": "No payment records yet. Record one to start.",
       "fillPlanned": "Use planned amount",
       "heading": "Record this period’s payment",
-      "hint": "Enter the amount and date first; notes can be added later.",
       "modeAria": "Repayment record method",
       "modeAuto": "Auto debit",
       "modeManual": "Manual entry",
@@ -3012,14 +2752,12 @@
       "pressureAria": "Repayment pressure curve",
       "previewAria": "Repayment pressure preview",
       "previewTitle": "Repayment pressure curve",
-      "previewHint": "See each period's payment and the principal left after it",
       "previewTag": "Ready",
       "previewPeriods": "{count} periods planned",
       "previewTotal": "Total planned repayment",
       "previewFirst": "First payment",
       "previewRemaining": "Left",
       "moreDetails": "More details",
-      "moreDetailsHint": "Interest, accounts, periods and more",
       "trendAriaSuffix": "repayment trend"
     },
     "quickConfirm": {
@@ -3063,9 +2801,7 @@
     },
     "accountTypePlaceholder": "Choose a type",
     "accountsMetricsAria": "Account statistics",
-    "accountsSubtitle": "Balances update automatically as you record transactions. Double-click an amount to calibrate it.",
     "accountsTitle": "Account management",
-    "accountsToolbarHint": "Keep bank cards, cash, and virtual accounts in one place for easier tracking.",
     "add": "Add",
     "addAccount": "+ Add account",
     "addAdjustment": "Add adjustment",
@@ -3077,7 +2813,6 @@
     "balanceEditTitle": "Double-click to edit the balance",
     "balancePlaceholder": "Enter balance",
     "categoriesMetricsAria": "Category statistics",
-    "categoriesSubtitle": "Manage expenses and income separately, and nest subcategories under a top-level category.",
     "categoriesTitle": "Category & tag management",
     "childBadge": "Subcategory",
     "collapse": "Collapse",
@@ -3132,7 +2867,6 @@
     "moveToTrash": "Move to recycle bin",
     "moveUp": "↑ Up",
     "negativeBalance": "Negative balances",
-    "newAccountHint": "New accounts are included in transaction totals and balance statistics.",
     "newCategoryNameAria": "New category name",
     "newExpensePlaceholder": "New expense category",
     "newIncomePlaceholder": "New income category",
@@ -3149,15 +2883,12 @@
     "statAria": "Accounts and categories overview",
     "statUnit": " base settings",
     "structureTitle": "Category structure",
-    "subtitle": "Manage your categories, tags, and money accounts in one tidy workspace.",
     "tabAccounts": "Money accounts",
     "tabCategories": "Categories & Tags",
     "tabsAria": "Accounts and categories workspaces",
-    "tagLibraryHint": "Tags come from transaction notes and AI recognition. Merge or clean them up here.",
     "tagLibraryTitle": "Tag library",
     "toolsSummary": "Manage",
     "totalBalance": "Total balance",
-    "treeHintSuffix": " tree · use “+ Subcategory” to add another level",
     "viewCategoryTxAria": "View the {count} transactions in {name}"
   },
   "smartBudget": {
@@ -3173,7 +2904,6 @@
       "notConfigured": "No AI model configured. Set the model endpoint, key, and model name in Settings first."
     },
     "backToDashboard": "Back to the budget board",
-    "categorySectionHint": "Open any category to see the details, or fine-tune the budget right on the card.",
     "categorySectionTitle": "Category budget execution",
     "clearButton": "Clear budget",
     "error": {
@@ -3200,14 +2930,12 @@
       "student": "Low fixed costs and a more flexible schedule"
     },
     "logAria": "Suggested action log",
-    "logHint": "Recent adjustments stay here for easy review.",
     "logTitle": "Action log",
     "monthLabel": "Month",
     "monthlyIncomeSuffix": "· Monthly income",
     "needSetup": "Finish and confirm your budget setup before opening the smart budget board.",
     "restartButton": "Set up again",
     "savingsSuffix": "· Savings",
-    "subtitle": "Answer five questions to generate a monthly budget you can actually follow.",
     "title": "Smart budget",
     "wizard": {
       "categoryAmountAria": "{category} budget amount",
@@ -3229,7 +2957,6 @@
       "incomeLabel": "Monthly take-home pay",
       "incomeShortcutsAria": "Income shortcuts",
       "introAria": "Current step description",
-      "introHint": "Five steps give you a workable monthly budget — leave and come back any time.",
       "next": "Next",
       "prev": "Back",
       "preview": {
@@ -3290,7 +3017,6 @@
       "orTrimPrefix": ", or trim",
       "reanalyze": "Re-analyze",
       "remindMe": "Remind me this month",
-      "subtitle": "Highlights what to watch next based on how the budget is running.",
       "tagColon": ": ",
       "title": "AI budget review",
       "usedPrefix": "has already used"
@@ -3300,7 +3026,6 @@
       "aria": "Anomaly alerts",
       "empty": "No category is close to overspending — keep the current pace.",
       "projected": "Projected month-end spending",
-      "subtitle": "Categories that may overspend by month end at the current pace.",
       "title": "Anomaly alerts and suggestions",
       "trim": "Trim about"
     },
@@ -3391,8 +3116,7 @@
       "current": "Current version",
       "empty": "Confirmed budgets are kept here as versions you can go back to.",
       "incomeSavings": "Monthly income · Savings",
-      "restore": "Restore this version",
-      "subtitle": "Every confirmation keeps a version you can restore without re-entering anything."
+      "restore": "Restore this version"
     },
     "overview": {
       "aria": "Budget overview",
@@ -3546,21 +3270,15 @@
       "daily": "Daily pay estimate",
       "dailyNote": "Estimated as monthly salary ÷ paid days",
       "hourly": "Hourly pay estimate",
-      "hourlyNote": "Estimated as daily pay ÷ daily hours",
-      "weekly": "Weekly pay estimate (5 days)",
-      "weeklyNote": "Based on 5 working days by default"
+      "weekly": "Weekly pay estimate (5 days)"
     },
     "overtime": {
       "title": "Overtime pay estimate",
-      "hint": "Uses your current hourly pay: 1.5× on workdays, 2× on rest days and 3× on public holidays.",
       "basePrefix": "Current hourly base: ",
       "baseSuffix": " — overtime pay is estimated as a multiple of this hourly rate.",
       "workday": "Workday overtime (1.5x)",
-      "workdayNote": "Applies to extended hours on workdays",
       "restDay": "Rest day overtime (2x)",
-      "restDayNote": "Applies to overtime on rest days",
-      "holiday": "Public holiday overtime (3x)",
-      "holidayNote": "Applies to overtime on public holidays"
+      "holiday": "Public holiday overtime (3x)"
     },
     "disclaimer": {
       "line1": "Note 1: results are pre-tax estimates only, excluding social insurance, income tax, housing fund, allowances, commissions and special shift patterns.",
@@ -3770,9 +3488,7 @@
       "note": "Note",
       "optional": "Optional",
       "keypadAria": "Amount keypad",
-      "keypadTip": "Supports + - * /; press Enter to calculate",
-      "save": "Save entry",
-      "draftHint": "Your input is saved as a draft automatically"
+      "save": "Save entry"
     },
     "error": {
       "invalidDateRange": "Invalid custom date range: the start date cannot be later than the end date.",
