@@ -20,7 +20,7 @@
     "backPrevious": "Go back"
   },
   "auth": {
-    "checkingStatus": "Checking account status…",
+    "checkingStatus": "Checking account status...",
     "statusFailed": "Unable to reach the account service.",
     "operationFailed": "Account operation failed.",
     "kicker": "LEDGERFLOW ACCOUNT",
@@ -33,7 +33,7 @@
     "email": "Email",
     "password": "Password",
     "passwordPlaceholder": "At least 10 characters",
-    "submitting": "Please wait…",
+    "submitting": "Please wait...",
     "createAccount": "Create account and take over ledger",
     "login": "Sign in",
     "switchToLogin": "Already have an account? Sign in",
@@ -2090,7 +2090,7 @@
         "startDateAria": "Simulation start date",
         "endDate": "End date",
         "endDateAria": "Simulation end date",
-        "running": "Simulating…",
+        "running": "Simulating...",
         "run": "Run simulation",
         "resultAria": "Investment simulation result",
         "contributed": "Total contributed",
@@ -2110,7 +2110,7 @@
       "globalQuotesAria": "Major global indices",
       "globalQuotesTitle": "Major global indices",
       "globalQuotesSource": "Yahoo Finance · same-origin proxy",
-      "updating": "Updating…",
+      "updating": "Updating...",
       "updateFailed": "Cannot update right now",
       "aShares": "A-shares",
       "globalTrendAria": "Global market trend chart",
@@ -2193,7 +2193,7 @@
       "delete": "Delete",
       "hotThemes": "Hot themes",
       "topMovers": "Top movers",
-      "companiesLoading": "Syncing company quotes…",
+      "companiesLoading": "Syncing company quotes...",
       "companiesUnavailable": "Company quotes are unavailable; try again later.",
       "noConstituents": "No constituents returned for this sector.",
       "dataSourcePrefix": "Source:",
@@ -2640,7 +2640,7 @@
       "needsConfirm": "Needs confirmation"
     },
     "extract": {
-      "running": "Reading…",
+      "running": "Reading...",
       "action": "📷 Scan"
     },
     "add": {
@@ -2673,7 +2673,7 @@
       "equalPayment": "Equal payment",
       "equalPrincipal": "Equal principal",
       "extracted": "Recognized",
-      "extracting": "Reading…",
+      "extracting": "Reading...",
       "fixedMonthly": "Fixed monthly payment (term and amount below)",
       "imagePreviewAlt": "Debt screenshot preview",
       "manualAmountKept": "manual amount kept",

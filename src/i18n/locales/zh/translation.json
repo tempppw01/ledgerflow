@@ -20,7 +20,7 @@
     "backPrevious": "返回上一页"
   },
   "auth": {
-    "checkingStatus": "正在检查账号状态…",
+    "checkingStatus": "正在检查账号状态...",
     "statusFailed": "无法连接账号服务。",
     "operationFailed": "账号操作失败。",
     "kicker": "LEDGERFLOW ACCOUNT",
@@ -33,7 +33,7 @@
     "email": "邮箱",
     "password": "密码",
     "passwordPlaceholder": "至少 10 个字符",
-    "submitting": "请稍候…",
+    "submitting": "请稍候...",
     "createAccount": "创建账号并接管账本",
     "login": "登录",
     "switchToLogin": "已有账号？去登录",
@@ -2090,7 +2090,7 @@
         "startDateAria": "定投开始日期",
         "endDate": "结束日期",
         "endDateAria": "定投结束日期",
-        "running": "模拟中…",
+        "running": "模拟中...",
         "run": "开始模拟",
         "resultAria": "定投模拟结果",
         "contributed": "累计投入",
@@ -2110,7 +2110,7 @@
       "globalQuotesAria": "全球主要指数行情",
       "globalQuotesTitle": "全球主要指数",
       "globalQuotesSource": "Yahoo Finance · 同源代理",
-      "updating": "更新中…",
+      "updating": "更新中...",
       "updateFailed": "暂时无法更新",
       "aShares": "A 股",
       "globalTrendAria": "国际大盘走势图",
@@ -2193,7 +2193,7 @@
       "delete": "删除",
       "hotThemes": "热门题材",
       "topMovers": "领涨公司",
-      "companiesLoading": "正在同步公司行情…",
+      "companiesLoading": "正在同步公司行情...",
       "companiesUnavailable": "公司行情暂时不可用，稍后重试。",
       "noConstituents": "该板块暂未返回成分股。",
       "dataSourcePrefix": "数据源：",
@@ -2640,7 +2640,7 @@
       "needsConfirm": "需确认"
     },
     "extract": {
-      "running": "识别中…",
+      "running": "识别中...",
       "action": "📷 识别"
     },
     "add": {
@@ -2673,7 +2673,7 @@
       "equalPayment": "等额本息",
       "equalPrincipal": "等额本金",
       "extracted": "识别完成",
-      "extracting": "正在识别…",
+      "extracting": "正在识别...",
       "fixedMonthly": "按月固定扣款(期数和具体金额见下方)",
       "imagePreviewAlt": "负债截图预览",
       "manualAmountKept": "已保留手动填写金额",
