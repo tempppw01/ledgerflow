@@ -335,11 +335,12 @@ function normalizeAdjustmentKind(
   }
 
   const note = String(tx.note || '');
-  if (
-    tx.status === 'refunded' ||
-    REFUND_HINT_PATTERN.test(categoryName) ||
-    REFUND_HINT_PATTERN.test(note)
-  ) {
+  // 注意:这里**不**用 `status === 'refunded'` 作为「这行是退款」的依据。
+  // 应用在「全额退款」后会把**原交易**的 status 置为 refunded(见 refundTransaction),
+  // 那行本质是支出;把它当成退款会让方向反转,账户余额差出两个金额
+  // (支出 100 → 余额从 900 变成 1100)。
+  // 应用自己写的退款行都会显式带 adjustmentKind: 'refund',不依赖这里的推断。
+  if (REFUND_HINT_PATTERN.test(categoryName) || REFUND_HINT_PATTERN.test(note)) {
     return 'refund';
   }
 
