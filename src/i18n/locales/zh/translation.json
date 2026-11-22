@@ -755,7 +755,7 @@
       "topTransactions": "大额交易",
       "uncategorized": "未分类",
       "noNote": "没写备注",
-      "greetingFormat": "{{greeting}}，{{welcomeTitle}}",
+      "greetingFormat": "{{greeting}}, {{welcomeTitle}}",
       "statusBadge": "今天也适合把账说清楚 ✨",
       "monthlyBalance": "本月结余",
       "netAssets": "当前净资产",
