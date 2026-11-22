@@ -2,6 +2,9 @@
   "name": "ledgerflow-frontend",
   "version": "0.44.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

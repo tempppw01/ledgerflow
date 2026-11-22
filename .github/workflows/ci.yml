@@ -24,7 +24,9 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # 服务端测试 import 了 node:sqlite(Node >= 22 才有),运行镜像也是 node:24。
+          # 用 20 会让服务端 7 个测试文件全部 ERR_UNKNOWN_BUILTIN_MODULE。
+          node-version: '24'
           cache: npm
 
       - name: Install dependencies
