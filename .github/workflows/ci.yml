@@ -52,6 +52,9 @@ jobs:
       - name: Date usage gate
         run: npm run check:dates
 
+      - name: Money format gate
+        run: npm run check:money
+
   docker-latest:
     needs: verify
     runs-on: ubuntu-latest

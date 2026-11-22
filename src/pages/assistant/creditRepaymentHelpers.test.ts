@@ -10,7 +10,7 @@ import {
 const ITEM: CreditRepaymentSummaryItem = {
   title: '招商银行信用卡',
   productType: 'credit-card',
-  dueAmount: '¥1000',
+  dueAmount: '¥1,000.00',
   repaymentDate: '每月25日'
 };
 
@@ -59,7 +59,7 @@ describe('creditRepaymentHelpers cycle scoping', () => {
       ]
     );
 
-    expect(gap?.recentActualPaidAmount).toBe('¥1000');
+    expect(gap?.recentActualPaidAmount).toBe('¥1,000.00');
     expect(gap?.statusText).toBe('基本对齐');
     expect(gap?.gapAmount).toBe('0');
   });
@@ -73,7 +73,7 @@ describe('creditRepaymentHelpers cycle scoping', () => {
 
     expect(gap?.recentActualPaidAmount).toBeUndefined();
     expect(gap?.statusText).toBe('本期未还');
-    expect(gap?.gapAmount).toBe('¥1000');
+    expect(gap?.gapAmount).toBe('¥1,000.00');
   });
 
   it('labels a prior settled payment as history instead of the current cycle', () => {
@@ -117,7 +117,7 @@ describe('creditRepaymentHelpers cycle scoping', () => {
       [buildRecord({ id: 'paid-before-due', amount: 1000, paidAt: '2026-11-20' })]
     );
 
-    expect(gap?.recentActualPaidAmount).toBe('¥1000');
+    expect(gap?.recentActualPaidAmount).toBe('¥1,000.00');
     expect(gap?.statusText).toBe('基本对齐');
   });
 
@@ -154,7 +154,7 @@ describe('creditRepaymentHelpers cycle scoping', () => {
     );
 
     expect(gap?.statusText).toBe('部分已还');
-    expect(gap?.gapAmount).toBe('¥600');
+    expect(gap?.gapAmount).toBe('¥600.00');
   });
 
   it('flags a mismatched payment account within the cycle', () => {
@@ -182,7 +182,7 @@ describe('creditRepaymentHelpers cycle scoping', () => {
     );
 
     expect(lookup?.matchedDebtName).toBe('招商银行信用卡');
-    expect(lookup?.actualRepaymentText).toBe('¥1000 · 2026-11-05');
+    expect(lookup?.actualRepaymentText).toBe('¥1,000.00 · 2026-11-05');
     expect(lookup?.recordStatusText).toBe('基本对齐');
   });
 

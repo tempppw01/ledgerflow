@@ -1,4 +1,5 @@
 import type { DebtItem, RepaymentRecord } from '../../features/debt/model/debtMetrics';
+import { formatCurrency } from '../../shared/lib/format';
 import type {
   CreditRepaymentGapSummary,
   CreditRepaymentLookupSummary
@@ -63,8 +64,9 @@ function resolveRepaymentAnchorDay(
 }
 
 function formatGapMoney(value: number): string {
-  const rounded = roundMoney(value);
-  return `¥${rounded.toFixed(2).replace(/\.00$/, '')}`;
+  // 走统一格式化器:自己拼 `¥${toFixed(2)}` 会丢掉千分位(¥12860.4 而不是 ¥12,860.4),
+  // 而且这里还额外去掉了 .00 —— 同一页两种格式。
+  return formatCurrency(roundMoney(value));
 }
 
 function analyzeCreditRepayment(

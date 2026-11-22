@@ -48,7 +48,7 @@ import {
   todayLocalDateKey
 } from '../../shared/lib/localDate';
 import { EMPTY_CATEGORY_FILTER_VALUE } from '../../features/transactions/model/categoryQuickFilter';
-import { formatMoneyByCurrency } from '../../shared/lib/format';
+import { formatCurrencyFixed2, formatMoneyByCurrency } from '../../shared/lib/format';
 import { Toast } from '../../shared/ui/Toast';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import type { DebtItem } from '../../features/debt/model/debtMetrics';
@@ -1343,7 +1343,7 @@ export function AssistantPage() {
           labelKey: 'assistant.welcome.briefExpense',
           value:
             monthExpense > 0
-              ? `¥${monthExpense.toFixed(2)}`
+              ? formatCurrencyFixed2(monthExpense)
               : tf('assistant.welcome.briefEmpty', '暂无')
         },
         {
@@ -1351,13 +1351,13 @@ export function AssistantPage() {
           labelKey: 'assistant.welcome.briefIncome',
           value:
             monthIncome > 0
-              ? `¥${monthIncome.toFixed(2)}`
+              ? formatCurrencyFixed2(monthIncome)
               : tf('assistant.welcome.briefEmpty', '暂无')
         },
         {
           key: 'balance',
           labelKey: 'assistant.welcome.briefBalance',
-          value: `¥${monthBalance.toFixed(2)}`
+          value: formatCurrencyFixed2(monthBalance)
         },
         {
           key: 'advice',
@@ -2543,15 +2543,15 @@ export function AssistantPage() {
                       <div className="chat-credit-overview-grid is-compact">
                         <div className="is-primary">
                           <span>{t('assistant.ui.creditTotalDebt')}</span>
-                          <strong>¥{creditOverview.totalDebt.toFixed(2)}</strong>
+                          <strong>{formatCurrencyFixed2(creditOverview.totalDebt)}</strong>
                         </div>
                         <div>
                           <span>{t('assistant.ui.creditDueThisMonth')}</span>
-                          <strong>¥{creditOverview.currentGap.toFixed(2)}</strong>
+                          <strong>{formatCurrencyFixed2(creditOverview.currentGap)}</strong>
                         </div>
                         <div>
                           <span>{t('assistant.ui.creditPaidThisMonth')}</span>
-                          <strong>¥{creditOverview.totalPaidThisMonth.toFixed(2)}</strong>
+                          <strong>{formatCurrencyFixed2(creditOverview.totalPaidThisMonth)}</strong>
                         </div>
                       </div>
                       {creditOverview.dueSoonItems.length > 0 ? (
@@ -2576,7 +2576,7 @@ export function AssistantPage() {
                                         day: 'numeric'
                                       }).format(item.nextDue)
                                     })}{' '}
-                              · ¥{item.minimumPayment.toFixed(0)}
+                              · {formatCurrencyFixed2(item.minimumPayment)}
                             </button>
                           ))}
                         </div>
@@ -2586,7 +2586,7 @@ export function AssistantPage() {
                         <div className="chat-credit-overview-extra">
                           <span>
                             {t('assistant.ui.creditTotalDueThisMonth')}{' '}
-                            <strong>¥{creditOverview.totalDueThisMonth.toFixed(2)}</strong>
+                            <strong>{formatCurrencyFixed2(creditOverview.totalDueThisMonth)}</strong>
                           </span>
                           <span>
                             {t('assistant.ui.creditDebtCount')}{' '}
@@ -2598,7 +2598,7 @@ export function AssistantPage() {
                           </span>
                           <span>
                             {t('assistant.ui.creditRemainingInterest')}{' '}
-                            <strong>¥{creditOverview.totalRemainingInterest.toFixed(2)}</strong>
+                            <strong>{formatCurrencyFixed2(creditOverview.totalRemainingInterest)}</strong>
                           </span>
                         </div>
                       </details>
@@ -2656,7 +2656,7 @@ export function AssistantPage() {
                             <div className="chat-credit-draft-fields">
                               {draft.balance !== undefined ? (
                                 <span>
-                                  {tf('assistant.ledger.totalOutstanding', '总待还')} <strong>¥{draft.balance.toFixed(2)}</strong>
+                                  {tf('assistant.ledger.totalOutstanding', '总待还')} <strong>{formatCurrencyFixed2(draft.balance)}</strong>
                                 </span>
                               ) : null}
                               {draft.remainingMonths !== undefined ? (
@@ -2671,12 +2671,12 @@ export function AssistantPage() {
                               ) : null}
                               {draft.monthlyAmount !== undefined ? (
                                 <span>
-                                  {tf('assistant.ledger.perPeriod', '每期')} <strong>¥{draft.monthlyAmount.toFixed(2)}</strong>
+                                  {tf('assistant.ledger.perPeriod', '每期')} <strong>{formatCurrencyFixed2(draft.monthlyAmount)}</strong>
                                 </span>
                               ) : null}
                               {draft.dueAmount !== undefined ? (
                                 <span>
-                                  {tf('assistant.ledger.currentDue', '本期应还')} <strong>¥{draft.dueAmount.toFixed(2)}</strong>
+                                  {tf('assistant.ledger.currentDue', '本期应还')} <strong>{formatCurrencyFixed2(draft.dueAmount)}</strong>
                                 </span>
                               ) : null}
                             </div>

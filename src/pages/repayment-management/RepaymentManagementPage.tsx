@@ -32,7 +32,12 @@ import {
   QIFUJIETIAO_ICON_URL,
   WEBANK_ICON_URL
 } from '../../shared/config/brandAssets';
-import { formatCurrency, formatDate, formatNumberFixed2 } from '../../shared/lib/format';
+import {
+  formatCurrency,
+  formatCurrencyFixed2,
+  formatDate,
+  formatNumberFixed2
+} from '../../shared/lib/format';
 import { AmountBreakdown } from '../../shared/ui/AmountBreakdown';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { Toast } from '../../shared/ui/Toast';
@@ -2945,14 +2950,15 @@ export function RepaymentManagementPage() {
                 <span className="finance-overview-unit">{tf('repayment.unitDebtShort', '笔')}</span>
               </p>
               <p className="muted" style={{ margin: 0, fontSize: 12 }}>
-                {tf('repayment.card.archivedTotal', '余额合计')} ¥{archivedTotalDebt.toFixed(2)}
+                {tf('repayment.card.archivedTotal', '余额合计')}{' '}
+                {formatCurrencyFixed2(archivedTotalDebt)}
               </p>
             </article>
             <article className="repayment-overview-stat repayment-overview-income">
               <p className="finance-overview-label">{tf('repayment.card.income', '💼 月收入')}</p>
               <p className="finance-overview-value">
                 <span className="finance-overview-number">
-                  {monthlyIncome > 0 ? monthlyIncome.toFixed(2) : '--'}
+                  {monthlyIncome > 0 ? formatCurrencyFixed2(monthlyIncome) : '--'}
                 </span>
                 <span className="finance-overview-unit">¥</span>
               </p>
@@ -3134,8 +3140,8 @@ export function RepaymentManagementPage() {
                               : item.type === 'consumer-loan'
                                 ? tf('repayment.type.consumerLoan', '消费贷')
                                 : tf('repayment.type.loan', '贷款')}
-                            {' · ¥'}
-                            {item.principal.toFixed(0)}
+                            {' · '}
+                            {formatCurrencyFixed2(item.principal)}
                           </>
                         )}
                       </span>
@@ -3309,7 +3315,7 @@ export function RepaymentManagementPage() {
                       </span>
                       <span className="repayment-debt-metric-value">
                         {selectedDebt.simpleAmount !== undefined
-                          ? `¥${selectedDebt.simpleAmount.toFixed(2)}`
+                          ? formatCurrencyFixed2(selectedDebt.simpleAmount)
                           : tf('repayment.detail.pending', '待补充')}
                       </span>
                     </div>
@@ -3322,7 +3328,7 @@ export function RepaymentManagementPage() {
                           {tf('repayment.detail.remainingPrincipal', '剩余本金')}
                         </span>
                         <span className="repayment-debt-metric-value">
-                          ¥{selectedDebt.principal.toFixed(2)}
+                          {formatCurrencyFixed2(selectedDebt.principal)}
                         </span>
                       </div>
                       <div className="repayment-debt-metric">
@@ -3332,7 +3338,7 @@ export function RepaymentManagementPage() {
                             : tf('repayment.detail.minimumPayment', '最低还款')}
                         </span>
                         <span className="repayment-debt-metric-value">
-                          ¥{selectedDebt.minimumPayment.toFixed(2)}
+                          {formatCurrencyFixed2(selectedDebt.minimumPayment)}
                         </span>
                       </div>
                       <div className="repayment-debt-metric">
@@ -3369,7 +3375,7 @@ export function RepaymentManagementPage() {
                             {tf('repayment.chart.estimatedMonthly', '预计月供')}
                           </span>
                           <span className="repayment-debt-metric-value">
-                            ¥{selectedDebt.estimatedMonthlyPayment.toFixed(2)}
+                            {formatCurrencyFixed2(selectedDebt.estimatedMonthlyPayment)}
                           </span>
                         </div>
                       ) : (
@@ -3412,8 +3418,8 @@ export function RepaymentManagementPage() {
                         </div>
                         {selectedDebtPressurePoints.length > 0 ? (
                           <span className="repayment-debt-trend-next">
-                            {tf('repayment.chart.firstPeriodAmount', '首期')} ¥
-                            {selectedDebtPressurePoints[0]?.amount.toFixed(2)}
+                            {tf('repayment.chart.firstPeriodAmount', '首期')}{' '}
+                            {formatCurrencyFixed2(selectedDebtPressurePoints[0]?.amount ?? 0)}
                           </span>
                         ) : null}
                       </div>
@@ -3462,7 +3468,7 @@ export function RepaymentManagementPage() {
                           <span className="repayment-debt-metric-label">{tf('repayment.cost.remainingInterest', '剩余利息')}</span>
                           <span className="repayment-debt-metric-value">
                             {selectedDebt.remainingInterestCost !== null
-                              ? `¥${selectedDebt.remainingInterestCost.toFixed(2)}`
+                              ? formatCurrencyFixed2(selectedDebt.remainingInterestCost)
                               : tf('repayment.detail.pending', '待补充')}
                           </span>
                         </div>
@@ -3470,7 +3476,7 @@ export function RepaymentManagementPage() {
                           <span className="repayment-debt-metric-label">{tf('repayment.cost.remainingTotalCost', '剩余总成本')}</span>
                           <span className="repayment-debt-metric-value">
                             {selectedDebt.remainingTotalCost !== null
-                              ? `¥${selectedDebt.remainingTotalCost.toFixed(2)}`
+                              ? formatCurrencyFixed2(selectedDebt.remainingTotalCost)
                               : tf('repayment.detail.pending', '待补充')}
                           </span>
                         </div>
@@ -3771,8 +3777,8 @@ export function RepaymentManagementPage() {
                       <li key={item.id}>
                         <strong>{item.name}</strong>
                         <span>
-                          APR {item.annualRate.toFixed(1)}% · 余额 ¥{item.balance.toFixed(0)} · 最低
-                          ¥{item.minimumPayment.toFixed(0)}
+                          APR {item.annualRate.toFixed(1)}% · 余额 {formatCurrencyFixed2(item.balance)} · 最低
+                          {formatCurrencyFixed2(item.minimumPayment)}
                         </span>
                       </li>
                     ))}
@@ -3791,7 +3797,7 @@ export function RepaymentManagementPage() {
                         <strong>{REPAYMENT_STRATEGY_LABELS[result.strategy]}</strong>
                         <span>加速后 {result.accelerated.months} 个月</span>
                         <span>
-                          省 {result.savedMonths} 个月 / ¥{result.savedInterest.toFixed(0)}
+                          省 {result.savedMonths} 个月 / {formatCurrencyFixed2(result.savedInterest)}
                         </span>
                       </div>
                     ))}
@@ -3904,7 +3910,7 @@ export function RepaymentManagementPage() {
                               : tf('repayment.ai.dueDateMissing', '待补还款日期')}
                             （
                             {item.simpleAmount !== undefined
-                              ? `¥${item.simpleAmount.toFixed(2)}`
+                              ? formatCurrencyFixed2(item.simpleAmount)
                               : tf('repayment.ai.amountPending', '金额待补充')}
                             ）
                           </>
@@ -3916,7 +3922,7 @@ export function RepaymentManagementPage() {
                                 ? tf('repayment.ai.dueToday', '今天到期')
                                 : `${item.dueInDays} 天后到期`
                               : tf('repayment.ai.repaymentDayMissing', '待补还款日')}
-                            （最低 ¥{item.minimumPayment.toFixed(0)}）
+                            （最低 {formatCurrencyFixed2(item.minimumPayment)}）
                           </>
                         )}
                       </li>
