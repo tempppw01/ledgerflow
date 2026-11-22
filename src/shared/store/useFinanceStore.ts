@@ -537,23 +537,24 @@ export function normalizeImportedFinanceSnapshot(payload: FinanceDataSnapshot) {
 
 function computeAccountBalances(accounts: Account[], transactions: TransactionItem[]): Account[] {
   const normalizedAccounts = normalizeAccountOrder(accounts);
+  // 单趟累加:原实现对每个账户都遍历一遍全部流水(O(账户 × 流水)),1 万条 × 5 账户
+  // 就是 5 万次循环,而这段在**每次写操作**时都会跑。这里改成遍历一次流水、按账户累加,
+  // 语义完全一致(同一账户内的相加顺序不变,结果同样先求和再取整)。
+  const accountIds = new Set(normalizedAccounts.map((item) => item.id));
+  const deltas = new Map<string, number>();
+  for (const item of transactions) {
+    const accountId = item.accountId;
+    if (!accountId || !accountIds.has(accountId)) continue;
+    if (item.trashedAt || !isBalanceAffectingStatus(item.status)) continue;
+    deltas.set(accountId, (deltas.get(accountId) ?? 0) + getSignedAmount(item));
+  }
+
   return normalizedAccounts.map((account) => {
     const base = roundCurrency(Number(account.initialBalance ?? 0));
-    const delta = transactions.reduce((sum, item) => {
-      if (
-        item.accountId !== account.id ||
-        item.trashedAt ||
-        !isBalanceAffectingStatus(item.status)
-      ) {
-        return sum;
-      }
-      return sum + getSignedAmount(item);
-    }, 0);
-
     return {
       ...account,
       initialBalance: base,
-      balance: roundCurrency(base + delta)
+      balance: roundCurrency(base + (deltas.get(account.id) ?? 0))
     };
   });
 }
@@ -585,13 +586,24 @@ function buildTransactionBalanceChangeEntries(
     ])
   );
 
+  // 先算好排序键再排:原实现把 new Date(...) 放在比较函数里,每次比较都要解析两次日期 ——
+  // 1 万条流水约有 12 万次比较,等于每次写操作都要分配二十多万个 Date 对象。
+  // 排序规则不变:先按日期,再按更新时间,最后按 id。
+  const sortKeys = new Map<string, { date: number; updated: number }>();
+  for (const tx of transactions) {
+    sortKeys.set(tx.id, {
+      date: new Date(tx.date).getTime(),
+      updated: new Date(tx.updatedAt || tx.date).getTime()
+    });
+  }
   const sortedTransactions = [...transactions].sort((a, b) => {
-    const dateDiff = new Date(a.date).getTime() - new Date(b.date).getTime();
+    const keyA = sortKeys.get(a.id);
+    const keyB = sortKeys.get(b.id);
+    const dateDiff = (keyA?.date ?? 0) - (keyB?.date ?? 0);
     if (dateDiff !== 0) {
       return dateDiff;
     }
-    const updatedDiff =
-      new Date(a.updatedAt || a.date).getTime() - new Date(b.updatedAt || b.date).getTime();
+    const updatedDiff = (keyA?.updated ?? 0) - (keyB?.updated ?? 0);
     if (updatedDiff !== 0) {
       return updatedDiff;
     }
