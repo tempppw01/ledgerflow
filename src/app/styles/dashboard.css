@@ -505,7 +505,22 @@
   border-color: var(--color-primary-border);
   background: var(--color-primary-bg);
 }
-.dashboard-forecast-item.is-out-of-range { border-style: dashed; opacity: 0.55; }
+/*
+ * 落在推演窗口之外的预测账单。
+ *
+ * 以前这里只有 `opacity: 0.55` —— 整条一起变淡,没有半句文字说明,于是
+ * 「录入账单后日历没变化」看起来就是功能坏了(账单在列表里、还计入净影响,
+ * 日历却一格不动)。现在改成:边框虚线 + 一行**可读的**「不在区间」标记,
+ * 文字本身不再整体降透明度(那会连带把对比度一起拉低)。
+ */
+.dashboard-forecast-item.is-out-of-range { border-style: dashed; }
+.dashboard-forecast-item.is-out-of-range .dashboard-forecast-item-name,
+.dashboard-forecast-item.is-out-of-range .dashboard-forecast-item-date,
+.dashboard-forecast-item.is-out-of-range .dashboard-forecast-item-amount { color: var(--color-text-tertiary); }
+.dashboard-forecast-item-outofrange { flex: 0 0 auto; padding: 0 5px; border: 1px solid var(--color-border); border-radius: 999px; color: var(--color-text-secondary); font-size: 10px; line-height: 1.5; white-space: nowrap; }
+.dashboard-forecast-outofrange-hint { margin: 6px 0 0; color: var(--color-text-tertiary); font-size: var(--font-xs); line-height: 1.5; }
+.dashboard-forecast-outofrange-action { margin-left: 6px; padding: 1px 8px; border: 1px solid color-mix(in srgb, var(--color-primary) 32%, var(--color-border)); border-radius: 999px; background: color-mix(in srgb, var(--color-primary) 8%, transparent); color: var(--color-primary); font: inherit; font-weight: 600; cursor: pointer; }
+.dashboard-forecast-outofrange-action:hover { background: color-mix(in srgb, var(--color-primary) 16%, transparent); }
 .dashboard-forecast-item-times {
   color: var(--color-text-tertiary);
   font-family: var(--font-number);

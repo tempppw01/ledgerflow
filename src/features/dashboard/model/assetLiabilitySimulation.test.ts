@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { aggregateRowsByMonth, buildAssetLiabilitySimulation } from './assetLiabilitySimulation';
+import {
+  aggregateRowsByMonth,
+  buildAssetLiabilitySimulation,
+  classifyForecastBillsByWindow
+} from './assetLiabilitySimulation';
 import { describeSimulationEvent } from './assetLiabilitySimulationFormat';
+import type { ForecastBill } from '../../../entities/forecast/types';
 
 describe('buildAssetLiabilitySimulation', () => {
   it('projects scheduled income, repayment and subscription changes by date', () => {
@@ -177,8 +182,9 @@ describe('buildAssetLiabilitySimulation', () => {
 
     const hits = result.rows.filter((row) => row.forecastDelta !== 0).map((row) => row.date);
     expect(hits).toEqual(['2026-01-31', '2026-02-28', '2026-03-31']);
-    expect(hits.every((date) => result.rows.find((row) => row.date === date)?.forecastDelta === -300))
-      .toBe(true);
+    expect(
+      hits.every((date) => result.rows.find((row) => row.date === date)?.forecastDelta === -300)
+    ).toBe(true);
     // 每条命中都要带上账单 id,面板才能按账单统计本期次数。
     expect(
       result.rows.filter((row) => row.forecastBillIds.length > 0).map((row) => row.date)
@@ -332,5 +338,88 @@ describe('aggregateRowsByMonth', () => {
 
   it('空区间返回空数组,不抛错', () => {
     expect(aggregateRowsByMonth([])).toEqual([]);
+  });
+});
+
+describe('classifyForecastBillsByWindow', () => {
+  const bill = (id: string, date: string): ForecastBill => ({
+    id,
+    name: id,
+    amount: 100,
+    date,
+    direction: 'expense',
+    repeat: 'once',
+    createdAt: '2026-11-01T00:00:00.000Z',
+    updatedAt: '2026-11-01T00:00:00.000Z'
+  });
+
+  const oneMonthWindow = (bills: ForecastBill[] = []) =>
+    buildAssetLiabilitySimulation({
+      now: new Date('2026-11-23T08:00:00'),
+      accounts: [{ id: 'cash', name: '现金', type: 'cash', balance: 1000 }],
+      investmentPositions: [],
+      transactions: [],
+      subscriptions: [],
+      debts: [],
+      forecastBills: bills,
+      days: 30
+    }).rows;
+
+  const occurrencesOf = (rows: ReturnType<typeof oneMonthWindow>) =>
+    rows.reduce<Record<string, number>>((acc, row) => {
+      row.forecastBillIds.forEach((id) => {
+        acc[id] = (acc[id] || 0) + 1;
+      });
+      return acc;
+    }, {});
+
+  // 用户报的现象:录入了账单,账单在列表里、还计入净影响,日历却一格不动。
+  // 根因是窗口外,而这一点以前在界面上完全看不出来。
+  it('窗口外的账单被单独识别出来(而不是静默消失)', () => {
+    const bills = [
+      bill('in-window', '2026-12-01'),
+      bill('far-away', '2027-06-01'),
+      bill('beyond-horizon', '2030-01-01')
+    ];
+    const rows = oneMonthWindow(bills); // 2026-11-23 起 30 天
+
+    const status = classifyForecastBillsByWindow(rows, bills, occurrencesOf(rows));
+
+    expect(status.windowStart).toBe('2026-11-23');
+    expect(status.windowEnd).toBe('2026-12-22');
+    expect(status.visibleIds).toEqual(['in-window']);
+    expect(status.outOfWindowIds).toEqual(['far-away', 'beyond-horizon']);
+    // 2027-06-01 在 12 个月窗口内(切过去就能看到),2030 的不能
+    expect(status.unreachableIds).toEqual(['beyond-horizon']);
+  });
+
+  it('日期非法或缺失的账单算作窗口外,并且不谎称「切到 12 个月能看到」', () => {
+    const bills = [bill('no-date', ''), bill('bad-date', '2026/12/01')];
+    const rows = oneMonthWindow(bills);
+
+    const status = classifyForecastBillsByWindow(rows, bills, occurrencesOf(rows));
+
+    expect(status.outOfWindowIds).toEqual(['no-date', 'bad-date']);
+    expect(status.unreachableIds).toEqual(['no-date', 'bad-date']);
+  });
+
+  it('可见与否以推演结果为准:每月账单的首次发生日更早,当期仍然可见', () => {
+    // 首次发生日 2026-09-25 早于窗口起点(11-23),窗口内只落到 11/25 一次
+    // (下一次 12/25 已在窗口末日 12-22 之后)。
+    const monthly = { ...bill('monthly-since', '2026-09-25'), repeat: 'monthly' as const };
+    const rows = oneMonthWindow([monthly]);
+    const status = classifyForecastBillsByWindow(rows, [monthly], occurrencesOf(rows));
+
+    expect(occurrencesOf(rows)['monthly-since']).toBe(1);
+    expect(status.outOfWindowIds).toEqual([]);
+    expect(status.visibleIds).toEqual(['monthly-since']);
+  });
+
+  it('没有推演行时窗口为空,所有账单都算窗口外', () => {
+    const status = classifyForecastBillsByWindow([], [bill('a', '2026-12-01')], {});
+
+    expect(status.windowStart).toBe('');
+    expect(status.windowEnd).toBe('');
+    expect(status.outOfWindowIds).toEqual(['a']);
   });
 });

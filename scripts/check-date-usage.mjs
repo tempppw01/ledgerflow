@@ -24,7 +24,12 @@ const args = new Set(process.argv.slice(2));
 
 /** file:line 形式的白名单,reason 必须是「为什么这里按 UTC 取日是对的」。 */
 const ALLOW = new Map([
-  // 例子(当前为空):['src/xxx.ts:12', '导出文件名,与交易归属日无关']
+  [
+    'src/features/dashboard/model/assetLiabilitySimulation.ts:467',
+    // 预测账单的 date 不是时间戳:useAppPreferences.normalizeDateOnly() 在写入时已强制
+    // 成纯 YYYY-MM-DD(不合法就存空串),不存在带时区的时间部分被截断的问题。
+    '预测账单 date 已是纯 YYYY-MM-DD(写入时由 normalizeDateOnly 保证)'
+  ]
 ]);
 
 const PATTERNS = [

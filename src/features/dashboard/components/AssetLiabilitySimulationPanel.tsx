@@ -8,8 +8,14 @@ import {
   formatWeekdayNarrow
 } from '../../../shared/lib/i18nDate';
 import type { AssetLiabilitySimulationRow } from '../model/assetLiabilitySimulation';
-import { aggregateRowsByMonth } from '../model/assetLiabilitySimulation';
-import { formatCalendarAmount, describeSimulationEvent } from '../model/assetLiabilitySimulationFormat';
+import {
+  aggregateRowsByMonth,
+  classifyForecastBillsByWindow
+} from '../model/assetLiabilitySimulation';
+import {
+  formatCalendarAmount,
+  describeSimulationEvent
+} from '../model/assetLiabilitySimulationFormat';
 import type {
   ForecastBill,
   ForecastBillDirection,
@@ -112,9 +118,7 @@ export function AssetLiabilitySimulationPanel({
     key: string;
   } | null>(
     (best, [key, current]) =>
-      current.amount < 0 && (!best || current.amount < best.amount)
-        ? { ...current, key }
-        : best,
+      current.amount < 0 && (!best || current.amount < best.amount) ? { ...current, key } : best,
     null
   );
   const locale = i18n.resolvedLanguage;
@@ -144,6 +148,19 @@ export function AssetLiabilitySimulationPanel({
     });
     return acc;
   }, {});
+
+  /**
+   * 哪些账单落在当前推演窗口之外 —— 判定在模型层(有测试),这里只负责显示。
+   *
+   * 这类账单此前只在列表里**变淡**(opacity 0.55),没有任何文字说明,于是
+   * 「录入后日历没变化」看起来就是功能坏了:账单明明在列表里、还计入了净影响,
+   * 日历却一个格子都不动。窗口外的原因(默认只推演 1 个月)对用户不可见。
+   */
+  const forecastWindow = classifyForecastBillsByWindow(rows, forecastBills, forecastOccurrences);
+  // 12 个月里都看不到的,提示「切到 12 个月」是没用的,得分开说。
+  const reachableByLongestHorizon =
+    forecastWindow.outOfWindowIds.length - forecastWindow.unreachableIds.length;
+  const unreachableCount = forecastWindow.unreachableIds.length;
 
   const resetForecastForm = () => {
     setEditingBillId('');
@@ -411,9 +428,7 @@ export function AssetLiabilitySimulationPanel({
                     amount
                   )}${
                     row.events.length > 0
-                      ? `,${row.events
-                          .map((event) => describeSimulationEvent(event, t))
-                          .join(';')}`
+                      ? `,${row.events.map((event) => describeSimulationEvent(event, t)).join(';')}`
                       : ''
                   }`}
                   title={[
@@ -546,11 +561,7 @@ export function AssetLiabilitySimulationPanel({
               : t('dashboard.ui.simulation.forecastAdd')}
           </button>
           {editingBillId ? (
-            <button
-              type="button"
-              className="dashboard-forecast-cancel"
-              onClick={resetForecastForm}
-            >
+            <button type="button" className="dashboard-forecast-cancel" onClick={resetForecastForm}>
               {t('dashboard.ui.simulation.forecastCancel')}
             </button>
           ) : null}
@@ -568,16 +579,16 @@ export function AssetLiabilitySimulationPanel({
               {forecastBills.map((bill) => {
                 const occurrences = forecastOccurrences[bill.id] || 0;
                 const isEditing = editingBillId === bill.id;
+                // 与模型层同源:窗口外的判定只用一处,避免两个条件各说各话
+                const isOutOfWindow = forecastWindow.outOfWindowIds.includes(bill.id);
                 return (
                   <li
                     key={bill.id}
                     className={`dashboard-forecast-item ${
-                      occurrences === 0 ? 'is-out-of-range' : ''
+                      isOutOfWindow ? 'is-out-of-range' : ''
                     } ${isEditing ? 'is-editing' : ''}`.trim()}
                     title={
-                      occurrences === 0
-                        ? t('dashboard.ui.simulation.forecastOutOfRange')
-                        : undefined
+                      isOutOfWindow ? t('dashboard.ui.simulation.forecastOutOfRange') : undefined
                     }
                   >
                     <button
@@ -594,6 +605,12 @@ export function AssetLiabilitySimulationPanel({
                         ? ` · ${t('dashboard.ui.simulation.forecastMonthly')}`
                         : ''}
                     </span>
+                    {isOutOfWindow ? (
+                      // 文字标记必须有:只靠变淡,用户看不出「为什么日历里没有它」。
+                      <span className="dashboard-forecast-item-outofrange">
+                        {t('dashboard.ui.simulation.forecastOutOfRangeShort')}
+                      </span>
+                    ) : null}
                     <strong
                       className={
                         bill.direction === 'income'
@@ -605,9 +622,7 @@ export function AssetLiabilitySimulationPanel({
                       {formatCurrencyAuto(bill.amount)}
                     </strong>
                     {occurrences > 1 ? (
-                      <em className="dashboard-forecast-item-times">
-                        ×{occurrences}
-                      </em>
+                      <em className="dashboard-forecast-item-times">×{occurrences}</em>
                     ) : null}
                     <button
                       type="button"
@@ -625,6 +640,31 @@ export function AssetLiabilitySimulationPanel({
                 );
               })}
             </ul>
+            {forecastWindow.outOfWindowIds.length > 0 ? (
+              // 只说「不在区间」不够 —— 用户要的是「那我怎么才能看到它」。
+              // 日期在 12 个月窗口内的,给一个按钮直接切过去,不用自己找。
+              <p className="dashboard-forecast-outofrange-hint" role="note">
+                {reachableByLongestHorizon > 0
+                  ? t('dashboard.ui.simulation.forecastOutOfRangeHint', {
+                      count: reachableByLongestHorizon
+                    })
+                  : null}
+                {unreachableCount > 0
+                  ? t('dashboard.ui.simulation.forecastBeyondHorizonHint', {
+                      count: unreachableCount
+                    })
+                  : null}
+                {reachableByLongestHorizon > 0 && horizonMonths < 12 ? (
+                  <button
+                    type="button"
+                    className="dashboard-forecast-outofrange-action"
+                    onClick={() => onHorizonChange(12)}
+                  >
+                    {t('dashboard.ui.simulation.forecastOutOfRangeAction')}
+                  </button>
+                ) : null}
+              </p>
+            ) : null}
           </>
         ) : null}
       </div>

@@ -856,7 +856,11 @@
           "monthlyRepayment": "每月还款",
           "forecastIncome": "预测收入",
           "forecastExpense": "预测支出"
-        }
+        },
+        "forecastOutOfRangeShort": "不在区间",
+        "forecastOutOfRangeHint": "其中 {{count}} 笔在当前区间之外,切到 12 个月即可看到。",
+        "forecastBeyondHorizonHint": "另有 {{count}} 笔日期离当前太远,任何区间都不显示。",
+        "forecastOutOfRangeAction": "切到 12 个月"
       },
       "monthBalance": "本月结余",
       "traceMonth": "点击追溯本月交易",

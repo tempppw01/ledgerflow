@@ -856,7 +856,11 @@
           "monthlyRepayment": "Monthly repayment",
           "forecastIncome": "Forecast income",
           "forecastExpense": "Forecast expense"
-        }
+        },
+        "forecastOutOfRangeShort": "Outside range",
+        "forecastOutOfRangeHint": "{{count}} of them fall outside this range — switch to 12 months to see them.",
+        "forecastBeyondHorizonHint": "{{count}} more are too far out to appear in any range.",
+        "forecastOutOfRangeAction": "Switch to 12 months"
       },
       "monthBalance": "This month's balance",
       "traceMonth": "View this month's transactions",

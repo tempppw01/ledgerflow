@@ -412,13 +412,73 @@ export function buildAssetLiabilitySimulation(input: {
   };
 }
 
+/**
+ * 预测账单与「当前推演窗口」的关系。
+ *
+ * 为什么要有这层分类:窗口外的账单在列表里照常显示、还计入「净影响」,
+ * 但日历一个格子都不会变 —— 用户看到的现象就是「录入了账单,日历没反应」。
+ * 计算放在模型层,界面只负责把它翻成文案。
+ */
+export interface ForecastBillWindowStatus {
+  /** 落在当前窗口内、日历上能看到的账单 id。 */
+  visibleIds: string[];
+  /** 在当前窗口内一次都不会发生(且日期合法)。 */
+  outOfWindowIds: string[];
+  /** 日期放在最长区间(12 个月 = 365 天)内也不可见 —— 提示「切到 12 个月」对它们没用。 */
+  unreachableIds: string[];
+  /** 校验过的窗口起止(YYYY-MM-DD);rows 为空时是空串。 */
+  windowStart: string;
+  windowEnd: string;
+}
+
+export function classifyForecastBillsByWindow(
+  rows: AssetLiabilitySimulationRow[],
+  forecastBills: ForecastBill[] = [],
+  /** 账单 id → 在窗口内实际发生次数(来自推演行)。0/缺失即窗口外。 */
+  occurrences: Record<string, number> = {}
+): ForecastBillWindowStatus {
+  const windowStart = rows[0]?.date || '';
+  const windowEnd = rows.at(-1)?.date || '';
+
+  // 最长可选区间是 12 个月,而天数写成 months * 30 —— 12 个月即 360 天。
+  // 这里按 365 天算,宁可把「12 个月能看到」说宽一点,也不要漏报。
+  const longestWindowEnd = (() => {
+    if (!windowStart) return '';
+    const end = new Date(`${windowStart}T00:00:00`);
+    if (Number.isNaN(end.getTime())) return '';
+    end.setDate(end.getDate() + 364);
+    return dateKey(end);
+  })();
+
+  const visibleIds: string[] = [];
+  const outOfWindowIds: string[] = [];
+  const unreachableIds: string[] = [];
+
+  forecastBills.forEach((bill) => {
+    // 可见与否以**推演结果**为准,不能只看日期:周期性的「每月」账单首次发生日可能在
+    // 更早的月份,它当期仍然要出现在日历上。
+    if (occurrences[bill.id]) {
+      visibleIds.push(bill.id);
+      return;
+    }
+
+    outOfWindowIds.push(bill.id);
+
+    const date = String(bill.date || '').slice(0, 10);
+    const isValid = /^\d{4}-\d{2}-\d{2}$/.test(date);
+    if (!isValid || !longestWindowEnd || date > longestWindowEnd) {
+      unreachableIds.push(bill.id);
+    }
+  });
+
+  return { visibleIds, outOfWindowIds, unreachableIds, windowStart, windowEnd };
+}
+
 /** 同一个 (kind, name) 合并成一条并记次数:一个月里同一条订阅只写一行「×N」。 */
 function mergeEvents(events: SimulationEvent[]): SimulationEvent[] {
   const merged: SimulationEvent[] = [];
   events.forEach((event) => {
-    const hit = merged.find(
-      (item) => item.kind === event.kind && item.name === event.name
-    );
+    const hit = merged.find((item) => item.kind === event.kind && item.name === event.name);
     if (hit) hit.count = (hit.count || 1) + 1;
     else merged.push({ ...event });
   });
@@ -459,9 +519,7 @@ export function aggregateRowsByMonth(
     current.liabilityDelta += row.liabilityDelta;
     current.forecastDelta += row.forecastDelta;
     current.events = mergeEvents([...current.events, ...row.events]);
-    current.forecastBillIds = [
-      ...new Set([...current.forecastBillIds, ...row.forecastBillIds])
-    ];
+    current.forecastBillIds = [...new Set([...current.forecastBillIds, ...row.forecastBillIds])];
   });
 
   return aggregated;
