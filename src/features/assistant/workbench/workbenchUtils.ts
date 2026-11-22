@@ -430,20 +430,30 @@ export function buildBillContentSignature(input: {
   return `content:${day}|${amount}|${type}|${note}|${currency}`;
 }
 
-function normalizeDateText(value: unknown): string {
-  if (typeof value !== 'string' || value.trim().length === 0) return new Date().toISOString();
+function normalizeDateText(value: unknown): { value: string; inferred: boolean } {
+  // 模型没给日期时只能退回「今天」,但要告诉调用方「这个是猜的」,
+  // 由它在 needsReview 里标出来,让用户核对。
+  if (typeof value !== 'string' || value.trim().length === 0)
+    return { value: new Date().toISOString(), inferred: true };
   const source = value.trim();
   const chinese = source.match(/^(\d{4})年(\d{1,2})月(\d{1,2})日?$/);
   if (chinese) {
     const [, y, m, d] = chinese;
-    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    return { value: `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`, inferred: false };
   }
   const slash = source.match(/^(\d{4})[/.](\d{1,2})[/.](\d{1,2})$/);
   if (slash) {
     const [, y, m, d] = slash;
-    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    return { value: `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`, inferred: false };
   }
-  return source;
+  return { value: source, inferred: false };
+}
+
+/** 模型可能把单号写成数字;直接 `.trim()` 会抛错,导致整张识别结果被丢掉。 */
+function toOptionalTrimmedString(value: unknown): string | undefined {
+  if (value === null || value === undefined) return undefined;
+  const text = String(value).trim();
+  return text ? text : undefined;
 }
 
 function normalizePositiveInteger(value: unknown): number {
@@ -534,7 +544,8 @@ export function normalizeAiBill(raw: unknown): AiBillResult | null {
     // 录入金额统一保留两位，避免后续 UI 出现浮点展示噪音。
     const normalizedAmount = roundMoney(amount);
     if (!type || normalizedAmount <= 0) continue;
-    const baseDate = normalizeDateText(row.date);
+    const normalizedDate = normalizeDateText(row.date);
+    const baseDate = normalizedDate.value;
     const normalizedType: TransactionType =
       type === 'expense' && isFutureDate(baseDate) ? 'budget' : type;
     const baseItem: AiBillItem = {
@@ -553,8 +564,8 @@ export function normalizeAiBill(raw: unknown): AiBillResult | null {
         row.sourceHint === 'unknown'
           ? row.sourceHint
           : 'unknown',
-      orderNo: row.orderNo?.trim() || undefined,
-      merchantOrderNo: row.merchantOrderNo?.trim() || undefined,
+      orderNo: toOptionalTrimmedString(row.orderNo),
+      merchantOrderNo: toOptionalTrimmedString(row.merchantOrderNo),
       currency:
         normalizeCurrency((row as { currency?: unknown }).currency) !== 'unknown'
           ? normalizeCurrency((row as { currency?: unknown }).currency)
@@ -566,13 +577,20 @@ export function normalizeAiBill(raw: unknown): AiBillResult | null {
         String(
           (row as { originalAmountText?: unknown }).originalAmountText || row.amount || ''
         ).trim() || undefined,
-      needsReview: Array.isArray(rawRow.needsReview)
-        ? rawRow.needsReview
-            .map((item) => String(item).trim())
-            .filter((item): item is NonNullable<AiBillItem['needsReview']>[number] =>
-              ['amount', 'date', 'type', 'currency'].includes(item)
-            )
-        : undefined,
+      needsReview: (() => {
+        const fromModel = Array.isArray(rawRow.needsReview)
+          ? rawRow.needsReview
+              .map((item) => String(item).trim())
+              .filter((item): item is NonNullable<AiBillItem['needsReview']>[number] =>
+                ['amount', 'date', 'type', 'currency'].includes(item)
+              )
+          : [];
+        // 日期是猜出来的(模型没给)就必须让用户核对,不能悄悄按今天入账。
+        const merged = normalizedDate.inferred
+          ? Array.from(new Set([...fromModel, 'date' as const]))
+          : fromModel;
+        return merged.length ? merged : undefined;
+      })(),
       subscriptionSuggestion: detectSubscriptionSuggestion({
         type: normalizedType,
         note: String(row.note || 'AI 识别账单'),
@@ -617,13 +635,33 @@ export function extractJsonString(text: string): string {
   const transactionMatch = /\{\s*"transactions"/.exec(text);
   const transactionStart = transactionMatch?.index ?? -1;
   if (transactionStart >= 0) {
+    // 按括号配对截取,但**要跳过字符串内部**:备注里出现 `}`(例如「退款}」)时,
+    // 朴素的计数会提前截断,得到一个解析不了的 JSON,整张识别结果就白丢了。
     let depth = 0;
+    let inString = false;
+    let escaped = false;
     for (let i = transactionStart; i < text.length; i += 1) {
       const char = text[i];
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+        } else if (char === '\\') {
+          escaped = true;
+        } else if (char === '"') {
+          inString = false;
+        }
+        continue;
+      }
+      if (char === '"') {
+        inString = true;
+        continue;
+      }
       if (char === '{') depth += 1;
-      if (char === '}') depth -= 1;
-      if (depth === 0) {
-        return text.slice(transactionStart, i + 1).trim();
+      if (char === '}') {
+        depth -= 1;
+        if (depth === 0) {
+          return text.slice(transactionStart, i + 1).trim();
+        }
       }
     }
   }
