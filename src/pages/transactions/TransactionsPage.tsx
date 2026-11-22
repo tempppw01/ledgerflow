@@ -52,6 +52,7 @@ import {
   matchesCategoryQuickFilter
 } from '../../features/transactions/model/categoryQuickFilter';
 import { matchesStatusQuickFilter } from '../../features/transactions/model/statusQuickFilter';
+import { buildCategoryLabelIndex } from '../../shared/lib/categoryLabels';
 import {
   exportTransactionsPdf,
   type BulkPrintTemplate
@@ -1820,7 +1821,13 @@ export function TransactionsPage() {
           : tx.type === 'repayment'
             ? tf('txExport.type.repayment', '还款')
             : tf('txExport.type.expense', '支出');
-    const availableCategories = categories.map((item) => item.name);
+    // 交给 AI 的选择列表必须是**能唯一确定分类**的名字:同名子分类(餐饮/其他 与 交通/其他)
+    // 直接给两个「其他」会让它无从区分,回来后再按名字 find 只会随机命中一个。
+    const categoryLabelIndex = buildCategoryLabelIndex(
+      categories,
+      tf('txExport.value.uncategorized', '未分类')
+    );
+    const availableCategories = categoryLabelIndex.labels;
     const currentCategoryName =
       categories.find((item) => item.id === tx.categoryId)?.name ||
       tf('txExport.value.uncategorized', '未分类');
@@ -1841,12 +1848,13 @@ export function TransactionsPage() {
       });
 
       const suggestedName = parseAiCategoryName(reply.content);
-      const matched = categories.find((item) => item.name.trim() === suggestedName);
-      if (!suggestedName || !matched || matched.id === tx.categoryId) {
+      // 名字 → id 走唯一索引;拿不到唯一 id 就交给 fallback,不猜。
+      const matchedId = suggestedName ? categoryLabelIndex.labelToId.get(suggestedName) : undefined;
+      if (!suggestedName || !matchedId || matchedId === tx.categoryId) {
         return fallbackRecategorize() ? 'fallback-changed' : 'unchanged';
       }
 
-      updateTransaction(tx.id, { ...tx, categoryId: matched.id });
+      updateTransaction(tx.id, { ...tx, categoryId: matchedId });
       return 'changed';
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {

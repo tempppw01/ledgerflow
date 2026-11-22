@@ -1,4 +1,5 @@
 import type { Category } from '../../../entities/category/types';
+import { buildCategoryLabels } from '../../../shared/lib/categoryLabels';
 import type { TransactionItem } from '../../../entities/transaction/types';
 
 /**
@@ -21,11 +22,7 @@ export function resolveCategoryGroupLabel(
   categories: Category[],
   uncategorizedLabel: string
 ): string {
-  const category = categories.find((item) => item.id === key);
-  if (!category) {
-    return uncategorizedLabel;
-  }
-  return category.name;
+  return buildCategoryLabels(categories, uncategorizedLabel).get(key) || uncategorizedLabel;
 }
 
 /**
