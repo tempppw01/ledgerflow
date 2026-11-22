@@ -348,7 +348,10 @@ describe('parseFinanceBackupPayload', () => {
       ledger: false,
       subscriptions: true,
       globalMemories: false,
-      investments: false
+      investments: false,
+      // 调用方没传 debts 时按默认值(true)归一化;旧文件里没有 debts 数据,
+      // 应用侧靠 Array.isArray 守卫回退到当前数据,不会清空。
+      debts: true
     });
     expect(payload.data.transactions).toEqual([]);
     expect(payload.data.categories).toEqual([]);
@@ -668,7 +671,9 @@ describe('parseFinanceBackupPayload', () => {
       investmentPositionHistory: [],
       investmentGoals: [],
       investmentWatchlist: [],
-      investmentAiMessages: []
+      investmentAiMessages: [],
+      debts: [],
+      repaymentRecords: []
     };
 
     const payload = createFinanceBackupPayload(
@@ -777,7 +782,9 @@ describe('countFinanceBackupRecords', () => {
       investmentPositionHistory: [],
       investmentGoals: [],
       investmentWatchlist: [],
-      investmentAiMessages: []
+      investmentAiMessages: [],
+      debts: [],
+      repaymentRecords: []
     });
 
     expect(countFinanceBackupRecords(payload)).toBe(4);

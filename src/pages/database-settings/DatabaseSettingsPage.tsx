@@ -268,14 +268,17 @@ function writeStoredBackupScope(scope: FinanceBackupScope): void {
 }
 
 function hasSelectedBackupScope(scope: FinanceBackupScope): boolean {
-  return scope.ledger || scope.subscriptions || scope.globalMemories || scope.investments;
+  return (
+    scope.ledger || scope.subscriptions || scope.globalMemories || scope.investments || scope.debts
+  );
 }
 
 const BACKUP_SCOPE_ENTRIES: Record<keyof FinanceBackupScope, (tf: TfFallback) => string> = {
   ledger: (tf) => tf('dataBackup.scope.ledger', '账本数据'),
   subscriptions: (tf) => tf('dataBackup.scope.subscriptions', '订阅数据'),
   globalMemories: (tf) => tf('dataBackup.scope.memories', 'AI 记忆'),
-  investments: (tf) => tf('dataBackup.scope.investments', '投资理财')
+  investments: (tf) => tf('dataBackup.scope.investments', '投资理财'),
+  debts: (tf) => tf('dataBackup.scope.debts', '负债与还款')
 };
 
 function getBackupScopeSummary(scope: FinanceBackupScope, tf: TfFallback): string {
@@ -383,6 +386,12 @@ export function DatabaseSettingsPage() {
   const investmentWatchlist = useAppPreferences((s) => s.investmentWatchlist);
   const investmentAiMessages = useAppPreferences((s) => s.investmentAiMessages);
   const replaceInvestmentData = useAppPreferences((s) => s.replaceInvestmentData);
+  // 负债与还款记录此前不在备份范围内,导出文件里没有它们 —— 换设备后负债与还款历史会静默消失。
+  const debts = useAppPreferences((s) => s.debts);
+  const repaymentRecords = useAppPreferences((s) => s.repaymentRecords);
+  const monthlyIncome = useAppPreferences((s) => s.monthlyIncome);
+  const setRepaymentState = useAppPreferences((s) => s.setRepaymentState);
+  const replaceRepaymentRecords = useAppPreferences((s) => s.replaceRepaymentRecords);
 
   const backupInputRef = useRef<HTMLInputElement | null>(null);
   const billInputRef = useRef<HTMLInputElement | null>(null);
@@ -544,7 +553,9 @@ export function DatabaseSettingsPage() {
     investmentPositionHistory,
     investmentGoals,
     investmentWatchlist,
-    investmentAiMessages
+    investmentAiMessages,
+    debts,
+    repaymentRecords
   });
 
   const createScopedBackupPayload = () =>
@@ -559,6 +570,8 @@ export function DatabaseSettingsPage() {
       investmentGoals: nextInvestmentGoals,
       investmentWatchlist: nextInvestmentWatchlist,
       investmentAiMessages: nextInvestmentAiMessages,
+      debts: nextDebts,
+      repaymentRecords: nextRepaymentRecords,
       ...nextFinanceData
     } = restored;
     await importRelationalData({
@@ -566,6 +579,8 @@ export function DatabaseSettingsPage() {
       globalMemories: nextGlobalMemories,
       preferences: {
         ...useAppPreferences.getState(),
+        debts: nextDebts,
+        repaymentRecords: nextRepaymentRecords,
         investmentPositions: nextInvestmentPositions,
         investmentPositionHistory: nextInvestmentPositionHistory,
         investmentGoals: nextInvestmentGoals,
@@ -575,6 +590,8 @@ export function DatabaseSettingsPage() {
     });
     replaceAllData(nextFinanceData);
     replaceAllGlobalMemories(nextGlobalMemories);
+    setRepaymentState({ debts: nextDebts, monthlyIncome });
+    replaceRepaymentRecords(nextRepaymentRecords);
     replaceInvestmentData({
       investmentPositions: nextInvestmentPositions,
       investmentPositionHistory: nextInvestmentPositionHistory,

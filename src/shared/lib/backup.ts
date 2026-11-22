@@ -27,6 +27,7 @@ import {
 } from '../../entities/transaction/types';
 import { GlobalMemoryItem, sanitizePersistedGlobalMemoryItem } from '../store/globalMemory';
 import type { FinanceDataSnapshot } from '../store/useFinanceStore';
+import type { DebtItem, RepaymentRecord } from '../../features/debt/model/debtMetrics';
 import { readStoredLedgerflowApiToken } from './ledgerflowApiToken';
 import { tApiError as t } from './apiErrorTranslator';
 
@@ -363,6 +364,10 @@ export type FinanceBackupData = Required<FinanceDataSnapshot> & {
   investmentGoals: InvestmentGoal[];
   investmentWatchlist: InvestmentWatchItem[];
   investmentAiMessages: InvestmentAiMessage[];
+  /** 旧文件(v3 及更早)没有这两个字段。解析时保持 undefined,应用时据此刻意回退到当前数据 —— */
+  /** 若伪造成空数组,一次「导入旧备份」就会把负债与还款历史清空。 */
+  debts?: DebtItem[];
+  repaymentRecords?: RepaymentRecord[];
 };
 
 export interface FinanceBackupScope {
@@ -370,6 +375,8 @@ export interface FinanceBackupScope {
   subscriptions: boolean;
   globalMemories: boolean;
   investments: boolean;
+  /** 负债与还款记录:它们存在 useAppPreferences,曾是备份的空白。 */
+  debts: boolean;
 }
 
 export interface FinanceBackupPayload {
@@ -386,6 +393,8 @@ type FinanceBackupSnapshotWithMemories = Required<FinanceDataSnapshot> & {
   investmentGoals: InvestmentGoal[];
   investmentWatchlist: InvestmentWatchItem[];
   investmentAiMessages: InvestmentAiMessage[];
+  debts: DebtItem[];
+  repaymentRecords: RepaymentRecord[];
 };
 
 export function createDefaultFinanceBackupScope(): FinanceBackupScope {
@@ -393,7 +402,8 @@ export function createDefaultFinanceBackupScope(): FinanceBackupScope {
     ledger: true,
     subscriptions: true,
     globalMemories: true,
-    investments: true
+    investments: true,
+    debts: true
   };
 }
 
@@ -408,7 +418,8 @@ export function normalizeFinanceBackupScope(
     ledger: safeScope?.ledger ?? defaults.ledger,
     subscriptions: safeScope?.subscriptions ?? defaults.subscriptions,
     globalMemories: safeScope?.globalMemories ?? defaults.globalMemories,
-    investments: safeScope?.investments ?? defaults.investments
+    investments: safeScope?.investments ?? defaults.investments,
+    debts: safeScope?.debts ?? defaults.debts
   };
 }
 
@@ -1390,6 +1401,8 @@ function validateInvestmentAiMessage(
 
 export function createFinanceBackupPayload(
   input: FinanceDataSnapshot & {
+    debts?: DebtItem[];
+    repaymentRecords?: RepaymentRecord[];
     globalMemories?: GlobalMemoryItem[];
     investmentPositions?: InvestmentPosition[];
     investmentPositionHistory?: InvestmentPositionHistoryEntry[];
@@ -1454,6 +1467,11 @@ export function createFinanceBackupPayload(
       investmentAiMessages:
         normalizedScope.investments && Array.isArray(input.investmentAiMessages)
           ? input.investmentAiMessages
+          : [],
+      debts: normalizedScope.debts && Array.isArray(input.debts) ? input.debts : [],
+      repaymentRecords:
+        normalizedScope.debts && Array.isArray(input.repaymentRecords)
+          ? input.repaymentRecords
           : []
     }
   };
@@ -1585,6 +1603,19 @@ export function parseFinanceBackupPayload(raw: string): FinanceBackupPayload {
   const investmentAiMessages = (
     Array.isArray(data.investmentAiMessages) ? data.investmentAiMessages : []
   ).map((item, index) => validateInvestmentAiMessage(item, index, fallbackDate));
+  // 负债与还款记录用轻量清洗:只保留「对象且有字符串 id」的条目,store 写入时还会再规范化一次。
+  const sanitizeRecords = <T,>(value: unknown): T[] =>
+    (Array.isArray(value) ? value : []).filter(
+      (item): item is T =>
+        Boolean(item) && typeof item === 'object' && typeof (item as { id?: unknown }).id === 'string'
+    );
+  const debts =
+    data.debts === undefined ? undefined : sanitizeRecords<DebtItem>(data.debts);
+  const repaymentRecords =
+    data.repaymentRecords === undefined
+      ? undefined
+      : sanitizeRecords<RepaymentRecord>(data.repaymentRecords);
+
   const scope = normalizeFinanceBackupScope(
     isObjectRecord(parsed.scope) ? (parsed.scope as Partial<FinanceBackupScope>) : undefined
   );
@@ -1610,7 +1641,9 @@ export function parseFinanceBackupPayload(raw: string): FinanceBackupPayload {
       investmentPositionHistory,
       investmentGoals,
       investmentWatchlist,
-      investmentAiMessages
+      investmentAiMessages,
+      debts,
+      repaymentRecords
     }
   };
 }
@@ -1650,7 +1683,14 @@ export function applyFinanceBackupPayload(
       : current.investmentWatchlist,
     investmentAiMessages: scope.investments
       ? payload.data.investmentAiMessages
-      : current.investmentAiMessages
+      : current.investmentAiMessages,
+    // 旧备份(v3 及更早)没有这两个字段:此时必须保留当前数据,
+    // 否则一次「导入旧文件」会把负债与还款历史清空。
+    debts: scope.debts && Array.isArray(payload.data.debts) ? payload.data.debts : current.debts,
+    repaymentRecords:
+      scope.debts && Array.isArray(payload.data.repaymentRecords)
+        ? payload.data.repaymentRecords
+        : current.repaymentRecords
   };
 }
 

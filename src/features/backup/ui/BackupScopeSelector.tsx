@@ -20,6 +20,11 @@ const BACKUP_SCOPE_OPTIONS: Array<{
   {
     key: 'investments',
     label: (tf) => tf('dataBackup.scope.investments', '投资理财')
+  },
+  {
+    // 负债与还款记录此前不在备份范围内(换设备后静默丢失)。
+    key: 'debts',
+    label: (tf) => tf('dataBackup.scope.debts', '负债与还款')
   }
 ];
 

@@ -111,6 +111,8 @@ interface AppPreferencesState {
     payload: Omit<RepaymentRecord, 'id' | 'createdAt'> & { id?: string; createdAt?: string }
   ) => string;
   removeRepaymentRecord: (id: string) => void;
+  /** 备份恢复用:整批替换还款记录(逐条 add/remove 无法表达「恢复」)。 */
+  replaceRepaymentRecords: (records: RepaymentRecord[]) => void;
   upsertCreditDraft: (payload: Partial<CreditDraft>) => string;
   removeCreditDraft: (id: string) => void;
   addForecastBill: (
@@ -949,6 +951,10 @@ export const useAppPreferences = create<AppPreferencesState>()(
         }));
         return id;
       },
+      replaceRepaymentRecords: (records) =>
+        set((state) => ({
+          repaymentRecords: Array.isArray(records) ? records : state.repaymentRecords
+        })),
       removeRepaymentRecord: (id) => {
         set((state) => {
           const record = state.repaymentRecords.find((item) => item.id === id);

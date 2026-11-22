@@ -1996,7 +1996,8 @@
       "memories": "AI 记忆",
       "investments": "投资理财",
       "noneSelected": "未选择",
-      "separator": "、"
+      "separator": "、",
+      "debts": "负债与还款"
     },
     "currentRows": "当前 {count} 条数据",
     "snapshot": {

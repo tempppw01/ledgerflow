@@ -12,7 +12,8 @@ describe('BackupScopeSelector', () => {
           ledger: true,
           subscriptions: true,
           globalMemories: true,
-          investments: true
+          investments: true,
+          debts: true
         }}
         onChange={onChange}
       />
@@ -24,7 +25,8 @@ describe('BackupScopeSelector', () => {
       ledger: true,
       subscriptions: true,
       globalMemories: false,
-      investments: true
+      investments: true,
+      debts: true
     });
   });
 });

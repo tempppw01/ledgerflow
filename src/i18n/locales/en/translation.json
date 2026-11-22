@@ -1996,7 +1996,8 @@
       "memories": "AI memory",
       "investments": "Investments",
       "noneSelected": "None selected",
-      "separator": ", "
+      "separator": ", ",
+      "debts": "Debts & repayments"
     },
     "currentRows": "{count} rows tracked",
     "snapshot": {
