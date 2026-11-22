@@ -53,6 +53,54 @@ node ./node_modules/vitest/vitest.mjs run --config vitest.config.ts src/shared/s
 | `shared/lib/billImport.mergeInvariant.test.ts` | 重复导入不丢字段:来源里没有的字段(`status`/单号)不能把已有值覆盖成 `undefined` |
 | `shared/lib/transactionMetrics.test.ts` | 汇总口径:待支付/已关闭/失败/已删除不计入;过滤结果与账户余额判据逐行相等 |
 
+## 数据出入口的闭环验证
+
+读代码、比字段清单都**抓不到**下面这类问题:界面上一切正常,数据其实不全。
+这一节记的是「怎么真的跑一遍」,而不是某个测试文件。
+
+### 为什么会需要
+
+两个已修的真 bug,都是靠闭环验证(或它带出的自检)才发现的:
+
+- **JSON 备份里没有负债与还款记录** —— 导出/导入两边字段清单都"对称",但两边都缺
+- **App 自己导出的备份导不回来** —— 演示数据里账户 `type` 是 `ewallet`,而域类型里没有这个值,
+  导入校验直接抛「枚举值不合法」。只有真的"导出再导回"才会撞上
+
+### 三条可达路径与各自的验证方法
+
+| 路径 | 怎么验(全部可本地完成) |
+| --- | --- |
+| 本地 JSON 备份 | 数据库页「导出备份文件」→ 再「导入备份文件」选同一个文件 → 应提示`备份导入成功`且**无自检告警** |
+| 服务器恢复点 | 「数据库」页「创建恢复点」→「恢复最近副本」→ 确认 → 提示里应列出全部范围(含`负债与还款`、`偏好与计划`) |
+| SQL 导出 | 「下载 SQL 数据库」拿到 `.sqlite` → 用 `node:sqlite` 打开数行 |
+
+数据库页底部还有一个**恢复后自检**(`verifyFinanceBackupRestore`):恢复完成后比对
+「备份里写了多少条」与「真正落到状态里的有多少条」,少了就告警「哪一组、差几条」。
+
+### SQL 导出的核对方法
+
+```bash
+# 下载的文件在浏览器下载目录里,用 Node 自带的 sqlite 打开即可(需要 Node >= 22)
+node -e "
+const { DatabaseSync } = require('node:sqlite');
+const db = new DatabaseSync(process.argv[1], { readOnly: true });
+for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all()) {
+  if (!/debt|transaction|account|categor|setting/.test(t.name)) continue;
+  console.log(t.name, db.prepare('SELECT COUNT(*) AS c FROM ' + t.name).get().c);
+}
+" path/to/ledgerflow-*.sqlite
+```
+
+预期(演示数据):`ledger_transactions` 299 · `ledger_accounts` 6 · `ledger_categories` 23 ·
+`ledger_debts` 3 · `ledger_debt_repayments` 4 · `ledger_subscriptions` 3 · `ledger_user_settings` 11。
+
+### 两个容易误判的地方
+
+- **SQL 导出里的行数比 API 多**:作用域编码在 **id 前缀**里(如 `7e522500-rep-1`),
+  `ledger_debt_repayments` 这类表**没有 owner 列**。导出的 dump 含多个作用域的演示数据,
+  而 `/api/data/bootstrap` 只返回当前用户那一个作用域 —— 计数对不上是正常的。
+- **恢复点的状态是内联文本**(`.sync-tip`),不是 toast。想在浏览器里断言,要去读那段文本。
+
 ## 可访问性与 i18n 的闸门(命令式,不在上面那套里)
 
 | 命令 | 作用 |
