@@ -1631,7 +1631,9 @@ export function TransactionsPage() {
       return;
     }
 
-    const selectedRows = viewRows.filter((row) => selectedIds.includes(row.item.id));
+    // 勾选是**跨页**的(工具栏显示的是总数,批量删除也按总数走),
+    // 所以导出/打印必须从整份筛选结果里取,不能只用当前页 —— 否则「已选 6 条」只导出当前页那几条。
+    const selectedRows = sortedRows.filter((row) => selectedIds.includes(row.item.id));
     if (selectedRows.length === 0) {
       showToast(tf('txPage.pdf.selectFirst', '请先勾选要导出 PDF 的交易。'), 'warning');
       return;
@@ -1660,7 +1662,9 @@ export function TransactionsPage() {
   };
 
   const handleBulkPrintA4 = (options?: { preferPdf?: boolean }) => {
-    const selectedRows = viewRows.filter((row) => selectedIds.includes(row.item.id));
+    // 勾选是**跨页**的(工具栏显示的是总数,批量删除也按总数走),
+    // 所以导出/打印必须从整份筛选结果里取,不能只用当前页 —— 否则「已选 6 条」只导出当前页那几条。
+    const selectedRows = sortedRows.filter((row) => selectedIds.includes(row.item.id));
     if (selectedRows.length === 0) {
       showToast(tf('txPage.print.selectFirst', '请先勾选要打印的交易。'), 'warning');
       return;
