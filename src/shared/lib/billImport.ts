@@ -313,12 +313,24 @@ function parseType(
   const refundAmount = parseAmount(refundAmountRaw);
   const all = `${cashflowText} ${typeText} ${statusText} ${noteText} ${amountRaw}`;
 
-  if (refundAmount > 0) {
+  // 收支列能读出来(支出/收入)时以它为准;只有列里是乱码或缺失时,才用退款列兜底。
+  // 否则「支出 24.59 + 成功退款 24.59」这种行会被判成收入(见 buildTransactionFromLine 的净额处理)。
+  const cashflowReadable = /支出|付款|消费|转出|支付|扣款|收入|收款|入账|转入/.test(cashflowText);
+  if (refundAmount > 0 && !cashflowReadable) {
     return 'income';
   }
 
   if (/花呗还款|信用卡还款|借呗还款|还款|自动还款/i.test(all)) {
     return 'repayment';
+  }
+
+  // 收支列读得出来时,以它为准 —— 别再让「交易状态=退款成功」「商品名含退款」这类线索
+  // 把一笔支出翻成收入(那样会凭空多出收入)。
+  if (cashflowReadable) {
+    if (/支出|付款|消费|转出|支付|扣款/.test(cashflowText)) {
+      return 'expense';
+    }
+    return 'income';
   }
 
   if (/退款|退回|退还|冲正|退票/i.test(all)) {
@@ -527,9 +539,26 @@ function buildTransactionFromLine(
   }
 
   const amountRaw = pickByKeys(row, AMOUNT_KEYS);
-  const amount = parseAmount(amountRaw);
+  let amount = parseAmount(amountRaw);
   if (amount <= 0) {
     return null;
+  }
+
+  const type = parseType(row, amountRaw, input.source);
+  // 支付宝把「退款」记在同一行:金额 24.59、成功退款 24.59。这一行的经济含义是净额,
+  // 不是一笔新收入。旧逻辑直接判成 income,等于凭空多出一笔收入。
+  if (type === 'expense') {
+    const refundAmount = parseAmount(
+      pickByKeys(row, ['成功退款(元)', '成功退款（元）', '退款金额'])
+    );
+    if (refundAmount > 0) {
+      // 全额退款:净额为 0,不产生记录
+      if (refundAmount >= amount) {
+        return null;
+      }
+      // 部分退款:按净额记账
+      amount = roundMoney(amount - refundAmount);
+    }
   }
 
   const dateRaw = pickByKeys(row, DATE_KEYS);
@@ -551,7 +580,7 @@ function buildTransactionFromLine(
   const status = parseStatus(row);
 
   return {
-    type: parseType(row, amountRaw, input.source),
+    type,
     amount,
     date: parsedDate,
     note: buildNote(row),
