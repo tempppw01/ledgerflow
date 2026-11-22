@@ -163,10 +163,21 @@ function mergeRowCell(row: Record<string, string>, key: string, value: string): 
 }
 
 function parseAmount(raw: string): number {
-  const cleaned = raw.replace(/[¥￥,\s]/g, '');
+  // 先把「全角数字 / 全角标点」折半,再剥掉货币符号与币种代码。
+  // 这些写法在真实导出里都见过:全角数字(FF10-FF19)、带币种代码(CNY 58.00)、
+  // 带符号与千分位(¥1,234.56)。以前只处理了后者,前两种会让 parseFloat 得到 NaN,
+  // 于是整行被静默丢掉。
+  const cleaned = raw
+    .replace(/[\uFF10-\uFF19]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0))
+    .replace(/\uFF0E/g, '.')
+    .replace(/\uFF0C/g, ',')
+    // 只剥离人民币相关的写法。**外币符号与代码不剥**($ / USD / EUR …):
+    // 这个账本只有人民币,把「$1,234.56」当成 ¥1,234.56 记进去比跳过更糟。
+    .replace(/CNY|RMB/gi, '')
+    .replace(/[\u00A5\uFFE5,\s]/g, '');
   const value = Number.parseFloat(cleaned);
   if (!Number.isFinite(value)) return 0;
-  // 统一两位小数，避免浮点误差导致金额展示异常。
+  // 统一两位小数,避免浮点误差导致金额展示异常。
   return roundMoney(Math.abs(value));
 }
 

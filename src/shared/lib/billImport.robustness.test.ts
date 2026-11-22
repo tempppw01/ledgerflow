@@ -36,6 +36,24 @@ describe('账单导入健壮性', () => {
     expect(rows[0].amount).toBe(1234.56);
   });
 
+  it('带币种代码的金额能解析(以前会被静默丢掉)', () => {
+    for (const amountCell of ['CNY 58.00', 'RMB58.00', '58.00元']) {
+      const rows = parse(
+        [header, `2026-11-20 12:00:00,餐饮,某餐厅,午餐,支出,${amountCell},交易成功,T1a,M1a`].join('\n')
+      );
+      expect(rows, `解析失败:${amountCell}`).toHaveLength(1);
+      expect(rows[0].amount).toBe(58);
+    }
+  });
+
+  it('全角数字的金额能解析(以前会被静默丢掉)', () => {
+    const rows = parse(
+      [header, '2026-11-20 12:00:00,餐饮,某餐厅,午餐,支出,５８.００,交易成功,T1b,M1b'].join('\n')
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].amount).toBe(58);
+  });
+
   it('金额无法解析时整行跳过,而不是记成 0 元', () => {
     const rows = parse(
       [header, '2026-11-20 12:00:00,餐饮,某餐厅,午餐,支出,"$1,234.56",交易成功,T2,M2'].join('\n')
