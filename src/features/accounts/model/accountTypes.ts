@@ -14,6 +14,7 @@ export type AccountType =
   | 'savings'
   | 'credit'
   | 'virtual'
+  | 'ewallet'
   | 'liability'
   | 'receivable';
 
@@ -24,6 +25,7 @@ export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   savings: '储蓄卡',
   credit: '信用卡',
   virtual: '虚拟账户',
+  ewallet: '电子钱包',
   liability: '负债',
   receivable: '应收'
 };
@@ -34,7 +36,8 @@ export const ACCOUNT_TYPE_ICONS: Record<AccountType, string> = {
   debit: '💳',
   savings: '🏦',
   credit: '💳',
-  virtual: '📱',
+  virtual: '🧾',
+  ewallet: '👛',
   liability: '📄',
   receivable: '📥'
 };

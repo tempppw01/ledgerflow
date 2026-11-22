@@ -461,6 +461,8 @@ const ACCOUNT_TYPES = new Set<NonNullable<Account['type']>>([
   'savings',
   'credit',
   'virtual',
+  // 数据里真实存在:支付宝 / 微信钱包这类电子钱包账户
+  'ewallet',
   'liability',
   'receivable'
 ]);
@@ -767,17 +769,18 @@ function validateAccountItem(item: unknown, index: number): Account {
   }
   assertDateString(item.trashedAt, `data.accounts[${index}].trashedAt`, { required: false });
 
-  if (
-    item.type !== undefined &&
-    (typeof item.type !== 'string' || !ACCOUNT_TYPES.has(item.type as NonNullable<Account['type']>))
-  ) {
-    throw new Error(t('dataBackup.import.error.field.accountsType', "备份文件字段无效：data.accounts[{index}].type 枚举值不合法").replace("{index}", String(index)));
-  }
+  // 未知类型**不再硬失败**:一个不认识的账户类型不该让整份备份无法恢复
+  // (曾经就是这样:App 自己导出的备份,因演示数据里的 ewallet 而导不回来)。
+  // type 本身可选,认不出来就落成 undefined,账户其余字段照常导入。
+  const normalizedAccountType =
+    typeof item.type === 'string' && ACCOUNT_TYPES.has(item.type as NonNullable<Account['type']>)
+      ? (item.type as Account['type'])
+      : undefined;
 
   return {
     id: asSafeString(item.id),
     name: asSafeString(item.name),
-    type: item.type as Account['type'] | undefined,
+    type: normalizedAccountType,
     initialBalance:
       typeof item.initialBalance === 'number' ? Number(item.initialBalance) : undefined,
     balance: typeof item.balance === 'number' ? Number(item.balance) : undefined,
@@ -1714,6 +1717,85 @@ export function applyFinanceBackupPayload(
         ? payload.data.preferences
         : current.preferences
   };
+}
+
+/**
+ * 恢复后自检:把「备份里写了多少条」与「真正落到状态里的有多少条」对一遍。
+ *
+ * 之所以需要它:这一版修的两个 bug 都是「导入显示成功、数据其实不全」——
+ * JSON 备份里没有负债、没有偏好与计划。界面上没有任何异常,只有比对条数才能发现。
+ * 现在每次恢复完都会跑一次:少了哪一组、少了几条,直接告诉用户。
+ */
+export interface BackupRestoreMismatch {
+  group: string;
+  expected: number;
+  actual: number;
+}
+
+export function verifyFinanceBackupRestore(
+  payload: FinanceBackupPayload,
+  restored: {
+    finance: Pick<FinanceDataSnapshot, 'transactions' | 'categories' | 'accounts' | 'subscriptions'>;
+    globalMemories: GlobalMemoryItem[];
+    debts: DebtItem[];
+    repaymentRecords: RepaymentRecord[];
+  }
+): BackupRestoreMismatch[] {
+  const scope = normalizeFinanceBackupScope(payload.scope);
+  const checks: Array<{ group: string; enabled: boolean; expected: unknown[]; actual: unknown[] }> = [
+    {
+      group: 'transactions',
+      enabled: scope.ledger,
+      expected: payload.data.transactions,
+      actual: restored.finance.transactions
+    },
+    {
+      group: 'categories',
+      enabled: scope.ledger,
+      expected: payload.data.categories,
+      actual: restored.finance.categories
+    },
+    {
+      group: 'accounts',
+      enabled: scope.ledger,
+      expected: payload.data.accounts,
+      actual: restored.finance.accounts
+    },
+    {
+      group: 'subscriptions',
+      enabled: scope.subscriptions,
+      expected: payload.data.subscriptions,
+      actual: restored.finance.subscriptions ?? []
+    },
+    {
+      group: 'globalMemories',
+      enabled: scope.globalMemories,
+      expected: payload.data.globalMemories,
+      actual: restored.globalMemories
+    },
+    {
+      group: 'debts',
+      enabled: scope.debts,
+      expected: payload.data.debts ?? [],
+      actual: restored.debts
+    },
+    {
+      group: 'repaymentRecords',
+      enabled: scope.debts,
+      expected: payload.data.repaymentRecords ?? [],
+      actual: restored.repaymentRecords
+    }
+  ];
+
+  return checks
+    .filter((check) => check.enabled && Array.isArray(check.expected))
+    // 投资持仓由另一个 store 承接,这里不参与比对(它的落库不受本次恢复路径控制)。
+    .map((check) => ({
+      group: check.group,
+      expected: check.expected.length,
+      actual: Array.isArray(check.actual) ? check.actual.length : 0
+    }))
+    .filter((item) => item.actual < item.expected);
 }
 
 export function downloadBackupJson(payload: FinanceBackupPayload): void {

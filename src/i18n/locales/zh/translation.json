@@ -2203,7 +2203,11 @@
       "importFailed": "备份导入失败",
       "scopeRequired": "请至少勾选一个备份范围"
     },
-    "currentScopePrefix": " 当前备份范围："
+    "currentScopePrefix": " 当前备份范围：",
+    "verify": {
+      "mismatch": "恢复完成,但有条目没有落库(可能被判为无效):{detail}",
+      "mismatchItem": "{group}:期望 {expected} 条,实际 {actual} 条"
+    }
   },
   "investments": {
     "eyebrow": "投资管理",

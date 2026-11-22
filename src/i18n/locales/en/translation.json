@@ -2203,7 +2203,11 @@
       "importFailed": "Backup import failed",
       "scopeRequired": "Select at least one backup scope first"
     },
-    "currentScopePrefix": " Current backup scope:"
+    "currentScopePrefix": " Current backup scope:",
+    "verify": {
+      "mismatch": "Restore finished, but some rows did not land (possibly rejected): {detail}",
+      "mismatchItem": "{group}: expected {expected}, got {actual}"
+    }
   },
   "investments": {
     "eyebrow": "INVESTMENT CONTROL",

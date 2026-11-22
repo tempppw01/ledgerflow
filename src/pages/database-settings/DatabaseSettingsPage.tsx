@@ -31,6 +31,7 @@ import {
   type ObjectStorageBackupVersionItem,
   objectStorageUploadBackup,
   parseFinanceBackupPayload,
+  verifyFinanceBackupRestore,
   saveObjectStorageConfig,
   saveWebdavConfig,
   sanitizeObjectStorageConfig,
@@ -663,6 +664,42 @@ export function DatabaseSettingsPage() {
       investmentWatchlist: nextInvestmentWatchlist,
       investmentAiMessages: nextInvestmentAiMessages
     });
+    // 恢复后自检:把「备份里写了多少条」与「真正落到状态里的有多少条」对一遍。
+    // 这一版修的两个 bug 都是「导入显示成功、数据其实不全」(JSON 里没有负债、没有偏好),
+    // 界面上毫无异常 —— 只有比对条数才能发现。
+    const financeState = useFinanceStore.getState();
+    const preferenceState = useAppPreferences.getState();
+    const mismatches = verifyFinanceBackupRestore(payload, {
+      finance: {
+        transactions: financeState.transactions,
+        categories: financeState.categories,
+        accounts: financeState.accounts,
+        subscriptions: financeState.subscriptions
+      },
+      globalMemories: useGlobalMemoryStore.getState().memories ?? [],
+      debts: preferenceState.debts,
+      repaymentRecords: preferenceState.repaymentRecords
+    });
+
+    if (mismatches.length > 0) {
+      const detail = mismatches
+        .map((item) =>
+          tf('dataBackup.verify.mismatchItem', '{group}:期望 {expected} 条,实际 {actual} 条')
+            .replace('{group}', item.group)
+            .replace('{expected}', String(item.expected))
+            .replace('{actual}', String(item.actual))
+        )
+        .join(';');
+      showToast(
+        tf(
+          'dataBackup.verify.mismatch',
+          '恢复完成,但有条目没有落库(可能被判为无效):{detail}'
+        ).replace('{detail}', detail),
+        'warning'
+      );
+      return;
+    }
+
     showToast(buildBackupRestoreSuccessMessage(action, payload, tf), 'success');
   };
 

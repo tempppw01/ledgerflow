@@ -238,4 +238,34 @@ describe('偏好与计划的备份往返', () => {
     expect(restored.preferences?.monthlyIncome).toBe(10000);
   });
 });
+describe('账户类型的兼容性', () => {
+  it('ewallet(电子钱包)能原样导出并导回', () => {
+    const payload = createFinanceBackupPayload(
+      {
+        ...emptySnapshot,
+        accounts: [{ id: 'acc-alipay', name: '支付宝', type: 'ewallet', initialBalance: 100, sortOrder: 1 } as never]
+      },
+      fullScope
+    );
+
+    // 曾经这里会抛「data.accounts[0].type 枚举值不合法」——
+    // 也就是 App 自己导出的备份导不回来。
+    const parsed = parseFinanceBackupPayload(JSON.stringify(payload));
+    expect(parsed.data.accounts[0].type).toBe('ewallet');
+  });
+
+  it('完全不认识的类型不再让整份备份无法恢复', () => {
+    const payload = createFinanceBackupPayload(emptySnapshot, fullScope);
+    (payload.data.accounts as unknown[]) = [
+      { id: 'acc-x', name: '未知账户', type: 'quantum-wallet', initialBalance: 0, sortOrder: 1 }
+    ];
+
+    const parsed = parseFinanceBackupPayload(JSON.stringify(payload));
+
+    // 账户照常导入,只是类型落成 undefined(type 本身是可选的)
+    expect(parsed.data.accounts).toHaveLength(1);
+    expect(parsed.data.accounts[0].name).toBe('未知账户');
+    expect(parsed.data.accounts[0].type).toBeUndefined();
+  });
+});
 });
