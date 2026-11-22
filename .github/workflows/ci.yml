@@ -9,7 +9,49 @@ env:
   IMAGE_NAME: 34v0wphix/ledgerflow
 
 jobs:
+  # 先验证代码,再打镜像。
+  #
+  # 之前这个工作流**只构建镜像**:Dockerfile 里的 `npm run build` 会跑 tsc,
+  # 但**测试、lint、以及 scripts/ 下的几道闸门从来没在 CI 里跑过** ——
+  # 那些闸门当时只是「本地约定」。把验证独立成一个 job 并让镜像依赖它之后,
+  # 闸门失败会直接拦住镜像发布。
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Frontend tests
+        run: npm test
+
+      - name: Server tests
+        run: node --test server/*.test.js
+
+      - name: i18n gates
+        run: |
+          npm run i18n:check
+          npm run i18n:check-jsx
+
+      - name: Date usage gate
+        run: npm run check:dates
+
   docker-latest:
+    needs: verify
     runs-on: ubuntu-latest
     permissions:
       contents: read
