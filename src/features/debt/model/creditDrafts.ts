@@ -68,8 +68,15 @@ export function isCreditDraftReady(draft: CreditDraft): boolean {
 
 function positiveNumber(value: unknown): number | undefined {
   if (value === undefined || value === null || value === '') return undefined;
-  const parsed = typeof value === 'number' ? value : Number(String(value).replace(/[^0-9.-]/g, ''));
-  return Number.isFinite(parsed) && parsed > 0 ? Number(parsed.toFixed(2)) : undefined;
+  if (typeof value === 'number') return Number.isFinite(value) && value > 0 ? Number(value.toFixed(2)) : undefined;
+
+  const raw = String(value);
+  const parsed = Number(raw.replace(/[^0-9.-]/g, ''));
+  if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
+  // 字符串里带中文单位时按单位放大:「1.5万」是 15000,不是 1.5
+  const unit = Object.keys(CN_UNIT_MULTIPLIERS).find((key) => raw.includes(key));
+  const scaled = unit ? parsed * CN_UNIT_MULTIPLIERS[unit] : parsed;
+  return Number(scaled.toFixed(2));
 }
 
 function integerPositive(value: unknown): number | undefined {
@@ -197,11 +204,44 @@ export function mergeCreditDraft(
   return next;
 }
 
+/**
+ * 中文数量单位。**必须支持**,否则「欠款 1.5 万」会被读成 ¥1.5 —— 差 10000 倍,
+ * 而且用户确认时看到的是「待还 ¥1.50」,很难联想到是单位没解析。
+ */
+const CN_UNIT_MULTIPLIERS: Record<string, number> = {
+  万: 10000,
+  萬: 10000,
+  千: 1000,
+  百: 100
+};
+
+/** 取数字后面紧跟的单位(允许空格),返回乘数与消耗的字符数。 */
+function readTrailingUnit(text: string, fromIndex: number): { multiplier: number; length: number } {
+  const rest = text.slice(fromIndex);
+  const match = rest.match(/^\s*([万萬千百])/);
+  const unit = match?.[1];
+  if (!unit) return { multiplier: 1, length: 0 };
+  return { multiplier: CN_UNIT_MULTIPLIERS[unit] ?? 1, length: (match?.[0] ?? '').length };
+}
+
 function extractAmount(text: string, pattern: RegExp): number | undefined {
   const match = pattern.exec(text);
   if (!match) return undefined;
-  const value = Number(match[1].replace(/,/g, ''));
-  return Number.isFinite(value) && value > 0 ? value : undefined;
+  const base = Number(match[1].replace(/,/g, ''));
+  if (!Number.isFinite(base) || base <= 0) return undefined;
+
+  // 「1.5 万」「2千」这类口语写法要按单位放大
+  const endIndex = (match.index ?? 0) + match[0].length;
+  const unit = readTrailingUnit(text, endIndex);
+  if (unit.multiplier === 1) {
+    return base;
+  }
+
+  const scaled = base * unit.multiplier;
+  // 「1万5」= 15000:单位后面还跟一个数字时,它是「千位」补充
+  const tail = text.slice(endIndex + unit.length).match(/^(\d)(?![\d.])/);
+  const withTail = unit.multiplier === 10000 && tail ? scaled + Number(tail[1]) * 1000 : scaled;
+  return Number.isFinite(withTail) && withTail > 0 ? Number(withTail.toFixed(2)) : undefined;
 }
 
 /**

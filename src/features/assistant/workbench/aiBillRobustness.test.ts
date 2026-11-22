@@ -57,7 +57,7 @@ describe('normalizeAiBill 健壮性', () => {
       bill([{ type: 'expense', amount: 58, note: '午餐' }])
     );
     const row = result!.transactions[0];
-    expect(row.date.slice(0, 10)).toBe('2026-11-22');
+    expect(String(row.date).slice(0, 10)).toBe('2026-11-22');
     expect(row.needsReview, '猜出来的日期没有被标记,用户不会去核对').toContain('date');
   });
 
