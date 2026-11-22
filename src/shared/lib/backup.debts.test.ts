@@ -76,7 +76,19 @@ const fullScope: FinanceBackupScope = {
   subscriptions: true,
   globalMemories: true,
   investments: true,
-  debts: true
+  debts: true,
+  preferences: true
+};
+
+const samplePreferences = {
+  monthlyIncome: 10000,
+  smartBudgetPlan: { monthKey: '2026-11', flexibleBudget: 4900 },
+  smartBudgetHistory: [],
+  creditDrafts: [],
+  forecastBills: [],
+  rssSubscriptions: [],
+  categoryLearningRules: [{ id: 'rule-1', keyword: '咖啡', categoryId: 'cat-food' }],
+  categoryLearningEvents: []
 };
 
 function buildPayload(scope: Partial<FinanceBackupScope> = {}) {
@@ -85,7 +97,8 @@ function buildPayload(scope: Partial<FinanceBackupScope> = {}) {
       ...emptySnapshot,
       transactions: [transaction],
       debts: [debt],
-      repaymentRecords: [repayment]
+      repaymentRecords: [repayment],
+      preferences: samplePreferences
     },
     { ...fullScope, ...scope }
   );
@@ -171,4 +184,58 @@ describe('负债与还款记录的备份往返', () => {
     expect(parsed.data.debts).toHaveLength(1);
     expect(parsed.data.repaymentRecords).toEqual([]);
   });
+describe('偏好与计划的备份往返', () => {
+  it('默认包含偏好与计划', () => {
+    const payload = buildPayload();
+
+    expect(payload.data.preferences).toBeTruthy();
+    expect(payload.data.preferences?.monthlyIncome).toBe(10000);
+    expect((payload.data.preferences?.smartBudgetPlan as { monthKey?: string })?.monthKey).toBe('2026-11');
+    expect(Array.isArray(payload.data.preferences?.categoryLearningRules)).toBe(true);
+  });
+
+  it('关掉 preferences 范围时不写入', () => {
+    const payload = buildPayload({ preferences: false });
+
+    expect(payload.data.preferences).toBeUndefined();
+    expect(payload.data.debts).toHaveLength(1);
+  });
+
+  it('导出→解析→应用 之后偏好与计划仍在', () => {
+    const payload = buildPayload();
+    const parsed = parseFinanceBackupPayload(JSON.stringify(payload));
+    const restored = applyFinanceBackupPayload(emptySnapshot, parsed);
+
+    expect(restored.preferences?.monthlyIncome).toBe(10000);
+    expect(restored.preferences?.categoryLearningRules).toHaveLength(1);
+  });
+
+  it('旧备份(没有这个字段)不会清空现有偏好', () => {
+    const legacy = JSON.parse(JSON.stringify(buildPayload()));
+    delete legacy.data.preferences;
+    delete legacy.scope.preferences;
+
+    const current = {
+      ...emptySnapshot,
+      debts: [debt],
+      repaymentRecords: [repayment],
+      preferences: samplePreferences
+    };
+    const parsed = parseFinanceBackupPayload(JSON.stringify(legacy));
+    const restored = applyFinanceBackupPayload(current, parsed);
+
+    expect(restored.preferences?.monthlyIncome).toBe(10000);
+  });
+
+  it('偏好不是对象时视为无效,保留当前值', () => {
+    const dirty = JSON.parse(JSON.stringify(buildPayload()));
+    dirty.data.preferences = 'not-an-object';
+
+    const current = { ...emptySnapshot, preferences: samplePreferences };
+    const parsed = parseFinanceBackupPayload(JSON.stringify(dirty));
+    const restored = applyFinanceBackupPayload(current, parsed);
+
+    expect(restored.preferences?.monthlyIncome).toBe(10000);
+  });
+});
 });

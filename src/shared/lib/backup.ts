@@ -368,6 +368,8 @@ export type FinanceBackupData = Required<FinanceDataSnapshot> & {
   /** 若伪造成空数组,一次「导入旧备份」就会把负债与还款历史清空。 */
   debts?: DebtItem[];
   repaymentRecords?: RepaymentRecord[];
+  /** 偏好与计划。旧文件没有这个字段时保持 undefined,应用侧回退到当前数据。 */
+  preferences?: Record<string, unknown>;
 };
 
 export interface FinanceBackupScope {
@@ -377,6 +379,8 @@ export interface FinanceBackupScope {
   investments: boolean;
   /** 负债与还款记录:它们存在 useAppPreferences,曾是备份的空白。 */
   debts: boolean;
+  /** 偏好与计划:月收入、预算方案、信贷草稿、预测账单、分类学习规则、RSS。 */
+  preferences: boolean;
 }
 
 export interface FinanceBackupPayload {
@@ -395,6 +399,7 @@ type FinanceBackupSnapshotWithMemories = Required<FinanceDataSnapshot> & {
   investmentAiMessages: InvestmentAiMessage[];
   debts: DebtItem[];
   repaymentRecords: RepaymentRecord[];
+  preferences?: Record<string, unknown>;
 };
 
 export function createDefaultFinanceBackupScope(): FinanceBackupScope {
@@ -403,7 +408,8 @@ export function createDefaultFinanceBackupScope(): FinanceBackupScope {
     subscriptions: true,
     globalMemories: true,
     investments: true,
-    debts: true
+    debts: true,
+    preferences: true
   };
 }
 
@@ -419,7 +425,8 @@ export function normalizeFinanceBackupScope(
     subscriptions: safeScope?.subscriptions ?? defaults.subscriptions,
     globalMemories: safeScope?.globalMemories ?? defaults.globalMemories,
     investments: safeScope?.investments ?? defaults.investments,
-    debts: safeScope?.debts ?? defaults.debts
+    debts: safeScope?.debts ?? defaults.debts,
+    preferences: safeScope?.preferences ?? defaults.preferences
   };
 }
 
@@ -1403,6 +1410,7 @@ export function createFinanceBackupPayload(
   input: FinanceDataSnapshot & {
     debts?: DebtItem[];
     repaymentRecords?: RepaymentRecord[];
+    preferences?: Record<string, unknown>;
     globalMemories?: GlobalMemoryItem[];
     investmentPositions?: InvestmentPosition[];
     investmentPositionHistory?: InvestmentPositionHistoryEntry[];
@@ -1472,7 +1480,13 @@ export function createFinanceBackupPayload(
       repaymentRecords:
         normalizedScope.debts && Array.isArray(input.repaymentRecords)
           ? input.repaymentRecords
-          : []
+          : [],
+      preferences:
+        normalizedScope.preferences &&
+        input.preferences &&
+        typeof input.preferences === 'object'
+          ? input.preferences
+          : undefined
     }
   };
 }
@@ -1616,6 +1630,9 @@ export function parseFinanceBackupPayload(raw: string): FinanceBackupPayload {
       ? undefined
       : sanitizeRecords<RepaymentRecord>(data.repaymentRecords);
 
+  // 偏好与计划:缺失保持 undefined(应用时回退当前数据);存在但不是对象视为无效。
+  const preferences = isObjectRecord(data.preferences) ? data.preferences : undefined;
+
   const scope = normalizeFinanceBackupScope(
     isObjectRecord(parsed.scope) ? (parsed.scope as Partial<FinanceBackupScope>) : undefined
   );
@@ -1643,7 +1660,8 @@ export function parseFinanceBackupPayload(raw: string): FinanceBackupPayload {
       investmentWatchlist,
       investmentAiMessages,
       debts,
-      repaymentRecords
+      repaymentRecords,
+      preferences
     }
   };
 }
@@ -1690,7 +1708,11 @@ export function applyFinanceBackupPayload(
     repaymentRecords:
       scope.debts && Array.isArray(payload.data.repaymentRecords)
         ? payload.data.repaymentRecords
-        : current.repaymentRecords
+        : current.repaymentRecords,
+    preferences:
+      scope.preferences && payload.data.preferences && typeof payload.data.preferences === 'object'
+        ? payload.data.preferences
+        : current.preferences
   };
 }
 

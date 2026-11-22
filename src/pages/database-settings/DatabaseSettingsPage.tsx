@@ -43,6 +43,7 @@ import { BACKUP_ICON_URL, RESTORE_ICON_URL } from '../../shared/config/brandAsse
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { useGlobalMemoryStore } from '../../shared/store/useGlobalMemoryStore';
+import { useSmartBudgetStore } from '../../shared/store/useSmartBudgetStore';
 import {
   downloadSqlDatabaseExport,
   importRelationalData
@@ -269,7 +270,12 @@ function writeStoredBackupScope(scope: FinanceBackupScope): void {
 
 function hasSelectedBackupScope(scope: FinanceBackupScope): boolean {
   return (
-    scope.ledger || scope.subscriptions || scope.globalMemories || scope.investments || scope.debts
+    scope.ledger ||
+    scope.subscriptions ||
+    scope.globalMemories ||
+    scope.investments ||
+    scope.debts ||
+    scope.preferences
   );
 }
 
@@ -278,7 +284,8 @@ const BACKUP_SCOPE_ENTRIES: Record<keyof FinanceBackupScope, (tf: TfFallback) =>
   subscriptions: (tf) => tf('dataBackup.scope.subscriptions', '订阅数据'),
   globalMemories: (tf) => tf('dataBackup.scope.memories', 'AI 记忆'),
   investments: (tf) => tf('dataBackup.scope.investments', '投资理财'),
-  debts: (tf) => tf('dataBackup.scope.debts', '负债与还款')
+  debts: (tf) => tf('dataBackup.scope.debts', '负债与还款'),
+  preferences: (tf) => tf('dataBackup.scope.preferences', '偏好与计划')
 };
 
 function getBackupScopeSummary(scope: FinanceBackupScope, tf: TfFallback): string {
@@ -392,6 +399,14 @@ export function DatabaseSettingsPage() {
   const monthlyIncome = useAppPreferences((s) => s.monthlyIncome);
   const setRepaymentState = useAppPreferences((s) => s.setRepaymentState);
   const replaceRepaymentRecords = useAppPreferences((s) => s.replaceRepaymentRecords);
+  // 偏好与计划:云端快照一直带着这些,JSON 文件此前没有。
+  const creditDrafts = useAppPreferences((s) => s.creditDrafts);
+  const forecastBills = useAppPreferences((s) => s.forecastBills);
+  const rssSubscriptions = useAppPreferences((s) => s.rssSubscriptions);
+  const confirmedSmartBudgetPlan = useSmartBudgetStore((s) => s.confirmedPlan);
+  const smartBudgetHistory = useSmartBudgetStore((s) => s.history);
+  const categoryLearningRules = useFinanceStore((s) => s.categoryLearningRules);
+  const categoryLearningEvents = useFinanceStore((s) => s.categoryLearningEvents);
 
   const backupInputRef = useRef<HTMLInputElement | null>(null);
   const billInputRef = useRef<HTMLInputElement | null>(null);
@@ -555,7 +570,17 @@ export function DatabaseSettingsPage() {
     investmentWatchlist,
     investmentAiMessages,
     debts,
-    repaymentRecords
+    repaymentRecords,
+    preferences: {
+      monthlyIncome,
+      creditDrafts,
+      forecastBills,
+      rssSubscriptions,
+      smartBudgetPlan: confirmedSmartBudgetPlan,
+      smartBudgetHistory,
+      categoryLearningRules,
+      categoryLearningEvents
+    }
   });
 
   const createScopedBackupPayload = () =>
@@ -572,6 +597,7 @@ export function DatabaseSettingsPage() {
       investmentAiMessages: nextInvestmentAiMessages,
       debts: nextDebts,
       repaymentRecords: nextRepaymentRecords,
+      preferences: restoredPreferences,
       ...nextFinanceData
     } = restored;
     await importRelationalData({
@@ -581,6 +607,7 @@ export function DatabaseSettingsPage() {
         ...useAppPreferences.getState(),
         debts: nextDebts,
         repaymentRecords: nextRepaymentRecords,
+        ...(restoredPreferences ?? {}),
         investmentPositions: nextInvestmentPositions,
         investmentPositionHistory: nextInvestmentPositionHistory,
         investmentGoals: nextInvestmentGoals,
@@ -592,6 +619,43 @@ export function DatabaseSettingsPage() {
     replaceAllGlobalMemories(nextGlobalMemories);
     setRepaymentState({ debts: nextDebts, monthlyIncome });
     replaceRepaymentRecords(nextRepaymentRecords);
+    if (restoredPreferences) {
+      // 偏好与计划:只覆盖备份里明确带来的字段,其余保持当前值。
+      useAppPreferences.setState((current) => ({
+        ...current,
+        monthlyIncome:
+          typeof restoredPreferences.monthlyIncome === 'number'
+            ? restoredPreferences.monthlyIncome
+            : current.monthlyIncome,
+        creditDrafts: Array.isArray(restoredPreferences.creditDrafts)
+          ? (restoredPreferences.creditDrafts as never)
+          : current.creditDrafts,
+        forecastBills: Array.isArray(restoredPreferences.forecastBills)
+          ? (restoredPreferences.forecastBills as never)
+          : current.forecastBills,
+        rssSubscriptions: Array.isArray(restoredPreferences.rssSubscriptions)
+          ? (restoredPreferences.rssSubscriptions as never)
+          : current.rssSubscriptions
+      }));
+      useSmartBudgetStore.getState().replaceAllData({
+        confirmedPlan:
+          restoredPreferences.smartBudgetPlan &&
+          typeof restoredPreferences.smartBudgetPlan === 'object'
+            ? (restoredPreferences.smartBudgetPlan as never)
+            : confirmedSmartBudgetPlan,
+        history: Array.isArray(restoredPreferences.smartBudgetHistory)
+          ? (restoredPreferences.smartBudgetHistory as never)
+          : smartBudgetHistory
+      });
+      useFinanceStore.setState({
+        categoryLearningRules: Array.isArray(restoredPreferences.categoryLearningRules)
+          ? (restoredPreferences.categoryLearningRules as never)
+          : categoryLearningRules,
+        categoryLearningEvents: Array.isArray(restoredPreferences.categoryLearningEvents)
+          ? (restoredPreferences.categoryLearningEvents as never)
+          : categoryLearningEvents
+      });
+    }
     replaceInvestmentData({
       investmentPositions: nextInvestmentPositions,
       investmentPositionHistory: nextInvestmentPositionHistory,

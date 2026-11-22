@@ -25,6 +25,11 @@ const BACKUP_SCOPE_OPTIONS: Array<{
     // 负债与还款记录此前不在备份范围内(换设备后静默丢失)。
     key: 'debts',
     label: (tf) => tf('dataBackup.scope.debts', '负债与还款')
+  },
+  {
+    // 月收入、预算方案、信贷草稿、预测账单、分类学习规则、RSS —— 云端有、文件此前没有。
+    key: 'preferences',
+    label: (tf) => tf('dataBackup.scope.preferences', '偏好与计划')
   }
 ];
 

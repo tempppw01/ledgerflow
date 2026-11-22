@@ -13,7 +13,8 @@ describe('BackupScopeSelector', () => {
           subscriptions: true,
           globalMemories: true,
           investments: true,
-          debts: true
+          debts: true,
+          preferences: true
         }}
         onChange={onChange}
       />
@@ -26,7 +27,8 @@ describe('BackupScopeSelector', () => {
       subscriptions: true,
       globalMemories: false,
       investments: true,
-      debts: true
+      debts: true,
+      preferences: true
     });
   });
 });

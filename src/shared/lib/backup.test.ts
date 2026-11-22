@@ -351,7 +351,9 @@ describe('parseFinanceBackupPayload', () => {
       investments: false,
       // 调用方没传 debts 时按默认值(true)归一化;旧文件里没有 debts 数据,
       // 应用侧靠 Array.isArray 守卫回退到当前数据,不会清空。
-      debts: true
+      debts: true,
+      // 同理解析旧文件时 preferences 也按默认值归一化,应用侧按「非对象」回退当前值。
+      preferences: true
     });
     expect(payload.data.transactions).toEqual([]);
     expect(payload.data.categories).toEqual([]);
