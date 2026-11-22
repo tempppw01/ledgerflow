@@ -238,10 +238,30 @@ function extractAmount(text: string, pattern: RegExp): number | undefined {
   }
 
   const scaled = base * unit.multiplier;
-  // 「1万5」= 15000:单位后面还跟一个数字时,它是「千位」补充
-  const tail = text.slice(endIndex + unit.length).match(/^(\d)(?![\d.])/);
-  const withTail = unit.multiplier === 10000 && tail ? scaled + Number(tail[1]) * 1000 : scaled;
-  return Number.isFinite(withTail) && withTail > 0 ? Number(withTail.toFixed(2)) : undefined;
+  if (unit.multiplier !== 10000) {
+    return Number.isFinite(scaled) && scaled > 0 ? Number(scaled.toFixed(2)) : undefined;
+  }
+
+  // 「万」后面还能跟低位,几种口语写法都要认:
+  //   1万5    → 15000(单个数字 = 千位)
+  //   1万500  → 10500(多位数字 = 低位)
+  //   1万零500 → 10500(带「零」= 低位)
+  //   1万5千  → 15000(单个数字 + 显式「千」)
+  const rest = text.slice(endIndex + unit.length);
+  const zeroTail = rest.match(/^零\s*(\d{1,4})(?!\d)/);
+  const doubled = zeroTail ? scaled + Number(zeroTail[1]) : NaN;
+  if (Number.isFinite(doubled)) {
+    return Number(doubled.toFixed(2));
+  }
+  const lowPart = rest.match(/^(\d{2,4})(?!\d)/);
+  if (lowPart) {
+    return Number((scaled + Number(lowPart[1])).toFixed(2));
+  }
+  const singleDigit = rest.match(/^(\d)(?!\d)/);
+  if (singleDigit) {
+    return Number((scaled + Number(singleDigit[1]) * 1000).toFixed(2));
+  }
+  return Number.isFinite(scaled) && scaled > 0 ? Number(scaled.toFixed(2)) : undefined;
 }
 
 /**

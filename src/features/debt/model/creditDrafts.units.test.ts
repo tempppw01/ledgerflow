@@ -22,6 +22,20 @@ describe('parseCreditDraftFragment 的金额单位', () => {
     expect(parseCreditDraftFragment('借呗欠款1万5')?.balance).toBe(15000);
   });
 
+  it('「万」后面的低位不能被丢掉', () => {
+    // 1万零500 / 1万500 = 10500,不能只取 10000
+    expect(parseCreditDraftFragment('花呗欠款1万零500')?.balance).toBe(10500);
+    expect(parseCreditDraftFragment('花呗欠款1万500')?.balance).toBe(10500);
+    expect(parseCreditDraftFragment('花呗欠款1万5千')?.balance).toBe(15000);
+    expect(parseCreditDraftFragment('花呗欠款2万3')?.balance).toBe(23000);
+  });
+
+  it('纯中文数字目前不解析(安全失败:字段留空让用户补)', () => {
+    // 与其猜错,不如不猜 —— 留空会在待补字段里提示
+    expect(parseCreditDraftFragment('花呗欠款五千')?.balance).toBeUndefined();
+    expect(parseCreditDraftFragment('信用卡欠款三千五')?.balance).toBeUndefined();
+  });
+
   it('没有单位的普通金额保持不变', () => {
     expect(parseCreditDraftFragment('花呗欠款 5000')?.balance).toBe(5000);
     expect(parseCreditDraftFragment('花呗欠款 ¥12,345.67')?.balance).toBe(12345.67);
