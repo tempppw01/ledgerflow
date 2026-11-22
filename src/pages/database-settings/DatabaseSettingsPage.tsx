@@ -372,7 +372,6 @@ export function DatabaseSettingsPage() {
   const balanceChangeEntries = useFinanceStore((s) => s.balanceChangeEntries);
   const trashedSubscriptions = useFinanceStore((s) => s.trashedSubscriptions);
   const addTransaction = useFinanceStore((s) => s.addTransaction);
-  const updateTransaction = useFinanceStore((s) => s.updateTransaction);
   const addAccount = useFinanceStore((s) => s.addAccount);
   const replaceAllData = useFinanceStore((s) => s.replaceAllData);
   const clearAllAccountBills = useFinanceStore((s) => s.clearAllAccountBills);
@@ -774,10 +773,19 @@ export function DatabaseSettingsPage() {
       }
 
       // 恢复备份属于既有数据:同样跳过退款总额校验,避免历史数据把整批恢复顶失败。
-      result.update.forEach((row) =>
-        updateTransaction(row.id, row.payload, { allowRefundOverflow: true })
+      // 批量写,并把「目标不存在」的行先过滤掉(批量路径会直接抛错)。
+      const pendingUpdates = result.update.filter((row) =>
+        transactions.some((item) => item.id === row.id)
       );
-      result.append.forEach((row) => addTransaction(row));
+      if (pendingUpdates.length > 0) {
+        addTransaction(
+          pendingUpdates.map((row) => ({ operation: 'update' as const, id: row.id, payload: row.payload }))
+        );
+      }
+      // 同交易页:批量写一次,避免逐条触发全量余额重算(1 万条存量下每条约 80ms)。
+      if (result.append.length > 0) {
+        addTransaction(result.append.map((payload) => ({ operation: 'add' as const, payload })));
+      }
 
       const changedCount = result.append.length + result.update.length;
       if (changedCount === 0) {
