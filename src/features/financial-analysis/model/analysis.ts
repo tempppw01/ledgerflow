@@ -4,7 +4,11 @@ import type { Account } from '../../../entities/account/types';
 import type { TransactionItem } from '../../../entities/transaction/types';
 import type { DebtItem, RepaymentRecord } from '../../debt/model/debtMetrics';
 import { calculateDebtHealthScore, calculateDebtSummary } from '../../debt/model/debtMetrics';
-import { filterCountableTransactions, summarizeTransactions } from '../../../shared/lib/transactionMetrics';
+import {
+  filterCountableTransactions,
+  isTransactionRefundLike,
+  summarizeTransactions
+} from '../../../shared/lib/transactionMetrics';
 import { roundMoney } from '../../../shared/lib/money';
 
 export type FinancialAnalysisRangeKey = 'month' | '30d' | '90d';
@@ -363,7 +367,11 @@ function isExpenseLike(tx: TransactionItem): boolean {
 }
 
 function isAnalysisExpenseLike(tx: TransactionItem, categories: Category[]): boolean {
-  if (tx.adjustmentKind) {
+  // 注意:普通交易的 adjustmentKind 是 'normal'(真值),不能用 `if (tx.adjustmentKind)` 判断 ——
+  // 那会把**所有**普通交易当成调整行排除,导致「过去」「行为洞察」两段永远显示"样本不足",
+  // 而同一页页头的总额用的是另一套判断,于是出现「支出 ¥12,056.62 / 日均支出 ¥0.00」。
+  // 只有退款/冲正才该排除,统一走共享判断。
+  if (isTransactionRefundLike(tx)) {
     return false;
   }
 

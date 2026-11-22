@@ -711,7 +711,14 @@ export function FinancialAnalysisPage() {
               >
                 <span>{item.label}</span>
                 <strong>{formatCurrency(item.value)}</strong>
-                <small>{formatDelta(item.delta)}</small>
+                {/* 以前这里只有一个光秃秃的「-¥5,672.00」,读者会以为那就是收入本身。
+                    它其实是「较上月」的增减额。 */}
+                <small>
+                  <span className="financial-analysis-market-delta-label">
+                    {t('financialAnalysis.market.deltaLabel')}
+                  </span>
+                  {formatDelta(item.delta)}
+                </small>
               </article>
             ))}
           </div>
@@ -1061,17 +1068,21 @@ export function FinancialAnalysisPage() {
               ))}
             </div>
             <div className="financial-analysis-ai-columns">
-              {previousQuickActions.map((action) => (
-                <article key={action.label} className="financial-analysis-subcard">
-                  <h4>{action.label}</h4>
-                  <p className="financial-analysis-paragraph">{action.hint}</p>
-                  <div className="financial-analysis-actions">
-                    <button type="button" onClick={action.onClick}>
-                      {t('financialAnalysis.previous.continue')}
-                    </button>
-                  </div>
-                </article>
-              ))}
+              {/* 收成一行按钮:标签即去向,说明改挂在 title 上。原来每组是 3 张卡,
+                  每张都有标题加一段说明,而按钮还都叫「继续处理」/「立即前往」/「去处理」,
+                  得把整段读完才知道点下去会去哪。 */}
+              <div className="financial-analysis-actions financial-analysis-quick-actions">
+                {previousQuickActions.map((action) => (
+                  <button
+                    key={action.label}
+                    type="button"
+                    title={action.hint}
+                    onClick={action.onClick}
+                  >
+                    {action.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </article>
         </div>
@@ -1119,17 +1130,21 @@ export function FinancialAnalysisPage() {
           ))}
         </div>
         <div className="financial-analysis-ai-columns">
-          {presentQuickActions.map((action) => (
-            <article key={action.label} className="financial-analysis-subcard">
-              <h4>{action.label}</h4>
-              <p className="financial-analysis-paragraph">{action.hint}</p>
-              <div className="financial-analysis-actions">
-                <button type="button" onClick={action.onClick}>
-                  {t('financialAnalysis.present.go')}
-                </button>
-              </div>
-            </article>
-          ))}
+          {/* 收成一行按钮:标签即去向,说明改挂在 title 上。原来每组是 3 张卡,
+              每张都有标题加一段说明,而按钮还都叫「继续处理」/「立即前往」/「去处理」,
+              得把整段读完才知道点下去会去哪。 */}
+          <div className="financial-analysis-actions financial-analysis-quick-actions">
+            {presentQuickActions.map((action) => (
+              <button
+                key={action.label}
+                type="button"
+                title={action.hint}
+                onClick={action.onClick}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -1174,17 +1189,21 @@ export function FinancialAnalysisPage() {
           ))}
         </div>
         <div className="financial-analysis-ai-columns">
-          {futureQuickActions.map((action) => (
-            <article key={action.label} className="financial-analysis-subcard">
-              <h4>{action.label}</h4>
-              <p className="financial-analysis-paragraph">{action.hint}</p>
-              <div className="financial-analysis-actions">
-                <button type="button" onClick={action.onClick}>
-                  {t('financialAnalysis.future.handle')}
-                </button>
-              </div>
-            </article>
-          ))}
+          {/* 收成一行按钮:标签即去向,说明改挂在 title 上。原来每组是 3 张卡,
+              每张都有标题加一段说明,而按钮还都叫「继续处理」/「立即前往」/「去处理」,
+              得把整段读完才知道点下去会去哪。 */}
+          <div className="financial-analysis-actions financial-analysis-quick-actions">
+            {futureQuickActions.map((action) => (
+              <button
+                key={action.label}
+                type="button"
+                title={action.hint}
+                onClick={action.onClick}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
     </div>

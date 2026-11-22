@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Account } from '../../entities/account/types';
@@ -238,23 +238,14 @@ describe('FinancialAnalysisPage', () => {
 
     renderPage();
 
-    const abnormalQuickActionCard = screen.getByText('定位异常流水').closest('article');
-    expect(abnormalQuickActionCard).not.toBeNull();
-    fireEvent.click(
-      within(abnormalQuickActionCard as HTMLElement).getByRole('button', { name: '继续处理' })
-    );
+    // 快动作现在是一行按钮,标签即去向(以前是「标题 + 说明 + 通用按钮」的卡片)
+    fireEvent.click(screen.getByRole('button', { name: '定位异常流水' }));
     expect(navigateMock).toHaveBeenCalledWith('/transactions/tx-prev-abnormal');
 
-    const pressureCard = screen.getByText('查看还款压力').closest('article');
-    expect(pressureCard).not.toBeNull();
-    fireEvent.click(within(pressureCard as HTMLElement).getByRole('button', { name: '立即前往' }));
+    fireEvent.click(screen.getByRole('button', { name: '查看还款压力' }));
     expect(navigateMock).toHaveBeenCalledWith('/repayment-management');
 
-    const subscriptionCard = screen.getByText('检查即将续费订阅').closest('article');
-    expect(subscriptionCard).not.toBeNull();
-    fireEvent.click(
-      within(subscriptionCard as HTMLElement).getByRole('button', { name: '去处理' })
-    );
+    fireEvent.click(screen.getByRole('button', { name: '检查即将续费订阅' }));
     expect(navigateMock).toHaveBeenCalledWith('/subscriptions');
   });
 
@@ -772,9 +763,7 @@ describe('FinancialAnalysisPage', () => {
 
     renderPage();
 
-    const cycleCard = screen.getByText('查看当前周期流水').closest('article');
-    expect(cycleCard).not.toBeNull();
-    fireEvent.click(within(cycleCard as HTMLElement).getByRole('button', { name: '继续处理' }));
+    fireEvent.click(screen.getByRole('button', { name: '查看当前周期流水' }));
 
     expect(navigateMock).toHaveBeenCalledWith(
       '/transactions?datePreset=custom&dateFrom=2026-03-23&dateTo=2026-04-21'

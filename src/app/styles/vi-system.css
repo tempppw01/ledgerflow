@@ -243,6 +243,18 @@
   padding: var(--space-4);
 }
 
+/**
+ * 滚动定位到区块时,标题不要被粘性顶栏盖住。
+ *
+ * 以前是 0:`scrollIntoView`(或页内锚点)会把区块顶部对齐到视口顶部,
+ * 而顶栏高 56px 且粘在顶部,于是「过去:复盘支出变化」这类标题会被切掉一半。
+ */
+.vi-section,
+.vi-hero,
+.vi-card {
+  scroll-margin-top: calc(var(--topbar-height, 56px) + var(--space-4));
+}
+
 .vi-section--muted,
 .vi-card--muted {
   background: var(--vi-surface-bg-muted);

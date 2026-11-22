@@ -1276,6 +1276,7 @@
     },
     "market": {
       "title": "Cash flow board",
+      "deltaLabel": "vs last month",
       "badge": "Momentum",
       "headlineUp": "Cash momentum is recovering",
       "headlineDown": "Cash momentum is weakening",

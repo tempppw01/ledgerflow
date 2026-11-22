@@ -1276,6 +1276,7 @@
     },
     "market": {
       "title": "资金动态看板",
+      "deltaLabel": "较上月",
       "badge": "动态判断",
       "headlineUp": "资金动能回升",
       "headlineDown": "资金动能转弱",

@@ -2395,6 +2395,13 @@
   font-size: clamp(18px, 2.4vw, 24px);
 }
 
+/* 「较上月」标签:增减额本身要说清是跟什么比,否则读者会把它当成金额本身。 */
+.financial-analysis-market-delta-label {
+  margin-right: 6px;
+  font-size: var(--font-xs);
+  color: var(--color-text-tertiary);
+}
+
 .financial-analysis-market-card.tone-income strong,
 .financial-analysis-market-bar-track i.is-positive {
   color: var(--color-income);
@@ -2567,6 +2574,16 @@
 .financial-analysis-stat-grid.is-three,
 .financial-analysis-ai-columns {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/**
+ * 快动作收成一行后,这行必须横跨整个网格。
+ * 否则它只占第一列(约三分之一宽),里面的按钮会在窄列里竖着堆叠 ——
+ * 比原来的三张卡片还占地方。
+ */
+.financial-analysis-quick-actions {
+  grid-column: 1 / -1;
+  align-items: center;
 }
 
 .financial-analysis-two-col {
