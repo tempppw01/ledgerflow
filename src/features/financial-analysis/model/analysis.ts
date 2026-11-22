@@ -388,15 +388,38 @@ function calculateCategoryRows(
 ) {
   const expenseRows = rows.filter((item) => isAnalysisExpenseLike(item, categories));
   const total = expenseRows.reduce((sum, item) => sum + Math.max(0, Number(item.amount) || 0), 0);
-  const grouped = expenseRows.reduce<Record<string, number>>((acc, item) => {
-    const key = getCategoryName(item.categoryId, categories, messages);
-    acc[key] = (acc[key] || 0) + Math.max(0, Number(item.amount) || 0);
-    return acc;
-  }, {});
 
-  return Object.entries(grouped)
-    .map(([name, amount]) => ({
-      name,
+  // 按**分类 id** 聚合。此前以分类名为 key,而应用明确允许同名子分类共存
+  // (「餐饮 / 其他」与「交通 / 其他」),于是两笔不同分类的钱会被合并成一行,
+  // 金额与占比都算错。
+  const grouped = new Map<string, number>();
+  for (const item of expenseRows) {
+    const key = String(item.categoryId || '');
+    grouped.set(key, (grouped.get(key) || 0) + Math.max(0, Number(item.amount) || 0));
+  }
+
+  const categoryById = new Map(categories.map((item) => [item.id, item]));
+  const nameOf = (id: string) => categoryById.get(id)?.name || messages.uncategorized;
+
+  // 同名分类用「父 / 子」区分,避免图上出现两行一模一样的名字。
+  const nameUsages = new Map<string, number>();
+  for (const id of grouped.keys()) {
+    const name = nameOf(id);
+    nameUsages.set(name, (nameUsages.get(name) || 0) + 1);
+  }
+  const labelOf = (id: string) => {
+    const name = nameOf(id);
+    if ((nameUsages.get(name) || 0) <= 1) {
+      return name;
+    }
+    const parentId = categoryById.get(id)?.parentId;
+    const parentName = parentId ? categoryById.get(parentId)?.name : undefined;
+    return parentName ? `${parentName} / ${name}` : name;
+  };
+
+  return [...grouped.entries()]
+    .map(([id, amount]) => ({
+      name: labelOf(id),
       amount: normalizeAmount(amount),
       share: total > 0 ? amount / total : 0
     }))
