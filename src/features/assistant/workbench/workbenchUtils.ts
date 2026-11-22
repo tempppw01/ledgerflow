@@ -4,6 +4,7 @@ import type { Category } from '../../../entities/category/types';
 import type { TransactionItem, TransactionType } from '../../../entities/transaction/types';
 import type { AiBillItem, AiBillResult, DraftBillEntry, ValidationIssue } from './workbenchTypes';
 import { toLocalDateKey } from '../../../shared/lib/localDate';
+import { roundMoney } from '../../../shared/lib/money';
 
 const MAX_PROMPT_TRANSACTIONS = 1200;
 const CHINA_NETWORK_TIME_API = 'https://api.m.taobao.com/rest/api3.do?api=mtop.common.getTimestamp';
@@ -219,7 +220,7 @@ export function buildTransactionPromptContext(
     .map((item) => ({
       date: toDateKey(item.date),
       type: item.type,
-      amount: Number((Math.round((Number(item.amount) || 0) * 100) / 100).toFixed(2)),
+      amount: Number(roundMoney(Number(item.amount) || 0).toFixed(2)),
       category: categoryMap.get(item.categoryId) || item.categoryId || '未分类',
       account: accountMap.get(item.accountId || '') || item.accountId || '未指定账户',
       tags: (item.tags || []).slice(0, 6),
@@ -419,7 +420,7 @@ export function buildBillContentSignature(input: {
   transactionCurrency?: string;
 }): string {
   const day = String(input.date || '').slice(0, 10);
-  const amount = Math.round(normalizeAmount(input.amount) * 100) / 100;
+  const amount = roundMoney(normalizeAmount(input.amount));
   const type = input.type === 'unknown' ? 'expense' : input.type;
   const note = String(input.note || '').trim();
   const currency = input.transactionCurrency
@@ -531,7 +532,7 @@ export function normalizeAiBill(raw: unknown): AiBillResult | null {
     const type = normalizeType(row.type);
     const amount = normalizeAmount(row.amount);
     // 录入金额统一保留两位，避免后续 UI 出现浮点展示噪音。
-    const normalizedAmount = Number.isFinite(amount) ? Math.round(amount * 100) / 100 : 0;
+    const normalizedAmount = roundMoney(amount);
     if (!type || normalizedAmount <= 0) continue;
     const baseDate = normalizeDateText(row.date);
     const normalizedType: TransactionType =
@@ -588,7 +589,7 @@ export function normalizeAiBill(raw: unknown): AiBillResult | null {
     if (type === 'repayment' && remainingPeriods > 1) {
       const recurringAmount =
         Number.isFinite(perPeriodAmount) && perPeriodAmount > 0
-          ? Math.round(perPeriodAmount * 100) / 100
+          ? roundMoney(perPeriodAmount)
           : normalizedAmount;
       const safePeriods = Math.min(remainingPeriods, 360);
       for (let i = 0; i < safePeriods; i += 1) {
@@ -682,7 +683,7 @@ export function toDraftEntries(payload: AiBillResult): DraftBillEntry[] {
       id: `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 7)}`,
       selected: true,
       type: item.type,
-      amount: Number((Math.round((Number(item.amount) || 0) * 100) / 100).toFixed(2)),
+      amount: Number(roundMoney(Number(item.amount) || 0).toFixed(2)),
       date: item.date || new Date().toISOString(),
       note: item.note || '',
       category: item.category || '',

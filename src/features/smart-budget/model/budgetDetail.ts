@@ -2,6 +2,7 @@ import { TransactionItem } from '../../../entities/transaction/types';
 import { Category } from '../../../entities/category/types';
 import { formatMonthKey, parseDateInput } from './budgetDate';
 import { shiftMonthKey } from './budgetComparison';
+import { roundMoney } from '../../../shared/lib/money';
 
 export type BudgetCategoryTransaction = {
   id: string;
@@ -100,7 +101,7 @@ export function buildBudgetCategoryDetail(params: {
   const monthlyPoints = monthKeys
     .map((key) => ({
       monthKey: key,
-      spent: Math.max(0, Math.round((spentByMonth.get(key) || 0) * 100) / 100)
+      spent: Math.max(0, roundMoney(spentByMonth.get(key) || 0))
     }))
     .reverse();
 

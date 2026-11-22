@@ -1,4 +1,5 @@
 import { TransactionItem, TransactionStatus } from '../../entities/transaction/types';
+import { roundMoney } from './money';
 
 type BillSource = 'wechat' | 'alipay';
 
@@ -166,7 +167,7 @@ function parseAmount(raw: string): number {
   const value = Number.parseFloat(cleaned);
   if (!Number.isFinite(value)) return 0;
   // 统一两位小数，避免浮点误差导致金额展示异常。
-  return Math.round(Math.abs(value) * 100) / 100;
+  return roundMoney(Math.abs(value));
 }
 
 function buildBillIdentity(item: {
@@ -187,7 +188,7 @@ function buildBillIdentity(item: {
     return `merchant:${merchantOrderNo}`;
   }
 
-  const amount = Math.round(Math.abs(Number(item.amount || 0)) * 100) / 100;
+  const amount = roundMoney(Math.abs(Number(item.amount || 0)));
   return `content:${String(item.date || '').slice(0, 10)}|${amount}|${String(item.type || '')}|${String(item.note || '').trim()}`;
 }
 

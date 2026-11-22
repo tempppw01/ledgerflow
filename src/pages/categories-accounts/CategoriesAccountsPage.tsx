@@ -23,6 +23,7 @@ import {
 } from '../../features/accounts/model/accountTypes';
 import type { AccountType } from '../../features/accounts/model/accountTypes';
 import type { Category } from '../../entities/category/types';
+import { roundMoney } from '../../shared/lib/money';
 
 function normalizeNameInput(raw: string) {
   return raw.replace(/[<>]/g, '').replace(/\s+/g, ' ').trim();
@@ -323,7 +324,7 @@ export function CategoriesAccountsPage() {
     if (!Number.isFinite(parsed)) {
       return;
     }
-    const normalized = Math.round(parsed * 100) / 100;
+    const normalized = roundMoney(parsed);
     updateAccountBalance(accountId, normalized);
     setEditingBalances((prev) => ({ ...prev, [accountId]: normalized.toFixed(2) }));
     setEditingBalanceAccountId((prev) => (prev === accountId ? null : prev));

@@ -14,6 +14,7 @@ import {
   writeTransactionDraft,
   type TransactionDraft
 } from './transactionDraft';
+import { roundMoney } from '../../shared/lib/money';
 
 interface RecognitionSuggestion {
   merchant: string;
@@ -73,7 +74,7 @@ function evaluateExpression(input: string): number | null {
 }
 
 function formatAmountFromNumber(value: number): string {
-  const rounded = Math.round(value * 100) / 100;
+  const rounded = roundMoney(value);
   const fixed = rounded.toFixed(2);
   return fixed.replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
 }

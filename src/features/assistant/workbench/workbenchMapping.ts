@@ -2,11 +2,12 @@ import type { Account } from '../../../entities/account/types';
 import type { Category } from '../../../entities/category/types';
 import type { TransactionSource, TransactionType } from '../../../entities/transaction/types';
 import type { DraftBillEntry } from './workbenchTypes';
+import { roundMoney } from '../../../shared/lib/money';
 
 /** 金额统一按分级精度保留两位，避免出现 337.280000000000001 这类展示噪音。 */
 export function normalizeMoney(value: number): number {
   if (!Number.isFinite(value)) return 0;
-  return Math.round(value * 100) / 100;
+  return roundMoney(value);
 }
 
 /**

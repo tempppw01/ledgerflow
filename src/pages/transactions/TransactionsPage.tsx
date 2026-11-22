@@ -96,6 +96,7 @@ import {
   type QuickTransactionDraft
 } from '../transaction-edit/transactionDraft';
 import { useDialogFocus } from '../../shared/lib/useDialogFocus';
+import { roundMoney } from '../../shared/lib/money';
 
 const DEFAULT_PAGE_SIZE = 8;
 const PAGE_SIZE_OPTIONS = [8, 20, 50, 100] as const;
@@ -329,7 +330,7 @@ function buildDuplicateSignature(item: {
   type: string;
   note: string;
 }) {
-  return `${item.date.slice(0, 10)}|${Math.round(Number(item.amount || 0) * 100) / 100}|${item.type}|${String(item.note || '').trim()}`;
+  return `${item.date.slice(0, 10)}|${roundMoney(Number(item.amount || 0))}|${item.type}|${String(item.note || '').trim()}`;
 }
 
 function inferCategoryIdByTransaction(
@@ -1171,7 +1172,7 @@ export function TransactionsPage() {
       ...spending,
       dailyBudget,
       remaining:
-        dailyBudget === null ? null : Math.round((dailyBudget - spending.projected) * 100) / 100
+        dailyBudget === null ? null : roundMoney(dailyBudget - spending.projected)
     };
   }, [confirmedSmartBudgetPlan, quickAddAmount, quickAddDate, quickAddType, transactions]);
 
@@ -1247,7 +1248,7 @@ export function TransactionsPage() {
       type: quickAddType,
       categoryId: quickAddCategoryId,
       accountId: quickAddAccountId,
-      amount: Math.round(amount * 100) / 100,
+      amount: roundMoney(amount),
       date: quickAddDate,
       note: quickAddNote.trim() || t('transactions.quickAdd.defaultNote'),
       tags: [],
@@ -2102,7 +2103,7 @@ export function TransactionsPage() {
 
         updateTransaction(keeper.id, {
           ...merged,
-          amount: Math.round(Number(merged.amount || 0) * 100) / 100
+          amount: roundMoney(Number(merged.amount || 0))
         });
         duplicates.forEach((item) => removeTransaction(item.id));
       });

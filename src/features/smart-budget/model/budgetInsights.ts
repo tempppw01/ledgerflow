@@ -7,6 +7,7 @@ import {
   monthLabelFromKey,
   parseDateInput
 } from './budgetDate';
+import { roundMoney } from '../../../shared/lib/money';
 
 export { formatMonthKey, monthLabelFromKey, parseDateInput };
 
@@ -91,7 +92,7 @@ export function buildBudgetTrackingRows(params: {
     .filter((item) => !['固定支出', '储蓄/投资'].includes(item.category))
     .map((item) => {
       const key = normalizeCategoryName(item.category);
-      const spentAmount = Math.max(0, Math.round((spentByCategory.get(key) || 0) * 100) / 100);
+      const spentAmount = Math.max(0, roundMoney(spentByCategory.get(key) || 0));
       const budgetAmount = item.amount;
       const diff = spentAmount - budgetAmount;
       const ratio = budgetAmount > 0 ? spentAmount / budgetAmount : 0;

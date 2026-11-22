@@ -8,6 +8,7 @@ import {
   normalizeLedgerCurrency
 } from '../workbench/workbenchUtils';
 import { resolveDraftAccountLabel } from '../workbench/workbenchMapping';
+import { roundMoney } from '../../../shared/lib/money';
 
 interface BillPreviewCardProps {
   entries: DraftBillEntry[];
@@ -124,7 +125,7 @@ export function BillPreviewCard({
     const amount = Number(conversionInputs[item.id]);
     if (!isForeignCurrency(item) || !Number.isFinite(amount) || amount <= 0) return;
     onUpdateEntry?.(item.id, {
-      amount: Math.round(amount * 100) / 100,
+      amount: roundMoney(amount),
       currencyConfirmed: true,
       originalAmountText: item.originalAmountText?.trim() || formatAmount(item.amount, currency)
     });

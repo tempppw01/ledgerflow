@@ -16,6 +16,7 @@ import { generateId } from '../lib/id';
 import { getSignedAmount } from '../lib/transactionMetrics';
 import { isBalanceAffectingStatus } from '../lib/localDate';
 import { advanceSubscriptionDate } from '../lib/subscriptionSchedule';
+import { roundMoney } from '../lib/money';
 import { resolveSubscriptionStatus } from '../../features/subscriptions/model/subscriptionStatus';
 
 interface CategoryLearningRule {
@@ -297,11 +298,9 @@ const TX_BALANCE_CHANGE_TYPES = new Set<BalanceChangeType>([
 ]);
 
 function roundCurrency(raw: number): number {
-  const value = Number(raw);
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-  return Math.round(value * 100) / 100;
+  // 统一走 shared/lib/money:全项目只保留一套取整算法,避免 1.005 在不同模块得到
+  // 1.00 / 1.01 两种结果。
+  return roundMoney(raw);
 }
 
 function inferSubscriptionCategoryId(item: SubscriptionItem): string {

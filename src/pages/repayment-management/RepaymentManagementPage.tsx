@@ -43,6 +43,7 @@ import {
   getManualScheduleStartPeriod
 } from '../../features/debt/model/debtPressureSchedule';
 import { resolveDebtRepaymentDueDisplay } from '../../features/debt/model/repaymentCycle';
+import { roundMoney } from '../../shared/lib/money';
 
 /** 数据模型在缺少日期时输出的中文占位;渲染层按语言判定是否隐藏。 */
 const CHART_DATE_PLACEHOLDER = '日期待填';
@@ -715,9 +716,9 @@ function estimateRemainingPrincipal(input: {
     const balance =
       principal * Math.pow(1 + monthlyRate, completed) -
       payment * ((Math.pow(1 + monthlyRate, completed) - 1) / monthlyRate);
-    return Math.max(0, Math.round(balance * 100) / 100);
+    return Math.max(0, roundMoney(balance));
   }
-  return Math.max(0, Math.round(((principal * remaining) / total) * 100) / 100);
+  return Math.max(0, roundMoney((principal * remaining) / total));
 }
 
 const DEBT_STATUS_LABELS: Record<DebtLifecycleStatus, string> = {

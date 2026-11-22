@@ -5,6 +5,7 @@ import type { TransactionItem } from '../../../entities/transaction/types';
 import type { DebtItem, RepaymentRecord } from '../../debt/model/debtMetrics';
 import { calculateDebtHealthScore, calculateDebtSummary } from '../../debt/model/debtMetrics';
 import { filterCountableTransactions, summarizeTransactions } from '../../../shared/lib/transactionMetrics';
+import { roundMoney } from '../../../shared/lib/money';
 
 export type FinancialAnalysisRangeKey = 'month' | '30d' | '90d';
 
@@ -310,7 +311,7 @@ function addDays(date: Date, days: number): Date {
 }
 
 function normalizeAmount(value: number): number {
-  return Number.isFinite(value) ? Math.round(value * 100) / 100 : 0;
+  return roundMoney(value);
 }
 
 function toPercent(value: number): number {

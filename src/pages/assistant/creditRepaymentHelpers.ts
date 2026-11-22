@@ -10,6 +10,7 @@ import {
   resolveRepaymentPaidTime
 } from '../../features/debt/model/repaymentCycle';
 import { findMatchingCreditDebt } from '../../features/assistant/creditAssistant/debtClassification';
+import { roundMoney } from '../../shared/lib/money';
 
 export {
   resolveRepaymentDueDisplay as resolveCreditRepaymentDueDisplay
@@ -62,7 +63,7 @@ function resolveRepaymentAnchorDay(
 }
 
 function formatGapMoney(value: number): string {
-  const rounded = Math.round((value + Number.EPSILON) * 100) / 100;
+  const rounded = roundMoney(value);
   return `¥${rounded.toFixed(2).replace(/\.00$/, '')}`;
 }
 

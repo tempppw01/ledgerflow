@@ -5,6 +5,7 @@ import { formatMonthKey } from '../../../shared/lib/i18nDate';
 import type { DebtItem, RepaymentRecord } from '../model/debtMetrics';
 import { getRepaymentBreakdownColor, getRepaymentOverview } from '../model/repaymentOverview';
 import { formatCurrency, formatCurrencyAuto } from '../../../shared/lib/format';
+import { roundMoney } from '../../../shared/lib/money';
 
 interface RepaymentDashboardProps {
   debts: DebtItem[];
@@ -41,7 +42,7 @@ function useMountedProgress(target: number, durationMs = 700) {
       const elapsed = now - startRef.current;
       const t = Math.min(1, elapsed / durationMs);
       const eased = 1 - Math.pow(1 - t, 3);
-      setValue(Math.round(eased * target * 100) / 100);
+      setValue(roundMoney(eased * target));
       if (t < 1) {
         frameRef.current = requestAnimationFrame(step);
       }

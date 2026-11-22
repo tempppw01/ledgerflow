@@ -1,4 +1,5 @@
 import type { TransactionItem } from '../../../entities/transaction/types';
+import { roundMoney } from '../../../shared/lib/money';
 
 type QuickAddSpendingInput = {
   transactions: TransactionItem[];
@@ -34,8 +35,8 @@ export function getQuickAddDailySpending({
 
   const draftAmount = Number.isFinite(proposedExpense) && proposedExpense > 0 ? proposedExpense : 0;
   return {
-    spent: Math.max(0, Math.round(spent * 100) / 100),
-    projected: Math.max(0, Math.round((spent + draftAmount) * 100) / 100)
+    spent: Math.max(0, roundMoney(spent)),
+    projected: Math.max(0, roundMoney(spent + draftAmount))
   };
 }
 
@@ -47,5 +48,5 @@ export function getDailyFlexibleBudget(monthlyFlexibleBudget: number | null, dat
 
   const [year, month] = date.split('-').map(Number);
   const daysInMonth = new Date(year, month, 0).getDate();
-  return Math.round((monthlyFlexibleBudget / daysInMonth) * 100) / 100;
+  return roundMoney(monthlyFlexibleBudget / daysInMonth);
 }
