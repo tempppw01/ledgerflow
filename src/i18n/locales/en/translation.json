@@ -895,6 +895,9 @@
     },
     "topTransactions": {
       "title": "Biggest transactions this month"
+    },
+    "categoryBreakdown": {
+      "other": "Other"
     }
   },
   "transactions": {

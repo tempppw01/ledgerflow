@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { TrendChart } from '../../features/dashboard/components/TrendChart';
 import { CategoryBreakdownChart } from '../../features/dashboard/components/CategoryBreakdownChart';
+import {
+  buildCategoryGroupLabels,
+  resolveCategoryGroupKey
+} from '../../features/dashboard/model/categoryBreakdown';
 import { DashboardNetWorthSummary } from '../../features/dashboard/components/DashboardNetWorthSummary';
 import { buildNetWorthTrend } from '../../features/dashboard/model/netWorth';
 import { DashboardWelcomeBanner } from '../../features/dashboard/components/DashboardWelcomeBanner';
@@ -29,11 +33,14 @@ import {
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { EmptyState } from '../../shared/ui/EmptyState';
+import { useTFallback } from '../../shared/lib/useTFallback';
 
 const DASHBOARD_DENSITY_KEY = 'dashboard_density_v1';
 
 export function DashboardPage() {
   const { t, i18n } = useTranslation();
+  // 分类名与汇总桶的文案需要中文兜底(单测里没有初始化 i18n)
+  const tf = useTFallback();
   const locale = i18n.resolvedLanguage;
   const tFallback = (key: string, fallback: string) => {
     const translated = t(key);
@@ -355,34 +362,49 @@ export function DashboardPage() {
     thisMonthRows.forEach((item) => {
       if (!includeRow(item)) return;
       const categoryMeta = categoryMetaMap.get(item.categoryId);
-      const name = categoryMeta?.name || item.categoryId || '未分类';
-      const current = map.get(name) || {
+      // 身份用分类 id:同名子分类(餐饮/其他 与 交通/其他)用名字当 key 会被合并。
+      const key = resolveCategoryGroupKey(item);
+      const current = map.get(key) || {
         amount: 0,
         prevAmount: 0,
         icon: categoryMeta?.icon || '🏷️',
         color: categoryMeta?.color
       };
       current.amount += signedAmount(item);
-      map.set(name, current);
+      map.set(key, current);
     });
 
     prevMonthRows.forEach((item) => {
       if (!includeRow(item)) return;
       const categoryMeta = categoryMetaMap.get(item.categoryId);
-      const name = categoryMeta?.name || item.categoryId || '未分类';
-      const current = map.get(name) || {
+      // 身份用分类 id:同名子分类(餐饮/其他 与 交通/其他)用名字当 key 会被合并。
+      const key = resolveCategoryGroupKey(item);
+      const current = map.get(key) || {
         amount: 0,
         prevAmount: 0,
         icon: categoryMeta?.icon || '🏷️',
         color: categoryMeta?.color
       };
       current.prevAmount += signedAmount(item);
-      map.set(name, current);
+      map.set(key, current);
     });
 
+    const uncategorizedLabel = tf('transactions.table.filter.uncategorized', '未分类');
+    const bucketLabel = tf('dashboard.categoryBreakdown.other', '其他');
+    const labels = buildCategoryGroupLabels(map.keys(), categories, uncategorizedLabel);
+    // 真实分类正好也叫「其他」时,用父分类区分,避免和汇总桶出现两行同名。
+    for (const [key, label] of labels) {
+      if (label !== bucketLabel) continue;
+      const parentId = categories.find((item) => item.id === key)?.parentId;
+      const parentName = parentId
+        ? categories.find((item) => item.id === parentId)?.name
+        : undefined;
+      labels.set(key, parentName ? `${parentName} / ${label}` : `${label} (分类)`);
+    }
+
     const rows = Array.from(map.entries())
-      .map(([name, value]) => ({
-        name,
+      .map(([key, value]) => ({
+        name: labels.get(key) || uncategorizedLabel,
         amount: value.amount,
         prevAmount: value.prevAmount,
         icon: value.icon,
@@ -401,7 +423,7 @@ export function DashboardPage() {
     );
     if (Math.abs(other.amount) > 0) {
       top.push({
-        name: '其他',
+        name: bucketLabel,
         amount: other.amount,
         prevAmount: other.prevAmount,
         icon: '🧩',
@@ -422,7 +444,7 @@ export function DashboardPage() {
         ['#2563eb', '#60a5fa', '#93c5fd', '#c4b5fd', '#34d399', '#d1d5db'][index] ||
         '#d1d5db'
     }));
-  }, [cashflowView, categoryMetaMap, currentMonth, currentYear, transactions]);
+  }, [cashflowView, categories, categoryMetaMap, currentMonth, currentYear, tf, transactions]);
 
   useEffect(() => {
     if (!cashflowCategoryRows.length) {
