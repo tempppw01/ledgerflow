@@ -41,7 +41,7 @@ import {
   WALLET_CARDS_ICON_URL
 } from '../../shared/config/brandAssets';
 import { formatCurrency } from '../../shared/lib/format';
-import { summarizeTransactions } from '../../shared/lib/transactionMetrics';
+import { filterCountableTransactions, summarizeTransactions } from '../../shared/lib/transactionMetrics';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { ScrollProgressBar } from './ScrollProgressBar';
 
@@ -468,7 +468,7 @@ export function AppLayout() {
   }).format(new Date());
 
   const thisMonth = new Date();
-  const monthTransactions = transactions.filter((item) => {
+  const monthTransactions = filterCountableTransactions(transactions).filter((item) => {
     const date = new Date(item.date);
     return (
       date.getMonth() === thisMonth.getMonth() && date.getFullYear() === thisMonth.getFullYear()

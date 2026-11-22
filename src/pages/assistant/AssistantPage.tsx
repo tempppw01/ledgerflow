@@ -27,6 +27,7 @@ import { extractGlobalMemoriesFromConversation } from '../../features/assistant/
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import {
+  filterCountableTransactions,
   getTransactionDirection,
   summarizeTransactions
 } from '../../shared/lib/transactionMetrics';
@@ -1173,7 +1174,8 @@ export function AssistantPage() {
   };
 
   const assistantOverview = useMemo(() => {
-    const validRows = transactions.filter(
+    // 与账户余额同口径:排除已删除与待支付/已关闭/失败的行,否则同一屏会出现两套数。
+    const validRows = filterCountableTransactions(transactions).filter(
       (item) => item.type === 'income' || item.type === 'expense'
     );
     const todayRows = validRows.filter((item) => item.date.slice(0, 10) === todayKey);

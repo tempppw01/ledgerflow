@@ -21,6 +21,7 @@ import { formatCurrencyAuto } from '../../shared/lib/format';
 import { formatMonth } from '../../shared/lib/i18nDate';
 import { toLocalDateKey } from '../../shared/lib/localDate';
 import {
+  filterCountableTransactions,
   getSignedAmount,
   isTransactionRefundLike,
   summarizeTransactions
@@ -78,7 +79,7 @@ export function DashboardPage() {
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
-  const monthly = transactions.filter((t) => {
+  const monthly = filterCountableTransactions(transactions).filter((t) => {
     const d = new Date(t.date);
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
   });
@@ -135,7 +136,7 @@ export function DashboardPage() {
       Array.from({ length: 6 }).map((_, i) => {
         const d = new Date(currentYear, currentMonth - (5 - i), 1);
         const key = monthKey(d);
-        const rows = transactions.filter((t) => monthKey(new Date(t.date)) === key);
+        const rows = filterCountableTransactions(transactions).filter((t) => monthKey(new Date(t.date)) === key);
         const summary = summarizeTransactions(rows);
         const mIncome = summary.incomeTotal;
         const mExpense = summary.expenseTotal;
@@ -179,7 +180,7 @@ export function DashboardPage() {
     if (trendGranularity === 'year') {
       return Array.from({ length: 6 }).map((_, index) => {
         const targetYear = currentYear - (5 - index);
-        const rows = transactions.filter(
+        const rows = filterCountableTransactions(transactions).filter(
           (item) => new Date(item.date).getFullYear() === targetYear
         );
         const yearExpense = summarizeTransactions(rows).expenseTotal;

@@ -4,7 +4,7 @@ import type { Account } from '../../../entities/account/types';
 import type { TransactionItem } from '../../../entities/transaction/types';
 import type { DebtItem, RepaymentRecord } from '../../debt/model/debtMetrics';
 import { calculateDebtHealthScore, calculateDebtSummary } from '../../debt/model/debtMetrics';
-import { summarizeTransactions } from '../../../shared/lib/transactionMetrics';
+import { filterCountableTransactions, summarizeTransactions } from '../../../shared/lib/transactionMetrics';
 
 export type FinancialAnalysisRangeKey = 'month' | '30d' | '90d';
 
@@ -784,8 +784,10 @@ export function analyzeFinancialOverview(input: {
   const today = startOfToday();
   const previousRange = getPreviousRange(input.range);
 
-  const rangeTransactions = input.transactions.filter((item) => isInRange(item.date, start, today));
-  const previousTransactions = input.transactions.filter((item) =>
+  const rangeTransactions = filterCountableTransactions(input.transactions).filter((item) =>
+    isInRange(item.date, start, today)
+  );
+  const previousTransactions = filterCountableTransactions(input.transactions).filter((item) =>
     isInRange(item.date, previousRange.start, previousRange.end)
   );
 

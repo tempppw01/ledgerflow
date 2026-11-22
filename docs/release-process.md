@@ -1,5 +1,15 @@
 # 发布流程(以及 release 工作流为什么曾经大面积失败)
 
+## 发布节奏:攒一批再发(重要)
+
+**不要一个修复就发一个版本。** 多个问题修复与新增内容攒成一批,再统一发一个版本,
+发布说明里一次写清全部内容。
+
+- 日常的修复/功能:只 **commit + push 到 main**,不动 `package.json` / `APP_VERSION`,
+  不打 tag、不建 Release
+- 等这批改动成规模(一个主题做完,或攒够几条像样的修复/功能),再统一:
+  改版本号 → 写 `release-notes/RELEASE_NOTES_<tag>.md` → 提交 → 打 tag → 工作流发布
+
 ## 约定
 
 **每个版本 tag 都要有对应的 `release-notes/RELEASE_NOTES_<tag>.md`,并且这个文件必须在

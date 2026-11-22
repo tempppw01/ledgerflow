@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { formatCurrency, formatDateTime } from '../../shared/lib/format';
 import { useTFallback } from '../../shared/lib/useTFallback';
-import { summarizeTransactions } from '../../shared/lib/transactionMetrics';
+import { filterCountableTransactions, summarizeTransactions } from '../../shared/lib/transactionMetrics';
 import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import {
@@ -256,7 +256,7 @@ export function SmartBudgetPage() {
   }, [statusFilter, trackingRows]);
 
   const monthTotals = useMemo(() => {
-    const monthTransactions = transactions.filter((item) => {
+    const monthTransactions = filterCountableTransactions(transactions).filter((item) => {
       const date = parseDateInput(item.date);
       return !Number.isNaN(date.getTime()) && formatMonthKey(date) === activeMonthKey;
     });

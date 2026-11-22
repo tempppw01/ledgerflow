@@ -1,4 +1,5 @@
 import type { TransactionItem, TransactionType } from '../../entities/transaction/types';
+import { isBalanceAffectingStatus } from './localDate';
 
 export type TransactionDirection = 'inflow' | 'outflow';
 
@@ -48,6 +49,25 @@ export interface TransactionSummary {
   refundTotal: number;
   netTotal: number;
   overallTotal: number;
+}
+
+/**
+ * 是否计入收支统计:未删除、且状态影响余额(待支付 / 已关闭 / 失败的行不计)。
+ *
+ * `summarizeTransactions` 本身**不做状态过滤** —— 它假定调用方已经筛过。给「资产/趋势」
+ * 这类口径用时必须显式套一层,否则同一屏里会出现两套数:账户余额那边
+ * (`computeAccountBalances`)一直排除这些行,而月度汇总把它们算进去了。
+ *
+ * 注意:交易**列表页**顶部的合计是对「你看到的这批行」求和,那种场景不要用这个过滤,
+ * 否则合计会与列表里可见的金额对不上。
+ */
+export function isCountableTransaction(tx: TransactionItem): boolean {
+  return !tx.trashedAt && isBalanceAffectingStatus(tx.status);
+}
+
+/** 只保留计入收支统计的行。用于资产、趋势、预算这类与余额同口径的聚合。 */
+export function filterCountableTransactions(rows: TransactionItem[]): TransactionItem[] {
+  return rows.filter(isCountableTransaction);
 }
 
 /**
