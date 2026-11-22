@@ -1449,9 +1449,20 @@ export const useFinanceStore = create<FinanceState>()(
             thrownError = new Error('未找到订阅项目。');
             return s;
           }
-          const accountId = subscription.accountId || s.accounts[0]?.id;
+          const explicitAccountId = subscription.accountId;
+          const accountId = explicitAccountId
+            ? s.accounts.some((account) => account.id === explicitAccountId)
+              ? explicitAccountId
+              : undefined
+            : s.accounts[0]?.id;
           if (!accountId) {
-            thrownError = new Error('当前没有可用账户，无法生成支出记录。');
+            // 订阅绑定的账户被删掉时不能照样写流水:那会留下指向不存在账户的 accountId,
+            // 余额里看不到它、支出统计里却有它(同一屏两套数)。
+            thrownError = new Error(
+              explicitAccountId
+                ? '订阅绑定的账户已不存在,请先重新指定账户。'
+                : '当前没有可用账户,无法生成支出记录。'
+            );
             return s;
           }
 
