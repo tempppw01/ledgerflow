@@ -1,7 +1,22 @@
 import { TransactionItem } from '../../entities/transaction/types';
 
+/**
+ * 导出用的列名。**不要随便改**:导入侧(billImport)会认这些别名,
+ * 两头对上才能「导出 → 再导入」。改这里要同时跑 `csv.roundtrip.test.ts`。
+ */
+export const CSV_EXPORT_HEADERS = [
+  'id',
+  'type',
+  'categoryId',
+  'accountId',
+  'amount',
+  'date',
+  'note',
+  'tags'
+] as const;
+
 export function exportTransactionsCsv(rows: TransactionItem[]) {
-  const headers = ['id', 'type', 'categoryId', 'accountId', 'amount', 'date', 'note', 'tags'];
+  const headers = [...CSV_EXPORT_HEADERS];
   const body = rows.map((row) =>
     [
       row.id,

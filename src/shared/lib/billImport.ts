@@ -4,6 +4,10 @@ import { resolveTransactionLocalDay } from './localDate';
 
 type BillSource = 'wechat' | 'alipay';
 
+// 正则字面量里不需要转义的字符集合 → 用于把英文列名安全地拼进 RegExp
+const ESCAPE_REGEXP = /[.*+?^${}()|[\]\\]/g;
+const escapedChar = (match: string) => `\\${match}`;
+
 interface ParseBillInput {
   csvText: string;
   source: BillSource;
@@ -56,13 +60,40 @@ const DATE_KEYS = [
   '交易创建时间',
   '付款时间',
   '完成时间',
-  '最近修改时间'
+  '最近修改时间',
+  // 本 App 自己导出的 CSV 用的是英文列名(见 csv.ts 的 CSV_EXPORT_HEADERS)。
+  // 不认这些别名,就会「导出能成功、导回来 0 条」。
+  'date',
+  'datetime',
+  'time'
 ];
-const AMOUNT_KEYS = ['金额', '金额(元)', '金额（元）', '订单金额', '交易金额', '收/支金额'];
-const TYPE_KEYS = ['收/支', '收支类型', '交易类型', '资金类型', '类型'];
-const NOTE_KEYS = ['商品名称', '商品', '商品说明', '交易对方', '备注', '商户', '收款方'];
-const STATUS_KEYS = ['交易状态', '当前状态', '状态'];
-const ORDER_NO_KEYS = ['交易号', '交易订单号', '订单号', '交易单号'];
+const AMOUNT_KEYS = [
+  '金额',
+  // 半角括号与全角括号两种写法都出现在真实导出里(以前重复写了两遍同一个格式)
+  '金额(元)',
+  '金额（元）',
+  '订单金额',
+  '交易金额',
+  '收/支金额',
+  // 本 App 导出的 CSV 用 `amount` 作列名。漏了这一项时 isLikelyHeader 会因为
+  // “没有金额列”直接判否 → 整份文件 0 条,界面却照样提示导入成功。
+  'amount',
+  'money'
+];
+const TYPE_KEYS = ['收/支', '收支类型', '交易类型', '资金类型', '类型', 'type'];
+const NOTE_KEYS = [
+  '商品名称',
+  '商品',
+  '商品说明',
+  '交易对方',
+  '备注',
+  '商户',
+  '收款方',
+  'note',
+  'description'
+];
+const STATUS_KEYS = ['交易状态', '当前状态', '状态', 'status'];
+const ORDER_NO_KEYS = ['交易号', '交易订单号', '订单号', '交易单号', 'orderNo', 'order_no'];
 const MERCHANT_ORDER_NO_KEYS = ['商家订单号', '商户订单号', '商户单号'];
 
 const HEADER_HINT_KEYS = [
@@ -134,9 +165,50 @@ function detectDelimiter(lines: string[]): ',' | '\t' {
   return tabScore > commaScore ? '\t' : ',';
 }
 
+const EN_WORD_KEYS = new Set([
+  // 'amount' 必须是整词匹配:它是 'type' 的父串,'amount'.includes('type') 为真,
+  // 用包含匹配去找「类型」列会先命中 amount 列,把 58.00 当成交易类型读出来。
+  'amount',
+  'money',
+  'date',
+  'datetime',
+  'time',
+  'type',
+  'note',
+  'description',
+  'status',
+  'orderNo',
+  'order_no'
+]);
+
+/**
+ * 列名里的英文键按**整词**匹配,中文键仍按包含匹配。
+ *
+ * 曾经只用 `k.includes(key)`:找「成功退款」时,键列表里的 `amount`(子串匹配)
+ * 会先撞上本 App 导出的 `amount` 列,于是**支出金额被当成退款金额**,
+ * 一笔 ¥58.00 的支出被算成「全额退款」→ 整行丢弃。导出导入闭环因此在第二处断掉。
+ */
+function keyMatchesColumn(column: string, key: string): boolean {
+  if (EN_WORD_KEYS.has(key)) {
+    // 按单词边界匹配,避免 amount 命中 refundAmount、date 命中 updateDate
+    const escaped = key.replace(ESCAPE_REGEXP, escapedChar);
+    const pattern = new RegExp('(^|[^a-zA-Z0-9])' + escaped + '([^a-zA-Z0-9]|$)', 'i');
+    return pattern.test(column);
+  }
+  return column.includes(key);
+}
+
 function pickByKeys(row: Record<string, string>, keys: string[]): string {
+  // 先精确匹配:列名与键完全相等时直接取,不受匹配规则影响
   for (const key of keys) {
-    const matched = Object.keys(row).find((k) => k.includes(key));
+    const exact = Object.keys(row).find((k) => k === key);
+    if (exact && row[exact]) {
+      return row[exact];
+    }
+  }
+
+  for (const key of keys) {
+    const matched = Object.keys(row).find((k) => keyMatchesColumn(k, key));
     if (matched && row[matched]) {
       return row[matched];
     }
@@ -144,6 +216,11 @@ function pickByKeys(row: Record<string, string>, keys: string[]): string {
   return '';
 }
 
+/**
+ * 把一行的第 idx 个单元格写进 row[h]。
+ * 同一列名出现多次时(某些导出会重复列)用空格拼接,而不是后一个覆盖前一个 ——
+ * 覆盖会让「金额」这类信息静默丢掉其中一列。
+ */
 function mergeRowCell(row: Record<string, string>, key: string, value: string): void {
   if (!key) return;
   if (!(key in row)) {
@@ -321,9 +398,32 @@ function parseType(
   const statusText = pickByKeys(row, STATUS_KEYS);
   const noteText = buildNote(row);
   const refundAmountRaw =
-    pickByKeys(row, ['成功退款（元）', '成功退款(元)', '退款金额']) || row['成功退款（元）'] || '';
+    pickByKeys(row, [
+      '成功退款(元)',
+      '成功退款（元）',
+      '退款金额',
+      'refundAmount',
+      'refund_amount'
+    ]) || '';
   const refundAmount = parseAmount(refundAmountRaw);
   const all = `${cashflowText} ${typeText} ${statusText} ${noteText} ${amountRaw}`;
+
+  // 本 App 导出的 CSV 里 `type` 列是英文枚举(expense / income / ...),中文关键词
+  // 匹配不到它,这里直接按值映射。必须整词相等:账单的「类型」列也可能是自由文本,
+  // 用包含匹配会把「非支出」这类值误判成支出。
+  //
+  // 注意读的是 typeText(「交易类型」列)而不是 cashflowText(「收/支」列):
+  // 英文导出里「收/支」列是空的,读错列会让这段判断永远不生效 ——
+  // 一笔 ¥58 的支出会被记成收入(见 csv.roundtrip.test.ts)。
+  const englishType = typeText.trim().toLowerCase();
+  if (
+    englishType === 'expense' ||
+    englishType === 'income' ||
+    englishType === 'budget' ||
+    englishType === 'repayment'
+  ) {
+    return englishType;
+  }
 
   // 收支列能读出来(支出/收入)时以它为准;只有列里是乱码或缺失时,才用退款列兜底。
   // 否则「支出 24.59 + 成功退款 24.59」这种行会被判成收入(见 buildTransactionFromLine 的净额处理)。
@@ -413,6 +513,14 @@ function parseDate(raw: string): string | null {
     return null;
   }
 
+  // 先按原样解析。下面的归一化会把 `.` 换成 `-`,而 ISO 时间戳
+  // (`2026-11-20T04:30:00.000Z`)里的毫秒点号一旦被替换就变成无效日期,
+  // 于是「本 App 自己导出的 CSV」每一行都解析失败 —— 整份文件导回来是 0 条。
+  const direct = new Date(trimmed);
+  if (!Number.isNaN(direct.getTime())) {
+    return direct.toISOString();
+  }
+
   const normalized = trimmed
     // 中文日期:2026年11月18日 → 2026-11-18
     .replace(/年/g, '-')
@@ -494,9 +602,9 @@ function findHeaderIndex(lines: string[], delimiter: ',' | '\t'): number {
 }
 
 function buildNote(row: Record<string, string>): string {
-  const counterparty = pickByKeys(row, ['交易对方', '收款方', '商户']);
-  const goods = pickByKeys(row, ['商品名称', '商品', '商品说明']);
-  const remark = pickByKeys(row, ['备注']);
+  const counterparty = pickByKeys(row, ['交易对方', '收款方', '商户', 'counterparty', 'merchant']);
+  const goods = pickByKeys(row, ['商品名称', '商品', '商品说明', 'note', 'description']);
+  const remark = pickByKeys(row, ['备注', 'remark']);
 
   const parts = [counterparty, goods, remark].map((item) => item.trim()).filter(Boolean);
   if (parts.length === 0) {
