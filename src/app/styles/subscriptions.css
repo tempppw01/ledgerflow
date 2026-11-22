@@ -108,3 +108,163 @@
 
 @media (max-width: 1180px) { .subscriptions-hero.vi-hero, .subscriptions-main-grid { grid-template-columns: minmax(0, 1fr); } .subscriptions-form-grid-primary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 720px) { .subscriptions-page { gap: var(--space-4); } .subscriptions-hero.vi-hero { padding-bottom: var(--space-4); } .subscriptions-summary-strip { width: 100%; } .subscriptions-summary-pill { flex: 1 1 40%; justify-content: space-between; } .subscriptions-template-list, .subscriptions-form-grid, .subscriptions-form-grid-primary { grid-template-columns: 1fr; } .subscriptions-field-wide { grid-column: auto; } .subscriptions-checkbox { padding-top: 0; } .subscriptions-panel-head, .subscriptions-card-head { align-items: flex-start; flex-direction: column; } .subscriptions-card-badges, .subscriptions-actions-inline { justify-content: flex-start; } }
+
+/* ---------- 本次调整:药丸可筛选 / 提醒压成一行 / 更多菜单 / 表单可折叠 ---------- */
+
+/* 状态药丸从「死统计」变成筛选按钮 */
+.subscriptions-summary-pill {
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.subscriptions-summary-pill.is-active {
+  border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-bg-elevated));
+}
+
+.subscriptions-summary-pill.is-active strong {
+  color: var(--color-primary);
+}
+
+/* 待处理提醒:一行说完,不再重复清单内容 */
+.subscriptions-attention-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--color-warning, #d97706) 35%, var(--color-border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-warning, #d97706) 8%, transparent);
+}
+
+.subscriptions-attention-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.subscriptions-attention-copy strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-sm);
+}
+
+.subscriptions-attention-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-warning, #d97706) 25%, transparent);
+  font-size: var(--font-xs);
+}
+
+.subscriptions-attention-names {
+  color: var(--color-text-secondary);
+  font-size: var(--font-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subscriptions-attention-action {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border: 1px solid color-mix(in srgb, var(--color-warning, #d97706) 45%, var(--color-border));
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--font-xs);
+  cursor: pointer;
+}
+
+.subscriptions-attention-action[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--color-warning, #d97706) 20%, transparent);
+}
+
+/* 卡片:主操作常显,其余收进「更多」 */
+.subscriptions-card-more {
+  position: relative;
+}
+
+.subscriptions-more-toggle {
+  min-width: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  font-size: var(--font-md);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.subscriptions-more-toggle:hover,
+.subscriptions-more-toggle.is-open {
+  color: var(--color-primary);
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+}
+
+.subscriptions-more-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 3;
+  display: grid;
+  min-width: 128px;
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg-elevated);
+  box-shadow: var(--shadow-md, 0 8px 24px rgba(0, 0, 0, 0.28));
+}
+
+.subscriptions-more-menu button {
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--font-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.subscriptions-more-menu button:hover {
+  background: var(--color-bg-hover);
+}
+
+.subscriptions-more-menu button.danger {
+  color: var(--color-expense);
+}
+
+/* 表单头:折叠按钮 */
+.subscriptions-form-head-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.subscriptions-form-toggle {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: var(--font-sm);
+  cursor: pointer;
+}
+
+.subscriptions-form-toggle:hover {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+/* 表单收起时:清单跨整行,不让左边的空面板占着半屏 */
+.subscriptions-page.is-form-collapsed .subscriptions-list-panel {
+  grid-column: 1 / -1;
+}

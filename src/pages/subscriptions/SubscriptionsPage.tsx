@@ -320,6 +320,17 @@ function SubscriptionTemplateLogo({ kind }: { kind: TemplateLogoKind }) {
   );
 }
 
+/**
+ * 填充占位符。项目里的 key 用 i18next 的 `{{value}}` 风格,而 `tf()` 只接 key + 兜底字符串:
+ * 直接 `.replace('{value}', ...)` 会把 `{{value}}` 变成 `{3}}`。同时匹配两种写法更稳。
+ */
+function fill(template: string, values: Record<string, string | number>) {
+  return Object.entries(values).reduce(
+    (text, [key, value]) => text.replace(new RegExp(`\\{\\{?${key}\\}?\\}`, 'g'), String(value)),
+    template
+  );
+}
+
 export function SubscriptionsPage() {
   const tf = useTFallback();
   const navigate = useNavigate();
@@ -333,6 +344,12 @@ export function SubscriptionsPage() {
   const [form, setForm] = useState(DEFAULT_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  /** 状态筛选:概览药丸点一下就过滤清单(原来药丸是死的,点了没反应)。 */
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'due-soon' | 'expired' | 'attention'>('all');
+  /** 同一时间只展开一张卡的「更多」,避免又变成一排按钮。 */
+  const [openActionsId, setOpenActionsId] = useState<string | null>(null);
+  /** 新增表单默认收起:管理页第一眼该看到清单。 */
+  const [formOpen, setFormOpen] = useState(false);
   const [error, setError] = useState('');
   const [demoAvailable, setDemoAvailable] = useState(false);
 
@@ -395,6 +412,14 @@ export function SubscriptionsPage() {
     [subscriptions]
   );
 
+  const visibleRows = useMemo(() => {
+    if (statusFilter === 'all') return rows;
+    if (statusFilter === 'attention') {
+      return rows.filter((item) => item.status === 'due-soon' || item.status === 'expired');
+    }
+    return rows.filter((item) => item.status === statusFilter);
+  }, [rows, statusFilter]);
+
   const attentionItems = useMemo(
     () =>
       rows.filter((item) => item.status === 'due-soon' || item.status === 'expired').slice(0, 6),
@@ -415,6 +440,7 @@ export function SubscriptionsPage() {
     setForm(DEFAULT_FORM);
     setEditingId(null);
     setError('');
+    setFormOpen(true);
   };
 
   const applySubscriptionTemplate = (template: SubscriptionTemplate) => {
@@ -524,7 +550,11 @@ export function SubscriptionsPage() {
   };
 
   return (
-    <div className="subscriptions-page vi-page">
+    <div
+      className={`subscriptions-page vi-page${
+        formOpen || editingId ? '' : ' is-form-collapsed'
+      }`}
+    >
       <section className="subscriptions-hero vi-hero">
         <div className="subscriptions-header">
           <div className="subscriptions-hero-copy vi-hero-copy">
@@ -534,24 +564,25 @@ export function SubscriptionsPage() {
               className="subscriptions-summary-strip"
               aria-label={tf('subscriptions.summaryAria', '订阅概览')}
             >
-              <article className="subscriptions-summary-pill">
-                <span>{tf('subscriptions.summary.total', '总数')}</span>
-                <strong>{summary.total}</strong>
-              </article>
-              <article className="subscriptions-summary-pill">
-                <span>{tf('subscriptions.summary.active', '活跃中')}</span>
-                <strong>{summary.active}</strong>
-              </article>
-              <article className="subscriptions-summary-pill is-warning">
-                <span>{tf('subscriptions.summary.dueSoon', '即将到期')}</span>
-                <strong>{summary.dueSoon}</strong>
-              </article>
-              {summary.expired > 0 ? (
-                <article className="subscriptions-summary-pill is-danger">
-                  <span>{tf('subscriptions.summary.expired', '已到期')}</span>
-                  <strong>{summary.expired}</strong>
-                </article>
-              ) : null}
+              {(
+                [
+                  ['all', tf('subscriptions.summary.total', '总数'), summary.total, ''],
+                  ['active', tf('subscriptions.summary.active', '活跃中'), summary.active, ''],
+                  ['due-soon', tf('subscriptions.summary.dueSoon', '即将到期'), summary.dueSoon, ' is-warning'],
+                  ['expired', tf('subscriptions.summary.expired', '已到期'), summary.expired, ' is-danger']
+                ] as const
+              ).map(([key, label, count, tone]) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`subscriptions-summary-pill${tone}${statusFilter === key ? ' is-active' : ''}`}
+                  aria-pressed={statusFilter === key}
+                  onClick={() => setStatusFilter(key)}
+                >
+                  <span>{label}</span>
+                  <strong>{count}</strong>
+                </button>
+              ))}
             </div>
           </div>
 
@@ -582,32 +613,34 @@ export function SubscriptionsPage() {
 
               {attentionItems.length > 0 ? (
                 <div className="subscriptions-compact-group subscriptions-attention-compact">
-                  <div className="dashboard-section-header">
-                    <h4>{tf('subscriptions.overview.reminders', '待处理提醒')}</h4>
-                  </div>
-                  <div className="subscriptions-alert-list">
-                    {attentionItems.map((item) => (
-                      <article key={`alert-${item.id}`} className="subscriptions-alert-card">
-                        <strong>{item.name}</strong>
-                        <span>
-                          {item.expireDate
-                            ? tf('subscriptions.card.expirePrefix', '到期:{date}').replace(
-                                '{date}',
-                                formatDate(item.expireDate)
-                              )
-                            : item.renewalDate
-                              ? tf('subscriptions.card.renewPrefix', '续费:{date}').replace(
-                                  '{date}',
-                                  formatDate(item.renewalDate)
-                                )
-                              : tf('subscriptions.card.noDate', '日期未设置')}
+                  {/* 原来是 3 张卡逐条重复清单里的内容(名字/到期日/状态/金额),
+                      占 222px 却和下面的清单说同一件事。现在压成一行:名字都在,
+                      点一下就只看待处理。 */}
+                  <div className="subscriptions-attention-row">
+                    <div className="subscriptions-attention-copy">
+                      <strong>
+                        {fill(tf('subscriptions.overview.reminders', '待处理提醒'), {})}
+                        <span className="subscriptions-attention-count">
+                          {attentionItems.length}
                         </span>
-                        <em>
-                          {labelOf(STATUS_LABEL_ENTRIES, tf, item.status)} ·{' '}
-                          {formatMoneyByCurrency(item.amount, item.currency)}
-                        </em>
-                      </article>
-                    ))}
+                      </strong>
+                      <span className="subscriptions-attention-names">
+                        {attentionItems
+                          .map(
+                            (item) =>
+                              `${item.name}(${labelOf(STATUS_LABEL_ENTRIES, tf, item.status)})`
+                          )
+                          .join('、')}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="subscriptions-attention-action"
+                      aria-pressed={statusFilter === 'attention'}
+                      onClick={() => setStatusFilter('attention')}
+                    >
+                      {tf('subscriptions.overview.onlyAttention', '只看待处理')}
+                    </button>
                   </div>
                 </div>
               ) : null}
@@ -626,17 +659,36 @@ export function SubscriptionsPage() {
                   : tf('subscriptions.form.createTitle', '新增订阅')}
               </h3>
             </div>
-            <div className="subscriptions-form-preview">
-              <span>{tf('subscriptions.form.monthlyAverage', '折算月均')}</span>
-              <strong>{formatMoneyByCurrency(formMonthlyPreview, form.currency || 'CNY')}</strong>
-              <em>
-                {form.billingCycle === 'custom'
-                  ? tf('subscriptions.form.customCycleHint', '按自定义周期折算')
-                  : labelOf(CYCLE_LABEL_ENTRIES, tf, form.billingCycle)}
-              </em>
+            <div className="subscriptions-form-head-actions">
+              {/* 表单还空着时显示「折算月均 ¥0.00」没有意义 */}
+              {formOpen || editingId || Number(form.amount) > 0 ? (
+                <div className="subscriptions-form-preview">
+                  <span>{tf('subscriptions.form.monthlyAverage', '折算月均')}</span>
+                  <strong>{formatMoneyByCurrency(formMonthlyPreview, form.currency || 'CNY')}</strong>
+                  <em>
+                    {form.billingCycle === 'custom'
+                      ? tf('subscriptions.form.customCycleHint', '按自定义周期折算')
+                      : labelOf(CYCLE_LABEL_ENTRIES, tf, form.billingCycle)}
+                  </em>
+                </div>
+              ) : null}
+              {editingId ? null : (
+                <button
+                  type="button"
+                  className="subscriptions-form-toggle"
+                  aria-expanded={formOpen}
+                  onClick={() => setFormOpen((current) => !current)}
+                >
+                  {formOpen
+                    ? tf('subscriptions.form.collapse', '收起表单')
+                    : tf('subscriptions.form.expand', '新增订阅')}
+                </button>
+              )}
             </div>
           </div>
 
+          {formOpen || editingId ? (
+          <>
           <div
             className="subscriptions-template-panel"
             aria-label={tf('subscriptions.form.templatesAria', '订阅预设模板')}
@@ -863,6 +915,8 @@ export function SubscriptionsPage() {
               ) : null}
             </div>
           </form>
+          </>
+          ) : null}
         </section>
 
         <section className="subscriptions-list-panel vi-section">
@@ -878,7 +932,20 @@ export function SubscriptionsPage() {
             ) : null}
           </div>
 
-          {rows.length === 0 ? (
+          {rows.length > 0 && visibleRows.length === 0 ? (
+            <EmptyState
+              title={tf('subscriptions.list.noMatchTitle', '这个状态暂时没有订阅')}
+              description={tf(
+                'subscriptions.list.noMatchDesc',
+                '换一个状态筛选,或点「总数」看全部订阅。'
+              )}
+              icon="🔍"
+              secondaryAction={{
+                label: tf('subscriptions.list.showAll', '看全部订阅'),
+                onClick: () => setStatusFilter('all')
+              }}
+            />
+          ) : rows.length === 0 ? (
             <EmptyState
               title={tf('subscriptions.list.emptyTitle', '还没有订阅项目')}
               description={tf(
@@ -897,7 +964,7 @@ export function SubscriptionsPage() {
             />
           ) : (
             <div className="subscriptions-card-list">
-              {rows.map((item) => {
+              {visibleRows.map((item) => {
                 const account = item.accountId
                   ? accounts.find((row) => row.id === item.accountId)
                   : null;
@@ -981,26 +1048,51 @@ export function SubscriptionsPage() {
                       >
                         {tf('subscriptions.card.generateExpense', '生成支出')}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          navigate(
-                            `/transactions?tags=${encodeURIComponent('订阅')}&note=${encodeURIComponent(item.name)}`
-                          )
-                        }
-                      >
-                        {tf('subscriptions.card.viewExpense', '查看支出')}
-                      </button>
-                      <button type="button" onClick={() => startEdit(item)}>
-                        {tf('subscriptions.card.edit', '编辑')}
-                      </button>
-                      <button
-                        type="button"
-                        className="danger"
-                        onClick={() => setPendingDeleteId(item.id)}
-                      >
-                        {tf('subscriptions.card.delete', '删除')}
-                      </button>
+                      {/* 每张卡原来常显 4 个按钮(含红色的删除),20 条订阅就是 80 个按钮。
+                          现在只留主操作「生成支出」,其余收进「更多」。 */}
+                      <div className="subscriptions-card-more">
+                        <button
+                          type="button"
+                          className={`subscriptions-more-toggle${openActionsId === item.id ? ' is-open' : ''}`}
+                          aria-expanded={openActionsId === item.id}
+                          aria-label={tf('subscriptions.card.moreAria', '更多操作:{name}').replace(
+                            '{name}',
+                            String(item.name)
+                          )}
+                          onClick={() =>
+                            setOpenActionsId((current) => (current === item.id ? null : item.id))
+                          }
+                        >
+                          ⋯
+                        </button>
+                        {openActionsId === item.id ? (
+                          <div className="subscriptions-more-menu">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                navigate(
+                                  `/transactions?tags=${encodeURIComponent('订阅')}&note=${encodeURIComponent(item.name)}`
+                                )
+                              }
+                            >
+                              {tf('subscriptions.card.viewExpense', '查看支出')}
+                            </button>
+                            <button type="button" onClick={() => startEdit(item)}>
+                              {tf('subscriptions.card.edit', '编辑')}
+                            </button>
+                            <button
+                              type="button"
+                              className="danger"
+                              onClick={() => {
+                                setOpenActionsId(null);
+                                setPendingDeleteId(item.id);
+                              }}
+                            >
+                              {tf('subscriptions.card.delete', '删除')}
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   </article>
                 );

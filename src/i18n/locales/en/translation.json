@@ -1707,7 +1707,8 @@
       "monthlyCost": "Estimated monthly fixed cost",
       "groupedByCurrency": "Grouped by currency",
       "normalizedMonthly": "Normalized per month",
-      "reminders": "Pending reminders"
+      "reminders": "Pending reminders",
+      "onlyAttention": "Only pending"
     },
     "card": {
       "noDate": "No date set",
@@ -1724,7 +1725,8 @@
       "perMonth": "/mo",
       "renewPrefix": "Renews {date}",
       "renewTag": "Renews",
-      "remindTag": "Reminder"
+      "remindTag": "Reminder",
+      "moreAria": "More actions for {name}"
     },
     "form": {
       "editTitle": "Edit subscription",
@@ -1753,7 +1755,9 @@
       "note": "Notes",
       "notePlaceholder": "Plan details, member benefits, last digits of the card…",
       "saveEdit": "Save changes",
-      "cancelEdit": "Cancel editing"
+      "cancelEdit": "Cancel editing",
+      "collapse": "Hide form",
+      "expand": "New subscription"
     },
     "kind": {
       "digital": "Digital",
@@ -1779,7 +1783,10 @@
       "count": "Recorded",
       "emptyTitle": "No subscriptions yet",
       "emptyDesc": "Add your first digital subscription, mobile plan or membership; costs and expiry will be tracked together.",
-      "loadDemo": "Load sample subscriptions"
+      "loadDemo": "Load sample subscriptions",
+      "noMatchTitle": "Nothing with this status",
+      "noMatchDesc": "Pick another status, or tap Total to see everything.",
+      "showAll": "Show all subscriptions"
     },
     "confirm": {
       "cancel": "Cancel"
