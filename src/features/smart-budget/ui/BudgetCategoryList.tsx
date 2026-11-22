@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { formatExecutionRatePercent } from '../model/rateDisplay';
 import { formatCurrency } from '../../../shared/lib/format';
 import { useTFallback } from '../../../shared/lib/useTFallback';
 import { resolveBudgetCategoryLabel } from '../model/budgetCategoryLabels';
@@ -117,7 +118,7 @@ function CategoryRow(props: {
 
       <div className="sb-category-meta">
         <span>
-          {tf('smartBudget.common.executionRate', '执行率')} {(row.ratio * 100).toFixed(1)}%
+          {tf('smartBudget.common.executionRate', '执行率')} {formatExecutionRatePercent(row.ratio)}
         </span>
         <span className={row.diff <= 0 ? 'is-safe' : 'is-warn'}>
           {row.diff <= 0

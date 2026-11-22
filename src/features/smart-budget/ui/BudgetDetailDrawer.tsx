@@ -1,3 +1,4 @@
+import { formatExecutionRatePercent } from '../model/rateDisplay';
 import { formatCurrency } from '../../../shared/lib/format';
 import { useTFallback } from '../../../shared/lib/useTFallback';
 import { BudgetTrackingRow } from '../model/budgetInsights';
@@ -65,7 +66,7 @@ export function BudgetDetailDrawer({ row, detail, onClose }: BudgetDetailDrawerP
             />
           </div>
           <p className="sb-drawer-rate">
-            {tf('smartBudget.common.executionRate', '执行率')} {(row.ratio * 100).toFixed(1)}%
+            {tf('smartBudget.common.executionRate', '执行率')} {formatExecutionRatePercent(row.ratio)}
           </p>
 
           {detail ? (

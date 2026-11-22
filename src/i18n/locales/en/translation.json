@@ -3576,7 +3576,9 @@
       "safeCount": "{count} categories within budget",
       "setupFirst": "Finish the budget setup first",
       "spent": "Used so far",
-      "todayAllowance": "About {amount} today"
+      "todayAllowance": "About {amount} today",
+      "overspent": "Over budget",
+      "todayOverspent": "Over by {amount} today"
     },
     "trend": {
       "aria": "Budget execution trend",

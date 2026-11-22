@@ -3576,7 +3576,9 @@
       "safeCount": "{count} 个分类在预算内",
       "setupFirst": "先完成预算设置",
       "spent": "已经用掉",
-      "todayAllowance": "今天约 {amount}"
+      "todayAllowance": "今天约 {amount}",
+      "overspent": "已超支",
+      "todayOverspent": "今天已超 {amount}"
     },
     "trend": {
       "aria": "预算执行趋势",

@@ -87,19 +87,21 @@ export function BudgetOverview({ overview, health, pacing }: BudgetOverviewProps
         <article className="sb-kpi">
           <span className="sb-kpi-label">
             <BudgetTargetIcon className="sb-icon-sm" />
-            {tf('smartBudget.overview.remaining', '还能花')}
+            {overview.remainingAmount >= 0
+              ? tf('smartBudget.overview.remaining', '还能花')
+              : tf('smartBudget.overview.overspent', '已超支')}
           </span>
           <strong
             className={`sb-number ${overview.remainingAmount >= 0 ? 'is-positive' : 'is-negative'}`}
           >
-            {formatCurrency(overview.remainingAmount)}
+            {formatCurrency(Math.abs(overview.remainingAmount))}
           </strong>
           <span className="sb-kpi-foot">
             {pacing && pacing.isCurrentMonth
-              ? tf('smartBudget.overview.todayAllowance', '今天约 {amount}').replace(
-                  '{amount}',
-                  String(formatCurrency(pacing.dailyAllowance))
-                )
+              ? (pacing.dailyAllowance >= 0
+                  ? tf('smartBudget.overview.todayAllowance', '今天约 {amount}')
+                  : tf('smartBudget.overview.todayOverspent', '今天已超 {amount}')
+                ).replace('{amount}', String(formatCurrency(Math.abs(pacing.dailyAllowance))))
               : tf('smartBudget.overview.safeCount', '{count} 个分类在预算内').replace(
                   '{count}',
                   String(overview.safeCount)
