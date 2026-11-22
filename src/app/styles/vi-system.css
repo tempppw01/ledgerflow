@@ -26,6 +26,11 @@
 .vi-page {
   display: grid;
   gap: var(--vi-page-gap);
+  /* grid 项默认 min-width:auto —— 内容的最小宽度会把整列撑得比容器还宽,
+     而 .workspace 是 overflow-x: hidden,超出的部分既不滚动也点不到,直接被裁掉。
+     余额变动(390px 视口下列宽 545px,右侧汇总与「增加 / 笔数」全部看不到)就是
+     这么来的。minmax(0, 1fr) 让列可以收缩到容器宽度,内容再自行换行。 */
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   width: 100%;
 }

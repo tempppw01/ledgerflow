@@ -2285,10 +2285,11 @@
       "regenerate": "Regenerate",
       "riskLabel": "risk",
       "status": {
-        "live": "Prices, news and sectors combined · updates every 15 min · score",
+        "live": "Prices, news and sectors combined · updates every 15 min",
         "localOnly": "Local signals · refreshes every 15 min after AI setup",
-        "needModel": "Local signals ready · pick an AI model to generate briefings · score",
-        "collecting": "Collecting prices and news · score"
+        "needModel": "Local signals ready · pick an AI model to generate briefings",
+        "collecting": "Collecting prices and news",
+        "unavailable": "Local signals ready, AI unavailable"
       },
       "line": {
         "loading": "Quotes are still loading — no conclusions yet.",
@@ -2298,7 +2299,8 @@
         "weakening": "Sentiment is fading; today is for watching, not impulsive moves.",
         "hesitant": "The index is undecided; watch your own holdings instead of every tick."
       },
-      "subtitle": "Moves, sectors and news boiled down to a few lines — enough to act on."
+      "subtitle": "Moves, sectors and news boiled down to a few lines — enough to act on.",
+      "scoreLabel": "score"
     },
     "clock": {
       "eyebrow": "Global market relay",

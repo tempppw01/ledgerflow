@@ -664,11 +664,50 @@
 }
 
 .investments-market-insight-meta {
-  display: block;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
   margin-top: 10px;
   color: var(--color-text-tertiary);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.35;
+}
+
+/* 分数是 -100~100 的有符号值,必须与前面的说明文字分开、并带上自己的标签 ——
+   拼成一句话时「…每 15 分钟更新 · 综合 -23」会被读成「更新晚了 23 分钟」。 */
+.investments-market-insight-status {
+  min-width: 0;
+}
+
+.investments-market-insight-signal {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  flex: 0 0 auto;
+  padding: 1px 7px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-text-tertiary) 8%, transparent);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.investments-market-insight-signal strong {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.investments-market-insight-signal.is-strong {
+  border-color: color-mix(in srgb, var(--color-income) 35%, var(--color-border));
+  background: color-mix(in srgb, var(--color-income) 10%, transparent);
+  color: var(--color-income);
+}
+
+.investments-market-insight-signal.is-weak {
+  border-color: color-mix(in srgb, var(--color-expense) 35%, var(--color-border));
+  background: color-mix(in srgb, var(--color-expense) 10%, transparent);
+  color: var(--color-expense);
 }
 
 .investments-market-insight-footer {

@@ -1195,6 +1195,35 @@ function PlainMarketBriefingPanel({
   const policyNews = news.find((item) => isPolicySignalText(`${item.title} ${item.summary}`));
   const topNews = policyNews || news[0];
 
+  // 引脚上的「状态说明」只讲数据来源与刷新频率,分数拆成带标签的小块单独渲染。
+  //
+  // 以前把分数拼进同一句话,而综合分是 -100~100 的有符号值,于是出现过
+  // 「先用本地信号 · 配置 AI 后每 15 分钟更新 · 综合 -23 · 风险 96」——
+  // 光看这句,「-23」和前面的「更新」连读,像是在说「更新晚了 23 分钟」,
+  // 而实际上它是综合分的负数。风险分同理:后面紧跟的数字没有标签,只能猜。
+  const insightStatusLine =
+    insightStatus === 'ready' && insight
+      ? tf('investments.briefing.status.live', '结合行情、新闻和板块 · 每 15 分钟更新')
+      : insightStatus === 'disabled'
+        ? tf('investments.briefing.status.localOnly', '本地信号 · 配置 AI 后每 15 分钟更新')
+        : insightStatus === 'model-missing'
+          ? tf('investments.briefing.status.needModel', '本地信号可用 · 请先选择 AI 模型再生成简报')
+          : insightStatus === 'error'
+            ? tf('investments.briefing.status.unavailable', '本地信号可用,AI 暂不可用')
+            : tf('investments.briefing.status.collecting', '正在整理行情和新闻');
+  const scoreTone =
+    algorithmSignals.score >= 35
+      ? 'is-strong'
+      : algorithmSignals.score <= -35
+        ? 'is-weak'
+        : 'is-flat';
+  const riskTone =
+    algorithmSignals.riskScore >= 70
+      ? 'is-weak'
+      : algorithmSignals.riskScore <= 35
+        ? 'is-strong'
+        : 'is-flat';
+
   return (
     <section
       className="panel investments-plain-briefing-panel"
@@ -1279,15 +1308,15 @@ function PlainMarketBriefingPanel({
       </div>
       <div className="investments-market-insight-footer">
         <small className="investments-market-insight-meta">
-          {insightStatus === 'ready' && insight
-            ? `${tf('investments.briefing.status.live', '结合行情、新闻和板块 · 每 15 分钟更新 · 综合')} ${algorithmSignals.score} · ${tf('investments.briefing.riskLabel', '风险')} ${algorithmSignals.riskScore}`
-            : insightStatus === 'disabled'
-              ? `${tf('investments.briefing.status.localOnly', '先用本地信号 · 配置 AI 后每 15 分钟更新 · 综合')} ${algorithmSignals.score} · ${tf('investments.briefing.riskLabel', '风险')} ${algorithmSignals.riskScore}`
-              : insightStatus === 'model-missing'
-                ? `${tf('investments.briefing.status.needModel', '本地信号可用 · 请先选择 AI 模型再生成简报 · 综合')} ${algorithmSignals.score} · ${tf('investments.briefing.riskLabel', '风险')} ${algorithmSignals.riskScore}`
-                : insightStatus === 'error'
-                  ? `本地信号可用，AI 暂不可用 · 综合 ${algorithmSignals.score} · 风险 ${algorithmSignals.riskScore}`
-                  : `${tf('investments.briefing.status.collecting', '正在整理行情和新闻 · 综合')} ${algorithmSignals.score} · ${tf('investments.briefing.riskLabel', '风险')} ${algorithmSignals.riskScore}`}
+          <span className="investments-market-insight-status">{insightStatusLine}</span>
+          <span className={`investments-market-insight-signal ${scoreTone}`}>
+            {tf('investments.briefing.scoreLabel', '综合分')}
+            <strong>{algorithmSignals.score}</strong>
+          </span>
+          <span className={`investments-market-insight-signal ${riskTone}`}>
+            {tf('investments.briefing.riskLabel', '风险')}
+            <strong>{algorithmSignals.riskScore}</strong>
+          </span>
         </small>
         {insightStatus === 'error' && onRetryInsight ? (
           <button
@@ -2223,7 +2252,10 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
   }
 
   return (
-    <section className="investments-market-history-section" aria-label={tf('investments.marketHistoryAria', '大盘历史行情和投资模拟')}>
+    <section
+      className="investments-market-history-section"
+      aria-label={tf('investments.marketHistoryAria', '大盘历史行情和投资模拟')}
+    >
       <div className="investments-market-history-head">
         <div>
           <h4>{historyTarget.label.replace(/^.+?·\s*/, '')}历史走势</h4>
@@ -2276,7 +2308,8 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
             <>
               <div className="investments-market-history-summary">
                 <span>
-                  {tf('investments.simulation.start', '起点')} <strong>{formatMarketIndexValue(firstHistoryPoint?.value)}</strong>
+                  {tf('investments.simulation.start', '起点')}{' '}
+                  <strong>{formatMarketIndexValue(firstHistoryPoint?.value)}</strong>
                 </span>
                 <span>
                   {tf('investments.market.latest', '最新')}
@@ -2339,7 +2372,11 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
             </>
           ) : (
             <div className="investments-market-chart-empty" role="status">
-              <strong>{historyStatus === 'loading' ? tf('investments.market.historyLoading', '历史数据加载中') : tf('investments.market.historyEmpty', '暂无历史数据')}</strong>
+              <strong>
+                {historyStatus === 'loading'
+                  ? tf('investments.market.historyLoading', '历史数据加载中')
+                  : tf('investments.market.historyEmpty', '暂无历史数据')}
+              </strong>
               <span>{historyError || '选择区间后会显示日线走势。'}</span>
             </div>
           )}
@@ -2348,7 +2385,12 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
         <form className="investments-simulation-panel" onSubmit={runSimulation}>
           <div>
             <h4>{tf('investments.simulation.title', '定投模拟')}</h4>
-            <p>{tf('investments.simulation.subtitle', '用历史收盘价估算：按计划投入后，期末大约剩多少。')}</p>
+            <p>
+              {tf(
+                'investments.simulation.subtitle',
+                '用历史收盘价估算：按计划投入后，期末大约剩多少。'
+              )}
+            </p>
           </div>
           <div className="investments-simulation-fields">
             <label>
@@ -2359,7 +2401,9 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
                   setSimulationFrequency(event.target.value as InvestmentSimulationFrequency)
                 }
               >
-                <option value="trading-daily">{tf('investments.simulation.everyTradingDay', '每个交易日')}</option>
+                <option value="trading-daily">
+                  {tf('investments.simulation.everyTradingDay', '每个交易日')}
+                </option>
                 <option value="monthly">{tf('investments.simulation.monthly', '每月')}</option>
                 <option value="weekly">{tf('investments.simulation.weekly', '每周')}</option>
               </select>
@@ -2439,7 +2483,11 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
               ? tf('investments.market.sim.running', '模拟中…')
               : tf('investments.market.sim.run', '开始模拟')}
           </button>
-          {simulationError ? <p className="investments-market-error" role="alert">{simulationError}</p> : null}
+          {simulationError ? (
+            <p className="investments-market-error" role="alert">
+              {simulationError}
+            </p>
+          ) : null}
           {simulationResult ? (
             <div
               className="investments-simulation-result"
@@ -2470,8 +2518,9 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
         </form>
       </div>
       <p className="investments-market-source-note investments-simulation-method-note">
-        计算口径：按计划日在历史日线中顺延到下一个可用交易日买入，期末按结束日前最后收盘价估值；{tf('investments.metric.return', '收益')}率为模拟盈亏
-        ÷ 累计投入，未年化。仅模拟指数点位，不代表实际基金收益，且不含申购费、分红、税费和滑点。
+        计算口径：按计划日在历史日线中顺延到下一个可用交易日买入，期末按结束日前最后收盘价估值；
+        {tf('investments.metric.return', '收益')}率为模拟盈亏 ÷
+        累计投入，未年化。仅模拟指数点位，不代表实际基金收益，且不含申购费、分红、税费和滑点。
       </p>
     </section>
   );
@@ -3471,7 +3520,11 @@ function MarketOverviewPanel({
         </details>
       ) : null}
 
-      {error && status === 'error' ? <p className="investments-market-error" role="alert">{error}</p> : null}
+      {error && status === 'error' ? (
+        <p className="investments-market-error" role="alert">
+          {error}
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -3751,7 +3804,9 @@ function MarketBoardsPanel({
       ) : null}
 
       {error && status === 'error' ? (
-        <p className="investments-market-news-error" role="alert">{error}</p>
+        <p className="investments-market-news-error" role="alert">
+          {error}
+        </p>
       ) : null}
 
       {view === 'theme' ? (
@@ -4163,7 +4218,9 @@ function MarketNewsPanel({
       </div>
 
       {error && status === 'error' ? (
-        <p className="investments-market-news-error" role="alert">{error}</p>
+        <p className="investments-market-news-error" role="alert">
+          {error}
+        </p>
       ) : null}
 
       {news.length === 0 && status !== 'loading' ? (
@@ -5383,9 +5440,7 @@ export function InvestmentsPage() {
     <div className="page-stack investments-page investments-management-page investments-console-page vi-page">
       <header className="investments-console-header">
         <div>
-          <p className="investments-console-eyebrow">
-            {tf('investments.eyebrow', '投资管理')}
-          </p>
+          <p className="investments-console-eyebrow">{tf('investments.eyebrow', '投资管理')}</p>
           <h1>{tf('investments.title', '投资理财')}</h1>
         </div>
         <div
@@ -5665,7 +5720,9 @@ export function InvestmentsPage() {
                   </button>
                 </div>
                 {fundLookupError ? (
-                  <p className="investments-fund-lookup-error" role="alert">{fundLookupError}</p>
+                  <p className="investments-fund-lookup-error" role="alert">
+                    {fundLookupError}
+                  </p>
                 ) : null}
               </form>
 
@@ -5705,7 +5762,9 @@ export function InvestmentsPage() {
                   </button>
                 </div>
                 {stockLookupError ? (
-                  <p className="investments-fund-lookup-error" role="alert">{stockLookupError}</p>
+                  <p className="investments-fund-lookup-error" role="alert">
+                    {stockLookupError}
+                  </p>
                 ) : null}
                 {stockLookupResults.length > 0 ? (
                   <div
