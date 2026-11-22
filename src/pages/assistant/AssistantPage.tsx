@@ -1,4 +1,13 @@
-import { FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  FormEvent,
+  KeyboardEvent,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import { useDialogFocus } from '../../shared/lib/useDialogFocus';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
@@ -1051,6 +1060,7 @@ export function AssistantPage() {
   const recognitionTurnRef = useRef(0);
   const renderedRecognitionTurnRef = useRef(0);
   const messageEndRef = useRef<HTMLDivElement | null>(null);
+  const messagesAreaRef = useRef<HTMLElement | null>(null);
   const [duplicateReviewOpen, setDuplicateReviewOpen] = useState(false);
   const [duplicateReviewPairs, setDuplicateReviewPairs] = useState<DuplicateReviewPair[]>([]);
   const [duplicateReviewIndex, setDuplicateReviewIndex] = useState(0);
@@ -1393,17 +1403,54 @@ export function AssistantPage() {
       : '最近支出'
     : '最近一笔';
 
-  // 每次状态或消息变化后，自动将视图滚动到底部，保持聊天体验。
-  useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [wb.status, wb.rawContent, wb.rawReasoning, wb.entries.length, wb.error]);
+  // 滚动到底部。**必须显式区分 instant 与 smooth**:
+  // .chat-messages-area 的 CSS 里写了 scroll-behavior: smooth,而 behavior: auto 会沿用 CSS 的值 ——
+  // 也就是说进入页面时「跳到最新一条」会被浏览器演成一段动画,用户看到的是从顶部一路滚下去。
+  // 只有 'instant' 才是真正的瞬间落位。
+  const scrollMessagesToEnd = useCallback((behavior: ScrollBehavior) => {
+    const container = messagesAreaRef.current;
+    if (container) {
+      // jsdom 没有实现 Element.scrollTo(测试环境会直接抛错),所以留一条兜底路径。
+      if (typeof container.scrollTo === 'function') {
+        container.scrollTo({ top: container.scrollHeight, behavior });
+        return;
+      }
+      container.scrollTop = container.scrollHeight;
+      return;
+    }
+    messageEndRef.current?.scrollIntoView({ behavior, block: 'end' });
+  }, []);
 
-  // 当 {t('assistant.ui.assistantMode')}/AI 记账收到新的助手回复时，始终自动滚到底部。
+  /**
+   * 进入助手页时**直接落在最后一条消息上**,不要从顶部滚下来。
+   *
+   * 用 useLayoutEffect(而不是 useEffect)是为了在浏览器绘制之前就落位,
+   * 否则会先画一帧顶部、再跳到末尾。等历史消息到位再跳:历史可能是异步拉来的,
+   * 空数组时跳没有意义,而那一次跳必须是瞬间的。
+   */
+  const didInitialScrollRef = useRef(false);
+  useLayoutEffect(() => {
+    if (didInitialScrollRef.current || chatHistory.length === 0) return;
+    didInitialScrollRef.current = true;
+    scrollMessagesToEnd('instant');
+    // 首帧之后再落一次:字体/图片撑高内容时位置会漂,这次同样不许有动画
+    const frame = requestAnimationFrame(() => scrollMessagesToEnd('instant'));
+    return () => cancelAnimationFrame(frame);
+  }, [chatHistory.length, scrollMessagesToEnd]);
+
+  // 每次状态或消息变化后,自动将视图滚动到底部,保持聊天体验。
+  useEffect(() => {
+    if (!didInitialScrollRef.current) return; // 首次由上面那次瞬间落位负责
+    scrollMessagesToEnd('smooth');
+  }, [wb.status, wb.rawContent, wb.rawReasoning, wb.entries.length, wb.error, scrollMessagesToEnd]);
+
+  // 当 {t('assistant.ui.assistantMode')}/AI 记账收到新的助手回复时,始终自动滚到底部。
   useEffect(() => {
     const latestMessage = chatHistory[chatHistory.length - 1];
     if (!latestMessage || latestMessage.role !== 'assistant') return;
-    messageEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [chatHistory, mode]);
+    if (!didInitialScrollRef.current) return; // 首次由上面那次瞬间落位负责
+    scrollMessagesToEnd('smooth');
+  }, [chatHistory, mode, scrollMessagesToEnd]);
 
   useEffect(() => {
     if (!baseUrl || !apiKey || !model) return;
@@ -2357,7 +2404,10 @@ export function AssistantPage() {
         </div>
       ) : (
         <>
-          <section className={`chat-messages-area ${isWideLayout ? 'is-wide' : ''}`}>
+          <section
+            className={`chat-messages-area ${isWideLayout ? 'is-wide' : ''}`}
+            ref={messagesAreaRef}
+          >
             <div className={`chat-messages-inner ${isWideLayout ? 'is-wide' : ''}`}>
               {!wb.hasApiKey ? (
                 <section className="chat-key-required">
