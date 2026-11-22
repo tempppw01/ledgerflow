@@ -705,16 +705,15 @@
       "evening": "晚上好"
     },
     "tips": {
-      "1": "你可以在记账助手中粘贴账单截图，AI 会自动识别并生成记账数据",
-      "2": "支持拖拽图片到记账助手，快速识别消费信息",
-      "3": "在设置页面可以配置 AI 服务商和 API 密钥",
-      "4": "账本数据默认保存在本地或自托管数据库，不会自动上传",
-      "5": "支持导出 CSV，方便在 Excel 中继续分析",
-      "6": "试试深色模式，在侧边栏底部的主题切换器中选择"
+      "1": "账单截图丢给助手,自动变成记账数据",
+      "2": "图片直接拖进助手就能识别",
+      "3": "想换 AI 服务商:设置 → AI",
+      "4": "数据只在你的设备或你自己的服务器上",
+      "5": "想用 Excel 继续算:导出 CSV",
+      "6": "夜间用深色更顺眼,顶栏右上角可切"
     },
     "ui": {
-      "welcome": "LedgerFlow",
-      "welcomeSubtitle": "今天的钱花在哪、还剩多少、哪里能省一点，这里直接告诉你。",
+      "welcomeSubtitle": "本月的收支、结余和去向,一屏看完。",
       "corePanel": "今日财务看板",
       "emptyTitle": "还没有任何账目记录",
       "emptyDesc": "开始记第一笔交易，也可以让 AI 助手帮你自动识别。",
@@ -755,8 +754,8 @@
       "topTransactions": "大额交易",
       "uncategorized": "未分类",
       "noNote": "没写备注",
-      "greetingFormat": "{{greeting}}, {{welcomeTitle}}",
-      "statusBadge": "今天也适合把账说清楚 ✨",
+      "greetingFormat": "{{greeting}},{{action}}",
+      "statusBadge": "今天记了吗",
       "monthlyBalance": "本月结余",
       "netAssets": "当前净资产",
       "netWorth": "净资产",
@@ -902,6 +901,14 @@
     },
     "categoryBreakdown": {
       "other": "其他"
+    },
+    "greetingAction": {
+      "night": "睡前顺手记两笔",
+      "morning": "今天想记点什么",
+      "forenoon": "先看一眼钱花在哪",
+      "noon": "趁午休补两笔",
+      "afternoon": "下午也记得看一眼",
+      "evening": "给今天的钱收个尾"
     }
   },
   "transactions": {

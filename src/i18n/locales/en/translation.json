@@ -705,16 +705,15 @@
       "evening": "Good evening"
     },
     "tips": {
-      "1": "You can paste bill screenshots into the assistant, and AI will automatically extract transaction details",
-      "2": "Drag images into the assistant for faster expense recognition",
-      "3": "You can configure the AI provider and API key in Settings",
-      "4": "Ledger data stays in your local or self-hosted database and is never uploaded automatically",
-      "5": "CSV export is supported for spreadsheet analysis",
-      "6": "Try dark mode from the theme switcher at the bottom of the sidebar"
+      "1": "Drop a bill screenshot on the assistant — it becomes transactions",
+      "2": "Drag images into the assistant to read them",
+      "3": "Switch AI provider: Settings → AI",
+      "4": "Your data stays on your device or your own server",
+      "5": "Need Excel? Export CSV",
+      "6": "Dark mode reads better at night — top-right toggle"
     },
     "ui": {
-      "welcome": "LedgerFlow",
-      "welcomeSubtitle": "See where today’s money went, what’s left, and where you can save a little.",
+      "welcomeSubtitle": "Income, spending and what’s left this month — in one screen.",
       "corePanel": "Today’s Financial Snapshot",
       "emptyTitle": "No transaction records yet",
       "emptyDesc": "Add your first transaction, or let the AI assistant recognize one for you.",
@@ -755,8 +754,8 @@
       "topTransactions": "Large transactions",
       "uncategorized": "Uncategorized",
       "noNote": "No note",
-      "greetingFormat": "{{greeting}}, {{welcomeTitle}}",
-      "statusBadge": "A good day to make the numbers clear ✨",
+      "greetingFormat": "{{greeting}},{{action}}",
+      "statusBadge": "Anything to log today?",
       "monthlyBalance": "This month’s balance",
       "netAssets": "Current net worth",
       "netWorth": "Net worth",
@@ -902,6 +901,14 @@
     },
     "categoryBreakdown": {
       "other": "Other"
+    },
+    "greetingAction": {
+      "night": "log it before bed",
+      "morning": "what are we logging today?",
+      "forenoon": "take a quick look at your spending",
+      "noon": "catch up over lunch",
+      "afternoon": "a quick look is enough",
+      "evening": "wrap up today’s spending"
     }
   },
   "transactions": {

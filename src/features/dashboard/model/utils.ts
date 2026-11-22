@@ -36,6 +36,23 @@ export function getGreeting(t: (key: string) => string): string {
   return tWithFallback(t, 'dashboard.greeting.night', '夜深了，慢慢来');
 }
 
+/**
+ * 与问候语配对的「今天能做什么」。
+ *
+ * 问候语本身只说时间(早上好 / 夜深了),信息量为零;后面再缀上产品名也已经出现过三次。
+ * 这里按时段补一句短的、动词开头的行动提示,让 hero 第一行真正有内容可读。
+ */
+export function getGreetingAction(t: (key: string) => string): string {
+  const hour = new Date().getHours();
+  if (hour < 6) return tWithFallback(t, 'dashboard.greetingAction.night', '睡前顺手记两笔');
+  if (hour < 9) return tWithFallback(t, 'dashboard.greetingAction.morning', '今天想记点什么');
+  if (hour < 12) return tWithFallback(t, 'dashboard.greetingAction.forenoon', '先看一眼钱花在哪');
+  if (hour < 14) return tWithFallback(t, 'dashboard.greetingAction.noon', '趁午休补两笔');
+  if (hour < 18) return tWithFallback(t, 'dashboard.greetingAction.afternoon', '下午也记得看一眼');
+  if (hour < 22) return tWithFallback(t, 'dashboard.greetingAction.evening', '给今天的钱收个尾');
+  return tWithFallback(t, 'dashboard.greetingAction.night', '睡前顺手记两笔');
+}
+
 export function monthKey(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');

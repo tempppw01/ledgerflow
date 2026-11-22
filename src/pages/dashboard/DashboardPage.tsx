@@ -16,6 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import { DebugLogPanel } from '../../features/debug-log/ui/DebugLogPanel';
 import {
   getGreeting,
+  getGreetingAction,
   monthKey,
   isActualExpenseType,
   monthBounds
@@ -490,7 +491,7 @@ export function DashboardPage() {
         versionLabel={APP_VERSION}
         isExpanded={isWelcomeExpanded}
         greeting={getGreeting(t)}
-        welcomeTitle={tFallback('dashboard.ui.welcome', 'LedgerFlow')}
+        greetingAction={getGreetingAction(t)}
         welcomeSubtitle={tFallback(
           'dashboard.ui.welcomeSubtitle',
           '今天的钱花在哪、还剩多少、哪里能省一点，这里直接告诉你。'
