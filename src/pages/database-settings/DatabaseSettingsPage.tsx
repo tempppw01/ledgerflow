@@ -1,5 +1,6 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useDialogFocus } from '../../shared/lib/useDialogFocus';
+import { useStatusTimers } from '../../shared/lib/useStatusTimers';
 import { useTranslation } from 'react-i18next';
 import { useTFallback, type TfFallback } from '../../shared/lib/useTFallback';
 import { MysqlSnapshotPanel } from '../../features/mysql-snapshot/ui/MysqlSnapshotPanel';
@@ -413,6 +414,16 @@ export function DatabaseSettingsPage() {
   const billInputRef = useRef<HTMLInputElement | null>(null);
   const webdavRestoreDialogRef = useRef<HTMLElement | null>(null);
   const objectStorageRestoreDialogRef = useRef<HTMLElement | null>(null);
+  /**
+   * 「操作完成后显示一条提示,过几秒自动收起」的定时器。
+   *
+   * 这里原来有 7 处裸的 `window.setTimeout(() => setXxxStatus(''), 2400)`。裸写有两个
+   * 问题:卸载后回调仍会触发 setState(测试环境里表现为 `window is not defined`
+   * 的 unhandled error —— 测试全过、CI 却红,还款管理页已因此红过一次);
+   * 以及连续触发时会堆积回调,前一个把后一个的提示清掉。
+   * 两件事都由 useStatusTimers 处理,实现与测试在 shared/lib/useStatusTimers。
+   */
+  const { schedule: scheduleStatusClear } = useStatusTimers();
 
   const [importSource, setImportSource] = useState<BillSource | null>(null);
   const [importMode, setImportMode] = useState<BillImportMode>('incremental');
@@ -850,7 +861,7 @@ export function DatabaseSettingsPage() {
       showToast(error instanceof Error ? error.message : tf('dataBackup.toast.importFailed', '备份导入失败'), 'error');
     } finally {
       setBusy(false);
-      window.setTimeout(() => setBackupImportProgress(null), 4000);
+      scheduleStatusClear('backupImportProgress', () => setBackupImportProgress(null), 4000);
     }
   };
 
@@ -1024,7 +1035,7 @@ export function DatabaseSettingsPage() {
       showToast(error instanceof Error ? error.message : tf('dataBackup.webdav.backupFailed', 'WebDAV 备份失败'), 'error');
     } finally {
       setBusy(false);
-      window.setTimeout(() => setWebdavStatus(''), 2400);
+      scheduleStatusClear('webdavStatus', () => setWebdavStatus(''), 2400);
     }
   };
 
@@ -1049,7 +1060,7 @@ export function DatabaseSettingsPage() {
       showToast(error instanceof Error ? error.message : tf('dataBackup.webdav.downloadFailed', 'WebDAV 下载失败'), 'error');
     } finally {
       setBusy(false);
-      window.setTimeout(() => setWebdavStatus(''), 2400);
+      scheduleStatusClear('webdavStatus', () => setWebdavStatus(''), 2400);
     }
   };
 
@@ -1072,7 +1083,7 @@ export function DatabaseSettingsPage() {
       showToast(error instanceof Error ? error.message : tf('dataBackup.webdav.downloadFailed', 'WebDAV 下载失败'), 'error');
     } finally {
       setBusy(false);
-      window.setTimeout(() => setWebdavStatus(''), 2400);
+      scheduleStatusClear('webdavStatus', () => setWebdavStatus(''), 2400);
     }
   };
 
@@ -1102,7 +1113,7 @@ export function DatabaseSettingsPage() {
       showToast(error instanceof Error ? error.message : tf('dataBackup.objectStorage.backupFailed', "{provider} 备份失败").replace("{provider}", String(objectStorageLabel)), 'error');
     } finally {
       setBusy(false);
-      window.setTimeout(() => setObjectStorageStatus(''), 2400);
+      scheduleStatusClear('objectStorageStatus', () => setObjectStorageStatus(''), 2400);
     }
   };
 
@@ -1130,7 +1141,7 @@ export function DatabaseSettingsPage() {
       showToast(error instanceof Error ? error.message : tf('dataBackup.objectStorage.downloadFailed', "{provider} 下载失败").replace("{provider}", String(objectStorageLabel)), 'error');
     } finally {
       setBusy(false);
-      window.setTimeout(() => setObjectStorageStatus(''), 2400);
+      scheduleStatusClear('objectStorageStatus', () => setObjectStorageStatus(''), 2400);
     }
   };
 
@@ -1156,7 +1167,7 @@ export function DatabaseSettingsPage() {
       showToast(error instanceof Error ? error.message : tf('dataBackup.objectStorage.downloadFailed', "{provider} 下载失败").replace("{provider}", String(objectStorageLabel)), 'error');
     } finally {
       setBusy(false);
-      window.setTimeout(() => setObjectStorageStatus(''), 2400);
+      scheduleStatusClear('objectStorageStatus', () => setObjectStorageStatus(''), 2400);
     }
   };
 

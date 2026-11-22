@@ -3,6 +3,7 @@ import { todayLocalDateKey } from '../../shared/lib/localDate';
 import { useTranslation } from 'react-i18next';
 import { useMenuKeyboard } from '../../shared/lib/useMenuKeyboard';
 import { useDialogFocus } from '../../shared/lib/useDialogFocus';
+import { useStatusTimers } from '../../shared/lib/useStatusTimers';
 import { useTFallback, type TfFallback } from '../../shared/lib/useTFallback';
 import { useLocation } from 'react-router-dom';
 import { formatMonthKey, getDateLocale } from '../../shared/lib/i18nDate';
@@ -1372,30 +1373,12 @@ export function RepaymentManagementPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const debtContextMenuRef = useRef<HTMLDivElement | null>(null);
   const debtModalRef = useRef<HTMLDivElement | null>(null);
-  // 「识别成功」提示 1.4 秒后自动收起。定时器要能被清掉,见下面的 effect。
-  const extractSuccessTimerRef = useRef<number | null>(null);
+  // 「识别成功」提示 1.4 秒后自动收起。用共享的受管理定时器,卸载时会被清掉。
+  const { schedule: scheduleStatusClear } = useStatusTimers();
   // 新增/编辑负债的弹层:焦点收进来、关闭后还给触发按钮。
   useDialogFocus(showAddDebtModal, debtModalRef, () => setShowAddDebtModal(false));
   // role="menu" 的方向键导航 + 关闭后归还焦点。
   useMenuKeyboard(Boolean(debtContextMenu), debtContextMenuRef, () => setDebtContextMenu(null));
-
-  /**
-   * 卸载时清掉「识别成功」的自动收起定时器。
-   *
-   * 不清的后果不只是内存:测试环境拆除 window 之后定时器才到点,
-   * `setExtractSuccess` 会在已销毁的 window 上触发 setState ——
-   * Vitest 报 `ReferenceError: window is not defined` 的 unhandled error,
-   * 于是**1039 项测试全过、CI 依然红**,而且只在 CI 上稳定复现(本地时序不同)。
-   */
-  useEffect(
-    () => () => {
-      if (extractSuccessTimerRef.current !== null) {
-        window.clearTimeout(extractSuccessTimerRef.current);
-        extractSuccessTimerRef.current = null;
-      }
-    },
-    []
-  );
 
   useEffect(() => {
     writeRepaymentCollapseState(repaymentCollapseState);
@@ -2309,7 +2292,7 @@ export function RepaymentManagementPage() {
       setSelectedDebtId(editingDebtId || '');
       setDebtToastVisible(true);
       setAddDebtSuccess(true);
-      window.setTimeout(() => setAddDebtSuccess(false), 800);
+      scheduleStatusClear('addDebtSuccess', () => setAddDebtSuccess(false), 800);
       setError('');
       setShowAddDebtModal(false);
       return;
@@ -2435,7 +2418,7 @@ export function RepaymentManagementPage() {
     setAddDebtSuccess(true);
     setShowDebtPressurePreview(false);
     setShowAddDebtModal(false);
-    window.setTimeout(() => setAddDebtSuccess(false), 800);
+    scheduleStatusClear('addDebtSuccess', () => setAddDebtSuccess(false), 800);
     setError('');
   }
 
@@ -2687,13 +2670,7 @@ export function RepaymentManagementPage() {
         replaceDebts(recognizedPayload);
       }
       setExtractSuccess(true);
-      if (extractSuccessTimerRef.current !== null) {
-        window.clearTimeout(extractSuccessTimerRef.current);
-      }
-      extractSuccessTimerRef.current = window.setTimeout(() => {
-        extractSuccessTimerRef.current = null;
-        setExtractSuccess(false);
-      }, 1400);
+      scheduleStatusClear('extractSuccess', () => setExtractSuccess(false), 1400);
       setRepaymentAdvice('');
       setRepaymentReasoning('');
       const matchedPresets = Array.from(
