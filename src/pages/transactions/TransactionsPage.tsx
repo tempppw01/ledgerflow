@@ -51,6 +51,7 @@ import {
   EMPTY_CATEGORY_FILTER_VALUE,
   matchesCategoryQuickFilter
 } from '../../features/transactions/model/categoryQuickFilter';
+import { matchesStatusQuickFilter } from '../../features/transactions/model/statusQuickFilter';
 import {
   exportTransactionsPdf,
   type BulkPrintTemplate
@@ -773,7 +774,7 @@ export function TransactionsPage() {
     return mappedRows.filter((row) => {
       const rowDay = String(row.item.date || '').slice(0, 10);
       const typePass = quickFilters.type === 'all' ? true : row.item.type === quickFilters.type;
-      const statusPass = statusFilter === 'all' ? true : row.item.status === statusFilter;
+      const statusPass = matchesStatusQuickFilter(statusFilter, row.item.status);
       const categoryPass = matchesCategoryQuickFilter(
         categoryFilter,
         row.item.categoryId,
