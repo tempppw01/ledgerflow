@@ -16,6 +16,7 @@ import { generateId } from '../lib/id';
 import { getSignedAmount } from '../lib/transactionMetrics';
 import { isBalanceAffectingStatus } from '../lib/localDate';
 import { advanceSubscriptionDate } from '../lib/subscriptionSchedule';
+import { resolveSubscriptionStatus } from '../../features/subscriptions/model/subscriptionStatus';
 
 interface CategoryLearningRule {
   id: string;
@@ -299,21 +300,6 @@ function roundCurrency(raw: number): number {
   return Math.round(value * 100) / 100;
 }
 
-function normalizeSubscriptionStatus(
-  item: Pick<SubscriptionItem, 'expireDate' | 'renewalDate' | 'status'>
-): SubscriptionItem['status'] {
-  if (item.status === 'paused') return 'paused';
-  const now = new Date();
-  const target = item.expireDate || item.renewalDate;
-  if (!target) return 'active';
-  const time = new Date(target).getTime();
-  if (Number.isNaN(time)) return 'active';
-  const diffDays = Math.ceil((time - now.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays < 0) return 'expired';
-  if (diffDays <= 7) return 'due-soon';
-  return 'active';
-}
-
 function inferSubscriptionCategoryId(item: SubscriptionItem): string {
   if (item.kind === 'mobile') return 'cat-communication';
   if (item.kind === 'membership' || item.kind === 'digital') return 'cat-entertainment';
@@ -487,14 +473,14 @@ export function normalizeImportedFinanceSnapshot(payload: FinanceDataSnapshot) {
   const incomingSubscriptions = Array.isArray(payload.subscriptions)
     ? payload.subscriptions.map((item) => ({
         ...item,
-        status: normalizeSubscriptionStatus(item)
+        status: resolveSubscriptionStatus(item)
       }))
     : [];
   const incomingTrashedSubscriptions = Array.isArray(payload.trashedSubscriptions)
     ? ensureUniqueById(
         payload.trashedSubscriptions.map((item) => ({
           ...item,
-          status: normalizeSubscriptionStatus(item)
+          status: resolveSubscriptionStatus(item)
         }))
       )
     : [];
@@ -1328,7 +1314,7 @@ export const useFinanceStore = create<FinanceState>()(
           id,
           amount: roundCurrency(payload.amount),
           currency: String(payload.currency || 'CNY').toUpperCase(),
-          status: normalizeSubscriptionStatus({
+          status: resolveSubscriptionStatus({
             expireDate: payload.expireDate,
             renewalDate: payload.renewalDate,
             status: 'active'
@@ -1348,7 +1334,7 @@ export const useFinanceStore = create<FinanceState>()(
                   id,
                   amount: roundCurrency(payload.amount),
                   currency: String(payload.currency || 'CNY').toUpperCase(),
-                  status: normalizeSubscriptionStatus({
+                  status: resolveSubscriptionStatus({
                     expireDate: payload.expireDate,
                     renewalDate: payload.renewalDate,
                     status: payload.status
@@ -1476,7 +1462,7 @@ export const useFinanceStore = create<FinanceState>()(
               lastGeneratedTransactionId: transaction.id,
               updatedAt: today,
               // 用推进后的日期重算状态;下面这行以前是空转(日期没变,结果必然相同)。
-              status: normalizeSubscriptionStatus(advanced)
+              status: resolveSubscriptionStatus(advanced)
             };
           });
 
