@@ -32,7 +32,12 @@ import {
   summarizeTransactions
 } from '../../shared/lib/transactionMetrics';
 import { useTFallback } from '../../shared/lib/useTFallback';
-import { daysSinceLocalDate, toLocalDateKey, todayLocalDateKey } from '../../shared/lib/localDate';
+import {
+  daysSinceLocalDate,
+  resolveTransactionLocalDay,
+  toLocalDateKey,
+  todayLocalDateKey
+} from '../../shared/lib/localDate';
 import { EMPTY_CATEGORY_FILTER_VALUE } from '../../features/transactions/model/categoryQuickFilter';
 import { formatMoneyByCurrency } from '../../shared/lib/format';
 import { Toast } from '../../shared/ui/Toast';
@@ -1179,7 +1184,9 @@ export function AssistantPage() {
     const validRows = filterCountableTransactions(transactions).filter(
       (item) => item.type === 'income' || item.type === 'expense'
     );
-    const todayRows = validRows.filter((item) => item.date.slice(0, 10) === todayKey);
+    const todayRows = validRows.filter(
+      (item) => resolveTransactionLocalDay(item.date) === todayKey
+    );
     const todaySummary = summarizeTransactions(todayRows);
     const todayIncome = todaySummary.incomeTotal;
     const todayExpense = todaySummary.expenseTotal;
@@ -3980,7 +3987,7 @@ export function AssistantPage() {
                       <dl>
                         <div>
                           <dt>{tf('transactions.table.col.date', '日期')}</dt>
-                          <dd>{currentDuplicateReview.entry.date.slice(0, 10)}</dd>
+                          <dd>{resolveTransactionLocalDay(currentDuplicateReview.entry.date)}</dd>
                         </div>
                         <div>
                           <dt>{tf('transactions.table.col.type', '类型')}</dt>
@@ -4014,7 +4021,7 @@ export function AssistantPage() {
                       <dl>
                         <div>
                           <dt>{tf('transactions.table.col.date', '日期')}</dt>
-                          <dd>{currentDuplicateReview.existing.date.slice(0, 10)}</dd>
+                          <dd>{resolveTransactionLocalDay(currentDuplicateReview.existing.date)}</dd>
                         </div>
                         <div>
                           <dt>{tf('transactions.table.col.type', '类型')}</dt>

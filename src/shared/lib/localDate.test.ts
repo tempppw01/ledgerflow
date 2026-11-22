@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   daysSinceLocalDate,
+  resolveTransactionLocalDay,
   startOfLocalDayTime,
   toLocalDateKey,
   todayLocalDateKey
@@ -116,5 +117,37 @@ describe('startOfLocalDayTime', () => {
   it('非法值返回 null', () => {
     expect(startOfLocalDayTime('nope')).toBeNull();
     expect(startOfLocalDayTime(new Date('nope'))).toBeNull();
+  });
+});
+
+describe('resolveTransactionLocalDay', () => {
+  it('纯日期原样返回', () => {
+    expect(resolveTransactionLocalDay('2026-11-20')).toBe('2026-11-20');
+  });
+
+  it('带时间的 ISO 取本地日,而不是 UTC 日', () => {
+    const instant = new Date(2026, 10, 1, 0, 30).toISOString();
+    expect(resolveTransactionLocalDay(instant)).toBe('2026-11-01');
+    if (new Date().getTimezoneOffset() < 0) {
+      expect(instant.slice(0, 10)).toBe('2026-10-31');
+    }
+  });
+
+  it('本地 23:59 也归属当天', () => {
+    const instant = new Date(2026, 10, 1, 23, 59).toISOString();
+    expect(resolveTransactionLocalDay(instant)).toBe('2026-11-01');
+  });
+
+  it('空值与非法值不抛错', () => {
+    expect(resolveTransactionLocalDay(undefined)).toBe('');
+    expect(resolveTransactionLocalDay('')).toBe('');
+    expect(resolveTransactionLocalDay('not-a-date')).toBe('not-a-date');
+  });
+
+  it('一天 24 小时都归属同一个本地日', () => {
+    for (let hour = 0; hour < 24; hour += 1) {
+      const instant = new Date(2026, 10, 1, hour, 30).toISOString();
+      expect(resolveTransactionLocalDay(instant)).toBe('2026-11-01');
+    }
   });
 });

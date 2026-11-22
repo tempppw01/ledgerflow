@@ -24,7 +24,10 @@ import {
   parseBillFileToTransactionsDetailed
 } from '../../shared/lib/billImport';
 import { formatCurrency, formatCurrencyAuto, formatDate } from '../../shared/lib/format';
-import { toLocalDateKey } from '../../shared/lib/localDate';
+import {
+  resolveTransactionLocalDay,
+  toLocalDateKey
+} from '../../shared/lib/localDate';
 import {
   getSignedAmount,
   getTransactionDirection,
@@ -330,7 +333,7 @@ function buildDuplicateSignature(item: {
   type: string;
   note: string;
 }) {
-  return `${item.date.slice(0, 10)}|${roundMoney(Number(item.amount || 0))}|${item.type}|${String(item.note || '').trim()}`;
+  return `${resolveTransactionLocalDay(item.date)}|${roundMoney(Number(item.amount || 0))}|${item.type}|${String(item.note || '').trim()}`;
 }
 
 function inferCategoryIdByTransaction(
@@ -730,7 +733,7 @@ export function TransactionsPage() {
 
       let byDate = true;
       if (dateRange.from && dateRange.to) {
-        const day = item.date.slice(0, 10);
+        const day = resolveTransactionLocalDay(item.date);
         byDate = day >= dateRange.from && day <= dateRange.to;
       }
 
@@ -774,7 +777,7 @@ export function TransactionsPage() {
     const noteFilter = quickFilters.note.trim().toLowerCase();
 
     return mappedRows.filter((row) => {
-      const rowDay = String(row.item.date || '').slice(0, 10);
+      const rowDay = resolveTransactionLocalDay(row.item.date);
       const typePass = quickFilters.type === 'all' ? true : row.item.type === quickFilters.type;
       const statusPass = matchesStatusQuickFilter(statusFilter, row.item.status);
       const categoryPass = matchesCategoryQuickFilter(
@@ -2238,7 +2241,7 @@ export function TransactionsPage() {
     let min = '';
     let max = '';
     transactions.forEach((item) => {
-      const day = String(item.date || '').slice(0, 10);
+      const day = resolveTransactionLocalDay(item.date);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) {
         return;
       }
@@ -2388,7 +2391,7 @@ export function TransactionsPage() {
       marker?: string
     ) => {
       const sign = item.type === 'income' ? '+' : '-';
-      return `${marker || `${index + 1}.`} ${item.date.slice(0, 10)} ${sign}${formatCurrencyAuto(item.amount)} ${item.note || tf('txPage.import.noNote', '无备注')}`;
+      return `${marker || `${index + 1}.`} ${resolveTransactionLocalDay(item.date)} ${sign}${formatCurrencyAuto(item.amount)} ${item.note || tf('txPage.import.noNote', '无备注')}`;
     };
 
     return [
@@ -2488,7 +2491,7 @@ export function TransactionsPage() {
                   <span className="import-confirm-row-index">{index + 1}</span>
                   <div className="import-confirm-row-main">
                     <strong>{item.note || tf('txPage.import.noNote', '无备注')}</strong>
-                    <small>{item.date.slice(0, 10)}</small>
+                    <small>{resolveTransactionLocalDay(item.date)}</small>
                   </div>
                   <span
                     className={`import-confirm-row-amount ${item.type === 'income' ? 'income' : 'expense'}`}
@@ -2527,7 +2530,7 @@ export function TransactionsPage() {
                     <span className="import-confirm-row-index positive">+{index + 1}</span>
                     <div className="import-confirm-row-main">
                       <strong>{item.note || tf('txPage.import.noNote', '无备注')}</strong>
-                      <small>{item.date.slice(0, 10)}</small>
+                      <small>{resolveTransactionLocalDay(item.date)}</small>
                     </div>
                     <span
                       className={`import-confirm-row-amount ${item.type === 'income' ? 'income' : 'expense'}`}
@@ -2563,7 +2566,7 @@ export function TransactionsPage() {
                     <span className="import-confirm-row-index neutral">~{index + 1}</span>
                     <div className="import-confirm-row-main">
                       <strong>{payload.note || tf('txPage.import.noNote', '无备注')}</strong>
-                      <small>{payload.date.slice(0, 10)}</small>
+                      <small>{resolveTransactionLocalDay(payload.date)}</small>
                     </div>
                     <span
                       className={`import-confirm-row-amount ${payload.type === 'income' ? 'income' : 'expense'}`}

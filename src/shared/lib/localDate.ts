@@ -67,3 +67,32 @@ export function daysSinceLocalDate(value: string | Date, now: Date = new Date())
 export function isBalanceAffectingStatus(status: string | undefined): boolean {
   return status !== 'pending' && status !== 'closed' && status !== 'failed';
 }
+
+const DATE_ONLY_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * 交易属于**哪一天**(本地日历日)。
+ *
+ * 交易里的 `date` 有两种形态:纯日期(`2026-11-20`)和带时间的 ISO 瞬间
+ * (`2026-10-31T16:30:00.000Z`,用户在日期选择器里选了本地 11-01 00:30)。
+ *
+ * 之前列表与筛选都用 `date.slice(0, 10)`,也就是**按 UTC 取日**:在 UTC+8,
+ * 本地 00:00–07:59 记的账会被算到前一天 —— 显示成昨天,而且会从「本月」里掉出去
+ * (月初那几小时尤其明显:11-01 00:30 的账落到 10-31,就不在本月了)。
+ *
+ * 统一走这个函数:纯日期原样返回,带时间的取**本地**日。
+ */
+export function resolveTransactionLocalDay(value: string | undefined): string {
+  const text = String(value || '').trim();
+  if (!text) {
+    return '';
+  }
+  if (DATE_ONLY_KEY_RE.test(text)) {
+    return text;
+  }
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.getTime())) {
+    return text.slice(0, 10);
+  }
+  return toLocalDateKey(parsed);
+}
