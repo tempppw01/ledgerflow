@@ -204,15 +204,18 @@ function hasImportedFieldChanges(
   existing: TransactionItem,
   incoming: ImportedTransactionDraft
 ): boolean {
+  // 来源为 undefined 表示「这份账单没提供该字段」,不算变化 —— 否则每次重新导入
+  // 都会生成一批内容其实没变的更新。
   return (
     existing.type !== incoming.type ||
     existing.amount !== incoming.amount ||
     existing.date !== incoming.date ||
     existing.note !== incoming.note ||
-    existing.source !== incoming.source ||
-    existing.orderNo !== incoming.orderNo ||
-    existing.merchantOrderNo !== incoming.merchantOrderNo ||
-    existing.status !== incoming.status ||
+    (incoming.source !== undefined && existing.source !== incoming.source) ||
+    (incoming.orderNo !== undefined && existing.orderNo !== incoming.orderNo) ||
+    (incoming.merchantOrderNo !== undefined &&
+      existing.merchantOrderNo !== incoming.merchantOrderNo) ||
+    (incoming.status !== undefined && existing.status !== incoming.status) ||
     !hasAllImportTags(existing.tags || [], incoming.tags || [])
   );
 }
@@ -227,6 +230,12 @@ function buildImportedTransactionUpdatePayload(
     categoryId: existing.categoryId || incoming.categoryId,
     accountId: existing.accountId || incoming.accountId,
     tags: mergeImportTags(existing.tags || [], incoming.tags || []),
+    // 来源账单里可能根本没有这几列(值就是 undefined)。直接 `...incoming` 会把已有值
+    // 覆盖成 undefined —— 状态被清空尤其危险:isBalanceAffectingStatus(undefined) 为真,
+    // 一条已关闭/待支付的记录会因此重新计入余额。所以只有来源确实带了值才覆盖。
+    status: incoming.status ?? existing.status,
+    orderNo: incoming.orderNo ?? existing.orderNo,
+    merchantOrderNo: incoming.merchantOrderNo ?? existing.merchantOrderNo,
     attachments: existing.attachments,
     adjustmentKind: existing.adjustmentKind,
     refundOfTransactionId: existing.refundOfTransactionId,
