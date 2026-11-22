@@ -412,6 +412,33 @@ npm run build
 npm run lint
 ```
 
+完整一点:
+
+```bash
+npm run test                    # 前端单测(vitest,当前 977 项)
+npm run build                   # tsc --noEmit + vite build
+npm run lint                    # eslint --max-warnings=0
+node --test server/*.test.js    # 服务端单测(需要 Node >= 22,见下)
+npm run i18n:check              # i18n key 缺失/单边/属性里写死的中文
+npm run i18n:check-jsx          # JSX 文本节点里的硬编码中文
+npm run check:dates             # 禁止 date.slice(0,10) 这种「按 UTC 取日」
+```
+
+### Node 版本要求
+
+**需要 Node >= 22**(`package.json` 里已声明 `engines`)。服务端代码使用了 `node:sqlite`,
+它在 Node 22 之前不存在 —— 用 Node 20 跑服务端测试会得到 `ERR_UNKNOWN_BUILTIN_MODULE`
+(运行镜像是 `node:24-alpine`)。
+
+### 提交前跑什么
+
+`npm run test` + `npm run lint` + `npm run build` + 三道 `check:*` 闸门。
+这些**已经在 CI 里跑**(`.github/workflows/ci.yml` 的 `verify` job,Node 24),
+并且镜像发布依赖它 —— 闸门失败会拦住镜像,不必靠人记得。
+
+已经用测试钉住的既有行为见 [`docs/verified-invariants.md`](docs/verified-invariants.md),
+发布流程见 [`docs/release-process.md`](docs/release-process.md)。
+
 ## 安全说明
 
 - LedgerFlow 是个人财务工具，请不要把测试令牌、AI Key、MySQL 密码提交到仓库。
