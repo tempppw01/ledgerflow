@@ -702,6 +702,8 @@ function validateCategoryItem(item: unknown, index: number): Category {
   assertString(item.name, `data.categories[${index}].name`);
   assertString(item.color, `data.categories[${index}].color`, { required: false });
   assertString(item.icon, `data.categories[${index}].icon`, { required: false });
+  // 两级分类的父子关系必须保留:早先这里漏了 parentId,恢复备份会把子分类拍平成一级。
+  assertString(item.parentId, `data.categories[${index}].parentId`, { required: false });
 
   if (item.sortOrder !== undefined) {
     assertNumber(item.sortOrder, `data.categories[${index}].sortOrder`);
@@ -720,6 +722,7 @@ function validateCategoryItem(item: unknown, index: number): Category {
     id: asSafeString(item.id),
     name: asSafeString(item.name),
     kind: item.kind as Category['kind'] | undefined,
+    parentId: asSafeString(item.parentId) || undefined,
     color: asSafeString(item.color) || undefined,
     icon: asSafeString(item.icon) || undefined,
     sortOrder: typeof item.sortOrder === 'number' ? Number(item.sortOrder) : undefined,
@@ -971,6 +974,9 @@ function validateInvestmentPositionItem(
     linkedAccountId: asSafeString(item.linkedAccountId) || undefined,
     investedAmount: asSafeNumber(item.investedAmount),
     currentValue: asSafeNumber(item.currentValue),
+    // 基金代码与持有份额此前只导出、不还原 —— 恢复备份后持仓会丢掉代码与份额。
+    fundCode: asSafeString(item.fundCode) || undefined,
+    holdingShares: typeof item.holdingShares === 'number' ? Number(item.holdingShares) : undefined,
     monthlyContribution:
       typeof item.monthlyContribution === 'number' ? Number(item.monthlyContribution) : undefined,
     targetAllocation:
@@ -1068,6 +1074,9 @@ function validateInvestmentPositionHistoryItem(
     action: (item.action as InvestmentPositionHistoryAction | undefined) || 'snapshot',
     investedAmount,
     currentValue,
+    // 同理:历史快照也要留住代码与份额,否则回看历史时数字对不上。
+    fundCode: asSafeString(item.fundCode) || undefined,
+    holdingShares: typeof item.holdingShares === 'number' ? Number(item.holdingShares) : undefined,
     profit,
     profitRate: asSafeNumber(item.profitRate, investedAmount > 0 ? profit / investedAmount : 0),
     investedAmountDelta:
@@ -1311,6 +1320,8 @@ function validateInvestmentWatchItem(
     buyFeeRate: asSafeString(item.buyFeeRate) || undefined,
     fundCompany: asSafeString(item.fundCompany) || undefined,
     lastAnalysisAt: asSafeString(item.lastAnalysisAt) || undefined,
+    // 行情数据时间此前没有还原:恢复后无法判断行情是不是过期数据。
+    lastDataAt: asSafeString(item.lastDataAt) || undefined,
     createdAt: asSafeTimestamp(item.createdAt, fallbackDate),
     updatedAt: asSafeTimestamp(item.updatedAt, asSafeTimestamp(item.createdAt, fallbackDate))
   };
@@ -1350,12 +1361,21 @@ function validateInvestmentAiMessage(
     .filter((value) => value.startsWith('data:image/'))
     .slice(0, 4);
 
+  const followUpPrompts = readOptionalStringArray(
+    item.followUpPrompts,
+    `data.investmentAiMessages[${index}].followUpPrompts`
+  );
+
   return {
     id: asSafeString(item.id),
     role: item.role === 'user' ? 'user' : 'assistant',
     text: asSafeString(item.text) || t('dataBackup.investment.legacyNoContent', '旧备份未记录消息正文'),
     feedback: item.feedback as InvestmentAiMessage['feedback'] | undefined,
     reasoning: asSafeString(item.reasoning) || undefined,
+    // 这三个字段此前只导出、不还原:恢复后网页检索轨迹、附加信息与追问建议都会丢。
+    webTrace: asSafeString(item.webTrace) || undefined,
+    auxiliaryInfo: asSafeString(item.auxiliaryInfo) || undefined,
+    followUpPrompts: followUpPrompts.length ? followUpPrompts : undefined,
     attachmentCount:
       attachmentImages.length ||
       (typeof item.attachmentCount === 'number' ? Number(item.attachmentCount) : undefined),
