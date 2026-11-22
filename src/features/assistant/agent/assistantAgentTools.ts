@@ -6,7 +6,7 @@ import type {
   AccountUpdatePayload,
   AddTransactionAction
 } from '../../../shared/store/useFinanceStore';
-import { isBalanceAffectingStatus } from '../../../shared/lib/localDate';
+import { isBalanceAffectingStatus, todayLocalDateKey } from '../../../shared/lib/localDate';
 import { getSignedAmount } from '../../../shared/lib/transactionMetrics';
 import type { ChatToolCall, ChatToolDefinition } from '../api/openaiCompatibleClient';
 import {
@@ -501,7 +501,9 @@ function toTags(value: unknown): string[] {
 function toDateKey(value: unknown): string {
   const text = toText(value);
   if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
-  return new Date().toISOString().slice(0, 10);
+  // 兜底「今天」必须用本地日历日:UTC+8 的 00:00–07:59 用 toISOString 会退回昨天,
+  // 于是 AI 新建的交易被写到前一天。
+  return todayLocalDateKey();
 }
 
 function toTransactionType(value: unknown, fallback: TransactionType = 'expense'): TransactionType {

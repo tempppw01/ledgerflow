@@ -5,6 +5,7 @@ import {
   calculateDebtSummary
 } from '../../debt/model/debtMetrics';
 import { resolveDebtRepaymentDueDisplay } from '../../debt/model/repaymentCycle';
+import { todayLocalDateKey } from '../../../shared/lib/localDate';
 import type { CreditDraft } from '../../debt/model/creditDrafts';
 import {
   createCreditDraft,
@@ -398,7 +399,9 @@ function debtTypeLabel(type: CreditDebtType): string {
 }
 
 function todayIso(ctx: CreditAgentContext): string {
-  return (ctx.now ?? new Date()).toISOString().slice(0, 10);
+  // 本地日历日:UTC+8 的 00:00–07:59 用 toISOString 会退回昨天;
+  // 如果那天是本月初,monthKey 会直接指向上个月。
+  return todayLocalDateKey(ctx.now ?? new Date());
 }
 
 function monthKey(ctx: CreditAgentContext): string {

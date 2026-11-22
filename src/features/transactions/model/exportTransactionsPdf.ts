@@ -1,4 +1,5 @@
 import i18n from '../../../i18n';
+import { toLocalDateKey } from '../../../shared/lib/localDate';
 import { formatCurrency, formatDate } from '../../../shared/lib/format';
 import { TransactionItem } from '../../../entities/transaction/types';
 import { PDF_CHINESE_FONT_URL } from '../../../shared/config/brandAssets';
@@ -258,7 +259,7 @@ export async function exportTransactionsPdf(input: ExportTransactionsPdfInput) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `ledgerflow-transactions-${new Date().toISOString().slice(0, 10)}.pdf`;
+  link.download = `ledgerflow-transactions-${toLocalDateKey(new Date())}.pdf`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

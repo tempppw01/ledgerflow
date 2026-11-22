@@ -31,7 +31,7 @@ import {
   summarizeTransactions
 } from '../../shared/lib/transactionMetrics';
 import { useTFallback } from '../../shared/lib/useTFallback';
-import { toLocalDateKey } from '../../shared/lib/localDate';
+import { daysSinceLocalDate, toLocalDateKey, todayLocalDateKey } from '../../shared/lib/localDate';
 import { formatMoneyByCurrency } from '../../shared/lib/format';
 import { Toast } from '../../shared/ui/Toast';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
@@ -1210,8 +1210,11 @@ export function AssistantPage() {
 
     const monthBalance = monthIncome - monthExpense;
     const weeklyRows = validRows.filter((item) => {
-      const gap = Math.floor((Date.now() - new Date(item.date).getTime()) / (1000 * 60 * 60 * 24));
-      return gap >= 0 && gap < 14;
+      // 按本地日历日算天数差。旧写法把纯日期按 UTC 零点解析再和当前时刻相减:
+      // 在 UTC+8 的 00:00–07:59,「今天」的记录会算出 -1,被 gap >= 0 直接剔除,
+      // 等于早上记的账不进这两周的统计。
+      const gap = daysSinceLocalDate(item.date);
+      return gap !== null && gap >= 0 && gap < 14;
     });
     const thisWeekExpense = summarizeTransactions(
       weeklyRows.filter((item) => item.type === 'expense').slice(0, 7)
@@ -1660,7 +1663,7 @@ export function AssistantPage() {
       addRepaymentRecord({
         debtId: creditItem.matchedDebtId,
         amount,
-        paidAt: new Date().toISOString().slice(0, 10),
+        paidAt: todayLocalDateKey(),
         paymentAccount,
         note: `来自 AI 信贷助手：${creditItem.title}`,
         recordMode: 'manual'

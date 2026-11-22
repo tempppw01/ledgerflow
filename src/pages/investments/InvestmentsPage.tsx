@@ -1,3 +1,4 @@
+import { toLocalDateKey } from '../../shared/lib/localDate';
 import {
   type CSSProperties,
   FormEvent,
@@ -2091,7 +2092,8 @@ const MARKET_HISTORY_TARGETS: MarketHistoryTarget[] = [
 ];
 
 function formatDateInputValue(date: Date) {
-  return date.toISOString().slice(0, 10);
+  // 本地日期,不用 toISOString:东时区清晨会退到前一天。
+  return toLocalDateKey(date);
 }
 
 function shiftDateByYears(date: Date, years: number) {

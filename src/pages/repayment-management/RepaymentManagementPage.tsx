@@ -1,4 +1,5 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { todayLocalDateKey } from '../../shared/lib/localDate';
 import { useTranslation } from 'react-i18next';
 import { useMenuKeyboard } from '../../shared/lib/useMenuKeyboard';
 import { useDialogFocus } from '../../shared/lib/useDialogFocus';
@@ -1339,7 +1340,7 @@ export function RepaymentManagementPage() {
   const [repaymentDebtId, setRepaymentDebtId] = useState('');
   const [repaymentAmount, setRepaymentAmount] = useState('');
   const [repaymentPaidAt, setRepaymentPaidAt] = useState(() =>
-    new Date().toISOString().slice(0, 10)
+    todayLocalDateKey()
   );
   const [repaymentNote, setRepaymentNote] = useState('');
   const [editingDebtId, setEditingDebtId] = useState('');
@@ -2487,7 +2488,7 @@ export function RepaymentManagementPage() {
     setRepaymentRecordToastVariant(resultTag === 'partial' ? 'warning' : 'success');
     setRepaymentDebtId('');
     setRepaymentAmount('');
-    setRepaymentPaidAt(new Date().toISOString().slice(0, 10));
+    setRepaymentPaidAt(todayLocalDateKey());
     setRepaymentNote('');
     setRepaymentRecordModeInput('manual');
     setRepaymentRecordError('');
@@ -3563,7 +3564,7 @@ export function RepaymentManagementPage() {
                           className="repayment-today-button repayment-record-icon-button"
                           aria-label={tf('repayment.record.todayAria', '设为今天')}
                           onClick={() => {
-                            setRepaymentPaidAt(new Date().toISOString().slice(0, 10));
+                            setRepaymentPaidAt(todayLocalDateKey());
                             setRepaymentRecordError('');
                           }}
                         >
