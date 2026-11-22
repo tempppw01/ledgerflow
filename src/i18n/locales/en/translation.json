@@ -1579,7 +1579,12 @@
     "after": "After",
     "metrics": {
       "entries": "Entries",
-      "currentPage": "Current page"
+      "currentPage": "Current page",
+      "net": "Net change",
+      "increase": "Inflow",
+      "decrease": "Outflow",
+      "count": "Entries",
+      "totalEntries": "{{value}} in total"
     },
     "empty": {
       "title": "No balance changes yet",
@@ -1605,7 +1610,8 @@
       "transactionBudget": "Budget change",
       "transactionRepayment": "Repayment deducted",
       "transactionRefund": "Refund restored",
-      "manualAdjustment": "Manual adjustment"
+      "manualAdjustment": "Manual adjustment",
+      "unknown": "Other change"
     },
     "direction": {
       "increase": "Balance increased",
@@ -1625,7 +1631,50 @@
       "first": "First",
       "previous": "Previous",
       "next": "Next",
-      "last": "Last"
+      "last": "Last",
+      "daysSize": "{{value}} days",
+      "summary": "Page {{page}} of {{total}} · {{days}} days"
+    },
+    "filters": {
+      "search": "Search",
+      "searchPlaceholder": "Account, note, remark",
+      "type": "Type",
+      "typeAll": "All types",
+      "account": "Account",
+      "accountAll": "All accounts",
+      "range": "Period",
+      "rangeAll": "All time",
+      "range7": "Last 7 days",
+      "range30": "Last 30 days",
+      "range90": "Last 90 days",
+      "rangeMonth": "This month",
+      "reset": "Reset filters",
+      "noMatchTitle": "No matching entries",
+      "noMatchDescription": "Try another keyword, or loosen the filters."
+    },
+    "table": {
+      "time": "Time",
+      "account": "Account",
+      "type": "Type",
+      "detail": "Details",
+      "amount": "Change",
+      "balanceAfter": "Balance after"
+    },
+    "tableCaption": "Balance change entries",
+    "day": {
+      "total": "Subtotal {{amount}}",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "weekdaySun": "Sun",
+      "weekdayMon": "Mon",
+      "weekdayTue": "Tue",
+      "weekdayWed": "Wed",
+      "weekdayThu": "Thu",
+      "weekdayFri": "Fri",
+      "weekdaySat": "Sat"
+    },
+    "row": {
+      "expand": "Show details"
     }
   },
   "dataSync": {

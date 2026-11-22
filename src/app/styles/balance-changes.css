@@ -1,843 +1,453 @@
+/**
+ * 余额变动明细。
+ *
+ * 重构后的形态:**紧凑表格 + 按天分组 + 完整口径的汇总**,替换掉原来
+ * 「默认全收起的大卡片 + 只统计当前页的分组」。
+ * 关键点:一屏能看到 12~14 条(原来 4 条),分组头吸顶,筛选与分页在顶部一行。
+ */
+
 .balance-change-page {
   display: grid;
-  gap: 16px;
+  gap: var(--space-4);
 }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- 头部与汇总 ---------- */
 
 .balance-change-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  padding: 18px;
-  border: 1px solid color-mix(in srgb, var(--color-primary) 16%, var(--color-border-light));
-  border-radius: 22px;
-  background: var(--gradient-hero);
-  box-shadow: var(--shadow-sm);
+  gap: var(--space-3);
 }
 
 .balance-change-header h2 {
-  margin: 0 0 8px;
-  font-size: clamp(22px, 3vw, 30px);
-  letter-spacing: -0.04em;
-}
-
-.balance-change-header .muted {
-  max-width: 680px;
   margin: 0;
-  font-size: 14px;
-  line-height: 1.8;
+  font-size: var(--font-2xl);
 }
 
-.balance-change-summary {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.balance-change-summary .metric-chip {
-  background: color-mix(in srgb, var(--color-bg-elevated) 78%, var(--color-primary-bg));
-  border-color: color-mix(in srgb, var(--color-primary) 20%, var(--color-border-light));
-  box-shadow: inset 0 1px 0 color-mix(in srgb, white 60%, transparent);
-}
-
-.balance-change-tip {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--color-accent-cyan) 24%, var(--color-border));
-  border-radius: 18px;
-  padding: 14px 16px 14px 48px;
-  background: var(--gradient-card-info);
-}
-
-.balance-change-tip::before {
-  content: '💡';
-  position: absolute;
-  left: 16px;
-  top: 14px;
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
+.balance-change-reset {
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
   border-radius: 999px;
-  background: var(--color-accent-cyan-bg);
-}
-
-.balance-change-tip p {
-  margin: 6px 0 0;
+  background: transparent;
   color: var(--color-text-secondary);
-  line-height: 1.7;
-}
-
-.balance-change-domino-board {
-  display: grid;
-  gap: 18px;
-}
-
-.balance-change-domino-group {
-  --group-accent: var(--color-primary);
-  --group-bg: var(--gradient-card-primary);
-  position: relative;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--group-accent) 24%, var(--color-border-light));
-  border-radius: 24px;
-  background: color-mix(in srgb, var(--color-bg-elevated) 82%, var(--color-bg-subtle));
-  box-shadow: var(--shadow-sm);
-  transition:
-    box-shadow 360ms cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 240ms ease,
-    background 240ms ease;
-}
-
-.balance-change-domino-group.is-income {
-  --group-accent: var(--color-success);
-  --group-bg: var(--gradient-card-income);
-}
-
-.balance-change-domino-group.is-expense {
-  --group-accent: var(--color-danger);
-  --group-bg: var(--gradient-card-expense);
-}
-
-.balance-change-domino-group.is-neutral {
-  --group-accent: var(--color-primary);
-  --group-bg: var(--gradient-card-primary);
-}
-
-.balance-change-domino-group.is-expanded {
-  box-shadow: var(--shadow-md);
-  border-color: color-mix(in srgb, var(--group-accent) 34%, var(--color-border-light));
-}
-
-.balance-change-group-toggle {
-  width: 100%;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
-  gap: 12px;
-  align-items: center;
-  min-height: 74px;
-  padding: 14px 16px;
-  border: 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--group-accent) 16%, transparent);
-  background:
-    radial-gradient(
-      circle at left top,
-      color-mix(in srgb, var(--group-accent) 16%, transparent),
-      transparent 38%
-    ),
-    var(--group-bg);
-  color: var(--color-text);
-  text-align: left;
+  font-size: var(--font-sm);
   cursor: pointer;
 }
 
-.balance-change-group-toggle:hover {
-  filter: saturate(1.04);
+.balance-change-reset:hover {
+  color: var(--color-primary);
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
 }
 
-.balance-change-group-icon {
+.balance-change-metrics {
   display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--group-accent) 16%, var(--color-bg-elevated));
-  color: var(--group-accent);
-  font-size: 18px;
-  font-weight: 900;
-  box-shadow: inset 0 1px 0 color-mix(in srgb, white 54%, transparent);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-border);
+  overflow: hidden;
 }
 
-.balance-change-group-copy {
-  min-width: 0;
-  display: grid;
-  gap: 3px;
-}
-
-.balance-change-group-copy strong {
-  font-size: 17px;
-  line-height: 1.25;
-}
-
-.balance-change-group-copy small,
-.balance-change-group-stat small {
-  color: var(--color-text-secondary);
-  line-height: 1.4;
-}
-
-.balance-change-group-stat {
+.balance-change-metrics > div {
   display: grid;
   gap: 2px;
-  min-width: 110px;
-  text-align: right;
-}
-
-.balance-change-group-stat strong {
-  font-family: var(--font-number);
-  font-size: 14px;
-  font-variant-numeric: tabular-nums;
-}
-
-.balance-change-group-stat small {
-  font-family: var(--font-number);
-  font-variant-numeric: tabular-nums;
-}
-
-.balance-change-group-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 56px;
-  height: 32px;
-  padding: 0 12px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--group-accent) 12%, var(--color-bg-elevated));
-  color: var(--group-accent);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.balance-change-card-list {
-  position: relative;
-  padding: 16px;
-  min-height: 158px;
-  transition:
-    min-height 520ms cubic-bezier(0.22, 1, 0.36, 1),
-    padding 320ms ease;
-}
-
-.balance-change-domino-group.is-collapsed .balance-change-card-list {
-  min-height: 132px;
-  padding-bottom: 28px;
-}
-
-.balance-change-domino-group.is-expanded .balance-change-card-list {
-  display: grid;
-  gap: 10px;
-  min-height: 0;
-}
-
-.balance-change-card {
-  --domino-clamped: min(var(--domino-index), 4);
-  position: relative;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 10px;
-  min-height: 86px;
   padding: 12px 14px;
-  border: 1px solid color-mix(in srgb, var(--group-accent) 18%, var(--color-border-light));
-  border-radius: 18px;
-  background: color-mix(in srgb, var(--color-bg-elevated) 88%, var(--group-bg));
-  box-shadow: 0 10px 28px color-mix(in srgb, var(--color-text) 7%, transparent);
-  transform-origin: 18px 18px;
-  transition:
-    transform 520ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 320ms ease,
-    filter 320ms ease,
-    box-shadow 260ms ease;
+  background: var(--color-bg-elevated);
 }
 
-.balance-change-domino-group.is-collapsed .balance-change-card {
-  position: absolute;
-  left: 16px;
-  right: 16px;
-  top: 16px;
-  z-index: calc(30 - var(--domino-clamped));
-  opacity: 1;
-  filter: none;
-  transform: translateY(calc(var(--domino-clamped) * 14px))
-    translateX(calc(var(--domino-clamped) * 5px)) scale(calc(1 - var(--domino-clamped) * 0.018));
-  pointer-events: none;
-}
-
-.balance-change-domino-group.is-collapsed .balance-change-card:first-child {
-  min-height: 68px;
-}
-
-.balance-change-domino-group.is-collapsed
-  .balance-change-card:first-child
-  .balance-change-card-main {
-  gap: 0;
-}
-
-.balance-change-domino-group.is-collapsed
-  .balance-change-card:first-child
-  .balance-change-card-head {
-  align-items: center;
-}
-
-.balance-change-domino-group.is-collapsed .balance-change-card:not(:first-child) {
-  min-height: 76px;
-  overflow: hidden;
-  opacity: calc(0.86 - min(var(--domino-index), 4) * 0.12);
-  border-color: color-mix(in srgb, var(--color-border-light) 84%, transparent);
-  background: color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-bg-subtle));
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--color-text) 5%, transparent);
-  filter: saturate(0.86);
-}
-
-.balance-change-domino-group.is-collapsed .balance-change-card:not(:first-child) > * {
-  opacity: 0;
-}
-
-.balance-change-domino-group.is-collapsed .balance-change-card:not(:first-child)::before {
-  opacity: 0;
-}
-
-.balance-change-domino-group.is-collapsed .balance-change-card:not(:first-child)::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-bg-subtle));
-}
-
-.balance-change-domino-group.is-collapsed .balance-change-card:nth-child(n + 6) {
-  opacity: 0;
-  transform: translateY(70px) translateX(24px) scale(0.92);
-}
-
-.balance-change-domino-group.is-expanded .balance-change-card {
-  position: relative;
-  opacity: 1;
-  animation: domino-card-open 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: calc(min(var(--domino-index), 14) * 36ms);
-}
-
-.balance-change-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
-}
-
-.balance-change-domino-group.is-collapsed .balance-change-card:hover {
-  transform: translateY(calc(var(--domino-clamped) * 14px - 2px))
-    translateX(calc(var(--domino-clamped) * 5px)) scale(calc(1 - var(--domino-clamped) * 0.018));
-}
-
-.balance-change-card.is-positive {
-  border-color: color-mix(in srgb, var(--color-success) 26%, var(--color-border-light));
-}
-
-.balance-change-card.is-negative {
-  border-color: color-mix(in srgb, var(--color-danger) 24%, var(--color-border-light));
-}
-
-.balance-change-card::before {
-  content: '';
-  position: absolute;
-  inset: 12px auto 12px 0;
-  width: 4px;
-  border-radius: 999px;
-  background: var(--group-accent);
-}
-
-.balance-change-card-icon {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 13px;
-  background: color-mix(in srgb, var(--group-accent) 14%, var(--color-bg-elevated));
-  color: var(--group-accent);
-  font-size: 14px;
-  font-weight: 900;
-}
-
-.balance-change-card-main {
-  min-width: 0;
-  display: grid;
-  gap: 8px;
-}
-
-.balance-change-card-head {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: start;
-}
-
-.balance-change-card-kicker {
-  margin: 0 0 2px;
-  color: var(--color-text-tertiary);
-  font-size: 11px;
-}
-
-.balance-change-card h3 {
-  margin: 0;
-  font-size: 15px;
-  line-height: 1.25;
-  letter-spacing: -0.02em;
-}
-
-.balance-change-card-amount {
-  display: grid;
-  gap: 1px;
-  min-width: 108px;
-  text-align: right;
-}
-
-.balance-change-card-amount span {
+.balance-change-metrics dt {
   color: var(--color-text-secondary);
-  font-size: 11px;
+  font-size: var(--font-xs);
 }
 
-.balance-change-card-amount strong {
-  font-family: var(--font-number);
-  font-size: 16px;
-  line-height: 1.2;
+.balance-change-metrics dd {
+  margin: 0;
+  font-size: clamp(16px, 2vw, 22px);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-.balance-change-card-amount.is-positive strong {
-  color: var(--color-success);
+.balance-change-metrics small {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-xs);
 }
 
-.balance-change-card-amount.is-negative strong {
-  color: var(--color-danger);
+.balance-change-metrics .is-net {
+  background: color-mix(in srgb, var(--color-primary) 7%, var(--color-bg-elevated));
 }
 
-.balance-change-card-body {
+.is-positive {
+  color: var(--color-income);
+}
+
+.is-negative {
+  color: var(--color-expense);
+}
+
+.is-neutral {
+  color: var(--color-text-secondary);
+}
+
+/* ---------- 筛选条 ---------- */
+
+.balance-change-filters {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(210px, 0.85fr);
-  gap: 10px;
-  align-items: stretch;
+  grid-template-columns: minmax(200px, 2fr) repeat(3, minmax(120px, 1fr));
+  gap: var(--space-3);
+  align-items: end;
 }
 
-.balance-change-reason,
-.balance-change-flow {
-  border: 1px solid color-mix(in srgb, var(--color-border-light) 72%, transparent);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--color-bg-elevated) 68%, transparent);
-  padding: 9px 10px;
-}
-
-.balance-change-reason {
+.balance-change-field {
   display: grid;
   gap: 4px;
-}
-
-.balance-change-reason span {
-  width: fit-content;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--group-accent) 12%, var(--color-bg-subtle));
-  color: var(--group-accent);
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.balance-change-reason strong {
   min-width: 0;
-  overflow-wrap: anywhere;
-  font-size: 13px;
-  line-height: 1.45;
 }
 
-.balance-change-reason small,
-.balance-change-card-note small {
+.balance-change-field > span {
   color: var(--color-text-secondary);
-  line-height: 1.45;
+  font-size: var(--font-xs);
+}
+
+.balance-change-field input,
+.balance-change-field select {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-sm);
+}
+
+.balance-change-field input:focus-visible,
+.balance-change-field select:focus-visible {
+  border-color: var(--color-primary);
+}
+
+/* ---------- 表格 ---------- */
+
+.balance-change-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-sm);
+}
+
+.balance-change-table th,
+.balance-change-table td {
+  padding: 9px 10px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.balance-change-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  font-size: var(--font-xs);
+  white-space: nowrap;
+}
+
+.balance-change-table .is-numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 分组头(按天):吸在表头下面 */
+.balance-change-day-head th,
+.balance-change-day-head td {
+  position: sticky;
+  top: 34px;
+  z-index: 1;
+  background: var(--color-bg-subtle);
+  border-bottom: 1px solid var(--color-divider);
+  font-weight: 600;
+  font-size: var(--font-xs);
+}
+
+.balance-change-day-label {
+  margin-right: 8px;
+}
+
+.balance-change-day-count {
+  color: var(--color-text-tertiary);
+  font-weight: 400;
+}
+
+.balance-change-day-subtotal {
+  color: var(--color-text-secondary);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.balance-change-detail-row td {
+  padding: 0 10px 10px;
+}
+
+.balance-change-detail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--color-bg-subtle);
 }
 
 .balance-change-flow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  gap: 8px;
+  display: inline-flex;
   align-items: center;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
 }
 
 .balance-change-flow div {
   display: grid;
-  gap: 3px;
-  min-width: 0;
 }
 
 .balance-change-flow span {
   color: var(--color-text-tertiary);
-  font-size: 11px;
-}
-
-.balance-change-flow strong {
-  font-family: var(--font-number);
-  color: var(--color-text);
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
+  font-size: var(--font-xs);
 }
 
 .balance-change-flow i {
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--group-accent) 10%, var(--color-bg-subtle));
-  color: var(--group-accent);
+  color: var(--color-text-tertiary);
   font-style: normal;
 }
 
-.balance-change-card-note {
+.balance-change-detail-meta {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding-top: 8px;
-  border-top: 1px dashed var(--color-border-light);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
   color: var(--color-text-secondary);
-  font-size: 12px;
+  font-size: var(--font-xs);
 }
+
+/* 行:紧凑、可悬浮、可聚焦 */
+.balance-change-row td:first-child {
+  padding-left: 14px;
+  border-left: 3px solid transparent;
+}
+
+.balance-change-row.is-positive td:first-child {
+  border-left-color: var(--color-income);
+}
+
+.balance-change-row.is-negative td:first-child {
+  border-left-color: var(--color-expense);
+}
+
+.balance-change-row:hover td {
+  background: var(--color-bg-hover);
+}
+
+.balance-change-row.is-expanded td {
+  background: var(--color-bg-subtle);
+}
+
+.balance-change-row + .balance-change-row td,
+.balance-change-day .balance-change-row:first-of-type td {
+  border-top: 1px solid var(--color-divider);
+}
+
+.balance-change-time {
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.balance-change-account {
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.balance-change-type {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+  font-size: var(--font-xs);
+  white-space: nowrap;
+}
+
+.balance-change-summary {
+  min-width: 0;
+}
+
+.balance-change-summary-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.balance-change-summary-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 展开箭头:与分类页同样的画法,收起/展开旋转 90° */
+.balance-change-caret {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+}
+
+.balance-change-caret::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.16s ease;
+  opacity: 0.65;
+}
+
+.balance-change-row.is-expanded .balance-change-caret::before {
+  transform: rotate(45deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .balance-change-caret::before {
+    transition: none;
+  }
+}
+
+.balance-change-note {
+  display: block;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-xs);
+}
+
+.balance-change-amount {
+  font-weight: 600;
+}
+
+.balance-change-after {
+  color: var(--color-text-secondary);
+}
+
+/* ---------- 分页 ---------- */
 
 .balance-change-pagination {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 2px;
   flex-wrap: wrap;
   align-items: center;
-  padding: 12px 14px;
-  border: 1px solid var(--color-border-light);
-  border-radius: 16px;
-  background: var(--gradient-surface-muted);
+  justify-content: space-between;
+  gap: var(--space-3);
 }
 
-.balance-change-page-size,
-.balance-change-pagination-actions {
-  display: inline-flex;
+.balance-change-pagination .balance-change-field {
+  grid-auto-flow: column;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
-.balance-change-page-size select {
-  min-height: 34px;
-  border-radius: 10px;
+.balance-change-page-info {
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+}
+
+.balance-change-pagination-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.balance-change-pagination-actions button {
+  padding: 6px 12px;
   border: 1px solid var(--color-border);
+  border-radius: 8px;
   background: var(--color-bg-elevated);
   color: var(--color-text);
-  padding: 0 10px;
+  font-size: var(--font-sm);
+  cursor: pointer;
 }
 
-@keyframes domino-card-open {
-  0% {
-    opacity: 0.5;
-    transform: translateY(-22px) translateX(24px) rotate(-5deg) scale(0.94);
-  }
-  62% {
-    opacity: 1;
-    transform: translateY(4px) translateX(0) rotate(0.8deg) scale(1.01);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) translateX(0) rotate(0) scale(1);
-  }
+.balance-change-pagination-actions button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  color: var(--color-primary);
 }
+
+.balance-change-pagination-actions button:disabled {
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ---------- 窄屏 ---------- */
 
 @media (max-width: 900px) {
-  .balance-change-card-body {
-    grid-template-columns: 1fr;
+  .balance-change-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .balance-change-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .balance-change-field.is-search {
+    grid-column: 1 / -1;
   }
 }
 
 @media (max-width: 720px) {
-  .balance-change-group-toggle {
-    grid-template-columns: auto minmax(0, 1fr);
+  /* 窄屏去掉次要两列,避免横向滚动:账户与变动后余额 */
+  .balance-change-table th:nth-child(2),
+  .balance-change-table td:nth-child(2),
+  .balance-change-table th:nth-child(6),
+  .balance-change-table td:nth-child(6) {
+    display: none;
   }
 
-  .balance-change-group-stat,
-  .balance-change-group-action {
-    grid-column: 2;
-    justify-self: start;
-    text-align: left;
-  }
-}
-
-@media (max-width: 640px) {
-  .balance-change-header {
-    padding: 16px;
-    border-radius: 18px;
+  .balance-change-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .balance-change-card-list {
-    padding: 12px;
-  }
-
-  .balance-change-domino-group.is-collapsed .balance-change-card {
-    left: 12px;
-    right: 12px;
-    top: 12px;
-  }
-
-  .balance-change-card {
-    grid-template-columns: 1fr;
-  }
-
-  .balance-change-card-head {
-    grid-template-columns: 1fr;
-  }
-
-  .balance-change-card-amount {
-    text-align: left;
-  }
-
-  .balance-change-flow {
-    grid-template-columns: 1fr;
-  }
-
-  .balance-change-flow i {
-    transform: rotate(90deg);
+  .balance-change-pagination {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .balance-change-card,
-  .balance-change-card-list,
-  .balance-change-domino-group {
-    transition: none;
-    animation: none !important;
-  }
+/* 只有一条记录的那一天:日期并入时间列,不再单独占一行分组头 */
+.balance-change-time-with-day {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
 }
 
-/* VI coverage — balance history is a compact activity log, not a deck of
-   decorative domino cards. Expand/collapse remains, but the visual hierarchy
-   now comes from type, amount and dividers. */
-.balance-change-page.panel {
-  gap: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.balance-change-header {
-  padding: 2px 0 20px;
-  border: 0;
-  border-bottom: 1px solid var(--color-divider);
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.balance-change-tip {
-  padding: 14px 0 14px 38px;
-  border: 0;
-  border-bottom: 1px solid var(--color-divider);
-  border-radius: 0;
-  background: transparent;
-}
-
-.balance-change-tip::before {
-  left: 0;
-  top: 13px;
-  background: transparent;
-}
-
-.balance-change-domino-board {
-  gap: 0;
-}
-
-.balance-change-domino-group {
-  overflow: visible;
-  border: 0;
-  border-bottom: 1px solid var(--color-divider);
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.balance-change-domino-group.is-expanded {
-  border-color: var(--color-divider);
-  box-shadow: none;
-}
-
-.balance-change-group-toggle {
-  min-height: 66px;
-  padding: 12px 0;
-  border-bottom-color: var(--color-divider);
-  background: transparent;
-}
-
-.balance-change-group-toggle:hover {
-  background: var(--color-bg-subtle);
-  filter: none;
-}
-
-.balance-change-group-icon,
-.balance-change-card-icon {
-  border-radius: 50%;
-  box-shadow: none;
-}
-
-.balance-change-card-list,
-.balance-change-domino-group.is-collapsed .balance-change-card-list {
-  min-height: 0;
-  padding: 0;
-}
-
-.balance-change-domino-group.is-expanded .balance-change-card-list {
-  gap: 0;
-}
-
-.balance-change-card,
-.balance-change-domino-group.is-expanded .balance-change-card {
-  min-height: 0;
-  padding: 14px 0 14px 12px;
-  border: 0;
-  border-bottom: 1px solid var(--color-divider);
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  animation: none;
-}
-
-.balance-change-domino-group.is-collapsed .balance-change-card {
-  position: relative;
-  inset: auto;
-  display: none;
-  transform: none;
-  opacity: 1;
-  pointer-events: none;
-}
-
-.balance-change-domino-group.is-collapsed .balance-change-card:first-child {
-  display: grid;
-  min-height: 0;
-  pointer-events: auto;
-}
-
-.balance-change-domino-group.is-collapsed .balance-change-card:not(:first-child) {
-  min-height: 0;
-  opacity: 1;
-  filter: none;
-  background: transparent;
-  box-shadow: none;
-}
-
-.balance-change-card:hover,
-.balance-change-domino-group.is-collapsed .balance-change-card:hover {
-  background: var(--color-bg-subtle);
-  box-shadow: none;
-  transform: none;
-}
-
-.balance-change-card::before {
-  inset: 14px auto 14px 0;
-  width: 3px;
-  border-radius: 0;
-}
-
-.balance-change-reason,
-.balance-change-flow,
-.balance-change-pagination {
-  border-inline: 0;
-  border-radius: 0;
-  background: transparent;
-}
-
-.balance-change-pagination {
-  padding: 14px 0;
-  border-bottom: 0;
-}
-
-.balance-change-header .muted {
-  max-width: 680px;
-  line-height: 1.6;
-}
-
-.balance-change-domino-group {
-  border-bottom: 1px solid color-mix(in srgb, var(--color-divider) 76%, transparent);
-}
-
-.balance-change-group-toggle {
-  min-height: 58px;
-  gap: 12px;
-}
-
-.balance-change-group-icon {
-  width: 32px;
-  height: 32px;
-  flex: 0 0 32px;
-  font-size: 15px;
-}
-
-.balance-change-group-copy {
-  gap: 3px;
-}
-
-.balance-change-group-copy strong {
-  font-size: var(--font-sm);
-  font-weight: 650;
-}
-
-.balance-change-group-copy small {
+.balance-change-day-inline {
+  color: var(--color-text-tertiary);
   font-size: var(--font-xs);
-}
-
-.balance-change-group-stat {
-  gap: 2px;
-}
-
-.balance-change-group-stat strong {
-  font-size: var(--font-xs);
-  font-weight: 600;
-}
-
-.balance-change-group-stat small {
-  font-size: 11px;
-}
-
-.balance-change-group-action {
-  min-width: 50px;
-  padding: 6px 10px;
-  border: 1px solid var(--color-divider);
-  border-radius: 999px;
-  background: var(--color-bg-elevated);
-  font-size: var(--font-xs);
-  font-weight: 600;
-}
-
-.balance-change-card,
-.balance-change-domino-group.is-expanded .balance-change-card {
-  padding-block: 12px;
-}
-
-.balance-change-card-kicker {
-  margin-bottom: 3px;
-  font-size: var(--font-xs);
-}
-
-.balance-change-card h3 {
-  font-size: var(--font-sm);
-  font-weight: 620;
-}
-
-.balance-change-card-amount span {
-  font-size: 11px;
-}
-
-.balance-change-card-amount strong {
-  font-size: var(--font-md);
-  font-weight: 680;
-}
-
-.balance-change-card-icon {
-  width: 30px;
-  height: 30px;
-  flex: 0 0 30px;
-  font-size: 13px;
-}
-
-.balance-change-pagination {
-  gap: 12px;
-  color: var(--color-text-secondary);
-  font-size: var(--font-xs);
-}
-
-@media (max-width: 640px) {
-  .balance-change-header {
-    padding: 2px 0 16px;
-  }
-
-  .balance-change-card {
-    padding-left: 10px;
-  }
 }
