@@ -301,13 +301,35 @@ export function parseCreditDraftFragment(text: string): CreditDraftPatch | null 
     if (aliasDue !== undefined) patch.dueAmount = aliasDue;
   }
 
-  const periods = extractAmount(source, /(?<!总共)(?:剩余|还有|还剩)?\s*([0-9]+)\s*期(?:数)?/i);
-  if (periods !== undefined) patch.remainingMonths = periods;
-  const totalPeriods = extractAmount(source, /(?:总期数|共|一共|总共)\s*([0-9]+)\s*期/i);
+  // 期数分三件事:总期数、已还期数、剩余期数。之前只有前两个的一半 ——
+// 「分12期,已还3期」会被读成「还剩 12 期」,于是还款计划与剩余利息整体高估(少算了已还的 3 期)。
+  const paidPeriodsMatch = source.match(/(?:已还|已还款|已还了|已经还了?|还了)\s*([0-9]+)\s*期/i);
+  const paidPeriods = extractAmount(source, /(?:已还|已还款|已还了|已经还了?|还了)\s*([0-9]+)\s*期/i);
+  if (paidPeriods !== undefined) patch.paidPeriods = paidPeriods;
+
+  const explicitRemainingPeriods = extractAmount(
+    source,
+    /(?:剩余|还有|还剩|再还|剩下)\s*([0-9]+)\s*期/i
+  );
+
+  // 把「已还 N 期」「还剩 N 期」这些片段从原文里剔掉,剩下的裸「N 期」才当作总期数,
+  // 否则「还剩6期」会被同时当成总期数 6。
+  const strippedSource = source
+    .replace(/(?:已还|已还款|已还了|已经还了?|还了)\s*([0-9]+)\s*期/i, ' ')
+    .replace(/(?:剩余|还有|还剩|再还|剩下)\s*([0-9]+)\s*期/i, ' ');
+
+  const totalPeriods =
+    extractAmount(source, /(?:总期数|共|一共|总共|分)\s*([0-9]+)\s*期/i) ??
+    extractAmount(strippedSource, /([0-9]+)\s*期(?:数)?/i);
   if (totalPeriods !== undefined) patch.totalPeriods = totalPeriods;
-  if (patch.totalPeriods === undefined) {
-    const installmentPeriods = extractAmount(source, /(?:分)\s*([0-9]+)\s*期/i);
-    if (installmentPeriods !== undefined) patch.totalPeriods = installmentPeriods;
+
+  if (explicitRemainingPeriods !== undefined) {
+    patch.remainingMonths = explicitRemainingPeriods;
+  } else if (totalPeriods !== undefined) {
+    // 没说剩余多少期时,用「总期数 − 已还期数」推算;一期都没还就是总期数。
+    const paid = paidPeriodsMatch ? patch.paidPeriods ?? 0 : 0;
+    const derived = totalPeriods - paid;
+    if (derived > 0) patch.remainingMonths = derived;
   }
   const repaymentDay = extractAmount(source, /(?:还款日|扣款日)\s*(?:为|是|[:：])?\s*([0-9]{1,2})/i);
   if (repaymentDay !== undefined && repaymentDay <= 31) patch.repaymentDay = repaymentDay;
