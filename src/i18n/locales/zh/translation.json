@@ -2246,7 +2246,7 @@
       "costPending": "成本待录入",
       "todayEstimate": "今日市场估算",
       "waitingQuotes": "等待行情",
-      "estimateHint": "自选持仓按今日涨跌幅从高到低排列，TOP 3 仅标记有行情的基金；没有基金行情时再按主要指数平均涨跌估算。",
+      "estimateHint": "按今日涨跌幅排序 · TOP 3 仅标记有行情的基金",
       "askAiTitle": "让 AI 分析这只持仓",
       "marketValue": "当前市值",
       "costBasis": "持仓成本",
@@ -2280,7 +2280,7 @@
       "riskLabel": "风险",
       "status": {
         "live": "结合行情、新闻和板块 · 每 15 分钟更新 · 综合",
-        "localOnly": "先用本地信号 · 配置 AI 后每 15 分钟更新 · 综合",
+        "localOnly": "本地信号 · 配置 AI 后每 15 分钟更新",
         "needModel": "本地信号可用 · 请先选择 AI 模型再生成简报 · 综合",
         "collecting": "正在整理行情和新闻 · 综合"
       },
@@ -2304,7 +2304,7 @@
       "now": "现在",
       "summaryAria": "折叠的全球市场时间轴",
       "timelineTitle": "交易时间轴",
-      "timelineHint": "常规交易时段 · 自动换算当前时区 · 不含节假日与盘前盘后",
+      "timelineHint": "常规交易时段 · 已换算当前时区",
       "allClosed": "当前常规交易时段均已休市",
       "tradingSuffix": "正在交易",
       "nameSeparator": "、"
@@ -2316,9 +2316,9 @@
       "weekendTitle": "周末休市 · 暂无实时行情",
       "noOpenEyebrow": "交易时段提醒",
       "noOpenTitle": "当前没有市场处于交易中",
-      "noOpenDetail": "各市场会按当地交易日历分别开闭市；休市期间不刷新实时价格，走势图仍可查看最近行情。",
-      "weekendDetail": "{date} 为周末，A 股、日韩及美股均不进行常规交易。页面展示最近收盘数据，下一交易日开盘后自动恢复更新。",
-      "holidayDetail": "{date} 为{holiday}休市日，行情将保留最近收盘数据，自动轮询会在下一交易时段恢复。"
+      "noOpenDetail": "按当地交易日历开闭市;休市期间不刷新价格。",
+      "weekendDetail": "展示最近收盘数据,下个交易日自动更新。",
+      "holidayDetail": "{date} 为{holiday},展示最近收盘数据。"
     },
     "state": {
       "trading": "交易中",
@@ -2403,7 +2403,7 @@
       "candleDisconnected": "K 线暂时没有连上",
       "candleLoading": "正在加载 K 线",
       "candleWaiting": "等待 K 线数据",
-      "candleHint": "Yahoo Finance 历史 K 线加载后会显示在这里。",
+      "candleHint": "暂无 K 线数据",
       "marketFallback": "大盘",
       "latest": "最新",
       "high": "最高",
@@ -2473,10 +2473,10 @@
       "emptyTitle": "暂无行业数据",
       "emptyDesc": "稍后刷新，或切换回热门题材。",
       "filterAria": "热门行业筛选",
-      "fallbackNotice": "东方财富行情暂不可用，当前使用 Yahoo 行业 ETF 参考。",
+      "fallbackNotice": "行情不可用,当前使用 Yahoo 行业 ETF 参考",
       "sortHint": "按涨跌幅排序；每条线展示当日行业走势。",
       "boardCountSuffix": " 个板块",
-      "breadthSummary": "涨 {up} · 平 {flat} · 跌 {down}，按涨跌幅展示前 8 个",
+      "breadthSummary": "涨 {up} · 平 {flat} · 跌 {down}",
       "summary": " 个行业 · 涨 {up} / 跌 {down}",
       "renameAria": "修改 {name} 的显示名称",
       "indexPrefix": "指数",
@@ -2488,7 +2488,7 @@
       "concentration": {
         "maxShare": "{percent}% 最大仓位占比"
       },
-      "formula": "综合分 = 指数动量×45% + 板块广度×35% + 板块均值×20%；再叠加新闻信号、波动率和集中度计算风险分。",
+      "formula": "综合分 = 指数动量 45% + 板块广度 35% + 板块均值 20%",
       "health": {
         "neutral": "观望一下",
         "strong": "偏强，别追高",
@@ -2520,7 +2520,7 @@
       "emptyTitle": "暂无快讯",
       "emptyDesc": "稍后刷新，或切换其他分类看看。",
       "tagsAria": "关联代码",
-      "sourceNote": "数据源：东方财富 7×24 快讯 · 服务端同源代理，避免部署环境浏览器跨域拦截",
+      "sourceNote": "数据源:东方财富 7×24 快讯",
       "catAllDay": "7×24",
       "catFocus": "焦点",
       "catListedCompany": "上市公司",

@@ -2246,7 +2246,7 @@
       "costPending": "Cost not entered",
       "todayEstimate": "Today’s market estimate",
       "waitingQuotes": "Waiting for quotes",
-      "estimateHint": "Watchlist holdings are ranked by today’s change, top 3 only when quotes exist; without fund quotes the main-index average is used.",
+      "estimateHint": "Sorted by today’s change · only funds with quotes get a TOP 3 mark",
       "askAiTitle": "Ask AI about this holding",
       "marketValue": "Market value",
       "costBasis": "Cost basis",
@@ -2280,7 +2280,7 @@
       "riskLabel": "risk",
       "status": {
         "live": "Prices, news and sectors combined · updates every 15 min · score",
-        "localOnly": "Local signals only · configure AI for 15-minute updates · score",
+        "localOnly": "Local signals · refreshes every 15 min after AI setup",
         "needModel": "Local signals ready · pick an AI model to generate briefings · score",
         "collecting": "Collecting prices and news · score"
       },
@@ -2304,7 +2304,7 @@
       "now": "Now",
       "summaryAria": "Collapsed global market timeline",
       "timelineTitle": "Trading timeline",
-      "timelineHint": "Regular sessions, converted to your time zone; excludes holidays and pre/post market.",
+      "timelineHint": "Regular session · shown in your time zone",
       "allClosed": "All regular sessions are closed right now",
       "tradingSuffix": " trading",
       "nameSeparator": ", "
@@ -2316,9 +2316,9 @@
       "weekendTitle": "Weekend — no live quotes",
       "noOpenEyebrow": "Trading hours",
       "noOpenTitle": "No market is trading right now",
-      "noOpenDetail": "Each market follows its own local calendar; live prices pause while closed, and charts still show the latest session.",
-      "weekendDetail": "{date} is a weekend: A-shares, Japan, Korea and the US all skip regular trading. The page shows the latest close and resumes automatically next session.",
-      "holidayDetail": "{date} is a {holiday} holiday: quotes keep the latest close and auto-refresh resumes next session."
+      "noOpenDetail": "Markets open by local calendar; prices pause while closed.",
+      "weekendDetail": "Showing latest close; updates automatically next trading day.",
+      "holidayDetail": "{date} is {holiday}; showing latest close."
     },
     "state": {
       "trading": "Trading",
@@ -2403,7 +2403,7 @@
       "candleDisconnected": "Candles not connected yet",
       "candleLoading": "Loading candles",
       "candleWaiting": "Waiting for candle data",
-      "candleHint": "Yahoo Finance historical candles will appear here once loaded.",
+      "candleHint": "No candlestick data yet",
       "marketFallback": "Market",
       "latest": "Latest",
       "high": "High",
@@ -2473,10 +2473,10 @@
       "emptyTitle": "No sector data yet",
       "emptyDesc": "Refresh later, or switch back to hot themes.",
       "filterAria": "Sector filter",
-      "fallbackNotice": "Eastmoney quotes are unavailable; using Yahoo sector ETFs for reference.",
+      "fallbackNotice": "Quotes unavailable; using Yahoo sector ETFs as reference",
       "sortHint": "Sorted by change; each line shows the sector’s intraday trend.",
       "boardCountSuffix": " sectors",
-      "breadthSummary": "{up} up · {flat} flat · {down} down, top 8 by change",
+      "breadthSummary": "Up {up} · Flat {flat} · Down {down}",
       "summary": " sectors · {up} up / {down} down",
       "renameAria": "Rename {name}",
       "indexPrefix": "Index",
@@ -2488,7 +2488,7 @@
       "concentration": {
         "maxShare": "{percent}% largest position share"
       },
-      "formula": "Composite = index momentum × 45% + sector breadth × 35% + sector average × 20%; news signals, volatility and concentration feed the risk score.",
+      "formula": "Score = index momentum 45% + breadth 35% + sector mean 20%",
       "health": {
         "neutral": "Wait and see",
         "strong": "Firm, do not chase",
@@ -2520,7 +2520,7 @@
       "emptyTitle": "No headlines yet",
       "emptyDesc": "Refresh later, or try another category.",
       "tagsAria": "Related tickers",
-      "sourceNote": "Source: Eastmoney 7×24 news · same-origin proxy on the server to avoid browser CORS issues",
+      "sourceNote": "Source: Eastmoney 7×24 news",
       "catAllDay": "7×24",
       "catFocus": "Focus",
       "catListedCompany": "Listed companies",
