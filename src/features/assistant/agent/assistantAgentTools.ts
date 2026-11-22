@@ -18,6 +18,7 @@ import {
   normalizeMoney,
   resolveDraftAccountTarget
 } from '../workbench/workbenchMapping';
+import { resolveTransactionLocalDay } from '../../../shared/lib/localDate';
 
 export interface AgentToolContext {
   categories: Category[];
@@ -414,7 +415,7 @@ function accountTransactionStats(accountId: string, ctx: AgentToolContext) {
     transactionCount: linked.length,
     lastTransactionDate:
       linked
-        .map((row) => row.date.slice(0, 10))
+        .map((row) => resolveTransactionLocalDay(row.date))
         .sort()
         .at(-1) || ''
   };
@@ -907,7 +908,7 @@ function matchesKeyword(row: TransactionItem, keyword: string, ctx: AgentToolCon
 function serializeTransaction(row: TransactionItem, ctx: AgentToolContext) {
   return {
     id: row.id,
-    date: row.date.slice(0, 10),
+    date: resolveTransactionLocalDay(row.date),
     type: row.type,
     amount: row.amount,
     category: findCategoryName(ctx.categories, row.categoryId),
@@ -1030,7 +1031,8 @@ function executeUpdate(args: Record<string, unknown>, ctx: AgentToolContext): Ag
   const nextTags = args.tags !== undefined ? toTags(args.tags) : target.tags;
   const nextAmount =
     args.amount !== undefined ? Math.abs(toNumber(args.amount) ?? target.amount) : target.amount;
-  const nextDate = args.date !== undefined ? toDateKey(args.date) : target.date.slice(0, 10);
+  const nextDate =
+    args.date !== undefined ? toDateKey(args.date) : resolveTransactionLocalDay(target.date);
   const categoryName = toText(args.category);
   const accountName = toText(args.account);
   const categoryId = categoryName
@@ -1134,8 +1136,8 @@ function executeQuery(args: Record<string, unknown>, ctx: AgentToolContext): Age
 
   const rows = ctx.transactions
     .filter((row) => (typeFilter ? row.type === typeFilter : true))
-    .filter((row) => (startDate ? row.date.slice(0, 10) >= startDate : true))
-    .filter((row) => (endDate ? row.date.slice(0, 10) <= endDate : true))
+    .filter((row) => (startDate ? resolveTransactionLocalDay(row.date) >= startDate : true))
+    .filter((row) => (endDate ? resolveTransactionLocalDay(row.date) <= endDate : true))
     .filter((row) =>
       categoryFilter
         ? findCategoryName(ctx.categories, row.categoryId).includes(categoryFilter)
@@ -1168,8 +1170,8 @@ function executeSummary(args: Record<string, unknown>, ctx: AgentToolContext): A
 
   const rows = ctx.transactions
     .filter((row) => row.type === 'expense' || row.type === 'income')
-    .filter((row) => (startDate ? row.date.slice(0, 10) >= startDate : true))
-    .filter((row) => (endDate ? row.date.slice(0, 10) <= endDate : true));
+    .filter((row) => (startDate ? resolveTransactionLocalDay(row.date) >= startDate : true))
+    .filter((row) => (endDate ? resolveTransactionLocalDay(row.date) <= endDate : true));
 
   const groups = new Map<
     string,

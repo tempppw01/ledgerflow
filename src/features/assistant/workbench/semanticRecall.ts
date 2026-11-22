@@ -2,6 +2,7 @@ import type { Account } from '../../../entities/account/types';
 import type { Category } from '../../../entities/category/types';
 import type { TransactionItem } from '../../../entities/transaction/types';
 import { fetchEmbeddings } from '../api/openaiEmbeddingClient';
+import { resolveTransactionLocalDay } from '../../../shared/lib/localDate';
 
 const EMBEDDING_CACHE_PREFIX = 'ledgerflow-assistant-embedding-index-v1';
 const MAX_INDEX_TRANSACTIONS = 180;
@@ -135,7 +136,7 @@ function buildTransactionDocs(
     .sort((a, b) => +new Date(b.date) - +new Date(a.date))
     .slice(0, MAX_INDEX_TRANSACTIONS)
     .map((tx) => {
-      const date = String(tx.date || '').slice(0, 10);
+      const date = resolveTransactionLocalDay(tx.date);
       const categoryName = categoryMap.get(tx.categoryId) || tx.categoryId || '未分类';
       const accountName = accountMap.get(tx.accountId) || tx.accountId || '未指定账户';
       const text = [

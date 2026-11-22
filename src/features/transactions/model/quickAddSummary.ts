@@ -1,5 +1,6 @@
 import type { TransactionItem } from '../../../entities/transaction/types';
 import { roundMoney } from '../../../shared/lib/money';
+import { resolveTransactionLocalDay } from '../../../shared/lib/localDate';
 
 type QuickAddSpendingInput = {
   transactions: TransactionItem[];
@@ -18,7 +19,7 @@ export function getQuickAddDailySpending({
   const spent = transactions.reduce((total, item) => {
     if (
       item.type !== 'expense' ||
-      item.date.slice(0, 10) !== date ||
+      resolveTransactionLocalDay(item.date) !== date ||
       item.trashedAt ||
       item.status === 'pending' ||
       item.status === 'closed' ||

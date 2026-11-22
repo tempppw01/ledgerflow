@@ -1,5 +1,6 @@
 import { TransactionItem, TransactionStatus } from '../../entities/transaction/types';
 import { roundMoney } from './money';
+import { resolveTransactionLocalDay } from './localDate';
 
 type BillSource = 'wechat' | 'alipay';
 
@@ -200,7 +201,7 @@ function buildBillIdentity(item: {
   }
 
   const amount = roundMoney(Math.abs(Number(item.amount || 0)));
-  return `content:${String(item.date || '').slice(0, 10)}|${amount}|${String(item.type || '')}|${String(item.note || '').trim()}`;
+  return `content:${resolveTransactionLocalDay(item.date)}|${amount}|${String(item.type || '')}|${String(item.note || '').trim()}`;
 }
 
 function mergeImportTags(existingTags: string[], incomingTags: string[]): string[] {

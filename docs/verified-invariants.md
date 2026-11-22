@@ -59,6 +59,7 @@ node ./node_modules/vitest/vitest.mjs run --config vitest.config.ts src/shared/s
 | --- | --- |
 | `npm run i18n:check` | i18n key 缺失/单边/写死属性;命中即非 0 退出 |
 | `npm run i18n:check-jsx` | JSX 文本节点里的硬编码中文;命中即非 0 退出 |
+| `npm run check:dates` | 禁止 `date.slice(0, 10)`(按 UTC 取日);命中即非 0 退出 |
 | `node scripts/audit-jsx-hardcoded.mjs --count` | 同上,只看数字(用于看趋势) |
 
 ## 已知但**故意不**当作 bug 的

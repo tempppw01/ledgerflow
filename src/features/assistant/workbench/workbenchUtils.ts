@@ -5,6 +5,7 @@ import type { TransactionItem, TransactionType } from '../../../entities/transac
 import type { AiBillItem, AiBillResult, DraftBillEntry, ValidationIssue } from './workbenchTypes';
 import { toLocalDateKey } from '../../../shared/lib/localDate';
 import { roundMoney } from '../../../shared/lib/money';
+import { resolveTransactionLocalDay } from '../../../shared/lib/localDate';
 
 const MAX_PROMPT_TRANSACTIONS = 1200;
 const CHINA_NETWORK_TIME_API = 'https://api.m.taobao.com/rest/api3.do?api=mtop.common.getTimestamp';
@@ -419,7 +420,7 @@ export function buildBillContentSignature(input: {
   currency?: string;
   transactionCurrency?: string;
 }): string {
-  const day = String(input.date || '').slice(0, 10);
+  const day = resolveTransactionLocalDay(input.date);
   const amount = roundMoney(normalizeAmount(input.amount));
   const type = input.type === 'unknown' ? 'expense' : input.type;
   const note = String(input.note || '').trim();

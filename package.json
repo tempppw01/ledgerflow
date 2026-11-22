@@ -15,6 +15,7 @@
     "lint": "eslint . --max-warnings=0",
     "i18n:check": "node scripts/check-i18n-keys.mjs",
     "i18n:check-jsx": "node scripts/audit-jsx-hardcoded.mjs --fail",
+    "check:dates": "node scripts/check-date-usage.mjs",
     "i18n:audit-jsx": "node scripts/audit-jsx-hardcoded.mjs",
     "brands:generate": "node scripts/generate-brand-icons.mjs",
     "format": "prettier . --write",

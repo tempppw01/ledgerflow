@@ -9,6 +9,7 @@ import {
 } from '../workbench/workbenchUtils';
 import { resolveDraftAccountLabel } from '../workbench/workbenchMapping';
 import { roundMoney } from '../../../shared/lib/money';
+import { resolveTransactionLocalDay } from '../../../shared/lib/localDate';
 
 interface BillPreviewCardProps {
   entries: DraftBillEntry[];
@@ -207,7 +208,7 @@ export function BillPreviewCard({
               <div className="chat-bill-row-copy">
                 <strong>{item.note?.trim() || item.category || tf('billPreview.emptyNote', '未填写备注')}</strong>
                 <small>
-                  {item.date.slice(0, 10)} <span aria-hidden="true">·</span>{' '}
+                  {resolveTransactionLocalDay(item.date)} <span aria-hidden="true">·</span>{' '}
                   {getTypeLabel(item.type, tf)}
                   <span aria-hidden="true">·</span> {item.category || tf('billPreview.uncategorized', '未分类')}
                   <span aria-hidden="true">·</span> {accountLabel.label || tf('billPreview.noAccount', '未指定账户')}
@@ -350,7 +351,7 @@ export function BillPreviewCard({
                     {tf('billPreview.field.date', '日期')}
                     <input
                       type="date"
-                      value={item.date.slice(0, 10)}
+                      value={resolveTransactionLocalDay(item.date)}
                       onChange={(event) => onUpdateEntry?.(item.id, { date: event.target.value })}
                     />
                   </label>
