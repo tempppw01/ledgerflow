@@ -376,11 +376,41 @@ function shouldSkipByStatus(row: Record<string, string>): boolean {
   return /失败|撤销|未支付/.test(status);
 }
 
-function parseDate(raw: string): string {
-  const normalized = raw.replace(/\./g, '-').replace(/\//g, '-').trim();
+/**
+ * 解析账单里的日期。**认不出来就返回 null,由调用方跳过整行** —— 之前这里会退化成
+ * `new Date().toISOString()`(也就是「今天」),于是:
+ * - 中文日期「2026年11月18日」认不出来 → 整份账单全部记到今天
+ * - 美式日期「11/22/2026」认不出来 → 同样记到今天
+ * 这两种都是「数据看着导入成功、账却全错」,比丢一行严重得多。
+ */
+function parseDate(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const normalized = trimmed
+    // 中文日期:2026年11月18日 → 2026-11-18
+    .replace(/年/g, '-')
+    .replace(/月/g, '-')
+    .replace(/日/g, ' ')
+    // 中文时间:9时30分(20秒)→ 9:30(:20)
+    .replace(/时/g, ':')
+    .replace(/分/g, ':')
+    .replace(/秒/g, '')
+    // 2026.11.18 / 2026/11/18 → 2026-11-18
+    .replace(/[./]/g, '-')
+    .replace(/\s+/g, ' ')
+    .replace(/[\s:-]+$/, '')
+    .trim();
+
+  if (!normalized) {
+    return null;
+  }
+
   const d = new Date(normalized);
   if (Number.isNaN(d.getTime())) {
-    return new Date().toISOString();
+    return null;
   }
   return d.toISOString();
 }
@@ -503,6 +533,19 @@ function buildTransactionFromLine(
   }
 
   const dateRaw = pickByKeys(row, DATE_KEYS);
+  // 两种情况要区别对待:
+  // - **整份账单没有日期列**(有些导出只有金额与商品):沿用「记到今天」的兜底,
+  //   用户能立刻看到并自行改日期;
+  // - **有日期列但这一行的值认不出来**(中文日期、美式日期、脏数据):整行跳过。
+  //   这时用「今天」顶上会让整份账单落到同一天,月统计全错,而且用户看不出来。
+  const hasDateColumn = headers.some((header) => DATE_KEYS.some((key) => header.includes(key)));
+  let parsedDate = parseDate(dateRaw);
+  if (!parsedDate) {
+    if (hasDateColumn) {
+      return null;
+    }
+    parsedDate = new Date().toISOString();
+  }
   const orderNo = pickByKeys(row, ORDER_NO_KEYS) || undefined;
   const merchantOrderNo = pickByKeys(row, MERCHANT_ORDER_NO_KEYS) || undefined;
   const status = parseStatus(row);
@@ -510,7 +553,7 @@ function buildTransactionFromLine(
   return {
     type: parseType(row, amountRaw, input.source),
     amount,
-    date: parseDate(dateRaw),
+    date: parsedDate,
     note: buildNote(row),
     tags: [input.source === 'wechat' ? '微信导入' : '支付宝'],
     categoryId: input.defaultCategoryId,
