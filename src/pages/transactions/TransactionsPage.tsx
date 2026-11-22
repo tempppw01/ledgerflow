@@ -1369,7 +1369,11 @@ export function TransactionsPage() {
       clearAllAccountBills();
     }
 
-    result.update.forEach((row) => updateTransaction(row.id, row.payload));
+    // 导入/恢复写的是既有数据:允许「已退金额 > 原交易金额」这种历史状态通过,
+    // 否则一份含该状态的文件会整批导入失败(用户无法自愈)。
+    result.update.forEach((row) =>
+      updateTransaction(row.id, row.payload, { allowRefundOverflow: true })
+    );
     const insertedIds = result.append.map((item) => addTransaction(item));
     const newestId = insertedIds[insertedIds.length - 1];
     const changedCount = result.append.length + result.update.length;

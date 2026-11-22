@@ -773,7 +773,10 @@ export function DatabaseSettingsPage() {
         clearAllAccountBills();
       }
 
-      result.update.forEach((row) => updateTransaction(row.id, row.payload));
+      // 恢复备份属于既有数据:同样跳过退款总额校验,避免历史数据把整批恢复顶失败。
+      result.update.forEach((row) =>
+        updateTransaction(row.id, row.payload, { allowRefundOverflow: true })
+      );
       result.append.forEach((row) => addTransaction(row));
 
       const changedCount = result.append.length + result.update.length;

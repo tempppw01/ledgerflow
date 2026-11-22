@@ -108,7 +108,11 @@ interface FinanceState {
   categoryLearningRules: CategoryLearningRule[];
   categoryLearningEvents: CategoryLearningEvent[];
   addTransaction: AddTransactionAction;
-  updateTransaction: (id: string, payload: Omit<TransactionItem, 'id'>) => void;
+  updateTransaction: (
+    id: string,
+    payload: Omit<TransactionItem, 'id'>,
+    options?: { allowRefundOverflow?: boolean }
+  ) => void;
   removeTransaction: (id: string) => void;
   restoreTransaction: (id: string) => void;
   permanentlyDeleteTransaction: (id: string) => void;
@@ -839,8 +843,47 @@ export const useFinanceStore = create<FinanceState>()(
         void syncChangeIfNeeded({ entity: 'transactions', action: 'insert', row });
         return id;
       }) as AddTransactionAction,
-      updateTransaction: (id, payload) => {
+      updateTransaction: (id, payload, options) => {
         let updatedRow: TransactionItem | null = null;
+        // 退款关联的不变量:同一笔交易的退款/冲正总额不得超过它的金额。
+        // 创建退款那条路径已经守住了,但**编辑**绕过它 —— 把原交易金额改小、或把退款金额
+        // 改大,都会让这个不变量失效:账户净额会凭空多出一笔钱(支出变小、退款照旧流入)。
+        // 这里在写入前挡下来,错误信息由调用方展示(与 refundTransaction 的处理方式一致)。
+        if (!options?.allowRefundOverflow) {
+          const rows = get().transactions;
+          const existing = rows.find((item) => item.id === id);
+          if (existing) {
+            const nextAmount = roundCurrency(payload.amount);
+            const refundedForThisRow = getRefundedAmount(rows, id);
+            if (refundedForThisRow > 0 && nextAmount < refundedForThisRow) {
+              throw new Error(
+                `这笔已退 ${refundedForThisRow.toFixed(2)} 元,金额不能低于该值。请先处理对应的退款单。`
+              );
+            }
+
+            const nextAdjustmentKind =
+              payload.adjustmentKind ?? existing.adjustmentKind ?? 'normal';
+            const originalId = payload.refundOfTransactionId ?? existing.refundOfTransactionId;
+            const isRefundLike =
+              nextAdjustmentKind === 'refund' || nextAdjustmentKind === 'reversal';
+            if (isRefundLike && originalId) {
+              const original = rows.find((item) => item.id === originalId);
+              if (original) {
+                // 已退总额里含本行,先减去本行旧值,再加上改后的值
+                const others = roundCurrency(
+                  getRefundedAmount(rows, originalId) - Math.abs(roundCurrency(existing.amount))
+                );
+                const nextTotal = roundCurrency(others + Math.abs(nextAmount));
+                const originalAmount = roundCurrency(original.amount);
+                if (nextTotal > originalAmount) {
+                  throw new Error(
+                    `退款总额不能超过原交易金额 ${originalAmount.toFixed(2)} 元(其余退款已占 ${others.toFixed(2)} 元)。`
+                  );
+                }
+              }
+            }
+          }
+        }
         set((s) => {
           const existing = s.transactions.find((item) => item.id === id);
           if (!existing) {

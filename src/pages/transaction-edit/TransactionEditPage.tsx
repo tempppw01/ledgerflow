@@ -521,7 +521,17 @@ export function TransactionEditPage() {
     };
 
     if (id) {
-      updateTransaction(id, payload);
+      // updateTransaction 会在「金额低于已退总额」等情况下抛错(守退款不变量),把原因显示在表单里。
+      try {
+        updateTransaction(id, payload);
+      } catch (error) {
+        setFormError(
+          error instanceof Error
+            ? error.message
+            : tf('transactions.edit.error.saveFailed', '保存失败,请稍后重试。')
+        );
+        return;
+      }
     } else {
       addTransaction(payload);
       clearTransactionDraft(draftStorageId);

@@ -1192,7 +1192,8 @@
         "dateRange": "日期超出允许范围（2000-01-01 ~ 2100-12-31）。",
         "expression": "表达式无效，无法计算",
         "categoryRequired": "分类不能为空，请先选择或新建分类。",
-        "accountRequired": "请先选择账户。"
+        "accountRequired": "请先选择账户。",
+        "saveFailed": "保存失败,请稍后重试。"
       },
       "suggestionMiddle": "」，分类「",
       "suggestionSuffix": "」。"

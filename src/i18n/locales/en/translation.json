@@ -1192,7 +1192,8 @@
         "dateRange": "Date out of range (2000-01-01 to 2100-12-31).",
         "expression": "Invalid expression",
         "categoryRequired": "Category is required: pick or create one first.",
-        "accountRequired": "Please choose an account first."
+        "accountRequired": "Please choose an account first.",
+        "saveFailed": "Could not save. Please try again."
       },
       "suggestionMiddle": "” · category “",
       "suggestionSuffix": "”."
