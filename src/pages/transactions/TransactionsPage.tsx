@@ -47,7 +47,10 @@ import {
   TransactionSortKey,
   TransactionTable
 } from '../../features/transactions/components/TransactionTable';
-import { matchesCategoryQuickFilter } from '../../features/transactions/model/categoryQuickFilter';
+import {
+  EMPTY_CATEGORY_FILTER_VALUE,
+  matchesCategoryQuickFilter
+} from '../../features/transactions/model/categoryQuickFilter';
 import {
   exportTransactionsPdf,
   type BulkPrintTemplate
@@ -655,8 +658,10 @@ export function TransactionsPage() {
       return;
     }
 
+    // 「未分类」是列表里的一个正式筛选项(哨兵值),它不对应任何分类 id ——
+    // 之前这里只认真实分类,于是助手「待分类交易」卡片点过来是没反应的。
     const hasCategory = categories.some((item) => item.id === categoryId);
-    if (!hasCategory) {
+    if (!hasCategory && categoryId !== EMPTY_CATEGORY_FILTER_VALUE) {
       return;
     }
 
@@ -733,10 +738,14 @@ export function TransactionsPage() {
   const mappedRows: TransactionRowView[] = useMemo(() => {
     return filteredRows.map((item) => ({
       item,
-      categoryName: categories.find((c) => c.id === item.categoryId)?.name ?? '-',
+      // 分类被删除后引用会被清成 '',这类记录在导出与图表里都显示「未分类」,
+      // 列表此前显示 '-' —— 与确认弹层的承诺(「归入未分类」)和导出对不上。
+      categoryName:
+        categories.find((c) => c.id === item.categoryId)?.name ||
+        tf('transactions.table.filter.uncategorized', '未分类'),
       accountName: accounts.find((a) => a.id === item.accountId)?.name ?? '-'
     }));
-  }, [accounts, categories, filteredRows]);
+  }, [accounts, categories, filteredRows, tf]);
 
   const quickFilteredRows = useMemo(() => {
     const dateFilter = quickFilters.date.trim().toLowerCase();

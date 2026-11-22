@@ -33,6 +33,7 @@ import {
 } from '../../shared/lib/transactionMetrics';
 import { useTFallback } from '../../shared/lib/useTFallback';
 import { daysSinceLocalDate, toLocalDateKey, todayLocalDateKey } from '../../shared/lib/localDate';
+import { EMPTY_CATEGORY_FILTER_VALUE } from '../../features/transactions/model/categoryQuickFilter';
 import { formatMoneyByCurrency } from '../../shared/lib/format';
 import { Toast } from '../../shared/ui/Toast';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
@@ -1255,9 +1256,10 @@ export function AssistantPage() {
         level: creditAccountCount > 0 ? 'warning' : 'default'
       }
     ];
-    const uncategorizedCount = validRows.filter(
-      (item) => item.categoryId === 'uncategorized'
-    ).length;
+    // 「未分类」在数据里的表示是 categoryId 为空(删分类时会把引用清成 ''),
+    // 之前这里比的是字符串 'uncategorized' —— 那是个从不存在的值,计数永远是 0,
+    // 于是这张待办卡片从来不提示补分类。
+    const uncategorizedCount = validRows.filter((item) => !item.categoryId).length;
     const pendingCount = validRows.filter((item) => item.status === 'pending').length;
     const pendingRefundCount = validRows.filter(
       (item) =>
@@ -1277,7 +1279,7 @@ export function AssistantPage() {
         level: uncategorizedCount > 0 ? 'warning' : 'default',
         count: uncategorizedCount,
         statusLabel: uncategorizedCount > 0 ? tf('assistant.todos.dueToday', '今日 / 需处理') : undefined,
-        href: '/transactions?categoryId=uncategorized'
+        href: `/transactions?categoryId=${EMPTY_CATEGORY_FILTER_VALUE}`
       },
       {
         id: 'todo-refund-link',
