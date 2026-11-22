@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: '已有的版本标签，例如 v0.6.5'
+        description: '已有的版本标签,例如 v0.6.5'
         required: true
         type: string
 
@@ -23,14 +23,53 @@ jobs:
         with:
           ref: ${{ inputs.tag || github.ref_name }}
 
-      - name: Publish GitHub Release
+      - name: Resolve release notes
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag || github.ref_name }}
         run: |
+          set -euo pipefail
           NOTES="release-notes/RELEASE_NOTES_${TAG}.md"
-          if [ ! -f "$NOTES" ]; then
-            echo "Missing release notes: $NOTES" >&2
-            exit 1
+          echo "NOTES=$NOTES" >> "$GITHUB_ENV"
+
+          if [ -f "$NOTES" ]; then
+            echo "notes: 使用 tag 自带的 $NOTES"
+            exit 0
           fi
-          gh release create "$TAG" --title "LedgerFlow ${TAG}" --notes-file "$NOTES" --verify-tag
+
+          # 兼容历史:发布说明的约定在 v0.10.0 之后中断过,老 tag 的提交里没有这个文件。
+          # 先尝试从默认分支取一份同名文件补上,这样补写历史版本的说明也能生效。
+          DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
+          git fetch --depth=1 origin "$DEFAULT_BRANCH" || true
+          if git show "origin/${DEFAULT_BRANCH}:${NOTES}" > "$NOTES" 2>/dev/null; then
+            echo "notes: tag 里没有,已从默认分支 ${DEFAULT_BRANCH} 补齐"
+            exit 0
+          fi
+
+          # 没有说明文件:
+          #   - 该 tag 的 Release 已经存在(历史版本多由手工创建)→ 没有可发布的内容,跳过即可,
+          #     不再把 CI 顶红。真正的约定靠下面的新 tag 路径保证。
+          #   - Release 还不存在 → 这是新 tag 漏写说明,必须失败提醒。
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::warning::${NOTES} 不存在,但 ${TAG} 的 Release 已存在,跳过发布"
+            echo "SKIP_PUBLISH=1" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          echo "Missing release notes: $NOTES" >&2
+          echo "请在 release-notes/ 下补 ${NOTES} 后再打 tag(见 docs/release-process.md)" >&2
+          exit 1
+
+      - name: Publish GitHub Release
+        if: env.SKIP_PUBLISH != '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            # 已存在就更新说明,而不是报错退出 —— 补写历史说明、重跑工作流都用这条路径。
+            gh release edit "$TAG" --title "LedgerFlow ${TAG}" --notes-file "$NOTES"
+          else
+            gh release create "$TAG" --title "LedgerFlow ${TAG}" --notes-file "$NOTES" --verify-tag
+          fi
