@@ -4,6 +4,7 @@ import type { Category } from '../../entities/category/types';
 import type { TransactionItem } from '../../entities/transaction/types';
 import { analyzeFinancialOverview } from '../../features/financial-analysis/model/analysis';
 import { filterCountableTransactions, summarizeTransactions } from '../../shared/lib/transactionMetrics';
+import { buildTransactionRowComparator } from '../../features/transactions/model/rowSort';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 
 /**
@@ -247,5 +248,38 @@ describe('批量更新(1 万条存量)', () => {
       true
     );
     expect(updateMs).toBeLessThan(1000);
+  });
+});
+
+/**
+ * 列表排序:比较函数里不要再解析日期 / 重复做中文比较。
+ *
+ * 这条不是"性能基准",而是**防回退**:如果有人把 `new Date(a.item.date)` 或
+ * `localeCompare` 写回比较函数,这里会明显变慢并触发断言。
+ */
+describe('交易列表排序(1 万条)', () => {
+  it('预计算排序键明显快于在比较函数里解析日期', () => {
+    const items = makeTransactions(ROW_COUNT, accounts.map((a) => a.id), categories.map((c) => c.id));
+    const rows = items.map((item) => ({
+      item,
+      categoryName: `分类 ${item.categoryId}`,
+      accountName: `账户 ${item.accountId}`
+    }));
+
+    const naiveMs = timed('排序:比较函数里 new Date()(旧行为)', () => {
+      [...rows].sort((a, b) => {
+        const left = new Date(a.item.date).getTime();
+        const right = new Date(b.item.date).getTime();
+        return left === right ? a.item.id.localeCompare(b.item.id) : left - right;
+      });
+    });
+
+    const fastMs = timed('排序:预计算排序键(新行为)', () => {
+      const copy = [...rows];
+      copy.sort(buildTransactionRowComparator(copy, 'date', 'asc'));
+    });
+
+    console.log(`[perf] 排序提速约 ${(naiveMs / Math.max(fastMs, 0.1)).toFixed(1)}×`);
+    expect(fastMs).toBeLessThan(naiveMs);
   });
 });

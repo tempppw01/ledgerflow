@@ -35,6 +35,7 @@ import {
   summarizeTransactions
 } from '../../shared/lib/transactionMetrics';
 import { AmountBreakdown } from '../../shared/ui/AmountBreakdown';
+import { buildTransactionRowComparator } from '../../features/transactions/model/rowSort';
 import { resolveImportDefaultAccountId } from '../../shared/lib/importAccount';
 import { Toast, ToastVariant } from '../../shared/ui/Toast';
 import { DatePicker } from '../../shared/ui/DatePicker';
@@ -742,14 +743,17 @@ export function TransactionsPage() {
   }, [transactions, filters.type, filters.source, filters.keyword, dateRange.from, dateRange.to]);
 
   const mappedRows: TransactionRowView[] = useMemo(() => {
+    // 每行都 categories.find / accounts.find 是 O(流水 × 分类);改成先建 Map 再查。
+    const categoryNameById = new Map(categories.map((item) => [item.id, item.name]));
+    const accountNameById = new Map(accounts.map((item) => [item.id, item.name]));
     return filteredRows.map((item) => ({
       item,
       // 分类被删除后引用会被清成 '',这类记录在导出与图表里都显示「未分类」,
       // 列表此前显示 '-' —— 与确认弹层的承诺(「归入未分类」)和导出对不上。
       categoryName:
-        categories.find((c) => c.id === item.categoryId)?.name ||
+        categoryNameById.get(item.categoryId) ||
         tf('transactions.table.filter.uncategorized', '未分类'),
-      accountName: accounts.find((a) => a.id === item.accountId)?.name ?? '-'
+      accountName: accountNameById.get(item.accountId) ?? '-'
     }));
   }, [accounts, categories, filteredRows, tf]);
 
@@ -826,45 +830,9 @@ export function TransactionsPage() {
 
   const sortedRows = useMemo(() => {
     const rows = [...quickFilteredRows];
-
-    rows.sort((a, b) => {
-      let compare = 0;
-      switch (sortKey) {
-        case 'date':
-          compare = new Date(a.item.date).getTime() - new Date(b.item.date).getTime();
-          break;
-        case 'type':
-          compare = a.item.type.localeCompare(b.item.type);
-          break;
-        case 'status':
-          compare = (a.item.status || '').localeCompare(b.item.status || '', 'zh-CN');
-          break;
-        case 'category':
-          compare = a.categoryName.localeCompare(b.categoryName, 'zh-CN');
-          break;
-        case 'account':
-          compare = a.accountName.localeCompare(b.accountName, 'zh-CN');
-          break;
-        case 'amount':
-          compare = a.item.amount - b.item.amount;
-          break;
-        case 'orderNo':
-          compare = (a.item.orderNo || '').localeCompare(b.item.orderNo || '', 'zh-CN');
-          break;
-        case 'merchantOrderNo':
-          compare = (a.item.merchantOrderNo || '').localeCompare(
-            b.item.merchantOrderNo || '',
-            'zh-CN'
-          );
-          break;
-        case 'note':
-          compare = (a.item.note || '').localeCompare(b.item.note || '', 'zh-CN');
-          break;
-      }
-
-      return sortDirection === 'asc' ? compare : -compare;
-    });
-
+    // 排序键只算一次(原先把 new Date()/localeCompare 放在比较函数里,1 万条约 12 万次比较),
+    // 规则不变,见 features/transactions/model/rowSort.ts。
+    rows.sort(buildTransactionRowComparator(rows, sortKey, sortDirection));
     return rows;
   }, [quickFilteredRows, sortDirection, sortKey]);
 
