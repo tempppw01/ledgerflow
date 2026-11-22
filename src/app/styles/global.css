@@ -9688,19 +9688,60 @@ body.exchange-resizing {
   margin-right: -2px;
 }
 
+/**
+ * 折叠箭头现在用 CSS 画,而不是渲染 ▾ / ▸ 字符。
+ *
+ * 之前是 11px 的 ▾(U+25BE),实测墨迹只有 9px 宽、颜色是次要灰 ——
+ * 在行里几乎看不见,像一截短线,而它又是折叠唯一入口。
+ * 画出来的 chevron 大小可控、任何缩放都清晰,收起时旋转 90°。
+ */
 .category-node-caret {
   border: 1px solid transparent;
   border-radius: 6px;
   background: transparent;
-  color: var(--color-text-tertiary);
-  font-size: 11px;
-  line-height: 1;
+  color: var(--color-text-secondary);
+}
+
+.category-node-caret::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translate(-1px, -1px);
+  transition: transform 0.18s ease;
+}
+
+.category-node.is-collapsed .category-node-caret::before {
+  transform: rotate(-45deg) translate(-1px, 1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .category-node-caret::before {
+    transition: none;
+  }
+}
+
+/* 整块主区可点:有子分类时它就是一个按钮(箭头只是装饰) */
+.category-node-main.is-toggle {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  padding: 2px 8px 2px 2px;
+  margin-left: -2px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
   cursor: pointer;
 }
 
-.category-node-caret:hover {
+.category-node-main.is-toggle:hover {
   background: var(--color-bg-hover);
-  color: var(--color-text);
+  color: var(--color-primary);
+}
+
+.category-node.is-collapsed .category-node-title small {
+  color: var(--color-text-tertiary);
 }
 
 .category-node.is-collapsed {

@@ -45,6 +45,28 @@ const CATEGORY_COLORS = [
 ];
 const CATEGORY_ICONS = ['🍜', '💰', '🛍️', '🏠', '🚇', '🎁', '📚', '💡', '📦'];
 
+/** 折叠状态要记住:以前是纯 useState,刷新或离开再回来又全展开了。 */
+const CATEGORY_COLLAPSE_STATE_KEY = 'ledgerflow-category-collapse-state-v1';
+
+function readCollapsedCategoryIds(): string[] {
+  try {
+    const raw = window.localStorage.getItem(CATEGORY_COLLAPSE_STATE_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCollapsedCategoryIds(ids: string[]) {
+  try {
+    window.localStorage.setItem(CATEGORY_COLLAPSE_STATE_KEY, JSON.stringify(ids));
+  } catch {
+    // 存不了(隐私模式/配额满)也不影响使用,只是这一轮不记住。
+  }
+}
+
 const CATEGORY_APPEARANCE_RULES: Array<{ pattern: RegExp; icon: string; color: string }> = [
   { pattern: /(工资|薪资|奖金|收入|salary|bonus|income)/i, icon: '💰', color: '#22c55e' },
   { pattern: /(餐|饭|外卖|奶茶|咖啡|food|meal|restaurant)/i, icon: '🍜', color: '#f97316' },
@@ -108,10 +130,17 @@ export function CategoriesAccountsPage() {
   const [editCategoryParentId, setEditCategoryParentId] = useState('');
   const [categoryActionError, setCategoryActionError] = useState('');
   /** 收起的父级分类 id:让「两级结构」能一眼看清,而不是 16 行平铺。 */
-  const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<string[]>([]);
+  const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<string[]>(() =>
+    readCollapsedCategoryIds()
+  );
   /** 展开的「更多操作」行;同一时间只开一行,避免又变回一排按钮。 */
   const [openCategoryActionId, setOpenCategoryActionId] = useState<string | null>(null);
   const categoryNameInputRef = useRef<HTMLInputElement | null>(null);
+
+  // 折叠状态写回本地:下次进来保持原样。
+  useEffect(() => {
+    writeCollapsedCategoryIds(collapsedCategoryIds);
+  }, [collapsedCategoryIds]);
   const [accountName, setAccountName] = useState('');
   const [accountType, setAccountType] = useState<AccountType | ''>('');
   const [accountInitialBalance, setAccountInitialBalance] = useState('0');
@@ -564,6 +593,13 @@ export function CategoriesAccountsPage() {
     [accountCards]
   );
 
+  const toggleCategoryCollapsed = (categoryId: string) => {
+    setCollapsedCategoryIds((prev) =>
+      prev.includes(categoryId)
+        ? prev.filter((idValue) => idValue !== categoryId)
+        : [...prev, categoryId]
+    );
+  };
   const renderCategoryNode = (
     item: Category,
     options: {
@@ -645,47 +681,47 @@ export function CategoriesAccountsPage() {
           hasChildren ? ' has-children' : ''
         }${isCollapsed ? ' is-collapsed' : ''}`}
       >
-        <span className="category-node-main">
-          {hasChildren ? (
-            <button
-              type="button"
-              className="category-node-caret"
-              aria-expanded={!isCollapsed}
-              aria-label={(
-                isCollapsed
-                  ? tf('categoriesAccounts.expandCategoryAria', '展开 {name} 的子分类')
-                  : tf('categoriesAccounts.collapseCategoryAria', '收起 {name} 的子分类')
-              ).replace('{name}', String(item.name))}
-              onClick={() =>
-                setCollapsedCategoryIds((prev) =>
-                  prev.includes(item.id)
-                    ? prev.filter((idValue) => idValue !== item.id)
-                    : [...prev, item.id]
-                )
-              }
-            >
-              {isCollapsed ? '▸' : '▾'}
-            </button>
-          ) : (
-            <span className="category-node-caret-spacer" aria-hidden="true" />
-          )}
-          <span className="category-node-icon" aria-hidden="true">
-            {item.icon || '📁'}
-          </span>
-          <span className="category-node-title">
-            <strong>{item.name}</strong>
-            {options.isChild ? (
-              <small>{tf('categoriesAccounts.childBadge', '子分类')}</small>
-            ) : hasChildren ? (
+        {hasChildren ? (
+          <button
+            type="button"
+            className="category-node-main is-toggle"
+            aria-expanded={!isCollapsed}
+            aria-controls={`category-children-${item.id}`}
+            aria-label={(
+              isCollapsed
+                ? tf('categoriesAccounts.expandCategoryAria', '展开 {name} 的子分类')
+                : tf('categoriesAccounts.collapseCategoryAria', '收起 {name} 的子分类')
+            ).replace('{name}', String(item.name))}
+            onClick={() => toggleCategoryCollapsed(item.id)}
+          >
+            <span className="category-node-caret" aria-hidden="true" />
+            <span className="category-node-icon" aria-hidden="true">
+              {item.icon || '📁'}
+            </span>
+            <span className="category-node-title" aria-hidden="true">
+              <strong>{item.name}</strong>
               <small>
                 {tf('categoriesAccounts.childCountLabel', '{count} 个子分类').replace(
                   '{count}',
                   String(childCount)
                 )}
               </small>
-            ) : null}
+            </span>
+          </button>
+        ) : (
+          <span className="category-node-main">
+            <span className="category-node-caret-spacer" aria-hidden="true" />
+            <span className="category-node-icon" aria-hidden="true">
+              {item.icon || '📁'}
+            </span>
+            <span className="category-node-title">
+              <strong>{item.name}</strong>
+              {options.isChild ? (
+                <small>{tf('categoriesAccounts.childBadge', '子分类')}</small>
+              ) : null}
+            </span>
           </span>
-        </span>
+        )}
         <span className="category-node-actions">
           <button
             type="button"
@@ -934,7 +970,7 @@ export function CategoriesAccountsPage() {
                   const isCollapsed = collapsedCategoryIds.includes(root.id);
                   return (
                     <li key={root.id} className="category-group">
-                      <ul className="category-group-list">
+                      <ul className="category-group-list" id={`category-children-${root.id}`}>
                         {renderCategoryNode(root, {
                           isChild: false,
                           siblingIds: categoryTree.map((group) => group.root.id),

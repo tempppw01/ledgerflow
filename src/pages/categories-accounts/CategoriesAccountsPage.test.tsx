@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -245,5 +245,79 @@ describe('CategoriesAccountsPage', () => {
       'tx-coffee',
       expect.objectContaining({ tags: ['下午茶', '下午'] })
     );
+  });
+  describe('两级分类的折叠', () => {
+    const rootCategory = { id: 'cat-food', name: '餐饮', kind: 'expense', icon: '🍜', sortOrder: 1 };
+    const childCategory = {
+      id: 'cat-lunch',
+      name: '午餐外卖',
+      kind: 'expense',
+      parentId: 'cat-food',
+      sortOrder: 2
+    };
+    const plainCategory = { id: 'cat-traffic', name: '交通', kind: 'expense', sortOrder: 3 };
+
+    beforeEach(() => {
+      window.localStorage.clear();
+      financeStoreMock.state.categories = [rootCategory, childCategory, plainCategory] as never;
+    });
+
+    function renderTreePage() {
+      return render(
+        <MemoryRouter>
+          <CategoriesAccountsPage />
+        </MemoryRouter>
+      );
+    }
+
+    it('有子分类的一级分类是整行可点的折叠控件', async () => {
+      const user = userEvent.setup();
+      renderTreePage();
+
+      // 页面用 120ms 的骨架屏计时器,这里要等它结束
+      const toggle = await screen.findByRole('button', { name: '收起 餐饮 的子分类' });
+      expect(toggle).toHaveAttribute('aria-expanded', 'true');
+      expect(toggle).toHaveAttribute('aria-controls', 'category-children-cat-food');
+      expect(screen.getByText('午餐外卖')).toBeInTheDocument();
+
+      await user.click(toggle);
+
+      expect(screen.getByRole('button', { name: '展开 餐饮 的子分类' })).toHaveAttribute(
+        'aria-expanded',
+        'false'
+      );
+      expect(screen.queryByText('午餐外卖')).not.toBeInTheDocument();
+    });
+
+    it('没有子分类的分类不渲染折叠控件', async () => {
+      renderTreePage();
+      expect(await screen.findByText('交通')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /交通 的子分类/ })).not.toBeInTheDocument();
+    });
+
+    it('折叠状态写入本地,重新进入页面仍然收起', async () => {
+      const user = userEvent.setup();
+      renderTreePage();
+
+      await user.click(await screen.findByRole('button', { name: '收起 餐饮 的子分类' }));
+      expect(window.localStorage.getItem('ledgerflow-category-collapse-state-v1')).toBe(
+        JSON.stringify(['cat-food'])
+      );
+
+      cleanup();
+      renderTreePage();
+
+      expect(await screen.findByRole('button', { name: '展开 餐饮 的子分类' })).toHaveAttribute(
+        'aria-expanded',
+        'false'
+      );
+      expect(screen.queryByText('午餐外卖')).not.toBeInTheDocument();
+    });
+
+    it('本地存了非数组的脏数据也不会崩', async () => {
+      window.localStorage.setItem('ledgerflow-category-collapse-state-v1', '{"not":"an array"}');
+      renderTreePage();
+      expect(await screen.findByText('午餐外卖')).toBeInTheDocument();
+    });
   });
 });
