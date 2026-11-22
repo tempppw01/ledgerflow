@@ -457,10 +457,28 @@ function sanitizeCategoriesAndTransactions(
   const nextTransactions = normalizeTransactionList(transactions);
   const nextExtraTransactions = normalizeTransactionList(extraTransactions);
 
+  // 两个数组必须互斥、且各自内部不重复:
+  // - 主列表里带着 trashedAt 的行属于回收站,否则交易列表会把已删除的记录当正常记录展示
+  //   (账户余额本来就排除它,列表和数字就对不上了);
+  // - 同一个 id 同时出现在两边时**以回收站为准** —— 宁可让用户手动恢复,也不要凭空
+  //   把一笔已删除的钱重新加回账本。
+  const trashedById = new Map(nextExtraTransactions.map((item) => [item.id, item]));
+  const liveTransactions: TransactionItem[] = [];
+  for (const row of nextTransactions) {
+    if (trashedById.has(row.id)) {
+      continue;
+    }
+    if (row.trashedAt) {
+      trashedById.set(row.id, row);
+      continue;
+    }
+    liveTransactions.push(row);
+  }
+
   return {
     categories: normalizedCategories,
-    transactions: nextTransactions,
-    extraTransactions: nextExtraTransactions
+    transactions: liveTransactions,
+    extraTransactions: [...trashedById.values()]
   };
 }
 
