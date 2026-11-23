@@ -1,3 +1,4 @@
+import { roundMoney } from '../../shared/lib/money';
 import {
   FormEvent,
   KeyboardEvent,
@@ -645,7 +646,7 @@ function resolveQuickRepayAmount(
   const balance = Math.max(0, debt.balance);
   const amount = Math.min(rawAmount, balance);
   if (amount <= 0) return null;
-  return { amount: Number(amount.toFixed(2)), capped: rawAmount > balance };
+  return { amount: roundMoney(amount), capped: rawAmount > balance };
 }
 
 function mapCreditItemToRepaymentPrefill(item: CreditExtractedItem) {
@@ -1700,7 +1701,7 @@ export function AssistantPage() {
       }
       const amount = resolved.amount;
       const minimumPayment = calculateDebtMinimumPayment(matchedDebt);
-      const nextBalance = Math.max(0, Number((matchedDebt.balance - amount).toFixed(2)));
+      const nextBalance = Math.max(0, roundMoney(matchedDebt.balance - amount));
       const shouldAdvancePeriod = amount >= Math.max(1, minimumPayment * 0.98);
       const nextPaidPeriods = matchedDebt.totalPeriods
         ? Math.min(

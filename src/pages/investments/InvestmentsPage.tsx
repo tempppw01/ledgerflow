@@ -1,4 +1,5 @@
 import { toLocalDateKey } from '../../shared/lib/localDate';
+import { roundMoney } from '../../shared/lib/money';
 import {
   type CSSProperties,
   FormEvent,
@@ -819,7 +820,7 @@ function getWatchHoldingSnapshot(
   const netValue = Number(String(item.netValue || '').replace(/,/g, ''));
   if (!Number.isFinite(netValue) || netValue <= 0) return null;
 
-  const currentValue = Number((item.holdingShares * netValue).toFixed(2));
+  const currentValue = roundMoney(item.holdingShares * netValue);
   const marketChange = parseStoredPercent(item.addedReturn);
   return {
     id: `watch-${item.id}`,
@@ -829,7 +830,7 @@ function getWatchHoldingSnapshot(
     currentValue,
     marketChange,
     estimatedTodayProfit:
-      marketChange === null ? null : Number(((currentValue * marketChange) / 100).toFixed(2))
+      marketChange === null ? null : roundMoney((currentValue * marketChange) / 100)
   };
 }
 
@@ -1001,7 +1002,7 @@ function HoldingsTodayPanel({
   const estimatedTodayProfit =
     estimatedPositionProfit === null && !hasEstimatedWatchProfit
       ? null
-      : Number(((estimatedPositionProfit || 0) + estimatedWatchProfit).toFixed(2));
+      : roundMoney((estimatedPositionProfit || 0) + estimatedWatchProfit);
   const estimatedValueBase =
     (estimatedPositionProfit === null ? 0 : totalCurrentValue) +
     watchHoldings.reduce(

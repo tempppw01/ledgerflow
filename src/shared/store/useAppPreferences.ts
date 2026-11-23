@@ -1,3 +1,4 @@
+import { roundMoney } from '../lib/money';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AppAccentTheme, AppTheme } from '../types/app';
@@ -192,7 +193,7 @@ function normalizeForecastBill(item: {
   return {
     id: item.id || createForecastBillId(),
     name: String(item.name || '').trim() || '预测账单',
-    amount: Number.isFinite(rawAmount) ? Number(Math.abs(rawAmount).toFixed(2)) : 0,
+    amount: Number.isFinite(rawAmount) ? roundMoney(Math.abs(rawAmount)) : 0,
     date: normalizeDateOnly(item.date),
     direction: item.direction === 'income' ? 'income' : 'expense',
     repeat: item.repeat === 'monthly' ? 'monthly' : 'once',
@@ -209,7 +210,7 @@ function normalizeFeedUrl(rawUrl: string): string {
 function normalizePositiveNumber(value: unknown): number {
   const numeric = Number(value);
   if (!Number.isFinite(numeric) || numeric <= 0) return 0;
-  return Number(numeric.toFixed(2));
+  return roundMoney(numeric);
 }
 
 function normalizePercentage(value: unknown): number | undefined {
@@ -226,7 +227,7 @@ function normalizeOptionalString(value: unknown): string | undefined {
 function normalizeOptionalNumber(value: unknown): number | undefined {
   const numeric = Number(value);
   if (!Number.isFinite(numeric) || numeric < 0) return undefined;
-  return Number(numeric.toFixed(2));
+  return roundMoney(numeric);
 }
 
 function normalizeStringList(value: unknown, limit = 6): string[] {
@@ -256,7 +257,7 @@ function normalizeManualRepaymentItem(item: ManualRepaymentItem): ManualRepaymen
   return {
     ...item,
     dueDate,
-    amount: Number.isFinite(numeric) && numeric > 0 ? Number(numeric.toFixed(2)) : 0,
+    amount: Number.isFinite(numeric) && numeric > 0 ? roundMoney(numeric) : 0,
     label
   };
 }
@@ -290,7 +291,7 @@ function normalizeDebtItem(item: DebtItem): DebtItem {
         : undefined,
     simpleAmount:
       entryMode === 'simple' && Number.isFinite(item.simpleAmount) && (item.simpleAmount ?? 0) > 0
-        ? Number(Number(item.simpleAmount).toFixed(2))
+        ? roundMoney(Number(item.simpleAmount))
         : undefined,
     manualRepayments: normalizeManualRepayments(item.manualRepayments),
     status:
@@ -332,7 +333,7 @@ function normalizeInvestmentPosition(
 function normalizeDelta(value: unknown): number | undefined {
   const numeric = Number(value);
   if (!Number.isFinite(numeric) || numeric === 0) return undefined;
-  return Number(numeric.toFixed(2));
+  return roundMoney(numeric);
 }
 
 function buildInvestmentPositionHistoryEntry(
@@ -368,7 +369,7 @@ function buildInvestmentPositionHistoryEntry(
     action,
     investedAmount: position.investedAmount,
     currentValue: position.currentValue,
-    profit: Number(profit.toFixed(2)),
+    profit: roundMoney(profit),
     profitRate: Number(profitRate.toFixed(4)),
     investedAmountDelta: normalizeDelta(investedAmountDelta),
     currentValueDelta: normalizeDelta(currentValueDelta),
@@ -397,7 +398,7 @@ function normalizeInvestmentPositionHistoryEntry(
   const investedAmount = normalizePositiveNumber(item.investedAmount);
   const currentValue = normalizePositiveNumber(item.currentValue);
   const profit = Number.isFinite(Number(item.profit))
-    ? Number(Number(item.profit).toFixed(2))
+    ? roundMoney(Number(item.profit))
     : Number((currentValue - investedAmount).toFixed(2));
   const profitRate = Number.isFinite(Number(item.profitRate))
     ? Number(Number(item.profitRate).toFixed(4))

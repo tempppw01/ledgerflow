@@ -2306,7 +2306,7 @@ export function RepaymentManagementPage() {
         entryMode: 'simple' as const,
         simpleDueDate,
         simpleAmount:
-          simpleAmount.trim().length > 0 ? Number(simpleAmountValue.toFixed(2)) : undefined
+          simpleAmount.trim().length > 0 ? roundMoney(simpleAmountValue) : undefined
       };
       if (editingDebtId) {
         updateDebt(editingDebtId, simplePayload);
@@ -2474,7 +2474,7 @@ export function RepaymentManagementPage() {
 
     const scheduledPayment = calculateDebtMinimumPayment(targetDebt);
     const paymentLabel = getDebtDueAmountLabel(targetDebt, tf);
-    const nextBalance = Math.max(0, Number((targetDebt.balance - amount).toFixed(2)));
+    const nextBalance = Math.max(0, roundMoney(targetDebt.balance - amount));
     const shouldAdvancePeriod = amount >= Math.max(1, scheduledPayment * 0.98);
     const nextPaidPeriods = targetDebt.totalPeriods
       ? Math.min(
@@ -2583,7 +2583,7 @@ export function RepaymentManagementPage() {
     const scheduledPayment = calculateDebtMinimumPayment(targetDebt);
     const shouldAdvancePeriod =
       alreadyPaidThisMonth + amount >= Math.max(1, scheduledPayment * 0.98);
-    const nextBalance = Math.max(0, Number((targetDebt.balance - amount).toFixed(2)));
+    const nextBalance = Math.max(0, roundMoney(targetDebt.balance - amount));
     const nextPaidPeriods = targetDebt.totalPeriods
       ? Math.min(
           targetDebt.totalPeriods,

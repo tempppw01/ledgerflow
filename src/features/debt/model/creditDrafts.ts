@@ -1,3 +1,4 @@
+import { roundMoney } from '../../../shared/lib/money';
 import type { DebtItem, DebtType } from './debtMetrics';
 import {
   inferCreditDebtType,
@@ -68,7 +69,7 @@ export function isCreditDraftReady(draft: CreditDraft): boolean {
 
 function positiveNumber(value: unknown): number | undefined {
   if (value === undefined || value === null || value === '') return undefined;
-  if (typeof value === 'number') return Number.isFinite(value) && value > 0 ? Number(value.toFixed(2)) : undefined;
+  if (typeof value === 'number') return Number.isFinite(value) && value > 0 ? roundMoney(value) : undefined;
 
   const raw = String(value);
   const parsed = Number(raw.replace(/[^0-9.-]/g, ''));
@@ -76,7 +77,7 @@ function positiveNumber(value: unknown): number | undefined {
   // 字符串里带中文单位时按单位放大:「1.5万」是 15000,不是 1.5
   const unit = Object.keys(CN_UNIT_MULTIPLIERS).find((key) => raw.includes(key));
   const scaled = unit ? parsed * CN_UNIT_MULTIPLIERS[unit] : parsed;
-  return Number(scaled.toFixed(2));
+  return roundMoney(scaled);
 }
 
 function integerPositive(value: unknown): number | undefined {
@@ -234,12 +235,12 @@ function extractAmount(text: string, pattern: RegExp): number | undefined {
   const endIndex = (match.index ?? 0) + match[0].length;
   const unit = readTrailingUnit(text, endIndex);
   if (unit.multiplier === 1) {
-    return base;
+    return roundMoney(base);
   }
 
   const scaled = base * unit.multiplier;
   if (unit.multiplier !== 10000) {
-    return Number.isFinite(scaled) && scaled > 0 ? Number(scaled.toFixed(2)) : undefined;
+    return Number.isFinite(scaled) && scaled > 0 ? roundMoney(scaled) : undefined;
   }
 
   // 「万」后面还能跟低位,几种口语写法都要认:
@@ -251,17 +252,17 @@ function extractAmount(text: string, pattern: RegExp): number | undefined {
   const zeroTail = rest.match(/^零\s*(\d{1,4})(?!\d)/);
   const doubled = zeroTail ? scaled + Number(zeroTail[1]) : NaN;
   if (Number.isFinite(doubled)) {
-    return Number(doubled.toFixed(2));
+    return roundMoney(doubled);
   }
   const lowPart = rest.match(/^(\d{2,4})(?!\d)/);
   if (lowPart) {
-    return Number((scaled + Number(lowPart[1])).toFixed(2));
+    return roundMoney(scaled + Number(lowPart[1]));
   }
   const singleDigit = rest.match(/^(\d)(?!\d)/);
   if (singleDigit) {
-    return Number((scaled + Number(singleDigit[1]) * 1000).toFixed(2));
+    return roundMoney(scaled + Number(singleDigit[1]) * 1000);
   }
-  return Number.isFinite(scaled) && scaled > 0 ? Number(scaled.toFixed(2)) : undefined;
+  return Number.isFinite(scaled) && scaled > 0 ? roundMoney(scaled) : undefined;
 }
 
 /**

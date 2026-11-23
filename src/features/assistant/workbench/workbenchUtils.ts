@@ -161,7 +161,7 @@ export function buildRepaymentPromptContext(input: {
     id: item.id,
     name: item.name,
     type: item.type,
-    balance: Number((Number(item.balance) || 0).toFixed(2)),
+    balance: roundMoney(Number(item.balance) || 0),
     annualRate:
       typeof item.annualRate === 'number' ? Number(item.annualRate.toFixed(4)) : undefined,
     repaymentPlan: {
@@ -178,7 +178,7 @@ export function buildRepaymentPromptContext(input: {
   const actualRepayments = input.repaymentRecords
     .map((item) => ({
       debtId: item.debtId,
-      amount: Number((Number(item.amount) || 0).toFixed(2)),
+      amount: roundMoney(Number(item.amount) || 0),
       paidAt: item.paidAt,
       paymentAccount: item.paymentAccount || '',
       recordMode: item.recordMode || '',
@@ -221,7 +221,7 @@ export function buildTransactionPromptContext(
     .map((item) => ({
       date: toDateKey(item.date),
       type: item.type,
-      amount: Number(roundMoney(Number(item.amount) || 0).toFixed(2)),
+      amount: roundMoney(Number(item.amount) || 0),
       category: categoryMap.get(item.categoryId) || item.categoryId || '未分类',
       account: accountMap.get(item.accountId || '') || item.accountId || '未指定账户',
       tags: (item.tags || []).slice(0, 6),
@@ -722,7 +722,7 @@ export function toDraftEntries(payload: AiBillResult): DraftBillEntry[] {
       id: `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 7)}`,
       selected: true,
       type: item.type,
-      amount: Number(roundMoney(Number(item.amount) || 0).toFixed(2)),
+      amount: roundMoney(Number(item.amount) || 0),
       date: item.date || new Date().toISOString(),
       note: item.note || '',
       category: item.category || '',

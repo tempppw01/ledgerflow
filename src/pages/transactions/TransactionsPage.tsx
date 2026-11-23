@@ -925,7 +925,7 @@ export function TransactionsPage() {
     }
     return Math.max(
       0,
-      Number((Number(pendingRefundTransaction.amount || 0) - pendingRefundedAmount).toFixed(2))
+      roundMoney(Number(pendingRefundTransaction.amount || 0) - pendingRefundedAmount)
     );
   }, [pendingRefundTransaction, pendingRefundedAmount]);
 
@@ -938,7 +938,7 @@ export function TransactionsPage() {
     if (!Number.isFinite(parsed) || parsed <= 0) {
       return pendingRefundRemainingAmount;
     }
-    return Math.min(pendingRefundRemainingAmount, Number(parsed.toFixed(2)));
+    return Math.min(pendingRefundRemainingAmount, roundMoney(parsed));
   }, [pendingRefundAmountInput, pendingRefundRemainingAmount]);
 
   const selectedRefundChildren = useMemo(() => {
