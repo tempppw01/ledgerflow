@@ -48,10 +48,18 @@ const financeStoreMock = {
   }
 };
 
-vi.mock('../../shared/store/useFinanceStore', () => ({
-  useFinanceStore: (selector: (state: typeof financeStoreMock.state) => unknown) =>
-    selector(financeStoreMock.state)
-}));
+vi.mock('../../shared/store/useFinanceStore', async () => {
+  // 重名判定要用真实实现:这条逻辑一旦和 store 走偏,
+  // 界面就会在「没创建成功」的时候清空输入框,让人以为建好了。
+  const actual = await vi.importActual<typeof import('../../shared/store/useFinanceStore')>(
+    '../../shared/store/useFinanceStore'
+  );
+  return {
+    findDuplicateCategory: actual.findDuplicateCategory,
+    useFinanceStore: (selector: (state: typeof financeStoreMock.state) => unknown) =>
+      selector(financeStoreMock.state)
+  };
+});
 
 describe('CategoriesAccountsPage', () => {
   beforeEach(() => {
@@ -168,6 +176,60 @@ describe('CategoriesAccountsPage', () => {
       '咖啡奶茶',
       expect.objectContaining({ parentId: 'cat-food', kind: 'expense' })
     );
+  });
+
+  it('一级分类重名时给出提示,而不是清空输入框假装成功', async () => {
+    const user = userEvent.setup();
+    financeStoreMock.state.categories = [
+      { id: 'cat-food', name: '餐饮', kind: 'expense', icon: '🍜' }
+    ] as never;
+    financeStoreMock.state.transactions = [] as never;
+    financeStoreMock.state.addCategory.mockClear();
+
+    render(
+      <MemoryRouter>
+        <CategoriesAccountsPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('餐饮');
+    const input = screen.getByLabelText('新增分类名称');
+    await user.type(input, '餐饮');
+    await user.click(screen.getByRole('button', { name: '添加' }));
+
+    /*
+     * store 对「同名 + 同父级」是静默复用:过去这里照样清空输入框、
+     * 不报任何错,用户会以为自己刚建好了一个分类。
+     */
+    expect(financeStoreMock.state.addCategory).not.toHaveBeenCalled();
+    expect(screen.getByText(/已存在/)).toBeInTheDocument();
+    expect(input).toHaveValue('餐饮');
+  });
+
+  it('子分类重名时在行内提示,并保留已输入的名字', async () => {
+    const user = userEvent.setup();
+    financeStoreMock.state.categories = [
+      { id: 'cat-food', name: '餐饮', kind: 'expense', icon: '🍜' },
+      { id: 'cat-food-takeout', name: '外卖', kind: 'expense', parentId: 'cat-food' }
+    ] as never;
+    financeStoreMock.state.transactions = [] as never;
+    financeStoreMock.state.addCategory.mockClear();
+
+    render(
+      <MemoryRouter>
+        <CategoriesAccountsPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('外卖');
+    await user.click(screen.getByRole('button', { name: '＋子分类' }));
+    const inlineInput = screen.getByLabelText('在 餐饮 下新增子分类');
+    await user.type(inlineInput, '外卖');
+    await user.click(screen.getByRole('button', { name: '添加子分类' }));
+
+    expect(financeStoreMock.state.addCategory).not.toHaveBeenCalled();
+    expect(screen.getByText(/已存在/)).toBeInTheDocument();
+    expect(inlineInput).toHaveValue('外卖');
   });
 
   it('分类支持行内改名并调整上级', async () => {

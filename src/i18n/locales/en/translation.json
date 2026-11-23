@@ -3322,6 +3322,7 @@
     "error": {
       "accountName": "Account names must be 1–24 characters and cannot contain < or >.",
       "accountType": "Choose an account type before adding the account.",
+      "categoryExists": "A category named “{name}” already exists. Try another name.",
       "categoryName": "Category names must be 1–24 characters and cannot contain < or >."
     },
     "expandCategoryAria": "Expand subcategories of {name}",

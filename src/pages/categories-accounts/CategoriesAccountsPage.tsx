@@ -7,7 +7,10 @@ import {
   type KeyboardEvent as ReactKeyboardEvent
 } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useFinanceStore } from '../../shared/store/useFinanceStore';
+import {
+  findDuplicateCategory,
+  useFinanceStore
+} from '../../shared/store/useFinanceStore';
 import { formatCurrencyFixed2 } from '../../shared/lib/format';
 import { useTFallback } from '../../shared/lib/useTFallback';
 import { EmptyState } from '../../shared/ui/EmptyState';
@@ -115,6 +118,8 @@ function inferCategoryAppearance(name: string, kind: 'income' | 'expense') {
   };
 }
 
+type CreateCategoryResult = 'created' | 'invalid' | 'duplicate';
+
 export function CategoriesAccountsPage() {
   const navigate = useNavigate();
   const tf = useTFallback();
@@ -206,12 +211,17 @@ export function CategoriesAccountsPage() {
   /**
    * 真正落地一条分类。顶部表单与行内「加子分类」共用同一条路径,
    * 免得两处的校验/图标推断各写一份、久了就走形。
-   * 返回是否创建成功,调用方据此决定要不要清空输入。
+   * 返回创建结果,调用方据此决定清空输入还是提示原因。
    */
-  function createCategory(rawName: string, parentId: string): boolean {
+  function createCategory(rawName: string, parentId: string): CreateCategoryResult {
     const normalized = normalizeNameInput(rawName);
     if (!isValidName(normalized)) {
-      return false;
+      return 'invalid';
+    }
+    // 同级重名时 store 会静默复用已有分类:表单照样清空,却什么都没创建。
+    // 这里先判一次,好把「没有创建」这件事明确说给用户。
+    if (findDuplicateCategory(categories, normalized, parentId || undefined)) {
+      return 'duplicate';
     }
     const appearance = inferCategoryAppearance(normalized, categoryKind);
     addCategory(normalized, {
@@ -220,15 +230,28 @@ export function CategoriesAccountsPage() {
       icon: appearance.icon,
       parentId: parentId || undefined
     });
-    return true;
+    return 'created';
+  }
+
+  /** 把创建失败的原因翻成一句用户看得懂的话。 */
+  function describeCreateFailure(result: CreateCategoryResult, rawName: string): string {
+    if (result === 'duplicate') {
+      return tf(
+        'categoriesAccounts.error.categoryExists',
+        '分类「{name}」已存在\uFF0C换个名字试试。'
+      ).replace('{name}', normalizeNameInput(rawName));
+    }
+    return tf(
+      'categoriesAccounts.error.categoryName',
+      '分类名称需为 1-24 个字符\uFF0C且不能包含 < 或 >。'
+    );
   }
 
   function submitCategory(e: FormEvent) {
     e.preventDefault();
-    if (!createCategory(categoryName, newCategoryParentId)) {
-      setCategoryError(
-        tf('categoriesAccounts.error.categoryName', '分类名称需为 1-24 个字符\uFF0C且不能包含 < 或 >。')
-      );
+    const result = createCategory(categoryName, newCategoryParentId);
+    if (result !== 'created') {
+      setCategoryError(describeCreateFailure(result, categoryName));
       return;
     }
     setCategoryName('');
@@ -258,10 +281,9 @@ export function CategoriesAccountsPage() {
   function submitInlineChild(e?: FormEvent) {
     e?.preventDefault();
     if (!inlineChildParentId) return;
-    if (!createCategory(inlineChildName, inlineChildParentId)) {
-      setInlineChildError(
-        tf('categoriesAccounts.error.categoryName', '分类名称需为 1-24 个字符\uFF0C且不能包含 < 或 >。')
-      );
+    const result = createCategory(inlineChildName, inlineChildParentId);
+    if (result !== 'created') {
+      setInlineChildError(describeCreateFailure(result, inlineChildName));
       return;
     }
     // 连续加子分类是很自然的操作:保留父级与焦点,只清空输入。

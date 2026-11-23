@@ -3322,6 +3322,7 @@
     "error": {
       "accountName": "账户名称需为 1-24 个字符，且不能包含 < 或 >。",
       "accountType": "请选择账户类型后再添加账户。",
+      "categoryExists": "分类「{name}」已存在,换个名字试试。",
       "categoryName": "分类名称需为 1-24 个字符，且不能包含 < 或 >。"
     },
     "expandCategoryAria": "展开 {name} 的子分类",

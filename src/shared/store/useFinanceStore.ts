@@ -366,6 +366,23 @@ function categoryNameKey(raw: string): string {
   return normalizeCategoryName(raw).toLocaleLowerCase('zh-CN');
 }
 
+/**
+ * 同名、同父级的分类在账本里视为同一个分类。
+ * 导入、助手和界面三处都必须按同一条规则判重,
+ * 否则「输入后表单清空、却什么都没创建」这种没有反馈的失败就会复现。
+ */
+export function findDuplicateCategory(
+  categories: Category[],
+  name: string,
+  parentId?: string
+): Category | undefined {
+  const key = categoryNameKey(name);
+  const targetParentId = parentId || '';
+  return categories.find(
+    (item) => categoryNameKey(item.name) === key && (item.parentId || '') === targetParentId
+  );
+}
+
 function normalizeAccountOrder(accounts: Account[]): Account[] {
   const uniqueIds = new Set<string>();
   const ordered = [...accounts]
@@ -1096,11 +1113,7 @@ export const useFinanceStore = create<FinanceState>()(
         let resolvedId = defaultCategories[0]?.id || 'cat-unknown';
 
         set((s) => {
-          const key = categoryNameKey(normalizedName);
-          const targetParentId = options?.parentId || '';
-          const existing = s.categories.find(
-            (item) => categoryNameKey(item.name) === key && (item.parentId || '') === targetParentId
-          );
+          const existing = findDuplicateCategory(s.categories, normalizedName, options?.parentId);
           if (existing) {
             resolvedId = existing.id;
             return s;
