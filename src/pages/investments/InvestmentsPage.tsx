@@ -1,5 +1,6 @@
 import { toLocalDateKey } from '../../shared/lib/localDate';
 import { roundMoney } from '../../shared/lib/money';
+import { calculateMonthlyCashflow } from '../../features/investments/model/monthlyCashflow';
 import {
   type CSSProperties,
   FormEvent,
@@ -255,13 +256,6 @@ function readTrackedMarketThemes() {
   } catch {
     return EASTMONEY_MARKET_THEMES;
   }
-}
-
-function getMonthBounds() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  return { start, end };
 }
 
 function formatDateTimeLabel(value?: string) {
@@ -4459,25 +4453,14 @@ export function InvestmentsPage() {
 
   const activePositions = useMemo(() => positions.filter((item) => item.isActive), [positions]);
 
-  const { monthExpenseTotal, monthNetBalance } = useMemo(() => {
-    const { start, end } = getMonthBounds();
-    const monthTransactions = transactions.filter((item) => {
-      const date = new Date(item.date);
-      return date >= start && date < end;
-    });
-
-    const incomeTotal = monthTransactions
-      .filter((item) => item.type === 'income')
-      .reduce((sum, item) => sum + item.amount, 0);
-    const expenseTotal = monthTransactions
-      .filter((item) => item.type === 'expense' || item.type === 'repayment')
-      .reduce((sum, item) => sum + item.amount, 0);
-
-    return {
-      monthExpenseTotal: expenseTotal,
-      monthNetBalance: incomeTotal - expenseTotal
-    };
-  }, [transactions]);
+  /*
+   * 口径统一交给 calculateMonthlyCashflow:原先这里自己求和,没有排除退款,
+   * 退款被当成又花一笔(演示账本 2026-11 多算一整笔 ¥390.55)。
+   */
+  const monthlyCashflow = useMemo(
+    () => calculateMonthlyCashflow({ transactions, monthlyIncome }),
+    [transactions, monthlyIncome]
+  );
 
   const positionSummary = useMemo(() => {
     const totalInvested = activePositions.reduce((sum, item) => sum + item.investedAmount, 0);
@@ -4515,10 +4498,7 @@ export function InvestmentsPage() {
     };
   }, [activePositions, tf]);
 
-  const monthlyInvestableCash = useMemo(() => {
-    const baseline = monthlyIncome > 0 ? monthlyIncome - monthExpenseTotal : monthNetBalance;
-    return Math.max(0, baseline);
-  }, [monthExpenseTotal, monthNetBalance, monthlyIncome]);
+  const monthlyInvestableCash = monthlyCashflow.investableCash;
 
   const averageMarketChange = useMemo(
     () => getAverageMarketChange(marketOverview),

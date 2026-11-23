@@ -64,6 +64,7 @@ import {
   readCachedMarketContext
 } from '../../investments/model/investmentMarketContext';
 import { useFinanceStore } from '../../../shared/store/useFinanceStore';
+import { calculateMonthlyCashflow } from '../../investments/model/monthlyCashflow';
 import { AI_MODEL_PRESETS, mergeAiModelOptions } from '../../../shared/config/aiModels';
 import { ConfirmDialog } from '../../../shared/ui/ConfirmDialog';
 import { AiModelFamilyIcon } from '../../../shared/ui/brandIcons';
@@ -233,13 +234,14 @@ export function InvestmentChatComposer({
     bottom: 'auto'
   });
 
-  const monthlyInvestableCash = useMemo(() => {
-    const expense = transactions.reduce(
-      (sum, item) => sum + (item.type === 'expense' || item.type === 'repayment' ? item.amount : 0),
-      0
-    );
-    return Math.max(0, (monthlyIncome || 0) - expense);
-  }, [monthlyIncome, transactions]);
+  /*
+   * 原先这里用**全部历史交易**去减月收入,于是任何用满一个月的账本都算出 0;
+   * 而且同样没有排除退款。现在与投资理财页共用同一份按月口径。
+   */
+  const monthlyInvestableCash = useMemo(
+    () => calculateMonthlyCashflow({ transactions, monthlyIncome }).investableCash,
+    [monthlyIncome, transactions]
+  );
 
   /**
    * 独立打开 AI 投资助手(例如 /assistant 的投资模式)时,没有父页面传入的行情上下文,
