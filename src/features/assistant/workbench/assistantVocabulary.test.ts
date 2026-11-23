@@ -4,7 +4,8 @@ import {
   inferAccountNameFromText,
   inferCategoryFromText,
   inferSourceFromText,
-  inferTags
+  inferTags,
+  resolveAccountId
 } from './workbenchMapping';
 import { normalizeLedgerCurrency } from './workbenchUtils';
 import { parseCreditDraftFragment } from '../../debt/model/creditDrafts';
@@ -115,6 +116,22 @@ describe('AI 助手用户词汇覆盖', () => {
     const addAccount = vi.fn(() => 'account-new');
     expect(ensureAccountId(name, [], addAccount, { source })).toBe('account-new');
     expect(addAccount).toHaveBeenCalledWith(name, expected);
+  });
+
+  /*
+   * 助手写入账单时,草稿没给账户名就该走 ensureAccountId:它会把账户建出来。
+   * 原先这条分支走 resolveAccountId,而它在账本里一个账户都没有时返回
+   * 'acc-unknown' —— 一个不存在的 id:这笔钱于是「账户余额里看不到、
+   * 支出统计里却有」(同一屏两套数)。
+   */
+  it('账本里一个账户都没有时不再凭空造 acc-unknown', () => {
+    expect(resolveAccountId(undefined, [])).toBe('');
+  });
+
+  it('草稿没给账户名、账本也没有账户时,先把账户建出来再记账', () => {
+    const addAccount = vi.fn(() => 'account-new');
+    expect(ensureAccountId(undefined, [], addAccount, { source: 'wechat' })).toBe('account-new');
+    expect(addAccount).toHaveBeenCalledWith('微信钱包', 'virtual');
   });
 
   it('还款类词汇优先落到负债账户而不是扣款银行卡', () => {

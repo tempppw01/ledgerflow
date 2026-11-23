@@ -305,7 +305,13 @@ export function resolveAccountId(
 ): string {
   const matchedId = resolveMatchedAccountId(name, accounts, options);
   if (matchedId) return matchedId;
-  return accounts[0]?.id || 'acc-unknown';
+  /*
+   * 没有账户时返回空串,**不要**造一个 'acc-unknown' 出来。
+   * 那个 id 在账本里不存在:拿它写交易会得到「账户余额里看不到它、支出统计里却有它」
+   * 的一笔钱(同一屏两套数)—— generateSubscriptionTransaction 那边专门为这件事
+   * 拒绝写入,这里不该反着来。要真记账请走 ensureAccountId,它会先把账户建出来。
+   */
+  return accounts[0]?.id || '';
 }
 
 /**

@@ -80,7 +80,6 @@ import {
   inferTags,
   mapAssistantErrorMessage,
   normalizeMoney,
-  resolveAccountId,
   resolveDraftAccountTarget
 } from './workbenchMapping';
 import type { AssistantToastState, DraftBillEntry, WorkbenchStatus } from './workbenchTypes';
@@ -1281,20 +1280,25 @@ export function useAssistantWorkbench(input: UseAssistantWorkbenchInput) {
         });
 
         const accountOptions = { source: accountTarget.source, type: accountTarget.type };
-        const accountId = accountTarget.name
-          ? ensureAccountId(
-              accountTarget.name,
-              accountCache,
-              (nextName, nextType) => {
-                const createdId = input.addAccount(nextName, nextType, 0);
-                if (createdId && !accountCache.some((entry) => entry.id === createdId)) {
-                  accountCache.push({ id: createdId, name: nextName.trim(), type: nextType });
-                }
-                return createdId;
-              },
-              accountOptions
-            )
-          : resolveAccountId(undefined, accountCache, accountOptions);
+        /*
+         * 两条分支都走 ensureAccountId:
+         * 名字缺失时它会用 inferDefaultAccountName(source/type) 兜出一个名字,
+         * 账本里一个账户都没有时也会先把账户建出来 —— 而 resolveAccountId 只会
+         * 返回 accounts[0] 或空串,拿空串/不存在的 id 写交易,这笔钱就同时
+         * 「不在任何账户余额里」又「在支出统计里」。
+         */
+        const accountId = ensureAccountId(
+          accountTarget.name,
+          accountCache,
+          (nextName, nextType) => {
+            const createdId = input.addAccount(nextName, nextType, 0);
+            if (createdId && !accountCache.some((entry) => entry.id === createdId)) {
+              accountCache.push({ id: createdId, name: nextName.trim(), type: nextType });
+            }
+            return createdId;
+          },
+          accountOptions
+        );
 
         const payload = {
           type,
