@@ -83,6 +83,65 @@ function renderPage() {
   );
 }
 
+describe('FinancialAnalysisPage 资金动态看板的口径', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-21T08:00:00.000Z'));
+    financeStoreMock.state = {
+      transactions: [],
+      categories: [],
+      accounts: [],
+      subscriptions: []
+    };
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /*
+   * 月序列原先直接对 type === 'expense' 的行求和,**没有排除退款/冲正**,
+   * 于是一笔退款被当成又花了一次钱:同一个月,页头(走 summarizeTransactions)是净额,
+   * 这张卡片是净额 + 2×退款 —— 同一页两个「本月支出」。
+   */
+  it('月支出扣除退款,而不是把退款再加一笔', () => {
+    financeStoreMock.state.transactions = [
+      {
+        id: 'tx-april-expense',
+        type: 'expense',
+        categoryId: 'cat-food',
+        accountId: 'acc-cash',
+        amount: 100,
+        date: '2026-04-10T00:00:00.000Z',
+        note: '四月支出',
+        tags: [],
+        source: 'manual',
+        status: 'completed'
+      } as TransactionItem,
+      {
+        id: 'tx-april-refund',
+        type: 'expense',
+        categoryId: 'cat-food',
+        accountId: 'acc-cash',
+        amount: 40,
+        date: '2026-04-12T00:00:00.000Z',
+        note: '退款',
+        tags: [],
+        source: 'manual',
+        status: 'completed',
+        adjustmentKind: 'refund',
+        refundOfTransactionId: 'tx-april-expense'
+      } as TransactionItem
+    ];
+
+    renderPage();
+
+    // 100 − 40 = 60;修复前这里是 100 + 40 = 140
+    expect(screen.getAllByText(/支 ¥60\.00/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/支 ¥140\.00/)).not.toBeInTheDocument();
+  });
+});
+
 describe('FinancialAnalysisPage', () => {
   beforeEach(() => {
     vi.useFakeTimers();

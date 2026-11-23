@@ -11,6 +11,10 @@ import {
 } from '../../features/financial-analysis/model/analysis';
 import { BADGE_DOLLAR_SIGN_ICON_URL, SCALE_ICON_URL } from '../../shared/config/brandAssets';
 import { formatCurrency } from '../../shared/lib/format';
+import {
+  filterCountableTransactions,
+  summarizeTransactions
+} from '../../shared/lib/transactionMetrics';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
@@ -377,23 +381,22 @@ export function FinancialAnalysisPage() {
       const date = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1);
       const month = date.getMonth();
       const year = date.getFullYear();
-      const rows = transactions.filter((item) => {
+      const rows = filterCountableTransactions(transactions).filter((item) => {
         const txDate = new Date(item.date);
         return txDate.getFullYear() === year && txDate.getMonth() === month;
       });
-      const income = rows
-        .filter((item) => item.type === 'income')
-        .reduce((sum, item) => sum + item.amount, 0);
-      const expense = rows
-        .filter(
-          (item) => item.type === 'expense' || item.type === 'repayment' || item.type === 'budget'
-        )
-        .reduce((sum, item) => sum + item.amount, 0);
+      /*
+       * 必须走共享汇总:原先这里直接对 type === 'expense' 的行求和,**没有排除退款/冲正**,
+       * 于是一笔退款被当成又花了一次钱。演示账本 11 月有一对 390.55 的支出+退款,
+       * 这里因此多算 2×390.55:同一个月,页头(走 summarizeTransactions)是 ¥7,764.37,
+       * 这张卡片是 ¥8,545.47 —— 同一页两个「本月支出」。
+       */
+      const summary = summarizeTransactions(rows);
       return {
         label: formatMonthLabel(year, month, locale),
-        income,
-        expense,
-        net: income - expense
+        income: summary.incomeTotal,
+        expense: summary.expenseTotal,
+        net: summary.netTotal
       };
     });
   }, [locale, transactions]);
