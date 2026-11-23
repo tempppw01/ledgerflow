@@ -6,6 +6,7 @@ import { Category } from '../../entities/category/types';
 import {
   BalanceChangeEntry,
   BalanceChangeType,
+  DEFAULT_TRANSACTION_STATUS,
   TransactionAdjustmentKind,
   TransactionItem,
   TransactionType
@@ -786,6 +787,10 @@ function createTransactionRow(
     ...payload,
     amount: roundCurrency(payload.amount),
     adjustmentKind: payload.adjustmentKind || 'normal',
+    // 显式落一个状态:助手导入账单那条路径不传 status,于是库里出现 transaction_status
+    // 为 NULL 的行(手工记账都会传 'completed')。缺状态的行虽然照样计入余额,
+    // 但列表以前显示成「-」、与筛选器口径不一致。这里兜住,写入侧就不会再产出这种行。
+    status: payload.status ?? DEFAULT_TRANSACTION_STATUS,
     updatedAt: payload.updatedAt || now,
     id
   };
@@ -804,6 +809,8 @@ function mergeTransactionRow(
     adjustmentKind: payload.adjustmentKind ?? existing.adjustmentKind ?? 'normal',
     refundOfTransactionId: payload.refundOfTransactionId ?? existing.refundOfTransactionId,
     attachments: payload.attachments ?? existing.attachments,
+    // 编辑历史行时把缺失的状态补上,顺带修掉那些 NULL 行。
+    status: payload.status ?? existing.status ?? DEFAULT_TRANSACTION_STATUS,
     updatedAt: now,
     id
   };

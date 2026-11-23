@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMenuKeyboard } from '../../../shared/lib/useMenuKeyboard';
 import { createPortal } from 'react-dom';
-import { TransactionItem, TransactionStatus } from '../../../entities/transaction/types';
+import {
+  DEFAULT_TRANSACTION_STATUS,
+  TransactionItem,
+  TransactionStatus
+} from '../../../entities/transaction/types';
 import { EMPTY_CATEGORY_FILTER_VALUE } from '../model/categoryQuickFilter';
 import { formatCurrencyAuto, formatDate } from '../../../shared/lib/format';
 import {
@@ -203,8 +207,9 @@ export interface TransactionRowView {
 }
 
 function formatStatus(status: TransactionStatus | undefined, tf: TfFallback): string {
-  if (!status) return '-';
-  switch (status) {
+  // 缺状态的行按默认状态显示:筛选器就是这么匹配的(statusQuickFilter),显示成「-」
+  // 会让同一行「筛得出来却看不出状态」—— 助手导入的账单以前就是这样。
+  switch (status ?? DEFAULT_TRANSACTION_STATUS) {
     case 'pending':
       return tf('transactions.table.status.pending', '待处理');
     case 'completed':
@@ -216,7 +221,7 @@ function formatStatus(status: TransactionStatus | undefined, tf: TfFallback): st
     case 'failed':
       return tf('transactions.table.status.failed', '失败');
     default:
-      return status;
+      return status ?? DEFAULT_TRANSACTION_STATUS;
   }
 }
 

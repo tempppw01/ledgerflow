@@ -4,6 +4,18 @@ export type TransactionType = 'expense' | 'income' | 'budget' | 'repayment';
 
 export type TransactionStatus = 'pending' | 'completed' | 'refunded' | 'closed' | 'failed';
 
+/**
+ * 缺省状态 = 已完成。
+ *
+ * 历史行(助手导入的账单、老备份、CSV)可能没有 status,它们在**别处**一律按
+ * 「计入余额」对待(isBalanceAffectingStatus(undefined) 为真)。所以:
+ *   · 筛选器要按已完成匹配,
+ *   · 列表状态列要显示「已完成」而不是「-」,
+ *   · **写入时也要写上**,别再产出没有状态的行。
+ * 三者必须同一个默认值,否则同一行会「筛得出来但显示成 -」。
+ */
+export const DEFAULT_TRANSACTION_STATUS: TransactionStatus = 'completed';
+
 export type TransactionAdjustmentKind = 'normal' | 'refund' | 'reversal';
 
 export type BalanceChangeType =

@@ -82,21 +82,35 @@ const SKIP_FILES = new Map([
   [SELF, '本脚本的说明文字里就含这些模式']
 ]);
 
-/** file:line 级豁免(确实不是同一个判断)。 */
+/**
+ * 豁免:按「文件 + 那一行的内容」匹配,**不要用行号**。
+ * 行号会随任何无关改动漂移 —— 第一版就是这么写的,一次注释插入就让三条豁免全部失效、
+ * 闸门误报。内容匹配则稳:真要改这一行时也会被注意到是否还需要豁免。
+ */
 const ALLOW = new Map([
   [
-    'src/shared/store/useFinanceStore.ts:330',
-    'normalizeAdjustmentKind:判断的是「是否已是三种已知 kind 之一(含 normal)」,不是退款判断'
+    "src/shared/store/useFinanceStore.ts|tx.adjustmentKind === 'normal' |||tx.adjustmentKind === 'refund' ||",
+    'normalizeAdjustmentKind:判断的是「是否已是三种已知 kind 之一」(含 normal),不是退款判断'
   ],
   [
-    'src/shared/store/useFinanceStore.ts:300',
+    'src/shared/store/useFinanceStore.ts||function roundCurrency(raw: number): number {',
     'roundCurrency 只是交给 roundMoney 的薄别名(历史调用点多),算法本身没有第二份'
   ],
   [
-    'src/pages/assistant/AssistantPage.tsx:1287',
+    "src/pages/assistant/AssistantPage.tsx|const repaymentTodoCount = validRows.filter(|(item) => item.type === 'repayment' && (item.status === 'pending' || item.status === 'failed')",
     '助手待办:统计「待处理/失败」的还款笔数,与「是否计入余额」无关(它本来就是待处理项)'
   ]
 ]);
+
+/**
+ * 豁免键:文件 + 上一行 + 本行(都去掉缩进)。
+ * 带上上一行是为了精确 —— 只看本行的话,同一文件里再出现一模一样的一行会被连带豁免。
+ */
+function allowKey(rel, lines, at) {
+  const current = (lines[at] || '').trim();
+  const previous = at > 0 ? (lines[at - 1] || '').trim() : '';
+  return rel + '|' + previous + '|' + current;
+}
 
 function isSkipped(rel) {
   if (SKIP_FILES.has(rel)) return true;
@@ -131,8 +145,12 @@ for (const file of walk(path.join(ROOT, 'src')).concat(walk(path.join(ROOT, 'scr
     // 定义级:直接看每一行,不拼窗口。
     const definition = DEFINITION_CHECKS.find((check) => check.re.test(lines[index]));
     if (definition) {
-      if (!ALLOW.has(rel + ':' + (index + 1))) {
-        hits.push({ key: rel + ':' + (index + 1), why: definition.why });
+      if (!ALLOW.has(allowKey(rel, lines, index))) {
+        hits.push({
+        key: rel + ':' + (index + 1),
+        allowKey: allowKey(rel, lines, index),
+        why: definition.why
+      });
       }
       continue;
     }
@@ -141,8 +159,11 @@ for (const file of walk(path.join(ROOT, 'src')).concat(walk(path.join(ROOT, 'scr
     if (!hit) continue;
     // 报「真正写着比较的那一行」,而不是两行窗口的起点 —— 人按这个行号去 grep 才找得到。
     const offset = pair.findIndex((line) => /adjustmentKind|\.status/.test(line));
-    const key = rel + ':' + (index + 1 + (offset === -1 ? 0 : offset));
-    if (!ALLOW.has(key)) hits.push({ key, why: hit.why });
+    const at = index + (offset === -1 ? 0 : offset);
+    const key = rel + ':' + (at + 1);
+    if (!ALLOW.has(allowKey(rel, lines, at))) {
+      hits.push({ key, allowKey: allowKey(rel, lines, at), why: hit.why });
+    }
     // 命中后跳过下一行:同一个写法会被相邻两次窗口各命中一次。
     index += 1;
   }
@@ -156,6 +177,9 @@ if (hits.length === 0) {
 }
 
 console.log('发现 ' + hits.length + ' 处重复实现:');
-for (const hit of hits) console.log('  ' + hit.key + '\n    ' + hit.why);
+for (const hit of hits) {
+  console.log('  ' + hit.key + '\n    ' + hit.why);
+  console.log('    · 若确属例外,加入豁免: ' + JSON.stringify(hit.allowKey));
+}
 if (args.has('--list')) process.exit(0);
 process.exit(1);
