@@ -37,3 +37,6 @@ test-results/
 
 # check-i18n-keys.mjs --json 的输出,按需生成
 .i18n-report.json
+
+# 临时脚本(重构/迁移用的 .tmp-*.mjs 等):一律不入库,避免 git add -A 误收
+.tmp-*
