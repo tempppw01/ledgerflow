@@ -3581,7 +3581,8 @@
         "overspend": {
           "detail": {
             "none": "No category is over budget",
-            "some": "{count} categories are over budget"
+            "some": "{count} categories are over budget",
+            "severe": "{count} categories are over budget, the worst by {percent}%"
           },
           "label": "Overspent categories"
         }
@@ -3608,7 +3609,7 @@
     },
     "overview": {
       "aria": "Budget overview",
-      "flexTotal": "Flexible categories total",
+      "flexTotal": "Fixed + flexible",
       "healthTitle": "Budget health",
       "monthBudget": "This month’s budget",
       "pacing": {

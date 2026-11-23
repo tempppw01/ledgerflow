@@ -3,6 +3,7 @@ import { Category } from '../../../entities/category/types';
 import { formatMonthKey, parseDateInput } from './budgetDate';
 import { shiftMonthKey } from './budgetComparison';
 import { roundMoney } from '../../../shared/lib/money';
+import { CORE_BUDGET_CATEGORIES, isRigidExpenseCategory } from './budgetPlan';
 
 export type BudgetCategoryTransaction = {
   id: string;
@@ -46,9 +47,19 @@ export function buildBudgetCategoryDetail(params: {
   const transactionLimit = params.transactionLimit ?? 6;
 
   const targetKey = normalizeCategoryName(params.category);
+  /*
+   * 「固定支出」在表格里是一行合计,账本里没有同名分类。
+   * 点它要能看到明细,就得把全部刚性支出分类(住房 / 还款 / 保险 / 税费 /
+   * 水电燃气 / 通讯)都算进来,否则抽屉会给出一个空列表。
+   */
+  const isFixedAggregate = params.category === CORE_BUDGET_CATEGORIES[0];
   const categoryIds = new Set(
     params.categories
-      .filter((item) => normalizeCategoryName(item.name) === targetKey)
+      .filter((item) =>
+        isFixedAggregate
+          ? isRigidExpenseCategory(item.name)
+          : normalizeCategoryName(item.name) === targetKey
+      )
       .map((item) => item.id)
   );
 

@@ -1434,7 +1434,13 @@
 .sb-drawer {
   position: fixed;
   inset: 0;
-  z-index: 80;
+  /*
+   * 必须压过粘性顶栏(z-index 220)和右键菜单(240),否则抽屉右上角的 ✕
+   * 会被顶栏盖住:elementFromPoint 命中的是 workspace-topbar,点了没反应。
+   * 这个抽屉没有点背景/按 Esc 关闭的退路,✕ 点不掉就等于关不掉。
+   * 同时要低于确认弹窗(260),免得弹窗被抽屉盖住。
+   */
+  z-index: 250;
   display: flex;
   justify-content: flex-end;
   background: rgba(15, 23, 42, 0.36);

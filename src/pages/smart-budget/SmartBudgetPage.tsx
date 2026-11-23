@@ -280,12 +280,18 @@ export function SmartBudgetPage() {
         {
           executionRate: overview.executionRate,
           overspentCount: overview.overspentCount,
+          // 超支的「严重程度」也要参与打分,否则一个超到 238% 的分类
+          // 和刚过线的分类扣一样的分,结论会写成「预算执行得很稳」。
+          worstOverspendRatio: trackingRows.reduce(
+            (max, row) => (row.ratio > max ? row.ratio : max),
+            0
+          ),
           monthIncome: monthTotals.income,
           monthExpense: monthTotals.expense
         },
         tf
       ),
-    [overview.executionRate, overview.overspentCount, monthTotals, tf]
+    [overview.executionRate, overview.overspentCount, monthTotals, trackingRows, tf]
   );
 
   const pacing = useMemo(

@@ -38,6 +38,8 @@ export function calculateBudgetHealth(
     overspentCount: number;
     monthIncome: number;
     monthExpense: number;
+    /** 超出预算最多的那个分类的执行率(1 = 刚好用完)。缺省按 0 处理,不额外扣分。 */
+    worstOverspendRatio?: number;
   },
   t: BudgetHealthTranslator = identityHealthTranslator
 ): BudgetHealth {
@@ -46,7 +48,18 @@ export function calculateBudgetHealth(
   const monthIncome = Number.isFinite(params.monthIncome) ? Math.max(0, params.monthIncome) : 0;
   const monthExpense = Number.isFinite(params.monthExpense) ? Math.max(0, params.monthExpense) : 0;
 
-  const overspendPenalty = Math.min(overspentCount * 10, 40);
+  const worstOverspendRatio = Number.isFinite(params.worstOverspendRatio)
+    ? Math.max(0, Number(params.worstOverspendRatio))
+    : 0;
+  /*
+   * 只按「几个分类超支」计数是不够的:一个分类超到 238% 和一个分类超到 101%
+   * 拿一样的扣分,于是「固定支出超 ¥4,143」旁边照样写着「预算执行得很稳」。
+   * 这一项按**超出的倍数**追加扣分。
+   */
+  const overspendPenalty = Math.min(
+    Math.min(overspentCount * 10, 40) + Math.min(Math.max(worstOverspendRatio - 1, 0) * 20, 30),
+    70
+  );
   const overRate = Math.max(executionRate - 1, 0);
   // 只惩罚超支,不惩罚省钱。这里原本还加了 underRate * 100 * 0.15 一项,
   // 于是「一分钱没花」也会被扣 15 分,和上面那句注释以及下方明细文案
@@ -66,12 +79,19 @@ export function calculateBudgetHealth(
       label: t('smartBudget.health.factor.overspend.label', '分类超支'),
       penalty: Math.round(overspendPenalty),
       detail:
-        overspentCount > 0
-          ? t(
-              'smartBudget.health.factor.overspend.detail.some',
-              '{count} 个分类已经超出预算'
-            ).replace('{count}', String(overspentCount))
-          : t('smartBudget.health.factor.overspend.detail.none', '没有分类超出预算')
+        overspentCount <= 0
+          ? t('smartBudget.health.factor.overspend.detail.none', '没有分类超出预算')
+          : worstOverspendRatio > 1
+            ? t(
+                'smartBudget.health.factor.overspend.detail.severe',
+                '{count} 个分类超出预算,最多超了 {percent}%'
+              )
+                .replace('{count}', String(overspentCount))
+                .replace('{percent}', String(Math.round((worstOverspendRatio - 1) * 100)))
+            : t(
+                'smartBudget.health.factor.overspend.detail.some',
+                '{count} 个分类已经超出预算'
+              ).replace('{count}', String(overspentCount))
     },
     {
       key: 'execution',

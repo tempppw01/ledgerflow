@@ -3581,7 +3581,8 @@
         "overspend": {
           "detail": {
             "none": "没有分类超出预算",
-            "some": "{count} 个分类已经超出预算"
+            "some": "{count} 个分类已经超出预算",
+            "severe": "{count} 个分类超出预算,最多超了 {percent}%"
           },
           "label": "分类超支"
         }
@@ -3608,7 +3609,7 @@
     },
     "overview": {
       "aria": "预算总览",
-      "flexTotal": "灵活分类合计",
+      "flexTotal": "固定 + 灵活",
       "healthTitle": "预算健康度",
       "monthBudget": "本月预算",
       "pacing": {

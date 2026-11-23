@@ -58,6 +58,20 @@ describe('calculateBudgetHealth', () => {
     expect(health.level).toBe('excellent');
   });
 
+  it('一个分类超得越狠,扣分越多 —— 不能和刚过线的一视同仁', () => {
+    const base = { executionRate: 1, overspentCount: 1, monthIncome: 10000, monthExpense: 8000 };
+    const barely = calculateBudgetHealth({ ...base, worstOverspendRatio: 1.01 });
+    const badly = calculateBudgetHealth({ ...base, worstOverspendRatio: 2.38 });
+
+    // 修复前两者都得 90 分 / 状态优秀,于是「固定支出超 ¥4,143」旁边
+    // 写着「预算执行得很稳,可以把结余优先安排到储蓄」。
+    expect(badly.score).toBeLessThan(barely.score);
+    expect(badly.level).not.toBe('excellent');
+
+    const detail = badly.factors.find((item) => item.key === 'overspend')?.detail;
+    expect(detail).toContain('138%');
+  });
+
   it('keeps penalising over-budget pace', () => {
     const health = calculateBudgetHealth({
       executionRate: 1.4,

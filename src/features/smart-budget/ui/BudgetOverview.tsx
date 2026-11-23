@@ -68,7 +68,7 @@ export function BudgetOverview({ overview, health, pacing }: BudgetOverviewProps
           <strong className="sb-number">{formatCurrency(overview.totalBudget)}</strong>
           <span className="sb-kpi-foot">
             {overview.totalBudget > 0
-              ? tf('smartBudget.overview.flexTotal', '灵活分类合计')
+              ? tf('smartBudget.overview.flexTotal', '固定 + 灵活')
               : tf('smartBudget.overview.setupFirst', '先完成预算设置')}
           </span>
         </article>

@@ -1,5 +1,5 @@
 import { formatExecutionRatePercent } from '../model/rateDisplay';
-import { formatCurrency } from '../../../shared/lib/format';
+import { formatCurrency, formatDate } from '../../../shared/lib/format';
 import { useTFallback } from '../../../shared/lib/useTFallback';
 import { BudgetTrackingRow } from '../model/budgetInsights';
 import { BudgetCategoryDetail } from '../model/budgetDetail';
@@ -111,9 +111,17 @@ export function BudgetDetailDrawer({ row, detail, onClose }: BudgetDetailDrawerP
                       <li key={item.id}>
                         <div>
                           <strong>{item.note || resolveBudgetCategoryLabel(row.category, tf)}</strong>
-                          <span>{item.date}</span>
+                          {/* 直接把 date 印出来会渲染成 2026-11-15T00:00:00.000Z,和别处一样走 formatDate。 */}
+                          <span>{formatDate(item.date)}</span>
                         </div>
-                        <span className="sb-number">-{formatCurrency(item.amount)}</span>
+                        {/*
+                         * 符号不能写死成「-」:退款/冲正在 budgetDetail 里已经是负数,
+                         * 拼上去会渲染成「--¥40.00」。这里按正负给 + / −。
+                         */}
+                        <span className="sb-number">
+                          {item.amount < 0 ? '+' : '-'}
+                          {formatCurrency(Math.abs(item.amount))}
+                        </span>
                       </li>
                     ))}
                   </ul>
