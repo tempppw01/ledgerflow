@@ -379,3 +379,97 @@ test('relational repository round-trips the repayment pre-recording snapshot', a
     await rm(dataDirectory, { recursive: true, force: true });
   }
 });
+
+/*
+ * 删除分类之后,交易会变成「无分类」(前端口径:categoryId === '')。
+ *
+ * 这条链路原先整条是断的:库里的 category_id 是 NOT NULL + 外键,空串两样都不满足,
+ * 于是导入时这些交易被 `!validCategoryIds.has('')` 整行跳过,而余额记录仍引用它们 ——
+ * 外键失败让**整个导入回滚**,前端看到的却是删除成功,刷新后分类复活、同步无限重试。
+ *
+ * 现在服务端用一条用户范围内的哨兵分类承接,读取时再映射回 '',前端不变式保持不变。
+ */
+test('删除分类后交易保留为「未分类」,导入不再整批失败', async () => {
+  const dataDirectory = await mkdtemp(path.join(os.tmpdir(), 'ledgerflow-uncategorized-'));
+  const env = { LEDGERFLOW_DATA_DIR: dataDirectory, SQLITE_PATH: '' };
+  try {
+    await migrateRelationalDatabase('sqlite', env);
+    const account = await registerUser(
+      'sqlite',
+      { email: 'uncategorized@example.com', password: 'uncategorized-password' },
+      env
+    );
+    const userId = account.user.ledgerUserId;
+
+    const base = {
+      finance: {
+        accounts: [{ id: 'account-cash', name: 'Cash', type: 'cash', initialBalance: 100, balance: 0 }],
+        categories: [{ id: 'category-transport', name: '交通', kind: 'expense' }],
+        transactions: [
+          {
+            id: 'transaction-bus',
+            type: 'expense',
+            accountId: 'account-cash',
+            categoryId: 'category-transport',
+            amount: 3,
+            date: '2026-07-31T00:00:00.000Z',
+            note: 'Bus'
+          }
+        ],
+        subscriptions: []
+      },
+      preferences: {
+        debts: [],
+        repaymentRecords: [],
+        investmentPositions: [],
+        investmentPositionHistory: [],
+        investmentGoals: [],
+        investmentWatchlist: [],
+        investmentAiMessages: [],
+        creditDrafts: [],
+        forecastBills: [],
+        categoryLearningRules: [],
+        categoryLearningEvents: [],
+        smartBudgetPlan: null,
+        smartBudgetHistory: [],
+        monthlyIncome: 0,
+        rssSubscriptions: []
+      }
+    };
+    await replaceRelationalData('sqlite', base, env, userId);
+
+    // 复刻「删除分类」后的状态:分类进回收站,交易引用清空。
+    const afterDelete = structuredClone(base);
+    afterDelete.finance.categories = [];
+    afterDelete.finance.trashedCategories = [
+      { id: 'category-transport', name: '交通', kind: 'expense', trashedAt: '2026-08-01T00:00:00.000Z' }
+    ];
+    afterDelete.finance.transactions[0].categoryId = '';
+
+    // 这一步原先会抛 FOREIGN KEY constraint failed
+    await replaceRelationalData('sqlite', afterDelete, env, userId);
+
+    const bootstrap = await getRelationalBootstrap('sqlite', env, userId);
+    const transactions = bootstrap.data.finance.transactions;
+    assert.equal(transactions.length, 1, '交易不能因为分类被删而丢失');
+    assert.equal(
+      transactions[0].categoryId,
+      '',
+      '读取时必须还原成「未分类」的空串口径'
+    );
+
+    // 实现细节不能漏给用户
+    const categoryIds = bootstrap.data.finance.categories.map((row) => row.id);
+    assert.ok(
+      categoryIds.every((value) => !String(value).startsWith('uncategorized:')),
+      '哨兵分类不能出现在用户可见的分类列表里'
+    );
+    const trashedCategoryIds = bootstrap.data.finance.trashedCategories.map((row) => row.id);
+    assert.ok(
+      trashedCategoryIds.every((value) => !String(value).startsWith('uncategorized:')),
+      '哨兵分类也不能出现在回收站的分类列表里'
+    );
+  } finally {
+    await rm(dataDirectory, { recursive: true, force: true });
+  }
+});

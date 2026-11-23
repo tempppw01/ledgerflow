@@ -254,6 +254,28 @@ export async function resetRelationalData(provider, env = process.env, authentic
   return getRelationalDataStatus(provider, env, userId);
 }
 
+/**
+ * 「未分类」在库里的存储方式。
+ *
+ * 前端有一份明确的不变式(docs/verified-invariants.md 与 uncategorizedCoherence.test.ts):
+ * **交易的 categoryId === '' 就表示未分类**。删除分类时,前端正是把相关交易的
+ * categoryId 清空(见 useFinanceStore.removeCategory)。
+ *
+ * 但库里的 ledger_transactions.category_id 是 NOT NULL + 外键到 ledger_categories:
+ * 空串既不满足外键(没有 id 为 '' 的分类),也不满足非空。于是导入时这些交易被
+ * `!validCategoryIds.has('')` 整行跳过,而余额记录仍然引用它们 ——
+ * 整个导入因外键失败回滚,删除分类永远写不进去、同步无限重试。
+ *
+ * 这里用一个**用户范围内的哨兵分类**承接:写入时落到它名下,读取时再映射回 ''。
+ * 完全不动 schema(不必重建被 4 张表引用的 ledger_transactions),
+ * 前端口径与既有测试原样成立,而且随时可逆。
+ *
+ * 定义在模块作用域:写入(replaceRelationalData)与读取(getRelationalBootstrap)
+ * 两个函数都要用到它。
+ */
+const UNCATEGORIZED_CATEGORY_PREFIX = 'uncategorized:';
+const uncategorizedCategoryIdFor = (ownerId) => `${UNCATEGORIZED_CATEGORY_PREFIX}${ownerId}`;
+
 export async function replaceRelationalData(
   provider,
   payload,
@@ -344,13 +366,40 @@ export async function replaceRelationalData(
             ]
           );
         }
-        for (const item of transactions) {
-          if (
-            !id(item.id) ||
-            !validAccountIds.has(id(item.accountId)) ||
+        /*
+         * 有交易缺分类时,先补上哨兵分类。
+         * 判据要与下面的插入保持一致(只算「账户合法、真会被写入」的交易),
+         * 否则会给一个根本用不到它的账本凭空建出一行。
+         */
+        const uncategorizedCategoryId = uncategorizedCategoryIdFor(userId);
+        const needsUncategorizedCategory = transactions.some(
+          (item) =>
+            id(item.id) &&
+            validAccountIds.has(id(item.accountId)) &&
             !validCategoryIds.has(id(item.categoryId))
-          )
-            continue;
+        );
+        if (needsUncategorizedCategory) {
+          await database.run(
+            `INSERT INTO ledger_categories (id, user_id, name, category_kind, color, icon, sort_order, trashed_at, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              uncategorizedCategoryId,
+              userId,
+              '未分类',
+              'expense',
+              null,
+              null,
+              9999,
+              null,
+              database.date(timestamp),
+              database.date(timestamp)
+            ]
+          );
+        }
+        for (const item of transactions) {
+          // 账户无效仍然跳过(没有账户的交易无处归属);
+          // 但**分类缺失不再跳过** —— 那是删分类之后的正常状态。
+          if (!id(item.id) || !validAccountIds.has(id(item.accountId))) continue;
           await database.run(
             `INSERT INTO ledger_transactions (id, user_id, account_id, category_id, transaction_type, amount, occurred_at, note, source, order_no, merchant_order_no, transaction_status, adjustment_kind, refund_of_transaction_id, trashed_at, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -358,7 +407,9 @@ export async function replaceRelationalData(
               id(item.id),
               userId,
               id(item.accountId),
-              id(item.categoryId),
+              validCategoryIds.has(id(item.categoryId))
+                ? id(item.categoryId)
+                : uncategorizedCategoryId,
               text(item.type, 'expense'),
               number(item.amount),
               database.date(item.date),
@@ -853,7 +904,10 @@ export async function getRelationalBootstrap(
       const mapTransaction = (row) => ({
         id: row.id,
         type: row.transaction_type,
-        categoryId: row.category_id,
+        // 哨兵分类对前端一律呈现为「未分类」(空串),与前端不变式一致。
+        categoryId: String(row.category_id || '').startsWith(UNCATEGORIZED_CATEGORY_PREFIX)
+          ? ''
+          : row.category_id,
         accountId: row.account_id,
         amount: number(row.amount),
         date: fromDbDate(row.occurred_at),
@@ -891,7 +945,13 @@ export async function getRelationalBootstrap(
         updatedAt: fromDbDate(row.updated_at)
       });
       const [activeAccounts, trashedAccounts] = splitTrashed(accounts.map(mapAccount));
-      const [activeCategories, trashedCategories] = splitTrashed(categories.map(mapCategory));
+      // 哨兵分类是实现细节,不能出现在用户可见的分类列表里。
+      const visibleCategoryRows = categories.filter(
+        (row) => !String(row.id).startsWith(UNCATEGORIZED_CATEGORY_PREFIX)
+      );
+      const [activeCategories, trashedCategories] = splitTrashed(
+        visibleCategoryRows.map(mapCategory)
+      );
       const [activeTransactions, trashedTransactions] = splitTrashed(
         transactions.map(mapTransaction)
       );
