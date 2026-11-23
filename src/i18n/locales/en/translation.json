@@ -3487,7 +3487,8 @@
         "amount": "Amount",
         "category": "Category",
         "share": "Share of income"
-      }
+      },
+      "rigidNote": "Rent, loan repayments, insurance, taxes, utilities and phone bills are already covered by the fixed bills above and are not listed separately — they are the same amount every month and should not compete with dining or leisure for the flexible budget."
     },
     "aiPanel": {
       "action": {

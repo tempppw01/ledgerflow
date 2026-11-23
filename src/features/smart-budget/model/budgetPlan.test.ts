@@ -3,6 +3,7 @@ import { BudgetRecommendation } from './budgetPlanner';
 import {
   applyBalancedCategoryEdit,
   buildBudgetSignature,
+  isRigidExpenseCategory,
   syncRecommendationWithExpenseCategories
 } from './budgetPlan';
 
@@ -47,7 +48,7 @@ describe('syncRecommendationWithExpenseCategories', () => {
       { name: '餐饮', kind: 'expense' },
       { name: '交通', kind: 'expense' },
       { name: '购物日用', kind: 'expense' },
-      { name: '保险', kind: 'expense' },
+      { name: '医疗健康', kind: 'expense' },
       { name: '工资', kind: 'income' }
     ]);
 
@@ -82,6 +83,73 @@ describe('syncRecommendationWithExpenseCategories', () => {
 
     const shopping = synced.categoryBudgets.find((item) => item.category === '购物日用');
     expect(shopping?.amount).toBeGreaterThan(0);
+  });
+
+  /*
+   * 演示账本里的真实形状:住房每月固定 ¥6,500,却从灵活池分到 ¥206,
+   * 界面上于是出现「住房 超支 >999%」—— 数学没错,模型是错的。
+   * 刚性支出应该由用户自己声明的「固定支出」承担,不参与灵活预算分摊。
+   */
+  const demoLedger = [
+    '住房',
+    '保险',
+    '水电燃气',
+    '通讯网络',
+    '还款',
+    '税费',
+    '餐饮',
+    '交通',
+    '购物日用',
+    '娱乐社交',
+    '医疗健康',
+    '衣物穿搭',
+    '人情往来',
+    '旅行',
+    '教育学习',
+    '其他',
+    '午餐外卖'
+  ].map((name) => ({ name, kind: 'expense' as const }));
+
+  it('刚性支出分类不参与灵活预算分摊', () => {
+    const synced = syncRecommendationWithExpenseCategories(recommendation, demoLedger);
+    const names = synced.categoryBudgets.map((item) => item.category);
+
+    for (const rigid of ['住房', '保险', '水电燃气', '通讯网络', '还款', '税费']) {
+      expect(names).not.toContain(rigid);
+    }
+    // 灵活的分类照常分额度。
+    expect(names).toContain('餐饮');
+    expect(names).toContain('娱乐社交');
+  });
+
+  it('刚性支出不再抢走灵活分类的额度,合计仍是月收入', () => {
+    const withRigid = syncRecommendationWithExpenseCategories(recommendation, demoLedger);
+    const withoutRigid = syncRecommendationWithExpenseCategories(
+      recommendation,
+      demoLedger.filter((item) => !isRigidExpenseCategory(item.name))
+    );
+
+    const total = withRigid.categoryBudgets.reduce((sum, item) => sum + item.amount, 0);
+    expect(total).toBe(recommendation.monthlyIncome);
+    expect(withRigid.flexibleBudget).toBe(5000);
+
+    // 同样的分类集合,是否带上刚性分类,灵活分类拿到的钱应当完全一致。
+    const diningWith = withRigid.categoryBudgets.find((item) => item.category === '餐饮')?.amount;
+    const diningWithout = withoutRigid.categoryBudgets.find(
+      (item) => item.category === '餐饮'
+    )?.amount;
+    expect(diningWith).toBe(diningWithout);
+  });
+
+  it('全是刚性支出时退回按全部分类分摊,不会把灵活预算丢掉', () => {
+    const synced = syncRecommendationWithExpenseCategories(recommendation, [
+      { name: '住房', kind: 'expense' },
+      { name: '还款', kind: 'expense' }
+    ]);
+
+    const total = synced.categoryBudgets.reduce((sum, item) => sum + item.amount, 0);
+    expect(total).toBe(recommendation.monthlyIncome);
+    expect(synced.categoryBudgets.map((item) => item.category)).toContain('住房');
   });
 });
 

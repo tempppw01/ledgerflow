@@ -7,7 +7,7 @@ export const CORE_BUDGET_CATEGORIES = ['固定支出', '储蓄/投资'] as const
  * 旧版本会给账本里没有对应身份的分类留下 0 额度，
  * 版本号变化时重新分摊一次，之后保留用户手动调整过的金额。
  */
-export const BUDGET_DISTRIBUTION_VERSION = 2;
+export const BUDGET_DISTRIBUTION_VERSION = 3;
 
 export function normalizeBudgetCategoryName(raw: string): string {
   return raw.trim().toLocaleLowerCase('zh-CN');
@@ -54,6 +54,42 @@ const IDENTITY_CATEGORY_KEYWORDS: Record<string, string[]> = {
   工作投入: ['工', '办公', '设备', '软件', '差旅', '会议', '订阅']
 };
 
+/**
+ * 刚性支出分类:每月固定要付、金额基本不受当月取舍影响的那些钱。
+ *
+ * 它们必须落在「固定支出」里,不能参与灵活预算的分摊。否则「住房」会从灵活池
+ * 分到两百来块,而实际房租是六千五 —— 界面于是报出一个毫无意义的「超支 >999%」,
+ * 同时那两百块还是从餐饮、交通真正灵活的钱里抢走的。
+ */
+const RIGID_CATEGORY_KEYWORDS = [
+  '住房',
+  '房租',
+  '房贷',
+  '租金',
+  '物业',
+  '水电',
+  '燃气',
+  '取暖',
+  '还款',
+  '贷款',
+  '分期',
+  '保险',
+  '税费',
+  '税务',
+  '通讯',
+  '话费',
+  '宽带',
+  '网费'
+];
+
+export function isRigidExpenseCategory(name: string): boolean {
+  const normalized = normalizeBudgetCategoryName(name);
+  if (!normalized) {
+    return false;
+  }
+  return RIGID_CATEGORY_KEYWORDS.some((keyword) => normalized.includes(keyword));
+}
+
 function findIdentityCategory(categoryName: string, identityCategories: string[]): string | null {
   const normalized = normalizeBudgetCategoryName(categoryName);
 
@@ -94,14 +130,25 @@ export function syncRecommendationWithExpenseCategories(
     return recommendation;
   }
 
+  /*
+   * 刚性支出(住房 / 还款 / 保险 / 税费 / 水电燃气 / 通讯)不参与灵活预算分摊:
+   * 它们的钱来自用户自己声明的「固定支出」。全部都是刚性支出时无处可放,
+   * 退回按全部分类分摊的旧行为。
+   */
+  const flexibleCategoryNames = expenseCategoryNames.filter(
+    (name) => !isRigidExpenseCategory(name)
+  );
+  const distributionNames =
+    flexibleCategoryNames.length > 0 ? flexibleCategoryNames : expenseCategoryNames;
+
   const currentFlexibleNames = recommendation.categoryBudgets
     .filter((item) => !isCoreBudgetCategory(item.category))
     .map((item) => normalizeBudgetCategoryName(item.category));
 
   const namesMatch =
-    currentFlexibleNames.length === expenseCategoryNames.length &&
+    currentFlexibleNames.length === distributionNames.length &&
     currentFlexibleNames.every(
-      (name, index) => name === normalizeBudgetCategoryName(expenseCategoryNames[index])
+      (name, index) => name === normalizeBudgetCategoryName(distributionNames[index])
     );
 
   const flexibleRowsSource = recommendation.categoryBudgets.filter(
@@ -135,7 +182,7 @@ export function syncRecommendationWithExpenseCategories(
   const identityCategories = Object.keys(CANONICAL_IDENTITY_WEIGHTS);
 
   // 先确定每个账本分类对应到哪个身份分类。
-  const matchedIdentity = expenseCategoryNames.map((name) =>
+  const matchedIdentity = distributionNames.map((name) =>
     findIdentityCategory(name, identityCategories)
   );
 
@@ -162,11 +209,11 @@ export function syncRecommendationWithExpenseCategories(
   const fallbackWeight =
     matchedWeightList.length > 0
       ? matchedWeightList.reduce((sum, weight) => sum + weight, 0) / matchedWeightList.length
-      : 1 / Math.max(1, expenseCategoryNames.length);
+      : 1 / Math.max(1, distributionNames.length);
   const weights = rawWeights.map((weight) => (weight > 0 ? weight : fallbackWeight));
   const weightTotal = weights.reduce((sum, weight) => sum + weight, 0) || 1;
 
-  const flexibleRows = expenseCategoryNames.map((name, index) => ({
+  const flexibleRows = distributionNames.map((name, index) => ({
     category: name,
     amount: Math.round((baseFlexibleBudget * weights[index]) / weightTotal),
     ratio: 0

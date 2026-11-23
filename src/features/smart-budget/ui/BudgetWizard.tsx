@@ -364,6 +364,13 @@ export function BudgetWizard(props: BudgetWizardProps) {
             </table>
           </div>
 
+          <p className="sb-rigid-note">
+            {tf(
+              'smartBudget.wizard.rigidNote',
+              '住房、还款、保险、税费、水电燃气、通讯这类刚性支出已算进上面的「固定账单」\uFF0C不再单列预算 —— 它们每月数额固定,不该和餐饮、娱乐抢同一笔灵活额度。'
+            )}
+          </p>
+
           <div className="sb-actions">
             <button type="button" className="sb-btn sb-btn--primary" onClick={onConfirm}>
               <BudgetCheckIcon className="sb-icon-sm" />

@@ -911,6 +911,13 @@
   color: var(--color-primary);
 }
 
+.sb-rigid-note {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-xs);
+  line-height: var(--leading-normal);
+}
+
 .sb-category-table-wrap {
   max-height: 320px;
   overflow: auto;
