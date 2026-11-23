@@ -53,6 +53,15 @@ interface EntryRow {
   id: string;
   type: string;
   time: number;
+  /**
+   * 「变动后余额」是按**交易日期**顺序一条条推出来的。列表若按 createdAt(≈更新时间)
+   * 排,两者顺序就会分叉:改过日期的交易、或后补的倒填交易,会让相邻两行的余额接不上
+   * —— 用户看到的是「+¥390.55 之后余额反而变少」这种自相矛盾的列。
+   * 所以排序与分组都用链式计算用的同一个键。
+   */
+  chainTime: number;
+  /** 同一天内的次序:链式算法用 updatedAt,这里取反序。 */
+  chainUpdatedTime: number;
   accountName: string;
   summary: string;
   note: string;
@@ -203,10 +212,20 @@ export function BalanceChangesPage() {
       }
 
       const delta = Number(entry.afterBalance || 0) - Number(entry.beforeBalance || 0);
+      // 链式余额用的是交易日期(见 buildTransactionBalanceChangeEntries),
+      // 手工调整没有交易,退回 createdAt。
+      const transactionDate = transaction?.date ? new Date(transaction.date).getTime() : NaN;
+      const chainTime = Number.isNaN(transactionDate) ? time : transactionDate;
+      const transactionUpdated = transaction?.updatedAt
+        ? new Date(transaction.updatedAt).getTime()
+        : NaN;
+      const chainUpdatedTime = Number.isNaN(transactionUpdated) ? time : transactionUpdated;
       result.push({
         id: entry.id,
         type: entry.type,
         time,
+        chainTime,
+        chainUpdatedTime,
         accountName,
         summary,
         note: entry.note ?? '',
@@ -221,7 +240,16 @@ export function BalanceChangesPage() {
       });
     }
 
-    result.sort((a, b) => b.time - a.time || a.id.localeCompare(b.id));
+    /*
+     * 链式余额按 (date, updatedAt, id) 升序推演;这里按同样的键降序展示,
+     * 才能保证从上往下读时「变动后余额」逐行接得上。
+     */
+    result.sort(
+      (a, b) =>
+        b.chainTime - a.chainTime ||
+        b.chainUpdatedTime - a.chainUpdatedTime ||
+        b.id.localeCompare(a.id)
+    );
     return result;
   }, [
     accountFilter,
@@ -270,7 +298,7 @@ export function BalanceChangesPage() {
     }> = [];
     const indexByKey = new Map<string, number>();
     for (const row of rows) {
-      const key = toLocalDateKey(new Date(row.time));
+      const key = toLocalDateKey(new Date(row.chainTime));
       let index = indexByKey.get(key);
       if (index === undefined) {
         index = groups.length;

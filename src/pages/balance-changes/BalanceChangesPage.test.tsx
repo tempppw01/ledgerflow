@@ -126,6 +126,63 @@ describe('BalanceChangesPage', () => {
     expect(screen.getByText('笔数').nextElementSibling?.textContent).toBe('40');
   });
 
+  /*
+   * 「变动后余额」是按**交易日期**一条条推出来的。列表原先按 createdAt(≈更新时间)排,
+   * 两者顺序一旦分叉(改过日期、或后补的倒填交易),相邻两行就接不上 ——
+   * 实测微信钱包 24 行里有 12 处断裂,读起来像「+¥390.55 之后余额反而变少」。
+   */
+  it('列表顺序与「变动后余额」的推演顺序一致:改过日期的交易不会把链条打断', () => {
+    financeStoreMock.state.transactions = [
+      {
+        id: 'tx-late-edit',
+        type: 'expense',
+        categoryId: 'cat-food',
+        accountId: account.id,
+        amount: 10,
+        // 交易日期在前,但更新得很晚(被编辑过)
+        date: '2026-04-10T00:00:00.000Z',
+        updatedAt: '2026-04-20T00:00:00.000Z',
+        note: '旧账',
+        tags: [],
+        source: 'manual',
+        status: 'completed'
+      } as TransactionItem,
+      {
+        id: 'tx-normal',
+        type: 'expense',
+        categoryId: 'cat-food',
+        accountId: account.id,
+        amount: 10,
+        date: '2026-04-15T00:00:00.000Z',
+        updatedAt: '2026-04-15T12:00:00.000Z',
+        note: '新账',
+        tags: [],
+        source: 'manual',
+        status: 'completed'
+      } as TransactionItem
+    ];
+
+    // 链式:旧账(0 → -10)→ 新账(-10 → -20);createdAt 取更新时间,故意与日期反着来。
+    financeStoreMock.state.balanceChangeEntries = [
+      entry('a', { at: '2026-04-20T00:00:00.000Z', amount: -10, before: 0, note: '旧账' }),
+      entry('b', { at: '2026-04-15T12:00:00.000Z', amount: -10, before: -10, note: '新账' })
+    ];
+    financeStoreMock.state.balanceChangeEntries[0].transactionId = 'tx-late-edit';
+    financeStoreMock.state.balanceChangeEntries[1].transactionId = 'tx-normal';
+
+    renderPage();
+
+    const rows = Array.from(document.querySelectorAll('tbody tr'))
+      .map((tr) => Array.from(tr.querySelectorAll('td')).map((td) => td.textContent?.trim() ?? ''))
+      .filter((cells) => cells.length >= 6);
+
+    // 新的那条排在上面(交易日期更晚),旧的在下 —— 这样「变动后余额」列从上往下才接得上。
+    const notes = rows.map((cells) => cells[3]);
+    expect(notes.slice(0, 2)).toEqual(['新账', '旧账']);
+    expect(rows[0][5]).toBe('-¥20.00');
+    expect(rows[1][5]).toBe('-¥10.00');
+  });
+
   it('按天分组,组头给出当天笔数与小计', () => {
     // 用本地时间构造:UTC 字面量会在 UTC+8 落到次日,把一天拆成两组
     const localAt = (day: number, hour: number) => new Date(2026, 3, day, hour, 0, 0).toISOString();
