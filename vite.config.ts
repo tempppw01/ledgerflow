@@ -95,10 +95,17 @@ function manualChunks(id: string) {
 export default defineConfig({
   server: {
     proxy: devProxy,
-    // 编辑器/工具常以「临时目录 + rename」方式落盘,Windows 上 watcher 抓到
-    // 这些瞬时 tmp 文件会抛 EBUSY 并直接终止 dev server,这里统一忽略。
+    /*
+     * 编辑器/工具常以「临时目录 + rename」方式落盘,Windows 上的 watcher 抓到这些
+     * 瞬时 tmp 文件会抛 EBUSY 并**直接终止 dev server**,这里统一忽略。
+     *
+     * `data/` 也必须忽略:它是本机运行时目录(SQLite 库与 data/backups/ 里的备份),
+     * 已在 .gitignore 里,但 watcher 不看 gitignore。备份一个正在被后端打开的
+     * .sqlite 副本时,watcher 会抓到被锁定的文件并抛 EBUSY —— 表现是「备份完
+     * 数据库,dev server 莫名挂了」。这个坑踩过两次,记在这里。
+     */
     watch: {
-      ignored: ['**/.*.tmpdir/**', '**/*.tmpdir/**']
+      ignored: ['**/.*.tmpdir/**', '**/*.tmpdir/**', '**/data/**']
     }
   },
   // 构建产物预览时同样需要把 /api 转发到后端，否则前端无法完成数据库初始化；devProxy 同时覆盖 /api 与 /cdn。

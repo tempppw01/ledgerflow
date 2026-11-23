@@ -61,6 +61,19 @@ export function DashboardPage() {
   const updateForecastBill = useAppPreferences((s) => s.updateForecastBill);
   const removeForecastBill = useAppPreferences((s) => s.removeForecastBill);
 
+  /**
+   * 没有「可预测的东西」:既没有流水,也没有负债与订阅。
+   *
+   * 这种账本上,「资产负债预测」推出来是一条平线加 30 格全 0,「未来与待办」只会说
+   * 「暂无安排」—— 面板没有任何信息量,而引导卡却排在它们之后。
+   *
+   * 注意不能用「账户数为 0」当判据:注册流程本来就会建好账户与分类,所以一个
+   * 从未记过账的新账号是「有账户、零流水」。真正决定预测面板是否有意义的是
+   * 流水/负债/订阅这三类,不是账户。
+   */
+  const isEmptyLedger =
+    transactions.length === 0 && debts.length === 0 && subscriptions.length === 0;
+
   const [isWelcomeExpanded, setIsWelcomeExpanded] = useState(true);
   const [trendGranularity, setTrendGranularity] = useState<'week' | 'month' | 'year'>('week');
   const [trendMonthOffset, setTrendMonthOffset] = useState(0);
@@ -504,6 +517,39 @@ export function DashboardPage() {
         onNavigateToAssistant={() => navigate('/assistant')}
       />
 
+      {/*
+       * 引导卡放在 hero 之后、所有数据面板之前。
+       *
+       * 原来它在页面最底部 —— 一个零数据账号要先划过 1844px 的空图表
+       *(资产负债预测 684px + 未来与待办 154px,全是 0)才看得到「记第一笔」。
+       * 第一个真正该做的事,不该排在最后一个。
+       */}
+      {isEmptyLedger ? (
+        <section className="panel">
+          <EmptyState
+            icon="📝"
+            title={tFallback('dashboard.ui.emptyTitle', '还没有账单，先记第一笔')}
+            description={tFallback(
+              'dashboard.ui.emptyDesc',
+              '记录一笔收入或支出后，这里会自动生成趋势、分类和提醒。'
+            )}
+            secondaryAction={{
+              label: tFallback('dashboard.ui.findAssistant', '找助手聊聊'),
+              onClick: () => {
+                navigate('/assistant');
+              }
+            }}
+            primaryAction={{
+              label: tFallback('dashboard.ui.quickAdd', '马上记一笔'),
+              variant: 'primary',
+              onClick: () => {
+                navigate('/transactions/new?quick=1');
+              }
+            }}
+          />
+        </section>
+      ) : null}
+
       <section className="dashboard-overview-workspace">
         <h2>{tFallback('dashboard.ui.corePanel', '今日财务看板')}</h2>
         <div className="grid grid-2 dashboard-stat-grid">
@@ -544,23 +590,37 @@ export function DashboardPage() {
             </div>
           </button>
         </div>
-        <DashboardCashflowAgenda
-          debts={debts}
-          subscriptions={subscriptions}
-          transactions={transactions}
-          onNavigateToRepayments={() => navigate('/repayment-management')}
-          onNavigateToSubscriptions={() => navigate('/subscriptions')}
-          onNavigateToTransactions={() => navigate('/transactions')}
-        />
-        <AssetLiabilitySimulationPanel
-          {...assetLiabilitySimulation}
-          horizonMonths={simulationMonths}
-          onHorizonChange={setSimulationMonths}
-          forecastBills={forecastBills}
-          onAddForecastBill={addForecastBill}
-          onUpdateForecastBill={updateForecastBill}
-          onRemoveForecastBill={removeForecastBill}
-        />
+        {/*
+         * 没有可预测的内容时不渲染这两个面板。
+         *
+         * 实测一个「有账户、零流水」的新账号:整页 1844px,其中「资产负债预测」684px、
+         * 「未来与待办」154px —— 两者加起来 838px(45%)全在展示"没有数据":一条平折线
+         * 加 30 格全 0 的日历,以及「预计余额最低日 11月23日 ¥0.00」这种没有信息量的读数。
+         * 而页面里本来就有引导卡,却被排在所有面板之后、落到最底部。
+         *
+         * 没有账目时该做的是引导「记第一笔」,不是展示空图表。
+         */}
+        {isEmptyLedger ? null : (
+          <DashboardCashflowAgenda
+            debts={debts}
+            subscriptions={subscriptions}
+            transactions={transactions}
+            onNavigateToRepayments={() => navigate('/repayment-management')}
+            onNavigateToSubscriptions={() => navigate('/subscriptions')}
+            onNavigateToTransactions={() => navigate('/transactions')}
+          />
+        )}
+        {isEmptyLedger ? null : (
+          <AssetLiabilitySimulationPanel
+            {...assetLiabilitySimulation}
+            horizonMonths={simulationMonths}
+            onHorizonChange={setSimulationMonths}
+            forecastBills={forecastBills}
+            onAddForecastBill={addForecastBill}
+            onUpdateForecastBill={updateForecastBill}
+            onRemoveForecastBill={removeForecastBill}
+          />
+        )}
         <div
           className="dashboard-density-control"
           role="group"
@@ -639,31 +699,6 @@ export function DashboardPage() {
         ) : null}
       </section>
 
-      {transactions.length === 0 ? (
-        <section className="panel">
-          <EmptyState
-            icon="📝"
-            title={tFallback('dashboard.ui.emptyTitle', '还没有账单，先记第一笔')}
-            description={tFallback(
-              'dashboard.ui.emptyDesc',
-              '记录一笔收入或支出后，这里会自动生成趋势、分类和提醒。'
-            )}
-            secondaryAction={{
-              label: tFallback('dashboard.ui.findAssistant', '找助手聊聊'),
-              onClick: () => {
-                navigate('/assistant');
-              }
-            }}
-            primaryAction={{
-              label: tFallback('dashboard.ui.quickAdd', '马上记一笔'),
-              variant: 'primary',
-              onClick: () => {
-                navigate('/transactions/new?quick=1');
-              }
-            }}
-          />
-        </section>
-      ) : null}
 
       <DebugLogPanel />
     </div>
