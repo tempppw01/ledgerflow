@@ -1365,6 +1365,7 @@ export function RepaymentManagementPage() {
     y: number;
   } | null>(null);
   const [debtPendingDeletion, setDebtPendingDeletion] = useState<DebtItem | null>(null);
+  const [debtPendingSettlement, setDebtPendingSettlement] = useState<DebtItem | null>(null);
   const [showAddDebtModal, setShowAddDebtModal] = useState(false);
   const [showDebtHealthInfo, setShowDebtHealthInfo] = useState(false);
   const [repaymentCollapseState, setRepaymentCollapseState] = useState<RepaymentCollapseState>(
@@ -1792,6 +1793,32 @@ export function RepaymentManagementPage() {
     removeDebt(deletedDebtId);
     if (selectedDebtId === deletedDebtId) setSelectedDebtId('');
     setDebtPendingDeletion(null);
+  }
+
+  /*
+   * 结清 = 这笔债已经还完,剩余本金归零。
+   *
+   * 原先两个入口做的事不一样:右键菜单里的「结清」把本金清成 0,
+   * 详情面板里的「结清」只改了状态 —— 于是卡片上写着「已结清」,
+   * 下面却还挂着 ¥12,860.40 剩余本金和一整张 12 期还款表,自相矛盾。
+   *
+   * 现在两个入口都走这里:口径统一为「清零」,并且先确认 —— 本金一旦清零
+   * 界面上没有撤回入口,不该是一个没有提示的单击。
+   */
+  function requestDebtSettlement(debtId: string): void {
+    const debt = debtsWithStatus.find((item) => item.id === debtId);
+    if (debt) setDebtPendingSettlement(debt);
+    setDebtContextMenu(null);
+  }
+
+  function confirmDebtSettlement(): void {
+    if (!debtPendingSettlement) return;
+    updateDebt(debtPendingSettlement.id, {
+      ...debtPendingSettlement,
+      status: 'settled',
+      balance: 0
+    });
+    setDebtPendingSettlement(null);
   }
 
   useEffect(() => {
@@ -3221,11 +3248,7 @@ export function RepaymentManagementPage() {
                 ) : null}
                 <button
                   type="button"
-                  onClick={() => {
-                    const item = debtsWithStatus.find((debt) => debt.id === debtContextMenu.id);
-                    if (item) updateDebt(item.id, { ...item, status: 'settled', balance: 0 });
-                    setDebtContextMenu(null);
-                  }}
+                  onClick={() => requestDebtSettlement(debtContextMenu.id)}
                 >
                   {tf('repayment.card.settle', '结清')}
                 </button>
@@ -3284,7 +3307,9 @@ export function RepaymentManagementPage() {
                           key={s}
                           type="button"
                           onClick={() =>
-                            updateDebt(selectedDebtId, { ...selectedDebtOriginal, status: s })
+                            s === 'settled'
+                              ? requestDebtSettlement(selectedDebtId)
+                              : updateDebt(selectedDebtId, { ...selectedDebtOriginal, status: s })
                           }
                         >
                           {s === 'active'
@@ -4949,6 +4974,28 @@ export function RepaymentManagementPage() {
           danger
           onConfirm={confirmDebtDeletion}
           onCancel={() => setDebtPendingDeletion(null)}
+        />
+        <ConfirmDialog
+          open={debtPendingSettlement !== null}
+          title={tf('repayment.settleDebt.title', '结清这笔负债')}
+          description={
+            debtPendingSettlement
+              ? tf(
+                  'repayment.settleDebt.description',
+                  '确定把“{name}”标记为已结清吗?剩余本金 {amount} 会清零,且不能撤回。'
+                )
+                  .replace('{name}', debtPendingSettlement.name)
+                  .replace(
+                    '{amount}',
+                    formatCurrency(Number(debtPendingSettlement.balance) || 0)
+                  )
+              : null
+          }
+          confirmText={tf('repayment.settleDebt.confirm', '确认结清')}
+          cancelText={tf('repayment.deleteDebt.cancel', '取消')}
+          danger
+          onConfirm={confirmDebtSettlement}
+          onCancel={() => setDebtPendingSettlement(null)}
         />
       </section>
     </div>

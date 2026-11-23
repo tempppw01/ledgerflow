@@ -934,4 +934,76 @@ describe('RepaymentManagementPage', () => {
 
     expect(screen.getAllByText(/本期已还 · 下期 \d+ 天后/).length).toBeGreaterThan(0);
   });
+
+  /*
+   * 结清 = 这笔债已经还完,剩余本金应当归零。
+   * 原先详情面板里的「结清」只改状态不清本金:卡片上写着「已结清」,
+   * 下面却还挂着 ¥12,860.40 剩余本金和一整张 12 期还款表。
+   * 而右键菜单里的「结清」会清零,却没有任何确认。
+   */
+  it('结清先确认,确认后才把剩余本金清零', () => {
+    appPreferencesMock.state.debts = [
+      {
+        id: 'debt-1',
+        name: '招商银行信用卡',
+        type: 'credit-card',
+        status: 'active',
+        balance: 12860.4,
+        annualRate: 18.25,
+        remainingMonths: 12,
+        repaymentDay: 25,
+        customMinPayment: 1286.04
+      }
+    ];
+
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '结清' }));
+
+    // 点一下不能就把本金清了;要先问,而且说清代价。
+    expect(appPreferencesMock.state.updateDebt).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog', { name: '结清这笔负债' })).toBeInTheDocument();
+    expect(screen.getByText(/剩余本金 ¥12,860\.40 会清零/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '确认结清' }));
+
+    expect(appPreferencesMock.state.updateDebt).toHaveBeenCalledWith(
+      'debt-1',
+      expect.objectContaining({ status: 'settled', balance: 0 })
+    );
+  });
+
+  it('结清可以取消,取消后什么都不动', () => {
+    appPreferencesMock.state.debts = [
+      {
+        id: 'debt-1',
+        name: '招商银行信用卡',
+        type: 'credit-card',
+        status: 'active',
+        balance: 12860.4,
+        annualRate: 18.25,
+        remainingMonths: 12,
+        repaymentDay: 25
+      }
+    ];
+
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '结清' }));
+    fireEvent.click(screen.getByRole('button', { name: '取消' }));
+
+    expect(appPreferencesMock.state.updateDebt).not.toHaveBeenCalled();
+  });
 });

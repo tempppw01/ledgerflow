@@ -3252,6 +3252,11 @@
       "consumerCreditNote": "Consumer credit · fill in from your statement",
       "installmentNote": "Installment template · fill in from your statement",
       "manualLoanNote": "Loan template · enter your contract details"
+    },
+    "settleDebt": {
+      "title": "Settle this debt",
+      "description": "Mark “{name}” as settled? The remaining principal of {amount} will be reset to zero and cannot be undone.",
+      "confirm": "Settle"
     }
   },
   "categoriesAccounts": {

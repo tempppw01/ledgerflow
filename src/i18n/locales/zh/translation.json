@@ -3252,6 +3252,11 @@
       "consumerCreditNote": "消费信贷 · 按账单补充参数",
       "installmentNote": "分期模板 · 按账单补充参数",
       "manualLoanNote": "贷款模板 · 自行填写合同数据"
+    },
+    "settleDebt": {
+      "title": "结清这笔负债",
+      "description": "确定把“{name}”标记为已结清吗?剩余本金 {amount} 会清零,且不能撤回。",
+      "confirm": "确认结清"
     }
   },
   "categoriesAccounts": {
