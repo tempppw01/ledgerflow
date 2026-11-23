@@ -537,3 +537,80 @@ test('分类的父子关系能存进库并读回', async () => {
     await rm(dataDirectory, { recursive: true, force: true });
   }
 });
+
+/*
+ * 「简单录入」负债的三项内容必须落库。
+ *
+ * 简单模式只让用户填「还款项目 + 还款日期 + 本期应还金额」,而这三项此前
+ * 从未进过库(列不存在、写入与读取都没有)—— 刷新之后负债只剩一个名字:
+ * 到期日、金额、连「这是简单模式」都没了,界面上显示成「待补日期」。
+ */
+test('简单录入的负债能存进库并读回(模式 / 到期日 / 金额)', async () => {
+  const dataDirectory = await mkdtemp(path.join(os.tmpdir(), 'ledgerflow-simple-debt-'));
+  const env = { LEDGERFLOW_DATA_DIR: dataDirectory, SQLITE_PATH: '' };
+  try {
+    await migrateRelationalDatabase('sqlite', env);
+    const account = await registerUser(
+      'sqlite',
+      { email: 'simple-debt@example.com', password: 'simple-debt-password' },
+      env
+    );
+    const userId = account.user.ledgerUserId;
+
+    const payload = {
+      finance: { accounts: [], categories: [], transactions: [], subscriptions: [] },
+      preferences: {
+        debts: [
+          {
+            id: 'debt-rent',
+            name: '9 月房租',
+            type: 'credit-card',
+            status: 'active',
+            balance: 0,
+            entryMode: 'simple',
+            simpleDueDate: '2026-12-20',
+            simpleAmount: 3500
+          },
+          {
+            id: 'debt-standard',
+            name: '消费分期贷',
+            type: 'loan',
+            status: 'active',
+            balance: 42000
+          }
+        ],
+        repaymentRecords: [],
+        investmentPositions: [],
+        investmentPositionHistory: [],
+        investmentGoals: [],
+        investmentWatchlist: [],
+        investmentAiMessages: [],
+        creditDrafts: [],
+        forecastBills: [],
+        categoryLearningRules: [],
+        categoryLearningEvents: [],
+        smartBudgetPlan: null,
+        smartBudgetHistory: [],
+        monthlyIncome: 0,
+        rssSubscriptions: []
+      }
+    };
+
+    await replaceRelationalData('sqlite', payload, env, userId);
+    const bootstrap = await getRelationalBootstrap('sqlite', env, userId);
+    const byId = new Map(bootstrap.data.preferences.debts.map((row) => [row.id, row]));
+
+    const simple = byId.get('debt-rent');
+    assert.equal(simple?.entryMode, 'simple', '简单模式必须保留,否则刷新后变成完整模式');
+    assert.equal(simple?.simpleDueDate, '2026-12-20', '到期日必须保留');
+    assert.equal(simple?.simpleAmount, 3500, '本期应还金额必须保留');
+
+    // 完整模式的负债不该被凭空写上简单模式的字段
+    const standard = byId.get('debt-standard');
+    assert.equal(standard?.entryMode, undefined);
+    assert.equal(standard?.simpleDueDate, undefined);
+    assert.equal(standard?.simpleAmount, undefined);
+  } finally {
+    await rm(dataDirectory, { recursive: true, force: true });
+  }
+});

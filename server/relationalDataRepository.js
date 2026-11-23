@@ -518,8 +518,8 @@ export async function replaceRelationalData(
         for (const item of debts) {
           if (!id(item.id)) continue;
           await database.run(
-            `INSERT INTO ledger_debts (id, user_id, name, debt_type, debt_status, balance, annual_rate, remaining_months, total_periods, paid_periods, loan_principal, total_repayment, custom_min_payment, bill_day, repayment_day, repayment_method, repayment_record_mode, payment_account_id, grace_days, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO ledger_debts (id, user_id, name, debt_type, debt_status, balance, annual_rate, remaining_months, total_periods, paid_periods, loan_principal, total_repayment, custom_min_payment, bill_day, repayment_day, repayment_method, repayment_record_mode, payment_account_id, grace_days, entry_mode, simple_due_date, simple_amount, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               id(item.id),
               userId,
@@ -540,6 +540,9 @@ export async function replaceRelationalData(
               nullable(item.repaymentRecordMode),
               validAccountIds.has(id(item.paymentAccount)) ? id(item.paymentAccount) : null,
               Math.floor(number(item.graceDays)) || null,
+              nullable(item.entryMode),
+              nullable(item.simpleDueDate),
+              number(item.simpleAmount) || null,
               database.date(item.createdAt),
               database.date(item.updatedAt)
             ]
@@ -1097,6 +1100,10 @@ export async function getRelationalBootstrap(
                 repaymentRecordMode: row.repayment_record_mode || undefined,
                 paymentAccount: row.payment_account_id || undefined,
                 graceDays: row.grace_days === null ? undefined : number(row.grace_days),
+                entryMode: row.entry_mode || undefined,
+                simpleDueDate: row.simple_due_date || undefined,
+                simpleAmount:
+                  row.simple_amount === null ? undefined : number(row.simple_amount),
                 createdAt: fromDbDate(row.created_at),
                 updatedAt: fromDbDate(row.updated_at)
               })),
