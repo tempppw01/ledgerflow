@@ -257,6 +257,67 @@ for (const user of users) {
     );
   }
 
+  // ---- 4.5 余额变动链:每行「变动前」必须接住上一行的「变动后」 ----
+  /*
+   * 这条不变量最容易骗人:按 created_at 排序看起来会有断点,而页面用的是
+   * (交易日期, 交易 updated_at, id) 作为链式键。我第一次手查就是按 created_at 排的,
+   * 于是支付宝显示 5 个假断点 —— 换成页面口径后是 0。
+   * 所以这里必须用同一个键,否则这条检查本身会误报。
+   */
+  const changeRows = db
+    .prepare(
+      `SELECT bc.id, bc.account_id, bc.change_type, bc.before_balance, bc.after_balance,
+              bc.created_at, t.occurred_at AS chain_time, t.updated_at AS chain_updated
+         FROM ledger_balance_changes bc
+         LEFT JOIN ledger_transactions t ON t.id = bc.transaction_id
+        WHERE bc.user_id = ?`
+    )
+    .all(uid);
+  const chainKey = (row) => [
+    row.chain_time || row.created_at || '',
+    row.chain_updated || '',
+    row.id
+  ];
+  const compareChain = (left, right) => {
+    const a = chainKey(left);
+    const b = chainKey(right);
+    for (let i = 0; i < a.length; i += 1) {
+      if (a[i] < b[i]) return -1;
+      if (a[i] > b[i]) return 1;
+    }
+    return 0;
+  };
+  let chainRows = 0;
+  for (const account of accounts) {
+    const chain = changeRows
+      .filter((row) => row.account_id === account.id)
+      .sort(compareChain);
+    if (chain.length === 0) continue;
+    chainRows += chain.length;
+    for (let index = 1; index < chain.length; index += 1) {
+      const previous = Number(chain[index - 1].after_balance);
+      const before = Number(chain[index].before_balance);
+      if (Math.abs(before - previous) > 0.005) {
+        fail(
+          label,
+          '账户「' + account.name + '」的余额变动链在 ' +
+            String(chain[index].chain_time || '').slice(0, 10) + ' 断开:变动前 ' +
+            formatMoney(before) + ' ≠ 上一行变动后 ' + formatMoney(previous)
+        );
+      }
+    }
+    const tail = Number(chain[chain.length - 1].after_balance);
+    const stored = round2(account.balance);
+    if (Math.abs(tail - stored) > 0.005) {
+      fail(
+        label,
+        '账户「' + account.name + '」末行变动后 ' + formatMoney(tail) +
+          ' ≠ 账户余额 ' + formatMoney(stored)
+      );
+    }
+  }
+  console.log('  余额变动链:' + chainRows + ' 行,按 (交易日期, 更新时间, id) 校验');
+
   // ---- 5. 逐月收支 ----
   const byMonth = new Map();
   for (const row of transactions) {
