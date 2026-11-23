@@ -27,6 +27,17 @@
 .subscriptions-alert-card strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--font-sm); }
 
 .subscriptions-main-grid { display: grid; grid-template-columns: minmax(330px, .92fr) minmax(0, 1.08fr); gap: var(--space-4); align-items: start; }
+/* 页面级说明行(例如「今天已经生成过支出」):别塞进收起的表单里,那里看不到。 */
+.subscriptions-notice {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+}
+
 .subscriptions-form-panel, .subscriptions-list-panel { margin: 0; min-width: 0; }
 .subscriptions-panel-head { margin-bottom: var(--space-4); }
 .subscriptions-panel-head h3, .subscriptions-form-section-head h4, .subscriptions-card-title h4 { margin: 0; }

@@ -144,4 +144,37 @@ describe('SubscriptionsPage', () => {
     expect(screen.getByText('从常用模板开始')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '收起表单' })).toBeInTheDocument();
   });
+
+  /*
+   * store 的重复保护是对的(同一天同一订阅只记一次),但它返回的是**已有那笔**的 id。
+   * 页面原先不区分 duplicated,直接导航到那笔交易的**编辑页** —— 用户双击一下
+   * 就被丢进一个已有记录的编辑表单,既没被告知「没有重复记账」,也容易顺手改掉它。
+   */
+  it('重复生成时说明「今天已经生成过」,不再静默跳进那笔交易的编辑页', () => {
+    financeStoreMock.state.generateSubscriptionTransaction.mockReturnValue({
+      transactionId: 'tx-existing',
+      duplicated: true
+    });
+
+    renderPage();
+    fireEvent.click(screen.getAllByRole('button', { name: '生成支出' })[0]);
+
+    expect(
+      screen.getByText(/今天已经为「Spotify Premium」生成过支出,没有重复记账。/)
+    ).toBeInTheDocument();
+    // 没有跳走:订阅清单还在页面上。
+    expect(screen.getByText('Spotify Premium')).toBeInTheDocument();
+  });
+
+  it('正常生成后不显示「已生成过」提示', () => {
+    financeStoreMock.state.generateSubscriptionTransaction.mockReturnValue({
+      transactionId: 'tx-new',
+      duplicated: false
+    });
+
+    renderPage();
+    fireEvent.click(screen.getAllByRole('button', { name: '生成支出' })[0]);
+
+    expect(screen.queryByText(/已经为「Spotify Premium」生成过支出/)).not.toBeInTheDocument();
+  });
 });

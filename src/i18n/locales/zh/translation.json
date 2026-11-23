@@ -1813,6 +1813,9 @@
       "nameRequired": "请输入订阅名称。",
       "amountRequired": "订阅金额必须大于 0。",
       "generateFailed": "生成订阅支出失败，请稍后重试。"
+    },
+    "notice": {
+      "alreadyGenerated": "今天已经为「{name}」生成过支出,没有重复记账。"
     }
   },
   "dataBackup": {

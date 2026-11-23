@@ -351,6 +351,8 @@ export function SubscriptionsPage() {
   /** 新增表单默认收起:管理页第一眼该看到清单。 */
   const [formOpen, setFormOpen] = useState(false);
   const [error, setError] = useState('');
+  /** 「今天已经生成过」这类说明。form 收起时 error 那一行不可见,所以要一个页面级的位置。 */
+  const [generateNotice, setGenerateNotice] = useState('');
   const [demoAvailable, setDemoAvailable] = useState(false);
 
   useEffect(() => {
@@ -539,6 +541,22 @@ export function SubscriptionsPage() {
   const handleGenerateTransaction = (item: SubscriptionItem) => {
     try {
       const result = generateSubscriptionTransaction(item.id);
+      if (result.duplicated) {
+        /*
+         * store 的重复保护是对的(同一天同一订阅只记一次),但它返回的是**已有那笔**
+         * 的 id。原先这里不区分,直接跳进那笔交易的**编辑页** —— 用户双击一下
+         * 就会被丢进一个已有记录的编辑表单,既没被告知「没有重复记账」,
+         * 也容易顺手改掉那笔已经记好的支出。
+         */
+        setGenerateNotice(
+          tf(
+            'subscriptions.notice.alreadyGenerated',
+            '今天已经为「{name}」生成过支出,没有重复记账。'
+          ).replace('{name}', item.name)
+        );
+        return;
+      }
+      setGenerateNotice('');
       navigate(`/transactions/${result.transactionId}`);
     } catch (error) {
       setError(
@@ -918,6 +936,12 @@ export function SubscriptionsPage() {
           </>
           ) : null}
         </section>
+
+        {generateNotice ? (
+          <p className="subscriptions-notice vi-section" role="status">
+            {generateNotice}
+          </p>
+        ) : null}
 
         <section className="subscriptions-list-panel vi-section">
           <div className="subscriptions-panel-head vi-section-head">
