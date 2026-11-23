@@ -1,6 +1,6 @@
 import type { TransactionItem } from '../../../entities/transaction/types';
 import { roundMoney } from '../../../shared/lib/money';
-import { resolveTransactionLocalDay } from '../../../shared/lib/localDate';
+import { isBalanceAffectingStatus, resolveTransactionLocalDay } from '../../../shared/lib/localDate';
 import { isTransactionRefundLike } from '../../../shared/lib/transactionMetrics';
 
 type QuickAddSpendingInput = {
@@ -22,9 +22,7 @@ export function getQuickAddDailySpending({
       item.type !== 'expense' ||
       resolveTransactionLocalDay(item.date) !== date ||
       item.trashedAt ||
-      item.status === 'pending' ||
-      item.status === 'closed' ||
-      item.status === 'failed'
+      !isBalanceAffectingStatus(item.status)
     ) {
       return total;
     }
