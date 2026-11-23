@@ -119,13 +119,24 @@ export function inferTags(
   return tags;
 }
 
+/**
+ * 解析分类。解析不出来时返回**空串**,不要退回第一个分类、也不要造一个 'cat-unknown'。
+ *
+ * 退回 `categories[0]` 会把「说不清分类」的账单**静默归到碰巧排第一的分类**上 ——
+ * 分类统计、预算执行数会因此悄悄偏掉,而用户完全看不出来(账单上显示的是那个真分类)。
+ * 空串表示「没有分类」,应用本来就为这种状态准备了「未分类」:列表按未分类显示,
+ * 服务端也有每用户的哨兵分类兜底(见 relationalDataRepository 里的 uncategorizedCategoryId)。
+ *
+ * 与 accounts 那边同一条原则:`resolveAccountId` 也不再造 'acc-unknown'
+ * (那个更糟 —— 会写出指向不存在账户的交易)。
+ */
 export function resolveCategoryId(name: string | undefined, categories: Category[]): string {
   const normalized = (name || '').trim();
-  if (!normalized) return categories[0]?.id || 'cat-unknown';
+  if (!normalized) return '';
   const matched = categories.find(
     (item) => item.name.trim().toLowerCase() === normalized.toLowerCase()
   );
-  return matched?.id || categories[0]?.id || 'cat-unknown';
+  return matched?.id || '';
 }
 
 function toLooseCategoryKey(raw: string): string {
@@ -162,7 +173,8 @@ export function ensureCategoryId(
   });
   if (nearMatched) return nearMatched.id;
 
-  return addCategory(normalized) || categories[0]?.id || 'cat-unknown';
+  // 新建失败(例如与既有分类重名而被拒)时同样返回空串 —— 未分类好过随便归一类。
+  return addCategory(normalized) || '';
 }
 
 function toLooseAccountKey(raw: string): string {
