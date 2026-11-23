@@ -28,7 +28,8 @@
     "test:watch": "vitest --config vitest.config.ts",
     "prepare": "husky",
     "check:r2-fetch": "node scripts/check-no-r2-fetch.mjs",
-    "audit:ui": "node scripts/audit-ui-browser.mjs"
+    "audit:ui": "node scripts/audit-ui-browser.mjs",
+    "audit:ledger-math": "node scripts/audit-ledger-math.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
