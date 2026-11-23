@@ -1,6 +1,7 @@
 import type { TransactionItem } from '../../../entities/transaction/types';
 import { roundMoney } from '../../../shared/lib/money';
 import { resolveTransactionLocalDay } from '../../../shared/lib/localDate';
+import { isTransactionRefundLike } from '../../../shared/lib/transactionMetrics';
 
 type QuickAddSpendingInput = {
   transactions: TransactionItem[];
@@ -29,9 +30,7 @@ export function getQuickAddDailySpending({
     }
 
     const amount = Math.abs(Number(item.amount) || 0);
-    return item.adjustmentKind === 'refund' || item.adjustmentKind === 'reversal'
-      ? total - amount
-      : total + amount;
+    return isTransactionRefundLike(item) ? total - amount : total + amount;
   }, 0);
 
   const draftAmount = Number.isFinite(proposedExpense) && proposedExpense > 0 ? proposedExpense : 0;

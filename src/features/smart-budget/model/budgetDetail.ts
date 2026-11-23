@@ -3,6 +3,7 @@ import { Category } from '../../../entities/category/types';
 import { formatMonthKey, parseDateInput } from './budgetDate';
 import { shiftMonthKey } from './budgetComparison';
 import { roundMoney } from '../../../shared/lib/money';
+import { isTransactionRefundLike } from '../../../shared/lib/transactionMetrics';
 import { CORE_BUDGET_CATEGORIES, isRigidExpenseCategory } from './budgetPlan';
 
 export type BudgetCategoryTransaction = {
@@ -92,7 +93,7 @@ export function buildBudgetCategoryDetail(params: {
     // 再加一笔。汇总侧(buildBudgetTrackingRows)一直是这么算的,详情侧以前直接
     // 累加正值,于是同一个分类在抽屉里和列表里给出两个不同的数字:
     // 支出 100 + 退款 40 → 列表 60、抽屉 140;全额冲正时抽屉更是翻倍。
-    const refundLike = item.adjustmentKind === 'refund' || item.adjustmentKind === 'reversal';
+    const refundLike = isTransactionRefundLike(item);
     const signedAmount = refundLike ? -amount : amount;
     spentByMonth.set(key, (spentByMonth.get(key) || 0) + signedAmount);
     recentTransactions.push({

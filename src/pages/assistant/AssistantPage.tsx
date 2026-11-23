@@ -38,6 +38,7 @@ import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import {
   filterCountableTransactions,
   getTransactionDirection,
+  isTransactionRefundLike,
   summarizeTransactions
 } from '../../shared/lib/transactionMetrics';
 import { useTFallback } from '../../shared/lib/useTFallback';
@@ -1278,11 +1279,9 @@ export function AssistantPage() {
     // 于是这张待办卡片从来不提示补分类。
     const uncategorizedCount = validRows.filter((item) => !item.categoryId).length;
     const pendingCount = validRows.filter((item) => item.status === 'pending').length;
+    // 退款/冲正走共享判断,状态「已退款」是另一回事(refundTransaction 会把原交易置为 refunded)。
     const pendingRefundCount = validRows.filter(
-      (item) =>
-        item.adjustmentKind === 'refund' ||
-        item.adjustmentKind === 'reversal' ||
-        item.status === 'refunded'
+      (item) => isTransactionRefundLike(item) || item.status === 'refunded'
     ).length;
     const repaymentTodoCount = validRows.filter(
       (item) => item.type === 'repayment' && (item.status === 'pending' || item.status === 'failed')

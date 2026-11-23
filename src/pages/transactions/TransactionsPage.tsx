@@ -947,8 +947,7 @@ export function TransactionsPage() {
     }
     return transactions.filter(
       (item) =>
-        item.refundOfTransactionId === selected.id &&
-        (item.adjustmentKind === 'refund' || item.adjustmentKind === 'reversal')
+        item.refundOfTransactionId === selected.id && isTransactionRefundLike(item)
     );
   }, [selected, transactions]);
 
@@ -1589,8 +1588,7 @@ export function TransactionsPage() {
       (item) =>
         !selected.has(item.id) &&
         Boolean(item.refundOfTransactionId) &&
-        selected.has(item.refundOfTransactionId as string) &&
-        (item.adjustmentKind === 'refund' || item.adjustmentKind === 'reversal')
+        selected.has(item.refundOfTransactionId as string) && isTransactionRefundLike(item)
     ).length;
   })();
 

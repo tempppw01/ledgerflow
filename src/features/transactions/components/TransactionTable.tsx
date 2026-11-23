@@ -479,10 +479,7 @@ export function TransactionTable({
   const taskSummary = useMemo(() => {
     const pendingRows = rows.filter((row) => row.item.status === 'pending');
     const refundRows = rows.filter(
-      (row) =>
-        row.item.adjustmentKind === 'refund' ||
-        row.item.adjustmentKind === 'reversal' ||
-        row.item.status === 'refunded'
+      (row) => isTransactionRefundLike(row.item) || row.item.status === 'refunded'
     );
     const failedRows = rows.filter((row) => row.item.status === 'failed');
     const doneRows = rows.filter(
@@ -536,7 +533,7 @@ export function TransactionTable({
       if (itemDate.getFullYear() !== currentYear || itemDate.getMonth() !== currentMonth) {
         return;
       }
-      if (item.adjustmentKind === 'refund' || item.adjustmentKind === 'reversal') {
+      if (isTransactionRefundLike(item)) {
         return;
       }
       const key = getRepeatGroupKey(item);
@@ -1055,7 +1052,7 @@ export function TransactionTable({
                         className={`transaction-row-clickable ${
                           highlightId === item.id ? 'transaction-row-highlight' : ''
                         } ${
-                          item.adjustmentKind === 'refund' || item.adjustmentKind === 'reversal'
+                          isTransactionRefundLike(item)
                             ? 'transaction-row-refund-like'
                             : ''
                         }`.trim()}

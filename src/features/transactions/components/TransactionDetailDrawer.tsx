@@ -648,8 +648,7 @@ export function TransactionDetailDrawer({
   if (!open || !transaction) return null;
 
   const abnormalAlert = buildAbnormalAlert(transaction, tf);
-  const isRefundOrReversal =
-    transaction.adjustmentKind === 'refund' || transaction.adjustmentKind === 'reversal';
+  const isRefundOrReversal = isTransactionRefundLike(transaction);
   const hasMoreInformation = Boolean(
     transaction.orderNo ||
     transaction.merchantOrderNo ||

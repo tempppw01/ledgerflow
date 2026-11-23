@@ -8,6 +8,7 @@ import {
   parseDateInput
 } from './budgetDate';
 import { roundMoney } from '../../../shared/lib/money';
+import { isTransactionRefundLike } from '../../../shared/lib/transactionMetrics';
 import { CORE_BUDGET_CATEGORIES, isRigidExpenseCategory } from './budgetPlan';
 
 export { formatMonthKey, monthLabelFromKey, parseDateInput };
@@ -84,7 +85,7 @@ export function buildBudgetTrackingRows(params: {
     }
 
     const key = normalizeCategoryName(categoryName);
-    const refundLike = item.adjustmentKind === 'refund' || item.adjustmentKind === 'reversal';
+    const refundLike = isTransactionRefundLike(item);
     const signedAmount = refundLike ? -Number(item.amount || 0) : Number(item.amount || 0);
     spentByCategory.set(key, (spentByCategory.get(key) || 0) + signedAmount);
   });

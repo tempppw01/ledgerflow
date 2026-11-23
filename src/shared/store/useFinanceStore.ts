@@ -13,7 +13,7 @@ import {
 import { SubscriptionItem } from '../../entities/subscription/types';
 import { syncChangeIfNeeded } from '../lib/dataSync';
 import { generateId } from '../lib/id';
-import { getSignedAmount } from '../lib/transactionMetrics';
+import { getSignedAmount, isTransactionRefundLike } from '../lib/transactionMetrics';
 import { isBalanceAffectingStatus } from '../lib/localDate';
 import { advanceSubscriptionDate } from '../lib/subscriptionSchedule';
 import { roundMoney } from '../lib/money';
@@ -581,7 +581,7 @@ function computeAccountBalances(accounts: Account[], transactions: TransactionIt
 }
 
 function getBalanceChangeType(tx: TransactionItem): BalanceChangeType {
-  if (tx.adjustmentKind === 'refund' || tx.adjustmentKind === 'reversal') {
+  if (isTransactionRefundLike(tx)) {
     return 'transaction-refund';
   }
   if (tx.type === 'income') {
@@ -651,7 +651,7 @@ function buildTransactionBalanceChangeEntries(
       createdAt: tx.updatedAt || tx.date,
       note: tx.note,
       remark:
-        tx.adjustmentKind === 'refund' || tx.adjustmentKind === 'reversal'
+        isTransactionRefundLike(tx)
           ? tx.refundOfTransactionId
             ? '退款已关联原交易'
             : '退款记录缺少原交易关联'
@@ -975,8 +975,7 @@ export const useFinanceStore = create<FinanceState>()(
           const dependents = s.transactions.filter(
             (item) =>
               item.id !== id &&
-              item.refundOfTransactionId === id &&
-              (item.adjustmentKind === 'refund' || item.adjustmentKind === 'reversal')
+              item.refundOfTransactionId === id && isTransactionRefundLike(item)
           );
           const removingIds = new Set([id, ...dependents.map((item) => item.id)]);
           trashedRows = [target, ...dependents].map((item) => markTrashedAt(item));
@@ -1026,7 +1025,7 @@ export const useFinanceStore = create<FinanceState>()(
             thrownError = new Error('未找到要退款的原始记录。');
             return s;
           }
-          if (original.adjustmentKind === 'refund' || original.adjustmentKind === 'reversal') {
+          if (isTransactionRefundLike(original)) {
             thrownError = new Error('退款单或冲正单不能再次发起退款。');
             return s;
           }
