@@ -148,6 +148,7 @@ for (const user of users) {
     .prepare('SELECT * FROM ledger_balance_changes WHERE user_id = ?')
     .all(uid);
   const positions = db.prepare('SELECT * FROM investment_positions WHERE user_id = ?').all(uid);
+  const subscriptions = db.prepare('SELECT * FROM ledger_subscriptions WHERE user_id = ?').all(uid);
 
   console.log('\n=== ' + label + ' ===');
   console.log(
@@ -255,6 +256,49 @@ for (const user of users) {
         danglingCategories +
         ' 笔指向已不存在的分类(删除账户/分类时应用会保留交易,这是有意设计)'
     );
+  }
+
+  // ---- 4.3 分类父子关系 ----
+  /*
+   * 子分类指向的父级必须存在;父级若已进回收站,子分类就会「挂在一个看不见的父级上」
+   * —— 界面上它可能整个消失。removeCategory 会把子分类提升为一级分类,所以正常数据里
+   * 这两种情况都应为 0。
+   */
+  const categoryById = new Map(categories.map((row) => [row.id, row]));
+  let orphanChildren = 0;
+  let childrenOfTrashed = 0;
+  for (const row of categories) {
+    if (!row.parent_id) continue;
+    const parent = categoryById.get(row.parent_id);
+    if (!parent) orphanChildren += 1;
+    else if (parent.trashed_at) childrenOfTrashed += 1;
+  }
+  if (orphanChildren > 0) {
+    fail(label, orphanChildren + ' 个子分类指向不存在的父级');
+  }
+  if (childrenOfTrashed > 0) {
+    fail(label, childrenOfTrashed + ' 个子分类的父级在回收站里(界面上会找不到它)');
+  }
+
+  // ---- 4.4 订阅与它生成的那笔交易 ----
+  /*
+   * lastGeneratedTransactionId 必须指向一笔真实存在、且**没进回收站**的交易。
+   * 删除那笔流水时若不回退(参见 useFinanceStore 的 removeTransaction),
+   * 这个引用就会悬空,续费日也会停在错误的期次上。
+   */
+  const transactionById = new Map(transactions.map((row) => [row.id, row]));
+  for (const subscription of subscriptions) {
+    const linkId = subscription.last_generated_transaction_id;
+    if (!linkId) continue;
+    const linked = transactionById.get(linkId);
+    if (!linked) {
+      fail(label, '订阅「' + subscription.name + '」指向的生成交易 ' + linkId + ' 不存在');
+    } else if (linked.trashed_at) {
+      warn(
+        label,
+        '订阅「' + subscription.name + '」指向的生成交易已在回收站里(续费日可能与实际不符)'
+      );
+    }
   }
 
   // ---- 4.5 余额变动链:每行「变动前」必须接住上一行的「变动后」 ----
