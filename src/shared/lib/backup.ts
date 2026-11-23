@@ -1494,6 +1494,31 @@ export function createFinanceBackupPayload(
   };
 }
 
+/**
+ * 把「分类学习规则 / 事件」补进准备发给服务端的 finance 段。
+ *
+ * 为什么需要它:这两个键**不在备份格式里**(它们是服务端 finance 侧的状态),
+ * 而服务端导入时是**照单写入**的 —— `list(finance.categoryLearningRules)` 取不到就是 []。
+ * 于是「恢复一份备份」会把用户纠正过的分类学习规则整批清空,导入却照样返回成功。
+ * (实测:2 条规则 + 1 条事件 → 全空,HTTP 200。)
+ *
+ * 语义与其它旧字段一致:备份里明确带了就用备份的,没带就保留当前值。
+ */
+export function withCurrentCategoryLearning<T extends Record<string, unknown>>(
+  finance: T,
+  current: { categoryLearningRules?: unknown; categoryLearningEvents?: unknown }
+): T & { categoryLearningRules: unknown; categoryLearningEvents: unknown } {
+  return {
+    ...finance,
+    categoryLearningRules: Array.isArray(finance.categoryLearningRules)
+      ? finance.categoryLearningRules
+      : (current.categoryLearningRules ?? []),
+    categoryLearningEvents: Array.isArray(finance.categoryLearningEvents)
+      ? finance.categoryLearningEvents
+      : (current.categoryLearningEvents ?? [])
+  };
+}
+
 export function countFinanceBackupRecords(payload: FinanceBackupPayload): number {
   return Object.values(payload.data).reduce(
     (total, value) => total + (Array.isArray(value) ? value.length : 0),

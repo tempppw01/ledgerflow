@@ -33,6 +33,7 @@ import {
   objectStorageUploadBackup,
   parseFinanceBackupPayload,
   verifyFinanceBackupRestore,
+  withCurrentCategoryLearning,
   saveObjectStorageConfig,
   saveWebdavConfig,
   sanitizeObjectStorageConfig,
@@ -613,7 +614,15 @@ export function DatabaseSettingsPage() {
       ...nextFinanceData
     } = restored;
     await importRelationalData({
-      finance: nextFinanceData,
+      /*
+       * 分类学习规则 / 事件不在备份格式里,但服务端导入时是照单写入的。
+       * 漏掉这两个键 = 一次「恢复备份」把用户教给 App 的分类纠正整批清空,
+       * 而导入照样返回成功(实测:2 条规则 + 1 条事件 → []、HTTP 200)。
+       */
+      finance: withCurrentCategoryLearning(nextFinanceData, {
+        categoryLearningRules,
+        categoryLearningEvents
+      }),
       globalMemories: nextGlobalMemories,
       preferences: {
         ...useAppPreferences.getState(),

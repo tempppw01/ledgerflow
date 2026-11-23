@@ -4,6 +4,7 @@ import type { TransactionItem } from '../../entities/transaction/types';
 import {
   createFinanceBackupPayload,
   verifyFinanceBackupRestore,
+  withCurrentCategoryLearning,
   type FinanceBackupScope
 } from './backup';
 
@@ -141,5 +142,53 @@ describe('verifyFinanceBackupRestore', () => {
     });
 
     expect(mismatches).toEqual([]);
+  });
+});
+
+/*
+ * 分类学习规则 / 事件不在备份格式里,而服务端导入时是照单写入的
+ * (list(finance.categoryLearningRules) 取不到就是 []),所以恢复时必须把当前值带过去。
+ * 实测:不带 → 2 条规则 + 1 条事件全被清空,而导入返回 HTTP 200。
+ */
+describe('withCurrentCategoryLearning', () => {
+  const current = {
+    categoryLearningRules: [{ id: 'rule-1', hitCount: 7 }],
+    categoryLearningEvents: [{ id: 'event-1' }]
+  };
+
+  it('备份里没有这两个键时,保留当前值,不让服务端写成空数组', () => {
+    const result = withCurrentCategoryLearning({ transactions: [] }, current);
+
+    expect(result.categoryLearningRules).toEqual(current.categoryLearningRules);
+    expect(result.categoryLearningEvents).toEqual(current.categoryLearningEvents);
+    // 原有的字段不能被覆盖掉
+    expect(result.transactions).toEqual([]);
+  });
+
+  it('备份里明确带了就用备份的', () => {
+    const result = withCurrentCategoryLearning(
+      { categoryLearningRules: [{ id: 'from-backup' }], categoryLearningEvents: [] },
+      current
+    );
+
+    expect(result.categoryLearningRules).toEqual([{ id: 'from-backup' }]);
+    // 空数组也算「明确带了」,不能被当前值覆盖
+    expect(result.categoryLearningEvents).toEqual([]);
+  });
+
+  it('值是脏数据(非数组)时退回当前值', () => {
+    const result = withCurrentCategoryLearning(
+      { categoryLearningRules: 'oops' as never },
+      current
+    );
+
+    expect(result.categoryLearningRules).toEqual(current.categoryLearningRules);
+  });
+
+  it('当前也没有时给出空数组,而不是 undefined', () => {
+    const result = withCurrentCategoryLearning({}, {});
+
+    expect(result.categoryLearningRules).toEqual([]);
+    expect(result.categoryLearningEvents).toEqual([]);
   });
 });
