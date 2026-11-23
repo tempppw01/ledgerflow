@@ -67,7 +67,9 @@
     "hidePasswordConfirmation": "Hide confirmation password",
     "passwordMismatch": "The two new passwords do not match.",
     "resetEmailSent": "If that email is registered, a password reset email will arrive within a few minutes.",
-    "resetSucceeded": "Your password has been reset. Sign in with the new one."
+    "resetSucceeded": "Your password has been reset. Sign in with the new one.",
+    "networkUnreachable": "Cannot reach the account service. Check your network and try again.",
+    "serviceUnavailable": "The account service is temporarily unavailable. Please try again later."
   },
   "databaseSetup": {
     "initializationTitle": "Initialize data storage",
@@ -2457,7 +2459,19 @@
         "waiting": "Waiting for quotes"
       },
       "historyLoading": "Loading historical data",
-      "historyEmpty": "No historical data"
+      "historyEmpty": "No historical data",
+      "history": {
+        "network": "Cannot reach the market data service. Check your network and try again.",
+        "httpStatus": "The market data service is temporarily unavailable. Please try again later."
+      },
+      "news": {
+        "network": "Cannot reach the news service. Check your network and try again.",
+        "httpStatus": "The news service is temporarily unavailable. Please try again later."
+      },
+      "boards": {
+        "network": "Cannot reach the sector data service. Check your network and try again.",
+        "httpStatus": "The sector data service is temporarily unavailable. Please try again later."
+      }
     },
     "boards": {
       "aria": "A-share sector monitor",
@@ -2696,7 +2710,9 @@
       "monthly": "Monthly",
       "weekly": "Weekly",
       "method": "Method: each planned date rolls forward to the next available trading day; the end value uses the last close before the end date; return = simulated P/L ÷ total invested,",
-      "samples": "Samples"
+      "samples": "Samples",
+      "network": "Cannot reach the market data service. Check your network and try again.",
+      "httpStatus": "The market data service is temporarily unavailable. Please try again later."
     },
     "quote": {
       "up": "Up",
@@ -2707,6 +2723,10 @@
       "netValue": "NAV",
       "return": "Return",
       "holding": "Holding"
+    },
+    "stockSearch": {
+      "network": "Cannot reach the market data service. Check your network and try again.",
+      "httpStatus": "The market data service is temporarily unavailable. Please try again later."
     }
   },
   "investmentAi": {

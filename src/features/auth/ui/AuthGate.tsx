@@ -10,6 +10,7 @@ import {
   type AuthUser
 } from '../../../shared/api/authClient';
 import { APP_LOGO_URL } from '../../../shared/config/app';
+import { describeAuthError } from '../../../shared/lib/authErrorText';
 import { useTFallback } from '../../../shared/lib/useTFallback';
 import { PasswordInput } from '../../../shared/ui/PasswordInput';
 import { AuthContext } from './authContext';
@@ -65,9 +66,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
             : 'login'
       );
     } catch (reason) {
-      setError(
-        reason instanceof Error ? reason.message : tf('auth.statusFailed', '无法连接账号服务。')
-      );
+      // 不能直接把 reason.message 上屏:网络不可达时它是浏览器的
+      // `Failed to fetch`,非 2xx 时可能是 `HTTP 503`。见 describeAuthError。
+      setError(describeAuthError(reason, tf));
     } finally {
       setLoading(false);
     }
@@ -118,9 +119,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
       setUser(result.user);
       setPassword('');
     } catch (reason) {
-      setError(
-        reason instanceof Error ? reason.message : tf('auth.operationFailed', '账号操作失败。')
-      );
+      setError(describeAuthError(reason, tf));
     } finally {
       setSubmitting(false);
     }

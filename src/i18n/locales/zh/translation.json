@@ -67,7 +67,9 @@
     "hidePasswordConfirmation": "隐藏确认密码",
     "passwordMismatch": "两次输入的新密码不一致。",
     "resetEmailSent": "如果该邮箱已注册，密码重置邮件将在几分钟内送达。",
-    "resetSucceeded": "密码已重置，请使用新密码登录。"
+    "resetSucceeded": "密码已重置，请使用新密码登录。",
+    "networkUnreachable": "连接不上账号服务,请检查网络后重试。",
+    "serviceUnavailable": "账号服务暂时不可用,请稍后再试。"
   },
   "databaseSetup": {
     "initializationTitle": "初始化数据存储",
@@ -2457,7 +2459,19 @@
         "waiting": "等待行情"
       },
       "historyLoading": "历史数据加载中",
-      "historyEmpty": "暂无历史数据"
+      "historyEmpty": "暂无历史数据",
+      "history": {
+        "network": "连不上行情服务(请检查网络)，稍后重试。",
+        "httpStatus": "行情服务暂时不可用，请稍后重试。"
+      },
+      "news": {
+        "network": "连不上资讯服务(请检查网络)，稍后重试。",
+        "httpStatus": "资讯服务暂时不可用，请稍后重试。"
+      },
+      "boards": {
+        "network": "连不上板块行情(请检查网络)，稍后重试。",
+        "httpStatus": "板块行情服务暂时不可用，请稍后重试。"
+      }
     },
     "boards": {
       "aria": "A股行业涨跌监控",
@@ -2696,7 +2710,9 @@
       "monthly": "每月",
       "weekly": "每周",
       "method": "计算口径:按计划日在历史日线中顺延到下一个可用交易日买入,期末按结束日前最后收盘价估值;收益率为模拟盈亏 ÷ 累计投入,",
-      "samples": "样本"
+      "samples": "样本",
+      "network": "连不上行情服务(请检查网络)，稍后重试。",
+      "httpStatus": "行情服务暂时不可用，请稍后重试。"
     },
     "quote": {
       "up": "涨",
@@ -2707,6 +2723,10 @@
       "netValue": "净值",
       "return": "收益",
       "holding": "持有"
+    },
+    "stockSearch": {
+      "network": "连不上行情服务(请检查网络)，稍后重试。",
+      "httpStatus": "行情服务暂时不可用，请稍后重试。"
     }
   },
   "investmentAi": {

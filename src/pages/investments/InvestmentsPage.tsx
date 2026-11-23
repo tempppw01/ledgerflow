@@ -19,6 +19,28 @@ import type {
 import { sendAiChatStream } from '../../features/assistant/api/openaiCompatibleClient';
 import { useTranslation } from 'react-i18next';
 import { useTFallback, type TfFallback } from '../../shared/lib/useTFallback';
+import { describeRequestFailure } from '../../shared/lib/requestErrorText';
+
+/**
+ * 行情/资讯类请求失败时的可读文案。
+ *
+ * 这几处原来是 `error instanceof Error ? error.message : '兜底文案'` ——
+ * 于是断网时把浏览器内部的 `Failed to fetch` 直接显示在空状态里(以及 toast 上),
+ * 与登录页是同一个缺陷。统一走 describeRequestFailure:
+ * 服务端给的业务文案保留,网络层失败换成可读文案。
+ */
+function describeMarketFailure(
+  reason: unknown,
+  tf: TfFallback,
+  copy: { network: [string, string]; httpStatus: [string, string] }
+): string {
+  return describeRequestFailure(reason, tf, {
+    networkKey: copy.network[0],
+    networkFallback: copy.network[1],
+    httpStatusKey: copy.httpStatus[0],
+    httpStatusFallback: copy.httpStatus[1]
+  });
+}
 
 /** 跟随界面语言的日期时间 locale(从 useTranslation() 取语言,避免模块级 i18n 单例副作用) */
 function toLocaleLanguage(language: string | undefined): string {
@@ -2191,12 +2213,23 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
         if (cancelled) return;
         setHistoryPoints([]);
         setHistoryStatus('error');
-        setHistoryError(error instanceof Error ? error.message : '大盘历史行情加载失败。');
+        setHistoryError(
+          describeMarketFailure(error, tf, {
+            network: [
+              'investments.market.history.network',
+              '连不上行情服务(请检查网络)，稍后重试。'
+            ],
+            httpStatus: [
+              'investments.market.history.httpStatus',
+              '行情服务暂时不可用，请稍后重试。'
+            ]
+          })
+        );
       });
     return () => {
       cancelled = true;
     };
-  }, [historyRange, historyTarget.identifier, historyTarget.provider]);
+  }, [historyRange, historyTarget.identifier, historyTarget.provider, tf]);
 
   const historyTrend = useMemo<EastmoneyMarketTrendPoint[]>(
     () =>
@@ -2247,7 +2280,12 @@ function MarketHistoryAndSimulator({ secId, indexName }: { secId: string; indexN
       setSimulationStatus('idle');
     } catch (error) {
       setSimulationStatus('error');
-      setSimulationError(error instanceof Error ? error.message : '定投模拟失败，请稍后重试。');
+      setSimulationError(
+        describeMarketFailure(error, tf, {
+          network: ['investments.simulation.network', '连不上行情服务(请检查网络)，稍后重试。'],
+          httpStatus: ['investments.simulation.httpStatus', '行情服务暂时不可用，请稍后重试。']
+        })
+      );
     }
   }
 
@@ -4917,7 +4955,10 @@ export function InvestmentsPage() {
         setMarketNewsStatus('idle');
       } catch (error) {
         if (cancelled) return;
-        const message = error instanceof Error ? error.message : '快讯加载失败，请稍后重试。';
+        const message = describeMarketFailure(error, tf, {
+          network: ['investments.market.news.network', '连不上资讯服务(请检查网络)，稍后重试。'],
+          httpStatus: ['investments.market.news.httpStatus', '资讯服务暂时不可用，请稍后重试。']
+        });
         setMarketNewsError(message);
         setMarketNewsStatus('error');
       }
@@ -4928,7 +4969,7 @@ export function InvestmentsPage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedNewsCategoryId]);
+  }, [selectedNewsCategoryId, tf]);
 
   useEffect(() => {
     try {
@@ -4986,7 +5027,13 @@ export function InvestmentsPage() {
         setMarketBoardsStatus('idle');
       } catch (error) {
         if (cancelled) return;
-        const message = error instanceof Error ? error.message : '板块行情加载失败，请稍后重试。';
+        const message = describeMarketFailure(error, tf, {
+          network: ['investments.market.boards.network', '连不上板块行情(请检查网络)，稍后重试。'],
+          httpStatus: [
+            'investments.market.boards.httpStatus',
+            '板块行情服务暂时不可用，请稍后重试。'
+          ]
+        });
         setMarketBoardsError(message);
         setMarketBoardsStatus('error');
       }
@@ -5067,7 +5114,10 @@ export function InvestmentsPage() {
       setMarketNews(nextNews);
       setMarketNewsStatus('idle');
     } catch (error) {
-      const message = error instanceof Error ? error.message : '快讯加载失败，请稍后重试。';
+      const message = describeMarketFailure(error, tf, {
+        network: ['investments.market.news.network', '连不上资讯服务(请检查网络)，稍后重试。'],
+        httpStatus: ['investments.market.news.httpStatus', '资讯服务暂时不可用，请稍后重试。']
+      });
       setMarketNewsError(message);
       setMarketNewsStatus('error');
       setToastState(message, 'warning');
@@ -5111,7 +5161,10 @@ export function InvestmentsPage() {
       }
       setMarketBoardsStatus('idle');
     } catch (error) {
-      const message = error instanceof Error ? error.message : '板块行情加载失败，请稍后重试。';
+      const message = describeMarketFailure(error, tf, {
+        network: ['investments.market.boards.network', '连不上板块行情(请检查网络)，稍后重试。'],
+        httpStatus: ['investments.market.boards.httpStatus', '板块行情服务暂时不可用，请稍后重试。']
+      });
       setMarketBoardsError(message);
       setMarketBoardsStatus('error');
       setToastState(message, 'warning');
@@ -5315,7 +5368,10 @@ export function InvestmentsPage() {
         setStockLookupError('没有搜到匹配个股，换个名称或代码试试。');
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : '个股搜索失败，请稍后重试。';
+      const message = describeMarketFailure(error, tf, {
+        network: ['investments.stockSearch.network', '连不上行情服务(请检查网络)，稍后重试。'],
+        httpStatus: ['investments.stockSearch.httpStatus', '行情服务暂时不可用，请稍后重试。']
+      });
       setStockLookupError(message);
       setStockLookupStatus('error');
     }
