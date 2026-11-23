@@ -399,8 +399,21 @@ export async function replaceRelationalData(
           );
         }
         for (const item of transactions) {
-          // 账户无效仍然跳过(没有账户的交易无处归属);
-          // 但**分类缺失不再跳过** —— 那是删分类之后的正常状态。
+          /*
+           * 账户无效仍然跳过 —— 这是**已知冲突,不是疏忽**,别顺手改成「置空保留」:
+           * ledger_transactions.account_id 是 NOT NULL,置空会直接违反约束让导入失败。
+           *
+           * 冲突的两端:
+           *   · 界面上删除账户的确认框写着「仅移除账户本身,交易仍会保留」,客户端也确实保留
+           *     (账户列显示 -);但客户端**彻底删除**账户(清空回收站)之后,下一次整份导入
+           *     就会把这里跳过 —— 交易从库里静默消失。SqlDataSyncGate 有 500ms 防抖的自动
+           *     整份同步,所以不必手动恢复备份也会发生。
+           *   · 订阅 / 负债 / 还款 / 持仓遇到无效账户时都是「置空保留」,交易与余额变动是例外,
+           *     而这个例外是表结构逼出来的。
+           * 完整复现与四个备选方案见 server/orphanAccountReferences.test.js 顶部说明。
+           *
+           * 分类缺失不跳过 —— 删分类之后 category_id 有哨兵分类兜底,是另一回事。
+           */
           if (!id(item.id) || !validAccountIds.has(id(item.accountId))) continue;
           await database.run(
             `INSERT INTO ledger_transactions (id, user_id, account_id, category_id, transaction_type, amount, occurred_at, note, source, order_no, merchant_order_no, transaction_status, adjustment_kind, refund_of_transaction_id, trashed_at, created_at, updated_at)
@@ -462,6 +475,7 @@ export async function replaceRelationalData(
           );
         }
         for (const item of balanceChanges) {
+          // 与交易同一处冲突(account_id 也是 NOT NULL),见上面那段说明。
           if (!id(item.id) || !validAccountIds.has(id(item.accountId))) continue;
           await database.run(
             `INSERT INTO ledger_balance_changes (id, user_id, account_id, transaction_id, related_transaction_id, change_type, amount, before_balance, after_balance, note, remark, created_at)
