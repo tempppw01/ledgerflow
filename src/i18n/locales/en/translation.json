@@ -3574,7 +3574,9 @@
         "execution": {
           "detail": {
             "over": "The budget is {percent}% used overall",
-            "under": "The budget is {percent}% used overall, a manageable pace"
+            "under": "The budget is {percent}% used overall, a manageable pace",
+            "projectedOver": "At this pace you will use {percent}% of the budget by month end",
+            "projectedUnder": "At this pace you will use {percent}% of the budget by month end — on track"
           },
           "label": "Execution pace"
         },

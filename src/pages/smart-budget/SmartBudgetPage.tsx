@@ -274,6 +274,17 @@ export function SmartBudgetPage() {
     [trackingRows, monthTotals]
   );
 
+  // pacing 要排在 health 前面:健康度需要拿它的「按节奏外推」结果。
+  const pacing = useMemo(
+    () =>
+      calculateBudgetPacing({
+        monthKey: activeMonthKey,
+        totalBudget: overview.totalBudget,
+        totalSpent: overview.totalSpent
+      }),
+    [activeMonthKey, overview.totalBudget, overview.totalSpent]
+  );
+
   const health = useMemo(
     () =>
       calculateBudgetHealth(
@@ -286,22 +297,17 @@ export function SmartBudgetPage() {
             (max, row) => (row.ratio > max ? row.ratio : max),
             0
           ),
+          // 节奏同样要参与:只看「已经用掉多少」会把 12 天前就用完整月预算判成正常。
+          projectedExecutionRate:
+            pacing && overview.totalBudget > 0
+              ? pacing.projectedSpent / overview.totalBudget
+              : undefined,
           monthIncome: monthTotals.income,
           monthExpense: monthTotals.expense
         },
         tf
       ),
-    [overview.executionRate, overview.overspentCount, monthTotals, trackingRows, tf]
-  );
-
-  const pacing = useMemo(
-    () =>
-      calculateBudgetPacing({
-        monthKey: activeMonthKey,
-        totalBudget: overview.totalBudget,
-        totalSpent: overview.totalSpent
-      }),
-    [activeMonthKey, overview.totalBudget, overview.totalSpent]
+    [overview.executionRate, overview.overspentCount, overview.totalBudget, monthTotals, trackingRows, pacing, tf]
   );
 
   const comparison = useMemo(() => {

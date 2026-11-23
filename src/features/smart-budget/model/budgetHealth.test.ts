@@ -72,6 +72,29 @@ describe('calculateBudgetHealth', () => {
     expect(detail).toContain('138%');
   });
 
+  it('12 天前就用完整月预算,不能判成节奏可控', () => {
+    const params = {
+      // 已经用掉 99.8%:按「已发生」看完全没超,按节奏外推却会超掉 30%。
+      executionRate: 0.998,
+      overspentCount: 0,
+      monthIncome: 10000,
+      monthExpense: 7888
+    };
+
+    const withoutProjection = calculateBudgetHealth(params);
+    const withProjection = calculateBudgetHealth({ ...params, projectedExecutionRate: 1.3 });
+
+    // 修复前:两者都是 100 分 / 状态优秀 / 明细写「整体用掉预算的 100%,节奏可控」,
+    // 而同一个卡片的节奏预测已经提示「月底预计超支 ¥2,388」。
+    expect(withoutProjection.score).toBe(100);
+    expect(withProjection.score).toBeLessThan(withoutProjection.score);
+
+    const execution = withProjection.factors.find((item) => item.key === 'execution');
+    expect(execution?.penalty).toBeGreaterThan(0);
+    expect(execution?.detail).toContain('按现在的节奏');
+    expect(execution?.detail).toContain('130%');
+  });
+
   it('keeps penalising over-budget pace', () => {
     const health = calculateBudgetHealth({
       executionRate: 1.4,

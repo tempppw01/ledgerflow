@@ -3574,7 +3574,9 @@
         "execution": {
           "detail": {
             "over": "整体已用掉预算的 {percent}%",
-            "under": "整体用掉预算的 {percent}%，节奏可控"
+            "under": "整体用掉预算的 {percent}%，节奏可控",
+            "projectedOver": "按现在的节奏，月底预计用掉预算的 {percent}%",
+            "projectedUnder": "按现在的节奏，月底预计用掉预算的 {percent}%，节奏可控"
           },
           "label": "执行节奏"
         },

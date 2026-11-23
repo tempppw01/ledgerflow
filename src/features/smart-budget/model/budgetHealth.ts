@@ -40,6 +40,14 @@ export function calculateBudgetHealth(
     monthExpense: number;
     /** 超出预算最多的那个分类的执行率(1 = 刚好用完)。缺省按 0 处理,不额外扣分。 */
     worstOverspendRatio?: number;
+    /**
+     * 按当前节奏外推到月底的执行率(1 = 刚好用完预算)。
+     *
+     * 只看「已经用掉多少」会把「12 天前就用完整月预算」判成节奏正常:
+     * 执行率 99.8% 不扣分,而同一张卡片的节奏预测已经写着「月底预计超支 ¥2,388」。
+     * 传了这个值就按它判节奏;不传则退回 executionRate(历史月份两者等价)。
+     */
+    projectedExecutionRate?: number;
   },
   t: BudgetHealthTranslator = identityHealthTranslator
 ): BudgetHealth {
@@ -51,6 +59,11 @@ export function calculateBudgetHealth(
   const worstOverspendRatio = Number.isFinite(params.worstOverspendRatio)
     ? Math.max(0, Number(params.worstOverspendRatio))
     : 0;
+  const projectedExecutionRate = Number.isFinite(params.projectedExecutionRate)
+    ? Math.max(0, Number(params.projectedExecutionRate))
+    : executionRate;
+  const usingProjection = projectedExecutionRate !== executionRate;
+
   /*
    * 只按「几个分类超支」计数是不够的:一个分类超到 238% 和一个分类超到 101%
    * 拿一样的扣分,于是「固定支出超 ¥4,143」旁边照样写着「预算执行得很稳」。
@@ -60,7 +73,7 @@ export function calculateBudgetHealth(
     Math.min(overspentCount * 10, 40) + Math.min(Math.max(worstOverspendRatio - 1, 0) * 20, 30),
     70
   );
-  const overRate = Math.max(executionRate - 1, 0);
+  const overRate = Math.max(projectedExecutionRate - 1, 0);
   // 只惩罚超支,不惩罚省钱。这里原本还加了 underRate * 100 * 0.15 一项,
   // 于是「一分钱没花」也会被扣 15 分,和上面那句注释以及下方明细文案
   // (「节奏可控」)都矛盾 —— 界面上会出现「节奏可控  −15」这种自相矛盾的组合。
@@ -97,16 +110,24 @@ export function calculateBudgetHealth(
       key: 'execution',
       label: t('smartBudget.health.factor.execution.label', '执行节奏'),
       penalty: Math.round(executionPenalty),
+      /*
+       * 必须连 **key** 一起换,不能只换 fallback:旧 key 在语言包里已经有值,
+       * tf() 会优先取语言包,只改 fallback 的话外推文案根本不会出现。
+       */
       detail:
-        executionRate > 1
+        projectedExecutionRate > 1
           ? t(
-              'smartBudget.health.factor.execution.detail.over',
-              '整体已用掉预算的 {percent}%'
-            ).replace('{percent}', String((executionRate * 100).toFixed(0)))
+              usingProjection
+                ? 'smartBudget.health.factor.execution.detail.projectedOver'
+                : 'smartBudget.health.factor.execution.detail.over',
+              '按现在的节奏,月底预计用掉预算的 {percent}%'
+            ).replace('{percent}', String((projectedExecutionRate * 100).toFixed(0)))
           : t(
-              'smartBudget.health.factor.execution.detail.under',
+              usingProjection
+                ? 'smartBudget.health.factor.execution.detail.projectedUnder'
+                : 'smartBudget.health.factor.execution.detail.under',
               '整体用掉预算的 {percent}%，节奏可控'
-            ).replace('{percent}', String((executionRate * 100).toFixed(0)))
+            ).replace('{percent}', String((projectedExecutionRate * 100).toFixed(0)))
     },
     {
       key: 'balance',
