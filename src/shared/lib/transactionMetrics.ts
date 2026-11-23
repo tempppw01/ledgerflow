@@ -15,6 +15,11 @@ export function isTransactionRefundLike(tx: TransactionItem): boolean {
   return tx.adjustmentKind === 'refund' || tx.adjustmentKind === 'reversal';
 }
 
+/**
+ * 支出类类型。注意:预算型交易在这里**算**支出,而首页的 `isActualExpenseType`
+ * (features/dashboard/model/utils.ts)不算 —— 两处口径不一致,尚未做产品决策,
+ * 详见那边的注释(含实测数据)。
+ */
 function isExpenseLike(type: TransactionType): boolean {
   return type === 'expense' || type === 'budget' || type === 'repayment';
 }

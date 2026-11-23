@@ -63,6 +63,20 @@ export function monthLabel(date: Date): string {
   return `${date.getMonth() + 1}月`;
 }
 
+/**
+ * 「实际支出」= 支出 + 还款,**不含预算型交易**。
+ *
+ * 注意:这和 src/shared/lib/transactionMetrics.ts 里的 `isExpenseLike`(支出 + 预算 + 还款)
+ * 口径不同,而 `summarizeTransactions` 用的是后者。于是用户一旦录入「预算」型交易,
+ * 首页自己就前后不一致:
+ *   · 页头「本月结余」把它当支出(实测记一笔 ¥100 后,结余从 1.86万 变 1.85万)
+ *   · 「钱都去哪了」的支出构成与「花钱节奏」的周支出都不显示它
+ *     (构成各分类合计仍是 ¥7,764.37,比当月实际支出少 ¥100)
+ *
+ * 「预算」型交易除了类型下拉里的一个选项之外,没有任何功能、没有测试、文档里也没定义,
+ * 库里演示账本 0 笔 —— 所以这里**不擅自统一**:预算是「钱真的花出去了」还是
+ * 「把钱划进某个额度」,是一条产品决策。定下来之后,要么改这里,要么两边都改用共用谓词。
+ */
 export function isActualExpenseType(type: 'expense' | 'income' | 'budget' | 'repayment'): boolean {
   return type === 'expense' || type === 'repayment';
 }
