@@ -54,6 +54,19 @@ export function resolveSubscriptionStatus(
 ): SubscriptionItem['status'] {
   if (item.status === 'paused') return 'paused';
 
+  /*
+   * **到期日优先,这是刻意的**(有专门的测试钉着:subscriptionStatus.test.ts
+   * 「expireDate 优先于 renewalDate」)。订阅有两个独立日期,分别回答两个问题:
+   *
+   *   · 到期日 expireDate →「这份订阅还生效吗」→ 这个状态徽标(正常/即将到期/已到期);
+   *   · 续费日 renewalDate →「下一笔钱什么时候扣」→ 卡片上的「续费/提醒 + 日期」,
+   *     以及首页「未来与待办」的「续费已逾期」和财务分析的 due-soon 计数。
+   *
+   * 两个日期同时存在且不一致时,同一订阅会在两屏得到不同结论
+   * (实测:续费日已过、到期日在未来 → 订阅页显示「正常」,首页显示「续费已逾期」)。
+   * 那是两个不同的问题,不是两个口径 —— 所以**不要**为了「统一」把这里改成续费日优先,
+   * 也不要反过来去改那两处。真要统一,先决定这两个字段在产品上各自代表什么。
+   */
   const target = item.expireDate || item.renewalDate;
   if (!target) return 'active';
 

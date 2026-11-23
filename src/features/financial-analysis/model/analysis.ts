@@ -480,6 +480,9 @@ function calculateDueSoonSubscriptions(subscriptions: SubscriptionItem[]): numbe
   const today = startOfToday();
   const deadline = addDays(today, 14);
   return subscriptions.filter((item) => {
+    // 这里问的是「续费」问题(未来 14 天内该扣钱的有几个),所以用续费日;
+    // 订阅页的状态徽标问的是「到期」问题(看 expireDate,窗口 7 天)—— 两者刻意不同,
+    // 详见 src/features/subscriptions/model/subscriptionStatus.ts 里那段说明。
     const target = item.renewalDate || item.expireDate;
     return Boolean(target) && isInRange(String(target), today, deadline);
   }).length;
