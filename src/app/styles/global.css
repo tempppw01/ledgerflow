@@ -6878,6 +6878,14 @@ small.mono {
   overflow: auto;
 }
 
+/* 删除确认框里「退款会一并移入回收站」的补充说明:独立成行、弱化一档。 */
+.dialog-cascade-note {
+  display: block;
+  margin-top: 8px;
+  color: var(--color-danger);
+  font-size: var(--font-sm);
+}
+
 .confirm-flow-copy {
   display: grid;
   gap: 12px;

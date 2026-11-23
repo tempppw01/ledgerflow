@@ -4202,7 +4202,8 @@
       "deleteDescription": "This transaction will be moved to the recycle bin first. You can restore or permanently delete it there afterwards. Continue?",
       "bulkDeleteConfirm": "Move all",
       "deleteConfirm": "Move to recycle bin",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "refundCascade": "{count} linked refund/reversal rows will be moved to the recycle bin as well."
     },
     "toast": {
       "undo": "Undo"

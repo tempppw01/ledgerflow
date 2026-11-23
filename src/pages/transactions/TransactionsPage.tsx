@@ -1576,6 +1576,24 @@ export function TransactionsPage() {
     setPendingDeleteIds(selectedIds);
   };
 
+  /**
+   * 删除原交易会连带把挂在它上面的退款/冲正一起移入回收站(否则退款会变成
+   * 凭空多出来的收入)。这里先数一下,好在确认框里说清楚「还会少几条」。
+   */
+  const pendingDeleteCascadeRefundCount = (() => {
+    if (pendingDeleteIds.length === 0) {
+      return 0;
+    }
+    const selected = new Set(pendingDeleteIds);
+    return transactions.filter(
+      (item) =>
+        !selected.has(item.id) &&
+        Boolean(item.refundOfTransactionId) &&
+        selected.has(item.refundOfTransactionId as string) &&
+        (item.adjustmentKind === 'refund' || item.adjustmentKind === 'reversal')
+    ).length;
+  })();
+
   const applyBulkUpdate = (payload: { categoryId?: string; accountId?: string }) => {
     if (selectedIds.length === 0) {
       return;
@@ -3392,12 +3410,23 @@ export function TransactionsPage() {
             : tf('txPage.confirm.deleteTitle', '确认移入回收站')
         }
         description={
-          pendingDeleteIds.length > 1
-            ? `${tf('txPage.confirm.bulkDeleteHead', `即将把 `)}${pendingDeleteIds.length}${tf('txPage.confirm.bulkDeleteTail', ` 条交易移入回收站。你之后仍可在回收站恢复或彻底删除。是否继续？`)}`
-            : tf(
-                'txPage.confirm.deleteDescription',
-                '该交易将先移入回收站。你之后仍可在回收站恢复或彻底删除。是否继续？'
-              )
+          <>
+            {pendingDeleteIds.length > 1
+              ? `${tf('txPage.confirm.bulkDeleteHead', `即将把 `)}${pendingDeleteIds.length}${tf('txPage.confirm.bulkDeleteTail', ` 条交易移入回收站。你之后仍可在回收站恢复或彻底删除。是否继续？`)}`
+              : tf(
+                  'txPage.confirm.deleteDescription',
+                  '该交易将先移入回收站。你之后仍可在回收站恢复或彻底删除。是否继续？'
+                )
+            }
+            {pendingDeleteCascadeRefundCount > 0 ? (
+              <span className="dialog-cascade-note">
+                {tf(
+                  'txPage.confirm.refundCascade',
+                  '其中 {count} 笔退款/冲正会一并移入回收站。'
+                ).replace('{count}', String(pendingDeleteCascadeRefundCount))}
+              </span>
+            ) : null}
+          </>
         }
         confirmText={
           pendingDeleteIds.length > 1

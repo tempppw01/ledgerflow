@@ -4202,7 +4202,8 @@
       "deleteDescription": "该交易将先移入回收站。你之后仍可在回收站恢复或彻底删除。是否继续？",
       "bulkDeleteConfirm": "确认移入回收站",
       "deleteConfirm": "移入回收站",
-      "cancel": "取消"
+      "cancel": "取消",
+      "refundCascade": "其中 {count} 笔退款/冲正会一并移入回收站。"
     },
     "toast": {
       "undo": "撤销"

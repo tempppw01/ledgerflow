@@ -960,21 +960,36 @@ export const useFinanceStore = create<FinanceState>()(
         }
       },
       removeTransaction: (id) => {
-        let trashedRow: TransactionItem | null = null;
+        let trashedRows: TransactionItem[] = [];
         set((s) => {
           const target = s.transactions.find((item) => item.id === id);
           if (!target) {
             return s;
           }
-          trashedRow = markTrashedAt(target);
-          const transactions = s.transactions.filter((item) => item.id !== id);
+          /*
+           * 退款 / 冲正单是这笔交易的附属记录,不能留在账上。
+           * 原先只移送目标这一行:删掉一笔 ¥100 的支出、留下 ¥40 的退款,
+           * 余额反而从 ¥1000 变成 ¥1040 —— 退款成了凭空多出来的收入
+           * (演示账本里「家居小物 ¥390.55」就是一对,删原交易会凭空多出 ¥390.55)。
+           */
+          const dependents = s.transactions.filter(
+            (item) =>
+              item.id !== id &&
+              item.refundOfTransactionId === id &&
+              (item.adjustmentKind === 'refund' || item.adjustmentKind === 'reversal')
+          );
+          const removingIds = new Set([id, ...dependents.map((item) => item.id)]);
+          trashedRows = [target, ...dependents].map((item) => markTrashedAt(item));
+          const transactions = s.transactions.filter((item) => !removingIds.has(item.id));
           return {
             transactions,
-            trashedTransactions: ensureUniqueById([...s.trashedTransactions, trashedRow]),
+            trashedTransactions: ensureUniqueById([...s.trashedTransactions, ...trashedRows]),
             ...rebuildStateSlices(s.accounts, transactions, s.balanceChangeEntries)
           };
         });
-        void syncChangeIfNeeded({ entity: 'transactions', action: 'delete', id });
+        trashedRows.forEach((row) => {
+          void syncChangeIfNeeded({ entity: 'transactions', action: 'delete', id: row.id });
+        });
       },
       restoreTransaction: (id) => {
         let restoredRow: TransactionItem | null = null;

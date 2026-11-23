@@ -150,4 +150,51 @@ describe('退款金额不变量:已退总额不得超过原交易金额', () => 
     const after = useFinanceStore.getState().transactions.find((item) => item.id === 'tx-1');
     expect(after?.amount).toBe(50);
   });
+
+  /*
+   * 退款单是原交易的附属记录。原先删除原交易只移送它自己一行,
+   * 留下的退款就成了一笔凭空的收入:¥1000 初始余额、删掉 ¥100 的支出之后
+   * 账上是 ¥1040 —— 退了的 ¥40 变成白捡的钱(演示账本里的
+   * 「家居小物 ¥390.55」正是这样一对)。
+   */
+  it('删除原交易时,挂在它上面的退款一并移入回收站,余额不会凭空变多', () => {
+    useFinanceStore.getState().refundTransaction({ transactionId: 'tx-1', amount: 40 });
+
+    const refundId = useFinanceStore
+      .getState()
+      .transactions.find((item) => item.refundOfTransactionId === 'tx-1')?.id;
+    expect(refundId).toBeDefined();
+
+    useFinanceStore.getState().removeTransaction('tx-1');
+
+    const state = useFinanceStore.getState();
+    expect(state.transactions).toHaveLength(0);
+    expect(state.trashedTransactions.map((item) => item.id).sort()).toEqual(
+      ['tx-1', refundId as string].sort()
+    );
+    // 两笔都离开主列表后,余额回到初始值:既没有那笔支出,也没有那笔退款。
+    expect(state.accounts[0].balance).toBe(1000);
+  });
+
+  it('删除原交易不会碰别笔交易的退款', () => {
+    useFinanceStore.setState({
+      transactions: [
+        ...useFinanceStore.getState().transactions,
+        expense({ id: 'tx-2', amount: 200, note: '另一笔' }),
+        expense({
+          id: 'ref-2',
+          amount: 50,
+          adjustmentKind: 'refund',
+          refundOfTransactionId: 'tx-2',
+          note: '退款 2'
+        })
+      ] as TransactionItem[]
+    });
+    useFinanceStore.getState().refundTransaction({ transactionId: 'tx-1', amount: 40 });
+
+    useFinanceStore.getState().removeTransaction('tx-1');
+
+    const activeIds = useFinanceStore.getState().transactions.map((item) => item.id).sort();
+    expect(activeIds).toEqual(['ref-2', 'tx-2']);
+  });
 });
