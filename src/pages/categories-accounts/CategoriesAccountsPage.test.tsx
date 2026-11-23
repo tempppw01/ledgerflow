@@ -262,6 +262,74 @@ describe('CategoriesAccountsPage', () => {
     });
   });
 
+  it('改名撞上同级已有分类时拦下来,不做静默合并', async () => {
+    const user = userEvent.setup();
+    financeStoreMock.state.categories = [
+      { id: 'cat-other', name: '其他', kind: 'expense', icon: '📦' },
+      { id: 'cat-lunch', name: '午餐外卖', kind: 'expense', icon: '🍜' }
+    ] as never;
+    financeStoreMock.state.transactions = [] as never;
+    financeStoreMock.state.updateCategory.mockClear();
+
+    render(
+      <MemoryRouter>
+        <CategoriesAccountsPage />
+      </MemoryRouter>
+    );
+
+    const node = (await screen.findByText('午餐外卖')).closest('.category-node') as HTMLElement;
+    await user.click(within(node).getByRole('button', { name: '编辑' }));
+    const nameInput = screen.getByLabelText('重命名分类 午餐外卖');
+    await user.clear(nameInput);
+    await user.type(nameInput, '其他');
+    await user.click(within(node).getByRole('button', { name: '保存' }));
+
+    /*
+     * 过去这里直接写库:界面上立刻出现两个「其他」,
+     * 下次载入时 sanitizeCategoriesAndTransactions 再把它俩静默合并,
+     * 被合并那个分类下的交易也跟着换了归属。
+     */
+    expect(financeStoreMock.state.updateCategory).not.toHaveBeenCalled();
+    expect(screen.getByText(/已存在/)).toBeInTheDocument();
+    // 仍停在改名状态,用户改个名字就能继续。
+    expect(screen.getByLabelText('重命名分类 午餐外卖')).toBeInTheDocument();
+  });
+
+  it('把子分类挪到已经有同名子分类的上级下时也拦下来', async () => {
+    const user = userEvent.setup();
+    financeStoreMock.state.categories = [
+      { id: 'cat-food', name: '餐饮', kind: 'expense', icon: '🍜' },
+      { id: 'cat-food-takeout', name: '外卖', kind: 'expense', parentId: 'cat-food' },
+      { id: 'cat-work', name: '工作餐', kind: 'expense', icon: '💼' },
+      { id: 'cat-work-takeout', name: '外卖', kind: 'expense', parentId: 'cat-work' }
+    ] as never;
+    financeStoreMock.state.transactions = [] as never;
+    financeStoreMock.state.updateCategory.mockClear();
+
+    render(
+      <MemoryRouter>
+        <CategoriesAccountsPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('工作餐');
+    const node = screen.getByText('工作餐').closest('.category-node') as HTMLElement;
+    const child = Array.from(
+      document.querySelectorAll('.category-node')
+    ).find((el) => el.textContent?.includes('外卖') && el !== node) as HTMLElement | undefined;
+    if (!child) throw new Error('child category node not found');
+
+    await user.click(within(child).getByRole('button', { name: '编辑' }));
+    await user.selectOptions(
+      screen.getByLabelText('设置分类 外卖 的上级'),
+      'cat-work'
+    );
+    await user.click(within(child).getByRole('button', { name: '保存' }));
+
+    expect(financeStoreMock.state.updateCategory).not.toHaveBeenCalled();
+    expect(screen.getByText(/已存在/)).toBeInTheDocument();
+  });
+
   it('标签支持重命名并同步到交易', async () => {
     const user = userEvent.setup();
     financeStoreMock.state.categories = [] as never;

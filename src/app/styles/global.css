@@ -9788,6 +9788,9 @@ body.exchange-resizing {
 .category-node.is-editing {
   background: var(--color-bg-subtle);
   padding: 10px 0;
+  /* 报错要独占一行:和表单挤在同一行时,一句「分类「X」已存在」
+     会被压成 150px 宽的三行窄条,读起来比没有还费劲。 */
+  flex-wrap: wrap;
 }
 
 .category-node-main {
@@ -10008,6 +10011,7 @@ body.exchange-resizing {
 }
 
 .category-action-error {
+  flex: 1 1 100%;
   margin: 4px 0 0;
   color: var(--color-danger);
   font-size: var(--font-xs);

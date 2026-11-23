@@ -374,12 +374,16 @@ function categoryNameKey(raw: string): string {
 export function findDuplicateCategory(
   categories: Category[],
   name: string,
-  parentId?: string
+  parentId?: string,
+  excludeId?: string
 ): Category | undefined {
   const key = categoryNameKey(name);
   const targetParentId = parentId || '';
   return categories.find(
-    (item) => categoryNameKey(item.name) === key && (item.parentId || '') === targetParentId
+    (item) =>
+      item.id !== excludeId &&
+      categoryNameKey(item.name) === key &&
+      (item.parentId || '') === targetParentId
   );
 }
 

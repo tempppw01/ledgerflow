@@ -567,13 +567,29 @@ export function CategoriesAccountsPage() {
       );
       return;
     }
+    // 父级留空表示提升为一级分类;禁止把自己设成自己的父级。
+    const nextParentId =
+      editCategoryParentId && editCategoryParentId !== editingCategoryId
+        ? editCategoryParentId
+        : undefined;
+    /*
+     * 改名或换上级都可能撞上已有的同级同名分类。
+     * 过去这里直接写库:界面上先出现两个同名分类,下次载入时
+     * sanitizeCategoriesAndTransactions 再把它俩静默合并 ——
+     * 被合并那个分类下的交易也跟着换了归属,用户完全不知情。
+     */
+    if (findDuplicateCategory(categories, normalized, nextParentId, editingCategoryId)) {
+      setCategoryActionError(
+        tf(
+          'categoriesAccounts.error.categoryExists',
+          '分类「{name}」已存在\uFF0C换个名字试试。'
+        ).replace('{name}', normalized)
+      );
+      return;
+    }
     updateCategory(editingCategoryId, {
       name: normalized,
-      // 父级留空表示提升为一级分类;禁止把自己设成自己的父级。
-      parentId:
-        editCategoryParentId && editCategoryParentId !== editingCategoryId
-          ? editCategoryParentId
-          : undefined
+      parentId: nextParentId
     });
     cancelEditCategory();
   };
