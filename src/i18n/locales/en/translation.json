@@ -1212,7 +1212,11 @@
         "saveFailed": "Could not save. Please try again."
       },
       "suggestionMiddle": "” · category “",
-      "suggestionSuffix": "”."
+      "suggestionSuffix": "”.",
+      "notice": {
+        "updated": "Transaction updated.",
+        "created": "Transaction added."
+      }
     }
   },
   "finance": {

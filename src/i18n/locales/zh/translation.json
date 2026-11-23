@@ -1212,7 +1212,11 @@
         "saveFailed": "保存失败,请稍后重试。"
       },
       "suggestionMiddle": "」，分类「",
-      "suggestionSuffix": "」。"
+      "suggestionSuffix": "」。",
+      "notice": {
+        "updated": "已更新这笔记录。",
+        "created": "已新增这笔记录。"
+      }
     }
   },
   "finance": {

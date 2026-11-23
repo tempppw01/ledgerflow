@@ -537,7 +537,20 @@ export function TransactionEditPage() {
       addTransaction(payload);
       clearTransactionDraft(draftStorageId);
     }
-    navigate('/transactions');
+    /*
+     * 保存成功后跳回列表,并把「保存了什么」交给列表页去提示。
+     *
+     * 这里原来只是 `navigate('/transactions')` —— 点了保存、页面跳走,没有任何反馈,
+     * 用户只能自己回列表里翻找那笔改没改(失败时反而有提示:上面的 catch 会显示原因)。
+     * 成功路径比失败路径还安静,是不对的。
+     */
+    navigate('/transactions', {
+      state: {
+        notice: id
+          ? tf('transactions.edit.notice.updated', '已更新这笔记录。')
+          : tf('transactions.edit.notice.created', '已新增这笔记录。')
+      }
+    });
   }
 
   return (

@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTFallback, type TfFallback } from '../../shared/lib/useTFallback';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
 import { extractJsonString } from '../../features/assistant/workbench/workbenchUtils';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
@@ -393,6 +393,7 @@ function buildDuplicateGroups(rows: TransactionRowView[]): string[][] {
 
 export function TransactionsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t, i18n } = useTranslation();
   const tf = useTFallback();
   const columnOptions = useMemo(() => buildColumnOptions(tf), [tf]);
@@ -972,6 +973,21 @@ export function TransactionsPage() {
     setLastAddedTransactionId(null);
     setToast({ visible: true, message, variant });
   }, []);
+
+  /**
+   * 编辑页保存成功后通过路由 state 传来一条提示(见 TransactionEditPage 的保存逻辑)。
+   *
+   * 编辑页原来保存成功只是跳回列表、没有任何反馈,用户只能自己翻找那笔改没改;
+   * 而失败时反而有提示 —— 成功路径比失败路径还安静,是不对的。
+   *
+   * 消费后立刻把 state 清掉:否则浏览器后退/前进回到这条历史记录时,toast 会重复弹。
+   */
+  useEffect(() => {
+    const notice = (location.state as { notice?: string } | null)?.notice;
+    if (!notice) return;
+    showToast(notice, 'success');
+    navigate(location.pathname + location.search, { replace: true, state: null });
+  }, [location.state, location.pathname, location.search, navigate, showToast]);
 
   const handleAttachmentUploaded = useCallback(
     (attachment: TransactionAttachmentItem) => {
