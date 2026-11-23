@@ -334,3 +334,55 @@ describe('CategoriesAccountsPage', () => {
     });
   });
 });
+
+/*
+ * 电子钱包必须出现在「资金账户」列表里。
+ *
+ * 这条盯的是一个真实漏网:页面用 GENERAL_ACCOUNT_TYPES 过滤列表,而它是在
+ * 2026-02 写的(当时把 credit/liability/receivable 移到还款页),ewallet 是
+ * 2026-11 才补进域类型的 —— 于是支付宝、微信钱包这类账户在「账户与分类」里
+ * 完全不显示:看不到、改不了名、也删不掉。
+ *
+ * 原有用例的 fixture 把支付宝/微信写成 type: 'virtual'(在允许列表内),
+ * 正好掩盖了这个问题,所以这里显式用 'ewallet'。
+ */
+it('电子钱包(ewallet)账户出现在资金账户列表里', async () => {
+  const user = userEvent.setup();
+  const originalAccounts = financeStoreMock.state.accounts;
+  financeStoreMock.state.accounts = [
+    {
+      id: 'acc-ewallet',
+      name: '支付宝',
+      type: 'ewallet',
+      initialBalance: 100,
+      balance: 100,
+      sortOrder: 1
+    },
+    {
+      id: 'acc-cash',
+      name: '现金',
+      type: 'cash',
+      initialBalance: 50,
+      balance: 50,
+      sortOrder: 2
+    }
+  ] as never;
+
+  try {
+    render(
+      <MemoryRouter>
+        <CategoriesAccountsPage />
+      </MemoryRouter>
+    );
+
+    // 两个都算「资金账户」,tab 上的计数应当为 2
+    await user.click(await screen.findByRole('button', { name: /资金账户 2/ }));
+    expect(await screen.findByText('支付宝')).toBeInTheDocument();
+    // 「现金」既是账户名也是类型标签,用 getAllByText 避免重名歧义
+    expect(screen.getAllByText('现金').length).toBeGreaterThan(0);
+    // 类型标签用「电子钱包」,而不是原始英文枚举
+    expect(screen.getByText('电子钱包')).toBeInTheDocument();
+  } finally {
+    financeStoreMock.state.accounts = originalAccounts;
+  }
+});

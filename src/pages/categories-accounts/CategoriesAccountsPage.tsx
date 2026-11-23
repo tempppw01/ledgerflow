@@ -33,7 +33,17 @@ function isValidName(name: string) {
   return name.length >= 1 && name.length <= 24;
 }
 
-const GENERAL_ACCOUNT_TYPES: AccountType[] = ['cash', 'debit', 'savings', 'virtual'];
+/*
+ * 「资金账户」列表包含哪些类型。
+ *
+ * 不含 credit / liability / receivable —— 2026-02 的重构把它们有意移到了还款页统一管理。
+ *
+ * **ewallet 必须在这里**:它是后来(2026-11-22)才补进域类型的(电子钱包),
+ * 而这个过滤写在那之前,于是支付宝、微信钱包这类账户在「账户与分类」里
+ * 完全不显示 —— 实测一个账本 300 笔交易里有 240 笔挂在这种账户上,
+ * 用户却看不到、也没法改名或删除它们。
+ */
+const GENERAL_ACCOUNT_TYPES: AccountType[] = ['cash', 'debit', 'savings', 'virtual', 'ewallet'];
 const CATEGORY_COLORS = [
   '#f97316',
   '#ec4899',
