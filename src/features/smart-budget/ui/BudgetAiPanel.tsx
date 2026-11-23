@@ -2,6 +2,7 @@ import { formatCurrency } from '../../../shared/lib/format';
 import { useTFallback } from '../../../shared/lib/useTFallback';
 import { BudgetTrackingRow } from '../model/budgetInsights';
 import { resolveBudgetCategoryLabel } from '../model/budgetCategoryLabels';
+import { formatExecutionRatePercent } from '../model/rateDisplay';
 import { BudgetRefreshIcon, BudgetSparkIcon } from './budgetIcons';
 
 export type BudgetAiAdvice = {
@@ -75,7 +76,7 @@ export function BudgetAiPanel(props: BudgetAiPanelProps) {
           <p>
             <strong>{resolveBudgetCategoryLabel(topOverspent.category, tf)}</strong>{' '}
             {tf('smartBudget.aiPanel.usedPrefix', '已经花到预算的')}{' '}
-            <strong>{(topOverspent.ratio * 100).toFixed(0)}%</strong>
+            <strong>{formatExecutionRatePercent(topOverspent.ratio)}</strong>
           </p>
           <p>
             {tf('smartBudget.aiPanel.nextMonthPrefix', '下个月可以把预算调到')}{' '}

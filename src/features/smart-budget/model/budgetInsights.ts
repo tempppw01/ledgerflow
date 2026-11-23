@@ -97,7 +97,14 @@ export function buildBudgetTrackingRows(params: {
       category,
       budgetAmount,
       spentAmount: rounded,
-      ratio: budgetAmount > 0 ? rounded / budgetAmount : 0,
+      /*
+       * 预算为 0 却有支出时,执行率**不是 0** —— 那是「无上限」。
+       * 原先这里固定给 0,于是「预算 ¥0、花了 ¥500」的分类会同时显示
+       * 「超支」徽标和「执行率 0.0%」+ 空进度条,同一行自相矛盾
+       * (预算编辑器允许把某个分类改成 0,所以这条路是真的能走到的)。
+       * 用 Infinity 表示「无上限」,formatExecutionRatePercent 已经会渲染成 >999%。
+       */
+      ratio: budgetAmount > 0 ? rounded / budgetAmount : rounded > 0 ? Number.POSITIVE_INFINITY : 0,
       diff,
       isOverspent: diff > 0
     };

@@ -1,6 +1,7 @@
 import { formatCurrency } from '../../../shared/lib/format';
 import { useTFallback } from '../../../shared/lib/useTFallback';
 import { resolveBudgetCategoryLabel } from '../model/budgetCategoryLabels';
+import { formatExecutionRatePercent } from '../model/rateDisplay';
 import {
   BudgetAnswers,
   BudgetRecommendation,
@@ -357,7 +358,7 @@ export function BudgetWizard(props: BudgetWizardProps) {
                         />
                       </div>
                     </td>
-                    <td className="sb-number">{(row.ratio * 100).toFixed(1)}%</td>
+                    <td className="sb-number">{formatExecutionRatePercent(row.ratio)}</td>
                   </tr>
                 ))}
               </tbody>
