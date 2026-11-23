@@ -9693,6 +9693,75 @@ body.exchange-resizing {
   border-top: 1px solid var(--color-divider);
 }
 
+/*
+ * 行内「新增子分类」。
+ *
+ * 原来加子分类要把父级塞进页面顶部的表单再滚回去输入;现在点「+子分类」就在
+ * 该分类下方展开一行输入框,回车即建。缩进与子分类对齐(26px),视觉上属于父级。
+ */
+.category-node.is-inline-add {
+  display: block;
+  padding-left: 26px;
+  min-height: 0;
+  padding-top: 4px;
+  padding-bottom: 8px;
+}
+
+.category-inline-add-form {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.category-inline-add-form input {
+  flex: 1 1 200px;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.category-inline-add-form input:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 55%, transparent);
+  outline-offset: 1px;
+}
+
+.category-inline-add-form button {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.category-inline-add-form button.primary {
+  border-color: transparent;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* 展开后没有子分类时的交代:避免「展开了却什么都没有」看起来像坏了。 */
+.category-empty-children {
+  background: transparent;
+  border-top: 0;
+  min-height: 32px;
+  color: var(--color-text-tertiary);
+}
+
+.category-empty-children small {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-xs);
+}
+
 .category-node.is-child {
   min-height: 40px;
   padding-left: 26px;

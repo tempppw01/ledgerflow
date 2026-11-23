@@ -3371,7 +3371,11 @@
     "tagLibraryTitle": "标签库",
     "toolsSummary": "管理",
     "totalBalance": "当前总余额",
-    "viewCategoryTxAria": "查看分类 {name} 的 {count} 条交易"
+    "viewCategoryTxAria": "查看分类 {name} 的 {count} 条交易",
+    "inlineChildPlaceholder": "子分类名称，回车即添加",
+    "inlineChildAria": "在 {name} 下新增子分类",
+    "emptyChildrenHint": "还没有子分类，点右侧「+子分类」添加",
+    "inlineChildSubmit": "添加子分类"
   },
   "smartBudget": {
     "action": {

@@ -1,9 +1,17 @@
 import { createHash } from 'node:crypto';
 
+/*
+ * 会被加上用户作用域前缀的字段。
+ *
+ * parentId 一度漏在这里:子分类的 parentId 不做作用域化,而分类 id 做了,
+ * 于是「父级是否存在于本账本」的校验永远为假 —— 写入时被落成 null,
+ * 刷新后子分类就变成了一级分类(换设备同样丢)。
+ */
 const ID_KEYS = new Set([
   'id',
   'accountId',
   'categoryId',
+  'parentId',
   'transactionId',
   'relatedTransactionId',
   'refundOfTransactionId',

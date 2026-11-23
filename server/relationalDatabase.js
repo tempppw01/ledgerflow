@@ -3,7 +3,7 @@ import { getDatabaseDataDirectory, getSqliteDatabasePath } from './databaseProvi
 import { withMysqlConnection } from './databaseConnection.js';
 import { openSqliteDatabase } from './sqliteDatabase.js';
 
-export const RELATIONAL_SCHEMA_VERSION = 6;
+export const RELATIONAL_SCHEMA_VERSION = 7;
 const DEFAULT_USER_ID = 'default';
 
 const SQLITE_MIGRATION_TABLE =
@@ -13,7 +13,7 @@ const SQLITE_V1_TABLES = [
   `CREATE TABLE IF NOT EXISTS ledger_users (id TEXT PRIMARY KEY, display_name TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS ledger_user_settings (user_id TEXT NOT NULL, setting_key TEXT NOT NULL, setting_value TEXT NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY (user_id, setting_key), FOREIGN KEY (user_id) REFERENCES ledger_users(id))`,
   `CREATE TABLE IF NOT EXISTS ledger_accounts (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, account_type TEXT, initial_balance REAL NOT NULL DEFAULT 0, balance REAL NOT NULL DEFAULT 0, sort_order INTEGER NOT NULL DEFAULT 0, trashed_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES ledger_users(id))`,
-  `CREATE TABLE IF NOT EXISTS ledger_categories (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, category_kind TEXT NOT NULL, color TEXT, icon TEXT, sort_order INTEGER NOT NULL DEFAULT 0, trashed_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES ledger_users(id))`,
+  `CREATE TABLE IF NOT EXISTS ledger_categories (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, category_kind TEXT NOT NULL, color TEXT, icon TEXT, sort_order INTEGER NOT NULL DEFAULT 0, parent_id TEXT, trashed_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES ledger_users(id))`,
   `CREATE TABLE IF NOT EXISTS ledger_transactions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, account_id TEXT NOT NULL, category_id TEXT NOT NULL, transaction_type TEXT NOT NULL, amount REAL NOT NULL, occurred_at TEXT NOT NULL, note TEXT NOT NULL DEFAULT '', source TEXT, order_no TEXT, merchant_order_no TEXT, transaction_status TEXT, adjustment_kind TEXT, refund_of_transaction_id TEXT, trashed_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES ledger_users(id), FOREIGN KEY (account_id) REFERENCES ledger_accounts(id), FOREIGN KEY (category_id) REFERENCES ledger_categories(id), FOREIGN KEY (refund_of_transaction_id) REFERENCES ledger_transactions(id))`,
   `CREATE TABLE IF NOT EXISTS ledger_transaction_tags (transaction_id TEXT NOT NULL, tag TEXT NOT NULL, PRIMARY KEY (transaction_id, tag), FOREIGN KEY (transaction_id) REFERENCES ledger_transactions(id) ON DELETE CASCADE)`,
   `CREATE TABLE IF NOT EXISTS ledger_transaction_attachments (id TEXT PRIMARY KEY, transaction_id TEXT NOT NULL, name TEXT NOT NULL, remote_path TEXT NOT NULL, mime_type TEXT, byte_size INTEGER, uploaded_at TEXT NOT NULL, FOREIGN KEY (transaction_id) REFERENCES ledger_transactions(id) ON DELETE CASCADE)`,
@@ -62,6 +62,15 @@ const V6_COLUMNS = [
   ['ledger_debt_repayments', 'paid_periods_before', 'INTEGER', 'BIGINT'],
   ['ledger_debt_repayments', 'remaining_months_before', 'INTEGER', 'BIGINT']
 ];
+
+/*
+ * v7:分类的父子关系。
+ *
+ * 「子分类」此前只存在于浏览器 store —— 服务端连 parent_id 这一列都没有,
+ * 于是新建的子分类一刷新就变回一级分类(换设备同样丢)。
+ * 这里只做**加列**,不动既有约束,风险最低。
+ */
+const V7_COLUMNS = [['ledger_categories', 'parent_id', 'TEXT', 'VARCHAR(191)']];
 
 const SQLITE_V4_TABLES = [
   `CREATE TABLE IF NOT EXISTS market_history_cache (cache_key TEXT PRIMARY KEY, provider TEXT NOT NULL, target_id TEXT NOT NULL, range_start TEXT NOT NULL, range_end TEXT NOT NULL, payload_json TEXT NOT NULL, fetched_at TEXT NOT NULL, expires_at TEXT NOT NULL, last_accessed_at TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`
@@ -154,7 +163,8 @@ function migrationsFor(provider) {
     { version: 3, statements: mysql ? MYSQL_V3_STATEMENTS : SQLITE_V3_STATEMENTS },
     { version: 4, tables: mysql ? MYSQL_V4_TABLES : SQLITE_V4_TABLES, indexes: V4_INDEXES },
     { version: 5, statements: mysql ? MYSQL_V5_STATEMENTS : SQLITE_V5_STATEMENTS },
-    { version: 6, columns: V6_COLUMNS }
+    { version: 6, columns: V6_COLUMNS },
+    { version: 7, columns: V7_COLUMNS }
   ];
 }
 

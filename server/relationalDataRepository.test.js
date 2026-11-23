@@ -473,3 +473,67 @@ test('删除分类后交易保留为「未分类」,导入不再整批失败', a
     await rm(dataDirectory, { recursive: true, force: true });
   }
 });
+
+/*
+ * 「子分类」此前只存在于浏览器 store —— 服务端连 parent_id 这一列都没有,
+ * 于是新建的子分类一刷新就变回一级分类(换设备同样丢)。
+ * 这条用例盯的是「父子关系能真正落库并读回」。
+ */
+test('分类的父子关系能存进库并读回', async () => {
+  const dataDirectory = await mkdtemp(path.join(os.tmpdir(), 'ledgerflow-category-parent-'));
+  const env = { LEDGERFLOW_DATA_DIR: dataDirectory, SQLITE_PATH: '' };
+  try {
+    await migrateRelationalDatabase('sqlite', env);
+    const account = await registerUser(
+      'sqlite',
+      { email: 'parent-id@example.com', password: 'parent-id-password' },
+      env
+    );
+    const userId = account.user.ledgerUserId;
+
+    const payload = {
+      finance: {
+        accounts: [{ id: 'account-cash', name: 'Cash', type: 'cash', initialBalance: 100, balance: 100 }],
+        categories: [
+          { id: 'category-food', name: '餐饮', kind: 'expense', sortOrder: 0 },
+          { id: 'category-lunch', name: '午餐', kind: 'expense', sortOrder: 1, parentId: 'category-food' },
+          // 父级指向一个不存在的分类:必须落成 null,而不是写下悬空引用
+          { id: 'category-orphan', name: '孤儿', kind: 'expense', sortOrder: 2, parentId: 'category-missing' }
+        ],
+        transactions: [],
+        subscriptions: []
+      },
+      preferences: {
+        debts: [],
+        repaymentRecords: [],
+        investmentPositions: [],
+        investmentPositionHistory: [],
+        investmentGoals: [],
+        investmentWatchlist: [],
+        investmentAiMessages: [],
+        creditDrafts: [],
+        forecastBills: [],
+        categoryLearningRules: [],
+        categoryLearningEvents: [],
+        smartBudgetPlan: null,
+        smartBudgetHistory: [],
+        monthlyIncome: 0,
+        rssSubscriptions: []
+      }
+    };
+
+    await replaceRelationalData('sqlite', payload, env, userId);
+    const bootstrap = await getRelationalBootstrap('sqlite', env, userId);
+    const byId = new Map(bootstrap.data.finance.categories.map((row) => [row.id, row]));
+
+    assert.equal(byId.get('category-lunch')?.parentId, 'category-food', '子分类的父级必须保留');
+    assert.equal(byId.get('category-food')?.parentId, undefined, '一级分类没有父级');
+    assert.equal(
+      byId.get('category-orphan')?.parentId,
+      undefined,
+      '父级不存在时应落成空,不能写悬空引用'
+    );
+  } finally {
+    await rm(dataDirectory, { recursive: true, force: true });
+  }
+});

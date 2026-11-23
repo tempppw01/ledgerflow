@@ -3371,7 +3371,11 @@
     "tagLibraryTitle": "Tag library",
     "toolsSummary": "Manage",
     "totalBalance": "Total balance",
-    "viewCategoryTxAria": "View the {count} transactions in {name}"
+    "viewCategoryTxAria": "View the {count} transactions in {name}",
+    "inlineChildPlaceholder": "Subcategory name — press Enter to add",
+    "inlineChildAria": "Add a subcategory under {name}",
+    "emptyChildrenHint": "No subcategories yet — use “+ Subcategory” on the right",
+    "inlineChildSubmit": "Add subcategory"
   },
   "smartBudget": {
     "action": {

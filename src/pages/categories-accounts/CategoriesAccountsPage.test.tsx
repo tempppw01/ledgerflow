@@ -154,10 +154,15 @@ describe('CategoriesAccountsPage', () => {
 
     await user.click(screen.getByRole('tab', { name: '支出分类' }));
     await user.click(screen.getByRole('button', { name: '＋子分类' }));
-    expect(screen.getByLabelText('上级分类')).toHaveValue('cat-food');
+    /*
+     * 「+子分类」不再把父级塞进页面顶部的表单再让人滚回去输入 ——
+     * 现在点一下就在该分类下方展开输入框,原地输入、提交即建。
+     */
+    const inlineInput = screen.getByLabelText('在 餐饮 下新增子分类');
+    expect(inlineInput).toHaveFocus();
 
-    await user.type(screen.getByLabelText('新增分类名称'), '咖啡奶茶');
-    await user.click(screen.getByRole('button', { name: '添加' }));
+    await user.type(inlineInput, '咖啡奶茶');
+    await user.click(screen.getByRole('button', { name: '添加子分类' }));
 
     expect(financeStoreMock.state.addCategory).toHaveBeenCalledWith(
       '咖啡奶茶',
@@ -289,10 +294,18 @@ describe('CategoriesAccountsPage', () => {
       expect(screen.queryByText('午餐外卖')).not.toBeInTheDocument();
     });
 
-    it('没有子分类的分类不渲染折叠控件', async () => {
+    it('没有子分类的分类默认收起,但仍可点开', async () => {
       renderTreePage();
       expect(await screen.findByText('交通')).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /交通 的子分类/ })).not.toBeInTheDocument();
+      /*
+       * 有意的行为变更:一级分类**一律**可点开,即使当前没有子分类 ——
+       * 否则「想给交通加子分类」只能跑回页面顶部,而这一行既不可点、
+       * 也看不出能往下挂东西。没有子分类的默认收起,点开才展开并给出提示。
+       */
+      expect(screen.getByRole('button', { name: '展开 交通 的子分类' })).toHaveAttribute(
+        'aria-expanded',
+        'false'
+      );
     });
 
     it('折叠状态写入本地,重新进入页面仍然收起', async () => {

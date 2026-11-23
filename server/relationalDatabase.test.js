@@ -7,7 +7,8 @@ import { DatabaseSync } from 'node:sqlite';
 import {
   getRelationalMigrationStatements,
   getRelationalDatabaseStatus,
-  migrateRelationalDatabase
+  migrateRelationalDatabase,
+  RELATIONAL_SCHEMA_VERSION
 } from './relationalDatabase.js';
 import { openSqliteDatabase } from './sqliteDatabase.js';
 
@@ -44,12 +45,12 @@ test('SQLite relational schema migrates and is idempotent', async () => {
         .map((row) => row.name);
       const user = database.prepare('SELECT id FROM ledger_users WHERE id = ?').get('default');
 
-      assert.equal(first.currentVersion, 6);
+      assert.equal(first.currentVersion, RELATIONAL_SCHEMA_VERSION);
       assert.deepEqual(second, first);
       assert.deepEqual(status, {
         provider: 'sqlite',
-        currentVersion: 6,
-        expectedVersion: 6,
+        currentVersion: RELATIONAL_SCHEMA_VERSION,
+        expectedVersion: RELATIONAL_SCHEMA_VERSION,
         ready: true
       });
       assert.ok(tables.includes('ledger_transactions'));
@@ -110,8 +111,12 @@ test('SQLite upgrades a real V1 database through the authentication and device m
         .prepare('SELECT id FROM ledger_schema_migrations ORDER BY id')
         .all()
         .map((row) => Number(row.id));
-      assert.equal(migrated.currentVersion, 6);
-      assert.deepEqual(versions, [1, 2, 3, 4, 5, 6]);
+      assert.equal(migrated.currentVersion, RELATIONAL_SCHEMA_VERSION);
+      // 迁移是逐版本累积的:到 v7 为止应当是 [1..7] 连续无缺口。
+      assert.deepEqual(
+        versions,
+        Array.from({ length: RELATIONAL_SCHEMA_VERSION }, (_, index) => index + 1)
+      );
       assert.equal(upgraded.prepare('SELECT COUNT(*) AS count FROM auth_users').get().count, 0);
       // V6 必须真的把「登记前快照」三列加到既有库上,否则删除还款时
       // 无法精确还原本金与期数。

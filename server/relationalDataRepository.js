@@ -350,8 +350,8 @@ export async function replaceRelationalData(
         for (const item of categories) {
           if (!id(item.id)) continue;
           await database.run(
-            `INSERT INTO ledger_categories (id, user_id, name, category_kind, color, icon, sort_order, trashed_at, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO ledger_categories (id, user_id, name, category_kind, color, icon, sort_order, parent_id, trashed_at, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               id(item.id),
               userId,
@@ -360,6 +360,8 @@ export async function replaceRelationalData(
               nullable(item.color),
               nullable(item.icon),
               Math.floor(number(item.sortOrder)),
+              // 父级只认本次 payload 里真实存在的分类,避免写下悬空引用。
+              validCategoryIds.has(id(item.parentId)) ? id(item.parentId) : null,
               nullable(item.trashedAt),
               database.date(timestamp),
               database.date(timestamp)
@@ -899,6 +901,7 @@ export async function getRelationalBootstrap(
         color: row.color || undefined,
         icon: row.icon || undefined,
         sortOrder: number(row.sort_order),
+        parentId: row.parent_id || undefined,
         trashedAt: fromDbDate(row.trashed_at)
       });
       const mapTransaction = (row) => ({

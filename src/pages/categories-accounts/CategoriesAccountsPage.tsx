@@ -136,11 +136,37 @@ export function CategoriesAccountsPage() {
   /** 展开的「更多操作」行;同一时间只开一行,避免又变回一排按钮。 */
   const [openCategoryActionId, setOpenCategoryActionId] = useState<string | null>(null);
   const categoryNameInputRef = useRef<HTMLInputElement | null>(null);
+  /**
+   * 行内新增子分类。
+   *
+   * 原来「+子分类」只是把父级塞进页面顶部的表单并聚焦,用户得滚回顶部才能输入 ——
+   * 想给「餐饮」加个子分类,视线要在列表和顶部之间来回跳。
+   * 现在点一下就在该分类下方展开输入框,原地输入、回车即建。
+   */
+  /**
+   * 没有子分类的一级分类默认收起。
+   *
+   * 折叠状态原本是「记住被收起的 id」,默认全展开 —— 于是 17 个分类全都显示
+   * 「还没有子分类」的提示,纯噪音。有子分类的仍按原逻辑默认展开;
+   * 没有子分类的要用户主动点开,展开时给出提示,这样「点开」才有意义。
+   */
+  const [expandedEmptyCategoryIds, setExpandedEmptyCategoryIds] = useState<string[]>([]);
+  const [inlineChildParentId, setInlineChildParentId] = useState<string | null>(null);
+  const [inlineChildName, setInlineChildName] = useState('');
+  const [inlineChildError, setInlineChildError] = useState('');
+  const inlineChildInputRef = useRef<HTMLInputElement | null>(null);
 
   // 折叠状态写回本地:下次进来保持原样。
   useEffect(() => {
     writeCollapsedCategoryIds(collapsedCategoryIds);
   }, [collapsedCategoryIds]);
+
+  // 行内输入框一出现就聚焦。用 effect 而不是 requestAnimationFrame:
+  // rAF 在测试环境(jsdom)不会同步触发,断言「已聚焦」会稳定失败。
+  useEffect(() => {
+    if (!inlineChildParentId) return;
+    inlineChildInputRef.current?.focus();
+  }, [inlineChildParentId]);
   const [accountName, setAccountName] = useState('');
   const [accountType, setAccountType] = useState<AccountType | ''>('');
   const [accountInitialBalance, setAccountInitialBalance] = useState('0');
@@ -167,24 +193,70 @@ export function CategoriesAccountsPage() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  function submitCategory(e: FormEvent) {
-    e.preventDefault();
-    const normalized = normalizeNameInput(categoryName);
+  /**
+   * 真正落地一条分类。顶部表单与行内「加子分类」共用同一条路径,
+   * 免得两处的校验/图标推断各写一份、久了就走形。
+   * 返回是否创建成功,调用方据此决定要不要清空输入。
+   */
+  function createCategory(rawName: string, parentId: string): boolean {
+    const normalized = normalizeNameInput(rawName);
     if (!isValidName(normalized)) {
-      setCategoryError(
-        tf('categoriesAccounts.error.categoryName', '分类名称需为 1-24 个字符\uFF0C且不能包含 < 或 >。')
-      );
-      return;
+      return false;
     }
     const appearance = inferCategoryAppearance(normalized, categoryKind);
     addCategory(normalized, {
       kind: categoryKind,
       color: appearance.color,
       icon: appearance.icon,
-      parentId: newCategoryParentId || undefined
+      parentId: parentId || undefined
     });
+    return true;
+  }
+
+  function submitCategory(e: FormEvent) {
+    e.preventDefault();
+    if (!createCategory(categoryName, newCategoryParentId)) {
+      setCategoryError(
+        tf('categoriesAccounts.error.categoryName', '分类名称需为 1-24 个字符\uFF0C且不能包含 < 或 >。')
+      );
+      return;
+    }
     setCategoryName('');
     setCategoryError('');
+  }
+
+  /** 展开某个父级分类(把它从「已收起」里移除)。 */
+  function expandCategory(id: string) {
+    setCollapsedCategoryIds((prev) => prev.filter((value) => value !== id));
+    // 空分类默认收起,这里要显式记为展开,否则点「+子分类」看不到输入框。
+    setExpandedEmptyCategoryIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  }
+
+  function openInlineChildForm(parentId: string) {
+    setInlineChildParentId(parentId);
+    setInlineChildName('');
+    setInlineChildError('');
+    expandCategory(parentId);
+  }
+
+  function closeInlineChildForm() {
+    setInlineChildParentId(null);
+    setInlineChildName('');
+    setInlineChildError('');
+  }
+
+  function submitInlineChild(e?: FormEvent) {
+    e?.preventDefault();
+    if (!inlineChildParentId) return;
+    if (!createCategory(inlineChildName, inlineChildParentId)) {
+      setInlineChildError(
+        tf('categoriesAccounts.error.categoryName', '分类名称需为 1-24 个字符\uFF0C且不能包含 < 或 >。')
+      );
+      return;
+    }
+    // 连续加子分类是很自然的操作:保留父级与焦点,只清空输入。
+    setInlineChildName('');
+    setInlineChildError('');
   }
 
   function submitAccount(e: FormEvent) {
@@ -593,7 +665,16 @@ export function CategoriesAccountsPage() {
     [accountCards]
   );
 
-  const toggleCategoryCollapsed = (categoryId: string) => {
+  const toggleCategoryCollapsed = (categoryId: string, hasChildren: boolean) => {
+    if (!hasChildren) {
+      // 空分类:切换的是「显式展开」集合,默认(不在集合里)即收起。
+      setExpandedEmptyCategoryIds((prev) =>
+        prev.includes(categoryId)
+          ? prev.filter((idValue) => idValue !== categoryId)
+          : [...prev, categoryId]
+      );
+      return;
+    }
     setCollapsedCategoryIds((prev) =>
       prev.includes(categoryId)
         ? prev.filter((idValue) => idValue !== categoryId)
@@ -670,7 +751,12 @@ export function CategoriesAccountsPage() {
     }
 
     const childCount = options.childCount ?? 0;
-    const hasChildren = !options.isChild && childCount > 0;
+    /*
+     * 一级分类**总是**可点开 —— 即使现在还没有子分类。
+     * 原来只有 childCount > 0 时才是按钮,于是「想给餐饮加子分类」只能跑回顶部表单,
+     * 而这一行本身不可点、也看不出能往下挂东西。
+     */
+    const canExpand = !options.isChild;
     const isCollapsed = options.collapsed === true;
     const isActionOpen = openCategoryActionId === item.id;
 
@@ -678,10 +764,10 @@ export function CategoriesAccountsPage() {
       <li
         key={item.id}
         className={`category-node ${options.isChild ? 'is-child' : 'is-root'}${
-          hasChildren ? ' has-children' : ''
+          canExpand ? ' has-children' : ''
         }${isCollapsed ? ' is-collapsed' : ''}`}
       >
-        {hasChildren ? (
+        {canExpand ? (
           <button
             type="button"
             className="category-node-main is-toggle"
@@ -692,7 +778,7 @@ export function CategoriesAccountsPage() {
                 ? tf('categoriesAccounts.expandCategoryAria', '展开 {name} 的子分类')
                 : tf('categoriesAccounts.collapseCategoryAria', '收起 {name} 的子分类')
             ).replace('{name}', String(item.name))}
-            onClick={() => toggleCategoryCollapsed(item.id)}
+            onClick={() => toggleCategoryCollapsed(item.id, childCount > 0)}
           >
             <span className="category-node-caret" aria-hidden="true" />
             <span className="category-node-icon" aria-hidden="true">
@@ -700,12 +786,15 @@ export function CategoriesAccountsPage() {
             </span>
             <span className="category-node-title" aria-hidden="true">
               <strong>{item.name}</strong>
-              <small>
-                {tf('categoriesAccounts.childCountLabel', '{count} 个子分类').replace(
-                  '{count}',
-                  String(childCount)
-                )}
-              </small>
+              {/* 没有子分类时不显示「0 个子分类」这种噪音,靠箭头表达可展开。 */}
+              {childCount > 0 ? (
+                <small>
+                  {tf('categoriesAccounts.childCountLabel', '{count} 个子分类').replace(
+                    '{count}',
+                    String(childCount)
+                  )}
+                </small>
+              ) : null}
             </span>
           </button>
         ) : (
@@ -740,11 +829,7 @@ export function CategoriesAccountsPage() {
             <button
               type="button"
               className="category-action"
-              onClick={() => {
-                setNewCategoryParentId(item.id);
-                setCategoryName('');
-                categoryNameInputRef.current?.focus();
-              }}
+              onClick={() => openInlineChildForm(item.id)}
             >
               {tf('categoriesAccounts.addChild', '＋子分类')}
             </button>
@@ -967,7 +1052,15 @@ export function CategoriesAccountsPage() {
               </div>
               <ul className="category-tree">
                 {categoryTree.map(({ root, children, totalCount }) => {
-                  const isCollapsed = collapsedCategoryIds.includes(root.id);
+                  /*
+                   * 有子分类:按「被收起的 id」判定(默认展开,保持原行为)。
+                   * 没有子分类:默认收起,只有用户点开过才展开 —— 否则十几个空分类
+                   * 同时显示「还没有子分类」,全是噪音。
+                   */
+                  const isCollapsed =
+                    children.length > 0
+                      ? collapsedCategoryIds.includes(root.id)
+                      : !expandedEmptyCategoryIds.includes(root.id);
                   return (
                     <li key={root.id} className="category-group">
                       <ul className="category-group-list" id={`category-children-${root.id}`}>
@@ -985,6 +1078,71 @@ export function CategoriesAccountsPage() {
                                 isChild: true,
                                 siblingIds: children.map((item) => item.id)
                               })
+                            )}
+                        {/* 展开后原地新增子分类:不用再滚回页面顶部的表单。 */}
+                        {isCollapsed || inlineChildParentId !== root.id ? null : (
+                          <li className="category-node is-inline-add">
+                            <form
+                              className="category-inline-add-form"
+                              onSubmit={submitInlineChild}
+                            >
+                              <span className="category-node-caret-spacer" aria-hidden="true" />
+                              <input
+                                ref={inlineChildInputRef}
+                                value={inlineChildName}
+                                onChange={(event) => {
+                                  setInlineChildName(event.target.value);
+                                  if (inlineChildError) setInlineChildError('');
+                                }}
+                                onKeyDown={(event) => {
+                                  if (event.key === 'Escape') closeInlineChildForm();
+                                }}
+                                maxLength={24}
+                                placeholder={tf(
+                                  'categoriesAccounts.inlineChildPlaceholder',
+                                  '子分类名称,回车即添加'
+                                )}
+                                aria-label={tf(
+                                  'categoriesAccounts.inlineChildAria',
+                                  '在 {name} 下新增子分类'
+                                ).replace('{name}', String(root.name))}
+                              />
+                              {/*
+                                与页面顶部表单的「添加」同名会让读屏用户无法区分,
+                                这里给一个明确的名称。
+                              */}
+                              <button
+                                className="primary"
+                                type="submit"
+                                aria-label={tf(
+                                  'categoriesAccounts.inlineChildSubmit',
+                                  '添加子分类'
+                                )}
+                              >
+                                {tf('categoriesAccounts.add', '添加')}
+                              </button>
+                              <button type="button" onClick={closeInlineChildForm}>
+                                {tf('confirmDialog.cancel', '取消')}
+                              </button>
+                            </form>
+                            {inlineChildError ? <small className="error">{inlineChildError}</small> : null}
+                          </li>
+                        )}
+                        {/* 展开后确实没有子分类时给个明确交代,否则「展开了却什么都没有」很像坏了。 */}
+                        {isCollapsed || children.length > 0 || inlineChildParentId === root.id
+                          ? null
+                          : (
+                              <li className="category-node is-child category-empty-children">
+                                <span className="category-node-main">
+                                  <span className="category-node-caret-spacer" aria-hidden="true" />
+                                  <small>
+                                    {tf(
+                                      'categoriesAccounts.emptyChildrenHint',
+                                      '还没有子分类,点右侧「+子分类」添加'
+                                    )}
+                                  </small>
+                                </span>
+                              </li>
                             )}
                       </ul>
                     </li>
