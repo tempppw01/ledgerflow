@@ -7,9 +7,10 @@
  * 忘了排除退款,于是同一页上页头(走 summarizeTransactions)是净额、卡片是
  * 「净额 + 2×退款」,演示账本 11 月因此多算 ¥781.10。
  *
- * 目前守两条(都对应 src/shared 里的唯一真源):
+ * 目前守三条(都对应 src/shared 里的唯一真源):
  *   1. 退款/冲正判断  → isTransactionRefundLike       (src/shared/lib/transactionMetrics.ts)
  *   2. 是否计入余额的状态 → isBalanceAffectingStatus  (src/shared/lib/localDate.ts)
+ *   3. 金额取整      → roundMoney                     (src/shared/lib/money.ts)
  *
  * 刻意不检查的地方(都有理由,不是漏网):
  *   · 谓词自身的实现文件 —— 那是唯一真源;
@@ -59,10 +60,25 @@ const CHECKS = [
   }
 ];
 
+/**
+ * 「定义级」检查:不许在别处重新定义同名的共享助手。
+ * 这类问题最阴的地方是**名字一样**:读代码的人看到 roundMoney(...) 会以为它就是
+ * money.ts 里那套(带 EPSILON 修正、且把 -0 归一),实际却可能是另一套算法。
+ * 实测两套在 1.005 / 2.675 / 0.615 / -1.005 上给出不同结果(toFixed 甚至会把
+ * 1.01 输出成 1)。
+ */
+const DEFINITION_CHECKS = [
+  {
+    re: /^\s*(?:export\s+)?function\s+(roundMoney|roundCurrency)\s*\(/,
+    why: '本地重新定义了共享的金额取整 —— 请 import { roundMoney } from 共享库'
+  }
+];
+
 /** 整份文件豁免,理由必须写清。 */
 const SKIP_FILES = new Map([
   ['src/shared/lib/transactionMetrics.ts', 'isTransactionRefundLike 自身的实现,唯一真源'],
   ['src/shared/lib/localDate.ts', 'isBalanceAffectingStatus 自身的实现,唯一真源'],
+  ['src/shared/lib/money.ts', 'roundMoney 自身的实现,唯一真源'],
   [SELF, '本脚本的说明文字里就含这些模式']
 ]);
 
@@ -71,6 +87,10 @@ const ALLOW = new Map([
   [
     'src/shared/store/useFinanceStore.ts:330',
     'normalizeAdjustmentKind:判断的是「是否已是三种已知 kind 之一(含 normal)」,不是退款判断'
+  ],
+  [
+    'src/shared/store/useFinanceStore.ts:300',
+    'roundCurrency 只是交给 roundMoney 的薄别名(历史调用点多),算法本身没有第二份'
   ],
   [
     'src/pages/assistant/AssistantPage.tsx:1287',
@@ -108,6 +128,15 @@ for (const file of walk(path.join(ROOT, 'src')).concat(walk(path.join(ROOT, 'scr
   for (let index = 0; index < lines.length; index += 1) {
     const pair = lines.slice(index, index + 2);
     const window = pair.join(' ');
+    // 定义级:直接看每一行,不拼窗口。
+    const definition = DEFINITION_CHECKS.find((check) => check.re.test(lines[index]));
+    if (definition) {
+      if (!ALLOW.has(rel + ':' + (index + 1))) {
+        hits.push({ key: rel + ':' + (index + 1), why: definition.why });
+      }
+      continue;
+    }
+
     const hit = CHECKS.find((check) => check.test(window));
     if (!hit) continue;
     // 报「真正写着比较的那一行」,而不是两行窗口的起点 —— 人按这个行号去 grep 才找得到。
@@ -121,7 +150,7 @@ for (const file of walk(path.join(ROOT, 'src')).concat(walk(path.join(ROOT, 'scr
 
 if (hits.length === 0) {
   console.log(
-    '共享谓词检查通过:没有手写的「退款/冲正」判断,也没有手写的「是否计入余额的状态」。'
+    '共享谓词检查通过:没有手写的「退款/冲正」「是否计入余额的状态」判断,也没有本地重定义的金额取整。'
   );
   process.exit(0);
 }

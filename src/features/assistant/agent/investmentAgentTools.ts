@@ -6,6 +6,7 @@ import type {
   InvestmentWatchItem
 } from '../../../entities/investment/types';
 import type { ChatToolCall, ChatToolDefinition } from '../api/openaiCompatibleClient';
+import { roundMoney } from '../../../shared/lib/money';
 
 export interface InvestmentAgentActionView {
   id: string;
@@ -131,10 +132,6 @@ function toNumber(value: unknown): number | null {
 
 function toViewId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}`;
-}
-
-function roundMoney(value: number): number {
-  return Number(value.toFixed(2));
 }
 
 function categoryLabel(category: InvestmentCategory): string {

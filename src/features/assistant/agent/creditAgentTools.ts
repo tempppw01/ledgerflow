@@ -6,6 +6,7 @@ import {
 } from '../../debt/model/debtMetrics';
 import { resolveDebtRepaymentDueDisplay } from '../../debt/model/repaymentCycle';
 import { todayLocalDateKey } from '../../../shared/lib/localDate';
+import { roundMoney } from '../../../shared/lib/money';
 import type { CreditDraft } from '../../debt/model/creditDrafts';
 import {
   createCreditDraft,
@@ -380,10 +381,6 @@ function hasArg(args: Record<string, unknown>, key: string): boolean {
 
 function toViewId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-}
-
-function roundMoney(value: number): number {
-  return Number(value.toFixed(2));
 }
 
 function normalizeDebtType(value: unknown): CreditDebtType {
