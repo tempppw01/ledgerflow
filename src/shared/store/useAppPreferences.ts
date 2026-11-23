@@ -939,16 +939,31 @@ export const useAppPreferences = create<AppPreferencesState>()(
       addRepaymentRecord: (payload) => {
         const id = payload.id || createRepaymentRecordId();
         const createdAt = payload.createdAt || new Date().toISOString();
-        set((state) => ({
-          repaymentRecords: [
-            {
-              ...payload,
-              id,
-              createdAt
-            },
-            ...state.repaymentRecords
-          ]
-        }));
+        set((state) => {
+          /*
+           * 快照(扣减前的本金 / 期数)在这里补齐,而不是指望每个调用点都记得传。
+           *
+           * 调用方一律先 addRepaymentRecord、再 updateDebt,所以此刻 state 里读到的
+           * 就是扣减前的值。助手那条路径当初漏传了快照,于是撤销这笔还款时走了
+           * 估算分支:余额 100 的负债还了 150(登记时被夹到 0),撤销后变成
+           * 0 + 150 = 150 —— 本金凭空多出 50,用户白赚一笔负债。
+           */
+          const debtBefore = state.debts.find((item) => item.id === payload.debtId);
+          return {
+            repaymentRecords: [
+              {
+                ...payload,
+                balanceBefore: payload.balanceBefore ?? debtBefore?.balance,
+                paidPeriodsBefore: payload.paidPeriodsBefore ?? debtBefore?.paidPeriods,
+                remainingMonthsBefore:
+                  payload.remainingMonthsBefore ?? debtBefore?.remainingMonths,
+                id,
+                createdAt
+              },
+              ...state.repaymentRecords
+            ]
+          };
+        });
         return id;
       },
       replaceRepaymentRecords: (records) =>

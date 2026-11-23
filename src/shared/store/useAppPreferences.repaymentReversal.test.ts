@@ -112,6 +112,72 @@ describe('useAppPreferences removeRepaymentRecord reverses the debt mutation', (
   });
 });
 
+/*
+ * 快照由 store 自己补,而不是靠调用点记得传。
+ * 助手那条路径当初就漏传了,于是撤销一笔超额还款会把本金多加一笔。
+ */
+describe('useAppPreferences addRepaymentRecord captures the undo snapshot itself', () => {
+  beforeEach(() => {
+    localStorage.removeItem('ledgerflow-preferences');
+    seed([], []);
+  });
+
+  it('调用方不传快照时,撤销超额还款不会把本金多加一笔', () => {
+    // 负债剩 100,还了 150:页面 / 助手都会把新余额夹到 0,
+    // 但那时登记的记录里没有 balanceBefore。
+    seed([debt({ balance: 100, paidPeriods: 3, remainingMonths: 9 })], []);
+    useAppPreferences.getState().addRepaymentRecord({
+      debtId: 'd1',
+      amount: 150,
+      paidAt: '2026-11-21',
+      recordMode: 'manual'
+    });
+    useAppPreferences.getState().updateDebt('d1', {
+      ...debt({ balance: 0, paidPeriods: 4, remainingMonths: 8 })
+    });
+
+    const saved = useAppPreferences.getState().repaymentRecords[0];
+    expect(saved.balanceBefore).toBe(100);
+    expect(saved.paidPeriodsBefore).toBe(3);
+    expect(saved.remainingMonthsBefore).toBe(9);
+
+    useAppPreferences.getState().removeRepaymentRecord(saved.id);
+
+    const target = useAppPreferences.getState().debts[0];
+    // 修复前这里是 0 + 150 = 150 —— 本金凭空多出 50。
+    expect(target.balance).toBe(100);
+    expect(target.paidPeriods).toBe(3);
+    expect(target.remainingMonths).toBe(9);
+  });
+
+  it('调用方显式传的快照优先于自动采集', () => {
+    seed([debt({ balance: 999 })], []);
+    useAppPreferences.getState().addRepaymentRecord({
+      debtId: 'd1',
+      amount: 10,
+      paidAt: '2026-11-21',
+      recordMode: 'manual',
+      balanceBefore: 123
+    });
+
+    expect(useAppPreferences.getState().repaymentRecords[0].balanceBefore).toBe(123);
+  });
+
+  it('负债不存在时不会写入 undefined 之外的东西,撤销仍然安全', () => {
+    seed([], []);
+    const id = useAppPreferences.getState().addRepaymentRecord({
+      debtId: 'missing',
+      amount: 10,
+      paidAt: '2026-11-21',
+      recordMode: 'manual'
+    });
+
+    const saved = useAppPreferences.getState().repaymentRecords[0];
+    expect(saved.balanceBefore).toBeUndefined();
+    expect(() => useAppPreferences.getState().removeRepaymentRecord(id)).not.toThrow();
+  });
+});
+
 describe('useAppPreferences removeDebt drops the debt repayment history', () => {
   beforeEach(() => {
     localStorage.removeItem('ledgerflow-preferences');
