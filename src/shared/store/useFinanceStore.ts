@@ -998,23 +998,39 @@ export const useFinanceStore = create<FinanceState>()(
         });
       },
       restoreTransaction: (id) => {
-        let restoredRow: TransactionItem | null = null;
+        let restoredRows: TransactionItem[] = [];
         set((s) => {
-          const restored = restoreFromTrash(s.transactions, s.trashedTransactions, id);
-          if (!restored.restored) {
+          const target = s.trashedTransactions.find((item) => item.id === id);
+          if (!target) {
             return s;
           }
-          restoredRow = restored.restored;
-          const transactions = ensureUniqueById(restored.active);
+          /*
+           * 与 removeTransaction 对称:删除时退款/冲正会**随原交易一起**进回收站
+           * (确认框也明确写了「其中 1 笔退款/冲正会一并移入回收站」),所以恢复时也必须
+           * 一起回来。只恢复原交易的话:支出回来了、退款还留在回收站,账上凭空少掉退款那一笔
+           * —— 演示账本那对 ¥390.55,恢复后支付宝余额从 −26,556.20 变成 −26,946.75,
+           * 而且那笔支出状态是「已退款」却找不到退款记录。
+           */
+          const dependents = s.trashedTransactions.filter(
+            (item) =>
+              item.id !== id &&
+              item.refundOfTransactionId === id &&
+              isTransactionRefundLike(item)
+          );
+          const restoringIds = new Set([id, ...dependents.map((item) => item.id)]);
+          restoredRows = [target, ...dependents].map(clearTrashedAt);
+          const transactions = ensureUniqueById([...s.transactions, ...restoredRows]);
           return {
             transactions,
-            trashedTransactions: restored.trashed,
+            trashedTransactions: s.trashedTransactions.filter(
+              (item) => !restoringIds.has(item.id)
+            ),
             ...rebuildStateSlices(s.accounts, transactions, s.balanceChangeEntries)
           };
         });
-        if (restoredRow) {
-          void syncChangeIfNeeded({ entity: 'transactions', action: 'insert', row: restoredRow });
-        }
+        restoredRows.forEach((row) => {
+          void syncChangeIfNeeded({ entity: 'transactions', action: 'insert', row });
+        });
       },
       permanentlyDeleteTransaction: (id) => {
         set((s) => ({
