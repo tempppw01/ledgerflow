@@ -30,7 +30,8 @@
     "check:r2-fetch": "node scripts/check-no-r2-fetch.mjs",
     "audit:ui": "node scripts/audit-ui-browser.mjs",
     "audit:ledger-math": "node scripts/audit-ledger-math.mjs",
-    "check:shared-predicates": "node scripts/check-shared-predicates.mjs"
+    "check:shared-predicates": "node scripts/check-shared-predicates.mjs",
+    "audit:sums": "node scripts/audit-handrolled-sums.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

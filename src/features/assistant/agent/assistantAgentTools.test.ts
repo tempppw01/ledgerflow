@@ -385,6 +385,68 @@ describe('assistantAgentTools', () => {
     });
   });
 
+  /*
+   * 助手说「这个月花了多少」必须和页面同一个口径:
+   *   · 退款/冲正要**抵减**,不是又加一笔 —— 原先这里无条件 current.expense += row.amount,
+   *     于是多算 2×退款(演示账本 11 月会多报 ¥781.10,和「资金动态看板」那次是同一个 bug);
+   *   · 待处理 / 已关闭 / 失败的行走账户余额那边一直是排除的,这里也要排除,
+   *     否则会出现「助手说花了 X,账户只少了 Y」。
+   */
+  it('summarize_transactions 把退款抵减掉,并排除不计入余额的行', () => {
+    const { ctx } = createContext();
+    ctx.transactions.push(
+      {
+        id: 'tx-big',
+        type: 'expense',
+        categoryId: 'cat-food',
+        accountId: 'acc-wechat',
+        amount: 100,
+        date: '2026-11-10',
+        note: '大件',
+        tags: []
+      },
+      {
+        id: 'tx-refund',
+        type: 'expense',
+        categoryId: 'cat-food',
+        accountId: 'acc-wechat',
+        amount: 40,
+        date: '2026-11-11',
+        note: '退款:大件',
+        tags: [],
+        adjustmentKind: 'refund',
+        refundOfTransactionId: 'tx-big'
+      },
+      {
+        id: 'tx-pending',
+        type: 'expense',
+        categoryId: 'cat-food',
+        accountId: 'acc-wechat',
+        amount: 30,
+        date: '2026-11-12',
+        note: '待付',
+        tags: [],
+        status: 'pending'
+      }
+    );
+
+    const result = executeAssistantToolCall(
+      createCall('summarize_transactions', {
+        startDate: '2026-11-01',
+        endDate: '2026-11-30',
+        groupBy: 'category'
+      }),
+      ctx
+    );
+    const payload = JSON.parse(result.content);
+
+    // 28(午餐) + 100(大件) − 40(退款) = 88;待处理那 30 不计
+    expect(payload.expenseTotal).toBe(88);
+    // 不抵减退款、也不排除待处理的话会是 198
+    expect(payload.expenseTotal).not.toBe(198);
+    expect(payload.count).toBe(3);
+  });
+
   it('同一轮对话内新增的账单能被后续查询与汇总看到', () => {
     const { ctx } = createContext();
     executeAssistantToolCall(

@@ -7,7 +7,12 @@ import type {
   AddTransactionAction
 } from '../../../shared/store/useFinanceStore';
 import { isBalanceAffectingStatus, todayLocalDateKey } from '../../../shared/lib/localDate';
-import { getSignedAmount } from '../../../shared/lib/transactionMetrics';
+import {
+  filterCountableTransactions,
+  getSignedAmount,
+  isTransactionRefundLike,
+  summarizeTransactions
+} from '../../../shared/lib/transactionMetrics';
 import type { ChatToolCall, ChatToolDefinition } from '../api/openaiCompatibleClient';
 import {
   type AccountResolveSource,
@@ -1168,7 +1173,15 @@ function executeSummary(args: Record<string, unknown>, ctx: AgentToolContext): A
   const endDate = toText(args.endDate);
   const groupBy = toText(args.groupBy) || 'category';
 
-  const rows = ctx.transactions
+  /*
+   * 口径与页面一致:
+   *   · 先排掉「不计入余额」的行(待处理 / 已关闭 / 失败)—— 账户余额那边一直是排除它们的,
+   *     这里不排就会出现「助手说花了 X,账户只少了 Y」;
+   *   · 退款/冲正**抵减**同类金额,而不是又加一笔。原先是
+   *     `current.expense += row.amount` 无条件累加,于是「本月花了多少」会多算 2×退款
+   *     —— 和「资金动态看板月支出」那次是同一个 bug,演示账本 11 月会多报 ¥781.10。
+   */
+  const rows = filterCountableTransactions(ctx.transactions)
     .filter((row) => row.type === 'expense' || row.type === 'income')
     .filter((row) => (startDate ? resolveTransactionLocalDay(row.date) >= startDate : true))
     .filter((row) => (endDate ? resolveTransactionLocalDay(row.date) <= endDate : true));
@@ -1185,18 +1198,18 @@ function executeSummary(args: Record<string, unknown>, ctx: AgentToolContext): A
           ? row.type
           : findCategoryName(ctx.categories, row.categoryId);
     const current = groups.get(label) || { label, income: 0, expense: 0, count: 0 };
-    if (row.type === 'income') current.income += row.amount;
-    else current.expense += row.amount;
+    // 退款/冲正与原始方向相反:收入退款抵减收入,支出退款抵减支出。
+    const signed = isTransactionRefundLike(row) ? -Number(row.amount || 0) : Number(row.amount || 0);
+    if (row.type === 'income') current.income += signed;
+    else current.expense += signed;
     current.count += 1;
     groups.set(label, current);
   });
 
-  const incomeTotal = rows
-    .filter((row) => row.type === 'income')
-    .reduce((sum, row) => sum + row.amount, 0);
-  const expenseTotal = rows
-    .filter((row) => row.type === 'expense')
-    .reduce((sum, row) => sum + row.amount, 0);
+  // 合计也走共享汇总,避免这里再有一份自己的口径。
+  const summary = summarizeTransactions(rows);
+  const incomeTotal = summary.incomeTotal;
+  const expenseTotal = summary.expenseTotal;
 
   const viewId = toViewId('agent-transaction-summary', 0);
   return {
@@ -1206,7 +1219,7 @@ function executeSummary(args: Record<string, unknown>, ctx: AgentToolContext): A
       endDate: endDate || null,
       incomeTotal: normalizeMoney(incomeTotal),
       expenseTotal: normalizeMoney(expenseTotal),
-      netTotal: normalizeMoney(incomeTotal - expenseTotal),
+      netTotal: normalizeMoney(summary.netTotal),
       count: rows.length,
       groups: Array.from(groups.values())
         .sort((a, b) => b.expense + b.income - (a.expense + a.income))
