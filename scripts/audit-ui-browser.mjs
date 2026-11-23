@@ -224,7 +224,15 @@ for (const [label, viewport] of VIEWPORTS) {
   for (const route of ROUTES) {
     const errorsBefore = consoleErrors.length;
     await page.goto(`${base}${route}`, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(1200);
+    /*
+     * 等页面「网络静默」再判定,最多 3 秒,之后再加 600ms 缓冲。
+     *
+     * 原来是固定 1200ms:晚于 1.2 秒才失败的异步请求会被整批漏掉,
+     * 而这类失败的代价是「审计报 0 问题、实际有报错」。
+     * 注意:networkidle 在被轮询/长连接的页面上可能一直不到,所以必须有超时兜底。
+     */
+    await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => undefined);
+    await page.waitForTimeout(600);
 
     const audit = await page.evaluate(AUDIT_FN);
     const scrollOverflow = await page.evaluate(
