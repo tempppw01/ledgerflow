@@ -3,7 +3,7 @@ import { getDatabaseDataDirectory, getSqliteDatabasePath } from './databaseProvi
 import { withMysqlConnection } from './databaseConnection.js';
 import { openSqliteDatabase } from './sqliteDatabase.js';
 
-export const RELATIONAL_SCHEMA_VERSION = 8;
+export const RELATIONAL_SCHEMA_VERSION = 9;
 const DEFAULT_USER_ID = 'default';
 
 const SQLITE_MIGRATION_TABLE =
@@ -18,7 +18,7 @@ const SQLITE_V1_TABLES = [
   `CREATE TABLE IF NOT EXISTS ledger_transaction_tags (transaction_id TEXT NOT NULL, tag TEXT NOT NULL, PRIMARY KEY (transaction_id, tag), FOREIGN KEY (transaction_id) REFERENCES ledger_transactions(id) ON DELETE CASCADE)`,
   `CREATE TABLE IF NOT EXISTS ledger_transaction_attachments (id TEXT PRIMARY KEY, transaction_id TEXT NOT NULL, name TEXT NOT NULL, remote_path TEXT NOT NULL, mime_type TEXT, byte_size INTEGER, uploaded_at TEXT NOT NULL, FOREIGN KEY (transaction_id) REFERENCES ledger_transactions(id) ON DELETE CASCADE)`,
   `CREATE TABLE IF NOT EXISTS ledger_balance_changes (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, account_id TEXT NOT NULL, transaction_id TEXT, related_transaction_id TEXT, change_type TEXT NOT NULL, amount REAL NOT NULL, before_balance REAL NOT NULL, after_balance REAL NOT NULL, note TEXT, remark TEXT, created_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES ledger_users(id), FOREIGN KEY (account_id) REFERENCES ledger_accounts(id), FOREIGN KEY (transaction_id) REFERENCES ledger_transactions(id), FOREIGN KEY (related_transaction_id) REFERENCES ledger_transactions(id))`,
-  `CREATE TABLE IF NOT EXISTS ledger_subscriptions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, account_id TEXT, name TEXT NOT NULL, subscription_kind TEXT NOT NULL, amount REAL NOT NULL, currency TEXT NOT NULL, billing_cycle TEXT NOT NULL, custom_cycle_days INTEGER, provider TEXT, note TEXT, renewal_date TEXT, expire_date TEXT, auto_renew INTEGER NOT NULL DEFAULT 0, subscription_status TEXT NOT NULL, last_generated_at TEXT, last_generated_transaction_id TEXT, trashed_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES ledger_users(id), FOREIGN KEY (account_id) REFERENCES ledger_accounts(id), FOREIGN KEY (last_generated_transaction_id) REFERENCES ledger_transactions(id))`,
+  `CREATE TABLE IF NOT EXISTS ledger_subscriptions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, account_id TEXT, name TEXT NOT NULL, subscription_kind TEXT NOT NULL, amount REAL NOT NULL, currency TEXT NOT NULL, billing_cycle TEXT NOT NULL, custom_cycle_days INTEGER, provider TEXT, note TEXT, renewal_date TEXT, expire_date TEXT, auto_renew INTEGER NOT NULL DEFAULT 0, subscription_status TEXT NOT NULL, last_generated_at TEXT, last_generated_transaction_id TEXT, prev_renewal_date TEXT, prev_expire_date TEXT, trashed_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES ledger_users(id), FOREIGN KEY (account_id) REFERENCES ledger_accounts(id), FOREIGN KEY (last_generated_transaction_id) REFERENCES ledger_transactions(id))`,
   `CREATE TABLE IF NOT EXISTS ledger_debts (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, debt_type TEXT NOT NULL, debt_status TEXT NOT NULL, balance REAL NOT NULL, annual_rate REAL, remaining_months INTEGER, total_periods INTEGER, paid_periods INTEGER, loan_principal REAL, total_repayment REAL, custom_min_payment REAL, bill_day INTEGER, repayment_day INTEGER, repayment_method TEXT, repayment_record_mode TEXT, payment_account_id TEXT, grace_days INTEGER, entry_mode TEXT, simple_due_date TEXT, simple_amount REAL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY (user_id) REFERENCES ledger_users(id), FOREIGN KEY (payment_account_id) REFERENCES ledger_accounts(id))`,
   `CREATE TABLE IF NOT EXISTS ledger_debt_repayments (id TEXT PRIMARY KEY, debt_id TEXT NOT NULL, transaction_id TEXT, amount REAL NOT NULL, paid_at TEXT NOT NULL, payment_account_id TEXT, note TEXT, record_mode TEXT NOT NULL, created_at TEXT NOT NULL, FOREIGN KEY (debt_id) REFERENCES ledger_debts(id) ON DELETE CASCADE, FOREIGN KEY (transaction_id) REFERENCES ledger_transactions(id), FOREIGN KEY (payment_account_id) REFERENCES ledger_accounts(id))`,
   `CREATE TABLE IF NOT EXISTS investment_instruments (id TEXT PRIMARY KEY, instrument_type TEXT NOT NULL, market TEXT, symbol TEXT, name TEXT NOT NULL, currency TEXT, fund_company TEXT, metadata_json TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE (market, symbol))`,
@@ -79,6 +79,18 @@ const V7_COLUMNS = [['ledger_categories', 'parent_id', 'TEXT', 'VARCHAR(191)']];
  * 从未落库(列不存在、写入与读取都没有),于是刷新之后负债只剩一个名字:
  * 到期日、金额、连「这是简单模式」都消失,界面上显示成「待补日期」。
  */
+/*
+ * 订阅「生成支出」会把续费日推进一期。用户把生成的那笔流水删掉时,必须把日期退回上一期,
+ * 否则再点一次生成会**再推进一期**,整个账单周期被跳过(提醒与资产负债预测都用这个日期)。
+ *
+ * 退回需要「上一期到底是什么」,而日期推算是有损的:1月31日 +1月 = 2月28日,
+ * 从 2月28日 倒推只能得到 1月28日。所以这里把推进前的值**存下来**,退回时精确还原。
+ */
+const V9_COLUMNS = [
+  ['ledger_subscriptions', 'prev_renewal_date', 'TEXT', 'TEXT'],
+  ['ledger_subscriptions', 'prev_expire_date', 'TEXT', 'TEXT']
+];
+
 const V8_COLUMNS = [
   ['ledger_debts', 'entry_mode', 'TEXT', 'VARCHAR(32)'],
   ['ledger_debts', 'simple_due_date', 'TEXT', 'TEXT'],
@@ -178,7 +190,8 @@ function migrationsFor(provider) {
     { version: 5, statements: mysql ? MYSQL_V5_STATEMENTS : SQLITE_V5_STATEMENTS },
     { version: 6, columns: V6_COLUMNS },
     { version: 7, columns: V7_COLUMNS },
-    { version: 8, columns: V8_COLUMNS }
+    { version: 8, columns: V8_COLUMNS },
+    { version: 9, columns: V9_COLUMNS }
   ];
 }
 

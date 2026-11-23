@@ -487,8 +487,8 @@ export async function replaceRelationalData(
         for (const item of subscriptions) {
           if (!id(item.id)) continue;
           await database.run(
-            `INSERT INTO ledger_subscriptions (id, user_id, account_id, name, subscription_kind, amount, currency, billing_cycle, custom_cycle_days, provider, note, renewal_date, expire_date, auto_renew, subscription_status, last_generated_at, last_generated_transaction_id, trashed_at, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO ledger_subscriptions (id, user_id, account_id, name, subscription_kind, amount, currency, billing_cycle, custom_cycle_days, provider, note, renewal_date, expire_date, auto_renew, subscription_status, last_generated_at, last_generated_transaction_id, prev_renewal_date, prev_expire_date, trashed_at, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               id(item.id),
               userId,
@@ -509,6 +509,8 @@ export async function replaceRelationalData(
               validTransactionIds.has(id(item.lastGeneratedTransactionId))
                 ? id(item.lastGeneratedTransactionId)
                 : null,
+              nullable(item.prevRenewalDate),
+              nullable(item.prevExpireDate),
               nullable(item.trashedAt),
               database.date(item.createdAt),
               database.date(item.updatedAt)
@@ -946,6 +948,8 @@ export async function getRelationalBootstrap(
         status: row.subscription_status,
         lastGeneratedAt: fromDbDate(row.last_generated_at),
         lastGeneratedTransactionId: row.last_generated_transaction_id || undefined,
+        prevRenewalDate: fromDbDate(row.prev_renewal_date),
+        prevExpireDate: fromDbDate(row.prev_expire_date),
         trashedAt: fromDbDate(row.trashed_at),
         createdAt: fromDbDate(row.created_at),
         updatedAt: fromDbDate(row.updated_at)

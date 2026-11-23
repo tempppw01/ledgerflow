@@ -858,6 +858,12 @@ function validateSubscriptionItem(
   assertDateString(item.lastGeneratedAt, `data.subscriptions[${index}].lastGeneratedAt`, {
     required: false
   });
+  assertDateString(item.prevRenewalDate, `data.subscriptions[${index}].prevRenewalDate`, {
+    required: false
+  });
+  assertDateString(item.prevExpireDate, `data.subscriptions[${index}].prevExpireDate`, {
+    required: false
+  });
   assertString(
     item.lastGeneratedTransactionId,
     `data.subscriptions[${index}].lastGeneratedTransactionId`,
@@ -915,6 +921,8 @@ function validateSubscriptionItem(
     status: (item.status as SubscriptionStatus | undefined) || 'active',
     lastGeneratedAt: asSafeString(item.lastGeneratedAt) || undefined,
     lastGeneratedTransactionId: asSafeString(item.lastGeneratedTransactionId) || undefined,
+    prevRenewalDate: asSafeString(item.prevRenewalDate) || undefined,
+    prevExpireDate: asSafeString(item.prevExpireDate) || undefined,
     trashedAt: asSafeString(item.trashedAt) || undefined,
     createdAt: asSafeTimestamp(item.createdAt, fallbackDate),
     updatedAt: asSafeTimestamp(item.updatedAt, asSafeTimestamp(item.createdAt, fallbackDate))

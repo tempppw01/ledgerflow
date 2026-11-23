@@ -987,8 +987,37 @@ export const useFinanceStore = create<FinanceState>()(
           const removingIds = new Set([id, ...dependents.map((item) => item.id)]);
           trashedRows = [target, ...dependents].map((item) => markTrashedAt(item));
           const transactions = s.transactions.filter((item) => !removingIds.has(item.id));
+
+          /*
+           * 被删的这笔如果是某个订阅「生成支出」写出来的,订阅那一侧必须跟着退回去:
+           * 生成时把续费日推进了一期,删掉流水却不退,再点一次生成就会**再推进一期** ——
+           * 演示账本 iCloud+ 实测:基线 11/28 → 生成 12/28 → 删掉流水(仍 12/28)
+           * → 再生成 2027/01/28,整段 12 月被跳过(提醒与资产负债预测都用这个日期)。
+           */
+          const subscriptions = s.subscriptions.map((item) => {
+            if (!item.lastGeneratedTransactionId || !removingIds.has(item.lastGeneratedTransactionId)) {
+              return item;
+            }
+            const reverted = {
+              ...item,
+              renewalDate: item.prevRenewalDate ?? item.renewalDate,
+              expireDate: item.prevExpireDate ?? item.expireDate
+            };
+            delete reverted.prevRenewalDate;
+            delete reverted.prevExpireDate;
+            return {
+              ...reverted,
+              lastGeneratedTransactionId: undefined,
+              status: resolveSubscriptionStatus(reverted)
+            };
+          });
+          const subscriptionsChanged = subscriptions.some(
+            (item, index) => item !== s.subscriptions[index]
+          );
+
           return {
             transactions,
+            ...(subscriptionsChanged ? { subscriptions } : {}),
             trashedTransactions: ensureUniqueById([...s.trashedTransactions, ...trashedRows]),
             ...rebuildStateSlices(s.accounts, transactions, s.balanceChangeEntries)
           };
@@ -1592,7 +1621,14 @@ export const useFinanceStore = create<FinanceState>()(
                 item.expireDate,
                 item.billingCycle,
                 item.customCycleDays
-              )
+              ),
+              /*
+               * 记下**推进前**的日期:用户把这笔生成的流水删掉时,要把续费日精确退回上一期。
+               * 不能靠倒推一期来还原 —— 日期推算是夹过月尾的(1月31日 +1月 = 2月28日,
+               * 倒推只能得到 1月28日),存下来才是一分不差的还原。
+               */
+              prevRenewalDate: item.renewalDate,
+              prevExpireDate: item.expireDate
             };
             return {
               ...advanced,
