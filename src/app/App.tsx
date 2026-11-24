@@ -19,6 +19,9 @@ export function App() {
   const { t } = useTranslation();
   const theme = useAppPreferences((s) => s.theme);
   const resolvedTheme = useResolvedTheme(theme);
+  // 主题色:原来这里写死 'amber',于是设置里的 accentTheme 永远不生效(tokens.css 里
+  // 六套 [data-accent-theme='…'] 只有 amber 那套真的被用上)。
+  const accentTheme = useAppPreferences((s) => s.accentTheme);
 
   /**
    * 把主题标记挂到 html 根节点，避免仅在局部容器生效，
@@ -26,8 +29,8 @@ export function App() {
    */
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', resolvedTheme);
-    document.documentElement.setAttribute('data-accent-theme', 'amber');
-  }, [resolvedTheme]);
+    document.documentElement.setAttribute('data-accent-theme', accentTheme);
+  }, [resolvedTheme, accentTheme]);
 
   return (
     <div className="app-shell">

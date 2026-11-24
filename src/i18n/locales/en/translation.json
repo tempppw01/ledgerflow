@@ -176,6 +176,16 @@
       "advanced": "Advanced"
     },
     "preferences": {
+      "accentLabel": "Accent color",
+      "accentHint": "Used for buttons, links and charts.",
+      "accent": {
+        "amber": "Amber",
+        "blue": "Blue",
+        "emerald": "Emerald",
+        "violet": "Violet",
+        "rose": "Rose",
+        "aurora": "Aurora"
+      },
       "eyebrow": "General",
       "title": "Startup and currency",
       "landingLabel": "Default page on open",

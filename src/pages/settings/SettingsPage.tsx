@@ -180,6 +180,9 @@ const SETTINGS_WORKSPACES: Array<{ value: SettingsWorkspace; labelKey: string }>
   { value: 'advanced', labelKey: 'settings.workspaces.advanced' }
 ];
 
+/** 可选主题色;与 shared/types/app.ts 的 AppAccentTheme 一一对应。 */
+const ACCENT_THEMES = ['amber', 'blue', 'emerald', 'violet', 'rose', 'aurora'] as const;
+
 /** 「默认打开页面」的可选项;空路径代表首页。与路由表保持一致,不要在这里写不存在的路径。 */
 const LANDING_OPTIONS: Array<{ path: string; labelKey: string }> = [
   { path: '', labelKey: 'settings.preferences.landingHome' },
@@ -272,6 +275,8 @@ export function SettingsPage({
   const defaultLandingPath = useAppPreferences((state) => state.defaultLandingPath);
   const setDefaultLandingPath = useAppPreferences((state) => state.setDefaultLandingPath);
   const baseCurrency = useAppPreferences((state) => state.baseCurrency);
+  const accentTheme = useAppPreferences((state) => state.accentTheme);
+  const setAccentTheme = useAppPreferences((state) => state.setAccentTheme);
   const setBaseCurrencyPreference = useAppPreferences((state) => state.setBaseCurrency);
   // 改完立刻让格式化模块用上新符号(store 的订阅也会同步,这里是为了同帧生效)
   const handleBaseCurrencyChange = (code: LedgerBaseCurrency) => {
@@ -859,6 +864,32 @@ export function SettingsPage({
                 </select>
                 <small className="muted">{t('settings.preferences.landingHint')}</small>
               </label>
+
+              <div className="field">
+                <span>{t('settings.preferences.accentLabel')}</span>
+                <div
+                  className="settings-accent-grid"
+                  role="radiogroup"
+                  aria-label={t('settings.preferences.accentLabel')}
+                >
+                  {ACCENT_THEMES.map((accent) => (
+                    <button
+                      key={accent}
+                      type="button"
+                      role="radio"
+                      aria-checked={accentTheme === accent}
+                      className={
+                        'settings-accent-option' + (accentTheme === accent ? ' is-active' : '')
+                      }
+                      onClick={() => setAccentTheme(accent)}
+                    >
+                      <span className="settings-accent-swatch" data-accent-swatch={accent} aria-hidden="true" />
+                      {t('settings.preferences.accent.' + accent)}
+                    </button>
+                  ))}
+                </div>
+                <small className="muted">{t('settings.preferences.accentHint')}</small>
+              </div>
 
               <label className="field">
                 <span>{t('settings.preferences.currencyLabel')}</span>

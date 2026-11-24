@@ -176,6 +176,16 @@
       "advanced": "高级设置"
     },
     "preferences": {
+      "accentLabel": "主题色",
+      "accentHint": "影响按钮、链接与图表的主色。",
+      "accent": {
+        "amber": "琥珀",
+        "blue": "蓝",
+        "emerald": "翠绿",
+        "violet": "紫罗兰",
+        "rose": "玫红",
+        "aurora": "极光"
+      },
       "eyebrow": "常规",
       "title": "打开与计价",
       "landingLabel": "默认打开页面",
