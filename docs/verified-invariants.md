@@ -293,6 +293,20 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   同理,另外三个脚本也全仓零引用:`benchmark:database`、`brands:generate`、`test:watch`
   (前者是性能基线、中者是生成品牌图标、后者是开发用 watch,都属于"按需手动跑",不是坏掉)。
 
+- **\`.dockerignore\` 已排除 \`data/\`(本地账本数据库不进构建上下文)—— 已跑通验证(2026-11-25)**。
+  \`Dockerfile\` 里是 \`COPY . .\`,而 \`data/\` 放着 **SQLite 库与 \`data/backups/\` 里的备份** ——
+  也就是**一个人的完整账本**。推送的镜像里没有它(最终镜像只拷 \`dist\` / \`node_modules\` / \`server\`),
+  而且没配 \`cache-to\`,所以**暂时不会外泄**;但只要有人加上 registry 缓存(很自然的优化),
+  它就会被打包上传。
+
+  **这条特别能说明"东西在、没接上"这个模式**:\`vite.config.ts\` 里**早就**有同一条判断 ——
+  \`watch.ignored\` 含 \`**/data/**\`,注释写着"它是本机运行时目录(SQLite 库与 data/backups/ 里的备份)"。
+  作者清楚这个风险,只是 \`.dockerignore\` 漏了另一半。顺手也排除了 \`docs/\` 与 \`release-notes/\`
+  (构建用不到)。
+
+  验证:\`9b28352\` → run **success**、verify **success**、**docker-latest success**(镜像重建并推送)。
+  也就是说 \`.dockerignore\` 没有误伤构建 —— 这类改动 CI 会自动替你验,改完看 docker job 即可。
+
 - **Cookie 的 Secure 判定:显式开关优先,别被 \`NODE_ENV\` 那半句吓到(2026-11-25 核实,结论是没问题)**。
   \`secureCookiesEnabled\` 是三级判断:
 
