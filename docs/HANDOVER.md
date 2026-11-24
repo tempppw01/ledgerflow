@@ -131,8 +131,17 @@ node scripts/audit-ledger-math.mjs --email=demo.mcp@ledgerflow.local   # 需要�
 PLAYWRIGHT_MODULE=<path>/playwright/index.mjs npm run audit:ui:local   # 起服务→审计→收尾
 ```
 
-其中 `check:docs`(文档引用的测试必须存在、表格列数一致)、`check:shared-predicates`、
-`check:audit-routes`(界面审计覆盖必须与路由对齐)三个**已经在 CI 里跑**。
+下面这**五个**已经在 CI 里跑(verify job 的 Static consistency gates 一步,2026-11-24 实测在 Linux CI 上通过):
+
+| 闸门 | 查什么 |
+| --- | --- |
+| `check:shared-predicates` | 共享判断(退款/冲正、是否计入余额、金额取整、支出口径)不许在别处手写或重复定义 |
+| `check:docs` | 本文档与不变量清单:引用的测试必须存在、表格列数一致、表格不被正文切断 |
+| `check:audit-routes` | 界面审计覆盖的路径必须与 `src/app/router/router.tsx` 对齐 |
+| `audit:sums` | 手工求和的候选点;被点名却未引用共享汇总的文件必须写明理由 |
+| `check:dynamic-i18n` | 动态拼出来的 i18n 键必须存在(kind 从代码推导,新增 kind 不漏语言键) |
+
+`audit:ledger-math` 与 `audit:ui` 不在 CI 里:前者要本地库,后者要 playwright 与 chromium。
 
 ---
 
