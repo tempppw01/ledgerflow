@@ -1,5 +1,9 @@
 # syntax=docker/dockerfile:1.7
-FROM node:20-alpine AS build
+# 构建阶段与运行时、CI 统一用 Node 24。
+# 这里原本是 node:20 —— 而运行时是 24、CI 也是 24,于是"生产构建"只在 20 上被验证过,
+# 换句话说 vite build 在 24 上能不能过没人知道(不过的话只有部署时才发现)。
+# 现在 CI 的 verify 里有 npm run build(先在 24 上跑通、再加这一行),两边一致了。
+FROM node:24-alpine AS build
 WORKDIR /app
 
 ENV HUSKY=0
