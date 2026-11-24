@@ -39,13 +39,13 @@ function walk(dir, out = []) {
     if (entry === 'node_modules' || entry === '.git' || entry === 'dist') continue;
     const full = path.join(dir, entry);
     if (statSync(full).isDirectory()) walk(full, out);
-    else if (/\.(ts|tsx)$/.test(entry) && !/\.test\.(ts|tsx)$/.test(entry)) out.push(full);
+    else if (/\.(ts|tsx|js|mjs)$/.test(entry) && !/\.test\.(ts|tsx|js|mjs)$/.test(entry)) out.push(full);
   }
   return out;
 }
 
 const rows = [];
-for (const file of walk(path.join(ROOT, 'src'))) {
+for (const file of walk(path.join(ROOT, 'src')).concat(walk(path.join(ROOT, 'server')))) {
   const rel = path.relative(ROOT, file).split(path.sep).join('/');
   const text = readFileSync(file, 'utf8');
   const usesShared = SHARED.some((needle) => text.includes(needle));
