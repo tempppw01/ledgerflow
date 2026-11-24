@@ -143,6 +143,9 @@ PLAYWRIGHT_MODULE=<path>/playwright/index.mjs npm run audit:ui:local   # 起服�
 
 `audit:ledger-math` 与 `audit:ui` 不在 CI 里:前者要本地库,后者要 playwright 与 chromium。
 
+**生产构建已验过(2026-11-24)**:构建成功(dist 4.0MB / 43 个 asset / 48 个预缓存条目),
+并且用 `vite preview` 起构建产物跑了一遍完整界面审计 —— **46 个组合(23 路由 × 2 视口)、0 个问题**(含登录与数据加载,Service Worker 已注册)。
+
 **生产构建**(`npm run build` = `tsc --noEmit && vite build`)在 CI 里由 docker 那条线覆盖(Dockerfile 里有 `RUN npm run build`)。
 本地在 Windows/MSYS 下直接跑会失败于 `[vite:esbuild-transpile] remove ...: Access is denied` —— 那是 MSYS 的临时目录路径问题,不是代码问题。
 逃生方法(实测可用):
