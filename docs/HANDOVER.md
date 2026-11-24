@@ -198,7 +198,6 @@ npm run audit:demo-baseline                                 # 收工前确认基
 cmd.exe /c "set TEMP=C:\\Users\\<你>\<仓库>\.tmp-build&& set TMP=%TEMP%&& npm run build"
 ```
 
-
 ---
 
 ## 六、这段工作的方法与教训
@@ -270,8 +269,6 @@ aiBillRobustness / semanticRecall / categoryKeywords / workbenchUtils / useAssis
 而接线测试在大页面上**很贵**(见下面 `transactions` 的 25 个 effect)。**不要因为"页面测试 0"就去补逻辑测试** ——
 先去 `features/` 看看有没有。
 
-
-
 | 页面 | 代码行 | 页面测试 | 备注 |
 | --- | --- | --- | --- |
 | `transactions` | 3541 | **0** | 主页面;记一笔的纯逻辑已单测(`features/transactions/model/quickAddForm.ts`),但**页面本身没有测试** |
@@ -324,10 +321,7 @@ v0.50.50 的说明里我写过"这个流程没有在浏览器里重新验过"。
 
 也就是说:**页面级单测在这里的投入产出比确实很差**,这是量出来的结论,不是偷懒。
 
-
-
-18 个页面里 **7 个完全没有页面测试**。要挑下一个体检目标,优先 `transaction-edit` 或 `database-settings`
-(都涉及写数据,代码量又不至于像主页面那样庞大)。
+**要挑下一个体检目标**:优先看「页面接线」,而不是「逻辑」—— 逻辑测试先去 `features/` 找(见上表),页面接线测试在大页面上很贵。
 
 **顺带排除过的两处**(不必重复查):
 · `repayment-management`:5003 行页面 + 1010 行测试,数学层另有 `debtMetrics` / `creditDrafts`(4 个测试文件)
