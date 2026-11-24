@@ -1104,6 +1104,8 @@
         "noneTitle": "暂无交易记录",
         "filteredDesc": "调整筛选条件后重试。",
         "noneDesc": "添加第一笔交易，或导入账单数据。",
+        "importWechat": "导入微信账单",
+        "importAlipay": "导入支付宝账单",
         "add": "新增账目"
       },
       "task": {

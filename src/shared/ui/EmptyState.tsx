@@ -14,6 +14,11 @@ interface EmptyStateProps {
   className?: string;
   primaryAction?: EmptyStateAction;
   secondaryAction?: EmptyStateAction;
+  /**
+   * 需要更多次级入口时用这个(例如空交易列表里要同时给出「导入微信账单」「导入支付宝账单」)。
+   * 与 secondaryAction 并存:先渲染 secondaryAction,再渲染这一组。
+   */
+  secondaryActions?: EmptyStateAction[];
 }
 
 function renderAction(action: EmptyStateAction, key: string) {
@@ -31,7 +36,8 @@ export function EmptyState({
   icon = '📭',
   className,
   primaryAction,
-  secondaryAction
+  secondaryAction,
+  secondaryActions
 }: EmptyStateProps) {
   return (
     <div className={cn('empty-state', className)}>
@@ -40,9 +46,10 @@ export function EmptyState({
       </div>
       <h3>{title}</h3>
       {description ? <p>{description}</p> : null}
-      {primaryAction || secondaryAction ? (
+      {primaryAction || secondaryAction || (secondaryActions && secondaryActions.length > 0) ? (
         <div className="row empty-state-actions" style={{ justifyContent: 'center', marginTop: 12 }}>
           {secondaryAction ? renderAction(secondaryAction, 'secondary') : null}
+          {(secondaryActions ?? []).map((action, index) => renderAction(action, 'secondary-' + index))}
           {primaryAction ? renderAction(primaryAction, 'primary') : null}
         </div>
       ) : null}

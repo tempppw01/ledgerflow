@@ -2763,6 +2763,7 @@ export function TransactionsPage() {
         >
           <TransactionTable
             showTaskSummary={false}
+            onImportBill={(source) => openImport(source)}
             pageSize={pageSize}
             pageSizeOptions={[...PAGE_SIZE_OPTIONS]}
             rows={viewRows}

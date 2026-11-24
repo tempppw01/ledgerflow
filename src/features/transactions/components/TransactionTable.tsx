@@ -257,6 +257,8 @@ interface TransactionTableProps {
   onLastPage: () => void;
   onPageSizeChange: (size: number) => void;
   onCreate?: () => void;
+  /** 空列表时的导入入口;不传则不显示(兼容已有用法)。 */
+  onImportBill?: (source: 'wechat' | 'alipay') => void;
   onOpenDetail: (id: string) => void;
   onShare: (id: string) => void;
   onDelete: (id: string) => void;
@@ -332,6 +334,7 @@ export function TransactionTable({
   onLastPage,
   onPageSizeChange,
   onCreate = () => undefined,
+  onImportBill,
   onOpenDetail,
   onShare,
   onDelete,
@@ -658,6 +661,25 @@ export function TransactionTable({
                   onClick: onClearFilters
                 }
               : undefined
+          }
+          /*
+           * 空列表时必须给出导入入口:文案写着「添加第一笔交易,或导入账单数据」,
+           * 而导入按钮原来只在「当期账单」那一排 —— 没有任何交易时不渲染,
+           * 新用户被文字引导去导入,却找不到入口。两个来源分开给,source 决定标签与一条支付宝专属规则。
+           */
+          secondaryActions={
+            hasFilters || !onImportBill
+              ? undefined
+              : [
+                  {
+                    label: tf('transactions.table.empty.importWechat', '导入微信账单'),
+                    onClick: () => onImportBill('wechat')
+                  },
+                  {
+                    label: tf('transactions.table.empty.importAlipay', '导入支付宝账单'),
+                    onClick: () => onImportBill('alipay')
+                  }
+                ]
           }
           primaryAction={
             hasFilters

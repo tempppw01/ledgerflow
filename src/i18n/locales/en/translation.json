@@ -1104,6 +1104,8 @@
         "noneTitle": "No transactions yet",
         "filteredDesc": "Adjust the filters and try again.",
         "noneDesc": "Add your first transaction, or import a statement.",
+        "importWechat": "Import WeChat bill",
+        "importAlipay": "Import Alipay bill",
         "add": "New transaction"
       },
       "task": {
