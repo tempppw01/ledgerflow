@@ -321,6 +321,7 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 | `npm run audit:sums`                           | 手工求和的候选点;被点名却未引用共享汇总的文件必须写明理由,否则非 0 退出                                     |
 | `npm run check:docs`                           | 本文档自身的引用体检:测试文件必须存在、表格列数一致、**表格不能被正文从中间切断**                          |
 | `npm run check:audit-routes`                   | 界面审计覆盖的路径必须与 `src/app/router/router.tsx` 对齐(有页面没跑过即失败)                              |
+| `npm run check:dynamic-i18n`                   | 动态拼出来的 i18n 键必须存在(kind 从代码推导,新增 kind 不漏语言键;走到罕见状态才暴露的那类)              |
 | `node scripts/audit-jsx-hardcoded.mjs --count` | 硬编码中文的数量,只看数字(用于看趋势)                                                                      |
 
 ### 两条关于闸门本身的说明

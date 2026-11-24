@@ -63,6 +63,7 @@ jobs:
           npm run check:docs
           npm run check:audit-routes
           npm run audit:sums
+          npm run check:dynamic-i18n
 
   docker-latest:
     needs: verify
