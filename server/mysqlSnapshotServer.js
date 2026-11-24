@@ -505,7 +505,10 @@ function normalizeStockSecIds(value) {
   const secIds = String(value || '')
     .split(',')
     .map((item) => item.trim())
-    .filter((item) => /^[01]\.\d{6}$/.test(item));
+    // 原来只放行 A 股([01].六位数字),美股(105.AAPL)、港股(116.00700)全被挡在外面 ——
+    // 用户加了美股个股却看不到任何行情,根子在这里。东财的 secid 是「市场.代码」,
+    // 代码未必是纯数字,所以放宽到这个形状。
+    .filter((item) => /^\d+\.[A-Za-z0-9]+$/.test(item));
   const uniqueSecIds = [...new Set(secIds)].slice(0, 32);
 
   if (uniqueSecIds.length === 0) {
@@ -658,7 +661,7 @@ async function getEastmoneyStockQuotes(secIds) {
     const response = await fetch(
       `https://push2.eastmoney.com/api/qt/ulist.np/get?secids=${encodeURIComponent(
         secIds.join(',')
-      )}&fields=f12,f13,f14,f3&fltt=2&invt=2`,
+      )}&fields=f12,f13,f14,f2,f3&fltt=2&invt=2`,
       {
         headers: {
           Referer: 'https://quote.eastmoney.com/',
@@ -677,10 +680,14 @@ async function getEastmoneyStockQuotes(secIds) {
       const code = String(item?.f12 || '').trim();
       const market = String(item?.f13 ?? '').trim();
       const value = Number(item?.f3);
+      const price = Number(item?.f2);
       return {
         secId: market && code ? `${market}.${code}` : '',
         code,
         name: String(item?.f14 || '').trim() || code,
+        // f2 = 最新价。这一路原来只取涨跌幅,所以「持有份额 × 价格」根本没法算 —— 个股自选
+        // 只能显示净值(基金才有),于是永远停在「待更新」。
+        price: Number.isFinite(price) && price > 0 ? price : null,
         changePercent: Number.isFinite(value) ? value : null
       };
     });

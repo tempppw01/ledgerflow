@@ -812,9 +812,17 @@ function getWatchHoldingSnapshot(
 ): WatchHoldingSnapshot | null {
   if (typeof item.holdingShares !== 'number' || item.holdingShares <= 0) return null;
   const netValue = Number(String(item.netValue || '').replace(/,/g, ''));
-  if (!Number.isFinite(netValue) || netValue <= 0) return null;
+  /*
+   * 单价取「基金净值」或「个股最新价」。
+   *
+   * 这里原来**只认净值** —— 个股没有净值,于是加了美股/港股个股、填了持有份额,
+   * 市值也永远算不出来(整条快照直接返回 null,界面上就是看不到)。
+   */
+  const unitPrice =
+    Number.isFinite(netValue) && netValue > 0 ? netValue : Number(item.lastPrice);
+  if (!Number.isFinite(unitPrice) || unitPrice <= 0) return null;
 
-  const currentValue = roundMoney(item.holdingShares * netValue);
+  const currentValue = roundMoney(item.holdingShares * unitPrice);
   const marketChange = parseStoredPercent(item.addedReturn);
   return {
     id: `watch-${item.id}`,
@@ -5270,7 +5278,50 @@ export function InvestmentsPage() {
     setToastState(`已把“${item.name}”加入关注。`);
   }
 
+  /** 这条自选是不是个股(基金走净值,个股走最新价)。 */
+  function isStockWatchItem(item: InvestmentWatchItem) {
+    if (item.secId) return true;
+    return (item.tags || []).some((tag) => /个股|股票|stock/i.test(tag));
+  }
+
+  /**
+   * 取这条自选的证券标识。
+   *
+   * 老数据里 secId 只被**拼进 note**(形如「… · 105.AAPL」),新数据才存成字段 ——
+   * 这里兜一下,已经加过的个股不用重新添加也能取到行情。
+   */
+  function resolveWatchItemSecId(item: InvestmentWatchItem): string | null {
+    if (item.secId && /^\d+\.[A-Za-z0-9]+$/.test(item.secId)) return item.secId;
+    const matched = String(item.note || '').match(/\b(\d{1,3}\.[A-Za-z0-9]{1,10})\b/);
+    return matched ? matched[1] : null;
+  }
+
   async function refreshWatchItemSnapshot(item: InvestmentWatchItem) {
+    // 个股走行情接口,不能走基金快照 —— 原来不区分,所以个股刷新必然失败
+    if (isStockWatchItem(item)) {
+      const secId = resolveWatchItemSecId(item);
+      if (!secId) {
+        throw new Error('这条自选没有证券标识,重新添加一次即可取到行情。');
+      }
+      const [quote] = await fetchEastmoneyHoldingStockQuotes([secId]);
+      if (!quote || quote.price == null) {
+        throw new Error('暂时取不到这只股票的行情,稍后再试。');
+      }
+      upsertInvestmentWatchItem({
+        ...item,
+        secId,
+        lastPrice: quote.price,
+        name: quote.name || item.name,
+        addedReturn:
+          quote.changePercent == null
+            ? item.addedReturn
+            : `${quote.changePercent >= 0 ? '+' : ''}${quote.changePercent.toFixed(2)}%`,
+        lastSummary: `最新价 ${quote.price} · 涨跌 ${(quote.changePercent ?? 0).toFixed(2)}%`,
+        lastDataAt: new Date().toISOString()
+      });
+      return quote.name || item.name;
+    }
+
     if (!item.code) throw new Error('这只基金没有代码，暂时无法刷新。');
 
     const snapshot = await fetchEastmoneyFundSnapshot(item.code);
@@ -5390,7 +5441,19 @@ export function InvestmentsPage() {
     }
   }
 
-  function handleAddStockWatchItem(result: EastmoneyStockSearchResult) {
+  /** 取个股最新价;失败就返回 undefined(不阻塞添加)。 */
+  async function fetchStockPriceForWatch(secId: string | undefined): Promise<number | undefined> {
+    if (!secId || !/^\d+\.[A-Za-z0-9]+$/.test(secId)) return undefined;
+    try {
+      const [quote] = await fetchEastmoneyHoldingStockQuotes([secId]);
+      return quote?.price ?? undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  async function handleAddStockWatchItem(result: EastmoneyStockSearchResult) {
+    const secIdForStock = result.secId || undefined;
     const existing = investmentWatchlist.find(
       (item) =>
         item.code === result.code ||
@@ -5420,6 +5483,10 @@ export function InvestmentsPage() {
       riskNotes: existing?.riskNotes || [],
       nextActions: existing?.nextActions || [],
       holdingShares: existing?.holdingShares,
+      // 存成字段:取个股行情要用它(以前只拼进 note,所以永远取不到价)
+      secId: result.secId || existing?.secId,
+      // 顺手取一次最新价 —— 否则要等用户手动点刷新才看得到数值
+      lastPrice: await fetchStockPriceForWatch(secIdForStock),
       lastAnalysisAt: existing?.lastAnalysisAt || new Date().toISOString()
     });
 
@@ -6047,9 +6114,20 @@ export function InvestmentsPage() {
                               aria-label={tf('investments.fundKeyData', '基金关键数据')}
                             >
                               <span>
-                                <em>{tf('investments.metric.netValue', '净值')}</em>
+                                {/*
+                                  个股没有「净值」这个概念,但**有最新价** —— 就显示现价。
+                                  原来这里一律写着「净值 / 待更新」,于是加了美股个股之后
+                                  那一格永远是「待更新」,看起来像是没数据。
+                                */}
+                                <em>
+                                  {item.lastPrice != null && item.netValue == null
+                                    ? tf('investments.metric.lastPrice', '现价')
+                                    : tf('investments.metric.netValue', '净值')}
+                                </em>
                                 <strong>
-                                  {item.netValue || tf('investments.watch.pendingValue', '待更新')}
+                                  {item.netValue ||
+                                    (item.lastPrice != null ? String(item.lastPrice) : '') ||
+                                    tf('investments.watch.pendingValue', '待更新')}
                                 </strong>
                               </span>
                               <span>

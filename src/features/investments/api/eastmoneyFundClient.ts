@@ -23,6 +23,8 @@ export interface EastmoneyHoldingStockQuote {
   secId: string;
   code: string;
   name: string;
+  /** 最新价(f2)。「市值 = 持有份额 × 最新价」靠它 —— 原来只取涨跌幅,所以个股算不出市值。 */
+  price?: number | null;
   changePercent: number | null;
 }
 
@@ -146,7 +148,10 @@ export async function fetchEastmoneyHoldingStockQuotes(
 ): Promise<EastmoneyHoldingStockQuote[]> {
   const normalizedSecIds = Array.from(
     new Set(
-      secIds.map((item) => String(item || '').trim()).filter((item) => /^[01]\.\d{6}$/.test(item))
+      // 与服务端一致:secid 是「市场.代码」,不能只放行 A 股(否则美股/港股个股取不到行情)
+      secIds
+        .map((item) => String(item || '').trim())
+        .filter((item) => /^\d+\.[A-Za-z0-9]+$/.test(item))
     )
   ).slice(0, 32);
 
@@ -167,6 +172,7 @@ export async function fetchEastmoneyHoldingStockQuotes(
   const body = (await response.json()) as EastmoneyHoldingStockQuoteResponse;
   return (body.data?.quotes || []).map((item) => ({
     secId: String(item.secId || '').trim(),
+    price: Number.isFinite(Number(item.price)) && Number(item.price) > 0 ? Number(item.price) : null,
     code: String(item.code || '').trim(),
     name: String(item.name || '').trim(),
     changePercent:

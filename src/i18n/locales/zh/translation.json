@@ -2757,6 +2757,7 @@
       "down": "跌"
     },
     "metric": {
+    "lastPrice": "现价",
       "netValue": "净值",
       "return": "收益",
       "holding": "持有"

@@ -140,6 +140,10 @@ export interface InvestmentWatchItem {
   riskNotes?: string[];
   nextActions?: string[];
   holdingShares?: number;
+  /** 证券标识(「市场.代码」,如 105.AAPL)。个股取行情要用它 —— 以前只被拼进 note,取不到价。 */
+  secId?: string;
+  /** 最新价(个股用)。基金用 netValue,两者有一个就能算市值。 */
+  lastPrice?: number;
   performanceHistory?: string[];
   fundAnalysis?: string[];
   fundHoldings?: string[];

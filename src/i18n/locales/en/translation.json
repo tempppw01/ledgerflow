@@ -2757,6 +2757,7 @@
       "down": "Down"
     },
     "metric": {
+    "lastPrice": "Price",
       "netValue": "NAV",
       "return": "Return",
       "holding": "Holding"
