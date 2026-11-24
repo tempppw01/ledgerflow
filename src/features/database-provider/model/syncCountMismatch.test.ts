@@ -67,13 +67,40 @@ describe('同步后核对服务端 counts', () => {
     expect(findDroppedSyncGroups({ finance: { transactions: 'nope' } }, matchingCounts)).toEqual([]);
   });
 
-  it('提示文案里带量词与差额', () => {
-    expect(describeDroppedGroups([{ group: 'transactions', sent: 4, saved: 3 }])).toBe('交易 1 条');
+  it('提示文案里带量词与差额,且量词走 i18n', () => {
+    // 用真的 tf 形状:key + 兜底文案,兜底不会出现在结果里(这里返回兜底,便于断言)
+    const tf = (key: string, fallback?: string) => {
+      const table: Record<string, string> = {
+        'dataSync.droppedGroup.transactions': '交易',
+        'dataSync.droppedGroup.accounts': '账户',
+        'dataSync.droppedGroupEntry': '{{label}} {{count}} 条',
+        'dataSync.droppedGroupSeparator': '、'
+      };
+      return table[key] ?? fallback ?? '';
+    };
+    expect(describeDroppedGroups([{ group: 'transactions', sent: 4, saved: 3 }], tf)).toBe('交易 1 条');
     expect(
-      describeDroppedGroups([
-        { group: 'transactions', sent: 4, saved: 3 },
-        { group: 'accounts', sent: 2, saved: 1 }
-      ])
+      describeDroppedGroups(
+        [
+          { group: 'transactions', sent: 4, saved: 3 },
+          { group: 'accounts', sent: 2, saved: 1 }
+        ],
+        tf
+      )
     ).toBe('交易 1 条、账户 1 条');
+  });
+
+  it('英文语境下量词跟着 tf 走,不出现中英混排', () => {
+    const tf = (key: string, fallback?: string) => {
+      const table: Record<string, string> = {
+        'dataSync.droppedGroup.transactions': 'transactions',
+        'dataSync.droppedGroupEntry': '{{label}}: {{count}}',
+        'dataSync.droppedGroupSeparator': ', '
+      };
+      return table[key] ?? fallback ?? '';
+    };
+    expect(describeDroppedGroups([{ group: 'transactions', sent: 4, saved: 3 }], tf)).toBe(
+      'transactions: 1'
+    );
   });
 });

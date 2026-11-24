@@ -1,3 +1,5 @@
+import type { TfFallback } from '../../../shared/lib/useTFallback';
+
 /**
  * 推送成功后核对「发了多少行」与「服务端说存了多少行」。
  *
@@ -25,8 +27,8 @@ function listLength(value: unknown): number {
   return Array.isArray(value) ? value.length : 0;
 }
 
-/** 中文量词,用于拼给用户看的提示。 */
-const GROUP_LABELS: Record<string, string> = {
+/** 中文兜底文案;真正的展示文案在 locale 文件的 dataSync.droppedGroup.* 下。 */
+const GROUP_LABEL_FALLBACKS: Record<string, string> = {
   accounts: '账户',
   categories: '分类',
   transactions: '交易',
@@ -36,10 +38,23 @@ const GROUP_LABELS: Record<string, string> = {
   investment_watchlists: '自选'
 };
 
-export function describeDroppedGroups(groups: SyncDroppedGroup[]): string {
+/**
+ * 拼给用户看的提示:如「交易 1 条、账户 1 条」。
+ *
+ * 量词走 i18n(`tf` = key + 兜底文案),**不在纯函数里写死中文** —— 否则英文界面下这句
+ * 提示会是中英混排(这条是我自审时发现的:原先这里直接写了一组中文标签,
+ * 而 i18n 闸门只查 locale 键与 JSX,查不到这种写在 .ts 里的硬编码)。
+ */
+export function describeDroppedGroups(groups: SyncDroppedGroup[], tf: TfFallback): string {
   return groups
-    .map((item) => `${GROUP_LABELS[item.group] || item.group} ${item.sent - item.saved} 条`)
-    .join('、');
+    .map((item) => {
+      const difference = item.sent - item.saved;
+      const label = tf(`dataSync.droppedGroup.${item.group}`, GROUP_LABEL_FALLBACKS[item.group] || item.group);
+      return tf('dataSync.droppedGroupEntry', '{{label}} {{count}} 条')
+        .replace('{{label}}', label)
+        .replace('{{count}}', String(difference));
+    })
+    .join(tf('dataSync.droppedGroupSeparator', '、'));
 }
 
 export function findDroppedSyncGroups(

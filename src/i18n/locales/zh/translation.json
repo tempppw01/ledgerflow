@@ -1710,7 +1710,18 @@
     "syncConflict": "云端同步已暂停：本机账本中的默认账户、分类等数据编号与云端另一个账本重复。为避免两个账本互相覆盖，系统已暂停上传。本地数据不受影响。请刷新页面重试；如果仍然出现，请联系管理员处理冲突后再恢复云端同步。",
     "syncFailure": "云端同步失败：{{detail}}",
     "syncRetry": "云端同步失败，数据会在稍后自动重试。",
-    "syncDroppedRecords": "同步完成，但以下记录没能写入服务端：{{detail}}。它们目前只存在当前页面里，请先导出备份再离开。"
+    "syncDroppedRecords": "同步完成，但以下记录没能写入服务端：{{detail}}。它们目前只存在当前页面里，请先导出备份再离开。",
+    "droppedGroupEntry": "{{label}} {{count}} 条",
+    "droppedGroupSeparator": "、",
+    "droppedGroup": {
+      "accounts": "账户",
+      "categories": "分类",
+      "transactions": "交易",
+      "subscriptions": "订阅",
+      "debts": "负债",
+      "investment_positions": "投资持仓",
+      "investment_watchlists": "自选"
+    }
   },
   "subscriptions": {
     "kicker": "周期支出总览",

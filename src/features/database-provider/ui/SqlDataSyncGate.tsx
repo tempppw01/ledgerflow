@@ -299,7 +299,7 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
             const dropped = findDroppedSyncGroups(payload, status?.counts);
             setNotice(
               dropped.length
-                ? { kind: 'syncDroppedRecords', detail: describeDroppedGroups(dropped) }
+                ? { kind: 'syncDroppedRecords', detail: describeDroppedGroups(dropped, tf) }
                 : null
             );
             // 推上去了,本地不再有「只活在内存里」的改动(除非服务端丢掉了行)
@@ -343,7 +343,7 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
       unsubscribeSmartBudget();
       if (timerRef.current !== null) window.clearTimeout(timerRef.current);
     };
-  }, [ready]);
+  }, [ready, tf]);
 
   const noticeText = notice
     ? t(`dataSync.${notice.kind}`, 'detail' in notice ? { detail: notice.detail } : undefined)

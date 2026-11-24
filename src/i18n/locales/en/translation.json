@@ -1710,7 +1710,18 @@
     "syncConflict": "Cloud sync is paused because some default account and category IDs in this ledger match another ledger in the cloud. To prevent the two ledgers from overwriting each other, uploads have been stopped. Your local data is safe. Refresh the page to retry; if the problem persists, ask your administrator to resolve the ID conflict before cloud sync can resume.",
     "syncFailure": "Cloud sync failed: {{detail}}",
     "syncRetry": "Cloud sync failed. Data will be retried automatically later.",
-    "syncDroppedRecords": "Sync finished, but these records could not be written to the server: {{detail}}. They currently exist only on the open page, so export a backup before leaving."
+    "syncDroppedRecords": "Sync finished, but these records could not be written to the server: {{detail}}. They currently exist only on the open page, so export a backup before leaving.",
+    "droppedGroupEntry": "{{label}}: {{count}}",
+    "droppedGroupSeparator": ", ",
+    "droppedGroup": {
+      "accounts": "accounts",
+      "categories": "categories",
+      "transactions": "transactions",
+      "subscriptions": "subscriptions",
+      "debts": "debts",
+      "investment_positions": "investment positions",
+      "investment_watchlists": "watchlist items"
+    }
   },
   "subscriptions": {
     "kicker": "Recurring spend overview",
