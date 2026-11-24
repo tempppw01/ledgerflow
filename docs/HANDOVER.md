@@ -283,12 +283,23 @@ v0.50.50 的说明里我写过"这个流程没有在浏览器里重新验过"。
 渲染它一次会触发 **25 个副作用**(URL 同步、草稿自动保存、焦点管理、表达式求值……),mock 必须
 **同时满足**这些副作用才不会炸,写出来的测试也会很脆。也就是说:**它是"结构性不可测",不是覆盖率问题。**
 
-**要让它可测,先做一步重构**:把快速记账抽屉(内联在页面里)抽成独立组件
-`features/transactions/components/QuickAddDrawer.tsx` —— 抽屉有自己的状态和保存逻辑,
-抽出来之后可以像 `TransactionDetailDrawer.test.tsx` / `TransactionTable.test.tsx` 那样单测。
-抽屉搬出去后,页面本体的 effect 数量也会明显下降。
+**抽 `QuickAddDrawer` 这个建议,我实测后自己否掉了(2026-11-25)**:
 
-在这一步之前,**不建议硬写 `TransactionsPage` 的页面测试** —— 投入产出比很差。
+我原本写的是"把抽屉抽成独立组件就能单测"。数了一下抽屉 JSX 区块(3060–3295 行)依赖的标识符:
+**22 个** —— 14 个状态/派生值(`quickAddAmountInputRef` / `quickAddBudgetSummary` / `quickAddCategoryOptions` /
+`quickAddDraftStatus` …)+ 6 个 setter + `handleQuickAddKeypadInput` + 2 个 ref。
+
+于是两条路都不好:
+· **只搬 JSX、状态留在页面** → 组件要接 **22 个 props**,比现在内联更难读;
+· **连状态一起搬** → 会牵动草稿持久化、表达式求值、金额键盘、AI 分类建议,是一次真正的重构,不是"抽个组件"。
+
+**所以不要为了测试去抽它。** 抽屉现在的保障是:
+· 纯逻辑有 9 条单测(`features/transactions/model/quickAddForm.ts` 的校验/再记一笔/建交易);
+· 端到端在浏览器 + 数据库验过(见上一节的表格)。
+
+也就是说:**页面级单测在这里的投入产出比确实很差**,这是量出来的结论,不是偷懒。
+
+
 
 18 个页面里 **7 个完全没有页面测试**。要挑下一个体检目标,优先 `transaction-edit` 或 `database-settings`
 (都涉及写数据,代码量又不至于像主页面那样庞大)。
