@@ -1,4 +1,5 @@
 import { roundMoney } from '../lib/money';
+import { setBaseCurrency as applyBaseCurrency, type LedgerBaseCurrency } from '../lib/format';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AppAccentTheme, AppTheme } from '../types/app';
@@ -53,6 +54,10 @@ const DEFAULT_RSS_SUBSCRIPTIONS: RssSubscription[] = [
 interface AppPreferencesState {
   theme: AppTheme;
   accentTheme: AppAccentTheme;
+  /** 本位币(账本计价单位):只影响符号与小数位规则,不做换算。随账本同步。 */
+  baseCurrency: LedgerBaseCurrency;
+  /** 打开应用时默认进入的路径;空字符串表示用首页。**仅本地**(设备级偏好,像主题一样)。 */
+  defaultLandingPath: string;
   rssSubscriptions: RssSubscription[];
   investmentPositions: InvestmentPosition[];
   investmentPositionHistory: InvestmentPositionHistoryEntry[];
@@ -66,6 +71,8 @@ interface AppPreferencesState {
   monthlyIncome: number;
   setTheme: (theme: AppTheme) => void;
   setAccentTheme: (accentTheme: AppAccentTheme) => void;
+  setBaseCurrency: (currency: LedgerBaseCurrency) => void;
+  setDefaultLandingPath: (path: string) => void;
   addRssSubscription: (payload: { title: string; url: string }) => { ok: boolean; reason?: string };
   removeRssSubscription: (id: string) => void;
   toggleRssSubscription: (id: string) => void;
@@ -661,6 +668,8 @@ export const useAppPreferences = create<AppPreferencesState>()(
     (set, get) => ({
       theme: 'system',
       accentTheme: 'amber',
+      baseCurrency: 'CNY',
+      defaultLandingPath: '',
       rssSubscriptions: DEFAULT_RSS_SUBSCRIPTIONS,
       investmentPositions: [],
       investmentPositionHistory: [],
@@ -674,6 +683,8 @@ export const useAppPreferences = create<AppPreferencesState>()(
       monthlyIncome: 0,
       setTheme: (theme) => set({ theme }),
       setAccentTheme: (accentTheme) => set({ accentTheme }),
+      setBaseCurrency: (currency) => set({ baseCurrency: currency }),
+      setDefaultLandingPath: (path) => set({ defaultLandingPath: String(path || "") }),
       setMonthlyIncome: (income) => set({ monthlyIncome: Number.isFinite(income) ? income : 0 }),
       setRepaymentState: ({ debts, monthlyIncome }) =>
         set({
@@ -1074,16 +1085,32 @@ export const useAppPreferences = create<AppPreferencesState>()(
       name: 'ledgerflow-preferences',
       partialize: (state) => ({
         theme: state.theme,
-        accentTheme: state.accentTheme
+        accentTheme: state.accentTheme,
+        defaultLandingPath: state.defaultLandingPath
       }),
       merge: (persisted, current) => {
-        const source = (persisted || {}) as Partial<Pick<AppPreferencesState, 'theme' | 'accentTheme'>>;
+        const source = (persisted || {}) as Partial<
+          Pick<AppPreferencesState, 'theme' | 'accentTheme' | 'defaultLandingPath'>
+        >;
         return {
           ...current,
           theme: source.theme === 'dark' || source.theme === 'light' ? source.theme : current.theme,
-          accentTheme: source.accentTheme || current.accentTheme
+          accentTheme: source.accentTheme || current.accentTheme,
+          defaultLandingPath:
+            typeof source.defaultLandingPath === 'string' ? source.defaultLandingPath : current.defaultLandingPath
         };
       }
     }
   )
 );
+
+
+/**
+ * 把偏好里的本位币同步进格式化模块(模块级状态,业务代码不传参)。
+ *
+ * 一次订阅覆盖三条路径:本地水合完成、服务端账本载入后写入、以及用户在设置里修改。
+ * 初始值也要同步一次 —— store 的初始默认是 CNY,而格式化模块自己的默认也是 CNY,两边一致;
+ * 但水合是异步的,所以不能只靠那一行初始同步。
+ */
+applyBaseCurrency(useAppPreferences.getState().baseCurrency);
+useAppPreferences.subscribe((state) => applyBaseCurrency(state.baseCurrency));

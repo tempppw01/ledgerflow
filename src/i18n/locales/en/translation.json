@@ -167,12 +167,23 @@
     "show": "👁 Show",
     "hide": "🙈 Hide",
     "workspaces": {
+      "preferences": "Preferences",
       "account": "Account & Security",
       "data": "Data",
       "openai": "OpenAI",
       "tavily": "Web search",
       "embedding": "Embedding Service",
       "advanced": "Advanced"
+    },
+    "preferences": {
+      "eyebrow": "General",
+      "title": "Startup and currency",
+      "landingLabel": "Default page on open",
+      "landingHint": "Saved on this device only, like the theme.",
+      "landingHome": "Home (default)",
+      "currencyLabel": "Base currency",
+      "currencyHint": "The unit of account for this ledger. It changes symbols and decimal rules only - no exchange conversion, existing numbers stay as they are. Synced with the ledger.",
+      "currencySample": "Shown as {sample}"
     },
     "data": {
       "eyebrow": "DATABASE",

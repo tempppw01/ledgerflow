@@ -5,6 +5,10 @@ import {
   importRelationalData
 } from '../../../shared/api/relationalDataClient';
 import { useAppPreferences } from '../../../shared/store/useAppPreferences';
+import {
+  LEDGER_BASE_CURRENCIES,
+  type LedgerBaseCurrency
+} from '../../../shared/lib/format';
 import { type FinanceDataSnapshot, useFinanceStore } from '../../../shared/store/useFinanceStore';
 import { useGlobalMemoryStore } from '../../../shared/store/useGlobalMemoryStore';
 import { useSmartBudgetStore } from '../../../shared/store/useSmartBudgetStore';
@@ -45,6 +49,14 @@ function isStaleLedgerRevision(message: string) {
   return /另一个窗口|已被.*改动/.test(message);
 }
 
+/** 只接受已知币种;其它一律 undefined(调用方据此决定是"保持原值"还是"忽略")。 */
+function normalizeBaseCurrency(value: unknown): LedgerBaseCurrency | undefined {
+  const code = String(value ?? '').trim().toUpperCase();
+  return (LEDGER_BASE_CURRENCIES as readonly string[]).includes(code)
+    ? (code as LedgerBaseCurrency)
+    : undefined;
+}
+
 function getPayload() {
   const finance = useFinanceStore.getState();
   const preferences = useAppPreferences.getState();
@@ -74,6 +86,7 @@ function getPayload() {
       debts: preferences.debts,
       repaymentRecords: preferences.repaymentRecords,
       monthlyIncome: preferences.monthlyIncome,
+      baseCurrency: preferences.baseCurrency,
       creditDrafts: preferences.creditDrafts,
       forecastBills: preferences.forecastBills,
       smartBudgetPlan: smartBudget.confirmedPlan,
@@ -194,6 +207,8 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
               ? (preferences.repaymentRecords as never)
               : [],
             monthlyIncome: Number(preferences.monthlyIncome) || 0,
+            // 非法或缺失时**保持当前值**(不能回落,否则别人的旧账本会把本机选择重置成 CNY)
+            baseCurrency: normalizeBaseCurrency(preferences.baseCurrency) ?? current.baseCurrency,
             creditDrafts: Array.isArray(preferences.creditDrafts)
               ? (preferences.creditDrafts as never)
               : [],

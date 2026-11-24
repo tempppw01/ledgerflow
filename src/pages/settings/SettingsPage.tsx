@@ -25,6 +25,11 @@ import {
 } from '../../shared/config/aiModels';
 import { useAiSettings } from '../../shared/store/useAiSettings';
 import { useAppPreferences } from '../../shared/store/useAppPreferences';
+import {
+  LEDGER_BASE_CURRENCIES,
+  setBaseCurrency as applyBaseCurrency,
+  type LedgerBaseCurrency
+} from '../../shared/lib/format';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { useGlobalMemoryStore } from '../../shared/store/useGlobalMemoryStore';
 import { useSmartBudgetStore } from '../../shared/store/useSmartBudgetStore';
@@ -156,9 +161,17 @@ interface SettingsPageProps {
   reloadPage?: () => void;
 }
 
-type SettingsWorkspace = 'account' | 'data' | 'openai' | 'tavily' | 'embedding' | 'advanced';
+type SettingsWorkspace =
+  | 'preferences'
+  | 'account'
+  | 'data'
+  | 'openai'
+  | 'tavily'
+  | 'embedding'
+  | 'advanced';
 
 const SETTINGS_WORKSPACES: Array<{ value: SettingsWorkspace; labelKey: string }> = [
+  { value: 'preferences', labelKey: 'settings.workspaces.preferences' },
   { value: 'account', labelKey: 'settings.workspaces.account' },
   { value: 'data', labelKey: 'settings.workspaces.data' },
   { value: 'openai', labelKey: 'settings.workspaces.openai' },
@@ -166,6 +179,34 @@ const SETTINGS_WORKSPACES: Array<{ value: SettingsWorkspace; labelKey: string }>
   { value: 'embedding', labelKey: 'settings.workspaces.embedding' },
   { value: 'advanced', labelKey: 'settings.workspaces.advanced' }
 ];
+
+/** 「默认打开页面」的可选项;空路径代表首页。与路由表保持一致,不要在这里写不存在的路径。 */
+const LANDING_OPTIONS: Array<{ path: string; labelKey: string }> = [
+  { path: '', labelKey: 'settings.preferences.landingHome' },
+  { path: '/transactions', labelKey: 'nav.transactions' },
+  { path: '/financial-analysis', labelKey: 'nav.financialAnalysis' },
+  { path: '/assistant', labelKey: 'nav.assistant' },
+  { path: '/smart-budget', labelKey: 'nav.smartBudget' },
+  { path: '/investments', labelKey: 'nav.investments' },
+  { path: '/repayment-management', labelKey: 'nav.repayment' },
+  { path: '/balance-changes', labelKey: 'nav.balanceChanges' }
+];
+
+/** 币种的中文名(与 format.ts 里支持的短符号表一一对应)。 */
+const CURRENCY_LABELS: Record<string, string> = {
+  CNY: '人民币',
+  USD: '美元',
+  EUR: '欧元',
+  HKD: '港币',
+  JPY: '日元',
+  GBP: '英镑',
+  KRW: '韩元',
+  SGD: '新加坡元',
+  AUD: '澳元',
+  CAD: '加元',
+  CHF: '瑞士法郎',
+  TWD: '新台币'
+};
 
 const DATA_COUNT_KEYS = [
   'accounts',
@@ -227,6 +268,16 @@ export function SettingsPage({
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user, updateProfile } = useAuth();
+  // 偏好里的两项:默认打开页面(仅本地)与本位币(随账本同步)
+  const defaultLandingPath = useAppPreferences((state) => state.defaultLandingPath);
+  const setDefaultLandingPath = useAppPreferences((state) => state.setDefaultLandingPath);
+  const baseCurrency = useAppPreferences((state) => state.baseCurrency);
+  const setBaseCurrencyPreference = useAppPreferences((state) => state.setBaseCurrency);
+  // 改完立刻让格式化模块用上新符号(store 的订阅也会同步,这里是为了同帧生效)
+  const handleBaseCurrencyChange = (code: LedgerBaseCurrency) => {
+    setBaseCurrencyPreference(code);
+    applyBaseCurrency(code);
+  };
 
   const baseUrl = useAiSettings((s) => s.baseUrl);
   const apiKey = useAiSettings((s) => s.apiKey);
@@ -778,6 +829,55 @@ export function SettingsPage({
             </button>
           ))}
         </nav>
+
+        {activeWorkspace === 'preferences' ? (
+          <section
+            className="settings-tab-panel"
+            role="tabpanel"
+            aria-labelledby="preferences-settings-title"
+          >
+            <div className="settings-data-panel">
+              <div className="settings-data-head">
+                <div>
+                  <p className="settings-data-eyebrow">{t('settings.preferences.eyebrow')}</p>
+                  <h3 id="preferences-settings-title">{t('settings.preferences.title')}</h3>
+                </div>
+              </div>
+
+              <label className="field">
+                <span>{t('settings.preferences.landingLabel')}</span>
+                <select
+                  value={defaultLandingPath}
+                  onChange={(event) => setDefaultLandingPath(event.target.value)}
+                  aria-label={t('settings.preferences.landingLabel')}
+                >
+                  {LANDING_OPTIONS.map((option) => (
+                    <option key={option.path || 'home'} value={option.path}>
+                      {t(option.labelKey)}
+                    </option>
+                  ))}
+                </select>
+                <small className="muted">{t('settings.preferences.landingHint')}</small>
+              </label>
+
+              <label className="field">
+                <span>{t('settings.preferences.currencyLabel')}</span>
+                <select
+                  value={baseCurrency}
+                  onChange={(event) => handleBaseCurrencyChange(event.target.value as LedgerBaseCurrency)}
+                  aria-label={t('settings.preferences.currencyLabel')}
+                >
+                  {LEDGER_BASE_CURRENCIES.map((code) => (
+                    <option key={code} value={code}>
+                      {code} · {CURRENCY_LABELS[code] || code}
+                    </option>
+                  ))}
+                </select>
+                <small className="muted">{t('settings.preferences.currencyHint')}</small>
+              </label>
+            </div>
+          </section>
+        ) : null}
 
         {activeWorkspace === 'data' ? (
           <section

@@ -7,7 +7,6 @@ import {
   AssistantPage,
   BalanceChangesPage,
   CategoriesAccountsPage,
-  DashboardPage,
   DatabaseSettingsPage,
   ExchangePage,
   FinancePage,
@@ -24,6 +23,7 @@ import {
   TransactionEditPage,
   TransactionsPage
 } from './lazyPages';
+import { HomeRoute } from './HomeRoute';
 
 export const router = createBrowserRouter([
   {
@@ -35,7 +35,7 @@ export const router = createBrowserRouter([
       </DatabaseInitializationGate>
     ),
     children: [
-      { index: true, element: <DashboardPage /> },
+      { index: true, element: <HomeRoute /> },
       { path: 'transactions', element: <TransactionsPage /> },
       { path: 'transactions/new', element: <TransactionEditPage /> },
       { path: 'transactions/:id', element: <TransactionEditPage /> },

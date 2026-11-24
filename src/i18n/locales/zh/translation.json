@@ -167,12 +167,23 @@
     "show": "显示",
     "hide": "隐藏",
     "workspaces": {
+      "preferences": "偏好",
       "account": "账号与安全",
       "data": "数据",
       "openai": "OpenAI",
       "tavily": "联网",
       "embedding": "嵌入服务",
       "advanced": "高级设置"
+    },
+    "preferences": {
+      "eyebrow": "常规",
+      "title": "打开与计价",
+      "landingLabel": "默认打开页面",
+      "landingHint": "只保存在本机(和主题一样),换设备不受影响。",
+      "landingHome": "首页(默认)",
+      "currencyLabel": "本位币",
+      "currencyHint": "账本的计价单位。只影响金额的符号与小数位规则,不做汇率换算,已有数字不变。随账本同步。",
+      "currencySample": "当前显示示例:{sample}"
     },
     "data": {
       "eyebrow": "数据库",

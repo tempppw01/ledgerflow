@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { formatCurrencyAuto, setFormattingLocale } from './format';
+import { baseCurrencySymbol, formatCurrency, formatCurrencyAuto, getBaseCurrency, setBaseCurrency, setFormattingLocale } from './format';
 
 afterEach(() => {
   // 其他用例默认中文数量级,避免这里的英文断言影响后续测试。
@@ -32,5 +32,56 @@ describe('formatCurrencyAuto', () => {
     setFormattingLocale('en');
     setFormattingLocale('zh-CN');
     expect(formatCurrencyAuto(42547.67)).toBe('¥4.25万');
+  });
+});
+
+describe('本位币(账本计价单位)', () => {
+  afterEach(() => {
+    setBaseCurrency('CNY');
+  });
+
+  it('默认是 CNY,¥ 符号与以前一致', () => {
+    expect(getBaseCurrency()).toBe('CNY');
+    expect(baseCurrencySymbol()).toBe('¥');
+    expect(formatCurrency(1234.56)).toContain('¥');
+  });
+
+  it('切成 USD 后,符号与数字格式都跟着变,但**数值不变**', () => {
+    setBaseCurrency('USD');
+    expect(getBaseCurrency()).toBe('USD');
+    expect(baseCurrencySymbol()).toBe('$');
+    const text = formatCurrency(1234.56);
+    expect(text).toContain('$');
+    expect(text).toContain('1,234.56');
+    // 不做换算:1234.56 还是 1234.56
+    expect(text).not.toContain('¥');
+  });
+
+  it('简写格式也用本位币符号(不是写死的 ¥)', () => {
+    setBaseCurrency('USD');
+    expect(formatCurrencyAuto(12345)).toContain('$');
+    expect(formatCurrencyAuto(12345)).not.toContain('¥');
+  });
+
+  it('英文界面下简写仍是短符号,不会变成 CN¥', () => {
+    setBaseCurrency('CNY');
+    setFormattingLocale('en');
+    const text = formatCurrencyAuto(12345);
+    expect(text).toContain('¥');
+    expect(text).not.toContain('CN¥');
+    setFormattingLocale('zh');
+  });
+
+  it('非法币种被忽略,保持原值', () => {
+    setBaseCurrency('USD');
+    setBaseCurrency('NOT-A-CURRENCY');
+    expect(getBaseCurrency()).toBe('USD');
+  });
+
+  it('eur / JPY 的短符号正确', () => {
+    setBaseCurrency('EUR');
+    expect(baseCurrencySymbol()).toBe('€');
+    setBaseCurrency('JPY');
+    expect(baseCurrencySymbol()).toBe('¥');
   });
 });

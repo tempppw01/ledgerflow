@@ -12,6 +12,8 @@ const SETTING_KEYS = {
   smartBudgetPlan: 'smart-budget-plan',
   smartBudgetHistory: 'smart-budget-history',
   monthlyIncome: 'monthly-income',
+  // 本位币(账本计价单位):账本级设置,跟账本一起同步
+  baseCurrency: 'base-currency',
   categoryLearningRules: 'category-learning-rules',
   categoryLearningEvents: 'category-learning-events'
 };
@@ -712,6 +714,19 @@ export async function replaceRelationalData(
           SETTING_KEYS.monthlyIncome,
           number(preferences.monthlyIncome)
         );
+        /*
+         * 本位币(账本计价单位)。必须**单独**一次 setSetting —— setSetting 只接受
+         * (database, userId, key, value) 四个参数,多传的会被静默忽略(这个坑踩过一次:
+         * 参数塞进同一个调用里,结果这一行从来没写进库,界面上一切正常,只是刷新后回退)。
+         */
+        if (text(preferences.baseCurrency)) {
+          await setSetting(
+            database,
+            userId,
+            SETTING_KEYS.baseCurrency,
+            text(preferences.baseCurrency)
+          );
+        }
         await setSetting(
           database,
           userId,
@@ -1024,6 +1039,7 @@ export async function getRelationalBootstrap(
             preferences: {
               rssSubscriptions: list(settings[SETTING_KEYS.rssSubscriptions]),
               monthlyIncome: number(settings[SETTING_KEYS.monthlyIncome]),
+              baseCurrency: text(settings[SETTING_KEYS.baseCurrency]),
               creditDrafts: list(settings[SETTING_KEYS.creditDrafts]),
               forecastBills: list(settings[SETTING_KEYS.forecastBills]),
               smartBudgetPlan: settings[SETTING_KEYS.smartBudgetPlan] || null,
