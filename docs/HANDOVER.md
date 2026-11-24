@@ -257,6 +257,21 @@ cmd.exe /c "set TEMP=C:\\Users\\<你>\<仓库>\.tmp-build&& set TMP=%TEMP%&& npm
 | `assistant` | 4183 | 279 | 比例 0.07 |
 | `settings` | 1705 | 110 | 比例 0.06 |
 
+**「再记一笔」已端到端验过(2026-11-25,浏览器 + 数据库)**:
+v0.50.50 的说明里我写过"这个流程没有在浏览器里重新验过"。之后验完了,结论是**功能正常**:
+
+| 步骤 | 结果 |
+| --- | --- |
+| 点「记一笔」(快速记账入口,注意页面上有两个同名按钮,**抽屉那个在末尾**) | 抽屉打开 |
+| 填 12.5 → 点「保存」 | 落库 `expense 12.5 快速记账` |
+| 填 7.25 → 点「再记一笔」 | 落库 `expense 7.25`;**抽屉不关**、**金额清空**、**类型(支出)保留** |
+
+两个给后来者的坑:
+· 金额输入框是 `<textarea id="quick-add-expression">`(**不是 input**),用 `input[placeholder="0"]` 永远找不到;
+  它自带 `<label>`,用 `getByLabelText('金额')` 或 `#quick-add-expression` 都可以;
+· footer 里 **「再记一笔」和「保存」并排**,点 `.quick-add-footer button.primary` 点的是「保存」(会关抽屉),
+  想验"保留表单"必须点文本为「再记一笔」的那个。
+
 **`transactions` 页面为什么还没测(2026-11-25 实测,不是"懒得测")**:
 
 | 指标 | `transactions` | `transaction-edit`(已能测) |
