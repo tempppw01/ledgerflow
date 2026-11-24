@@ -10,6 +10,7 @@ import { useGlobalMemoryStore } from '../../../shared/store/useGlobalMemoryStore
 import { useSmartBudgetStore } from '../../../shared/store/useSmartBudgetStore';
 import { clearScopedBrowserData } from '../model/deploymentScope';
 import { useTFallback } from '../../../shared/lib/useTFallback';
+import { useUnsyncedChangesGuard } from '../../../shared/hooks/useUnsyncedChangesGuard';
 
 interface SqlDataSyncGateProps {
   children: ReactNode;
@@ -95,12 +96,21 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
   const [error, setError] = useState<'' | 'readFailed' | 'initFailed'>('');
   const [notice, setNotice] = useState<SyncNotice | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  /*
+   * 有「还没推到服务端」的改动。账本不在浏览器里持久化(sqlOnlyStorage 是空实现),
+   * 所以这些改动只活在内存里 —— 离线记一笔再关页面就没了,而且事后毫无痕迹。
+   * 这个标记用来在离开页面前拦一道(见下方 useUnsyncedChangesGuard)。
+   */
+  const [hasUnsyncedChanges, setHasUnsyncedChanges] = useState(false);
   const syncingRef = useRef(false);
   const dirtyRef = useRef(false);
   const initializedRef = useRef(false);
   const timerRef = useRef<number | null>(null);
   const retryAttemptRef = useRef(0);
   const pausedRef = useRef(false);
+
+  // 有未同步的改动时,离开页面前让浏览器弹确认框(数据只在内存里,关掉就没了)
+  useUnsyncedChangesGuard(hasUnsyncedChanges);
 
   useEffect(() => {
     if (!financeHydrated || initializedRef.current) return;
@@ -263,6 +273,7 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
     const scheduleSync = (delayMs = 500) => {
       if (pausedRef.current) return;
       dirtyRef.current = true;
+      setHasUnsyncedChanges(true);
       if (timerRef.current !== null) window.clearTimeout(timerRef.current);
       if (syncingRef.current) return;
       timerRef.current = window.setTimeout(() => {
@@ -274,12 +285,16 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
           .then(() => {
             retryAttemptRef.current = 0;
             setNotice(null);
+            // 推上去了,本地不再有「只活在内存里」的改动
+            setHasUnsyncedChanges(false);
           })
           .catch((reason) => {
             const message = reason instanceof Error ? reason.message : '';
             const conflict = isLedgerIdConflict(message);
             pausedRef.current = conflict;
             dirtyRef.current = !conflict;
+            // 失败(含冲突暂停)时改动仍未上去,保护要继续挂着
+            setHasUnsyncedChanges(true);
             if (!conflict) retryAttemptRef.current += 1;
             setNotice(
               conflict
