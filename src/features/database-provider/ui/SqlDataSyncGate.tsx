@@ -26,12 +26,23 @@ type SyncNotice =
   | { kind: 'syncConflict' }
   | { kind: 'syncFailure'; detail: string }
   | { kind: 'syncDroppedRecords'; detail: string }
+  | { kind: 'syncStaleRevision' }
   | { kind: 'syncRetry' };
 
 // 服务端在检测到「本机账本编号与服务器上其它账本重复」时会返回 409。
 // 这类冲突不会自己消失,继续按退避重试只会不断刷屏,所以识别出来后就暂停自动上传。
 function isLedgerIdConflict(message: string) {
   return /冲突|重复|409/.test(message);
+}
+
+/**
+ * 服务端在「这个窗口加载之后,账本被另一个窗口/设备改过」时返回 409(见 /data/import 的实现)。
+ *
+ * 这条和 id 冲突的处理方式一样(暂停上传 + 提示刷新),但**文案不同** —— id 冲突说的是
+ * 「编号重复」,这条说的是「你手里的快照已经旧了」。所以要在 isLedgerIdConflict 之前判。
+ */
+function isStaleLedgerRevision(message: string) {
+  return /另一个窗口|已被.*改动/.test(message);
 }
 
 function getPayload() {
@@ -113,6 +124,12 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
   const timerRef = useRef<number | null>(null);
   const retryAttemptRef = useRef(0);
   const pausedRef = useRef(false);
+  /*
+   * 「我加载时看到的是哪个版本」(bootstrap / 上次导入返回的 updatedAt)。
+   * 随每次上传带给服务端:它发现版本已变就拒绝,避免整份替换把另一个窗口/设备写的行删掉。
+   * 上传成功后又用返回值续期 —— 否则自己下一次上传就会被自己刚刚的那次写入判成「旧版本」。
+   */
+  const baseRevisionRef = useRef('');
 
   // 有未同步的改动时,离开页面前让浏览器弹确认框(数据只在内存里,关掉就没了)
   useUnsyncedChangesGuard(hasUnsyncedChanges);
@@ -140,6 +157,8 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
 
         if (bootstrap.hasData) {
           const { finance, preferences, globalMemories } = bootstrap.data;
+          // 记下这个窗口看到的版本:之后每次上传都带给服务端做乐观并发校验
+          baseRevisionRef.current = String(bootstrap.updatedAt || '');
           useFinanceStore.getState().replaceAllData(finance as unknown as FinanceDataSnapshot);
           useFinanceStore.setState({
             categoryLearningRules: Array.isArray(finance.categoryLearningRules)
@@ -287,9 +306,13 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
         dirtyRef.current = false;
         syncingRef.current = true;
         const payload = getPayload();
-        void importRelationalData(payload)
+        void importRelationalData(payload, baseRevisionRef.current || undefined)
           .then((status) => {
             retryAttemptRef.current = 0;
+            // 上传成功:用服务端返回的版本续期,否则下一次上传会被自己刚写的这次判成旧版本
+            if (status?.updatedAt) {
+              baseRevisionRef.current = String(status.updatedAt);
+            }
             /*
              * 服务端返回的 counts 告诉我们它**实际存下了多少行**。它静默丢弃引用无法解析的行
              * (例如交易引用的账户已被彻底删除),而这里原先把 counts 直接丢掉了 ——
@@ -307,17 +330,25 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
           })
           .catch((reason) => {
             const message = reason instanceof Error ? reason.message : '';
-            const conflict = isLedgerIdConflict(message);
-            pausedRef.current = conflict;
-            dirtyRef.current = !conflict;
+            /*
+             * 「快照已旧」(另一个窗口/设备改过账本)要在 id 冲突之前判 ——
+             * isLedgerIdConflict 的规则里含 409,会把这条也吞进去,给出错误的原因说明。
+             * 两者都暂停上传、都要求刷新,但文案不同。
+             */
+            const staleRevision = isStaleLedgerRevision(message);
+            const conflict = !staleRevision && isLedgerIdConflict(message);
+            pausedRef.current = staleRevision || conflict;
+            dirtyRef.current = !(staleRevision || conflict);
             // 失败(含冲突暂停)时改动仍未上去,保护要继续挂着
             setHasUnsyncedChanges(true);
-            if (!conflict) retryAttemptRef.current += 1;
+            if (!(staleRevision || conflict)) retryAttemptRef.current += 1;
             setNotice(
-              conflict
-                ? { kind: 'syncConflict' }
-                : message
-                  ? { kind: 'syncFailure', detail: message }
+              staleRevision
+                ? { kind: 'syncStaleRevision' }
+                : conflict
+                  ? { kind: 'syncConflict' }
+                  : message
+                    ? { kind: 'syncFailure', detail: message }
                   : { kind: 'syncRetry' }
             );
           })

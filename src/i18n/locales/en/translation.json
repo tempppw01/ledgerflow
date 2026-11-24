@@ -1711,6 +1711,7 @@
     "syncFailure": "Cloud sync failed: {{detail}}",
     "syncRetry": "Cloud sync failed. Data will be retried automatically later.",
     "syncDroppedRecords": "Sync finished, but these records could not be written to the server: {{detail}}. They currently exist only on the open page, so export a backup before leaving.",
+    "syncStaleRevision": "This ledger was changed by another window or device, so uploads are paused to avoid overwriting those changes. Refresh the page to continue.",
     "droppedGroupEntry": "{{label}}: {{count}}",
     "droppedGroupSeparator": ", ",
     "droppedGroup": {
