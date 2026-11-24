@@ -249,7 +249,28 @@ cmd.exe /c "set TEMP=C:\\Users\\<你>\<仓库>\.tmp-build&& set TMP=%TEMP%&& npm
 - **死代码清理**:删掉 8 个没人引用的文件(7 个仪表盘组件 + 一个已废弃的 sync store),`syncClient.ts` 193 → 17 行;
   并加了「声明了却没人用」与「导出了却没人引用」两个闸门。
 
-**页面测试覆盖地图**(2026-11-25 实测,按"页面代码量 / 页面测试量"排):
+**页面测试覆盖地图(2026-11-25,已更正一次)**:
+
+⚠ **先说这个图表的局限**:它只统计 `src/pages/<页面>/<页面>Page.test.tsx`。
+第一版因此把「页面文件很长、但逻辑抽在 `features/` 里且有整套测试」的页面误标成了"零测试" ——
+**AI 助手**就是典型(页面 4183 行、比例 0.07,而 `features/assistant/` 下有
+aiBillRobustness / semanticRecall / categoryKeywords / workbenchUtils / useAssistantWorkbench 一整套测试)。
+
+补上 `features/**` 那一层之后的真实情况:
+
+| 页面 | 页面代码 | 页面测试 | **对应 features/ 里的测试文件** |
+| --- | --- | --- | --- |
+| `transactions` | 3541 | 0 | **14 个**(`features/transactions/`) |
+| `database-settings` | 1995 | 0 | **6 个**(database-provider 5 + backup 1) |
+| `transaction-edit` | 967 | 3(2026-11-25 补) | 0,逻辑在页面的 `transactionDraft.ts`(有测试) |
+| `global-memory` | 382 | 0 | 0 |
+| `recycle-bin` / `about` / `help` | 330 / 197 / 118 | 0 | 0(都是小页面) |
+
+**所以真正的结论是**:大页面的**逻辑**基本都有测试,缺的是**页面这一层的接线测试**;
+而接线测试在大页面上**很贵**(见下面 `transactions` 的 25 个 effect)。**不要因为"页面测试 0"就去补逻辑测试** ——
+先去 `features/` 看看有没有。
+
+
 
 | 页面 | 代码行 | 页面测试 | 备注 |
 | --- | --- | --- | --- |
