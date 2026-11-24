@@ -22,6 +22,11 @@
  * 「已知是退款类」的分支里,不会与谓词走形。债务生命周期的 settled/closed/paused
  * 是另一套状态,也不属于这条。
  *
+ * 2026-11-25 把范围从 src + scripts 扩到**也含 server**:服务端是 JS,而三个真源都在 src 里
+ * 且是 TS —— 它 **import 不了**,所以服务端是最容易长出"第二份判断"的地方。加宽后跑过一遍:
+ * **0 命中**,于是留着。万一将来这里真的报出命中,先想清楚那是不是"重复实现"还是"服务端
+ * 确实复制了一份必须存在的逻辑"——前者照常改,后者应当在 ALLOW 里写明理由。
+ *
  * 用法:
  *   node scripts/check-shared-predicates.mjs          # 有命中就非 0 退出
  *   node scripts/check-shared-predicates.mjs --list   # 只列出来,不失败
@@ -142,7 +147,7 @@ function walk(dir, out = []) {
 }
 
 const hits = [];
-for (const file of walk(path.join(ROOT, 'src')).concat(walk(path.join(ROOT, 'scripts')))) {
+for (const file of walk(path.join(ROOT, 'src')).concat(walk(path.join(ROOT, 'scripts')), walk(path.join(ROOT, 'server')))) {
   const rel = path.relative(ROOT, file).split(path.sep).join('/');
   if (isSkipped(rel)) continue;
   let text;
