@@ -34,7 +34,8 @@
     "audit:ledger-math": "node scripts/audit-ledger-math.mjs",
     "check:shared-predicates": "node scripts/check-shared-predicates.mjs",
     "audit:sums": "node scripts/audit-handrolled-sums.mjs",
-    "check:docs": "node scripts/check-doc-invariants.mjs"
+    "check:docs": "node scripts/check-doc-invariants.mjs",
+    "changelog": "node scripts/generate-changelog.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
