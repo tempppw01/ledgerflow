@@ -445,6 +445,59 @@ describe('workbenchUtils', () => {
       expect.arrayContaining([expect.objectContaining({ id: 'acc-wx', name: '微信钱包' })])
     );
   });
+
+  it('发给模型的合计必须冲减退款、且不计入待支付的行', () => {
+    const categories: Category[] = [{ id: 'cat-food', name: '餐饮', kind: 'expense' }];
+    const accounts: Account[] = [{ id: 'acc-wx', name: '微信钱包', type: 'virtual' }];
+    const today = new Date().toISOString().slice(0, 10);
+    const transactions: TransactionItem[] = [
+      {
+        id: 'tx-normal',
+        type: 'expense',
+        categoryId: 'cat-food',
+        accountId: 'acc-wx',
+        amount: 100,
+        date: today,
+        note: '一笔支出',
+        tags: [],
+        status: 'completed'
+      },
+      {
+        id: 'tx-refund',
+        type: 'expense',
+        categoryId: 'cat-food',
+        accountId: 'acc-wx',
+        amount: 40,
+        date: today,
+        note: '退款',
+        tags: [],
+        status: 'completed',
+        adjustmentKind: 'refund',
+        refundOfTransactionId: 'tx-normal'
+      },
+      {
+        id: 'tx-pending',
+        type: 'expense',
+        categoryId: 'cat-food',
+        accountId: 'acc-wx',
+        amount: 30,
+        date: today,
+        note: '待支付',
+        tags: [],
+        status: 'pending'
+      }
+    ];
+
+    const snapshot = JSON.parse(
+      buildTransactionPromptContext(transactions, categories, accounts, {
+        focusQuestion: '最近一个月消费分析'
+      })
+    );
+
+    // 100 - 40 = 60;待支付的 30 不计入。原先退款会被当成「又花了一笔」→ 140
+    expect(snapshot.summary.totalExpense).toBe(60);
+    expect(snapshot.summary.totalIncome).toBe(0);
+  });
 });
 
 describe('账单草稿账户解析', () => {

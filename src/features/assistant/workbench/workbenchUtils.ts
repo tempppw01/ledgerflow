@@ -6,6 +6,10 @@ import type { AiBillItem, AiBillResult, DraftBillEntry, ValidationIssue } from '
 import { toLocalDateKey } from '../../../shared/lib/localDate';
 import { roundMoney } from '../../../shared/lib/money';
 import { resolveTransactionLocalDay } from '../../../shared/lib/localDate';
+import {
+  filterCountableTransactions,
+  isTransactionRefundLike
+} from '../../../shared/lib/transactionMetrics';
 
 const MAX_PROMPT_TRANSACTIONS = 1200;
 const CHINA_NETWORK_TIME_API = 'https://api.m.taobao.com/rest/api3.do?api=mtop.common.getTimestamp';
@@ -219,6 +223,7 @@ export function buildTransactionPromptContext(
   const accountMap = new Map(accounts.map((item) => [item.id, item.name]));
   const normalizedAll = transactions
     .map((item) => ({
+      id: item.id,
       date: toDateKey(item.date),
       type: item.type,
       amount: roundMoney(Number(item.amount) || 0),
@@ -252,11 +257,25 @@ export function buildTransactionPromptContext(
   const coveredFrom = allDates[0] || '';
   const coveredTo = allDates[allDates.length - 1] || '';
 
+  /*
+   * 合计的算法要和项目其它地方一致:退款/冲正单的 type 也是 expense,但它们应当**冲减**
+   * 而不是再加一笔;待支付/已关闭/失败的行也不该计入。原先这两点都没做 ——
+   * 演示账本里有一笔 ¥390.55 的退款,于是发给模型的「支出」比实际多出 ¥390.55。
+   * 这里只修这两点,**不动支出口径**(预算型仍按原样不计入)。
+   */
+  const originalsById = new Map(transactions.map((item) => [item.id, item]));
+  const countableIds = new Set(filterCountableTransactions(transactions).map((item) => item.id));
   const totals = rows.reduce(
     (acc, item) => {
-      if (item.type === 'income') acc.income += item.amount;
-      if (item.type === 'expense' || item.type === 'repayment') acc.expense += item.amount;
-      if (item.type === 'repayment') acc.repayment += item.amount;
+      const original = originalsById.get(item.id);
+      if (!original || !countableIds.has(item.id)) {
+        return acc;
+      }
+      const sign = isTransactionRefundLike(original) ? -1 : 1;
+      const signed = sign * item.amount;
+      if (item.type === 'income') acc.income += signed;
+      if (item.type === 'expense' || item.type === 'repayment') acc.expense += signed;
+      if (item.type === 'repayment') acc.repayment += signed;
       return acc;
     },
     { income: 0, expense: 0, repayment: 0 }
