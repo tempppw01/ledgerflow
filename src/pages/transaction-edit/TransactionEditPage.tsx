@@ -15,6 +15,7 @@ import {
   type TransactionDraft
 } from './transactionDraft';
 import { roundMoney } from '../../shared/lib/money';
+import { isBalanceAffectingStatus } from '../../shared/lib/localDate';
 
 interface RecognitionSuggestion {
   merchant: string;
@@ -688,6 +689,22 @@ export function TransactionEditPage() {
                   <option value="closed">{tf('transactions.table.status.closed', '已关闭')}</option>
                   <option value="failed">{tf('transactions.table.status.failed', '失败')}</option>
                 </select>
+                {/*
+                  状态直接影响钱:`isBalanceAffectingStatus` 只让「已完成」「已退款」计入余额与
+                  各项收支统计,「待处理」「已关闭」「失败」**不计入**。
+
+                  在此之前界面上没有任何说明 —— 用户把一笔账改成「待处理」,它就悄悄从余额和
+                  本月支出里消失了,而屏幕上没有任何提示。这里只在**选了不计入的状态**时说明,
+                  避免正常记账时多一行噪声。
+                */}
+                {!isBalanceAffectingStatus(status) ? (
+                  <small className="muted">
+                    {tf(
+                      'transactions.edit.statusNotCountedHint',
+                      '「待处理」「已关闭」「失败」的交易只记在账上,不计入余额与收支统计。'
+                    )}
+                  </small>
+                ) : null}
               </div>
             </section>
 
