@@ -88,6 +88,25 @@ npm run audit:unused-i18n     # i18n 死键:分成可安全删除与需人工确
 它当前的结论:可安全删除的几十条(基本来自被删掉的仪表盘组件),另有 271 条需人工确认。
 删除它们卡在**同一个障碍**上:语言文件不是规范化 JSON,整文件重写会产生约 4000 行格式 diff —— 见不变量清单。
 
+## CI 里到底跑什么(2026-11-25 逐条核对)
+
+**别再靠印象判断"这个闸门在不在 CI"** —— 我因为只读了 `ci.yml` 的一段,误判过两次。
+下面是完整清单(共 12 类):
+
+| 步骤 | 跑什么 |
+| --- | --- |
+| 类型 | `npx tsc --noEmit` |
+| 代码风格 | `npm run lint`(`--max-warnings=0`) |
+| 前端测试 | `npm test` |
+| i18n | `npm run i18n:check` + `npm run i18n:check-jsx` |
+| 日期用法 | `npm run check:dates`(独立一步) |
+| 金额格式 | `npm run check:money`(独立一步) |
+| 静态一致性(9 个) | `check:shared-predicates` · `check:docs` · `check:audit-routes` · `audit:sums` · `check:dynamic-i18n` · `check:orphan-methods` · `check:dead-exports` · `check:jsx-hardcoded` · `check:r2-fetch` |
+
+**不在 CI 的**(要本地资源,只能手动跑):`audit:ledger-math`(要库)· `audit:ui` / `audit:ui:local`
+(要 playwright + chromium)· `audit:demo-baseline`(要库)· `format:check`(全仓 349 文件不过,
+**别跑** —— 见不变量清单)。
+
 ## 改完必须跑的
 
 ```bash
