@@ -7,6 +7,7 @@
 
 | 版本 | 说明 |
 | --- | --- |
+| [v0.50.38](release-notes/RELEASE_NOTES_v0.50.38.md) | 状态会影响钱,现在界面会告诉你 |
 | [v0.50.37](release-notes/RELEASE_NOTES_v0.50.37.md) | 选「预算」时,表单会说明它到底算什么 |
 | [v0.50.36](release-notes/RELEASE_NOTES_v0.50.36.md) | 「预算」型交易不再被算作支出 |
 | [v0.50.35](release-notes/RELEASE_NOTES_v0.50.35.md) | 不再让「旧窗口的快照」覆盖掉别处已经保存的数据 |
