@@ -96,3 +96,19 @@ export function resolveTransactionLocalDay(value: string | undefined): string {
   }
   return toLocalDateKey(parsed);
 }
+
+/**
+ * 两个日期值是否**同一个本地日**。
+ *
+ * 不要写成 `a.slice(0, 10) === b.slice(0, 10)`:那取的是 **UTC 日**,在 UTC+8 的
+ * 本地 00:00–07:59 会判成前一天。这个函数把两侧都归一到本地日再比。
+ * (`npm run check:dates` 会拦下「两个 slice(0,10) 直接比」这种写法。)
+ */
+export function isSameLocalDay(left?: string, right?: string): boolean {
+  if (!left || !right) {
+    return false;
+  }
+  const leftDay = resolveTransactionLocalDay(left);
+  const rightDay = resolveTransactionLocalDay(right);
+  return Boolean(leftDay) && leftDay === rightDay;
+}

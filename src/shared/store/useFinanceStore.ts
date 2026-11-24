@@ -15,7 +15,7 @@ import { SubscriptionItem } from '../../entities/subscription/types';
 import { syncChangeIfNeeded } from '../lib/dataSync';
 import { generateId } from '../lib/id';
 import { getSignedAmount, isTransactionRefundLike } from '../lib/transactionMetrics';
-import { isBalanceAffectingStatus } from '../lib/localDate';
+import { isBalanceAffectingStatus, isSameLocalDay } from '../lib/localDate';
 import { advanceSubscriptionDate } from '../lib/subscriptionSchedule';
 import { roundMoney } from '../lib/money';
 import { resolveSubscriptionStatus } from '../../features/subscriptions/model/subscriptionStatus';
@@ -308,11 +308,6 @@ function inferSubscriptionCategoryId(item: SubscriptionItem): string {
   if (item.kind === 'mobile') return 'cat-communication';
   if (item.kind === 'membership' || item.kind === 'digital') return 'cat-entertainment';
   return 'cat-other';
-}
-
-function isSameDay(left?: string, right?: string): boolean {
-  if (!left || !right) return false;
-  return left.slice(0, 10) === right.slice(0, 10);
 }
 
 function normalizeCategoryName(raw: string): string {
@@ -1617,7 +1612,7 @@ export const useFinanceStore = create<FinanceState>()(
             (item) =>
               item.accountId === accountId &&
               item.amount === roundCurrency(subscription.amount) &&
-              isSameDay(item.date, today) &&
+              isSameLocalDay(item.date, today) &&
               item.tags?.includes('订阅') &&
               item.note.includes(subscription.name)
           );

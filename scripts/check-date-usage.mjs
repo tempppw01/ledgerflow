@@ -37,6 +37,16 @@ const PATTERNS = [
   {
     re: /String\(\s*[A-Za-z_$][\w$.]*\.date\s*\|\|\s*''\s*\)\.slice\(\s*0\s*,\s*10\s*\)/g,
     why: "String(x.date || '').slice(0, 10) 取的是 UTC 日"
+  },
+  {
+    /*
+     * 两个 slice(0, 10) 直接比大小 —— 也就是「同一个 UTC 日」的写法。
+     * 用 `shared/lib/localDate.isSameLocalDay(a, b)` 代替:它把两侧都归一到本地日。
+     * (实测过的坑:判断「同一天是否已经生成过订阅支出」时,UTC 日与本地日在
+     *  本地 00:00–07:59 会差一天。)
+     */
+    re: /[\w$.()[\]\s]*\.slice\(\s*0\s*,\s*10\s*\)\s*===\s*[\w$.()[\]\s]*\.slice\(\s*0\s*,\s*10\s*\)/g,
+    why: '两个 slice(0, 10) 直接比较 = 比 UTC 日;请改用 isSameLocalDay(a, b)'
   }
 ];
 
