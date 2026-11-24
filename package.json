@@ -37,6 +37,7 @@
     "check:docs": "node scripts/check-doc-invariants.mjs",
     "check:dynamic-i18n": "node scripts/check-dynamic-i18n.mjs",
     "check:orphan-methods": "node scripts/check-orphan-store-methods.mjs",
+    "check:dead-exports": "node scripts/check-dead-exports.mjs",
     "audit:demo-baseline": "node scripts/check-demo-baseline.mjs",
     "dev:test-user": "node scripts/dev-test-user.mjs",
     "changelog": "node scripts/generate-changelog.mjs"

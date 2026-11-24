@@ -20,15 +20,10 @@
  */
 import { SyncChangeRequest } from '../api/syncClient';
 
-export type SyncDbType = 'redis';
-
-export function hasEnabledSqlConnection() {
-  return false;
-}
-
-export function resolveSyncTargetDbType(): SyncDbType | null {
-  return null;
-}
+/*
+ * 原来这里还有 hasEnabledSqlConnection / resolveSyncTargetDbType / SyncDbType ——
+ * 在线 SQL 逐条同步停用后它们就没有任何调用点了,已删除(见 scripts/check-dead-exports.mjs)。
+ */
 
 export async function syncChangeIfNeeded(payload: Omit<SyncChangeRequest, 'happenedAt'>) {
   void payload;

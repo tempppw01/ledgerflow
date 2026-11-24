@@ -334,6 +334,7 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 | `npm run check:audit-routes`                   | 界面审计覆盖的路径必须与 `src/app/router/router.tsx` 对齐(有页面没跑过即失败)                              |
 | `npm run check:dynamic-i18n`                   | 动态拼出来的 i18n 键必须存在(kind 从代码推导,新增 kind 不漏语言键;走到罕见状态才暴露的那类)              |
 | `npm run check:orphan-methods`                  | store 里声明的公开方法必须在别处被用到 —— 抓「声明了、实现是空壳、全项目没人调用」这类(类型检查与测试都发现不了) |
+| `npm run check:dead-exports`                    | 导出了却全仓没人引用(符号名与文件路径都查)—— 抓「功能删了、文件留下」这类死代码;只覆盖整个文件都没人用的情况 |
 | `node scripts/audit-jsx-hardcoded.mjs --count` | 硬编码中文的数量,只看数字(用于看趋势)                                                                      |
 
 ### 两条关于闸门本身的说明
