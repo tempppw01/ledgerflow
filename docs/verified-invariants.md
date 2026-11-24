@@ -278,6 +278,21 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 
   `shared/lib/expenseScope.contract.test.ts` 现在钉的是**统一后**的契约(两边判定必须一致、
   预算型两边都不算);谁再让某个类型两边不同,那 4 条会先翻红。
+- **`npm run format:check` 全仓不过(349 个文件)—— 不要顺手跑 `npm run format`(2026-11-25 实测)**。
+  `package.json` 里有 `format` / `format:check`(prettier),但这两个脚本**从来没有被任何地方引用**:
+  不在 CI、不在文档、不在别的脚本里。实测 `npm run format:check` → **退出码 1,349 个文件不合格**。
+
+  **这不是某一次改动造成的,是既有状态**:清单里包含大量与近期改动无关的文件
+  (`ScrollProgressBar.tsx`、`Toast.tsx`、`src/test/quickAddUndo.test.ts` …)。
+  也就是说这个仓库的自定义风格一直不是 prettier 的默认风格。
+
+  **所以千万不要"顺手"跑 `npm run format`** —— 那会产生一个**349 个文件**的格式化 diff,
+  把真正的改动埋掉、也让 `git blame` 失去意义。要么就**整体接受** prettier 风格
+  (单独一个提交、单独一次 review、之后加进 CI),要么就**别动它**。
+
+  同理,另外三个脚本也全仓零引用:`benchmark:database`、`brands:generate`、`test:watch`
+  (前者是性能基线、中者是生成品牌图标、后者是开发用 watch,都属于"按需手动跑",不是坏掉)。
+
 - **鉴权模型:一个部署一个 token,本地服务只绑 localhost —— 不要再当漏洞挖(2026-11-25 核实)**。
   服务端整套只认一个共享 token(`x-ledgerflow-api-token` 或 `Authorization: Bearer …`,
   用 `timingSafeEqual` 比较,这点做得对)。也就是说**没有用户级隔离**:任何持有 token 的调用方
