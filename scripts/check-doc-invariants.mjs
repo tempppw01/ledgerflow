@@ -137,12 +137,36 @@ for (const rel of FENCE_FILES) {
   }
 }
 
-if (missing.length === 0 && columnIssues.length === 0 && fragmentIssues.length === 0 && fenceIssues.length === 0) {
+/**
+ * 文档里写的 `npm run <script>` 都存在吗?
+ *
+ * 这个脚本原先只核对"文档引用的测试文件是否存在"。而文档里更常出现的是**命令** ——
+ * 命令被改名或删掉时没人会发现,直到有人照着做才失败。
+ * 2026-11-25:我自己就在验证配方里把静态闸门数写错过(10 vs 实际 9),说明这类对不上的事真会发生。
+ */
+const scriptNames = new Set(Object.keys(JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8')).scripts || {}));
+const commandIssues = [];
+for (const rel of ['README.md', ...DOC_FILES]) {
+  const full = path.join(ROOT, rel);
+  if (!existsSync(full)) continue;
+  const text = readFileSync(full, 'utf8');
+  for (const match of text.matchAll(/npm run ([a-zA-Z0-9:_-]+)/g)) {
+    if (!scriptNames.has(match[1])) {
+      commandIssues.push(`${rel}: npm run ${match[1]} —— package.json 里没有这个脚本`);
+    }
+  }
+}
+
+if (missing.length === 0 && columnIssues.length === 0 && fragmentIssues.length === 0 && fenceIssues.length === 0 && commandIssues.length === 0) {
   console.log(
     `文档引用体检通过:docs/*.md 共 ${DOC_FILES.length} 份 —— 引用的测试文件全部存在、` +
-      '表格列数一致、没有被打断的表格、代码块成对。'
+      '表格列数一致、没有被打断的表格、代码块成对、文档里写的 npm 脚本都存在。'
   );
   process.exit(0);
+}
+if (commandIssues.length > 0) {
+  console.log('\n文档里写了不存在的 npm 脚本(照着做会失败):');
+  for (const issue of commandIssues) console.log('  ✗ ' + issue);
 }
 if (missing.length > 0) {
   console.log('\n以下引用找不到对应文件(测试改名/删除后忘了同步文档):');
