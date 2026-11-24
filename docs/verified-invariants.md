@@ -293,6 +293,22 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   同理,另外三个脚本也全仓零引用:`benchmark:database`、`brands:generate`、`test:watch`
   (前者是性能基线、中者是生成品牌图标、后者是开发用 watch,都属于"按需手动跑",不是坏掉)。
 
+- **Cookie 的 Secure 判定:显式开关优先,别被 \`NODE_ENV\` 那半句吓到(2026-11-25 核实,结论是没问题)**。
+  \`secureCookiesEnabled\` 是三级判断:
+
+  \`\`\`js
+  if (LEDGERFLOW_COOKIE_SECURE === 'true') return true;
+  if (LEDGERFLOW_COOKIE_SECURE === 'false') return false;   // 显式设置直接返回
+  return xForwardedProto === 'https' || NODE_ENV === 'production';  // 只是兜底
+  \`\`\`
+
+  我一开始看到第三行,以为"谁设了 \`NODE_ENV=production\` 就会让 HTTP 部署的登录坏掉" —— **错了**:
+  compose 里 \`LEDGERFLOW_COOKIE_SECURE\` **总是被显式设置**(默认 \`false\`),所以前两个分支必然命中,
+  第三行只在**两个都没设**时才生效。设计是谨慎的:显式开关 > \`x-forwarded-proto\` > \`NODE_ENV\`。
+
+  **记这条是为了省下一次重复推导**;也提醒:别看到"最后兜底那半句"就当成缺陷去"修" ——
+  上次(交易表 \`table-layout\`)也是量了才发现本来就对。
+
 - **生产构建的验证盲区已关闭(2026-11-25,已跑通验证)**。
   查部署层时发现:CI 的 \`verify\` 有 tsc / lint / 测试 / 十一个闸门,但**没有 \`npm run build\`**;
   全仓只有 \`Dockerfile\` 会跑 \`vite build\`,而它的构建阶段是 **node:20** —— 运行时与 CI 却是 **24**。
