@@ -333,6 +333,27 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   两个缺口的共同形状:**判据写的是"某一种写法",而同一个错误换个写法(解构、加注释)就绕过去了**。
   所以破坏性验证时不要只试"文档里写着的那种写法" —— 试**同义的另一种写法**。
 
+  **2026-11-25:CI 里的闸门已全部核实过一遍**(每个都有下面之一:实测会拦 / 抓到过真问题 / 发现并修掉缺口):
+
+  | 关卡 | 依据 |
+  | --- | --- |
+  | `tsc --noEmit` / `npm run lint` | 本次加规则后立刻报出 62 条(扣掉误报剩 1 条真问题) |
+  | `npm test` / 服务端测试 | 本次多次因我改坏而失败(服务的 `toMysqlDate`、契约测试等) |
+  | `i18n:check` | 实测:去掉 zh 侧一个键 -> 失败;删掉 JSX 用到的 `accentLabel` -> 失败 |
+  | `i18n:check-jsx`(=`audit-jsx-hardcoded --fail`)| 实测:JSX 文本节点写死「今日财务雷达」-> exit 1 并点名文件:行;不带 `--fail` 则 0 |
+  | `check:dates` | 实测:两种写法都 exit 1(解构那条是这轮补上的缺口)|
+  | `check:money` | 实测:JSX 里写 `¥{value.toFixed(2)}` -> exit 1 |
+  | `check:shared-predicates` | 实测:注释可压制(已修);修后能报出真实的重复实现 |
+  | `check:docs` | 实测:抓到我自己写坏的表格 |
+  | `check:audit-routes` | 实测:加一条 `/probe-route` -> exit 1 并说明没被审计覆盖 |
+  | `audit:sums` | 实测:造违规文件 -> exit 1 并写出两条修法 |
+  | `check:dynamic-i18n` | 实测:动态键两份都删 -> 失败(这是这轮补的缺口)|
+  | `check:orphan-methods` / `check:dead-exports` / `check:r2-fetch` | 写它们时就各自证伪过一次(见本文档对应条目)|
+
+  **顺带一个反例**:`check:jsx-hardcoded` 曾被"接进"CI —— 但它和 `i18n:check-jsx` 是**同一条命令**,
+  于是同一个脚本跑了两遍(已撤)。"东西在、没接上"的反面是"**接上了,又接了一遍**":
+  接一个能力之前,先确认它是不是**已经**被人接过。
+
 - **\`audit:sums\` 是真闸门(会失败),不是"只打印清单" —— 已证伪验证(2026-11-25)**。
   它的输出看起来像一份**清单**(列出手工求和的地方 + ⚠ 标出没引用共享汇总的),而且跑起来
   \`exit 0\` —— 我据此推断"它永远不会失败,新出现一个 ⚠ 文件没人会知道"。**这个推断是错的**:
