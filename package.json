@@ -33,6 +33,8 @@
     "check:audit-routes": "node scripts/check-audit-routes.mjs",
     "audit:ledger-math": "node scripts/audit-ledger-math.mjs",
     "check:shared-predicates": "node scripts/check-shared-predicates.mjs",
+    "audit:jsx-hardcoded": "node scripts/audit-jsx-hardcoded.mjs",
+    "audit:unused-i18n": "node scripts/check-i18n-keys.mjs --json --unused > .i18n-report.json && node scripts/audit-unused-i18n.mjs",
     "audit:sums": "node scripts/audit-handrolled-sums.mjs",
     "check:docs": "node scripts/check-doc-invariants.mjs",
     "check:dynamic-i18n": "node scripts/check-dynamic-i18n.mjs",

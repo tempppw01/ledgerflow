@@ -72,6 +72,22 @@ node --test server/stockSecIdFilter.test.js                      # 服务端单�
 - **断言"条数/金额/日期",不要断言耗时** —— 耗时断言会变成 flaky。
   想看性能就跑一遍打日志(实测 1 万行约 478ms,线性)。
 
+## 两个容易漏掉的审计
+
+这两个脚本一直**没注册进 package.json**,所以没人会发现它们(2026-11-25 补上):
+
+```bash
+npm run audit:jsx-hardcoded   # JSX 文本节点里的硬编码中文(当前 0 处)
+npm run audit:unused-i18n     # i18n 死键:分成可安全删除与需人工确认两堆
+```
+
+`audit:unused-i18n` **是两步的**:它需要 `check-i18n-keys.mjs --json --unused` 先产出
+`.i18n-report.json` —— npm 脚本里已经链好了,但你要是单独跑它,会看到
+`ENOENT: .i18n-report.json`。**这不是脚本坏了,是少了前一步**(我在这上面绕过一次)。
+
+它当前的结论:可安全删除的几十条(基本来自被删掉的仪表盘组件),另有 271 条需人工确认。
+删除它们卡在**同一个障碍**上:语言文件不是规范化 JSON,整文件重写会产生约 4000 行格式 diff —— 见不变量清单。
+
 ## 改完必须跑的
 
 ```bash
