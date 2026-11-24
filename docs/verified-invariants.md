@@ -314,6 +314,19 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   (与 shared 的 \`isExpenseLike\` 判定完全相同,「预算」型不算支出是 v0.50.36 的定案,
   \`expenseScope.contract.test.ts\` 钉着两者一致,该测试实测 4 条全过)。
 
+- **文档里引用的文件路径:量过一遍,4 处失效都是"历史记录",没有接成闸门(2026-11-25)**。
+  18 份文档里共 **107 处**带目录前缀的路径引用,失效 6 处 —— 但**只有 4 处是真的**(另两处是我正则的假阳性:
+  `src/pages/占位符/占位符Page.test.tsx` 是占位符、`server/*.test.js` 是 glob)。
+
+  4 处真失效里,3 处落在这个会话删掉的死文件上(`useSyncStore.ts` / `DashboardTopTransactionsCard.tsx` /
+  `NetAssetCurveCard.tsx`,都在 `docs/i18n-hardcoded-audit.md` 里 —— 那份文档已加过"这些文件已被删除"的注);
+  **第 4 处是新发现的**:`docs/UI动画优化总结.md` 多次提到 `src/shared/hooks/useUIAnimations.ts`,
+  而全仓搜不到这个文件,hooks 目录现在只有 `usePwaInstallPrompt` / `useResolvedTheme` /
+  `useUnsyncedChangesGuard`。已在该文档顶部加注:这是历史记录,照抄里面的路径会失败。
+
+  **没有接成闸门**:要接就得给这 4 条历史引用配 ALLOW,而它们永远不会"恢复" —— 机制成本大于收益。
+  **但这事量过了**:以后真有人删文件,可以用同样的办法扫一遍(正则要排除占位符与 glob,否则会有假阳性)。
+
 - **审计脚本也要做"破坏性验证"(2026-11-25 两次都是靠它)**。
   光看代码或看退出码**不够** —— 这轮的教训具体是:
   · \`audit:sums\` 跑起来 exit 0,我据此推出"它永远不会失败";实测造一个违规文件后是 **exit 1**,推断错了;

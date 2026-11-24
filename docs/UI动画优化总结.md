@@ -1,4 +1,13 @@
-# UI&动画优化总结
+# UI动画优化总结
+
+> **⚠ 这是一份历史记录,里面的文件路径不保证仍然存在。**
+> 2026-11-25 核对时发现:文中多次提到的 `src/shared/hooks/useUIAnimations.ts` 在仓库里**已经没有了**
+> (全仓搜不到任何引用),而 `src/shared/hooks/` 现在只剩 `usePwaInstallPrompt` / `useResolvedTheme` /
+> `useUnsyncedChangesGuard` 三个。所以文中写的文件路径与那段 `import` 示例**照抄会失败**。
+>
+> 保留原文而不改写,是为了留住当时的判断与数据;要查现在的做法,请看代码与
+> `docs/verified-invariants.md`,不要以本文档为准。
+
 
 ## 概述
 根据提供的UI&动画优化规则，已完成P0、P1、P2优先级的核心优化工作。
