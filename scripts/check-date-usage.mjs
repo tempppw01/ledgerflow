@@ -35,6 +35,17 @@ const ALLOW = new Map([
 const PATTERNS = [
   { re: /\.date\.slice\(\s*0\s*,\s*10\s*\)/g, why: 'date.slice(0, 10) 取的是 UTC 日' },
   {
+    /*
+     * 解构之后的裸 date.slice(0, 10) —— 同一个 bug,但前一条判据要求前面有个点,
+     * 所以 `const { date } = tx; date.slice(0, 10)` 一直逃得掉。
+     *
+     * 2026-11-25 实测确认:tx.date.slice(0, 10) -> exit 1;换成解构写法 -> exit 0(放行)。
+     * 否定前视 `(?<![.\w])` 是为了不和上一条重复报告同一个位置(上一条匹配 x.date.slice)。
+     */
+    re: /(?<![.\w])date\.slice\(\s*0\s*,\s*10\s*\)/g,
+    why: 'date.slice(0, 10) 取的是 UTC 日(解构出来的 date 一样会算到前一天)'
+  },
+  {
     re: /String\(\s*[A-Za-z_$][\w$.]*\.date\s*\|\|\s*''\s*\)\.slice\(\s*0\s*,\s*10\s*\)/g,
     why: "String(x.date || '').slice(0, 10) 取的是 UTC 日"
   },
