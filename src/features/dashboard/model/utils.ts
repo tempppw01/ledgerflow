@@ -66,27 +66,25 @@ export function monthLabel(date: Date): string {
 /**
  * 「实际支出」= 支出 + 还款,**不含预算型交易**。
  *
- * 注意:这和 src/shared/lib/transactionMetrics.ts 里的 `isExpenseLike`(支出 + 预算 + 还款)
- * 口径不同,而 `summarizeTransactions` 用的是后者。于是用户一旦录入「预算」型交易,
- * 首页自己就前后不一致:
- *   · 页头「本月结余」把它当支出(实测记一笔 ¥100 后,结余从 1.86万 变 1.85万)
- *   · 「钱都去哪了」的支出构成与「花钱节奏」的周支出都不显示它
- *     (构成各分类合计仍是 ¥7,764.37,比当月实际支出少 ¥100)
+ * **2026-11-24 已定案**:预算型交易不算支出。在此之前这里与
+ * `shared/lib/transactionMetrics.isExpenseLike`(当时含 `budget`)口径不同,导致用户一旦录入
+ * 「预算」型交易,首页自己就前后不一致 —— 页头「本月结余」不把它当支出,而「钱都去哪了」
+ * 的支出构成与「花钱节奏」的周支出会把它算进去。
  *
- * 「预算」型交易除了类型下拉里的一个选项之外,没有任何功能、没有测试、文档里也没定义,
- * 库里演示账本 0 笔 —— 所以这里**不擅自统一**:预算是「钱真的花出去了」还是
- * 「把钱划进某个额度」,是一条产品决策。定下来之后,要么改这里,要么两边都改用共用谓词。
+ * 定案的依据不是偏好,而是**代码自己的一致行为**:全项目对「预算」型 5 处不计入
+ * (首页本月结余、智能预算的已花费/洞察/分类明细、助手发给模型的合计)、1 处计入
+ * (只有 isExpenseLike 那条链)—— 于是把那一处对齐到其余五处。
+ *
+ * 现在两个谓词的判定**完全相同**(支出 + 还款)。保留两个名字是因为首页多处按
+ * `isActualExpenseType` 读;改任一处都要同时改另一处(`npm run check:shared-predicates`
+ * 会盯着这两个名字,`shared/lib/expenseScope.contract.test.ts` 钉着它们必须一致)。
+ *
+ * 另注意:**预算型不算支出 ≠ 不影响余额** —— 它照样产生余额变动(钱确实划出账户了),
+ * 变的只是各处的「支出」统计不再把它算作花掉。
  */
 export function isActualExpenseType(type: 'expense' | 'income' | 'budget' | 'repayment'): boolean {
   return type === 'expense' || type === 'repayment';
 }
-
-/**
- * 2026-11-24 起,「实际花掉」与「支出类」已经是**同一个口径**(预算型两边都不算)。
- * 上面这个函数保持原名,是因为首页多处按它读;它现在与
- * `shared/lib/transactionMetrics.isExpenseLike` 一致,改任一处都要同时改另一处
- * (`npm run check:shared-predicates` 会盯着这两个名字)。
- */
 
 export function extractJson(text: string): string {
   const start = text.indexOf('{');
