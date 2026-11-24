@@ -40,7 +40,7 @@ export function inferCategoryFromText(type: TransactionType, text: string): stri
     return '还款';
   }
   if (
-    /餐|饭|早餐|午饭|午餐|晚饭|晚餐|夜宵|宵夜|外卖|食堂|快餐|火锅|烧烤|奶茶|咖啡|饮料|星巴克|瑞幸|蜜雪|霸王茶姬|food|meal|restaurant/.test(
+    /餐|饭|早餐|午饭|午餐|晚饭|晚餐|夜宵|宵夜|外卖|食堂|快餐|火锅|烧烤|奶茶|咖啡|饮料|星巴克|瑞幸|蜜雪|霸王茶姬|厨房|饭店|饭馆|餐厅|面馆|米线|米粉|小吃|烘焙|西点|面包|蛋糕|卤味|串串|排档|food|meal|restaurant/.test(
       normalized
     )
   ) {
@@ -63,7 +63,7 @@ export function inferCategoryFromText(type: TransactionType, text: string): stri
   if (/房租|租金|水费|电费|水电|燃气|物业|取暖|家政|装修|居住|rent|utility/.test(normalized)) {
     return '居住';
   }
-  if (/医院|药店|买药|挂号|看病|诊所|牙科|体检|医疗|医保|medical|doctor/.test(normalized)) {
+  if (/医院|药店|药房|买药|购药|挂号|看病|诊所|牙科|口腔|体检|医疗|医保|medical|doctor/.test(normalized)) {
     return '医疗';
   }
   if (/电影|演出|演唱会|游戏|KTV|娱乐|music|movie|game/.test(normalized)) return '娱乐';
