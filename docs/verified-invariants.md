@@ -293,6 +293,22 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   同理,另外三个脚本也全仓零引用:`benchmark:database`、`brands:generate`、`test:watch`
   (前者是性能基线、中者是生成品牌图标、后者是开发用 watch,都属于"按需手动跑",不是坏掉)。
 
+- **`brands:generate --check` 看起来能当闸门,其实不能 —— 别接进 CI(2026-11-25 核实)**。
+  它自带 `--check`("文件过期时退出码 1"),今天实测**通过**(`brandMarks.ts is up to date`)。
+  但它比对的数据源是 **网络** 且是 **`@latest`**:
+
+  ```
+  https://cdn.jsdelivr.net/npm/simple-icons@latest/_data/simple-icons.json
+  https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/<slug>.svg
+  ```
+
+  **上游 Simple Icons 一发新版,这个检查就会开始失败** —— 跟本仓库改没改没关系。
+  接进 CI 会得到一个随机失败、没人能修的闸门。所以:**保持手动跑**(想刷新图标时跑
+  `npm run brands:generate`,然后按正常流程提交)。
+
+  同理提醒:**"脚本能跑"不等于"适合当 CI 闸门"** —— 先确认它有没有网络依赖、有没有
+  `@latest` 这类会漂移的输入。这次差一点就把它接进 CI 了。
+
 - **鉴权模型:一个部署一个 token,本地服务只绑 localhost —— 不要再当漏洞挖(2026-11-25 核实)**。
   服务端整套只认一个共享 token(`x-ledgerflow-api-token` 或 `Authorization: Bearer …`,
   用 `timingSafeEqual` 比较,这点做得对)。也就是说**没有用户级隔离**:任何持有 token 的调用方
