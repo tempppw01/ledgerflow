@@ -293,6 +293,24 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   同理,另外三个脚本也全仓零引用:`benchmark:database`、`brands:generate`、`test:watch`
   (前者是性能基线、中者是生成品牌图标、后者是开发用 watch,都属于"按需手动跑",不是坏掉)。
 
+- **闸门红着不许提交 —— CI 确实会拦,但别指望本地拦住你(2026-11-25 实例)**。
+  那天我改了文档表格,`check:docs` 已经输出「表格列数不一致」**而我仍然提交推送了**;
+  20 分钟后**又犯了一次**(为验证 pre-commit hook 注入的坏表格忘了还原就提交)。
+  两次的结果都记录在 CI 里:
+
+  | 提交 | verify job |
+  | --- | --- |
+  | \`f1f4b3d\`(坏表格那次)| **failure** —— CI 拦住了 |
+  | \`5f37f54\` / \`bd29e93\`(修复)| success |
+
+  两条结论:
+  1. **本地没有任何东西会拦住你** —— 仓库配了 husky + lint-staged,但 \`.husky/pre-commit\` 长期缺失;
+     2026-11-25 补上后,又发现**这台 Windows 上 git 执行不了 husky 的 hook**
+     (\`env: failed to run command '.husky/_/pre-commit': Permission denied\`,手动 \`sh\` 跑却正常)。
+     所以 \`core.hooksPath\` 保持未设置,提交不受影响 —— **能跑 hook 的环境(Linux/WSL)会受益,Windows 只能靠 CI**。
+  2. **"写下来提醒自己"是没用的**:这条纪律我在那个会话里写过好几轮,然后照样违反两次。
+     唯一真正有效的是**机器拦截**,而它恰好在本机不可用 —— 所以**推之前自己把闸门跑一遍**,并**在 CI 里确认**。
+
 - **「改了要搜引用」的扫查结论(2026-11-25,两轮做完)**。
   另一条判据:**改过行为的地方,要搜一遍谁在用它** —— 接口兼容、测试也过,但**调用方可能已经变了味**。
   这次把本会话改过行为的地方逐个搜完,4 个目标里 **1 个是真问题**:
