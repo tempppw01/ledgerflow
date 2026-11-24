@@ -94,11 +94,25 @@ console.log(
   '文档引用的测试文件 ' + referenced.length + ' 个,仓库里共 ' + allTests.length + ' 个测试文件'
 );
 
-if (missing.length === 0 && columnIssues.length === 0 && fragmentIssues.length === 0) {
-  console.log('文档引用体检通过:引用的测试文件全部存在,表格列数一致,没有被打断的表格。');
-  process.exit(0);
+/**
+ * 代码块必须成对:未闭合的 ``` 会把后面整段文档吞成代码块(渲染出来面目全非),
+ * 而只看表格列数的检查完全看不到这件事。
+ */
+const FENCE_FILES = ["docs/verified-invariants.md", "docs/HANDOVER.md"];
+const fenceIssues = [];
+for (const rel of FENCE_FILES) {
+  const full = path.join(ROOT, rel);
+  if (!existsSync(full)) continue;
+  const count = readFileSync(full, "utf8").split("```").length - 1;
+  if (count % 2 !== 0) {
+    fenceIssues.push(rel + ": ``` 出现 " + count + " 次(奇数,有未闭合的代码块)");
+  }
 }
 
+if (missing.length === 0 && columnIssues.length === 0 && fragmentIssues.length === 0 && fenceIssues.length === 0) {
+  console.log('文档引用体检通过:引用的测试文件全部存在,表格列数一致,没有被打断的表格,代码块成对。');
+  process.exit(0);
+}
 if (missing.length > 0) {
   console.log('\n以下引用找不到对应文件(测试改名/删除后忘了同步文档):');
   for (const ref of missing) console.log('  ✗ ' + ref);
@@ -106,6 +120,10 @@ if (missing.length > 0) {
 if (columnIssues.length > 0) {
   console.log('\n表格列数不一致(渲染会错位):');
   for (const issue of columnIssues) console.log('  ✗ ' + issue);
+}
+if (fenceIssues.length > 0) {
+  console.log("\n代码块未闭合(后半段会被渲染成代码):");
+  for (const issue of fenceIssues) console.log("  ✗ " + issue);
 }
 if (fragmentIssues.length > 0) {
   console.log('\n表格被正文从中间切断(后半段会渲染成纯文本):');

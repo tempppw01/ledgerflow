@@ -143,6 +143,15 @@ PLAYWRIGHT_MODULE=<path>/playwright/index.mjs npm run audit:ui:local   # 起服�
 
 `audit:ledger-math` 与 `audit:ui` 不在 CI 里:前者要本地库,后者要 playwright 与 chromium。
 
+**生产构建**(`npm run build` = `tsc --noEmit && vite build`)在 CI 里由 docker 那条线覆盖(Dockerfile 里有 `RUN npm run build`)。
+本地在 Windows/MSYS 下直接跑会失败于 `[vite:esbuild-transpile] remove ...: Access is denied` —— 那是 MSYS 的临时目录路径问题,不是代码问题。
+逃生方法(实测可用):
+
+```bash
+cmd.exe /c "set TEMP=C:\\Users\\<你>\<仓库>\.tmp-build&& set TMP=%TEMP%&& npm run build"
+```
+
+
 ---
 
 ## 六、这段工作的方法与教训
