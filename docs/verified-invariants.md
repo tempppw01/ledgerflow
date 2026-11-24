@@ -131,6 +131,22 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   `ledger_debt_repayments` 这类表**没有 owner 列**。导出的 dump 含多个作用域的演示数据,
   而 `/api/data/bootstrap` 只返回当前用户那一个作用域 —— 计数对不上是正常的。
 - **恢复点的状态是内联文本**(`.sync-tip`),不是 toast。想在浏览器里断言,要去读那段文本。
+- **`auth_*` 表的 `user_id` 是 `auth_users.id`,不是 ledger 用户 id**。按后者去查
+  `auth_sessions` / `auth_password_reset_tokens` / `auth_audit_log` 会得到「全是别人的行」这种
+  假警报 —— 我自己就这么误判过一次(见下)。导出侧对这三张表是按 `auth_users.id` 剪的
+  (`pruneSqliteDatabase`),是对的。
+
+### 「下载 SQL 数据库」的作用域(验过)
+
+实测过一次(先造一个第二用户并写入一笔特征金额 `31415.92`,再以演示账号导出):
+
+- 导出 33 张表(线上 34 张,差的是 `sqlite_sequence`,被 `NOT LIKE 'sqlite_%'` 排除)✓;
+- 演示账号的数据完整:交易 298、账户 6、分类 21、settings 11 ✓;
+- **全表兜底:不属于演示账号的行合计 = 0**(含 `auth_sessions` / `auth_password_reset_tokens` /
+  `auth_audit_log`)✓;第二用户那笔特征交易与特征金额都不在文件里 ✓。
+
+也就是说这个出口按 `user_id`(认证表按 `auth_users.id`)把多租户库剪成了单账号快照,
+不会把别人的数据交到用户手里。
 
 ### 多用户隔离(验过,方法与结论如下)
 
