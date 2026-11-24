@@ -993,6 +993,10 @@ export const useFinanceStore = create<FinanceState>()(
            * 生成时把续费日推进了一期,删掉流水却不退,再点一次生成就会**再推进一期** ——
            * 演示账本 iCloud+ 实测:基线 11/28 → 生成 12/28 → 删掉流水(仍 12/28)
            * → 再生成 2027/01/28,整段 12 月被跳过(提醒与资产负债预测都用这个日期)。
+           *
+           * 注意这里**不清理** prev 快照与 lastGeneratedTransactionId:回收站是**可逆**的,
+           * 用户把流水恢复回来时要靠它们把日期推回「已生成」的状态(见 restoreTransaction)。
+           * 真正该清掉的是**彻底删除**——那时才不可逆。
            */
           const subscriptions = s.subscriptions.map((item) => {
             if (!item.lastGeneratedTransactionId || !removingIds.has(item.lastGeneratedTransactionId)) {
@@ -1003,11 +1007,8 @@ export const useFinanceStore = create<FinanceState>()(
               renewalDate: item.prevRenewalDate ?? item.renewalDate,
               expireDate: item.prevExpireDate ?? item.expireDate
             };
-            delete reverted.prevRenewalDate;
-            delete reverted.prevExpireDate;
             return {
               ...reverted,
-              lastGeneratedTransactionId: undefined,
               status: resolveSubscriptionStatus(reverted)
             };
           });
@@ -1049,8 +1050,39 @@ export const useFinanceStore = create<FinanceState>()(
           const restoringIds = new Set([id, ...dependents.map((item) => item.id)]);
           restoredRows = [target, ...dependents].map(clearTrashedAt);
           const transactions = ensureUniqueById([...s.transactions, ...restoredRows]);
+          /*
+           * 与 removeTransaction 对称:删除时把续费日退回了(并保留了 prev 快照与关联),
+           * 所以恢复这笔「生成的流水」时要把日期**推回生成后的状态**,否则订阅会落后一期 ——
+           * 提醒按错的日期算,而且再点一次生成会为同一个周期重复记一笔(直接是钱的问题)。
+           * 推进用的是生成时同一个函数,结果确定(月末夹取也一样)。
+           */
+          const subscriptions = s.subscriptions.map((item) => {
+            if (!item.lastGeneratedTransactionId || !restoringIds.has(item.lastGeneratedTransactionId)) {
+              return item;
+            }
+            const advanced = {
+              ...item,
+              renewalDate: advanceSubscriptionDate(
+                item.prevRenewalDate ?? item.renewalDate,
+                item.billingCycle,
+                item.customCycleDays
+              ),
+              expireDate: advanceSubscriptionDate(
+                item.prevExpireDate ?? item.expireDate,
+                item.billingCycle,
+                item.customCycleDays
+              )
+            };
+            delete advanced.prevRenewalDate;
+            delete advanced.prevExpireDate;
+            return { ...advanced, status: resolveSubscriptionStatus(advanced) };
+          });
+          const subscriptionsChanged = subscriptions.some(
+            (item, index) => item !== s.subscriptions[index]
+          );
           return {
             transactions,
+            ...(subscriptionsChanged ? { subscriptions } : {}),
             trashedTransactions: s.trashedTransactions.filter(
               (item) => !restoringIds.has(item.id)
             ),
@@ -1062,9 +1094,28 @@ export const useFinanceStore = create<FinanceState>()(
         });
       },
       permanentlyDeleteTransaction: (id) => {
-        set((s) => ({
-          trashedTransactions: s.trashedTransactions.filter((item) => item.id !== id)
-        }));
+        /*
+         * 彻底删除才**不可逆** —— 到这里才把订阅侧的快照与关联清掉。
+         * (回收站里那一份仍然留着,因为还能恢复。)
+         */
+        set((s) => {
+          const subscriptions = s.subscriptions.map((item) => {
+            if (item.lastGeneratedTransactionId !== id) {
+              return item;
+            }
+            const cleared = { ...item, lastGeneratedTransactionId: undefined };
+            delete cleared.prevRenewalDate;
+            delete cleared.prevExpireDate;
+            return cleared;
+          });
+          const subscriptionsChanged = subscriptions.some(
+            (item, index) => item !== s.subscriptions[index]
+          );
+          return {
+            trashedTransactions: s.trashedTransactions.filter((item) => item.id !== id),
+            ...(subscriptionsChanged ? { subscriptions } : {})
+          };
+        });
       },
       refundTransaction: (input) => {
         const refundAmount = roundCurrency(input.amount);

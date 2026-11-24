@@ -60,7 +60,7 @@ node ./node_modules/vitest/vitest.mjs run --config vitest.config.ts src/shared/s
 | `store/trashSymmetry.test.ts`                  | 删除/恢复/永久删除对称:往返字段不少、余额对称、重复操作是空操作、主列表已有同 id 时恢复不会让记录消失              |
 | `shared/lib/billImport.mergeInvariant.test.ts` | 重复导入不丢字段:来源里没有的字段(`status`/单号)不能把已有值覆盖成 `undefined`                                     |
 | `shared/lib/transactionMetrics.test.ts`        | 汇总口径:待支付/已关闭/失败/已删除不计入;过滤结果与账户余额判据逐行相等                                            |
-| `store/subscriptionRenewalRevert.test.ts`      | 删掉「生成支出」写出的流水时续费日要**精确退回**:月末 1/31 →(生成)2/28 →(删除)必须回到 1/31,不能倒推成 1/28;再生成只推进一期 |
+| `store/subscriptionRenewalRevert.test.ts`      | 删掉「生成支出」写出的流水时续费日要**精确退回**:月末 1/31 →(生成)2/28 →(删除)必须回到 1/31,不能倒推成 1/28;再生成只推进一期。**回收站可逆**:删除时保留 `prev*` 快照与关联,恢复时把日期推回生成后的状态(否则再生成会为同一周期重复记一笔),**彻底删除**才清掉它们 |
 | `server/orphanAccountReferences.test.js`        | **记录现状(待决策)**:账户被彻底删除后,其交易在整份导入时被丢弃。根因是 `account_id NOT NULL`;四个备选方案写在测试文件顶部 |
 | `server/subscriptionPrevDate.test.js`           | v9 的 `prev_renewal_date` / `prev_expire_date` 在服务端三层都通:建表、迁移、写入与读回 |
 
@@ -276,29 +276,6 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 
   所以无论最终选哪个方案,第 2 步的文案都要跟着改 —— 若选方案 C(拒绝彻底删除仍有交易的账户),
   这个危险操作根本不会出现;若选「重指派到某个账户」,文案要说明交易会被挪到哪。
-
-### 4. 「删除生成流水会退回续费日」没有对应的可逆机制(自审时发现,由 v0.50.18 引入)
-
-v0.50.18 让「删掉订阅生成的流水」把续费日**精确退回**上一期(带 `prevRenewalDate` 快照)。
-但**退回之后就再也回不去了**:同一次操作把 `prevRenewalDate` / `prevExpireDate` 删掉、
-把 `lastGeneratedTransactionId` 清空 —— 于是用户从回收站**恢复**那笔流水时,订阅那一侧什么都不知道。
-
-实测(单测探针,临时用例,未入库):
-
-| 步骤 | renewalDate | lastGeneratedTransactionId | status |
-| --- | --- | --- | --- |
-| 生成前 | 2026-11-28 | — | — |
-| 生成后 | **2026-12-28** | 有 | — |
-| 删除后(按设计退回) | 2026-11-28 | 无 | — |
-| **恢复后** | **2026-11-28** ✗ | **无** ✗ | **due-soon** ✗ |
-
-后果两条:① 「续费即将到期/已逾期」提醒按错的日期算;② 再点一次「生成支出」会**为同一个周期
-重复记一笔**(从 11-28 推进到 12-28,而 12 月那笔已经在账上了)—— 直接是钱的问题。
-
-修法方向(需要动三个 action,所以没在发现的那一轮仓促改):
-- 回收站是**可逆**的,所以删除时应当**保留** `prev*` 与关联;真正清掉它们的是**彻底删除**;
-- 恢复时用留存快照把日期推回生成后的值(或按同一规则从快照重算,结果确定);
-- 届时 `subscriptionRenewalRevert.test.ts` 里「删除后关联被清空」那条断言要跟着改。
 
 ### 3. `/api/data/import` 返回 200 **不等于**「全都写进去了」
 

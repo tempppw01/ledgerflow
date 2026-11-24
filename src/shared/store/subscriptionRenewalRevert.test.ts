@@ -61,7 +61,7 @@ describe('生成支出与续费日', () => {
     resetStore([subscription()]);
   });
 
-  it('删掉生成的流水会把续费日退回上一期', () => {
+  it('删掉生成的流水会把续费日退回上一期,并保留可逆所需的快照与关联', () => {
     expect(renewal()).toBe('2026-11-28');
     const generated = state().generateSubscriptionTransaction('sub-1');
     expect(renewal()).toBe('2026-12-28');
@@ -69,9 +69,42 @@ describe('生成支出与续费日', () => {
     state().removeTransaction(generated.transactionId);
 
     expect(renewal()).toBe('2026-11-28');
-    expect(state().subscriptions[0].lastGeneratedTransactionId).toBeUndefined();
+    // 回收站是可逆的,所以快照与关联要**留着** —— 恢复时要靠它们把日期推回去
+    expect(state().subscriptions[0].lastGeneratedTransactionId).toBe(generated.transactionId);
+    expect(state().subscriptions[0].prevRenewalDate).toBe('2026-11-28');
     // 状态跟着退回后的日期重算:今天是 11-24、续费日回到 11-28 → 即将到期(不再是 active)
     expect(state().subscriptions[0].status).toBe('due-soon');
+  });
+
+  it('从回收站恢复那笔流水,续费日回到「已生成」的状态(否则再生成会重复记一笔)', () => {
+    const generated = state().generateSubscriptionTransaction('sub-1');
+    expect(renewal()).toBe('2026-12-28');
+
+    state().removeTransaction(generated.transactionId);
+    expect(renewal()).toBe('2026-11-28');
+
+    state().restoreTransaction(generated.transactionId);
+
+    // 推回生成后的日期,并清掉快照(那笔流水又回到账上了)
+    expect(renewal()).toBe('2026-12-28');
+    expect(state().subscriptions[0].prevRenewalDate).toBeUndefined();
+    expect(state().subscriptions[0].lastGeneratedTransactionId).toBe(generated.transactionId);
+    expect(state().transactions).toHaveLength(1);
+    expect(state().trashedTransactions).toHaveLength(0);
+    // 12-28 还在未来 → 状态回到 active
+    expect(state().subscriptions[0].status).toBe('active');
+  });
+
+  it('彻底删除才是不可逆的:那时才清掉快照与关联', () => {
+    const generated = state().generateSubscriptionTransaction('sub-1');
+    state().removeTransaction(generated.transactionId);
+    expect(state().subscriptions[0].prevRenewalDate).toBe('2026-11-28');
+
+    state().permanentlyDeleteTransaction(generated.transactionId);
+
+    expect(state().subscriptions[0].lastGeneratedTransactionId).toBeUndefined();
+    expect(state().subscriptions[0].prevRenewalDate).toBeUndefined();
+    expect(state().trashedTransactions).toHaveLength(0);
   });
 
   it('删除后再生成,续费日只推进一期(不会跳过整个周期)', () => {
