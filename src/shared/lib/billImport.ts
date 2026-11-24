@@ -832,6 +832,48 @@ function buildTransactionFromLine(
   };
 }
 
+/**
+ * 按行切分,但**跳过引号内的换行**。
+ *
+ * 账单的备注 / 商品里可能带换行,导出成 CSV 时会被引号包住:
+ *   …, 商户消费, 稻家乐, "招牌菜
+ *   第二行", 支出, 39.70, …
+ * 直接 `split('\n')` 会把这条记录劈成两半 —— 两半都解析不出,
+ * 于是**整笔交易静默消失**(用户不会发现少了一笔钱)。
+ */
+function splitCsvLines(text: string): string[] {
+  const out: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+
+    if (char === '"') {
+      // 引号内连续两个引号是转义,保持引号状态
+      if (inQuotes && text[index + 1] === '"') {
+        current += '""';
+        index += 1;
+        continue;
+      }
+      inQuotes = !inQuotes;
+      current += char;
+      continue;
+    }
+
+    if (char === '\n' && !inQuotes) {
+      out.push(current);
+      current = '';
+      continue;
+    }
+
+    current += char;
+  }
+
+  out.push(current);
+  return out;
+}
+
 function parseBillCsvLines(input: ParseBillInput): {
   lines: string[];
   headers: string[];
@@ -844,8 +886,7 @@ function parseBillCsvLines(input: ParseBillInput): {
     return null;
   }
 
-  const lines = text
-    .split('\n')
+  const lines = splitCsvLines(text)
     .map((line) => normalizeText(line))
     .filter(Boolean);
 
