@@ -855,7 +855,15 @@ export function DatabaseSettingsPage() {
         file,
         source,
         defaultCategoryId: refs.categoryId,
-        defaultAccountId: refs.accountId
+        defaultAccountId: refs.accountId,
+        /*
+         * categories 必须一起传:解析器只在给了分类列表时才**按每行内容推断分类**
+         * (见 inferBillCategoryId)。漏了它,同一份账单从这里导入会全部落到默认分类,
+         * 而从交易页导入却会正确推断 —— 同一个功能两条入口行为不一致。
+         * categoryLearningRules 同理:它比关键词更贴合本人习惯,漏了也是同一种不一致。
+         */
+        categories,
+        categoryLearningRules
       });
 
       if (rows.length === 0) {
