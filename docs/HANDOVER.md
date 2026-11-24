@@ -224,6 +224,9 @@ cmd.exe /c "set TEMP=C:\\Users\\<你>\<仓库>\.tmp-build&& set TMP=%TEMP%&& npm
 
 ---
 
+> **怎么把功能跑起来**:起环境、驱动那个快速记账抽屉、把账单文件递进去、跑全站回归扫描 ——
+> 都写在 [docs/verification-recipes.md](verification-recipes.md) 里(实际跑通过的做法 + 踩过的坑)。
+
 ## 六、这段工作的方法与教训
 
 **有效的方法**(比随机翻页面产出高得多):
