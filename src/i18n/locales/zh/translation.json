@@ -4011,6 +4011,7 @@
       "cancelAria": "取消快速记账",
       "title": "记一笔",
       "done": "完成",
+        "saveAndNext": "再记一笔",
       "typeGroupAria": "账目类型",
       "expense": "支出",
       "income": "收入",

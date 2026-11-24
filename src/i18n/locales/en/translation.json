@@ -4011,6 +4011,7 @@
       "cancelAria": "Cancel quick add",
       "title": "New entry",
       "done": "Done",
+        "saveAndNext": "Save & next",
       "typeGroupAria": "Entry type",
       "expense": "Expense",
       "income": "Income",

@@ -1215,7 +1215,13 @@ export function TransactionsPage() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [quickAddOpen, closeQuickAddDrawer, handleQuickAddKeypadInput]);
 
-  const handleSaveQuickAdd = () => {
+  /**
+   * 保存快速记账。
+   *
+   * keepOpen=true 就是「再记一笔」:存下这一笔,但**不关弹层、不清上下文** ——
+   * 类型、分类、账户、日期都留着,只清空金额与备注,连着记多笔时不用重开弹层。
+   */
+  const handleSaveQuickAdd = (keepOpen = false) => {
     if (!quickAddCategoryId) {
       setQuickAddErrorKey('transactions.quickAdd.error.selectCategory');
       return;
@@ -1242,10 +1248,27 @@ export function TransactionsPage() {
       status: 'completed'
     });
 
-    closeQuickAddDrawer();
-    resetQuickAddForm();
     setPage(1);
     setLastAddedTransactionId(transactionId);
+
+    if (keepOpen) {
+      // 再记一笔:保留类型/分类/账户/日期,只清金额、备注与错误提示
+      setQuickAddAmount('');
+      setQuickAddExpression('');
+      setQuickAddCalculatedAmount(null);
+      setQuickAddNote('');
+      setQuickAddErrorKey('');
+      clearQuickTransactionDraft(user.ledgerUserId);
+      setToast({
+        visible: true,
+        message: `${t('transactions.quickAdd.saved')} · ${formatCurrency(amount)}`,
+        variant: 'success'
+      });
+      return;
+    }
+
+    closeQuickAddDrawer();
+    resetQuickAddForm();
     setToast({
       visible: true,
       message: `${t('transactions.quickAdd.saved')} · ${formatCurrency(amount)} · ${quickAddNote.trim() || t('transactions.quickAdd.defaultNote')}`,
@@ -3038,7 +3061,7 @@ export function TransactionsPage() {
               <button
                 type="button"
                 className="quick-add-header-action is-primary"
-                onClick={handleSaveQuickAdd}
+                onClick={() => handleSaveQuickAdd(false)}
               >
                 {tf('txPage.quickAdd.done', `完成`)}
               </button>
@@ -3210,7 +3233,18 @@ export function TransactionsPage() {
             </div>
 
             <footer className="quick-add-footer">
-              <button type="button" className="primary" onClick={handleSaveQuickAdd}>
+              {/*
+                「再记一笔」借鉴自同类记账 App 的记一笔界面:连着记多笔时不用反复重开弹层。
+                类型/分类/账户/日期保留,只清金额与备注(备注属于单笔,留着会误记到下一笔)。
+              */}
+              <button
+                type="button"
+                className="quick-add-save-next"
+                onClick={() => handleSaveQuickAdd(true)}
+              >
+                {tf('txPage.quickAdd.saveAndNext', `再记一笔`)}
+              </button>
+              <button type="button" className="primary" onClick={() => handleSaveQuickAdd(false)}>
                 {tf('txPage.quickAdd.save', `完成记账`)}
               </button>
               <small role="status">{quickAddDraftStatus}</small>

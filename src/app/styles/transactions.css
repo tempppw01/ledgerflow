@@ -928,3 +928,8 @@
     opacity: 1;
   }
 }
+
+/* 「再记一笔」:次要与主操作并排,主操作仍是完成记账 */
+.quick-add-save-next {
+  margin-right: 8px;
+}
