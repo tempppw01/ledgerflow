@@ -67,6 +67,7 @@ jobs:
           npm run check:orphan-methods
           npm run check:dead-exports
           npm run check:jsx-hardcoded
+          npm run check:r2-fetch
 
   docker-latest:
     needs: verify
