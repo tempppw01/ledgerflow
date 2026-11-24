@@ -293,6 +293,21 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   同理,另外三个脚本也全仓零引用:`benchmark:database`、`brands:generate`、`test:watch`
   (前者是性能基线、中者是生成品牌图标、后者是开发用 watch,都属于"按需手动跑",不是坏掉)。
 
+- **\`.env.example\` 与 \`docker-compose.yml\` 是同步的(2026-11-25 核对,结论是没问题)**。
+  \`docker-compose.yml\` 描述部署配置、\`.env.example\` 描述同一套变量 —— 这类"同一件事写两遍"
+  最容易一边漏,所以逐条对过一次:
+
+  | 比较 | 结果 |
+  | --- | --- |
+  | compose 用到的 **26 个**变量 | \`.env.example\` **一个不漏** |
+  | 只在 \`.env.example\` 里的 **12 个** | 11 个 \`VITE_*\`(前端**构建期**变量)+ \`LEDGERFLOW_API_PROXY_TARGET\`(开发期)—— 本来就不经过 compose |
+
+  顺带核过服务端:它读的 16 个环境变量里,compose 未设的 6 个全是开发/代理用途
+  (\`API_HOST\` / \`API_PROXY_TARGET\` / \`CDN_PROXY_TARGET\` / \`DEV_HOST\` / \`DEV_PORT\` / \`NODE_ENV\`)。
+
+  **要再核对时**别用 shell 拼 \`\${...}\` 的正则(引号会被吃掉,我因此得到过一份全是假的 diff):
+  写个小脚本读文件再比,几行就够。
+
 - **\`nginx.conf\` 完整读过(57 行):\`/api/\` 不设 \`proxy_read_timeout\` 是安全的(2026-11-25 核实)**。
   看到 \`location /api/\` 没有 \`proxy_read_timeout\`(走 nginx 默认 60 秒),一度担心长耗时请求
   (AI 生成)会被切断。核实后**不成立**:
