@@ -278,6 +278,29 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 
   `shared/lib/expenseScope.contract.test.ts` 现在钉的是**统一后**的契约(两边判定必须一致、
   预算型两边都不算);谁再让某个类型两边不同,那 4 条会先翻红。
+- **账单导入的输入变体矩阵(2026-11-25,撞了 13 种形状)**。
+  导入是用户报 bug 最多的地方,所以专门造各种"真实但脏"的输入去撞。结论:**两种形状会坏(已修)**,
+  其余本来就对。要改解析器时,先看这张表,别重复撞已经覆盖的。
+
+  | 形状 | 结果 | 守着它的测试 |
+  | --- | --- | --- |
+  | xlsx 里日期是序列号,**不写** `t`(微信官方导出) | 已修(v0.50.44) | `billImport.excelDate.test.ts` |
+  | xlsx 里日期是序列号,**写了 `t="n"`**(openpyxl / LibreOffice 另存) | **已修(v0.50.53)** —— 整份 0 条 | `billImport.xlsxFixture.test.ts`(真实 xlsx fixture) |
+  | CSV 引号字段内**带换行** | **已修(v0.50.54)** —— 整笔交易静默消失 | `billImport.csvVariants.test.ts` |
+  | CSV 引号字段内带逗号 | 本来就对 | 同上 |
+  | CRLF(Windows 上 Excel 另存) | 本来就对(备注不残留 `\r`) | 同上 |
+  | UTF-8 BOM | 本来就对(代码里剥了 `\uFEFF`) | — |
+  | 金额带 `¥` / 千分位(含逗号时必须加引号) | 本来就对 | `billImport.csvVariants2.test.ts` |
+  | 日期是斜杠格式 `2026/11/24` | 本来就对 | 同上 |
+  | 表头前后多余空行 / 行尾空格 | 本来就对 | 同上 |
+  | **GBK 编码**(Excel 另存「CSV(逗号分隔)」) | 本来就对(中文不乱码) | `billImport.csvVariants3.test.ts`(真实 GBK 字节 fixture) |
+  | 表头在第 40 行 | 本来就对(`findHeaderIndex` 扫前 80 行) | 同上 |
+  | 金额 0 | 跳过(不是交易) | 同上 |
+  | 金额负数 | **按绝对值记入**(银行流水用负数表流出,方向由收/支列决定)`Math.abs` 是有意的 | 同上 |
+
+  **还有两个坑是"我的 fixture 写错了",别再犯**:含逗号的金额字段必须加引号(不加会把列切开);
+  负数**不是**应该被跳过。
+
 - **表格溢出排查:只有余额变动页会真的被长备注撑开,其余不用动**。
   用户报过「备注过长撑破界面」(已修:余额变动页改 `table-layout: fixed` + 各列定宽)。
   之后把全项目的 `<table>` 过了一遍,共 **6 个文件**渲染表格:
