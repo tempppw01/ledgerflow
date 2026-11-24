@@ -104,6 +104,18 @@ const SKIP_FILES = new Map([
  */
 const ALLOW = new Map([
   [
+    "src/features/dashboard/model/utils.ts||export function isActualExpenseType(type: 'expense' | 'income' | 'budget' | 'repayment'): boolean {",
+    /*
+     * 有意并存的两个名字:isActualExpenseType(首页多处按它读)与 shared 的 isExpenseLike,
+     * 判定**完全相同**(支出 + 还款)—— 「预算」型不算支出是 v0.50.36 的定案。
+     * 改任一处都要同时改另一处,而 src/shared/lib/expenseScope.contract.test.ts 钉着它们必须一致。
+     *
+     * 这条以前**没被检查**:该文件的注释里提到了 isExpenseLike,而旧判据是"全文出现共享名就放行",
+     * 于是注释把检查压掉了(这个文件自己的注释还写着"check:shared-predicates 会盯着这两个名字" ——
+     * 在 2026-11-25 剥掉注释之后才算真的兑现)。
+     */
+  ],
+  [
     "src/shared/store/useFinanceStore.ts|tx.adjustmentKind === 'normal' |||tx.adjustmentKind === 'refund' ||",
     'normalizeAdjustmentKind:判断的是「是否已是三种已知 kind 之一」(含 normal),不是退款判断'
   ],
@@ -146,6 +158,20 @@ function walk(dir, out = []) {
   return out;
 }
 
+/**
+ * 把注释内容替换成空格,**保留换行**(行号不能变 —— ALLOW 是按行号/上下文匹配的)。
+ *
+ * 只处理两种注释:行注释 `//` 与块注释。字符串里的 `//`(比如 URL)会被误伤,但那只会让
+ * 更少的文本参与匹配,不会制造误报;而这个脚本要匹配的都是 `adjustmentKind === 'refund'`
+ * 这类代码片段,不会出现在字符串里。
+ */
+function stripComments(source) {
+  const blank = (s) => s.replace(/[^\n]/g, ' ');
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, (match) => blank(match))
+    .replace(/(^|[^:])\/\/[^\n]*/g, (match, prefix) => prefix + blank(match.slice(prefix.length)));
+}
+
 const hits = [];
 for (const file of walk(path.join(ROOT, 'src')).concat(walk(path.join(ROOT, 'scripts')), walk(path.join(ROOT, 'server')))) {
   const rel = path.relative(ROOT, file).split(path.sep).join('/');
@@ -156,6 +182,17 @@ for (const file of walk(path.join(ROOT, 'src')).concat(walk(path.join(ROOT, 'scr
   } catch {
     continue;
   }
+  /*
+   * 匹配前先把注释换成空白(保留行数,行号不变)。
+   *
+   * 为什么必须这么做:这条判据原本是「文件里有单边 refund 判断,且全文没有出现
+   * isTransactionRefundLike」—— 而"出现"包括**注释里的提及**。于是只要写一句
+   * 「这里应该改用共享的 isTransactionRefundLike(tx)」再照旧手写一遍判断,闸门就放行了。
+   * 2026-11-25 实测确认过:同样两处违规,注释里提到共享名 -> exit 0;不提 -> exit 1。
+   * 判据的本意是"作者**用**了共享谓词",不是"作者**知道**它"。剥掉注释之后,只剩真正的
+   * 代码参与匹配 —— 注释既不能触发误报,也不能压制检查。
+   */
+  text = stripComments(text);
   const lines = text.split(/\r?\n/);
   // 文件级:整份文件里手写了单边「退款」判断,却没有引用共享谓词。
   /*
