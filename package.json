@@ -30,6 +30,7 @@
     "test:watch": "vitest --config vitest.config.ts",
     "prepare": "husky",
     "check:r2-fetch": "node scripts/check-no-r2-fetch.mjs",
+    "check:gate-exceptions": "node scripts/check-gate-exceptions.mjs",
     "audit:ui": "node scripts/audit-ui-browser.mjs",
     "audit:ui:local": "node scripts/audit-ui-local.mjs",
     "check:audit-routes": "node scripts/check-audit-routes.mjs",
