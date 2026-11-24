@@ -105,6 +105,26 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 预期(演示数据):`ledger_transactions` 299 · `ledger_accounts` 6 · `ledger_categories` 23 ·
 `ledger_debts` 3 · `ledger_debt_repayments` 4 · `ledger_subscriptions` 3 · `ledger_user_settings` 11。
 
+### 更强的一层:导出 → 恢复之后逐字段对比数据库
+
+「无自检告警」只证明**条数**对得上。要证明**每个字段**都对得上,得在往返前后各 dump 一次
+再 diff(演示账本做过一次,结论是没有任何数据差异):
+
+1. 停掉服务,备份 `data/ledgerflow.sqlite`;
+2. dump 一份「该用户全部账本数据」当基线;
+3. 起服务,在数据库页「导出备份文件」→ 再「导入备份文件」选同一个文件;
+4. 再 dump 一次,diff 两份。
+
+对比时**必须处理三件事**,否则会把正常现象误读成数据丢失(实测会报出 67 处,其中 65 处是噪声):
+
+- **时间戳列会被重写**(`*_at` / `*_time`):恢复按「现在」写,不算数据差异;
+- **`ledger_debt_repayments` 这类表没有 owner 列**:dump 时要按外键(`debt_id`)过滤,
+  而且**过滤顺序要紧** —— 它同样有 `transaction_id`,但那些值可能全是 NULL,
+  先按 `transaction_id` 过滤会得到**假 0 行**,对比时看起来「两边都没有」;
+- **`entry_mode` 会从 NULL 归一成 `'standard'`**:这是归一化器有意的映射
+  (`item.entryMode === 'simple' ? 'simple' : 'standard'`),而且全部 18 处判断都只比
+  `'simple'`,所以 NULL 与 `'standard'` 行为完全一致 —— 不是差异。
+
 ### 两个容易误判的地方
 
 - **SQL 导出里的行数比 API 多**:作用域编码在 **id 前缀**里(如 `7e522500-rep-1`),
