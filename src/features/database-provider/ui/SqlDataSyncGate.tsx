@@ -11,6 +11,10 @@ import { useSmartBudgetStore } from '../../../shared/store/useSmartBudgetStore';
 import { clearScopedBrowserData } from '../model/deploymentScope';
 import { useTFallback } from '../../../shared/lib/useTFallback';
 import { useUnsyncedChangesGuard } from '../../../shared/hooks/useUnsyncedChangesGuard';
+import {
+  describeDroppedGroups,
+  findDroppedSyncGroups
+} from '../model/syncCountMismatch';
 
 interface SqlDataSyncGateProps {
   children: ReactNode;
@@ -21,6 +25,7 @@ type SyncNotice =
   | { kind: 'initialFailure'; detail: string }
   | { kind: 'syncConflict' }
   | { kind: 'syncFailure'; detail: string }
+  | { kind: 'syncDroppedRecords'; detail: string }
   | { kind: 'syncRetry' };
 
 // 服务端在检测到「本机账本编号与服务器上其它账本重复」时会返回 409。
@@ -281,12 +286,24 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
         if (syncingRef.current || !dirtyRef.current) return;
         dirtyRef.current = false;
         syncingRef.current = true;
-        void importRelationalData(getPayload())
-          .then(() => {
+        const payload = getPayload();
+        void importRelationalData(payload)
+          .then((status) => {
             retryAttemptRef.current = 0;
-            setNotice(null);
-            // 推上去了,本地不再有「只活在内存里」的改动
-            setHasUnsyncedChanges(false);
+            /*
+             * 服务端返回的 counts 告诉我们它**实际存下了多少行**。它静默丢弃引用无法解析的行
+             * (例如交易引用的账户已被彻底删除),而这里原先把 counts 直接丢掉了 ——
+             * 于是用户丢记录时既没有报错、也没有提示,只有下次载入才发现少了东西。
+             * 现在比对一次:有缺口就明说,并且**不解除**离开保护 —— 那些行仍然只活在内存里。
+             */
+            const dropped = findDroppedSyncGroups(payload, status?.counts);
+            setNotice(
+              dropped.length
+                ? { kind: 'syncDroppedRecords', detail: describeDroppedGroups(dropped) }
+                : null
+            );
+            // 推上去了,本地不再有「只活在内存里」的改动(除非服务端丢掉了行)
+            setHasUnsyncedChanges(dropped.length > 0);
           })
           .catch((reason) => {
             const message = reason instanceof Error ? reason.message : '';
