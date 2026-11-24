@@ -7,6 +7,7 @@
 
 | 版本 | 说明 |
 | --- | --- |
+| [v0.50.50](release-notes/RELEASE_NOTES_v0.50.50.md) | 补上「再记一笔」的测试 —— 这条我当初明说没有单测 |
 | [v0.50.49](release-notes/RELEASE_NOTES_v0.50.49.md) | 修:「主题色」被写死成琥珀 —— 六套配色只有一套生效 |
 | [v0.50.48](release-notes/RELEASE_NOTES_v0.50.48.md) | 「分类学习」曾经是个空壳 —— 现在真的能用了 |
 | [v0.50.47](release-notes/RELEASE_NOTES_v0.50.47.md) | 分类推断:补上真实商户名的关键词 |
