@@ -245,6 +245,27 @@ cmd.exe /c "set TEMP=C:\\Users\\<你>\<仓库>\.tmp-build&& set TMP=%TEMP%&& npm
 - **死代码清理**:删掉 8 个没人引用的文件(7 个仪表盘组件 + 一个已废弃的 sync store),`syncClient.ts` 193 → 17 行;
   并加了「声明了却没人用」与「导出了却没人引用」两个闸门。
 
+**页面测试覆盖地图**(2026-11-25 实测,按"页面代码量 / 页面测试量"排):
+
+| 页面 | 代码行 | 页面测试 | 备注 |
+| --- | --- | --- | --- |
+| `transactions` | 3541 | **0** | 主页面;记一笔的纯逻辑已单测(`features/transactions/model/quickAddForm.ts`),但**页面本身没有测试** |
+| `database-settings` | 1995 | **0** | 写数据的地方(设置/同步/备份);之前那个"多传两个参数被静默忽略"的 bug 就在这一带 |
+| `transaction-edit` | 967 | **0** | 编辑流水 |
+| `investments` | 6405 | 1066 | 比例 0.17 |
+| `repayment-management` | 5004 | 1010 | 比例 0.20,数学部分有 `debtMetrics` / `creditDrafts` 一整套测试 |
+| `assistant` | 4183 | 279 | 比例 0.07 |
+| `settings` | 1705 | 110 | 比例 0.06 |
+
+18 个页面里 **7 个完全没有页面测试**。要挑下一个体检目标,优先 `transaction-edit` 或 `database-settings`
+(都涉及写数据,代码量又不至于像主页面那样庞大)。
+
+**顺带排除过的两处**(不必重复查):
+· `repayment-management`:5003 行页面 + 1010 行测试,数学层另有 `debtMetrics` / `creditDrafts`(4 个测试文件)
+  / `debtPressureSchedule` / `debtRateConvention` 覆盖 —— 在这上面硬找是低产出;
+· 服务端 `.js`:扫过"实参比形参多的调用"(那个 `setSetting` 的坑就属于这一类,纯 JS 没有类型检查兜底),
+  **0 处**。
+
 **已知、未解决**(写在这里避免重复挖):
 
 - 服务端测试偶发过一次 `fetch failed / bad port`,连跑 5 次无法复现;固定端口与提前读端口都已排除。
