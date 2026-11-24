@@ -664,6 +664,18 @@ function shouldSkipRow(line: string): boolean {
   return false;
 }
 
+/**
+ * 「收/支」列明确写着 / —— 中性交易(转账、提现、理财通转入转出等)。
+ * 既不是收入也不是支出,导入时跳过。
+ *
+ * 只认**明确的 /**(或全角/),不看空值:空值可能是英文导出或列名不同,
+ * 那种情况仍有原有的关键词兜底,不能一刀切。
+ */
+function isNeutralCashflowRow(row: Record<string, string>): boolean {
+  const raw = pickByKeys(row, ['收/支', '收支类型']).trim();
+  return raw === '/' || raw === '／';
+}
+
 function buildTransactionFromLine(
   line: string,
   headers: string[],
@@ -685,6 +697,18 @@ function buildTransactionFromLine(
   });
 
   if (shouldSkipByStatus(row)) {
+    return null;
+  }
+
+  /*
+   * 中性交易(微信账单里「收/支」是 "/")要跳过。
+   *
+   * 这类是转账、零钱提现、理财通转入转出等 —— 钱在动,但**既不是收入也不是支出**。
+   * 以前收/支列读不出方向时会落到关键词兜底,于是这 93 笔被摊到收支两边:
+   * 实测这份账单(共 445 笔、中性 93 笔 ¥29163.47)收入被算成 55088.29(实际 29402.99),
+   * 支出算成 11882.08(实际 14522.08)。跳过之后两边才对得上。
+   */
+  if (isNeutralCashflowRow(row)) {
     return null;
   }
 
@@ -947,6 +971,75 @@ async function unzipXlsxEntries(buffer: ArrayBuffer): Promise<Map<string, Uint8A
   return files;
 }
 
+/**
+ * Excel 的日期在 sheet XML 里是**序列号**(如 46350.78209490741),不是文本 ——
+ * 而号码格式信息在 styles.xml 里。不还原这一层,微信账单的「交易时间」列就是一串数字,
+ * 下游按日期解析全部失败,整份文件解析出 **0 条**(这就是「上传微信账单失败」的根因)。
+ */
+const BUILTIN_DATE_FORMAT_IDS = new Set([14, 15, 16, 17, 18, 19, 20, 21, 22, 45, 46, 47]);
+
+/** 判断一个单元格样式(按 cellXfs 下标)是不是日期/时间格式。 */
+function collectDateStyleIndexes(stylesXml: string): Set<number> {
+  const result = new Set<number>();
+  if (!stylesXml) return result;
+  const doc = new DOMParser().parseFromString(stylesXml, 'application/xml');
+
+  // 自定义格式:numFmtId -> formatCode
+  const customFormats = new Map<number, string>();
+  Array.from(doc.getElementsByTagName('numFmt')).forEach((node) => {
+    const id = Number.parseInt(node.getAttribute('numFmtId') || '', 10);
+    const code = node.getAttribute('formatCode') || '';
+    if (Number.isFinite(id)) customFormats.set(id, code);
+  });
+
+  const isDateCode = (code: string) => {
+    // 去掉引号里的字面量,避免把 "年" 之类的文本当成日期占位符
+    const bare = code.replace(/"[^"]*"/g, '').replace(/\[[^\]]*\]/g, '');
+    return /[ymdhs]/i.test(bare);
+  };
+
+  Array.from(doc.getElementsByTagName('cellXfs')[0]?.getElementsByTagName('xf') || []).forEach(
+    (node, index) => {
+      const numFmtId = Number.parseInt(node.getAttribute('numFmtId') || '0', 10);
+      const code = customFormats.get(numFmtId);
+      if (code ? isDateCode(code) : BUILTIN_DATE_FORMAT_IDS.has(numFmtId)) {
+        result.add(index);
+      }
+    }
+  );
+
+  return result;
+}
+
+/**
+ * Excel 序列号 → 「YYYY-MM-DD HH:mm:ss」**本地墙钟**字符串。
+ *
+ * 纯算术,不经时区:账单里的时间就是本地时间,过一遍 Date 的时区换算反而会偏移。
+ * 基准 1899-12-30 是 Excel 1900 系统的约定。
+ */
+export function excelSerialToLocalDateTime(serial: number): string | null {
+  if (!Number.isFinite(serial) || serial <= 0) return null;
+  const days = Math.floor(serial);
+  const secondsInDay = Math.round((serial - days) * 86400);
+  const ms = Date.UTC(1899, 11, 30) + days * 86400000 + secondsInDay * 1000;
+  const date = new Date(ms);
+  if (Number.isNaN(date.getTime())) return null;
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return (
+    date.getUTCFullYear() +
+    '-' +
+    pad(date.getUTCMonth() + 1) +
+    '-' +
+    pad(date.getUTCDate()) +
+    ' ' +
+    pad(date.getUTCHours()) +
+    ':' +
+    pad(date.getUTCMinutes()) +
+    ':' +
+    pad(date.getUTCSeconds())
+  );
+}
+
 function extractSharedStrings(sharedXml: string): string[] {
   const doc = new DOMParser().parseFromString(sharedXml, 'application/xml');
   return Array.from(doc.getElementsByTagName('si')).map((node) => {
@@ -955,7 +1048,11 @@ function extractSharedStrings(sharedXml: string): string[] {
   });
 }
 
-function extractSheetRows(sheetXml: string, sharedStrings: string[]): string[][] {
+function extractSheetRows(
+  sheetXml: string,
+  sharedStrings: string[],
+  dateStyles: Set<number> = new Set()
+): string[][] {
   const doc = new DOMParser().parseFromString(sheetXml, 'application/xml');
   const rows = Array.from(doc.getElementsByTagName('row'));
   return rows.map((row) => {
@@ -971,6 +1068,13 @@ function extractSheetRows(sheetXml: string, sharedStrings: string[]): string[][]
       let text = inline || v;
       if (cellType === 's') {
         text = sharedStrings[Number.parseInt(v, 10)] || '';
+      } else if (!cellType) {
+        // 数字单元格:如果是日期样式,就把序列号还原成日期时间(否则下游认不出这一列)
+        const styleIndex = Number.parseInt(cell.getAttribute('s') || '-1', 10);
+        if (dateStyles.has(styleIndex) && /^\s*\d+(\.\d+)?\s*$/.test(v)) {
+          const converted = excelSerialToLocalDateTime(Number(v));
+          if (converted) text = converted;
+        }
       }
       values[idx] = String(text).trim();
     });
@@ -997,7 +1101,9 @@ async function xlsxToDelimitedText(file: File): Promise<string> {
     throw new Error('XLSX 未找到工作表');
   }
 
-  const rows = extractSheetRows(decoder.decode(sheetEntry), sharedStrings);
+  const stylesXml = entries.get('xl/styles.xml');
+  const dateStyles = stylesXml ? collectDateStyleIndexes(decoder.decode(stylesXml)) : new Set<number>();
+  const rows = extractSheetRows(decoder.decode(sheetEntry), sharedStrings, dateStyles);
   return rows
     .map((row) => row.map((cell) => String(cell || '').replace(/\r?\n/g, ' ')).join('\t'))
     .join('\n');
