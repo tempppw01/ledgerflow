@@ -314,6 +314,26 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   (与 shared 的 \`isExpenseLike\` 判定完全相同,「预算」型不算支出是 v0.50.36 的定案,
   \`expenseScope.contract.test.ts\` 钉着两者一致,该测试实测 4 条全过)。
 
+- **文档层已全部核对过一遍(2026-11-25,结论与修法都在这里)**。
+  这个会话把仓库里**所有**面向人的文档都读了一遍,并核对"文档说的事"与"仓库实际"是否一致:
+
+  | 文档 | 结论 |
+  | --- | --- |
+  | `docs/HANDOVER.md` | 标题版本停在 v0.50.4 → 已更新;内容逐节核对过 |
+  | `docs/release-process.md` | 「回填」一节过时(我自己删 Release 页面造成)→ 已更正 |
+  | `docs/i18n-hardcoded-audit.md` | 引用已删的组件 → 已在顶部加注"这些文件已被删除" |
+  | `docs/UI动画优化总结.md` | 引用的 `useUIAnimations.ts` 已不存在 → 已加注"历史记录,照抄会失败" |
+  | `docs/verification-recipes.md` | 闸门数写错(10 vs 实际 9)→ 已改;并新增"文档里的 npm 脚本是否存在"检查 |
+  | `docs/verified-invariants.md` | 本文档,持续补充 |
+  | `docs/pruned-releases.md` | 新写,内容与 GitHub 实际 Release 列表核对过 |
+  | `README.md` | 「功能亮点」是逐版本 changelog,停在 0.8.9 → 已加指路牌(不补写,避免编造)|
+  | `.env.example` | 与 `docker-compose.yml` **同步**(26 个变量一个不漏)|
+  | `CHANGELOG.md` | **当前**:到 v0.50.54(由 `generate-changelog.mjs` 从 release-notes 生成,不要手改)|
+  | `release-notes/` | **当前**:`0.50.x` 共 55 份(v0.50.0 – v0.50.54)|
+
+  **六处更新、五处确认干净** —— 而**每一处都是"读一遍才发现"的**,不是猜的。
+  共同规律仍然是那条:**"记录"和"实际"会各自漂移,而漂移的地方没人看**。
+
 - **文档里引用的文件路径:量过一遍,4 处失效都是"历史记录",没有接成闸门(2026-11-25)**。
   18 份文档里共 **107 处**带目录前缀的路径引用,失效 6 处 —— 但**只有 4 处是真的**(另两处是我正则的假阳性:
   `src/pages/占位符/占位符Page.test.tsx` 是占位符、`server/*.test.js` 是 glob)。
