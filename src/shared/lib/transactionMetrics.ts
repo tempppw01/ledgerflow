@@ -16,11 +16,12 @@ export function isTransactionRefundLike(tx: TransactionItem): boolean {
 }
 
 /**
- * 支出类类型。注意:预算型交易在这里**算**支出,而首页的 `isActualExpenseType`
- * (features/dashboard/model/utils.ts)不算 —— 两处口径不一致,尚未做产品决策,
- * 详见那边的注释(含实测数据)。
+ * 支出类类型(**减少账户余额**的口径)。注意:预算型交易在这里**算**支出,而首页的
+ * `isActualExpenseType`(features/dashboard/model/utils.ts)不算 —— 那是「实际花掉」的口径。
+ * 两者是**不同**的概念,不是两套实现:所以**不要在别处再抄一份**
+ * (`npm run check:shared-predicates` 会拦住重复定义),需要哪个就 import 哪个。
  */
-function isExpenseLike(type: TransactionType): boolean {
+export function isExpenseLike(type: TransactionType): boolean {
   return type === 'expense' || type === 'budget' || type === 'repayment';
 }
 

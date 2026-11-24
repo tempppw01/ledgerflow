@@ -6,6 +6,7 @@ import type { DebtItem, RepaymentRecord } from '../../debt/model/debtMetrics';
 import { calculateDebtHealthScore, calculateDebtSummary } from '../../debt/model/debtMetrics';
 import {
   filterCountableTransactions,
+  isExpenseLike,
   isTransactionRefundLike,
   summarizeTransactions
 } from '../../../shared/lib/transactionMetrics';
@@ -362,10 +363,11 @@ function isInRange(dateText: string, start: Date, end?: Date): boolean {
   return value >= startValue && value <= endValue;
 }
 
-function isExpenseLike(tx: TransactionItem): boolean {
-  return tx.type === 'expense' || tx.type === 'budget' || tx.type === 'repayment';
-}
-
+/*
+ * 支出口径直接用共享的 isExpenseLike(支出 + 预算 + 还款)。
+ * 这里原先抄了一份**完全相同**的本地副本 —— 一份谓词两个定义,改一处漏一处的典型来源;
+ * `npm run check:shared-predicates` 现在会拦下这种重复定义。
+ */
 function isAnalysisExpenseLike(tx: TransactionItem, categories: Category[]): boolean {
   // 注意:普通交易的 adjustmentKind 是 'normal'(真值),不能用 `if (tx.adjustmentKind)` 判断 ——
   // 那会把**所有**普通交易当成调整行排除,导致「过去」「行为洞察」两段永远显示"样本不足",
@@ -375,7 +377,7 @@ function isAnalysisExpenseLike(tx: TransactionItem, categories: Category[]): boo
     return false;
   }
 
-  if (isExpenseLike(tx)) {
+  if (isExpenseLike(tx.type)) {
     return true;
   }
 

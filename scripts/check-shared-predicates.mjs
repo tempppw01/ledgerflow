@@ -71,6 +71,16 @@ const DEFINITION_CHECKS = [
   {
     re: /^\s*(?:export\s+)?function\s+(roundMoney|roundCurrency)\s*\(/,
     why: '本地重新定义了共享的金额取整 —— 请 import { roundMoney } from 共享库'
+  },
+  {
+    /*
+     * 支出口径:transactionMetrics.isExpenseLike(支出+预算+还款)与
+     * dashboard/model/utils.isActualExpenseType(支出+还款,**不含预算**)是两个**有意不同**的
+     * 概念(前者=减少余额,后者=实际花掉)。正因为它们不同,更不能在别处再抄一份 ——
+     * financial-analysis 里就曾有一份与 isExpenseLike 完全相同的本地副本。
+     */
+    re: /^\s*(?:export\s+)?function\s+(isExpenseLike|isActualExpenseType)\s*\(/,
+    why: '本地重新定义了支出口径 —— 请 import 共享的 isExpenseLike / isActualExpenseType'
   }
 ];
 
@@ -99,6 +109,10 @@ const ALLOW = new Map([
   [
     "src/pages/assistant/AssistantPage.tsx|const repaymentTodoCount = validRows.filter(|(item) => item.type === 'repayment' && (item.status === 'pending' || item.status === 'failed')",
     '助手待办:统计「待处理/失败」的还款笔数,与「是否计入余额」无关(它本来就是待处理项)'
+  ],
+  [
+    "src/features/dashboard/model/utils.ts|*/|export function isActualExpenseType(type: 'expense' | 'income' | 'budget' | 'repayment'): boolean {",
+    'isActualExpenseType 的**唯一真源**,且它与 isExpenseLike 是两个有意不同的概念:前者=实际花掉(不含预算),后者=减少余额(含预算)'
   ]
 ]);
 
@@ -171,7 +185,7 @@ for (const file of walk(path.join(ROOT, 'src')).concat(walk(path.join(ROOT, 'scr
 
 if (hits.length === 0) {
   console.log(
-    '共享谓词检查通过:没有手写的「退款/冲正」「是否计入余额的状态」判断,也没有本地重定义的金额取整。'
+    '共享谓词检查通过:没有手写的「退款/冲正」「是否计入余额的状态」判断,没有本地重定义的金额取整,也没有重复定义的支出口径(isExpenseLike / isActualExpenseType)。'
   );
   process.exit(0);
 }
