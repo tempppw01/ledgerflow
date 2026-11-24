@@ -118,6 +118,21 @@ export function AuthGate({ children }: { children: ReactNode }) {
           : await loginAccount({ email, password });
       setUser(result.user);
       setPassword('');
+      /*
+       * 登录表单是**就地**渲染在当前路径上的:未登录时打开 `/` 就用 `/` 渲染,登录后 URL 不变、
+       * 路由照常工作。但如果用户直接访问了 /login,那个路径**不是应用路由**
+       * (src/app/router/router.tsx 里只有通配 404),登录成功后路由会落到「这个页面不存在」
+       * —— 用户会以为登录失败了。应用内部没有任何链接指向 /login,所以只有手动访问才会遇到,
+       * 但那是个死胡同,值得堵上。
+       *
+       * 这里用整页跳转而不是 useNavigate:AuthGate 在测试里是不套路由直接渲染的
+       * (AuthGate.test.tsx),引 useNavigate 会让整套夹具都得包一层;而这个分支本身只发生在
+       * 「手动访问 /login」这条冷路径上,整页跳转的代价可以忽略。
+       */
+      if (window.location.pathname.replace(/\/+$/, '') === '/login') {
+        window.location.replace('/');
+        return;
+      }
     } catch (reason) {
       setError(describeAuthError(reason, tf));
     } finally {
