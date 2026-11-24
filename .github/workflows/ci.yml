@@ -46,6 +46,13 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
+      # 生产构建原本**只在 Docker 里跑**,而 Docker 的构建阶段用的是 node:20 ——
+      # 也就是说除它之外全仓都是 Node 24,唯独生产构建只在 20 上被验证过。
+      # 加这一步,让 vite build 也在 CI 的 Node 24 上跑一遍;之后再把 Dockerfile 的
+      # 构建阶段对齐到 24,就是"先让验证存在,再依赖它"。
+      - name: Production build
+        run: npm run build
+
       - name: Lint
         run: npm run lint
 
