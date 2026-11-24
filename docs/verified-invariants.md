@@ -85,6 +85,12 @@ node ./node_modules/vitest/vitest.mjs run --config vitest.config.ts src/shared/s
 | 服务器恢复点   | 「数据库」页「创建恢复点」→「恢复最近副本」→ 确认 → 提示里应列出全部范围(含`负债与还款`、`偏好与计划`) |
 | SQL 导出       | 「下载 SQL 数据库」拿到 `.sqlite` → 用 `node:sqlite` 打开数行                                          |
 
+恢复点是**破坏性**功能,它的交互设计是可接受的(读过一遍,不是靠跑):确认框用 `danger` 样式,
+正文写明「将用数据库最新快照**覆盖**当前本地数据。建议确认已经导出本地备份后再继续」,
+并且**显示快照的时间与大小** —— 用户能判断「这份快照是三天前的,之后的记录会没」。
+底层机制由三个已单独验证过的部件组成:快照内容用同一个 `createScopedBackupPayload` 生成、
+恢复走同一个 `applyFinanceBackupPayload`(带自检)、回写走同一个替换语义的导入。
+
 数据库页底部还有一个**恢复后自检**(`verifyFinanceBackupRestore`):恢复完成后比对
 「备份里写了多少条」与「真正落到状态里的有多少条」,少了就告警「哪一组、差几条」。
 
@@ -243,6 +249,19 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   `dashboard/model/utils.isActualExpenseType`(不含)结论相反,首页一屏内两个数字自相矛盾;
 - **彻底删除账户会静默删掉其交易**:根因 `account_id NOT NULL`,四方案见
   `server/orphanAccountReferences.test.js` 顶部。
+
+  这条的**两段文案**值得逐字记下来,因为它决定用户有没有机会知道后果:
+
+  1. 移入回收站时的确认(`categoriesAccounts.confirm.accountUsage`):
+     「该账户下存在 {count} 条交易记录,**移入回收站后仅移除账户本身,交易仍会保留**。是否继续?」
+     —— 这一步**是准确的**,交易确实保留(已验)。
+  2. 彻底删除时的确认(`recycleBin.clearConfirm`):
+     「确认清空回收站吗?将永久删除其中的 {{count}} 项内容,且无法恢复。」
+     —— 只说回收站里那 N 项(例如 1 个账户),**没有说**引用它的那 K 笔交易随后会在下一次同步时
+     被丢掉的。于是用户在第 1 步被告知「交易仍会保留」,在第 2 步听不到相反的信息。
+
+  所以无论最终选哪个方案,第 2 步的文案都要跟着改 —— 若选方案 C(拒绝彻底删除仍有交易的账户),
+  这个危险操作根本不会出现;若选「重指派到某个账户」,文案要说明交易会被挪到哪。
 
 ### 3. `/api/data/import` 返回 200 **不等于**「全都写进去了」
 
