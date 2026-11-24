@@ -1472,7 +1472,7 @@
     "restore": "Restore",
     "deletePermanently": "Delete permanently",
     "deletePermanentlyConfirm": "Delete \"{{title}}\" permanently? This cannot be undone.",
-    "accountDeleteConfirm": "The {{count}} transaction(s) under this account will disappear as well, and this cannot be undone. Delete it permanently?",
+    "accountDeleteBlocked": "This account still has {{count}} transaction(s), so it cannot be deleted permanently - those rows would have no account to belong to. Reassign or delete them first.",
     "paginationSummary": "Showing {{start}}-{{end}} of {{total}} items, {{pageSize}} per page",
     "firstPage": "First page",
     "previousPage": "Previous",
