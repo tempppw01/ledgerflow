@@ -1862,7 +1862,7 @@ export function TransactionsPage() {
       if (!nextCategoryId || nextCategoryId === tx.categoryId) {
         return false;
       }
-      updateTransaction(tx.id, { ...tx, categoryId: nextCategoryId });
+      updateTransaction(tx.id, { ...tx, categoryId: nextCategoryId }, { skipCategoryLearning: true });
       return true;
     };
 
@@ -1917,7 +1917,7 @@ export function TransactionsPage() {
         return fallbackRecategorize() ? 'fallback-changed' : 'unchanged';
       }
 
-      updateTransaction(tx.id, { ...tx, categoryId: matchedId });
+      updateTransaction(tx.id, { ...tx, categoryId: matchedId }, { skipCategoryLearning: true });
       return 'changed';
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {

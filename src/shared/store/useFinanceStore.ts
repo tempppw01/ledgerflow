@@ -107,7 +107,7 @@ interface FinanceState {
   updateTransaction: (
     id: string,
     payload: Omit<TransactionItem, 'id'>,
-    options?: { allowRefundOverflow?: boolean }
+    options?: { allowRefundOverflow?: boolean; skipCategoryLearning?: boolean }
   ) => void;
   removeTransaction: (id: string) => void;
   restoreTransaction: (id: string) => void;
@@ -952,11 +952,16 @@ export const useFinanceStore = create<FinanceState>()(
           /*
            * 分类被改动时学一条规则 —— 这是「分类学习」唯一的触发点。
            * 不在这里记录的话,那套规则永远不会产生(它之前确实是空壳)。
+           *
+           * 但**机器猜的分类不算**:AI 重分类(`recategorizeByAi`)与关键词兜底也会走
+           * `updateTransaction` 改 categoryId,若照记不误,那些**猜测**就会被当成
+           * "用户的一次修正"存进规则里,以后同类交易按 AI 当时猜的走 —— 规则本该学的是人的习惯。
+           * 所以那些路径传 skipCategoryLearning: true。
            */
           // 这两个变量都是在闭包里赋的值,TS 的控制流分析会把它们收窄成 never,这里显式取出来
           const row = updatedRow as TransactionItem;
           const prev = previousRow as TransactionItem | null;
-          if (prev && prev.categoryId !== row.categoryId) {
+          if (!options?.skipCategoryLearning && prev && prev.categoryId !== row.categoryId) {
             get().recordCategoryCorrection({
               type: row.type,
               note: row.note || '',

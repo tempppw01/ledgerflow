@@ -77,6 +77,21 @@ describe('分类学习(接线)', () => {
     expect(state().categoryLearningRules).toHaveLength(0);
   });
 
+  it('带 skipCategoryLearning 时不记规则(机器猜的分类不算用户修正)', () => {
+    reset([tx()]);
+    /*
+     * AI 重分类与关键词兜底也走 updateTransaction 改 categoryId。
+     * 那些是**机器猜的**,不该进规则 —— 否则规则里混进 AI 的猜测,
+     * 以后同类交易按 AI 当时猜的走,而规则本该学的是人的习惯。
+     */
+    state().updateTransaction('tx-1', { ...tx(), categoryId: 'cat-food' }, { skipCategoryLearning: true });
+
+    expect(state().categoryLearningRules).toHaveLength(0);
+    expect(state().categoryLearningEvents).toHaveLength(0);
+    // 交易本身还是要改的
+    expect(state().transactions[0].categoryId).toBe('cat-food');
+  });
+
   it('撤销会移除这次生成的规则', () => {
     reset([tx()]);
     state().updateTransaction('tx-1', { ...tx(), categoryId: 'cat-food' });
