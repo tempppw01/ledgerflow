@@ -23,6 +23,8 @@ node ./node_modules/vitest/vitest.mjs run --config vitest.config.ts src/shared/s
 | `store/refundInvariant.test.ts`                            | 退款总额不得超过原交易金额:创建时拒绝、**编辑时也拒绝**(否则账户净额凭空多钱);导入/恢复可走 `allowRefundOverflow` 逃生门 |
 | `store/refundInference.test.ts`                            | 缺 `adjustmentKind` 时的方向推断:明确写了就不推翻;**不能**因为 `status: 'refunded'` 就把原交易当成退款(会把余额算成两倍) |
 | `investments/model/investmentSimulator.invariants.test.ts` | 定投模拟全程不取整:投入 = 每期 × 期数、利润/收益率自洽、**线性**(金额翻倍则结果精确翻倍)、非法输入返回 null              |
+| `features/debt/model/creditDrafts.rounding.test.ts`       | 信用草稿金额解析走共享取整:`2675.675 → 2675.68`(解析器曾原样返回三位小数);口语单位(`1万5` / `1万零500`)组合后同样不留三位小数 |
+| `features/investments/model/monthlyCashflow.test.ts`      | 「本月可投资现金」一份实现:按月取、退款抵减、排除不计入余额的状态;**上个月的花销不能把它压成 0**(投资助手聊天面板曾用全部历史去减月收入,恒为 0) |
 
 ## 日期
 
@@ -31,6 +33,7 @@ node ./node_modules/vitest/vitest.mjs run --config vitest.config.ts src/shared/s
 | `shared/lib/localDate.test.ts`                | 「今天」用本地日期(`toISOString` 在 UTC+8 清晨会给昨天);`daysSinceLocalDate` 一天 24 小时都稳定 |
 | `transactions/hooks/dateRangePresets.test.ts` | 本月/近 30 天/近 3 个月的边界(闰年、跨月、跨年),上个月最后一天不能落进本月                      |
 | `shared/lib/subscriptionSchedule.test.ts`     | 续费推进按 UTC 日历运算(负时区不会跳月)、纯日期进纯日期出、时区无关                             |
+| `features/assistant/model/weeklyExpenseTrend.test.ts` | 「本周 / 上周」按本地日历日分桶(0–6 / 7–13 天),**不按行号切**;乱序 + 稀疏数据(本周 2 笔、上周 5 笔)也要算对 |
 
 ## 状态与分类身份
 
@@ -42,6 +45,10 @@ node ./node_modules/vitest/vitest.mjs run --config vitest.config.ts src/shared/s
 | `transactions/model/statusQuickFilter.test.ts`         | 缺省状态按「已完成」处理,与 `isBalanceAffectingStatus` 同一结论                                           |
 | `store/uncategorizedCoherence.test.ts`                 | 「未分类」三处口径一致:数据用空串、筛选哨兵、助手计数                                                     |
 | `subscriptions/model/subscriptionStatus.test.ts`       | 逾期判定按**本地日历日**:到期当天是「即将到期」,次日才「逾期」,与时区无关                                 |
+| `store/defaultTransactionStatus.test.ts`               | 缺省状态 = 已完成:**写入侧也要落一个明确状态**(助手导入不传 status),筛选与显示共用同一个默认值             |
+| `store/trashRefundPair.test.ts`                        | 回收站里的「支出 + 退款」是一对:删除把退款一起移走,**恢复也必须一起回来**;只恢复一条会让余额少掉退款那一笔   |
+| `features/assistant/workbench/categoryFallback.test.ts` | 分类解析不出来时返回**空串**(走未分类),不许退回第一个分类(会静默归错类),也不许造 `cat-unknown`           |
+| `features/smart-budget/model/budgetZeroBudget.test.ts`  | 预算为 0 却有支出:既是「超支」也是「执行率无上限(`>999%`)」,不能显示成 0.0% —— 同一行不能自相矛盾         |
 
 ## 数据完整性
 
@@ -52,6 +59,8 @@ node ./node_modules/vitest/vitest.mjs run --config vitest.config.ts src/shared/s
 | `store/trashSymmetry.test.ts`                  | 删除/恢复/永久删除对称:往返字段不少、余额对称、重复操作是空操作、主列表已有同 id 时恢复不会让记录消失              |
 | `shared/lib/billImport.mergeInvariant.test.ts` | 重复导入不丢字段:来源里没有的字段(`status`/单号)不能把已有值覆盖成 `undefined`                                     |
 | `shared/lib/transactionMetrics.test.ts`        | 汇总口径:待支付/已关闭/失败/已删除不计入;过滤结果与账户余额判据逐行相等                                            |
+| `store/subscriptionRenewalRevert.test.ts`      | 删掉「生成支出」写出的流水时续费日要**精确退回**:月末 1/31 →(生成)2/28 →(删除)必须回到 1/31,不能倒推成 1/28;再生成只推进一期 |
+| `server/orphanAccountReferences.test.js`        | **记录现状(待决策)**:账户被彻底删除后,其交易在整份导入时被丢弃。根因是 `account_id NOT NULL`;四个备选方案写在测试文件顶部 |
 
 ## 数据出入口的闭环验证
 
@@ -109,6 +118,11 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 | `npm run i18n:check-jsx`                       | JSX 文本节点里的硬编码中文;命中即非 0 退出            |
 | `npm run check:dates`                          | 禁止 `date.slice(0, 10)`(按 UTC 取日);命中即非 0 退出 |
 | `node scripts/audit-jsx-hardcoded.mjs --count` | 同上,只看数字(用于看趋势)                             |
+| `npm run check:shared-predicates`               | 三条共享判断不许在别处手写:退款/冲正、是否计入余额的状态、金额取整;并按「文件+上一行+本行」精确豁免             |
+| `npm run check:money`                           | 金额格式与取整的既有闸门                                                                                          |
+| `npm run audit:ledger-math`                     | **账目口径体检**(需本地库):逐月收支、账户余额、余额变动链连续性、退款关联、分类父子、订阅→生成交易、净值恒等式 |
+| `npm run audit:sums`                            | 列出所有对交易金额手工求和的地方,标出「在求和却没引用共享汇总」的高发区(不判失败,是复查清单)                 |
+| `npm run check:docs`                            | 本文档自身的引用体检:提到的测试文件必须存在、表格列数要一致(文档指向空处比没有文档更糟)                     |
 
 ## 浏览器端页面体检(断言不了的那一类)
 
