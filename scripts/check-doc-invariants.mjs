@@ -48,46 +48,74 @@ const missing = referenced.filter((ref) => {
   return !allTests.some((candidate) => candidate === needle || candidate.endsWith('/' + needle));
 });
 
-const lines = doc.split(/\r?\n/);
-const columnIssues = [];
-const fragmentIssues = [];
-let headerCols = null;
-let tableStart = 0;
-for (let index = 0; index < lines.length; index += 1) {
-  const line = lines[index];
-  const isRow = line.trimStart().startsWith('|');
-  if (!isRow) {
-    headerCols = null;
-    continue;
-  }
-  /*
-   * 表格残块:一行表格行如果是「一块表格的第一行」,它**下面必须紧跟分隔行**(`| --- |`)。
-   * 缺分隔行说明这是一段没有表头的残表,Markdown 会把它渲染成纯文本。
-   *
-   * 这个检查针对我自己犯过的错:把一段说明插进表格中间,后半段表格就悄悄失效了。
-   * 旧版只比列数,完全看不出来 —— 而且正文两侧即使留了空行也照样会切断表格,
-   * 所以判据要看「有没有表头 + 分隔行」,而不是看上一行是不是正文。
-   */
-  const previous = (lines[index - 1] || '').trim();
-  const startsTableBlock = !previous || !previous.startsWith('|');
-  if (startsTableBlock) {
-    const separator = (lines[index + 1] || '').trim();
-    const hasSeparator = /^\|[\s:|-]+\|$/.test(separator) && separator.includes('-');
-    if (!hasSeparator) {
-      fragmentIssues.push(
-        `第 ${index + 1} 行:表格残块(这一行是一块表格的开头,但下一行不是 | --- | 分隔行,后半段会被渲染成纯文本)`
+/**
+ * 文档的表格结构检查。
+ *
+ * 原先只跑在 docs/verified-invariants.md 一份上,而仓库里有 17 份文档 —— 我自己新写的
+ * verification-recipes.md 带着表格与代码块,从头到尾没被检查过。现在覆盖全部 docs/*.md。
+ *
+ * 报错带文件名:不然只有"第 305 行",根本不知道是哪份文档。
+ */
+function checkTables(rel, lines) {
+  const columns = [];
+  const fragments = [];
+  let headerCols = null;
+  let tableStart = 0;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const isRow = line.trimStart().startsWith('|');
+    if (!isRow) {
+      headerCols = null;
+      continue;
+    }
+    /*
+     * 表格残块:一行表格行如果是「一块表格的第一行」,它**下面必须紧跟分隔行**(`| --- |`)。
+     * 缺分隔行说明这是一段没有表头的残表,Markdown 会把它渲染成纯文本。
+     *
+     * 这个检查针对我自己犯过的错:把一段说明插进表格中间,后半段表格就悄悄失效了。
+     * 旧版只比列数,完全看不出来 —— 而且正文两侧即使留了空行也照样会切断表格,
+     * 所以判据要看「有没有表头 + 分隔行」,而不是看上一行是不是正文。
+     */
+    const previous = (lines[index - 1] || '').trim();
+    const startsTableBlock = !previous || !previous.startsWith('|');
+    if (startsTableBlock) {
+      const separator = (lines[index + 1] || '').trim();
+      const hasSeparator = /^\|[\s:|-]+\|$/.test(separator) && separator.includes('-');
+      if (!hasSeparator) {
+        fragments.push(
+          `${rel}:${index + 1} 表格残块(这一行是一块表格的开头,但下一行不是 | --- | 分隔行,后半段会被渲染成纯文本)`
+        );
+      }
+    }
+    const cols = line.split('|').length - 2;
+    if (headerCols === null) {
+      headerCols = cols;
+      tableStart = index + 1;
+      continue;
+    }
+    if (cols !== headerCols) {
+      columns.push(
+        `${rel}:${index + 1}(表格起于第 ${tableStart} 行):期望 ${headerCols} 列,实际 ${cols} 列`
       );
     }
   }
-  const cols = line.split('|').length - 2;
-  if (headerCols === null) {
-    headerCols = cols;
-    tableStart = index + 1;
-    continue;
-  }
-  if (cols !== headerCols) {
-    columnIssues.push(`第 ${index + 1} 行(表格起于第 ${tableStart} 行):期望 ${headerCols} 列,实际 ${cols} 列`);
-  }
+
+  return { columns, fragments };
+}
+
+/** 仓库里所有文档。 */
+const DOC_FILES = readdirSync(path.join(ROOT, 'docs'))
+  .filter((entry) => entry.endsWith('.md'))
+  .sort()
+  .map((entry) => 'docs/' + entry);
+
+const columnIssues = [];
+const fragmentIssues = [];
+for (const rel of DOC_FILES) {
+  const result = checkTables(rel, readFileSync(path.join(ROOT, rel), 'utf8').split(/\r?\n/));
+  columnIssues.push(...result.columns);
+  fragmentIssues.push(...result.fragments);
 }
 
 console.log(
@@ -98,7 +126,7 @@ console.log(
  * 代码块必须成对:未闭合的 ``` 会把后面整段文档吞成代码块(渲染出来面目全非),
  * 而只看表格列数的检查完全看不到这件事。
  */
-const FENCE_FILES = ["docs/verified-invariants.md", "docs/HANDOVER.md"];
+const FENCE_FILES = DOC_FILES;
 const fenceIssues = [];
 for (const rel of FENCE_FILES) {
   const full = path.join(ROOT, rel);
@@ -110,7 +138,10 @@ for (const rel of FENCE_FILES) {
 }
 
 if (missing.length === 0 && columnIssues.length === 0 && fragmentIssues.length === 0 && fenceIssues.length === 0) {
-  console.log('文档引用体检通过:引用的测试文件全部存在,表格列数一致,没有被打断的表格,代码块成对。');
+  console.log(
+    `文档引用体检通过:docs/*.md 共 ${DOC_FILES.length} 份 —— 引用的测试文件全部存在、` +
+      '表格列数一致、没有被打断的表格、代码块成对。'
+  );
   process.exit(0);
 }
 if (missing.length > 0) {
