@@ -1132,7 +1132,12 @@ function extractSheetRows(
       let text = inline || v;
       if (cellType === 's') {
         text = sharedStrings[Number.parseInt(v, 10)] || '';
-      } else if (!cellType) {
+      } else if (!cellType || cellType === 'n') {
+        /*
+         * t="n" 也要走这里:openpyxl / LibreOffice 这类工具会**显式**把数字标成 t="n",
+         * 而微信自己导出的文件不写 t。只处理"没有 t"的那种,会让这些工具产出的账单日期
+         * 原样变成 46350.78… 的序列号 —— 下游按日期解析全部失败,整份文件 0 条。
+         */
         // 数字单元格:如果是日期样式,就把序列号还原成日期时间(否则下游认不出这一列)
         const styleIndex = Number.parseInt(cell.getAttribute('s') || '-1', 10);
         if (dateStyles.has(styleIndex) && /^\s*\d+(\.\d+)?\s*$/.test(v)) {

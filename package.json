@@ -1,6 +1,6 @@
 {
   "name": "ledgerflow-frontend",
-  "version": "0.50.52",
+  "version": "0.50.53",
   "private": true,
   "engines": {
     "node": ">=22"
