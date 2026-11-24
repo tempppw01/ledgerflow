@@ -278,6 +278,19 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 
   `shared/lib/expenseScope.contract.test.ts` 现在钉的是**统一后**的契约(两边判定必须一致、
   预算型两边都不算);谁再让某个类型两边不同,那 4 条会先翻红。
+- **已知偶发:服务端测试出现过一次 `fetch failed / bad port`(2026-11-24)**。
+  症状:一次并行跑 `node --test server/*.test.js` 时,3 条用例同时失败(两条市场数据、一条 secid 过滤),
+  错误是 `bad port` / `fetch failed`。**随后连续 5 次全量重跑都干净**,无法复现。
+
+  已经排除的两个常见原因:
+  · **没有测试绑固定端口** —— 所有用例都是 `server.listen(0, '127.0.0.1', …)`(临时端口),
+    不会和开发服务器撞;
+  · **没有"listen 之前读端口"的写法** —— 三个用了本地服务端的用例文件都是 `await listen` 之后才读 `address().port`。
+
+  当时的机器状态:同时开着 dev 服务(5333)、preview(5444)、API(8799)与浏览器自动化 ——
+  倾向是资源紧张下的偶发,而非代码缺陷。**下次遇到先看这几条,不要从零复现**;
+  若能在干净环境下稳定复现,那就是真问题。
+
 - **彻底删除账户会静默删掉其交易**:根因 `account_id NOT NULL`,四方案见
   `server/orphanAccountReferences.test.js` 顶部。
 
