@@ -27,6 +27,15 @@ export type BudgetCategoryDetail = {
   averageMonthlySpent: number;
 };
 
+/**
+ * 预算模块里比对分类名用的键。
+ *
+ * 它比 store 的 `findDuplicateCategory` 更宽松:只 trim + 小写,**不压缩内部连续空格**。
+ * 目前等价,因为分类名在创建时就按 store 的规则归一过了(库里不会有带连续空格的名字),
+ * 这一点由 `npm run audit:ledger-math` 的「分类名归一」检查守着。
+ * 若哪天允许直接写库或导入未归一的分类名,这里会漏掉那些分类的支出 —— 那时请改成
+ * 与 store 同一套归一,而不是在这里放宽。
+ */
 function normalizeCategoryName(raw: string): string {
   return raw.trim().toLocaleLowerCase('zh-CN');
 }

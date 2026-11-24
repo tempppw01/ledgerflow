@@ -139,6 +139,16 @@ export function resolveCategoryId(name: string | undefined, categories: Category
   return matched?.id || '';
 }
 
+/**
+ * 助手解析账单时用的**宽松**键:除了归一空白,还把标点也去掉。
+ *
+ * 它与 store 的 `findDuplicateCategory`(只归一空白 + 小写)用途不同,别合并:
+ *   · 这里的用途是**模糊匹配**——AI 从账单里抽出的名字常带「·」「-」「/」等分隔,
+ *     去掉后才能匹配上用户已有的「餐饮外卖」;
+ *   · store 那个是**身份判定**——决定「同名分类算不算同一个」,必须稳定且严格。
+ * 匹配不上时 `ensureCategoryId` 会去新建,所以宽松不会造成误归;反过来若把它改成严格键,
+ * 助手的匹配率会掉,账单会大量落到「未分类」。
+ */
 function toLooseCategoryKey(raw: string): string {
   return raw
     .replace(/[\u00A0\u3000]/g, ' ')

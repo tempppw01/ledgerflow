@@ -280,6 +280,38 @@ for (const user of users) {
     fail(label, childrenOfTrashed + ' 个子分类的父级在回收站里(界面上会找不到它)');
   }
 
+  // ---- 4.35 分类名的归一 ----
+  /*
+   * 库里的分类名必须已经是「归一形式」(全角/不换行空格当空格、连续空格压成一个、去首尾)。
+   * 判重规则是按归一后的名字比较的,所以名字本身没归一就等于「匹配不上自己」:
+   * 预算模块的匹配比 store 更宽松(它只 trim + 小写),一旦出现带内部连续空格的名字,
+   * 那边就会漏掉这笔分类的支出。
+   */
+  const normalizeCategoryName = (value) =>
+    String(value || '')
+      .replace(/[\u00A0\u3000]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  let unnormalizedNames = 0;
+  const seenCategoryKeys = new Map();
+  for (const row of categories) {
+    const normalized = normalizeCategoryName(row.name);
+    if (normalized !== row.name) {
+      unnormalizedNames += 1;
+      warn(label, '分类名未归一:' + JSON.stringify(row.name) + '(应为 ' + JSON.stringify(normalized) + ')');
+    }
+    const key = (row.parent_id || '') + '|' + normalized.toLocaleLowerCase('zh-CN');
+    const existing = seenCategoryKeys.get(key);
+    if (existing) {
+      fail(label, '归一后重名:' + JSON.stringify(existing) + ' 与 ' + JSON.stringify(row.name));
+    } else {
+      seenCategoryKeys.set(key, row.name);
+    }
+  }
+  if (unnormalizedNames === 0) {
+    console.log('  分类名归一:正常(' + categories.length + ' 个)');
+  }
+
   // ---- 4.4 订阅与它生成的那笔交易 ----
   /*
    * lastGeneratedTransactionId 必须指向一笔真实存在、且**没进回收站**的交易。
