@@ -7,6 +7,7 @@
 
 | 版本 | 说明 |
 | --- | --- |
+| [v0.50.46](release-notes/RELEASE_NOTES_v0.50.46.md) | 修:导入的账单全部变成「餐饮」 |
 | [v0.50.45](release-notes/RELEASE_NOTES_v0.50.45.md) | 修:余额变动页,备注过长会把界面撑开 |
 | [v0.50.44](release-notes/RELEASE_NOTES_v0.50.44.md) | 修:「上传微信账单失败」——xlsx 里的日期是 Excel 序列号 |
 | [v0.50.43](release-notes/RELEASE_NOTES_v0.50.43.md) | 修:「添加了个股,但是无法看到净值」 |
