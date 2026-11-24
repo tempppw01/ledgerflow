@@ -308,6 +308,16 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 | `npm run i18n:check-jsx`                       | JSX 文本节点里的硬编码中文;命中即非 0 退出            |
 | `npm run check:dates`                          | 禁止 `date.slice(0, 10)`(按 UTC 取日);命中即非 0 退出 |
 | `node scripts/audit-jsx-hardcoded.mjs --count` | 同上,只看数字(用于看趋势)                             |
+
+**项目里两种占位符并存,别混用**(自审时查证过,两种都在正常工作):
+
+- `t('key', { count })`(react-i18next)配 **`{{count}}`** —— 自动插值,如 `recycleBin.clearConfirm`、
+  `dataSync.syncFailure`、`dataSync.syncDroppedRecords`;
+- `tf('key', '兜底文案')`(本项目自己的 key+兜底 helper)**不接受插值参数**,所以配 **`{count}`**
+  + 代码里 `.replace('{count}', ...)` —— 如 `dataBackup.snapshot.synced`、`txPage.confirm.refundCascade`。
+
+风险很实际:译者按错的那套写,占位符就会原样显示给用户(我在 `syncDroppedRecords` 上就踩过一次)。
+改文案时先看**调用点用的是 `t` 还是 `tf`**,再决定花括号的个数。
 | `npm run check:shared-predicates`               | 三条共享判断不许在别处手写:退款/冲正、是否计入余额的状态、金额取整;并按「文件+上一行+本行」精确豁免             |
 | `npm run check:money`                           | 金额格式与取整的既有闸门                                                                                          |
 | `npm run audit:ledger-math`                     | **账目口径体检**(需本地库):逐月收支、账户余额、余额变动链连续性、退款关联、分类父子、订阅→生成交易、净值恒等式 |
