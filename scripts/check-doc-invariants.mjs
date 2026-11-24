@@ -50,13 +50,34 @@ const missing = referenced.filter((ref) => {
 
 const lines = doc.split(/\r?\n/);
 const columnIssues = [];
+const fragmentIssues = [];
 let headerCols = null;
 let tableStart = 0;
 for (let index = 0; index < lines.length; index += 1) {
   const line = lines[index];
-  if (!line.trimStart().startsWith('|')) {
+  const isRow = line.trimStart().startsWith('|');
+  if (!isRow) {
     headerCols = null;
     continue;
+  }
+  /*
+   * 表格残块:一行表格行如果是「一块表格的第一行」,它**下面必须紧跟分隔行**(`| --- |`)。
+   * 缺分隔行说明这是一段没有表头的残表,Markdown 会把它渲染成纯文本。
+   *
+   * 这个检查针对我自己犯过的错:把一段说明插进表格中间,后半段表格就悄悄失效了。
+   * 旧版只比列数,完全看不出来 —— 而且正文两侧即使留了空行也照样会切断表格,
+   * 所以判据要看「有没有表头 + 分隔行」,而不是看上一行是不是正文。
+   */
+  const previous = (lines[index - 1] || '').trim();
+  const startsTableBlock = !previous || !previous.startsWith('|');
+  if (startsTableBlock) {
+    const separator = (lines[index + 1] || '').trim();
+    const hasSeparator = /^\|[\s:|-]+\|$/.test(separator) && separator.includes('-');
+    if (!hasSeparator) {
+      fragmentIssues.push(
+        `第 ${index + 1} 行:表格残块(这一行是一块表格的开头,但下一行不是 | --- | 分隔行,后半段会被渲染成纯文本)`
+      );
+    }
   }
   const cols = line.split('|').length - 2;
   if (headerCols === null) {
@@ -73,8 +94,8 @@ console.log(
   '文档引用的测试文件 ' + referenced.length + ' 个,仓库里共 ' + allTests.length + ' 个测试文件'
 );
 
-if (missing.length === 0 && columnIssues.length === 0) {
-  console.log('文档引用体检通过:引用的测试文件全部存在,表格列数一致。');
+if (missing.length === 0 && columnIssues.length === 0 && fragmentIssues.length === 0) {
+  console.log('文档引用体检通过:引用的测试文件全部存在,表格列数一致,没有被打断的表格。');
   process.exit(0);
 }
 
@@ -85,5 +106,10 @@ if (missing.length > 0) {
 if (columnIssues.length > 0) {
   console.log('\n表格列数不一致(渲染会错位):');
   for (const issue of columnIssues) console.log('  ✗ ' + issue);
+}
+if (fragmentIssues.length > 0) {
+  console.log('\n表格被正文从中间切断(后半段会渲染成纯文本):');
+  for (const issue of fragmentIssues) console.log('  ✗ ' + issue);
+  console.log('\n请把说明挪到整张表之后,表格中间不要夹正文。');
 }
 process.exit(1);

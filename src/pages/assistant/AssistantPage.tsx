@@ -1219,7 +1219,12 @@ export function AssistantPage() {
       prevMonthIncome > 0 ? ((monthIncome - prevMonthIncome) / prevMonthIncome) * 100 : 0;
 
     const recentExpenseRows = [...validRows]
-      .filter((item) => item.type === 'expense' && item.adjustmentKind !== 'refund')
+      /*
+       * 用共享判断,别手写 `adjustmentKind !== 'refund'`:那会漏掉冲正(reversal),
+       * 于是冲正单被当成一笔正常支出,把「平均支出」抬高、连带把「异常大额」的阈值也抬高,
+       * 真正的大额支出反而被判定为正常。
+       */
+      .filter((item) => item.type === 'expense' && !isTransactionRefundLike(item))
       .sort((a, b) => +new Date(b.date) - +new Date(a.date))
       .slice(0, 30);
     const avgExpense =

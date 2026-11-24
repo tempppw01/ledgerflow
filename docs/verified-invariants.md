@@ -308,14 +308,24 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 
 ## 可访问性与 i18n 的闸门(命令式,不在上面那套里)
 
-| 命令                                           | 作用                                                  |
-| ---------------------------------------------- | ----------------------------------------------------- |
-| `npm run i18n:check`                           | i18n key 缺失/单边/写死属性;命中即非 0 退出           |
-| `npm run i18n:check-jsx`                       | JSX 文本节点里的硬编码中文;命中即非 0 退出            |
-| `npm run check:dates`                          | 禁止 `date.slice(0, 10)`(按 UTC 取日);命中即非 0 退出 |
-| `node scripts/audit-jsx-hardcoded.mjs --count` | 同上,只看数字(用于看趋势)                             |
+一张完整的表(之前被两段说明**从中间切开**,后半段丢了表头、渲染成纯文本 —— 已修):
 
-**项目里两种占位符并存,别混用**(自审时查证过,两种都在正常工作):
+| 命令                                           | 作用                                                                                                        |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `npm run i18n:check`                           | i18n key 缺失/单边/写死属性;命中即非 0 退出                                                                 |
+| `npm run i18n:check-jsx`                       | JSX 文本节点里的硬编码中文;命中即非 0 退出                                                                  |
+| `npm run check:dates`                          | 禁止按 UTC 取日(`date.slice(0, 10)`、两个 `slice(0, 10)` 直接比);命中即非 0 退出                        |
+| `npm run check:shared-predicates`              | 共享判断不许在别处手写:退款/冲正、是否计入余额的状态、金额取整、支出口径;按「文件+上一行+本行」精确豁免    |
+| `npm run check:money`                          | 金额格式与取整的既有闸门                                                                                    |
+| `npm run audit:ledger-math`                    | **账目口径体检**(需本地库):逐月收支、账户余额、余额变动链、退款关联、分类父子、订阅→生成交易、净值恒等式  |
+| `npm run audit:sums`                           | 手工求和的候选点;被点名却未引用共享汇总的文件必须写明理由,否则非 0 退出                                     |
+| `npm run check:docs`                           | 本文档自身的引用体检:测试文件必须存在、表格列数一致、**表格不能被正文从中间切断**                          |
+| `npm run check:audit-routes`                   | 界面审计覆盖的路径必须与 `src/app/router/router.tsx` 对齐(有页面没跑过即失败)                              |
+| `node scripts/audit-jsx-hardcoded.mjs --count` | 硬编码中文的数量,只看数字(用于看趋势)                                                                      |
+
+### 两条关于闸门本身的说明
+
+**一、两种 i18n 占位符并存,别混用**(自审时查证过,两种都在正常工作):
 
 - `t('key', { count })`(react-i18next)配 **`{{count}}`** —— 自动插值,如 `recycleBin.clearConfirm`、
   `dataSync.syncFailure`、`dataSync.syncDroppedRecords`;
@@ -324,11 +334,11 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 
 风险很实际:译者按错的那套写,占位符就会原样显示给用户(我在 `syncDroppedRecords` 上就踩过一次)。
 改文案时先看**调用点用的是 `t` 还是 `tf`**,再决定花括号的个数。
-| `npm run check:shared-predicates`               | 三条共享判断不许在别处手写:退款/冲正、是否计入余额的状态、金额取整;并按「文件+上一行+本行」精确豁免             |
-| `npm run check:money`                           | 金额格式与取整的既有闸门                                                                                          |
-| `npm run audit:ledger-math`                     | **账目口径体检**(需本地库):逐月收支、账户余额、余额变动链连续性、退款关联、分类父子、订阅→生成交易、净值恒等式 |
-| `npm run audit:sums`                            | 列出所有对交易金额手工求和的地方,标出「在求和却没引用共享汇总」的高发区(不判失败,是复查清单)                 |
-| `npm run check:docs`                            | 本文档自身的引用体检:提到的测试文件必须存在、表格列数要一致(文档指向空处比没有文档更糟)                     |
+
+**二、`check:shared-predicates` 的边界(实测)**:「退款/冲正」这条规则只拦**同一处同时写了 refund 和
+reversal** 的写法。像 `adjustmentKind !== 'refund'` 这种**单边**判断它抓不到 —— 全仓 17 处
+`adjustmentKind` 比较里多数是成对的(没问题),单边的那一处(助手页算「平均支出/异常大额」时漏掉冲正)已修。
+想做更严的规则,得先解决几十处成对写法的噪声,暂不做。
 
 ## 浏览器端页面体检(断言不了的那一类)
 
