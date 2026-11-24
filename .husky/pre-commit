@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+#
+# 提交前必须过的检查。
+#
+# 为什么会有这个文件:package.json 里早就配好了 husky(prepare) + lint-staged + lint-staged 规则,
+# 但 .husky 下**从来没有 pre-commit** —— 于是什么都没有真的跑过,等于白配。
+# (2026-11-25 发现:那次我把 check:docs 已经报错的提交推了上去,就是因为这里没有拦截。)
+#
+# 这里只放**快**的检查(几百毫秒级)。慢的(全量测试、全站审计)留给 CI。
+# 目标是拦住"提交里带了本来会被闸门拦下的东西",不是替代 CI。
+
+set -e
+
+# 1) 只对**暂存的文件**跑 eslint --fix(配置见 package.json 的 lint-staged)
+npx lint-staged
+
+# 2) 文档体检:表格列数、代码块成对、引用的测试文件存在。
+#    这几条正好是"改了文档但表格写错"这类错误 —— 全量跑一次也就一两百毫秒。
+npm run check:docs
