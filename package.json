@@ -30,6 +30,7 @@
     "check:r2-fetch": "node scripts/check-no-r2-fetch.mjs",
     "audit:ui": "node scripts/audit-ui-browser.mjs",
     "audit:ui:local": "node scripts/audit-ui-local.mjs",
+    "check:audit-routes": "node scripts/check-audit-routes.mjs",
     "audit:ledger-math": "node scripts/audit-ledger-math.mjs",
     "check:shared-predicates": "node scripts/check-shared-predicates.mjs",
     "audit:sums": "node scripts/audit-handrolled-sums.mjs",

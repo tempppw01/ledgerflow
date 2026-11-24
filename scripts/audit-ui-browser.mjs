@@ -34,9 +34,17 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
+/*
+ * 覆盖的路径要和 src/app/router/router.tsx 对齐。
+ * 曾经漏了三条真实页面(/transactions/new、/settings、/tags)—— 那时「36 个组合、0 个问题」
+ * 是有洞的:漏掉的页面从来没被跑过。加了路由之后请顺手核对一次两边是否仍然一致。
+ */
 const ROUTES = [
   '/',
   '/transactions',
+  '/transactions/new',
+  '/tags',
+  '/settings',
   '/smart-budget',
   '/assistant',
   '/global-memory',
@@ -52,7 +60,9 @@ const ROUTES = [
   '/salary-tools',
   '/finance',
   '/help',
-  '/about'
+  '/about',
+  '/investments/flow', // 重定向到 /investments,顺带验重定向不报错
+  '/这条路径不存在-用来验404' // 通配 404 页也要能安全渲染
 ];
 
 const VIEWPORTS = [
