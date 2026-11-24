@@ -98,6 +98,13 @@ npm run audit:unused-i18n     # i18n 死键:分成可安全删除与需人工确
 | 类型 | `npx tsc --noEmit` |
 | 代码风格 | `npm run lint`(`--max-warnings=0`) |
 | 前端测试 | `npm test` |
+| 服务端测试 | `npm run test:server`(`node --test server/*.test.js`)|
+| 全部测试 | `npm run test:all` = 上面两条 |
+
+> **⚠ 坑:`npm test` 只跑前端。** 服务端有 12+ 个测试文件在 `src/` 之外(`server/*.test.js`),
+> 而 vitest 的 `include` 只管 `src/**` —— 所以跑 `npm test` 看到"全绿"时,**服务端一条都没跑**。
+> (2026-11-25 之前 `package.json` 里甚至没有服务端那条脚本,只有 CI 与文档在跑裸命令;
+> 现在补成 `test:server` / `test:all`,`npm run` 里就能看到。)|
 | i18n | `npm run i18n:check` + `npm run i18n:check-jsx` |
 | 日期用法 | `npm run check:dates`(独立一步) |
 | 金额格式 | `npm run check:money`(独立一步) |

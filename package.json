@@ -25,6 +25,8 @@
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "test": "vitest run --config vitest.config.ts",
+    "test:server": "node --test server/*.test.js",
+    "test:all": "npm test && npm run test:server",
     "test:watch": "vitest --config vitest.config.ts",
     "prepare": "husky",
     "check:r2-fetch": "node scripts/check-no-r2-fetch.mjs",
