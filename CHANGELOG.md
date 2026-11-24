@@ -7,6 +7,7 @@
 
 | 版本 | 说明 |
 | --- | --- |
+| [v0.50.42](release-notes/RELEASE_NOTES_v0.50.42.md) | 股票/指数行情加了故障转移:Yahoo 挂了自动换东财、新浪 |
 | [v0.50.41](release-notes/RELEASE_NOTES_v0.50.41.md) | 记一笔:「再记一笔」 |
 | [v0.50.40](release-notes/RELEASE_NOTES_v0.50.40.md) | 设置页新增两项:默认打开页面、本位币 |
 | [v0.50.39](release-notes/RELEASE_NOTES_v0.50.39.md) | 美股:支持盘前 / 盘后实时显示 |
