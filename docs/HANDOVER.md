@@ -154,6 +154,21 @@ node scripts/audit-ledger-math.mjs --email=demo.mcp@ledgerflow.local   # 需要�
 PLAYWRIGHT_MODULE=<path>/playwright/index.mjs npm run audit:ui:local   # 起服务→审计→收尾
 ```
 
+### 浏览器端到端验证:用临时账号,不要用演示账号
+
+手工验证(比如"两个标签页并发写")要一个干净账号。**必须用临时账号** —— 用演示账号会往
+基线库里写测试数据(我这一段就犯过一次:写了 ¥999,清理时又漏了回写账户余额缓存,
+两次都是靠人肉对表才发现的)。
+
+```bash
+npm run dev:test-user -- --create  <ledgerUserId> <email>   # 密码与演示账号相同
+npm run dev:test-user -- --cleanup <ledgerUserId> <email>   # 按依赖顺序删干净
+npm run audit:demo-baseline                                 # 收工前确认基线没被动过
+```
+
+脚本里有一条**结构性保护**:目标指向演示账号时直接拒绝(id 与 email 双重比对)——
+让"误写演示库"这件事无法再发生。清理顺序也是写死的,不用每次重新推导。
+
 下面这**五个**已经在 CI 里跑(verify job 的 Static consistency gates 一步,2026-11-24 实测在 Linux CI 上通过):
 
 | 闸门 | 查什么 |
