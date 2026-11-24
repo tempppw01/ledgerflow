@@ -2,6 +2,7 @@ import { TransactionItem, TransactionStatus } from '../../entities/transaction/t
 import { roundMoney } from './money';
 import { inferCategoryFromText, resolveCategoryId } from '../../features/assistant/workbench/workbenchMapping';
 import type { Category } from '../../entities/category/types';
+import { suggestCategoryFromRules, type CategoryLearningRule } from './categoryLearning';
 import { resolveTransactionLocalDay } from './localDate';
 
 type BillSource = 'wechat' | 'alipay';
@@ -20,12 +21,16 @@ interface ParseBillInput {
    * 不给则全部用 defaultCategoryId —— 保持旧行为,不影响已有调用方与测试。
    */
   categories?: Category[];
+  /** 用户改分类学出来的规则。命中就先用它 —— 比关键词更贴合这个人自己的习惯。 */
+  categoryLearningRules?: CategoryLearningRule[];
 }
 
 interface ParseBillFileInput {
   file: File;
   /** 用户现有的分类;给了才按行推断分类(见 inferBillCategoryId)。 */
   categories?: Category[];
+  /** 用户改分类学出来的规则,优先级高于关键词。 */
+  categoryLearningRules?: CategoryLearningRule[];
   source: BillSource;
   defaultCategoryId: string;
   defaultAccountId: string;
@@ -716,6 +721,18 @@ function inferBillCategoryId(
 
   if (!text.trim()) return input.defaultCategoryId;
 
+  /*
+   * 先把用户自己改出来的规则问一遍 —— 它比关键词更准(那是这个人自己的习惯)。
+   * 规则命中就直接用,不再走关键词。
+   */
+  const learned = suggestCategoryFromRules(
+    { type, note: text },
+    input.categoryLearningRules ?? []
+  );
+  if (learned?.categoryId) {
+    return learned.categoryId;
+  }
+
   const inferredName = inferCategoryFromText(type, text);
   if (!inferredName) return input.defaultCategoryId;
 
@@ -1189,7 +1206,8 @@ export async function parseBillFileToTransactionsDetailed(
     defaultCategoryId: input.defaultCategoryId,
     defaultAccountId: input.defaultAccountId,
     // 别忘了转发 —— 少这一行,文件级入口就永远用默认分类(功能等于没接上)
-    categories: input.categories
+    categories: input.categories,
+    categoryLearningRules: input.categoryLearningRules
   });
 }
 

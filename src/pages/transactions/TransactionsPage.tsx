@@ -400,6 +400,7 @@ export function TransactionsPage() {
   const { user } = useAuth();
   const transactions = useFinanceStore((s) => s.transactions);
   const categories = useFinanceStore((s) => s.categories);
+  const categoryLearningRules = useFinanceStore((s) => s.categoryLearningRules);
   /** 一级分类筛选时,把子分类的交易一起算进来。 */
   const childCategoryIdsByParent = useMemo(() => {
     const map = new Map<string, string[]>();
@@ -1331,7 +1332,9 @@ export function TransactionsPage() {
         defaultCategoryId,
         defaultAccountId,
         // 把现有分类传进去,让每一行按内容推断分类(不传就等于全用默认分类)
-        categories
+        categories,
+        // 用户改分类学出来的规则,优先级高于关键词
+        categoryLearningRules
       });
       const parsed = parsedResult.rows;
 

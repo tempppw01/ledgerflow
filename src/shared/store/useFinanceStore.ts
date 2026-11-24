@@ -8,8 +8,7 @@ import {
   BalanceChangeType,
   DEFAULT_TRANSACTION_STATUS,
   TransactionAdjustmentKind,
-  TransactionItem,
-  TransactionType
+  TransactionItem
 } from '../../entities/transaction/types';
 import { SubscriptionItem } from '../../entities/subscription/types';
 import { syncChangeIfNeeded } from '../lib/dataSync';
@@ -18,34 +17,21 @@ import { getSignedAmount, isTransactionRefundLike } from '../lib/transactionMetr
 import { isBalanceAffectingStatus, isSameLocalDay } from '../lib/localDate';
 import { advanceSubscriptionDate } from '../lib/subscriptionSchedule';
 import { roundMoney } from '../lib/money';
+import {
+  applyCategoryCorrection,
+  suggestCategoryFromRules,
+  type CategoryLearningEvent,
+  type CategoryLearningInput,
+  type CategoryLearningRule
+} from '../lib/categoryLearning';
 import { resolveSubscriptionStatus } from '../../features/subscriptions/model/subscriptionStatus';
 
-interface CategoryLearningRule {
-  id: string;
-  token: string;
-  type: TransactionType;
-  categoryId: string;
-  hitCount: number;
-  createdAt: string;
-  lastAppliedAt: string;
-}
+// 定义只有一份:分类学习的结构放在 shared/lib/categoryLearning.ts,这里直接引用。
+// (原来 store 里有一份同结构定义,再引入一份就会两处漂移。)
 
-interface CategoryLearningEvent {
-  id: string;
-  createdAt: string;
-  type: TransactionType;
-  fromCategoryId: string;
-  toCategoryId: string;
-  tokens: string[];
-  ruleIds: string[];
-}
 
-interface CategoryLearningInput {
-  type: TransactionType;
-  note: string;
-  merchantOrderNo?: string;
-  orderNo?: string;
-}
+
+
 
 interface RefundTransactionInput {
   transactionId: string;
@@ -945,11 +931,13 @@ export const useFinanceStore = create<FinanceState>()(
             }
           }
         }
+        let previousRow: TransactionItem | null = null;
         set((s) => {
           const existing = s.transactions.find((item) => item.id === id);
           if (!existing) {
             return s;
           }
+          previousRow = existing;
           // 编辑表单只提交可编辑字段;退款关联、附件等仅在详情页维护的字段必须保留,
           // 否则一次普通编辑就会把退款单改成普通流水,导致余额方向反掉。
           const row = mergeTransactionRow(existing, payload, id, new Date().toISOString());
@@ -961,6 +949,23 @@ export const useFinanceStore = create<FinanceState>()(
           };
         });
         if (updatedRow) {
+          /*
+           * 分类被改动时学一条规则 —— 这是「分类学习」唯一的触发点。
+           * 不在这里记录的话,那套规则永远不会产生(它之前确实是空壳)。
+           */
+          // 这两个变量都是在闭包里赋的值,TS 的控制流分析会把它们收窄成 never,这里显式取出来
+          const row = updatedRow as TransactionItem;
+          const prev = previousRow as TransactionItem | null;
+          if (prev && prev.categoryId !== row.categoryId) {
+            get().recordCategoryCorrection({
+              type: row.type,
+              note: row.note || '',
+              merchantOrderNo: row.merchantOrderNo,
+              orderNo: row.orderNo,
+              fromCategoryId: prev.categoryId,
+              toCategoryId: row.categoryId
+            });
+          }
           void syncChangeIfNeeded({
             entity: 'transactions',
             action: 'update',
@@ -1755,13 +1760,32 @@ export const useFinanceStore = create<FinanceState>()(
           trashedSubscriptions: []
         });
       },
-      suggestCategoryByLearning: () => {
-        return null;
+      suggestCategoryByLearning: (input) => {
+        // 原来是 () => null 的空壳:管道(数据模型/备份/同步/设置页文案)都建好了,逻辑没写
+        return suggestCategoryFromRules(input, get().categoryLearningRules);
       },
-      recordCategoryCorrection: () => {
-        // noop
+      recordCategoryCorrection: (input) => {
+        const { rules, event } = applyCategoryCorrection(get().categoryLearningRules, input);
+        set((s) => ({
+          categoryLearningRules: rules,
+          // 事件只留最近 200 条,避免无限增长(同步载荷也会跟着变小)
+          categoryLearningEvents: [event, ...s.categoryLearningEvents].slice(0, 200)
+        }));
       },
-      undoLatestCategoryLearning: () => false,
+      undoLatestCategoryLearning: () => {
+        const events = get().categoryLearningEvents;
+        if (events.length === 0) return false;
+        const [latest, ...rest] = events;
+        set((s) => ({
+          categoryLearningEvents: rest,
+          // 撤销是"尽力而为":把这次动过的规则整条移除。
+          // 若这条规则是**更新**出来的(之前已有次数),移除后那一小段历史就找不回来了。
+          categoryLearningRules: s.categoryLearningRules.filter(
+            (rule) => !latest.ruleIds.includes(rule.id)
+          )
+        }));
+        return true;
+      },
       clearCategoryLearning: () => {
         set({
           categoryLearningRules: [],
