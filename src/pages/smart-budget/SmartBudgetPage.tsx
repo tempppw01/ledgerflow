@@ -7,7 +7,6 @@ import { useAiSettings } from '../../shared/store/useAiSettings';
 import {
   BudgetAnswers,
   BudgetRecommendation,
-  DEFAULT_BUDGET_ANSWERS,
   generateBudgetRecommendation,
   getIdentityLabel,
   normalizeBudgetAnswers
@@ -18,6 +17,8 @@ import {
   syncRecommendationWithExpenseCategories
 } from '../../features/smart-budget/model/budgetPlan';
 import { useSmartBudgetStore } from '../../shared/store/useSmartBudgetStore';
+import { useAppPreferences } from '../../shared/store/useAppPreferences';
+import { buildWizardDefaultAnswers } from '../../features/smart-budget/model/wizardDefaults';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import {
   buildBudgetTrackingRows,
@@ -204,8 +205,21 @@ export function SmartBudgetPage() {
     const stored = Number(initialDraft?.step);
     return Number.isFinite(stored) && stored > 0 && stored <= WIZARD_STEP_COUNT ? stored : 1;
   });
+  /*
+   * 向导问的第一个数是「每月到手收入」,而应用**早就知道**这个数(设置里的登记月收入,
+   * 还款管理用它算负债率、助手用它做上下文)。原先这里直接用写死的 DEFAULT_BUDGET_ANSWERS
+   * (月收入 10,000),于是用户明明登记过收入,向导还是从 10,000 开始 ——
+   * 一路点下去,整份预算(固定/储蓄/灵活的分配、执行率、健康度)都按 10,000 算。
+   * 演示账本正是这个状态:方案里 10,000,而登记月收入 26,000。
+   * 草稿仍然优先(用户上次填到一半的值不能被覆盖);没有登记收入时才退回默认。
+   */
+  const registeredMonthlyIncome = useAppPreferences((state) => state.monthlyIncome);
+  const wizardDefaultAnswers = useMemo(
+    () => buildWizardDefaultAnswers(registeredMonthlyIncome),
+    [registeredMonthlyIncome]
+  );
   const [answers, setAnswers] = useState<BudgetAnswers>(() =>
-    initialDraft?.answers ? normalizeBudgetAnswers(initialDraft.answers) : DEFAULT_BUDGET_ANSWERS
+    initialDraft?.answers ? normalizeBudgetAnswers(initialDraft.answers) : wizardDefaultAnswers
   );
   const [draftRecommendation, setDraftRecommendation] = useState<BudgetRecommendation | null>(
     () => initialDraft?.recommendation ?? null
@@ -490,7 +504,7 @@ export function SmartBudgetPage() {
   const handleRestartWizard = () => {
     clearWizardDraft();
     setDraftRecommendation(null);
-    setAnswers(DEFAULT_BUDGET_ANSWERS);
+    setAnswers(wizardDefaultAnswers);
     setStep(1);
     setWizardError(null);
     setMode('setup');
