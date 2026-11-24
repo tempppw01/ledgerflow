@@ -81,6 +81,13 @@ export function isActualExpenseType(type: 'expense' | 'income' | 'budget' | 'rep
   return type === 'expense' || type === 'repayment';
 }
 
+/**
+ * 2026-11-24 起,「实际花掉」与「支出类」已经是**同一个口径**(预算型两边都不算)。
+ * 上面这个函数保持原名,是因为首页多处按它读;它现在与
+ * `shared/lib/transactionMetrics.isExpenseLike` 一致,改任一处都要同时改另一处
+ * (`npm run check:shared-predicates` 会盯着这两个名字)。
+ */
+
 export function extractJson(text: string): string {
   const start = text.indexOf('{');
   const end = text.lastIndexOf('}');

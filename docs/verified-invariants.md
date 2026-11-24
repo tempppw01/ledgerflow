@@ -23,7 +23,7 @@ node ./node_modules/vitest/vitest.mjs run --config vitest.config.ts src/shared/s
 | `store/refundInvariant.test.ts`                            | 退款总额不得超过原交易金额:创建时拒绝、**编辑时也拒绝**(否则账户净额凭空多钱);导入/恢复可走 `allowRefundOverflow` 逃生门 |
 | `store/refundInference.test.ts`                            | 缺 `adjustmentKind` 时的方向推断:明确写了就不推翻;**不能**因为 `status: 'refunded'` 就把原交易当成退款(会把余额算成两倍) |
 | `investments/model/investmentSimulator.invariants.test.ts` | 定投模拟全程不取整:投入 = 每期 × 期数、利润/收益率自洽、**线性**(金额翻倍则结果精确翻倍)、非法输入返回 null              |
-| `shared/lib/expenseScope.contract.test.ts`                 | 「支出」两个口径被钉住:`isExpenseLike` = 支出+**预算**+还款(减少余额)、`isActualExpenseType` = 支出+还款(实际花掉),**只差 budget 一项**。想统一口径必须先改这个契约(见待决事项) |
+| `shared/lib/expenseScope.contract.test.ts`                 | 「支出」口径**已统一**:`isExpenseLike` 与 `isActualExpenseType` 都是 支出+还款,**预算型不算支出**(2026-11-24 定案,依据是全项目 5 处不计入对 1 处计入)。谁再让两边不同,这里先翻红 |
 | `features/debt/model/creditDrafts.rounding.test.ts`       | 信用草稿金额解析走共享取整:`2675.675 → 2675.68`(解析器曾原样返回三位小数);口语单位(`1万5` / `1万零500`)组合后同样不留三位小数 |
 | `features/investments/model/monthlyCashflow.test.ts`      | 「本月可投资现金」一份实现:按月取、退款抵减、排除不计入余额的状态;**上个月的花销不能把它压成 0**(投资助手聊天面板曾用全部历史去减月收入,恒为 0) |
 
@@ -260,13 +260,24 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 
 ### 2. 同类待决事项(细节见各自章节)
 
-- **「预算」型交易算不算支出**:`transactionMetrics.isExpenseLike`(含 `budget`)与
-  `dashboard/model/utils.isActualExpenseType`(不含)结论相反,首页一屏内两个数字自相矛盾;
-  需要你定一个口径。
+- **「预算」型交易算不算支出** —— **已定案(2026-11-24,v0.50.36):不算**。
+  原先 `transactionMetrics.isExpenseLike` 含 `budget` 而 `dashboard/model/utils.isActualExpenseType` 不含,
+  首页一屏内两个数字自相矛盾。定案的依据不是偏好,而是**代码自己的一致行为**:
 
-  **现在两个谓词的差异被 `shared/lib/expenseScope.contract.test.ts` 钉住了** ——
-  谁想把它们"统一",测试会先翻红(实测:统一后 4 条里 3 条失败)。所以这个决定不会被
-  悄悄做掉,必须先明确改这个契约、并连同本节一起改。
+  | 面 | 预算型算支出吗 |
+  | --- | --- |
+  | 首页「本月结余」(`isActualExpenseType`) | 不算 |
+  | 智能预算 · 已花费(`budgetDetail.ts:87`) | 不算 |
+  | 智能预算 · 洞察(`budgetInsights.ts:73`) | 不算 |
+  | 分类预算明细 | 不算 |
+  | 助手发给模型的账本合计 | 不算 |
+  | `isExpenseLike`(经 `summarizeTransactions` 与财务分析页) | **算** ← 唯一的例外 |
+
+  五比一,所以把那一处对齐到其余五处。注意**这不等于"预算型不影响余额"**:它照样写
+  `transaction-budget` 余额变动,只是各处的「支出」统计不再把它算作花掉。
+
+  `shared/lib/expenseScope.contract.test.ts` 现在钉的是**统一后**的契约(两边判定必须一致、
+  预算型两边都不算);谁再让某个类型两边不同,那 4 条会先翻红。
 - **彻底删除账户会静默删掉其交易**:根因 `account_id NOT NULL`,四方案见
   `server/orphanAccountReferences.test.js` 顶部。
 

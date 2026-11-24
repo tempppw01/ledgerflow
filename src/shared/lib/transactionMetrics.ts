@@ -16,13 +16,24 @@ export function isTransactionRefundLike(tx: TransactionItem): boolean {
 }
 
 /**
- * 支出类类型(**减少账户余额**的口径)。注意:预算型交易在这里**算**支出,而首页的
- * `isActualExpenseType`(features/dashboard/model/utils.ts)不算 —— 那是「实际花掉」的口径。
- * 两者是**不同**的概念,不是两套实现:所以**不要在别处再抄一份**
- * (`npm run check:shared-predicates` 会拦住重复定义),需要哪个就 import 哪个。
+ * 支出类类型(**实际花掉**的口径):支出 + 还款。
+ *
+ * 预算型交易**不算**支出 —— 它是把钱划进预算(账户余额确实变了),但钱还没花掉。
+ * 这一条曾经含糊:这里原本含 `budget`,而首页的 `isActualExpenseType` 不含,于是同一屏里
+ * 「本月结余」和「钱都去哪了」给出互相矛盾的两个数字。
+ *
+ * 2026-11-24 按**代码自己的一致行为**定案(不是偏好):全项目对「预算」型的处理是 5 处不计入、
+ * 1 处计入 ——
+ *   · 不计入:首页本月结余(isActualExpenseType)、智能预算的已花费/洞察/分类明细
+ *     (budgetDetail.ts:87、budgetInsights.ts:73)、助手发给模型的账本合计;
+ *   · 计入:只有这个函数(经 summarizeTransactions 与财务分析页)。
+ * 所以把这一处对齐到其余五处:预算型不再计入支出。
+ *
+ * 钱的**去向**不受影响:预算型交易照样产生余额变动(见 useFinanceStore 的
+ * `transaction-budget`),只是各处的「支出」统计不再把它算作花掉。
  */
 export function isExpenseLike(type: TransactionType): boolean {
-  return type === 'expense' || type === 'budget' || type === 'repayment';
+  return type === 'expense' || type === 'repayment';
 }
 
 export function getTransactionDirection(tx: TransactionItem): TransactionDirection {

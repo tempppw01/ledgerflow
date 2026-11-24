@@ -74,10 +74,10 @@ const DEFINITION_CHECKS = [
   },
   {
     /*
-     * 支出口径:transactionMetrics.isExpenseLike(支出+预算+还款)与
-     * dashboard/model/utils.isActualExpenseType(支出+还款,**不含预算**)是两个**有意不同**的
-     * 概念(前者=减少余额,后者=实际花掉)。正因为它们不同,更不能在别处再抄一份 ——
-     * financial-analysis 里就曾有一份与 isExpenseLike 完全相同的本地副本。
+     * 支出口径:transactionMetrics.isExpenseLike 与 dashboard/model/utils.isActualExpenseType
+     * 在 2026-11-24 已**统一**(都是支出+还款,预算型不算),但仍是两个名字、两处定义 ——
+     * 所以既不许再抄第三份(financial-analysis 里曾有一份完全相同的本地副本),
+     * 改其中一个时也要想到另一个。
      */
     re: /^\s*(?:export\s+)?function\s+(isExpenseLike|isActualExpenseType)\s*\(/,
     why: '本地重新定义了支出口径 —— 请 import 共享的 isExpenseLike / isActualExpenseType'
@@ -112,7 +112,7 @@ const ALLOW = new Map([
   ],
   [
     "src/features/dashboard/model/utils.ts|*/|export function isActualExpenseType(type: 'expense' | 'income' | 'budget' | 'repayment'): boolean {",
-    'isActualExpenseType 的**唯一真源**,且它与 isExpenseLike 是两个有意不同的概念:前者=实际花掉(不含预算),后者=减少余额(含预算)'
+    'isActualExpenseType 的**唯一真源**。2026-11-24 它已与 isExpenseLike 统一为「实际花掉」(预算型两边都不算),保留这个名字是因为首页多处按它读'
   ]
 ]);
 
