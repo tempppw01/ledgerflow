@@ -65,7 +65,12 @@ function listFiles(dir, out = []) {
 }
 
 const hits = [];
-for (const file of listFiles(path.join(root, 'src'))) {
+for (const file of listFiles(path.join(root, 'src')).concat(
+  // server/ 与 scripts/ 原先在范围外 —— 而 server 里也会处理日期(例如 server/sqlDateTime.js)。
+  // tsconfig 只 include src,所以这些文件连 tsc 都不走;范围越窄,闸门越像装饰。
+  listFiles(path.join(root, 'server')),
+  listFiles(path.join(root, 'scripts'))
+)) {
   const relative = path.relative(root, file).replace(/\\/g, '/');
   // 规则实现自己当然会用这个写法(注释里也提到),跳过
   if (relative === 'src/shared/lib/localDate.ts') continue;

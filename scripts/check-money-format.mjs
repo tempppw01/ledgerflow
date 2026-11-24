@@ -41,6 +41,9 @@ function listFiles(dir, out = []) {
 }
 
 const hits = [];
+// 范围保持 src:这条规则是 **JSX 专用**(禁止 JSX 里手写 ¥{...toFixed(...)}),
+// 而 server/ 与 scripts/ 里没有 JSX —— 2026-11-25 试过加宽,通过但没有任何意义,
+// 反而让人以为它覆盖了服务端。加宽范围要挑规则真正适用的那些闸门。
 for (const file of listFiles(path.join(root, 'src'))) {
   const relative = path.relative(root, file).replace(/\\/g, '/');
   const lines = readFileSync(file, 'utf8').split('\n');
