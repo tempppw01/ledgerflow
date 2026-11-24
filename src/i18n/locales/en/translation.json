@@ -1471,6 +1471,8 @@
     "listAria": "Recycle bin items",
     "restore": "Restore",
     "deletePermanently": "Delete permanently",
+    "deletePermanentlyConfirm": "Delete \"{{title}}\" permanently? This cannot be undone.",
+    "accountDeleteConfirm": "The {{count}} transaction(s) under this account will disappear as well, and this cannot be undone. Delete it permanently?",
     "paginationSummary": "Showing {{start}}-{{end}} of {{total}} items, {{pageSize}} per page",
     "firstPage": "First page",
     "previousPage": "Previous",

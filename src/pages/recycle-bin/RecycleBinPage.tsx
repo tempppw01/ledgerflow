@@ -33,6 +33,12 @@ export function RecycleBinPage() {
   const restoreSubscription = useFinanceStore((s) => s.restoreSubscription);
   const permanentlyDeleteSubscription = useFinanceStore((s) => s.permanentlyDeleteSubscription);
   const clearRecycleBin = useFinanceStore((s) => s.clearRecycleBin);
+  /*
+   * 只用来算「彻底删除某个账户会连带影响多少笔交易」。
+   * 之所以要算:账户被彻底删除后,引用它的交易在**下一次同步**时会被服务端静默丢弃
+   * (导入器会丢掉引用无法解析的行),这是用户在回收站里看不到的后果。
+   */
+  const transactions = useFinanceStore((s) => s.transactions);
   const [page, setPage] = useState(1);
 
   const totalCount =
@@ -131,6 +137,28 @@ export function RecycleBinPage() {
   };
 
   const handlePermanentDelete = (item: RecycleBinEntry) => {
+    /*
+     * 彻底删除**不可逆**,所以要先确认 —— 移入回收站、清空回收站本来都确认,
+     * 只有这一条路径原先点一下就直接删掉了。
+     *
+     * 账户还要单独说明后果:账户被彻底删除后,引用它的交易会在下一次同步时被服务端丢弃
+     * (导入器丢掉引用无法解析的行),这些交易虽然此刻还在列表里,但已经存不住了。
+     * 这句话描述的是**当前行为**;等「彻底删除账户」的语义定下来(拒绝删除 / 重指派),
+     * 这个分支和文案要跟着改。
+     */
+    const affectedTransactions =
+      item.kind === 'account'
+        ? transactions.filter((transaction) => transaction.accountId === item.id).length
+        : 0;
+    const confirmed = window.confirm(
+      affectedTransactions > 0
+        ? t('recycleBin.accountDeleteConfirm', { count: affectedTransactions })
+        : t('recycleBin.deletePermanentlyConfirm', { title: item.title })
+    );
+    if (!confirmed) {
+      return;
+    }
+
     switch (item.kind) {
       case 'transaction':
         permanentlyDeleteTransaction(item.id);
