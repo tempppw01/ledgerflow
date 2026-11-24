@@ -13,6 +13,11 @@ import {
 } from '../../shared/lib/billImport';
 import { resolveImportDefaultAccountId } from '../../shared/lib/importAccount';
 import {
+  isValidBackupTime,
+  validateBackupFile,
+  validateBillFile
+} from './backupFileGuards';
+import {
   applyFinanceBackupPayload,
   type BackupObjectStorageConfig,
   type BackupObjectStorageProvider,
@@ -62,17 +67,12 @@ import {
 type BillSource = 'wechat' | 'alipay';
 type BackupImportPhase = 'importing' | 'complete' | 'error';
 
-const MAX_BACKUP_FILE_SIZE_MB = 50;
-const MAX_BACKUP_FILE_SIZE_BYTES = MAX_BACKUP_FILE_SIZE_MB * 1024 * 1024;
-const MAX_BILL_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const LAST_WEBDAV_BACKUP_KEY = 'ledgerflow-webdav-last-backup-v1';
 const LAST_OBJECT_STORAGE_BACKUP_KEY = 'ledgerflow-object-storage-last-backup-v1';
 const BACKUP_SCOPE_STORAGE_KEY = 'ledgerflow-backup-scope-v1';
 const UNCATEGORIZED_CATEGORY_ID = '';
 const CLEAR_BILLS_CONFIRM_WORD_KEY = 'dataBackup.reset.confirmWord';
 
-const BACKUP_ACCEPTED_MIME_TYPES = new Set(['application/json', 'text/json']);
-const BILL_ACCEPTED_EXTENSIONS = new Set(['.csv', '.txt', '.xlsx']);
 const OBJECT_STORAGE_OPTIONS: Array<{
   value: BackupObjectStorageProvider;
   label: (tf: TfFallback) => string;
@@ -86,45 +86,8 @@ const OBJECT_STORAGE_OPTIONS: Array<{
     label: (tf) => tf('dataBackup.objectStorage.s3', 'S3 兼容')
   }
 ];
-function getFileExtension(fileName: string): string {
-  const index = fileName.lastIndexOf('.');
-  if (index < 0) return '';
-  return fileName.slice(index).toLowerCase();
-}
-
-function validateBackupFile(file: File, tf: TfFallback): void {
-  const ext = getFileExtension(file.name);
-  const hasValidMime = !file.type || BACKUP_ACCEPTED_MIME_TYPES.has(file.type);
-  const hasValidExt = ext === '.json';
-
-  if (!hasValidMime && !hasValidExt) {
-    throw new Error(tf('dataBackup.import.error.notJson', '备份导入失败：仅支持 JSON 文件（.json）'));
-  }
-
-  if (file.size > MAX_BACKUP_FILE_SIZE_BYTES) {
-    throw new Error(
-      tf('dataBackup.import.error.tooLarge', "备份导入失败：文件过大，请上传不超过 {max}MB 的 JSON 备份").replace("{max}", String(MAX_BACKUP_FILE_SIZE_MB))
-    );
-  }
-}
-
-function validateBillFile(file: File, tf: TfFallback): void {
-  const ext = getFileExtension(file.name);
-  if (!BILL_ACCEPTED_EXTENSIONS.has(ext)) {
-    throw new Error(tf('dataBackup.bill.error.unsupportedType', '账单导入失败：仅支持 CSV/TXT/XLSX 文件'));
-  }
-
-  if (file.size > MAX_BILL_FILE_SIZE_BYTES) {
-    throw new Error(tf('dataBackup.bill.error.tooLarge', '账单导入失败：文件过大，请上传不超过 10MB 的账单文件'));
-  }
-}
-
 function getWebdavBackupSignature(config: BackupWebdavConfig): string {
   return [config.endpoint.trim(), config.username.trim(), config.remoteFilePath.trim()].join('|');
-}
-
-function isValidBackupTime(value: string): boolean {
-  return Boolean(value) && !Number.isNaN(new Date(value).getTime());
 }
 
 function readStoredLastWebdavBackupAt(config: BackupWebdavConfig): string {
