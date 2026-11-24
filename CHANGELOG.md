@@ -7,6 +7,7 @@
 
 | 版本 | 说明 |
 | --- | --- |
+| [v0.50.44](release-notes/RELEASE_NOTES_v0.50.44.md) | 修:「上传微信账单失败」——xlsx 里的日期是 Excel 序列号 |
 | [v0.50.43](release-notes/RELEASE_NOTES_v0.50.43.md) | 修:「添加了个股,但是无法看到净值」 |
 | [v0.50.42](release-notes/RELEASE_NOTES_v0.50.42.md) | 股票/指数行情加了故障转移:Yahoo 挂了自动换东财、新浪 |
 | [v0.50.41](release-notes/RELEASE_NOTES_v0.50.41.md) | 记一笔:「再记一笔」 |
