@@ -43,6 +43,7 @@ node ./node_modules/vitest/vitest.mjs run --config vitest.config.ts src/shared/s
 | `features/dashboard/model/categoryBreakdown.test.ts`   | 分类聚合身份是 **id 不是名字**;未知分类显示「未分类」而不是内部 id                                        |
 | `financial-analysis/model/categoryAggregation.test.ts` | 同名子分类不合并、金额与占比各自独立                                                                      |
 | `transactions/model/statusQuickFilter.test.ts`         | 缺省状态按「已完成」处理,与 `isBalanceAffectingStatus` 同一结论                                           |
+| `transactions/model/statusLabel.test.ts`               | 状态列显示同一套默认值:缺状态显示「已完成」而不是「-」(否则「筛得出来却看不出状态」)                       |
 | `store/uncategorizedCoherence.test.ts`                 | 「未分类」三处口径一致:数据用空串、筛选哨兵、助手计数                                                     |
 | `subscriptions/model/subscriptionStatus.test.ts`       | 逾期判定按**本地日历日**:到期当天是「即将到期」,次日才「逾期」,与时区无关                                 |
 | `store/defaultTransactionStatus.test.ts`               | 缺省状态 = 已完成:**写入侧也要落一个明确状态**(助手导入不传 status),筛选与显示共用同一个默认值             |
@@ -61,6 +62,7 @@ node ./node_modules/vitest/vitest.mjs run --config vitest.config.ts src/shared/s
 | `shared/lib/transactionMetrics.test.ts`        | 汇总口径:待支付/已关闭/失败/已删除不计入;过滤结果与账户余额判据逐行相等                                            |
 | `store/subscriptionRenewalRevert.test.ts`      | 删掉「生成支出」写出的流水时续费日要**精确退回**:月末 1/31 →(生成)2/28 →(删除)必须回到 1/31,不能倒推成 1/28;再生成只推进一期 |
 | `server/orphanAccountReferences.test.js`        | **记录现状(待决策)**:账户被彻底删除后,其交易在整份导入时被丢弃。根因是 `account_id NOT NULL`;四个备选方案写在测试文件顶部 |
+| `server/subscriptionPrevDate.test.js`           | v9 的 `prev_renewal_date` / `prev_expire_date` 在服务端三层都通:建表、迁移、写入与读回 |
 
 ## 数据出入口的闭环验证
 
@@ -173,3 +175,28 @@ PLAYWRIGHT_MODULE=<path>/node_modules/playwright/index.mjs npm run audit:ui
 - 标签按字符串统计:标签本身就是字符串,重名合并是语义正确的
 - 分类占比/投资占比各自独立取整,合计可能是 99.9%:显示层通病,修需要重新分配(会改动用户看到的数字),暂不处理
 - 账单识别:一边有订单号、另一边没有时会判成两笔(跨来源同一笔消费可能重复记账)—— 既有设计取舍
+
+以下几条是 v0.50.5 之后逐条核对过的。它们**看起来**像同类 bug,但都是刻意的 —— 记在这里,
+免得以后有人为了「统一」把它们互相对齐而改坏:
+
+- **订阅有两个日期,各管一件事**:状态徽标(正常/即将到期/已到期)看 **expireDate**,
+  而卡片上的「续费/提醒 + 日期」、首页「续费已逾期」、财务分析的 due-soon 计数看 **renewalDate**。
+  「expireDate 优先」有专门测试钉着(`subscriptions/model/subscriptionStatus.test.ts`)。
+  两个日期相差很远时,同一订阅会在两屏得到不同结论 —— 那是两个不同的问题,不是两套口径。
+
+- **分类名有三套判定键,用途不同**:store 的 `findDuplicateCategory`(归一空白 + 小写)是
+  **身份判定**;助手的 `toLooseCategoryKey`(再去标点)是**模糊匹配**,把严格键换成它会让
+  助手匹配率下降、账单大量落到「未分类」;预算模块的键更宽松(只 trim + 小写),目前等价,
+  因为分类名在创建时就已归一 —— 这条前提由 `npm run audit:ledger-math` 的分类名归一检查守着。
+
+- **`shared/lib/dataSync.ts` 整个是空壳**:`syncChangeIfNeeded` 什么都不做,而 store 里有
+  18 处调用它。数据真正靠 zustand persist(本机)与 SqlDataSyncGate 的**防抖整份同步**落地。
+  不要基于「这行已经同步了」写新逻辑。
+
+- **`row.ratio` 在预算模块有五种渲染**:整数 %(AI 面板)、一位小数 %(列表/抽屉)、
+  `>999%`、以及两处进度条上限 160 与 100。这是显示精度取舍,不是算错。
+
+- **账户被彻底删除后,其交易会在整份导入时被丢弃**:根因是 `account_id NOT NULL`
+  (「不属于任何账户的交易」在库里表示不了),而删除账户的确认框写的是「交易仍会保留」。
+  **这是待决策的冲突**,不是可以顺手改的地方 —— 四个备选方案见
+  `server/orphanAccountReferences.test.js` 顶部。
