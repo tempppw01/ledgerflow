@@ -94,6 +94,140 @@ const GLOBAL_MARKET_INDEXES = [
 // Yahoo's liquid sector ETFs provide a compact, comparable international-sector
 // reference. A-share industry and concept classifications remain sourced from
 // Eastmoney because those China-specific taxonomies are not available on Yahoo.
+/*
+ * 故障转移用的代码映射。
+ *
+ * 全球行情原来只有 Yahoo 一个源,它慢或挂的时候整块就空了 —— 所以按下面的顺序退:
+ *   1. Yahoo(主源):数据最全,还带盘前/盘后
+ *   2. 东方财富  :实测 20~110ms,覆盖全部 6 个指数(含日经/韩国),但**没有**盘前/盘后
+ *   3. 新浪      :只覆盖美股那几个;用 GBK 编码,所以只解析数字、不碰名称
+ *
+ * 东财与新浪的取价都用 fltt=2 —— 不加这个参数,价格是 ×100 的整数(实测:
+ * 道琼斯 4959531 vs 49595.31),缩放错了就是 100 倍的错价。
+ */
+const EASTMONEY_GLOBAL_SECIDS = {
+  'us-dow': '100.DJIA',
+  'us-sp500': '100.SPX',
+  // 注意:东财的 100.NDX 是「纳斯达克综合」,100.NDX100 才是「纳斯达克100」(实测名称与数值都对得上)
+  'us-nasdaq': '100.NDX',
+  'us-nasdaq100': '100.NDX100',
+  'jp-nikkei': '100.N225',
+  'kr-kospi': '100.KS11'
+};
+
+/** 新浪只有美股这几个;日经/韩国综指用 int_ 前缀实测拿不到,所以不列。 */
+const SINA_GLOBAL_CODES = {
+  'us-dow': 'gb_$dji',
+  'us-sp500': 'gb_$inx',
+  'us-nasdaq': 'gb_$ixic',
+  'us-nasdaq100': 'gb_$ndx'
+};
+
+const GLOBAL_PROVIDER_TIMEOUT_MS = 4000;
+
+/** 东方财富:单只指数取价(批量接口对指数不给价格字段,实测)。 */
+async function fetchEastmoneyGlobalQuote(index, signal) {
+  const secid = EASTMONEY_GLOBAL_SECIDS[index.id];
+  if (!secid) return null;
+  try {
+    const response = await fetch(
+      `https://push2.eastmoney.com/api/qt/stock/get?secid=${secid}&fields=f43,f57,f58,f60,f169,f170&fltt=2&invt=2&_=1`,
+      {
+        headers: {
+          Referer: 'https://quote.eastmoney.com/',
+          'User-Agent': 'Mozilla/5.0 LedgerFlow market-data-proxy'
+        },
+        signal
+      }
+    );
+    if (!response.ok) return null;
+    const quote = (await response.json())?.data;
+    if (!quote) return null;
+    const value = Number(quote.f43);
+    const previousClose = Number(quote.f60);
+    if (!Number.isFinite(value) || value <= 0) return null;
+    const change = Number(quote.f169);
+    const changePercent = Number(quote.f170);
+    return {
+      id: index.id,
+      market: index.market,
+      name: index.name,
+      symbol: index.symbol,
+      value,
+      change: Number.isFinite(change) ? change : Number.isFinite(previousClose) ? value - previousClose : null,
+      changePercent: Number.isFinite(changePercent)
+        ? changePercent
+        : Number.isFinite(previousClose) && previousClose !== 0
+          ? ((value - previousClose) / previousClose) * 100
+          : null,
+      high: null,
+      low: null,
+      previousClose: Number.isFinite(previousClose) ? previousClose : null,
+      updatedAt: new Date().toISOString(),
+      source: '东方财富'
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 新浪:一次请求拿多只(`list=gb_$dji,gb_$inx`),响应是 GBK 文本。
+ * 只按逗号切数字字段,不解析名称 —— 名称是 GBK,按 UTF-8 读会成乱码。
+ * 字段顺序:名称,最新价,涨跌幅%,时间,涨跌额,昨收,...
+ */
+async function fetchSinaGlobalQuotes(indices, signal) {
+  const wanted = indices.filter((index) => SINA_GLOBAL_CODES[index.id]);
+  if (wanted.length === 0) return [];
+  try {
+    const response = await fetch(
+      `https://hq.sinajs.cn/list=${wanted.map((index) => SINA_GLOBAL_CODES[index.id]).join(',')}`,
+      {
+        headers: {
+          Referer: 'https://finance.sina.com.cn/',
+          'User-Agent': 'Mozilla/5.0 LedgerFlow market-data-proxy'
+        },
+        signal
+      }
+    );
+    if (!response.ok) return [];
+    const body = await response.text();
+    const byCode = new Map();
+    for (const line of body.split(/\r?\n/)) {
+      const key = (line.match(/hq_str_([a-z0-9_$]+)=/) || [])[1];
+      const fields = (line.split('"')[1] || '').split(',');
+      if (key) byCode.set(key, fields);
+    }
+    return wanted.flatMap((index) => {
+      const fields = byCode.get(SINA_GLOBAL_CODES[index.id]);
+      if (!fields) return [];
+      const value = Number(fields[1]);
+      const changePercent = Number(fields[2]);
+      const change = Number(fields[4]);
+      const previousClose = Number(fields[5]);
+      if (!Number.isFinite(value) || value <= 0) return [];
+      return [
+        {
+          id: index.id,
+          market: index.market,
+          name: index.name,
+          symbol: index.symbol,
+          value,
+          change: Number.isFinite(change) ? change : null,
+          changePercent: Number.isFinite(changePercent) ? changePercent : null,
+          high: null,
+          low: null,
+          previousClose: Number.isFinite(previousClose) ? previousClose : null,
+          updatedAt: new Date().toISOString(),
+          source: '新浪财经'
+        }
+      ];
+    });
+  } catch {
+    return [];
+  }
+}
+
 const GLOBAL_MARKET_SECTORS = [
   { id: 'us-technology', market: '美股行业', name: '科技', symbol: 'XLK' },
   { id: 'us-communication', market: '美股行业', name: '通信服务', symbol: 'XLC' },
@@ -930,6 +1064,11 @@ async function fetchTonghuashunNews(category) {
  * `meta.currentTradingPeriod` 给出 pre / regular / post 三个窗口,用它判断**现在**在哪个时段;
  * 不在盘前也不在盘后时返回 null(界面就不显示,避免展示过时数据)。
  */
+/** 清空全球行情的内存缓存(测试用;也可在排查数据陈旧时手动调用)。 */
+export function clearGlobalMarketQuoteCache() {
+  globalMarketQuoteCache.clear();
+}
+
 export function parseYahooExtendedSession(index, payload, nowSeconds) {
   const result = payload?.chart?.result?.[0];
   const meta = result?.meta || {};
@@ -1283,7 +1422,8 @@ async function getYahooSectorBoards() {
 
 async function getYahooGlobalMarketQuotes() {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
+  // 主源超时收紧到 4s:Yahoo 慢的时候要尽快让给备用源,而不是让用户干等 8s
+  const timeout = setTimeout(() => controller.abort(), GLOBAL_PROVIDER_TIMEOUT_MS);
   try {
     const results = await Promise.allSettled(
       GLOBAL_MARKET_INDEXES.map(async (index) => {
@@ -1307,18 +1447,55 @@ async function getYahooGlobalMarketQuotes() {
       })
     );
 
-    const quotes = results.flatMap((result) => {
-      if (result.status !== 'fulfilled') return [];
-      globalMarketQuoteCache.set(result.value.id, result.value);
-      return [result.value];
-    });
+    const freshQuotes = results.flatMap((result) =>
+      result.status === 'fulfilled' ? [result.value] : []
+    );
+    const providersUsed = new Set(freshQuotes.map((quote) => quote.source || 'Yahoo Finance'));
+
+    /*
+     * 故障转移:Yahoo 没给出来的指数,依次问东方财富、新浪。
+     * 只补缺的,不覆盖已拿到的 —— 主源数据更全(还带盘前/盘后)。
+     */
+    const missingAfterYahoo = GLOBAL_MARKET_INDEXES.filter(
+      (index) => !freshQuotes.some((quote) => quote.id === index.id)
+    );
+
+    if (missingAfterYahoo.length > 0) {
+      const eastmoneyQuotes = (
+        await Promise.all(
+          missingAfterYahoo.map((index) =>
+            fetchEastmoneyGlobalQuote(index, AbortSignal.timeout(GLOBAL_PROVIDER_TIMEOUT_MS)).catch(
+              () => null
+            )
+          )
+        )
+      ).filter(Boolean);
+      freshQuotes.push(...eastmoneyQuotes);
+      if (eastmoneyQuotes.length > 0) providersUsed.add('东方财富');
+    }
+
+    const missingAfterEastmoney = GLOBAL_MARKET_INDEXES.filter(
+      (index) => !freshQuotes.some((quote) => quote.id === index.id)
+    );
+    if (missingAfterEastmoney.length > 0) {
+      const sinaQuotes = await fetchSinaGlobalQuotes(
+        missingAfterEastmoney,
+        AbortSignal.timeout(GLOBAL_PROVIDER_TIMEOUT_MS)
+      ).catch(() => []);
+      freshQuotes.push(...sinaQuotes);
+      if (sinaQuotes.length > 0) providersUsed.add('新浪财经');
+    }
+
+    freshQuotes.forEach((quote) => globalMarketQuoteCache.set(quote.id, quote));
+
     const merged = GLOBAL_MARKET_INDEXES.flatMap((index) =>
       globalMarketQuoteCache.has(index.id) ? [globalMarketQuoteCache.get(index.id)] : []
     );
     if (merged.length === 0) {
       throw new Error('全球市场行情暂时无法更新。');
     }
-    return { quotes: merged, updatedAt: new Date().toISOString(), source: 'Yahoo Finance' };
+    const source = [...providersUsed].join(' · ') || 'Yahoo Finance';
+    return { quotes: merged, updatedAt: new Date().toISOString(), source };
   } finally {
     clearTimeout(timeout);
   }
