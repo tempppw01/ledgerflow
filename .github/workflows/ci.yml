@@ -5,6 +5,14 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# 连着推几次时,只跑最后一次 —— 否则每个提交都会起一个完整 run
+# (2026-11-25 实测:连着推三个提交,页面上三个 run 同时在跑),
+# 而且两个 docker 构建会同时往 :latest 推。
+# 被顶掉的旧 run 取消掉即可:它的结论对新提交没有意义。
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   IMAGE_NAME: 34v0wphix/ledgerflow
 
@@ -17,6 +25,9 @@ jobs:
   # 闸门失败会直接拦住镜像发布。
   verify:
     runs-on: ubuntu-latest
+    # 没有超时的话,卡住的 job 会一直挂到 GitHub 的默认上限(6 小时)才结束。
+    # 实测这几个步骤加起来不到十分钟,给它一个明确上限。
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -72,6 +83,8 @@ jobs:
   docker-latest:
     needs: verify
     runs-on: ubuntu-latest
+    # 多架构构建比 verify 慢得多(实测十分钟上下),给它一个更宽松但仍然明确的上限。
+    timeout-minutes: 40
     permissions:
       contents: read
     steps:
