@@ -257,6 +257,24 @@ cmd.exe /c "set TEMP=C:\\Users\\<你>\<仓库>\.tmp-build&& set TMP=%TEMP%&& npm
 | `assistant` | 4183 | 279 | 比例 0.07 |
 | `settings` | 1705 | 110 | 比例 0.06 |
 
+**`transactions` 页面为什么还没测(2026-11-25 实测,不是"懒得测")**:
+
+| 指标 | `transactions` | `transaction-edit`(已能测) |
+| --- | --- | --- |
+| store 选择器 | 9 | 6 |
+| `useEffect` | **25** | 3 |
+| `useState` | **53** | ~15 |
+
+渲染它一次会触发 **25 个副作用**(URL 同步、草稿自动保存、焦点管理、表达式求值……),mock 必须
+**同时满足**这些副作用才不会炸,写出来的测试也会很脆。也就是说:**它是"结构性不可测",不是覆盖率问题。**
+
+**要让它可测,先做一步重构**:把快速记账抽屉(内联在页面里)抽成独立组件
+`features/transactions/components/QuickAddDrawer.tsx` —— 抽屉有自己的状态和保存逻辑,
+抽出来之后可以像 `TransactionDetailDrawer.test.tsx` / `TransactionTable.test.tsx` 那样单测。
+抽屉搬出去后,页面本体的 effect 数量也会明显下降。
+
+在这一步之前,**不建议硬写 `TransactionsPage` 的页面测试** —— 投入产出比很差。
+
 18 个页面里 **7 个完全没有页面测试**。要挑下一个体检目标,优先 `transaction-edit` 或 `database-settings`
 (都涉及写数据,代码量又不至于像主页面那样庞大)。
 
