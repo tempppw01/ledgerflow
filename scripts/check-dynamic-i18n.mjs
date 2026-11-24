@@ -18,6 +18,8 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const GATE = path.join(ROOT, 'src/features/database-provider/ui/SqlDataSyncGate.tsx');
+// 主题色选择器所在的页面(取值域 ACCENT_THEMES 在里面)
+const SETTINGS = path.join(ROOT, 'src/pages/settings/SettingsPage.tsx');
 const ZH = path.join(ROOT, 'src/i18n/locales/zh/translation.json');
 const EN = path.join(ROOT, 'src/i18n/locales/en/translation.json');
 
@@ -48,6 +50,26 @@ const errors = errorTypeMatch
   ? [...new Set([...errorTypeMatch[1].matchAll(/'([a-zA-Z]+)'/g)].map((m) => m[1]))]
   : ['readFailed', 'initFailed'];
 
+/**
+ * 主题色选择器的取值域,来自设置页里的 `ACCENT_THEMES` 数组。
+ *
+ * 找不到数组就直接抛 —— 与其静默少查一个键族(那正是这个缺口当初藏起来的方式),
+ * 不如让改名/搬文件时**立刻**失败。
+ */
+function accentNames() {
+  const source = readFileSync(SETTINGS, 'utf8').replace(/\r\n/g, '\n');
+  const match = source.match(/const ACCENT_THEMES = \[([\s\S]*?)\]/);
+  if (!match) {
+    throw new Error(
+      '在 ' + SETTINGS + ' 里找不到 ACCENT_THEMES —— 主题色的取值域推导不出来了,' +
+        '请同步更新 check-dynamic-i18n.mjs(不要让它静默少查一个键族)。'
+    );
+  }
+  const names = [...new Set([...match[1].matchAll(/'([a-z]+)'/g)].map((m) => m[1]))];
+  if (names.length === 0) throw new Error('ACCENT_THEMES 里没解析出任何取值');
+  return names;
+}
+
 const candidates = [
   ...kinds.map((kind) => 'dataSync.' + kind),
   ...errors.map((value) => 'dataSync.' + value),
@@ -55,7 +77,15 @@ const candidates = [
   'recycleBin.kinds.transaction',
   'recycleBin.kinds.category',
   'recycleBin.kinds.account',
-  'recycleBin.kinds.subscription'
+  'recycleBin.kinds.subscription',
+  // 设置页的主题色选择器:`t('settings.preferences.accent.' + accent)`,
+  // 取值域来自页面里的 ACCENT_THEMES 数组 —— 从代码推导,所以以后加一个主题色会自动被覆盖。
+  //
+  // 这个键族是 2026-11-25 实测出来的缺口:把 accent.emerald 从**两份**语言文件里删掉之后,
+  // i18n:check 通过(它的"宽松前缀"规则会把整棵子树都算作已引用,少一个键它看不出来)、
+  // 这道检查也不覆盖(当时只认上面两个族)、1271 项测试全过 —— 也就是说**没有任何东西**会发现,
+  // 直到用户真的去点"翠绿",界面上才会露出原始 key。这正是这个脚本注释里警告的那类罕见状态 bug。
+  ...accentNames().map((name) => 'settings.preferences.accent.' + name)
 ];
 
 const missing = candidates.filter((key) => !has(zh, key) || !has(en, key));
