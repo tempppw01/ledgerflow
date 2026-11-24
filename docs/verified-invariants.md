@@ -335,10 +335,12 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 风险很实际:译者按错的那套写,占位符就会原样显示给用户(我在 `syncDroppedRecords` 上就踩过一次)。
 改文案时先看**调用点用的是 `t` 还是 `tf`**,再决定花括号的个数。
 
-**二、`check:shared-predicates` 的边界(实测)**:「退款/冲正」这条规则只拦**同一处同时写了 refund 和
-reversal** 的写法。像 `adjustmentKind !== 'refund'` 这种**单边**判断它抓不到 —— 全仓 17 处
-`adjustmentKind` 比较里多数是成对的(没问题),单边的那一处(助手页算「平均支出/异常大额」时漏掉冲正)已修。
-想做更严的规则,得先解决几十处成对写法的噪声,暂不做。
+**二、`check:shared-predicates` 的退款规则现在拦两种写法**:
+
+- **成对写法**:同一处把 refund 与 reversal 都写了(窗口规则);
+- **单边写法**:只在文件里比了 `adjustmentKind === 'refund'`、却**没有引用** `isTransactionRefundLike`(文件级规则,2026-11-24 加)。
+  这条是因为助手页算「平均支出/异常大额」时漏掉冲正才补的 —— 冲正被当成一笔正常支出,把平均值和阈值一起抬高。
+  判据刻意收得紧(引用了共享谓词就不查),所以当前零命中,纯粹用于防第五处;证伪过:造一个单边判断的文件会被点名并非 0 退出。
 
 ## 浏览器端页面体检(断言不了的那一类)
 

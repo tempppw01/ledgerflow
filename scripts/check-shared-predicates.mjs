@@ -151,8 +151,28 @@ for (const file of walk(path.join(ROOT, 'src')).concat(walk(path.join(ROOT, 'scr
   } catch {
     continue;
   }
-  // 把相邻两行拼起来看,这样 `a === 'x' ||\n a === 'y'` 这种换行写法也能命中。
   const lines = text.split(/\r?\n/);
+  // 文件级:整份文件里手写了单边「退款」判断,却没有引用共享谓词。
+  /*
+   * 为什么单独立一条:成对写法(refund 与 reversal 都判)能被下面的窗口规则抓到,
+   * 但**单边**写法(tx.adjustmentKind !== 'refund')抓不到 —— 它看起来完全正常,
+   * 只是漏了冲正。助手页的「平均支出 / 异常大额」就是这么漏的:冲正被当成一笔正常支出,
+   * 把平均值和「异常大额」阈值一起抬高。
+   *
+   * 判据刻意收得很紧:只有**文件里根本没引用 isTransactionRefundLike** 时才报 ——
+   * 引用了就说明作者知道共享谓词的存在。这样当前零命中,纯粹用于防第五处。
+   */
+  if (
+    /adjustmentKind\s*[!=]==?\s*'refund'/.test(text) &&
+    !/isTransactionRefundLike/.test(text)
+  ) {
+    const at = lines.findIndex((line) => /adjustmentKind\s*[!=]==?\s*'refund'/.test(line));
+    hits.push({
+      key: rel + ':' + (at + 1),
+      allowKey: allowKey(rel, lines, at),
+      why: "单边判断了 adjustmentKind === 'refund',却没引用共享的 isTransactionRefundLike(tx) —— 会漏掉冲正(reversal)"
+    });
+  }
   for (let index = 0; index < lines.length; index += 1) {
     const pair = lines.slice(index, index + 2);
     const window = pair.join(' ');
