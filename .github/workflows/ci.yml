@@ -55,6 +55,14 @@ jobs:
       - name: Money format gate
         run: npm run check:money
 
+      # 这三个也是纯静态检查(不依赖浏览器与数据库),没有理由只在本地跑:
+      # 闸门一旦要靠「记得跑」,就等于没有。
+      - name: Static consistency gates
+        run: |
+          npm run check:shared-predicates
+          npm run check:docs
+          npm run check:audit-routes
+
   docker-latest:
     needs: verify
     runs-on: ubuntu-latest
