@@ -126,6 +126,21 @@
   页面无横向溢出;第 1 步的「上一步」是**禁用态**(合理);第 2 步把收入填成 `0` 再点下一步,
   **停在原步**并提示「每月收入必须大于 0。」—— 校验生效。**这一页不必再从头验一遍**。
 
+**全站复扫(2026-11-25,22 条路由):0 问题**。
+项目自带的 `npm run audit:ui:local` 这次跑不起来 —— 它依赖的 Playwright 要 `chromium_headless_shell-1255`,
+而这台机器上装的是 1169 / 1248,**版本对不上**。于是我用一直能用的那套 MCP 浏览器,
+按审计脚本里的 **ROUTES 清单**逐条走了一遍(每条:控制台错误 + 横向溢出 + 4xx/5xx 请求):
+
+| 批次 | 路由 | 控制台错误 | 横向溢出 | 失败请求 |
+| --- | --- | --- | --- | --- |
+| 第一批 | / · /transactions · /transactions/new · /tags · /settings · /smart-budget · /assistant · /global-memory · /financial-analysis · /categories-accounts · /balance-changes | 0 | 0 | 0 |
+| 第二批 | /investments · /subscriptions · /repayment-management · /database-settings · /recycle-bin · /exchange · /salary-tools · /finance · /help · /about · /investments/flow | 0 | 0 | 0 |
+
+(清单里的第 23 条是一条**故意不存在**的路径,用来验 404 页,没算进上面两批。)
+
+**要复跑**:先用上面那套 MCP 浏览器按 ROUTES 走一遍(能跑);
+想让 `audit:ui:local` 自己跑起来,得先 `npx playwright install` 补上它要的那个版本。
+
 ## 四、演示账本的基线(2026-11-24 实测)
 
 手工验证都靠它 —— 而它**会被改动**(我这一段为了验证反复改过)。别再靠人眼对表,跑这两条:
