@@ -294,11 +294,33 @@ function hasImportedFieldChanges(
   existing: TransactionItem,
   incoming: ImportedTransactionDraft
 ): boolean {
+  /*
+   * 变更检测必须与**去重键**用同一套归一,否则同一份账单会同时被判成
+   * 「是同一笔」(身份键相同)和「有变化」(检测不等)—— 自相矛盾。
+   *
+   * 去重键(buildBillIdentity)对这几个字段是归一的:
+   *   金额 → roundMoney(Math.abs(...))
+   *   日期 → resolveTransactionLocalDay(...)
+   *   备注 / 订单号 / 商家订单号 → String(...).trim()
+   * 而这里原先比的是原始值,于是:CSV 里带尾随空格的备注、被取过整的金额、
+   * 纯日期 vs ISO 瞬间的日期,都会被判成「有变化」→ 每次重新导入都发一条没必要的
+   * update,报告里多出一批其实没变的「已更新」。
+   */
+  const sameAmount =
+    roundMoney(Math.abs(Number(existing.amount || 0))) ===
+    roundMoney(Math.abs(Number(incoming.amount || 0)));
+  const sameNote = String(existing.note || '').trim() === String(incoming.note || '').trim();
+  const sameOrderNo =
+    String(existing.orderNo || '').trim() === String(incoming.orderNo || '').trim();
+  const sameMerchantOrderNo =
+    String(existing.merchantOrderNo || '').trim() ===
+    String(incoming.merchantOrderNo || '').trim();
+
   // 来源为 undefined 表示「这份账单没提供该字段」,不算变化 —— 否则每次重新导入
   // 都会生成一批内容其实没变的更新。
   return (
     existing.type !== incoming.type ||
-    existing.amount !== incoming.amount ||
+    !sameAmount ||
     /*
      * 比的是**本地日历日**,不是原始字符串。
      *
@@ -309,11 +331,10 @@ function hasImportedFieldChanges(
      * 上面的去重键本来就是按本地日归一的,这里与它对齐。
      */
     resolveTransactionLocalDay(existing.date) !== resolveTransactionLocalDay(incoming.date) ||
-    existing.note !== incoming.note ||
+    !sameNote ||
     (incoming.source !== undefined && existing.source !== incoming.source) ||
-    (incoming.orderNo !== undefined && existing.orderNo !== incoming.orderNo) ||
-    (incoming.merchantOrderNo !== undefined &&
-      existing.merchantOrderNo !== incoming.merchantOrderNo) ||
+    (incoming.orderNo !== undefined && !sameOrderNo) ||
+    (incoming.merchantOrderNo !== undefined && !sameMerchantOrderNo) ||
     (incoming.status !== undefined && existing.status !== incoming.status) ||
     !hasAllImportTags(existing.tags || [], incoming.tags || [])
   );

@@ -68,6 +68,68 @@ function payloadFrom(mode: 'incremental' | 'merge') {
   return result.update[0].payload;
 }
 
+describe('变更检测与去重键用同一套归一', () => {
+  /*
+   * 去重键(buildBillIdentity)会把金额取整、备注与单号去空白、日期归一到本地日。
+   * 变更检测原先比原始值,于是同一份账单可以同时被判成「是同一笔」和「有变化」——
+   * 每次重新导入都发一条没必要的 update,报告里全是其实没变的「已更新」。
+   */
+  function runIncrementalWith(overrides: Record<string, unknown>) {
+    return applyBillImportMode({
+      mode: 'incremental',
+      existing: [
+        existingRow({
+          note: '午餐',
+          orderNo: 'A123',
+          merchantOrderNo: 'M456',
+          amount: 88
+        })
+      ],
+      incoming: [
+        incomingDraft({
+          source: 'manual',
+          tags: ['午餐'],
+          note: '午餐',
+          orderNo: 'A123',
+          merchantOrderNo: 'M456',
+          amount: 88,
+          ...overrides
+        } as never)
+      ]
+    });
+  }
+
+  it('备注带尾随空格不算变化', () => {
+    const result = runIncrementalWith({ note: '午餐   ' });
+    expect(result.update).toHaveLength(0);
+    expect(result.skipped).toBe(1);
+  });
+
+  it('订单号带尾随空格不算变化', () => {
+    const result = runIncrementalWith({ orderNo: 'A123  ' });
+    expect(result.update).toHaveLength(0);
+    expect(result.skipped).toBe(1);
+  });
+
+  it('金额多出可忽略的小数位不算变化', () => {
+    const result = runIncrementalWith({ amount: 88.004 });
+    expect(result.update).toHaveLength(0);
+    expect(result.skipped).toBe(1);
+  });
+
+  it('备注真的变了仍然要更新', () => {
+    const result = runIncrementalWith({ note: '午餐(改)' });
+    expect(result.update).toHaveLength(1);
+    expect(result.skipped).toBe(0);
+  });
+
+  it('金额真的变了仍然要更新', () => {
+    const result = runIncrementalWith({ amount: 90 });
+    expect(result.update).toHaveLength(1);
+    expect(result.skipped).toBe(0);
+  });
+});
+
 describe('同一笔的判定不受日期格式影响', () => {
   /*
    * 同一天的日期有两种存法:
