@@ -314,6 +314,20 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   (与 shared 的 \`isExpenseLike\` 判定完全相同,「预算」型不算支出是 v0.50.36 的定案,
   \`expenseScope.contract.test.ts\` 钉着两者一致,该测试实测 4 条全过)。
 
+- **助手层(12,235 行)的金额路径抽样核对过 —— 干净(2026-11-25)**。
+  这一层从没查过,而它会**创建交易**(「AI 识别账单、整理负债」),正是金额/分类类 bug 的高发区。
+  抽样看了创建交易的入口 `agent/assistantAgentTools.ts` 与 `workbench/workbenchMapping.ts`:
+
+  | 关注点 | 结论 |
+  | --- | --- |
+  | 有没有把 AI 返回的文本自己解析成数字 | **没有** —— 工具参数声明成 `type: 'number'`,不走 `parseFloat` 那套 |
+  | 校验 | 有:`toNumber(item.amount)` → 判 `null`,再判 `Math.abs(amount) <= 0` |
+  | 取整 | **走共享**:`normalizeMoney` 是 `roundMoney` 的薄封装(`workbenchMapping.ts` 第 6 行 import),不是第二份实现 |
+  | 本地 `toNumber` 算不算重复 | 不算:它返回 `null`(无效),而共享的 `toSafeNumber` 返回**回落值** —— 契约不同 |
+
+  **注意这是抽样,不是全审**(1.2 万行里只看了创建交易那条主路径)。要更彻底,可以按同样四个关注点
+  扫 `agent/creditAgentTools.ts`(1507 行,写负债数据)与 `creditAssistant/parser.ts`(406 行,解析 AI 输出)。
+
 - **文档层已全部核对过一遍(2026-11-25,结论与修法都在这里)**。
   这个会话把仓库里**所有**面向人的文档都读了一遍,并核对"文档说的事"与"仓库实际"是否一致:
 
