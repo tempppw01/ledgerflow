@@ -64,6 +64,7 @@ jobs:
           npm run check:audit-routes
           npm run audit:sums
           npm run check:dynamic-i18n
+          npm run check:orphan-methods
 
   docker-latest:
     needs: verify
