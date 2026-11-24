@@ -132,6 +132,35 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   而 `/api/data/bootstrap` 只返回当前用户那一个作用域 —— 计数对不上是正常的。
 - **恢复点的状态是内联文本**(`.sync-tip`),不是 toast。想在浏览器里断言,要去读那段文本。
 
+### 多用户隔离(验过,方法与结论如下)
+
+「另一个账号看不到我的数据」这件事不该靠假设。整套机制是三层的:
+
+1. **服务端 id 作用域**(`server/ledgerIdScope.js`):每个 id 加 8 位用户哈希前缀
+   (`7e522500-acc-cash`),涉及 14 个 id 字段(`accountId` / `categoryId` / `parentId` /
+   `refundOfTransactionId` / `lastGeneratedTransactionId` …)。写入时按会话用户加前缀,
+   读取时剥掉 —— 所以拿别人的 id 写入只会变成自己名下的一条新记录,不是串数据。
+2. **浏览器不缓存账本**:localStorage 里只有 `i18nextLng`、`ledgerflow-preferences`
+   (仅 `theme` / `accentTheme`)、部署标识与看板密度,**没有任何交易/账户/负债数据**。
+   所以「同一浏览器切换账号」不会把上一个账号的数据带过来。
+3. **页面按会话取数**:数据来自 `/api/data/bootstrap`,按会话用户过滤。
+
+复验方法(本地可完成,自助注册关闭时直接建库行、复用演示账号的密码哈希):
+
+- 建两个临时用户 → 以 A 登录(让数据进浏览器)→ **用界面正常登出**(顶栏账号菜单 →
+  退出登录)→ 直接以 B 登录(**故意不清 localStorage**)→ B 应显示自己的空账本
+  (`当前账号 · 使用空白账本`、`¥0.00`、`还没有任何账目记录`),看不到 A 的净资产;
+- 库里核对:`SELECT COUNT(*) FROM ledger_transactions WHERE user_id != <A> AND id LIKE '<A 前缀>%'`
+  应为 **0**(A 的行没有跑到别人名下)。
+
+实测(2026-11-24):A 的 ¥29.6 万净资产在 B 的会话里完全不出现,B 名下只有自己的默认账户/分类,
+带 A 前缀的行出现在其他用户名下的条数为 **0**。
+
+**一个已知但当前不可达的边界**:`scopeLedgerId` 会把 id 截断到 64 字符(留给原 id 55)。
+两个前 55 字符相同的超长 id 会撞成同一条 —— 但客户端 id 最长 48 字符
+(`investment-position-history-<时间戳>-<6 位随机>`),够不到阈值;而且写入全是普通 `INSERT`
+(没有 `OR REPLACE`),真撞上会报主键错误而不是静默覆盖。若将来引入外部超长 id,这里要重新评估。
+
 ## 可访问性与 i18n 的闸门(命令式,不在上面那套里)
 
 | 命令                                           | 作用                                                  |
