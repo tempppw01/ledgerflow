@@ -7,6 +7,8 @@
 
 | 版本 | 说明 |
 | --- | --- |
+| [v0.50.35](release-notes/RELEASE_NOTES_v0.50.35.md) | 不再让「旧窗口的快照」覆盖掉别处已经保存的数据 |
+| [v0.50.34](release-notes/RELEASE_NOTES_v0.50.34.md) | 不再允许「彻底删除还有交易的账户」 |
 | [v0.50.33](release-notes/RELEASE_NOTES_v0.50.33.md) | 发给模型的账本合计,把退款又算成了一笔支出 |
 | [v0.50.32](release-notes/RELEASE_NOTES_v0.50.32.md) | 从回收站恢复「生成支出」写出的流水时,续费日没有推回去 |
 | [v0.50.31](release-notes/RELEASE_NOTES_v0.50.31.md) | 单条「彻底删除」一按就删,没有确认;账户还带着看不见的后果 |
