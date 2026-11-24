@@ -61,10 +61,42 @@ test('fund realtime endpoint falls back to Tonghuashun when Eastmoney is unavail
 
 test('global market endpoint aggregates US, Japan and Korea indexes through Yahoo Finance', async () => {
   const originalFetch = global.fetch;
+  // 指数与 ETF 都会被请求(美股指数没有盘前/盘后,改用对应 ETF),所以两种 URL 都要接受
+  const etfSymbols = new Set(['DIA', 'SPY', 'QQQ']);
+  const etfRequests = [];
   global.fetch = async (input) => {
     const url = String(input);
-    assert.match(url, /query1\.finance\.yahoo\.com\/v8\/finance\/chart\/%5E/i);
+    assert.match(url, /query1\.finance\.yahoo\.com\/v8\/finance\/chart\//i);
     const symbol = decodeURIComponent(new URL(url).pathname.split('/').pop() || '');
+
+    if (etfSymbols.has(symbol)) {
+      etfRequests.push(symbol);
+      assert.match(url, /includePrePost=true/, 'ETF 请求必须带 includePrePost=true,否则拿不到盘前/盘后');
+      // 用相对当前时间构造窗口,保证 now 落在盘前时段内 —— 结果确定,不依赖运行时刻
+      const now = Math.floor(Date.now() / 1000);
+      return new Response(
+        JSON.stringify({
+          chart: {
+            result: [
+              {
+                meta: {
+                  chartPreviousClose: 90,
+                  currentTradingPeriod: {
+                    pre: { start: now - 600, end: now + 600 },
+                    regular: { start: now + 600, end: now + 3600 },
+                    post: { start: now + 3600, end: now + 7200 }
+                  }
+                },
+                timestamp: [now - 60, now - 30],
+                indicators: { quote: [{ close: [91, 92] }] }
+              }
+            ]
+          }
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     const names = {
       '^DJI': 'Dow Jones Industrial Average',
       '^GSPC': 'S&P 500',
@@ -121,8 +153,21 @@ test('global market endpoint aggregates US, Japan and Korea indexes through Yaho
       low: 97,
       previousClose: 98.5,
       updatedAt: '2026-08-07T08:00:00.000Z',
-      source: 'Yahoo Finance'
+      source: 'Yahoo Finance',
+      // 盘前/盘后:美股指数用对应 ETF 的价格代替(mock 里 now 落在盘前窗口内)
+      extended: {
+        session: 'pre',
+        symbol: 'DIA',
+        price: 92,
+        change: 2,
+        changePercent: (2 / 90) * 100,
+        previousClose: 90,
+        updatedAt: new Date((Math.floor(Date.now() / 1000) - 30) * 1000).toISOString()
+      }
     });
+
+    // 四个美股指数各拉一次对应 ETF;日经/韩国综合不是美股,不发 ETF 请求
+    assert.deepEqual([...etfRequests].sort(), ['DIA', 'QQQ', 'QQQ', 'SPY']);
   } finally {
     global.fetch = originalFetch;
     await closeServer(server);

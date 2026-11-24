@@ -2466,6 +2466,8 @@
       "historyToggleHint": "按需展开，不打断当前行情判断",
       "indexNameFallback": "大盘指数",
       "closeSuffix": " 收盘",
+        "extendedPre": "盘前",
+        "extendedPost": "盘后",
       "realtimeTrendSuffix": "实时走势",
       "candleChartSuffix": "K线图",
       "intradayHintSuffix": "分时线加载后会显示在这里。",

@@ -350,3 +350,99 @@ describe('EASTMONEY_MARKET_NEWS_CATEGORIES', () => {
     ]);
   });
 });
+
+describe('fetchGlobalMarketOverview 的字段映射', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  /**
+   * 这里曾经真的丢过数据:映射是**白名单**逐字段挑的,服务端明明返回了 extended(盘前/盘后),
+   * 客户端没显式带上就被丢掉 —— 接口有数据、界面什么都没有。这条钉住"扩展时段字段必须活着穿过映射"。
+   */
+  it('盘前/盘后字段能穿过映射,不被白名单丢掉', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ok: true,
+          data: {
+            source: 'Yahoo Finance',
+            updatedAt: '2026-11-24T10:30:00.000Z',
+            quotes: [
+              {
+                id: 'us-sp500',
+                market: '美股',
+                name: '标普 500',
+                symbol: '^GSPC',
+                value: 7237.17,
+                change: 339.1,
+                changePercent: 4.9,
+                high: 7240,
+                low: 6900,
+                previousClose: 6898.07,
+                updatedAt: '2026-11-24T10:30:00.000Z',
+                source: 'Yahoo Finance',
+                extended: {
+                  session: 'pre',
+                  symbol: 'SPY',
+                  price: 718.65,
+                  change: 28.84,
+                  changePercent: 4.18,
+                  previousClose: 689.81,
+                  updatedAt: '2026-11-24T10:30:50.000Z'
+                }
+              }
+            ]
+          }
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+
+    const { fetchGlobalMarketOverview } = await import('./eastmoneyMarketClient');
+    const overview = await fetchGlobalMarketOverview();
+
+    expect(overview.quotes[0].extended).toEqual({
+      session: 'pre',
+      symbol: 'SPY',
+      price: 718.65,
+      change: 28.84,
+      changePercent: 4.18,
+      previousClose: 689.81,
+      updatedAt: '2026-11-24T10:30:50.000Z'
+    });
+  });
+
+  it('时段字段不合法时映射为 null(宁可不显示,也不显示可疑数字)', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ok: true,
+          data: {
+            source: 'Yahoo Finance',
+            updatedAt: '2026-11-24T10:30:00.000Z',
+            quotes: [
+              {
+                id: 'us-sp500',
+                market: '美股',
+                name: '标普 500',
+                symbol: '^GSPC',
+                value: 7237.17,
+                changePercent: 4.9,
+                previousClose: 6898.07,
+                updatedAt: '2026-11-24T10:30:00.000Z',
+                extended: { session: 'lunch', symbol: 'SPY', price: 718.65, changePercent: 4.18 }
+              }
+            ]
+          }
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+
+    const { fetchGlobalMarketOverview } = await import('./eastmoneyMarketClient');
+    const overview = await fetchGlobalMarketOverview();
+
+    expect(overview.quotes[0].extended).toBeNull();
+  });
+});

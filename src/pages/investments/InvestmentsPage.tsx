@@ -2955,6 +2955,38 @@ function MarketOverviewPanel({
                 </div>
                 <b>{quote ? formatMarketIndexValue(quote.value) : '--'}</b>
                 <span className={tone}>{formatMarketPercent(quote?.changePercent ?? null)}</span>
+                {/*
+                  盘前/盘后:美股指数本身没有这两段交易,服务端用对应 ETF 的价格代替,
+                  所以这里**必须把 ETF 代码显示出来**,否则会被当成指数本身在动。
+                  只在当前确实处于盘前/盘后时段时才有值(`extended` 为 null 时不渲染)。
+                */}
+                {quote?.extended ? (
+                  <span className="investments-global-quote-extended">
+                    <em>
+                      {tf(
+                        quote.extended.session === 'pre'
+                          ? 'investments.market.extendedPre'
+                          : 'investments.market.extendedPost',
+                        quote.extended.session === 'pre' ? '盘前' : '盘后'
+                      )}
+                    </em>
+                    <span className="investments-global-quote-extended-symbol">
+                      {quote.extended.symbol}
+                    </span>
+                    <span>{formatMarketIndexValue(quote.extended.price)}</span>
+                    <span
+                      className={
+                        quote.extended.changePercent > 0
+                          ? 'is-up'
+                          : quote.extended.changePercent < 0
+                            ? 'is-down'
+                            : ''
+                      }
+                    >
+                      {formatMarketPercent(quote.extended.changePercent)}
+                    </span>
+                  </span>
+                ) : null}
               </article>
             );
           })}

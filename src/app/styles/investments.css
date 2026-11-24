@@ -8612,3 +8612,39 @@
     font-size: 10px;
   }
 }
+
+/* 盘前 / 盘后(美股指数用对应 ETF 的价格代替,ETF 代码必须显示出来,避免被误认为指数本身) */
+.investments-global-quote-extended {
+  /* 卡片是两列 grid + overflow:hidden;这行是第三个子元素,不跨列就会被挤出卡片裁掉(实测过)。
+     跨满两列并允许换行 —— 窄卡片上宁可占两行,也不能把涨跌幅截断。 */
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 4px;
+  min-width: 0;
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.3;
+  opacity: 0.85;
+}
+
+.investments-global-quote-extended em {
+  font-style: normal;
+  font-weight: 600;
+}
+
+.investments-global-quote-extended-symbol {
+  padding: 0 3px;
+  border-radius: 3px;
+  background: rgba(127, 127, 127, 0.16);
+  font-variant-numeric: tabular-nums;
+}
+
+.investments-global-quote-extended .is-up {
+  color: var(--color-up, #d33);
+}
+
+.investments-global-quote-extended .is-down {
+  color: var(--color-down, #1a7f37);
+}

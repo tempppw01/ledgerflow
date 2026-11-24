@@ -78,10 +78,15 @@ function writeMemoryMarketHistory(cache, cacheKey, value) {
 }
 
 const GLOBAL_MARKET_INDEXES = [
-  { id: 'us-dow', market: '美股', name: '道琼斯', symbol: '^DJI' },
-  { id: 'us-sp500', market: '美股', name: '标普 500', symbol: '^GSPC' },
-  { id: 'us-nasdaq', market: '美股', name: '纳斯达克', symbol: '^IXIC' },
-  { id: 'us-nasdaq100', market: '美股', name: '纳斯达克 100', symbol: '^NDX' },
+  // extendedSymbol:美股指数本身**没有**盘前/盘后交易,但对应的 ETF 有 —— 盘前/盘后时段
+  // 显示该 ETF 的价格(界面上会标注 ETF 代码,避免与指数本身混淆)。
+  //
+  // 纳斯达克综合(^IXIC)理论上对应 ONEQ,但 Yahoo 的 ONEQ 分时**没有数据**(实测 0 点),
+  // 所以这里用追踪纳斯达克 100 的 QQQ 代替 —— 界面上写的就是 QQQ,不会冒充指数本身。
+  { id: 'us-dow', market: '美股', name: '道琼斯', symbol: '^DJI', extendedSymbol: 'DIA' },
+  { id: 'us-sp500', market: '美股', name: '标普 500', symbol: '^GSPC', extendedSymbol: 'SPY' },
+  { id: 'us-nasdaq', market: '美股', name: '纳斯达克', symbol: '^IXIC', extendedSymbol: 'QQQ' },
+  { id: 'us-nasdaq100', market: '美股', name: '纳斯达克 100', symbol: '^NDX', extendedSymbol: 'QQQ' },
   { id: 'jp-nikkei', market: '日股', name: '日经 225', symbol: '^N225' },
   { id: 'kr-kospi', market: '韩股', name: '韩国综合', symbol: '^KS11' }
 ];
@@ -917,6 +922,92 @@ async function fetchTonghuashunNews(category) {
   }
 }
 
+/**
+ * 从 Yahoo chart 响应里取「当前时段」的盘前/盘后数据。
+ *
+ * 美股**指数**没有盘前/盘后交易,所以这里抓的是对应 ETF(DIA/SPY/ONEQ/QQQ)的 chart,
+ * 并带 includePrePost=true —— 这样 timestamp 里就包含盘前/盘后分钟点。
+ * `meta.currentTradingPeriod` 给出 pre / regular / post 三个窗口,用它判断**现在**在哪个时段;
+ * 不在盘前也不在盘后时返回 null(界面就不显示,避免展示过时数据)。
+ */
+export function parseYahooExtendedSession(index, payload, nowSeconds) {
+  const result = payload?.chart?.result?.[0];
+  const meta = result?.meta || {};
+  const periods = meta.currentTradingPeriod || {};
+  const now = Number.isFinite(nowSeconds) ? nowSeconds : Date.now() / 1000;
+
+  const windowOf = (name) => {
+    const period = periods[name];
+    const start = Number(period?.start);
+    const end = Number(period?.end);
+    return Number.isFinite(start) && Number.isFinite(end) ? { start, end } : null;
+  };
+  const inWindow = (window) => window && now >= window.start && now < window.end;
+
+  const preWindow = windowOf("pre");
+  const postWindow = windowOf("post");
+  const session = inWindow(preWindow) ? "pre" : inWindow(postWindow) ? "post" : null;
+  if (!session) return null;
+  const sessionWindow = session === "pre" ? preWindow : postWindow;
+
+  const timestamps = Array.isArray(result?.timestamp) ? result.timestamp : [];
+  const closes = (() => {
+    const quote = result?.indicators?.quote?.[0] || {};
+    return Array.isArray(quote.close) ? quote.close : [];
+  })();
+
+  // 取「本时段内」最后一个有效收盘价:既要落在窗口里,也不能太旧(避免展示隔夜残留)
+  let price = null;
+  let priceAt = null;
+  for (let i = timestamps.length - 1; i >= 0; i -= 1) {
+    const ts = Number(timestamps[i]);
+    const close = Number(closes[i]);
+    if (!Number.isFinite(ts) || !Number.isFinite(close)) continue;
+    if (ts < sessionWindow.start || ts > now) continue;
+    price = close;
+    priceAt = ts;
+    break;
+  }
+  if (!Number.isFinite(price)) return null;
+
+  // 盘前/盘后的涨跌以**上一交易日收盘**为基准
+  const previousClose = Number(meta.chartPreviousClose ?? meta.previousClose);
+  if (!Number.isFinite(previousClose) || previousClose === 0) return null;
+
+  const change = price - previousClose;
+  return {
+    session,
+    symbol: index.extendedSymbol,
+    price,
+    change,
+    changePercent: (change / previousClose) * 100,
+    previousClose,
+    updatedAt: new Date(priceAt * 1000).toISOString()
+  };
+}
+
+/** 抓对应 ETF 的盘前/盘后行情;失败或不适用时返回 null(不影响主行情)。 */
+async function fetchYahooExtendedSessionQuote(index, signal) {
+  try {
+    const response = await fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
+        index.extendedSymbol
+      )}?interval=1m&range=1d&includePrePost=true`,
+      {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "Mozilla/5.0 LedgerFlow market-data-proxy"
+        },
+        signal
+      }
+    );
+    if (!response.ok) return null;
+    return parseYahooExtendedSession(index, await response.json());
+  } catch {
+    return null;
+  }
+}
+
 function parseYahooMarketQuote(index, payload) {
   const result = payload?.chart?.result?.[0];
   const meta = result?.meta || {};
@@ -1207,7 +1298,12 @@ async function getYahooGlobalMarketQuotes() {
           }
         );
         if (!response.ok) throw new Error(`Yahoo Finance ${index.symbol} is unavailable.`);
-        return parseYahooMarketQuote(index, await response.json());
+        const parsed = parseYahooMarketQuote(index, await response.json());
+        // 美股指数没有盘前/盘后交易,用对应 ETF 的盘前/盘后补上(失败不影响主行情)
+        if (index.extendedSymbol) {
+          parsed.extended = await fetchYahooExtendedSessionQuote(index, controller.signal);
+        }
+        return parsed;
       })
     );
 

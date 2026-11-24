@@ -75,6 +75,24 @@ export interface GlobalMarketQuote {
   previousClose: number | null;
   updatedAt: string;
   source: string;
+  /**
+   * 盘前/盘后(仅美股指数有)。
+   *
+   * 美股**指数**本身没有盘前/盘后交易,所以服务端用对应 ETF 的价格代替
+   * (道琼斯→DIA、标普500→SPY、纳斯达克→ONEQ、纳斯达克100→QQQ),
+   * `symbol` 就是那个 ETF 的代码 —— 界面上必须把它显示出来,否则会被误认为指数在涨跌。
+   *
+   * 只在**当前确实处于盘前或盘后时段**时才有值;其它时候为 null,界面不显示。
+   */
+  extended?: {
+    session: 'pre' | 'post';
+    symbol: string;
+    price: number;
+    change: number;
+    changePercent: number;
+    previousClose: number;
+    updatedAt: string;
+  } | null;
 }
 
 export interface GlobalMarketOverview {
@@ -324,6 +342,33 @@ export const EASTMONEY_MARKET_THEMES: EastmoneyMarketTheme[] = [
   { code: 'BK0963', name: '商业航天' },
   { code: 'BK0695', name: '小金属概念' }
 ];
+
+/**
+ * 盘前/盘后字段的校验映射。
+ *
+ * 来的是外部数据(服务端转发 Yahoo),这里逐字段校验:时段只认 pre/post、价格与涨跌幅必须是有限数、
+ * ETF 代码必须非空 —— 任何一项不对就返回 null,**界面宁可不显示,也不显示可疑的数字**。
+ */
+function toNullableExtendedQuote(value: unknown): GlobalMarketQuote["extended"] {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
+  const session = raw.session === "pre" ? "pre" : raw.session === "post" ? "post" : null;
+  const symbol = String(raw.symbol || "").trim();
+  const price = toNullableNumber(raw.price);
+  const changePercent = toNullableNumber(raw.changePercent);
+  const change = toNullableNumber(raw.change);
+  const previousClose = toNullableNumber(raw.previousClose);
+  if (!session || !symbol || price === null || changePercent === null) return null;
+  return {
+    session,
+    symbol,
+    price,
+    change: change ?? 0,
+    changePercent,
+    previousClose: previousClose ?? 0,
+    updatedAt: String(raw.updatedAt || "").trim()
+  };
+}
 
 function toNullableNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === '-' || value === '') return null;
@@ -598,7 +643,9 @@ export async function fetchGlobalMarketOverview(): Promise<GlobalMarketOverview>
       low: toNullableNumber(item.low),
       previousClose: toNullableNumber(item.previousClose),
       updatedAt: String(item.updatedAt || '').trim(),
-      source: String(item.source || payload.data?.source || 'Yahoo Finance').trim()
+      source: String(item.source || payload.data?.source || 'Yahoo Finance').trim(),
+      // 盘前/盘后:这里是**白名单映射**,不显式带上就会被丢掉(实测过一次)
+      extended: toNullableExtendedQuote(item.extended)
     }))
     .filter((item) => item.id && item.value !== null);
 

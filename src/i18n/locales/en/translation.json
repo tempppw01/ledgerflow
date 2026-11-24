@@ -2466,6 +2466,8 @@
       "historyToggleHint": "Expand on demand without interrupting your read",
       "indexNameFallback": "Market index",
       "closeSuffix": " close",
+        "extendedPre": "Pre-market",
+        "extendedPost": "After-hours",
       "realtimeTrendSuffix": " live trend",
       "candleChartSuffix": " candlestick chart",
       "intradayHintSuffix": " intraday data will appear here once loaded.",
