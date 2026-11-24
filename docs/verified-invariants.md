@@ -144,7 +144,15 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   那是滑动手势的初始态,实际操作用卡片右上角「⋯」菜单
 - SVG `<text>` 的 `className` 是 `SVGAnimatedString`,会被打印成 `[object SVGAnimatedString]`
 
-**它不属于 CI 闸门**:需要先起后端与 dev server,还需要 playwright 与 chromium。依赖这样装:
+**它不属于 CI 闸门**:需要先起后端与 dev server,还需要 playwright 与 chromium。
+
+一条命令跑全套(起两个服务 → 等就绪 → 审计 → 收尾,端口被占用会直接报错而不是连到别人的服务上):
+
+```bash
+PLAYWRIGHT_MODULE=<path>/node_modules/playwright/index.mjs npm run audit:ui:local
+```
+
+需要单独调时再用下面这套。依赖这样装:
 
 ```bash
 # 仓库依赖里没有 playwright;用 PLAYWRIGHT_MODULE 指向任意一份本地安装
