@@ -1,3 +1,4 @@
+import { toMysqlDate } from './sqlDateTime.js';
 import { withMysqlConnection } from './databaseConnection.js';
 import { scopeLedgerPayload, unscopeLedgerPayload } from './ledgerIdScope.js';
 import { openSqliteDatabase } from './sqliteDatabase.js';
@@ -71,9 +72,8 @@ function date(value) {
   return Number.isNaN(parsed.getTime()) ? now() : parsed.toISOString();
 }
 
-function toMysqlDate(value) {
-  return date(value).replace('T', ' ').replace('Z', '');
-}
+// toMysqlDate 原先在这里本地定义了一份,已在 server/sqlDateTime.js 里共用
+// (relationalDatabase.js 曾经"用了但没定义",把它抽出来一并修掉)。
 
 function fromDbDate(value) {
   if (!value) return undefined;

@@ -55,7 +55,7 @@ for (const file of listTsx(path.join(root, 'src'))) {
     if (!text) continue;
     if (/^[\s|·、,，。:：]+$/.test(text)) continue;
     // 代码片段(含运算符/分号/括号)不是文案
-    if (/[=;(){}\[\]$]/.test(text)) continue;
+    if (/[=;(){}[\]$]/.test(text)) continue;
     // 装饰性文字(外层 aria-hidden)不该翻译,例如品牌字标「同」。
     // 注意 match.index 指在 `>` 上,所以上下文末尾没有那个 `>`。
     const context = src.slice(Math.max(0, match.index - 400), match.index);

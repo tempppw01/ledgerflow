@@ -2,6 +2,10 @@ import { mkdir } from 'node:fs/promises';
 import { getDatabaseDataDirectory, getSqliteDatabasePath } from './databaseProvider.js';
 import { withMysqlConnection } from './databaseConnection.js';
 import { openSqliteDatabase } from './sqliteDatabase.js';
+// 这一行是补回来的:下面 MySQL 迁移里用了 toMysqlDate,但它原先既没定义也没 import ——
+// 走到那行就是 ReferenceError(MySQL 首次建库 / 升级必挂)。server/ 没有静态检查,
+// 所以一直没人发现;给 server/ 套上 JS 规则后 no-undef 立刻报了出来。
+import { toMysqlDate } from './sqlDateTime.js';
 
 export const RELATIONAL_SCHEMA_VERSION = 9;
 const DEFAULT_USER_ID = 'default';

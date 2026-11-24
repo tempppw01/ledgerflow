@@ -293,6 +293,30 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   同理,另外三个脚本也全仓零引用:`benchmark:database`、`brands:generate`、`test:watch`
   (前者是性能基线、中者是生成品牌图标、后者是开发用 watch,都属于"按需手动跑",不是坏掉)。
 
+- **\`server/\` 与 \`scripts/\` 现在也 lint 了 —— 之前它们完全没静态检查,并且真的藏了一个 bug(2026-11-25)**。
+  查 \`eslint.config.js\` 时发现它的 \`files\` 只匹配 TS/TSX,而 \`tsconfig\` 也只 \`include: ["src", "vite.config.ts"]\` ——
+  也就是说 \`server/*.js\`(含 12+ 个测试文件)与 \`scripts/*.mjs\`(约 20 个)**既不过 eslint、也不过 tsc**。
+
+  **给它们套上 JS 规则后,no-undef 立刻报出一条真 bug**:
+
+  > \`server/relationalDatabase.js:364  'toMysqlDate' is not defined\`
+
+  那个标识符在 \`authService.js\` 与 \`relationalDataRepository.js\` 里各有一份定义,唯独这里既没定义也没 import。
+  而这一行走在 **MySQL 迁移路径**上(写「已应用的迁移版本」),所以**任何 MySQL 用户的首次建库 / 升级都会
+  ReferenceError,被 catch 抓住后回滚 —— 迁移直接失败**。
+
+  **两个缺口叠在一起才让它活到今天**:CI 的 \`relationalDatabase.test.js\` 走的是 SQLite 默认路径,
+  MySQL 迁移那一支没有覆盖;而这两个目录没有静态检查。
+
+  修法:把 \`toMysqlDate\` 抽到 \`server/sqlDateTime.js\` 共用(顺手去掉重复实现),两处 import 它;
+  \`eslint.config.js\` 加一段只针对 \`**/*.{js,mjs}\` 的配置(含"下划线开头视为刻意忽略"的约定,
+  globals 同时给 node 与 browser —— \`scripts/\` 里既有纯 Node 脚本也有跑浏览器的审计脚本)。
+
+  **接上时要先量**:第一次跑出来 62 个问题,其中绝大多数来自未追踪的本地草稿目录 \`.audit/\`
+  与 \`document is not defined\` 这类误报(探针只给了 node globals)。加 \`ignores\` 与下划线约定之后
+  **真问题只剩 1 个**(一处多余的 \`\\[\` 转义),扣掉它 \`npm run lint\` 就干净了。
+  —— 所以"要不要把某个目录纳入 lint"这种问题,**先跑一次看数,再决定**。
+
 - **\`data/\`(本机账本)的四个消费者都查过了 —— 只有 \`.dockerignore\` 曾漏掉(2026-11-25 已补)**。
   起因是查到 \`.dockerignore\` 漏了 \`data/\`。既然这一处漏了,就把**所有会扫仓库根目录的东西**逐个过一遍:
 
