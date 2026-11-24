@@ -7,6 +7,7 @@
 
 | 版本 | 说明 |
 | --- | --- |
+| [v0.50.54](release-notes/RELEASE_NOTES_v0.50.54.md) | 修:备注里带换行的账单,整笔交易会**静默消失** |
 | [v0.50.53](release-notes/RELEASE_NOTES_v0.50.53.md) | 修:「上传微信账单失败」还有一个漏网的情况 |
 | [v0.50.52](release-notes/RELEASE_NOTES_v0.50.52.md) | 修:新用户想导入账单,**找不到入口** |
 | [v0.50.51](release-notes/RELEASE_NOTES_v0.50.51.md) | 订阅生成支出:补上四条不变量,并修一处会误导人的提示 |
