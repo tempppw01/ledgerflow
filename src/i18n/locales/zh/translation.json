@@ -1172,6 +1172,7 @@
       "dateTime": "日期时间",
       "tagsLabel": "标签（逗号分隔）",
       "typeAria": "交易类型",
+      "budgetHint": "预算型:把钱划出账户作预留,账户余额会减少,但不计入支出统计。",
       "categoryAria": "交易分类",
       "accountAria": "交易账户",
       "statusAria": "交易状态",

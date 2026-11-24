@@ -615,6 +615,22 @@ export function TransactionEditPage() {
                     {tf('transactions.table.type.repayment', '还款')}
                   </option>
                 </select>
+                {/*
+                  预算型的语义在 2026-11-24 定案:钱划出账户(余额减少),但**不算花掉**
+                  (不计入各处支出统计)。定案依据见 shared/lib/transactionMetrics.isExpenseLike
+                  的注释 —— 全项目 5 处不计入、1 处计入,所以对齐到那 5 处。
+
+                  之前界面上只写「预算」两个字,没有任何解释,用户不可能知道它到底算不算支出。
+                  这里把这个已定的语义直接说出来。
+                */}
+                {type === 'budget' ? (
+                  <small className="muted">
+                    {tf(
+                      'transactions.edit.budgetHint',
+                      '预算型:把钱划出账户作预留,账户余额会减少,但不计入支出统计。'
+                    )}
+                  </small>
+                ) : null}
               </div>
 
               <div className="field">

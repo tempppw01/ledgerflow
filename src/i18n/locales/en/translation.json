@@ -1172,6 +1172,7 @@
       "dateTime": "Date & time",
       "tagsLabel": "Tags (comma separated)",
       "typeAria": "Transaction type",
+      "budgetHint": "Budget: moves money out of the account as a reservation. The balance drops, but it is not counted as spending.",
       "categoryAria": "Transaction category",
       "accountAria": "Transaction account",
       "statusAria": "Transaction status",
