@@ -293,6 +293,16 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   同理,另外三个脚本也全仓零引用:`benchmark:database`、`brands:generate`、`test:watch`
   (前者是性能基线、中者是生成品牌图标、后者是开发用 watch,都属于"按需手动跑",不是坏掉)。
 
+- **\`src/test/setup.ts\` 完整读过(54 行):只做环境垫片,干净 —— 但有一条覆盖局限(2026-11-25)**。
+  它做三件事,都写明了原因:给 \`localStorage\` / \`sessionStorage\` 兜一个**内存实现**
+  (Node 22+ 的实验性 \`localStorage\` 是"typeof 是 object 但一用就抛",所以先**探测可用性**再替换);
+  把语言固定成 \`zh\`(jsdom 的 navigator 是 en-US,会让组件渲染英文、与既有中文断言冲突)。
+  **它没有 mock 任何业务模块、也不吞错误** —— 只补环境,这是对的做法。
+
+  **局限(不是 bug,但要知道)**:因为语言被钉在 \`zh\`,**英文渲染路径在测试里从未被走过** ——
+  \`i18n:check\` / \`check:jsx-hardcoded\` 校验的是**键**存不存在,不校验**英文串会不会把布局撑破**。
+  真要看英文版,只能起服务切语言实测(或单独写一条把 \`i18nextLng\` 设成 \`en\` 的用例)。
+
 - **\`.env.example\` 与 \`docker-compose.yml\` 是同步的(2026-11-25 核对,结论是没问题)**。
   \`docker-compose.yml\` 描述部署配置、\`.env.example\` 描述同一套变量 —— 这类"同一件事写两遍"
   最容易一边漏,所以逐条对过一次:
