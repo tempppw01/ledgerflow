@@ -302,7 +302,7 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   | 解析器加了「按每行推断分类」 | 有**两个**调用方,只给其中一个传了 `categories` | **真问题**:同一份账单从交易页导入会推断分类,从数据与备份页导入全落默认分类 → 已修 |
   | `updateTransaction` 改成「分类变了就记学习规则」 | `recategorizeByAi` 也在用它改 categoryId | **真问题**:AI 猜的/兜底猜的分类被当成"用户修正"记进规则 → 已加 `skipCategoryLearning` |
   | `balance-changes.css` 改 `table-layout: fixed` | 无快照、无测试断言该表宽度 | 干净 |
-  | `EmptyState` 加渲染条件 `\|\| secondaryActions?.length` | 9 个调用方 | 干净(条件是**严格超集**,且 `secondaryActions` 是新增 prop,现有调用方不可能改变行为)|
+  | `EmptyState` 的渲染条件加了 `secondaryActions?.length` 这一项 | 9 个调用方 | 干净(条件是**严格超集**,且 `secondaryActions` 是新增 prop,现有调用方不可能改变行为)|
   | `App.tsx` 主题色改从 store 读 | 只有我改的那处 + 一句注释 | 干净(没有地方假设恒为 amber)|
 
   **注意前两条的共同点**:都是**接口兼容**的改动(可选参数、新 prop),类型检查不会报、测试也全过 ——
