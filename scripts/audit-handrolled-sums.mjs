@@ -86,3 +86,33 @@ console.log(
   '\n⚠ = 文件内没有任何共享汇总的引用。这些是「同一屏两个口径」的高发区,' +
     '值得逐个确认:它求的是「你看到的这批行」,还是「账户口径的合计」。'
 );
+
+/*
+ * 从「清单」升级成「闸门」:被标 ⚠ 的文件必须在下面给出一条**显式理由**,否则非 0 退出。
+ *
+ * 起因很具体:`workbenchUtils` 里那处手写聚合把**退款也算成一笔支出**(与 v0.50.20 修过的
+ * 是同一个 bug),而这份清单当时只是把它们打印出来、不做判断 —— 于是它躺了很久没人管。
+ * 现在的规则是:要么改用共享汇总,要么在这里说明「它求的不是交易行」。
+ */
+const JUSTIFIED = new Map([
+  [
+    'src/features/smart-budget/model/budgetPlan.ts',
+    '这里求的是**预算分配行**(各分类的预算额度),不是交易行 —— 与「账户口径的合计」无关'
+  ]
+]);
+
+const unjustified = [...byFile.keys()].filter(
+  (file) => !rows.find((row) => row.rel === file)?.usesShared && !JUSTIFIED.has(file)
+);
+
+if (unjustified.length > 0) {
+  console.log('\n以下文件在手工求交易金额、却既没引用共享汇总、也没有在 JUSTIFIED 里说明理由:');
+  for (const file of unjustified) console.log('  ✗ ' + file);
+  console.log('\n要么改用 shared/lib/transactionMetrics 的汇总,要么在脚本的 JUSTIFIED 里写清为什么这里求的不是交易行。');
+  process.exit(1);
+}
+
+if (JUSTIFIED.size > 0) {
+  console.log('\n已说明理由的例外:');
+  for (const [file, why] of JUSTIFIED) console.log('  · ' + file + ' —— ' + why);
+}
