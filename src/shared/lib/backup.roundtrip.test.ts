@@ -77,6 +77,9 @@ const subscription = {
   note: 'family plan',
   lastGeneratedAt: '2026-04-01',
   lastGeneratedTransactionId: 'tx-1',
+  // v0.50.18 起:生成支出推进续费日前的快照,删除生成流水时用它精确还原
+prevRenewalDate: '2026-03-01',
+  prevExpireDate: '2026-03-01',
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-04-01T00:00:00.000Z'
 };
