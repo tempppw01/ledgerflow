@@ -200,3 +200,10 @@ PLAYWRIGHT_MODULE=<path>/node_modules/playwright/index.mjs npm run audit:ui
   (「不属于任何账户的交易」在库里表示不了),而删除账户的确认框写的是「交易仍会保留」。
   **这是待决策的冲突**,不是可以顺手改的地方 —— 四个备选方案见
   `server/orphanAccountReferences.test.js` 顶部。
+
+- **「月收入」有两个来源,可能不一致**:登记月收入(`preferences.monthlyIncome`,还款管理用它算
+  负债率、助手用它做上下文、投资页用它算可投资现金)与**预算方案里的那个数**
+  (`recommendation.monthlyIncome`,是生成方案时的快照)。v0.50.27 之后向导会用登记值**预填**,
+  但方案一旦生成就固定了 —— 用户之后改了收入,两页会显示不同的「月收入」
+  (演示账本正是如此:方案 10,000 / 登记 26,000)。方案是快照,这是取舍不是 bug;
+  要不要在方案页提示「与当前登记收入不一致,建议重新生成」属于产品决定。
