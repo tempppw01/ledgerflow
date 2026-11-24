@@ -66,6 +66,7 @@ jobs:
           npm run check:dynamic-i18n
           npm run check:orphan-methods
           npm run check:dead-exports
+          npm run check:jsx-hardcoded
 
   docker-latest:
     needs: verify

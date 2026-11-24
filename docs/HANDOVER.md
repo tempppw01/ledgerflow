@@ -201,7 +201,7 @@ npm run audit:demo-baseline                                 # 收工前确认基
 脚本里有一条**结构性保护**:目标指向演示账号时直接拒绝(id 与 email 双重比对)——
 让"误写演示库"这件事无法再发生。清理顺序也是写死的,不用每次重新推导。
 
-下面这**七个**已经在 CI 里跑(verify job 的 Static consistency gates 一步,2026-11-24 实测在 Linux CI 上通过):
+下面这**八个**已经在 CI 里跑(verify job 的 Static consistency gates 一步,2026-11-24 实测在 Linux CI 上通过):
 
 | 闸门 | 查什么 |
 | --- | --- |
@@ -212,6 +212,7 @@ npm run audit:demo-baseline                                 # 收工前确认基
 | `check:dynamic-i18n` | 动态拼出来的 i18n 键必须存在(kind 从代码推导,新增 kind 不漏语言键) |
 | `check:orphan-methods` | store 里声明的公开方法必须在别处被用到 —— 抓「声明了、实现是空壳、全项目没人调用」这类(类型检查与测试都发现不了) |
 | `check:dead-exports` | 导出了却全仓没人引用(符号名与文件路径都查)—— 抓「功能删了、文件留下」这类死代码 |
+| `check:jsx-hardcoded` | JSX 文本节点里的硬编码中文(脚本本来就带 `--fail`,只是从没接进 CI)—— 抓「该走 i18n 却写死」 |
 
 `audit:ledger-math` 与 `audit:ui` 不在 CI 里:前者要本地库,后者要 playwright 与 chromium。
 
