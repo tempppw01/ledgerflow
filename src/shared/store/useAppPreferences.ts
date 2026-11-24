@@ -399,7 +399,7 @@ function normalizeInvestmentPositionHistoryEntry(
   const currentValue = normalizePositiveNumber(item.currentValue);
   const profit = Number.isFinite(Number(item.profit))
     ? roundMoney(Number(item.profit))
-    : Number((currentValue - investedAmount).toFixed(2));
+    : roundMoney(currentValue - investedAmount);
   const profitRate = Number.isFinite(Number(item.profitRate))
     ? Number(Number(item.profitRate).toFixed(4))
     : investedAmount > 0
@@ -451,9 +451,7 @@ function normalizeInvestmentGoal(
     targetAmount: normalizePositiveNumber(item.targetAmount),
     currentAmount: Math.max(
       0,
-      Number(
-        Number.isFinite(Number(item.currentAmount)) ? Number(item.currentAmount).toFixed(2) : 0
-      )
+      Number.isFinite(Number(item.currentAmount)) ? roundMoney(Number(item.currentAmount)) : 0
     ),
     monthlyContribution: normalizePositiveNumber(item.monthlyContribution) || undefined,
     targetDate: normalizeOptionalString(item.targetDate),
@@ -1007,9 +1005,7 @@ export const useAppPreferences = create<AppPreferencesState>()(
               amount >= Math.max(1, calculateDebtMinimumPayment(debt) * 0.98);
             return {
               ...debt,
-              balance: Number(
-                (Math.max(0, Number(debt.balance) || 0) + amount).toFixed(2)
-              ),
+              balance: roundMoney(Math.max(0, Number(debt.balance) || 0) + amount),
               paidPeriods: debt.totalPeriods
                 ? Math.max(0, (debt.paidPeriods || 0) - (shouldRestorePeriod ? 1 : 0))
                 : debt.paidPeriods,
