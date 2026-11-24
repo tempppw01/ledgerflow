@@ -293,6 +293,25 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   同理,另外三个脚本也全仓零引用:`benchmark:database`、`brands:generate`、`test:watch`
   (前者是性能基线、中者是生成品牌图标、后者是开发用 watch,都属于"按需手动跑",不是坏掉)。
 
+- **生产构建的验证盲区已关闭(2026-11-25,已跑通验证)**。
+  查部署层时发现:CI 的 \`verify\` 有 tsc / lint / 测试 / 十一个闸门,但**没有 \`npm run build\`**;
+  全仓只有 \`Dockerfile\` 会跑 \`vite build\`,而它的构建阶段是 **node:20** —— 运行时与 CI 却是 **24**。
+  于是"生产构建能不能在 Node 24 上过"**从来没被验证过**,不过也只有部署时才发现。
+
+  修的顺序是刻意的 —— **先让验证存在,再依赖它**:
+  1. 往 CI 的 verify 加 \`npm run build\`(提交 \`9101c07\`);在该 run 上确认 verify = success,
+     即 **vite build 在 Node 24 上确实能过**;
+  2. 然后才把 Dockerfile 的 \`node:20-alpine\` 改成 \`node:24-alpine\`(提交 \`4bd7dec\`)——
+     \`docker-latest\` 会重建镜像,等于把这一行也验证一遍。
+
+  **验证结果**:run \`4bd7dec\` → verify **success**、docker-latest **success**(多架构构建 + 推送成功)。
+
+  部署层其余部分(这轮完整读过,都扎实,不必再挖):
+  · \`docker/start-ledgerflow.sh\` 同时守护 API 与 nginx、\`trap TERM INT\`、子进程死了就**以它的状态码退出**;
+  · \`nginx.conf\` 用 resolver + **变量式 \`proxy_pass\`**,避免启动阶段 DNS 未就绪就退出;\`/cdn/\` 走反代(R2);
+  · 服务端**不读 \`package.json\`**(运行时镜像没 COPY 它);\`root\` 只用于默认数据目录,
+    而 Dockerfile 显式设了 \`LEDGERFLOW_DATA_DIR\` —— 不需要额外文件。
+
 - **CI 卫生:concurrency 与 timeout 已补(2026-11-25,已跑通验证)**。
   完整读了一遍 \`ci.yml\`(99 行)后补上两条标准配置,并在 CI 上确认生效:
 
