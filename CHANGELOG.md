@@ -7,6 +7,7 @@
 
 | 版本 | 说明 |
 | --- | --- |
+| [v0.50.49](release-notes/RELEASE_NOTES_v0.50.49.md) | 修:「主题色」被写死成琥珀 —— 六套配色只有一套生效 |
 | [v0.50.48](release-notes/RELEASE_NOTES_v0.50.48.md) | 「分类学习」曾经是个空壳 —— 现在真的能用了 |
 | [v0.50.47](release-notes/RELEASE_NOTES_v0.50.47.md) | 分类推断:补上真实商户名的关键词 |
 | [v0.50.46](release-notes/RELEASE_NOTES_v0.50.46.md) | 修:导入的账单全部变成「餐饮」 |
