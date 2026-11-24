@@ -293,6 +293,21 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   同理,另外三个脚本也全仓零引用:`benchmark:database`、`brands:generate`、`test:watch`
   (前者是性能基线、中者是生成品牌图标、后者是开发用 watch,都属于"按需手动跑",不是坏掉)。
 
+- **「改了要搜引用」的扫查结论(2026-11-25,两轮做完)**。
+  另一条判据:**改过行为的地方,要搜一遍谁在用它** —— 接口兼容、测试也过,但**调用方可能已经变了味**。
+  这次把本会话改过行为的地方逐个搜完,4 个目标里 **1 个是真问题**:
+
+  | 改了什么 | 搜到什么 | 结论 |
+  | --- | --- | --- |
+  | 解析器加了「按每行推断分类」 | 有**两个**调用方,只给其中一个传了 `categories` | **真问题**:同一份账单从交易页导入会推断分类,从数据与备份页导入全落默认分类 → 已修 |
+  | `updateTransaction` 改成「分类变了就记学习规则」 | `recategorizeByAi` 也在用它改 categoryId | **真问题**:AI 猜的/兜底猜的分类被当成"用户修正"记进规则 → 已加 `skipCategoryLearning` |
+  | `balance-changes.css` 改 `table-layout: fixed` | 无快照、无测试断言该表宽度 | 干净 |
+  | `EmptyState` 加渲染条件 `\|\| secondaryActions?.length` | 9 个调用方 | 干净(条件是**严格超集**,且 `secondaryActions` 是新增 prop,现有调用方不可能改变行为)|
+  | `App.tsx` 主题色改从 store 读 | 只有我改的那处 + 一句注释 | 干净(没有地方假设恒为 amber)|
+
+  **注意前两条的共同点**:都是**接口兼容**的改动(可选参数、新 prop),类型检查不会报、测试也全过 ——
+  只有**去搜调用方**才发现。以后再改一个被多处调用的函数,先搜一遍。
+
 - **`brands:generate --check` 看起来能当闸门,其实不能 —— 别接进 CI(2026-11-25 核实)**。
   它自带 `--check`("文件过期时退出码 1"),今天实测**通过**(`brandMarks.ts is up to date`)。
   但它比对的数据源是 **网络** 且是 **`@latest`**:
