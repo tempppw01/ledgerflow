@@ -293,6 +293,21 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   同理,另外三个脚本也全仓零引用:`benchmark:database`、`brands:generate`、`test:watch`
   (前者是性能基线、中者是生成品牌图标、后者是开发用 watch,都属于"按需手动跑",不是坏掉)。
 
+- **CI 卫生:concurrency 与 timeout 已补(2026-11-25,已跑通验证)**。
+  完整读了一遍 \`ci.yml\`(99 行)后补上两条标准配置,并在 CI 上确认生效:
+
+  | 补了什么 | 为什么 |
+  | --- | --- |
+  | \`concurrency: {group: ci-\${{ github.ref }}, cancel-in-progress: true}\` | 连推多次会同时起多个完整 run(实测页面上三个 in_progress),而且两个 docker 构建会同时往 \`:latest\` 推 |
+  | \`verify: timeout-minutes: 20\` / \`docker-latest: 40\` | 没有超时的话卡住的 job 会挂到 GitHub 默认上限(6 小时);实测 verify 不到十分钟、docker 十分钟上下 |
+
+  验证:改动本身是 CI 配置,所以最直接的验证就是**推上去看 run** —— YAML 被接受(新 run 正常启动)、
+  \`verify\` **success**、\`docker-latest\` 在它之后启动(\`needs:\` 仍生效)。
+
+  **看到但没动的两处**(都是优化,不是缺陷):
+  · docker 构建没配 \`cache-from/cache-to\`,每次冷构建 —— 这是它慢的主因;
+  · 文档提交也会重建镜像。**但不要**用 \`paths-ignore: docs/**\` 省(原因见上面那条)。
+
 - **别用 \`paths-ignore: docs/**\` 去省 CI —— 那会删掉管文档的那道闸门(2026-11-25)**。
   \`docker-latest\` 在**每次推送**都跑一次完整 Docker 构建(\`npm ci\` + \`npm run build\` + 镜像),doc-only
   的提交也不例外 —— 一天二十几次推送就是二十几次构建,看着很像"该用 \`paths-ignore\` 省掉"。
