@@ -299,7 +299,16 @@ function hasImportedFieldChanges(
   return (
     existing.type !== incoming.type ||
     existing.amount !== incoming.amount ||
-    existing.date !== incoming.date ||
+    /*
+     * 比的是**本地日历日**,不是原始字符串。
+     *
+     * 同一天的日期有两种存法:手动快记写纯日期(`2026-11-24`),助手导入写 ISO 瞬间
+     * (`2026-11-24T00:00:00.000Z`,来自 normalizeEntryDate)。直接比字符串会把它们判成
+     * 「有变化」,于是每次重新导入同一笔账单都会发出一条更新 —— 报告里出现一批其实没变的
+     * 「已更新」,还会把用户原来记的日期格式一起改写掉。
+     * 上面的去重键本来就是按本地日归一的,这里与它对齐。
+     */
+    resolveTransactionLocalDay(existing.date) !== resolveTransactionLocalDay(incoming.date) ||
     existing.note !== incoming.note ||
     (incoming.source !== undefined && existing.source !== incoming.source) ||
     (incoming.orderNo !== undefined && existing.orderNo !== incoming.orderNo) ||

@@ -68,6 +68,51 @@ function payloadFrom(mode: 'incremental' | 'merge') {
   return result.update[0].payload;
 }
 
+describe('同一笔的判定不受日期格式影响', () => {
+  /*
+   * 同一天的日期有两种存法:
+   *   · 手动快记:纯日期 `2026-04-10`(toLocalDateKey 产出)
+   *   · 助手导入:ISO 瞬间 `2026-04-10T00:00:00.000Z`(normalizeEntryDate 产出)
+   *
+   * 变更检测原先直接比字符串,于是「同一天、不同格式」被判成有变化 ——
+   * 每次重新导入同一笔账单都会发出一条 update(报告里多出一批其实没变的「已更新」),
+   * 还会把用户原来记的日期格式一并改写。去重键本来就按本地日归一的,这里与它对齐。
+   */
+  function runIncremental(incomingDate: string) {
+    return applyBillImportMode({
+      mode: 'incremental',
+      existing: [existingRow()],
+      incoming: [
+        incomingDraft({
+          // 除了日期,其余字段与已有记录完全一致 —— 只让格式不同
+          source: 'manual',
+          tags: ['午餐'],
+          date: incomingDate
+        })
+      ]
+    });
+  }
+
+  it('同一天、一边纯日期一边 ISO 瞬间,算「没有变化」并跳过', () => {
+    const result = runIncremental('2026-04-10T00:00:00.000Z');
+    expect(result.update).toHaveLength(0);
+    expect(result.skipped).toBe(1);
+  });
+
+  it('真的换了一天,就当成另一笔新增(身份键含日期)', () => {
+    const result = runIncremental('2026-04-11');
+    expect(result.append).toHaveLength(1);
+    expect(result.update).toHaveLength(0);
+    expect(result.skipped).toBe(0);
+  });
+
+  it('纯日期对纯日期也照常跳过(对照组)', () => {
+    const result = runIncremental('2026-04-10');
+    expect(result.update).toHaveLength(0);
+    expect(result.skipped).toBe(1);
+  });
+});
+
 describe('账单重复导入不丢字段', () => {
   it('来源账单没有状态时,已有的状态必须保留(merge)', () => {
     // 状态被清空不只是显示问题:isBalanceAffectingStatus 的判断会跟着变,
