@@ -314,6 +314,27 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   (与 shared 的 \`isExpenseLike\` 判定完全相同,「预算」型不算支出是 v0.50.36 的定案,
   \`expenseScope.contract.test.ts\` 钉着两者一致,该测试实测 4 条全过)。
 
+- **创建交易有 8 处以上入口,但不会"跨入口不一致"—— store 层统一兜底(2026-11-25 核实)**。
+  按"跨入口一致性"这个高产区去查:创建交易至少有这些入口 —— 快速记账、交易页表单、编辑页、
+  分类/账户页、账单导入(两个页面)、AI 工具、助手工作台。看着很像会走形,但实际不会:
+
+  \`addTransaction\` 内部统一走 \`createTransactionRow\`,由它在**一个地方**兜住字段:
+
+  \`\`\`js
+  amount: roundCurrency(payload.amount),                 // 金额取整(共用 roundMoney 的别名)
+  adjustmentKind: payload.adjustmentKind || 'normal',    // 兜 normal
+  status: payload.status ?? DEFAULT_TRANSACTION_STATUS,  // 兜状态
+  updatedAt: payload.updatedAt || now,
+  \`\`\`
+
+  **而且这条兜底本身就是为了修一个同类 bug**:助手导入账单那条路径原来不传 \`status\`,
+  库里就出现 \`transaction_status\` 为 NULL 的行(手工记账都会传 \`completed\`),列表显示成「-」、
+  与筛选器口径不一致。现在写入侧不会再产出这种行(注释里写着来龙去脉)。
+
+  **结论**:创建交易这条路是**结构性安全**的 —— 所以之前找到的两个"跨入口"真 bug 不在创建,
+  而在 **导入时漏传参数**(设置页没传 categories)和 **AI 重分类被当成用户修正**。
+  **下次查跨入口,别从"创建"入手**,从"同一功能的两条读/写路径把参数传全了吗"入手。
+
 - **助手层(12,235 行)的金额路径抽样核对过 —— 干净(2026-11-25)**。
   这一层从没查过,而它会**创建交易**(「AI 识别账单、整理负债」),正是金额/分类类 bug 的高发区。
   抽样看了创建交易的入口 `agent/assistantAgentTools.ts` 与 `workbench/workbenchMapping.ts`:
