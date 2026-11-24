@@ -65,6 +65,14 @@ interface GenerateSubscriptionTransactionResult {
   duplicated: boolean;
 }
 
+/**
+ * 彻底删除账户的结果。被交易引用时会拒绝(见 useFinanceStore.permanentlyDeleteAccount)。
+ * 导出给回收站页面用:它需要把「有 N 笔交易挡着」的原因显示给用户。
+ */
+export type PermanentlyDeleteAccountResult =
+  | { ok: true }
+  | { ok: false; reason: 'hasTransactions'; count: number };
+
 export interface FinanceDataSnapshot {
   transactions: TransactionItem[];
   categories: Category[];
@@ -140,7 +148,7 @@ interface FinanceState {
   reorderAccounts: (orderedIds: string[]) => void;
   removeAccount: (id: string) => void;
   restoreAccount: (id: string) => void;
-  permanentlyDeleteAccount: (id: string) => void;
+  permanentlyDeleteAccount: (id: string) => PermanentlyDeleteAccountResult;
   addSubscription: (
     payload: Omit<SubscriptionItem, 'id' | 'createdAt' | 'updatedAt' | 'status'>
   ) => string;
@@ -1504,9 +1512,33 @@ export const useFinanceStore = create<FinanceState>()(
         });
       },
       permanentlyDeleteAccount: (id) => {
-        set((s) => ({
-          trashedAccounts: s.trashedAccounts.filter((item) => item.id !== id)
-        }));
+        /*
+         * 拒绝彻底删除「仍被交易引用」的账户。
+         *
+         * 为什么:账户被彻底删除后,引用它的交易在下一次同步时会被服务端**静默丢弃**
+         * (导入器丢掉引用无法解析的行),而库里那条 `account_id` 是 NOT NULL、外键也不允许
+         * 悬垂引用 —— 于是「保留交易」这件事在当前数据模型里根本表达不出来。
+         *
+         * 回收站里的确认框此前写的是「移入回收站后仅移除账户本身,交易仍会保留」——
+         * 那一步确实是准的,但用户接着点「彻底删除」时并不知道交易也要跟着没了。
+         * 与其让它静默丢掉,不如在这里挡住,并告诉用户有哪几条挡着。
+         *
+         * (备选方案:把交易重指派到另一个账户 —— 那要用户选目标账户,属产品决策。)
+         */
+        let result: PermanentlyDeleteAccountResult = { ok: true };
+        set((s) => {
+          const referencing = [...s.transactions, ...s.trashedTransactions].filter(
+            (item) => item.accountId === id
+          );
+          if (referencing.length > 0) {
+            result = { ok: false, reason: 'hasTransactions', count: referencing.length };
+            return s;
+          }
+          return {
+            trashedAccounts: s.trashedAccounts.filter((item) => item.id !== id)
+          };
+        });
+        return result;
       },
       addSubscription: (payload) => {
         const id = generateId();

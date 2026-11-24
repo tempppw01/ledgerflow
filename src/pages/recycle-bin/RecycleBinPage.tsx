@@ -141,19 +141,23 @@ export function RecycleBinPage() {
      * 彻底删除**不可逆**,所以要先确认 —— 移入回收站、清空回收站本来都确认,
      * 只有这一条路径原先点一下就直接删掉了。
      *
-     * 账户还要单独说明后果:账户被彻底删除后,引用它的交易会在下一次同步时被服务端丢弃
-     * (导入器丢掉引用无法解析的行),这些交易虽然此刻还在列表里,但已经存不住了。
-     * 这句话描述的是**当前行为**;等「彻底删除账户」的语义定下来(拒绝删除 / 重指派),
-     * 这个分支和文案要跟着改。
+     * 账户要单独处理:只要它还被交易引用就**拒绝删除**,并说清有几笔挡着。
+     * 原因是账户一旦真的消失,那些交易会在下一次同步时被服务端静默丢弃
+     * (导入器丢掉引用无法解析的行),而 `account_id` 是 NOT NULL、外键也不允许悬垂引用 ——
+     * 「保留交易」在当前数据模型里表达不出来。回收站里那句「交易仍会保留」说的是**移入回收站**
+     * 那一步(那一步确实是准的),但用户接着点彻底删除时并不知道交易也要跟着没。
      */
     const affectedTransactions =
       item.kind === 'account'
         ? transactions.filter((transaction) => transaction.accountId === item.id).length
         : 0;
+    if (affectedTransactions > 0) {
+      window.alert(t('recycleBin.accountDeleteBlocked', { count: affectedTransactions }));
+      return;
+    }
+
     const confirmed = window.confirm(
-      affectedTransactions > 0
-        ? t('recycleBin.accountDeleteConfirm', { count: affectedTransactions })
-        : t('recycleBin.deletePermanentlyConfirm', { title: item.title })
+      t('recycleBin.deletePermanentlyConfirm', { title: item.title })
     );
     if (!confirmed) {
       return;
@@ -166,9 +170,14 @@ export function RecycleBinPage() {
       case 'category':
         permanentlyDeleteCategory(item.id);
         return;
-      case 'account':
-        permanentlyDeleteAccount(item.id);
+      case 'account': {
+        const result = permanentlyDeleteAccount(item.id);
+        // 兜底:上面的预检查已经挡过,但store 也可能因为别的原因拒绝
+        if (!result.ok) {
+          window.alert(t('recycleBin.accountDeleteBlocked', { count: result.count }));
+        }
         return;
+      }
       case 'subscription':
         permanentlyDeleteSubscription(item.id);
         return;

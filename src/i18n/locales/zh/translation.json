@@ -1472,7 +1472,7 @@
     "restore": "恢复",
     "deletePermanently": "彻底删除",
     "deletePermanentlyConfirm": "确认彻底删除「{{title}}」吗？此操作无法恢复。",
-    "accountDeleteConfirm": "该账户下的 {{count}} 笔交易也会随之消失，且无法恢复。确认彻底删除吗？",
+    "accountDeleteBlocked": "该账户下还有 {{count}} 笔交易，无法彻底删除 —— 那些交易会找不到账户。请先处理这几笔交易（改归属或删除），再回来删除账户。",
     "paginationSummary": "显示第 {{start}}-{{end}} 条，共 {{total}} 条，每页 {{pageSize}} 条",
     "firstPage": "第一页",
     "previousPage": "上一页",
