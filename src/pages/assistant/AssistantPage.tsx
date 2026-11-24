@@ -42,9 +42,9 @@ import {
   isTransactionRefundLike,
   summarizeTransactions
 } from '../../shared/lib/transactionMetrics';
+import { calculateWeeklyExpenseTrend } from '../../features/assistant/model/weeklyExpenseTrend';
 import { useTFallback } from '../../shared/lib/useTFallback';
 import {
-  daysSinceLocalDate,
   resolveTransactionLocalDay,
   toLocalDateKey,
   todayLocalDateKey
@@ -1231,21 +1231,16 @@ export function AssistantPage() {
     );
 
     const monthBalance = monthIncome - monthExpense;
-    const weeklyRows = validRows.filter((item) => {
-      // 按本地日历日算天数差。旧写法把纯日期按 UTC 零点解析再和当前时刻相减:
-      // 在 UTC+8 的 00:00–07:59,「今天」的记录会算出 -1,被 gap >= 0 直接剔除,
-      // 等于早上记的账不进这两周的统计。
-      const gap = daysSinceLocalDate(item.date);
-      return gap !== null && gap >= 0 && gap < 14;
-    });
-    const thisWeekExpense = summarizeTransactions(
-      weeklyRows.filter((item) => item.type === 'expense').slice(0, 7)
-    ).expenseTotal;
-    const lastWeekExpense = summarizeTransactions(
-      weeklyRows.filter((item) => item.type === 'expense').slice(7, 14)
-    ).expenseTotal;
-    const weeklyExpenseDeltaPct =
-      lastWeekExpense > 0 ? ((thisWeekExpense - lastWeekExpense) / lastWeekExpense) * 100 : 0;
+    /*
+     * 近两周对比按**日期**分桶,不再按行号切。
+     * 原先这里用 weeklyRows.slice(0, 7) / slice(7, 14) 当「本周 / 上周」,
+     * 而 weeklyRows 是 store 的原始顺序(未按日期排序),于是「本周」其实是
+     * 「列表里前 7 笔」—— 数据稀疏或插入顺序不同,结论会反,话术却仍写「近 7 天…较上周」。
+     */
+    const weeklyTrend = calculateWeeklyExpenseTrend({ transactions });
+    const thisWeekExpense = weeklyTrend.thisWeekExpense;
+    const lastWeekExpense = weeklyTrend.lastWeekExpense;
+    const weeklyExpenseDeltaPct = weeklyTrend.deltaPct ?? 0;
 
     const creditAccountCount = accounts.filter((item) => item.type === 'credit').length;
 
