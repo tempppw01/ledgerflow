@@ -278,6 +278,25 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 
   `shared/lib/expenseScope.contract.test.ts` 现在钉的是**统一后**的契约(两边判定必须一致、
   预算型两边都不算);谁再让某个类型两边不同,那 4 条会先翻红。
+- **i18n 死键:别按"完整路径没出现"整批删(会弄坏界面)**。
+  删掉 8 个没人用的组件后,语言文件里留下了它们的文案。用"完整路径在 src 里没出现过"去扫,
+  得到 **334 个**候选 —— 但**其中绝大多数是动态拼接的键**,删掉会直接把界面弄坏:
+
+  · `datePicker.weekdays.*` —— 按星期拼(`t('datePicker.weekdays.' + day)`);
+  · `settings.preferences.accent.*` —— 主题色选择器按选项名拼;
+  · `settings.data.counts.*` —— 按表名拼。
+
+  真正**可以证明**是死键的只有 **36 个**,全部在 `dashboard.*` 下、全部来自被删的 7 个仪表盘组件
+  (用删除提交 `25b4624` 的 diff 取「被删行用过的键」,再确认全项目不再出现)。清单:
+  `dashboard.historyCard.*` / `dashboard.monthlySummary.*` / `dashboard.netAssetCurve.*` /
+  `dashboard.radar.*` / `dashboard.topTransactions.title` / `dashboard.financeRadarBasis` /
+  `dashboard.ui.{active,anomalyAlert,anomalyAndHighlight,anomalyCardList}`。
+
+  这 36 个**没有在这一轮删除**,原因很实际:语言文件不是 `JSON.stringify(…, 2)` 的规范格式
+  (`zh` 136388 字节 vs 重写后 131968,且是 CRLF),整文件重写会产生约 **4000 行**的格式 diff;
+  而按行删又碰上 `title` 这类**大量重名**的叶子键,容易删错。
+  **下次谁要重整语言文件格式,顺手把这 36 个一起清掉即可。**
+
 - **已知偶发:服务端测试出现过一次 `fetch failed / bad port`(2026-11-24)**。
   症状:一次并行跑 `node --test server/*.test.js` 时,3 条用例同时失败(两条市场数据、一条 secid 过滤),
   错误是 `bad port` / `fetch failed`。**随后连续 5 次全量重跑都干净**,无法复现。
