@@ -124,11 +124,15 @@
 
 ## 四、演示账本的基线(2026-11-24 实测)
 
-手工验证都靠它。库被还原或改动过之后,先跑这一条确认它还是基线:
+手工验证都靠它 —— 而它**会被改动**(我这一段为了验证反复改过)。别再靠人眼对表,跑这两条:
 
 ```bash
-node scripts/audit-ledger-math.mjs --email=demo.mcp@ledgerflow.local
+npm run audit:demo-baseline   # counts / 关键余额 / 退款夹具 / 外键(下面那张表就是它的期望值)
+npm run audit:ledger-math -- --email=demo.mcp@ledgerflow.local   # 钱的口径:逐月收支、余额变动链、净值
 ```
+
+第一条是 2026-11-24 加的可执行版基线;不一致时它会**直接告诉你清理时容易踩的两个坑**:
+删交易要连 `ledger_balance_changes` 一起删、删完要把账户的 `balance` 缓存回写成审计算出的值。
 
 | 项 | 值 |
 | --- | --- |
