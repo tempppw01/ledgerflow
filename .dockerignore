@@ -6,3 +6,13 @@ coverage
 Dockerfile
 docker-compose.yml
 README.md
+
+# 本地账本数据库(含真实数据)绝不能进构建上下文。
+# 现在它只会进入 build 阶段的 COPY . .,不会进推送的镜像(最终镜像只拷 dist/node_modules/server),
+# 而且没配 cache-to,所以暂时不会外泄 —— 但只要有人加上 registry 缓存(很自然的优化),
+# 这里面就是一个人的完整账本被打包上传。
+data
+
+# 构建用不到,剔掉可以明显缩小上下文(仓库里有两百多份文档与一百多份发布说明)。
+docs
+release-notes
