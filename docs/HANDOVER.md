@@ -177,6 +177,18 @@ npm run audit:ledger-math -- --email=demo.mcp@ledgerflow.local   # 钱的口径:
 
 ## 五、怎么复跑这些检查
 
+> **⚠ 发布之前先读 [docs/release-process.md](release-process.md)。**
+> 那份文档的第一条是**发布节奏:攒一批再发** —— 日常修复**只 commit + push 到 main**,
+> **不动 `package.json` / `APP_VERSION`、不打 tag、不建 Release**;
+> 等这批改动成规模了,才统一改版本号 → 写 `release-notes/RELEASE_NOTES_<tag>.md` → 打 tag → 工作流发布。
+>
+> **这个文档原来只被 README / release.yml 引用,没有从这里链过** —— 结果是接手的人
+> (2026-11-25 那次)完全没读到它,把「一个修复发一个版本」做了十几遍(v0.50.43 ~ v0.54),
+> 正好是那份文档第一条明令禁止的。所以现在把**规则本身**也抄在这里,不只是链接。
+>
+> 另外两条也来自那份文档:每个 tag **必须**有 `release-notes/RELEASE_NOTES_<tag>.md`,
+> 且该文件要在 tag 指向的提交里;**不要手工 `gh release create`**(会绕开工作流)。
+
 ```bash
 npx tsc --noEmit && npm run lint && npm test && node --test server/*.test.js
 npm run i18n:check && npm run i18n:check-jsx
