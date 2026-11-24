@@ -12,6 +12,23 @@ import { useTranslation } from 'react-i18next';
 import { useTFallback, type TfFallback } from '../../shared/lib/useTFallback';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { sendAiChat } from '../../features/assistant/api/openaiCompatibleClient';
+import {
+  applyKeepOpen,
+  buildQuickAddTransaction,
+  validateQuickAddDraft,
+  type QuickAddValidationError
+} from '../../features/transactions/model/quickAddForm';
+
+/**
+ * 校验原因 → i18n 键。文案键留在页面层(逻辑层只给原因码)。
+ * 写成 { key: '…' } 而不是裸字符串映射:i18n 静态检查器认这个形状,
+ * 否则这些键会被误判成没人用,把界面上的报错文案当成死键删掉。
+ */
+const QUICK_ADD_ERROR_KEYS: Record<QuickAddValidationError, { key: string }> = {
+  selectCategory: { key: 'transactions.quickAdd.error.selectCategory' },
+  selectAccount: { key: 'transactions.quickAdd.error.selectAccount' },
+  invalidAmount: { key: 'transactions.quickAdd.error.invalidAmount' }
+};
 import { extractJsonString } from '../../features/assistant/workbench/workbenchUtils';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { exportTransactionsCsv } from '../../shared/lib/csv';
@@ -1223,41 +1240,38 @@ export function TransactionsPage() {
    * 类型、分类、账户、日期都留着,只清空金额与备注,连着记多笔时不用重开弹层。
    */
   const handleSaveQuickAdd = (keepOpen = false) => {
-    if (!quickAddCategoryId) {
-      setQuickAddErrorKey('transactions.quickAdd.error.selectCategory');
-      return;
-    }
-    if (!quickAddAccountId) {
-      setQuickAddErrorKey('transactions.quickAdd.error.selectAccount');
-      return;
-    }
-    const amount = Number(quickAddAmount);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      setQuickAddErrorKey('transactions.quickAdd.error.invalidAmount');
-      return;
-    }
-
-    const transactionId = addTransaction({
+    // 校验与「再记一笔保留什么」都在 features/transactions/model/quickAddForm.ts 里,
+    // 那两段逻辑原先只能靠手点验证,现在有单测钉着。
+    const draft = {
       type: quickAddType,
       categoryId: quickAddCategoryId,
       accountId: quickAddAccountId,
-      amount: roundMoney(amount),
+      amount: quickAddAmount,
       date: quickAddDate,
-      note: quickAddNote.trim() || t('transactions.quickAdd.defaultNote'),
-      tags: [],
-      source: 'manual',
-      status: 'completed'
-    });
+      note: quickAddNote
+    };
+
+    const validation = validateQuickAddDraft(draft);
+    if (!validation.ok) {
+      setQuickAddErrorKey(QUICK_ADD_ERROR_KEYS[validation.reason].key);
+      return;
+    }
+
+    const amount = Number(quickAddAmount);
+    const transactionId = addTransaction(
+      buildQuickAddTransaction(draft, t('transactions.quickAdd.defaultNote'))
+    );
 
     setPage(1);
     setLastAddedTransactionId(transactionId);
 
     if (keepOpen) {
       // 再记一笔:保留类型/分类/账户/日期,只清金额、备注与错误提示
-      setQuickAddAmount('');
+      const nextDraft = applyKeepOpen(draft);
+      setQuickAddAmount(nextDraft.amount);
+      setQuickAddNote(nextDraft.note);
       setQuickAddExpression('');
       setQuickAddCalculatedAmount(null);
-      setQuickAddNote('');
       setQuickAddErrorKey('');
       clearQuickTransactionDraft(user.ledgerUserId);
       setToast({
