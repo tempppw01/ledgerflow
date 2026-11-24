@@ -1,11 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMenuKeyboard } from '../../../shared/lib/useMenuKeyboard';
 import { createPortal } from 'react-dom';
-import {
-  DEFAULT_TRANSACTION_STATUS,
-  TransactionItem,
-  TransactionStatus
-} from '../../../entities/transaction/types';
+import { TransactionItem, TransactionStatus } from '../../../entities/transaction/types';
 import { EMPTY_CATEGORY_FILTER_VALUE } from '../model/categoryQuickFilter';
 import { formatCurrencyAuto, formatDate } from '../../../shared/lib/format';
 import {
@@ -15,6 +11,7 @@ import {
 } from '../../../shared/lib/transactionMetrics';
 import { EmptyState } from '../../../shared/ui/EmptyState';
 import { useTFallback, type TfFallback } from '../../../shared/lib/useTFallback';
+import { formatTransactionStatus } from '../model/statusLabel';
 import { TableSkeleton } from '../../../shared/ui/TableSkeleton';
 import { DatePicker } from '../../../shared/ui/DatePicker';
 import {
@@ -204,25 +201,6 @@ export interface TransactionRowView {
   item: TransactionItem;
   categoryName: string;
   accountName: string;
-}
-
-function formatStatus(status: TransactionStatus | undefined, tf: TfFallback): string {
-  // 缺状态的行按默认状态显示:筛选器就是这么匹配的(statusQuickFilter),显示成「-」
-  // 会让同一行「筛得出来却看不出状态」—— 助手导入的账单以前就是这样。
-  switch (status ?? DEFAULT_TRANSACTION_STATUS) {
-    case 'pending':
-      return tf('transactions.table.status.pending', '待处理');
-    case 'completed':
-      return tf('transactions.table.status.completed', '已完成');
-    case 'refunded':
-      return tf('transactions.table.status.refunded', '已退款');
-    case 'closed':
-      return tf('transactions.table.status.closed', '已关闭');
-    case 'failed':
-      return tf('transactions.table.status.failed', '失败');
-    default:
-      return status ?? DEFAULT_TRANSACTION_STATUS;
-  }
 }
 
 export type TransactionColumnKey =
@@ -446,7 +424,7 @@ export function TransactionTable({
       case 'category':
         return categoryName;
       case 'status':
-        return formatStatus(item.status, tf);
+        return formatTransactionStatus(item.status, tf);
       case 'account':
         return renderAccountLabel(accountName);
       case 'amount':
