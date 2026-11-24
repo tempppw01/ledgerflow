@@ -1,5 +1,7 @@
 import { TransactionItem, TransactionStatus } from '../../entities/transaction/types';
 import { roundMoney } from './money';
+import { inferCategoryFromText, resolveCategoryId } from '../../features/assistant/workbench/workbenchMapping';
+import type { Category } from '../../entities/category/types';
 import { resolveTransactionLocalDay } from './localDate';
 
 type BillSource = 'wechat' | 'alipay';
@@ -13,10 +15,17 @@ interface ParseBillInput {
   source: BillSource;
   defaultCategoryId: string;
   defaultAccountId: string;
+  /**
+   * 用户现有的分类。给了就**按每行内容推断分类**(见 inferBillCategoryId),
+   * 不给则全部用 defaultCategoryId —— 保持旧行为,不影响已有调用方与测试。
+   */
+  categories?: Category[];
 }
 
 interface ParseBillFileInput {
   file: File;
+  /** 用户现有的分类;给了才按行推断分类(见 inferBillCategoryId)。 */
+  categories?: Category[];
   source: BillSource;
   defaultCategoryId: string;
   defaultAccountId: string;
@@ -676,6 +685,44 @@ function isNeutralCashflowRow(row: Record<string, string>): boolean {
   return raw === '/' || raw === '／';
 }
 
+/**
+ * 按这一行的内容推断分类 id。
+ *
+ * 原来每行都用同一个 defaultCategoryId —— 用户导微信账单时那一个默认值往往是「餐饮」,
+ * 于是 445 笔交易(超市、停车、医院、话费……)全被归到餐饮,分类统计与预算执行数直接失真。
+ *
+ * 现在复用助手导入已有的推断器(inferCategoryFromText / resolveCategoryId):
+ * 按「交易对方 + 商品 + 备注 + 交易类型」匹配关键词,推到哪个分类就用哪个;
+ * 推不出来(或用户没有这个分类)才退回 defaultCategoryId。
+ */
+function inferBillCategoryId(
+  row: Record<string, string>,
+  type: TransactionItem['type'],
+  input: ParseBillInput
+): string {
+  const categories = input.categories;
+  if (!Array.isArray(categories) || categories.length === 0) {
+    return input.defaultCategoryId;
+  }
+
+  const text = [
+    pickByKeys(row, ['交易对方', '商户名称', '对方', 'merchant', 'counterparty']),
+    pickByKeys(row, ['商品', '商品说明', '商品名称', 'product', 'item']),
+    pickByKeys(row, ['备注', 'note', 'memo']),
+    pickByKeys(row, TYPE_KEYS)
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  if (!text.trim()) return input.defaultCategoryId;
+
+  const inferredName = inferCategoryFromText(type, text);
+  if (!inferredName) return input.defaultCategoryId;
+
+  const resolvedId = resolveCategoryId(inferredName, categories);
+  return resolvedId || input.defaultCategoryId;
+}
+
 function buildTransactionFromLine(
   line: string,
   headers: string[],
@@ -759,7 +806,7 @@ function buildTransactionFromLine(
     date: parsedDate,
     note: buildNote(row),
     tags: [input.source === 'wechat' ? '微信导入' : '支付宝'],
-    categoryId: input.defaultCategoryId,
+    categoryId: inferBillCategoryId(row, type, input),
     accountId: input.defaultAccountId,
     source: input.source,
     orderNo,
@@ -1140,7 +1187,9 @@ export async function parseBillFileToTransactionsDetailed(
     csvText,
     source: input.source,
     defaultCategoryId: input.defaultCategoryId,
-    defaultAccountId: input.defaultAccountId
+    defaultAccountId: input.defaultAccountId,
+    // 别忘了转发 —— 少这一行,文件级入口就永远用默认分类(功能等于没接上)
+    categories: input.categories
   });
 }
 

@@ -1329,7 +1329,9 @@ export function TransactionsPage() {
         file,
         source: activeSource,
         defaultCategoryId,
-        defaultAccountId
+        defaultAccountId,
+        // 把现有分类传进去,让每一行按内容推断分类(不传就等于全用默认分类)
+        categories
       });
       const parsed = parsedResult.rows;
 
