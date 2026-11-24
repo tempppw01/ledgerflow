@@ -84,7 +84,9 @@ jobs:
           npm run check:dynamic-i18n
           npm run check:orphan-methods
           npm run check:dead-exports
-          npm run check:jsx-hardcoded
+          # 注意:不要在这里加 check:jsx-hardcoded —— 它和上面 i18n gates 里的
+          # i18n:check-jsx 是**同一条命令**(都是 audit-jsx-hardcoded.mjs --fail)。
+          # 2026-11-25 我"把没接上的闸门接上"时加过一次,结果同一个脚本在 CI 里跑了两遍。
           npm run check:r2-fetch
 
   docker-latest:

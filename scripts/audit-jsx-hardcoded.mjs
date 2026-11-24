@@ -7,6 +7,16 @@
  * **夹在 `>` 和 `<` 之间的中文**(`<h4>今日财务雷达</h4>` 这种),它既不在 key 引用里,
  * 也不在任何属性里,只能单独扫。
  *
+ * 用法:
+ *   node scripts/audit-jsx-hardcoded.mjs          # 清单(不失败)
+ *   node scripts/audit-jsx-hardcoded.mjs --fail   # 有命中就非 0 退出
+ *
+ * ⚠ 注意:package.json 里 **两个脚本名指向同一条命令** ——
+ *   audit:jsx-hardcoded / check:jsx-hardcoded 就是本脚本(带不带 --fail 的区别),
+ *   而 i18n:check-jsx 也是 `本脚本 --fail`。所以 CI 里**只需跑一次**:
+ *   它出现在 i18n gates 那一步里,别再往静态闸门里加一遍。
+ *   (2026-11-25 我把 check:jsx-hardcoded"接进"CI 时没注意到这个别名,同一脚本跑了两遍。)
+ *
  * 排除 `{...}` 表达式:那里面通常是 `{tf('key', '中文')}`,中文属于兜底文案,是既有写法。
  *
  * 用法:
