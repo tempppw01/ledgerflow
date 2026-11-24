@@ -293,6 +293,18 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   同理,另外三个脚本也全仓零引用:`benchmark:database`、`brands:generate`、`test:watch`
   (前者是性能基线、中者是生成品牌图标、后者是开发用 watch,都属于"按需手动跑",不是坏掉)。
 
+- **别用 \`paths-ignore: docs/**\` 去省 CI —— 那会删掉管文档的那道闸门(2026-11-25)**。
+  \`docker-latest\` 在**每次推送**都跑一次完整 Docker 构建(\`npm ci\` + \`npm run build\` + 镜像),doc-only
+  的提交也不例外 —— 一天二十几次推送就是二十几次构建,看着很像"该用 \`paths-ignore\` 省掉"。
+
+  **但不要那么做**:验证一下就知道,\`check:docs\`(校验表格列数、代码块成对、引用的测试文件存在)
+  属于 \`verify\` job —— 而**文档改动恰恰是最容易弄坏它的**。2026-11-25 那天 CI 红了三次,其中
+  **两次是纯文档改动**(一次表格里写了转义的竖线 \`\\|\\|\`,一次注入了列数不一致的测试表格)。
+  加了 \`paths-ignore: docs/**\` 就等于把这层保护关掉。
+
+  真要想省:把 **docker job 单独拆到一个 workflow**、只给它加 \`paths-ignore\`,
+  **\`verify\` 保持每次推送都跑**。这样省的是构建时间,不是保护。
+
 - **闸门红着不许提交 —— CI 确实会拦,但别指望本地拦住你(2026-11-25 实例)**。
   那天我改了文档表格,`check:docs` 已经输出「表格列数不一致」**而我仍然提交推送了**;
   20 分钟后**又犯了一次**(为验证 pre-commit hook 注入的坏表格忘了还原就提交)。
