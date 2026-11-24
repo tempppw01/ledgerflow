@@ -144,6 +144,31 @@
   width: 100%;
   border-collapse: collapse;
   font-size: var(--font-sm);
+  /*
+   * 固定布局:列宽由下面这几条决定,内容再长也撑不宽。
+   *
+   * 用 auto 布局时,列宽由内容决定 —— 一条 180 字符的备注(订单号那种没有空格的串)
+   * 会把「说明」列顶到 1284px,整张表 1670px 宽,用户看到的就是「备注过长溢出界面」。
+   * ellipsis / overflow-wrap 在 auto 布局里都不解决问题:列本身已经变宽了。
+   */
+  table-layout: fixed;
+}
+
+/* 窄列定宽,「说明」列吃剩余空间并截断 */
+.balance-change-table thead th:nth-child(1) {
+  width: 15%;
+}
+.balance-change-table thead th:nth-child(2) {
+  width: 14%;
+}
+.balance-change-table thead th:nth-child(3) {
+  width: 9%;
+}
+.balance-change-table thead th:nth-child(5) {
+  width: 15%;
+}
+.balance-change-table thead th:nth-child(6) {
+  width: 17%;
 }
 
 .balance-change-table th,
@@ -151,6 +176,8 @@
   padding: 9px 10px;
   text-align: left;
   vertical-align: middle;
+  /* 兜底:表格是 auto 布局,任何一格里有不可断行的长串(订单号、URL)都会把整张表顶宽 */
+  overflow-wrap: anywhere;
 }
 
 .balance-change-table thead th {
@@ -309,6 +336,9 @@
 }
 
 .balance-change-summary-text {
+  /* 没有 min-width:0 时,flex 子项会被内容撑开,上面的 ellipsis 根本不生效 —— 长备注
+     就会把整张表顶出容器。这是「备注过长溢出界面」的一半原因。 */
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -345,7 +375,16 @@
 }
 
 .balance-change-note {
-  display: block;
+  /*
+   * 原来的规则只设了颜色和字号,长备注(尤其是订单号那种没有空格的串)会整条溢出容器。
+   * 现在:任意位置可断行 + 最多两行 + 超出省略,完整内容在 title 里。
+   */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   color: var(--color-text-tertiary);
   font-size: var(--font-xs);
 }

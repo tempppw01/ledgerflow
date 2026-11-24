@@ -551,7 +551,9 @@ export function BalanceChangesPage() {
                           <span className="balance-change-caret" aria-hidden="true" />
                         </button>
                         {row.note && row.note !== row.summary ? (
-                          <small className="balance-change-note">{row.note}</small>
+                          <small className="balance-change-note" title={row.note}>
+                            {row.note}
+                          </small>
                         ) : null}
                       </td>
                       <td className={`is-numeric balance-change-amount ${row.tone}`}>
