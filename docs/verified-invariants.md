@@ -293,6 +293,22 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   同理,另外三个脚本也全仓零引用:`benchmark:database`、`brands:generate`、`test:watch`
   (前者是性能基线、中者是生成品牌图标、后者是开发用 watch,都属于"按需手动跑",不是坏掉)。
 
+- **\`data/\`(本机账本)的四个消费者都查过了 —— 只有 \`.dockerignore\` 曾漏掉(2026-11-25 已补)**。
+  起因是查到 \`.dockerignore\` 漏了 \`data/\`。既然这一处漏了,就把**所有会扫仓库根目录的东西**逐个过一遍:
+
+  | 谁 | 会不会误吃 \`data/\` | 依据 |
+  | --- | --- | --- |
+  | \`.gitignore\` | **不会**(第 12 行就是 \`data/\`) | \`git check-ignore -v\` 实测命中;\`git ls-files data/\` 为空 |
+  | \`vite.config.ts\` | **不会**(\`watch.ignored\` 含 \`**/data/**\`) | 注释写明"它是本机运行时目录" |
+  | **\`.dockerignore\`** | **曾经会** —— 已补上 | \`Dockerfile\` 里是 \`COPY . .\` |
+  | \`prettier\`(无 \`.prettierignore\`) | 不会 | 只格式化已知扩展名,\`.log\` / \`.sqlite\` 被跳过 |
+  | \`eslint\` | 不会 | 只 lint \`**/*.{ts,tsx,js}\` |
+  | \`vitest\` | 不会 | \`include: ['src/**/*.test.{ts,tsx}']\` |
+  | \`tsc\` | 不会 | \`data/\` 里没有 \`.ts\` |
+
+  **所以"本机数据会不会被误用"这件事已经查完** —— 三处写死的忽略规则里 \`.gitignore\` 与 \`vite.config.ts\`
+  都有、唯独 \`.dockerignore\` 缺一半,现在补齐了。**再核这类问题不用从头来**。
+
 - **\`src/test/setup.ts\` 完整读过(54 行):只做环境垫片,干净 —— 但有一条覆盖局限(2026-11-25)**。
   它做三件事,都写明了原因:给 \`localStorage\` / \`sessionStorage\` 兜一个**内存实现**
   (Node 22+ 的实验性 \`localStorage\` 是"typeof 是 object 但一用就抛",所以先**探测可用性**再替换);
