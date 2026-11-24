@@ -44,12 +44,21 @@ export async function getRelationalBootstrap(): Promise<RelationalBootstrapRespo
   );
 }
 
-export async function importRelationalData(payload: unknown): Promise<RelationalDataStatus> {
+export async function importRelationalData(
+  payload: unknown,
+  baseRevision?: string
+): Promise<RelationalDataStatus> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  // 乐观并发:告诉服务端「我加载时看到的是哪个版本」。服务端发现版本已经变了就拒绝 ——
+  // 否则整份替换会把另一个窗口/设备在这期间写的行删掉,而且不会有任何报错。
+  if (baseRevision) {
+    headers['X-Ledger-Base-Revision'] = baseRevision;
+  }
   return readResponse(
     await fetch(getUrl('/data/import'), {
       method: 'PUT',
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(payload)
     })
   );

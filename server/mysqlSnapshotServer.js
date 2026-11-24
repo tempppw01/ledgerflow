@@ -2434,6 +2434,31 @@ export async function handleRequest(req, res) {
       await migrateRelationalDatabase(setup.provider);
       const session = await requireUserSession(req, res, setup.provider);
       if (!session) return;
+      /*
+       * 乐观并发:客户端把「它加载时看到的版本」(bootstrap 里的 updatedAt)随上传一起带来。
+       * 如果服务端现在的版本已经不是那个,说明**另一个窗口/设备在这个窗口里写过** ——
+       * 而导入是「整份替换」(先删光该用户的行再按快照重插),照收就会把那边的改动删掉,
+       * 且不会有任何报错。所以这里直接拒绝,让客户端刷新后重来。
+       *
+       * 不带头部的调用方(旧客户端、脚本、测试)保持原行为 —— 这是**可选**的防护,不是强制协议。
+       */
+      const baseRevision = String(req.headers['x-ledger-base-revision'] || '').trim();
+      if (baseRevision) {
+        const currentStatus = await getRelationalDataStatus(
+          setup.provider,
+          process.env,
+          session.user.ledgerUserId
+        );
+        const currentRevision = String(currentStatus?.updatedAt || '').trim();
+        if (currentRevision && currentRevision !== baseRevision) {
+          jsonResponse(res, 409, {
+            ok: false,
+            message:
+              '账本已被另一个窗口或设备改动,本次上传已拒绝,以免覆盖那些改动。请刷新页面后再继续。'
+          });
+          return;
+        }
+      }
       try {
         let payload;
         try {

@@ -1711,6 +1711,7 @@
     "syncFailure": "云端同步失败：{{detail}}",
     "syncRetry": "云端同步失败，数据会在稍后自动重试。",
     "syncDroppedRecords": "同步完成，但以下记录没能写入服务端：{{detail}}。它们目前只存在当前页面里，请先导出备份再离开。",
+    "syncStaleRevision": "账本已被另一个窗口或设备改动，已暂停上传，以免把那些改动覆盖掉。请刷新页面后再继续。",
     "droppedGroupEntry": "{{label}} {{count}} 条",
     "droppedGroupSeparator": "、",
     "droppedGroup": {
