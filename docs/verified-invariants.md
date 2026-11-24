@@ -293,6 +293,23 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   同理,另外三个脚本也全仓零引用:`benchmark:database`、`brands:generate`、`test:watch`
   (前者是性能基线、中者是生成品牌图标、后者是开发用 watch,都属于"按需手动跑",不是坏掉)。
 
+- **\`nginx.conf\` 完整读过(57 行):\`/api/\` 不设 \`proxy_read_timeout\` 是安全的(2026-11-25 核实)**。
+  看到 \`location /api/\` 没有 \`proxy_read_timeout\`(走 nginx 默认 60 秒),一度担心长耗时请求
+  (AI 生成)会被切断。核实后**不成立**:
+
+  · AI 请求走的是**流式**(\`openaiCompatibleClient\` 里 \`stream: true\` + 解码缓冲循环),
+    而 nginx 的 \`proxy_read_timeout\` 管的是**两次读取之间**的间隔 —— 模型逐块吐字时不会触发;
+  · 客户端自己还有可配置超时(\`getAiRequestTimeoutMs\` / \`getAiGenerationTimeoutMs\`)与 abort 逻辑。
+
+  这份配置其余部分也扎实,不必再挖:\`resolver\` + **变量式 \`proxy_pass\`**(域名请求时才解析,
+  避免启动阶段 DNS 未就绪就退出);\`rewrite\` 显式去掉 \`/cdn\` 前缀并保留查询串;
+  \`client_max_body_size 50m\` 与后端的 50 MiB 上限**对得上**;\`location /\` 的 \`try_files\` 是 SPA 回退,
+  而 \`index.html\` 不在 \`/assets/\` 里(不该带长缓存,这点也对)。
+
+  **已知的加固缺口(不是 bug,改它需要能跑起容器来验证)**:没有安全响应头 ——
+  \`X-Content-Type-Options\` / \`X-Frame-Options\` / CSP 一个都没有。前两个是安全的加法,
+  **CSP 需要谨慎**(用错会直接白屏),而 CI 只**构建**镜像、不**运行**它,所以加之前得先起容器实测。
+
 - **\`.dockerignore\` 已排除 \`data/\`(本地账本数据库不进构建上下文)—— 已跑通验证(2026-11-25)**。
   \`Dockerfile\` 里是 \`COPY . .\`,而 \`data/\` 放着 **SQLite 库与 \`data/backups/\` 里的备份** ——
   也就是**一个人的完整账本**。推送的镜像里没有它(最终镜像只拷 \`dist\` / \`node_modules\` / \`server\`),
