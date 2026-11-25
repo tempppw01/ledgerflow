@@ -5689,6 +5689,18 @@
   touch-action: none;
 }
 
+/*
+ * 右边缘(调宽)和下边缘(调高)现在可以用键盘调节(WCAG 2.1.1)。
+ * 这两条边平时是**完全透明**的命中区,不给焦点样式的话,键盘用户按 Tab 进来
+ * 什么也看不见 —— 那等于没有键盘入口(2.4.7 / 2.4.11)。
+ */
+.investment-chat-floating-resize-handle:focus-visible {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary) 55%, transparent);
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
 .investment-chat-floating-resize-handle.is-top,
 .investment-chat-floating-resize-handle.is-bottom {
   right: 12px;

@@ -2838,6 +2838,8 @@
     "stop": "Stop generating",
     "sendAria": "Start analysis",
     "launcherOpen": "Open the AI investment assistant",
+    "resizeWidthAria": "Resize the AI assistant panel width",
+    "resizeHeightAria": "Resize the AI assistant panel height",
     "title": "AI investment assistant",
     "syncedHint": "Holdings, watchlist and today’s quotes are in sync",
     "openFull": "Open the full AI investment assistant",

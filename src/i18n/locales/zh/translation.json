@@ -2838,6 +2838,8 @@
     "stop": "停止生成",
     "sendAria": "开始分析",
     "launcherOpen": "打开 AI 投资助手",
+    "resizeWidthAria": "调整 AI 助手浮窗宽度",
+    "resizeHeightAria": "调整 AI 助手浮窗高度",
     "title": "AI 投资助手",
     "syncedHint": "已同步持仓、自选与今日行情",
     "openFull": "打开完整 AI 投资助手",

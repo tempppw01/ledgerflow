@@ -1,6 +1,7 @@
 import {
   ClipboardEvent,
   FormEvent,
+  KeyboardEvent as ReactKeyboardEvent,
   PointerEvent as ReactPointerEvent,
   WheelEvent as ReactWheelEvent,
   useCallback,
@@ -103,6 +104,27 @@ type FloatingResizeState = FloatingPanelBounds & {
 const FLOATING_CHAT_MIN_WIDTH = 320;
 const FLOATING_CHAT_MIN_HEIGHT = 360;
 const FLOATING_CHAT_VIEWPORT_GUTTER = 16;
+/** 键盘一次调多少;按住 Shift 用粗档(与侧栏、分栏、列宽同一组步长)。 */
+const FLOATING_CHAT_KEYBOARD_STEP = 16;
+const FLOATING_CHAT_KEYBOARD_COARSE_STEP = 48;
+
+/**
+ * 浮窗某一轴能到多大。
+ *
+ * 公式与 `startFloatingResize` 里那一份**完全一致**:不能超过视口减两边留白,
+ * 也不能超过"当前位置到视口边缘减留白"。—— 键盘能调到的最大值必须和拖拽一样,
+ * 否则会报出拖不到的 aria-valuemax(表格列宽踩过:报 656 而实际停在 640)。
+ * 外层兜一个 max(min, …) 是为了保证 min <= max,否则 aria 上的区间是反的。
+ */
+function getFloatingAxisMax(min: number, position: number, viewport: number) {
+  return Math.max(
+    min,
+    Math.min(
+      Math.max(min, viewport - FLOATING_CHAT_VIEWPORT_GUTTER * 2),
+      viewport - position - FLOATING_CHAT_VIEWPORT_GUTTER
+    )
+  );
+}
 
 const MAX_INVESTMENT_AI_IMAGES = 4;
 const MAX_INVESTMENT_AI_IMAGE_SIZE_MB = 6;
@@ -1219,6 +1241,12 @@ export function InvestmentChatPanel({
   const [floatingOpen, setFloatingOpen] = useState(false);
   const [floatingPinned, setFloatingPinned] = useState(false);
   const [floatingBounds, setFloatingBounds] = useState<FloatingPanelBounds | null>(null);
+  /*
+   * 未拖动过时面板尺寸由 CSS 决定,floatingBounds 是 null。键盘调节和 aria-valuenow
+   * 都需要一个真实数字,所以量一份 —— 量不到就报 0,而 aria-valuemin 是 320/360,
+   * 读屏用户会听到自相矛盾的值(抽屉那边踩过同一个坑)。
+   */
+  const [floatingMetrics, setFloatingMetrics] = useState<FloatingPanelBounds | null>(null);
   const floatingResizeRef = useRef<FloatingResizeState | null>(null);
   const historyTurns = useMemo(() => messages.filter((item) => item.role === 'user'), [messages]);
   const latestMessageId = messages[messages.length - 1]?.id || '';
@@ -1369,6 +1397,110 @@ export function InvestmentChatPanel({
     },
     [floating]
   );
+
+  /*
+   * 量一次面板的真实位置与尺寸。floatingBounds 只在用户拖动过之后才有值,
+   * 所以两条都要跟:显示时量一次,拖动后(floatingBounds 变化)再量一次。
+   */
+  useEffect(() => {
+    if (!floating || !floatingOpen) {
+      setFloatingMetrics(null);
+      return;
+    }
+    const node = floatingPanelRef.current;
+    if (!node) return;
+    const rect = node.getBoundingClientRect();
+    setFloatingMetrics({
+      left: Math.round(rect.left),
+      top: Math.round(rect.top),
+      width: Math.round(rect.width),
+      height: Math.round(rect.height)
+    });
+  }, [floating, floatingOpen, floatingBounds]);
+
+  const floatingCurrent = floatingBounds ?? floatingMetrics;
+
+  /*
+   * 上限公式与拖拽共用(见 getFloatingAxisMax)。
+   *
+   * ⚠ 这里的值来自**测量**,而测量可能陈旧(面板打开时有入场过渡,打开瞬间量到的是
+   * 过渡中的尺寸:实测真实 430×560 @(986,316),量到 413×538 @(995,339))。
+   * 所以按键时不用这份值当基准 —— 一律以实时矩形为准(见 handleFloatingResizeKeyDown),
+   * 并在聚焦手柄时重量一次刷新这里,让 aria 读到的是真数。
+   */
+  const floatingMaxWidth = floatingCurrent
+    ? getFloatingAxisMax(FLOATING_CHAT_MIN_WIDTH, floatingCurrent.left, window.innerWidth)
+    : FLOATING_CHAT_MIN_WIDTH;
+  const floatingMaxHeight = floatingCurrent
+    ? getFloatingAxisMax(FLOATING_CHAT_MIN_HEIGHT, floatingCurrent.top, window.innerHeight)
+    : FLOATING_CHAT_MIN_HEIGHT;
+
+  /** 聚焦手柄时重量一次:此时面板早已落位,量到的是真值。 */
+  const remeasureFloatingPanel = useCallback(() => {
+    const node = floatingPanelRef.current;
+    if (!node) return;
+    const rect = node.getBoundingClientRect();
+    setFloatingMetrics({
+      left: Math.round(rect.left),
+      top: Math.round(rect.top),
+      width: Math.round(rect.width),
+      height: Math.round(rect.height)
+    });
+  }, []);
+
+  /*
+   * WCAG 2.1.1(键盘可达):这个浮窗原来 8 个手柄全是纯指针的,外层还套着 aria-hidden,
+   * 键盘和读屏用户既够不到、也不知道它可调。
+   *
+   * 只让**右边缘(宽度)和下边缘(高度)**可聚焦:一角同时改宽高在 ARIA 里没有对应的
+   * 单轴语义(separator 只有一个值、一个方向),两条边各自成一个 separator 才是诚实的表达。
+   *
+   * 基准一律取**实时矩形**:用状态里的测量值当基准的话,第一下方向键会把面板从真实尺寸
+   * 拉到陈旧尺寸(实测真实宽 430、状态里是 413,按一下 → 面板先缩到 429 再涨)。
+   */
+  const handleFloatingResizeKeyDown = (
+    edge: 'right' | 'bottom',
+    event: ReactKeyboardEvent<HTMLSpanElement>
+  ) => {
+    const node = floatingPanelRef.current;
+    if (!node) return;
+    const rect = node.getBoundingClientRect();
+    const baseLeft = Math.round(rect.left);
+    const baseTop = Math.round(rect.top);
+    const step = event.shiftKey ? FLOATING_CHAT_KEYBOARD_COARSE_STEP : FLOATING_CHAT_KEYBOARD_STEP;
+
+    let nextWidth = Math.round(rect.width);
+    let nextHeight = Math.round(rect.height);
+
+    if (edge === 'right') {
+      const max = getFloatingAxisMax(FLOATING_CHAT_MIN_WIDTH, baseLeft, window.innerWidth);
+      let next: number | null = null;
+      if (event.key === 'ArrowRight') next = nextWidth + step;
+      else if (event.key === 'ArrowLeft') next = nextWidth - step;
+      else if (event.key === 'Home') next = FLOATING_CHAT_MIN_WIDTH;
+      else if (event.key === 'End') next = max;
+      if (next === null) return;
+      nextWidth = Math.min(max, Math.max(FLOATING_CHAT_MIN_WIDTH, next));
+    } else {
+      const max = getFloatingAxisMax(FLOATING_CHAT_MIN_HEIGHT, baseTop, window.innerHeight);
+      let next: number | null = null;
+      if (event.key === 'ArrowDown') next = nextHeight + step;
+      else if (event.key === 'ArrowUp') next = nextHeight - step;
+      else if (event.key === 'Home') next = FLOATING_CHAT_MIN_HEIGHT;
+      else if (event.key === 'End') next = max;
+      if (next === null) return;
+      nextHeight = Math.min(max, Math.max(FLOATING_CHAT_MIN_HEIGHT, next));
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    setFloatingBounds({
+      left: baseLeft,
+      top: baseTop,
+      width: nextWidth,
+      height: nextHeight
+    });
+  };
 
   useEffect(() => {
     const handleViewportResize = () => {
@@ -1530,7 +1662,13 @@ export function InvestmentChatPanel({
         onWheelCapture={handleCompactWheelCapture}
       >
         {floating ? (
-          <div className="investment-chat-floating-resize-handles" aria-hidden="true">
+          /*
+           * 这里原来有 aria-hidden="true"。它挡不住鼠标操作,却会连带把里面**可聚焦**的
+           * 调节手柄从无障碍树里摘掉 —— 那正是 "aria-hidden 里有可聚焦元素" 这类问题的来源。
+           * 现在去掉:不参与键盘的 6 个手柄是空的 <span>,本来就不会被读屏读出来;
+           * 参与键盘的右/下两条边挂 role="separator",需要被读出来。
+           */
+          <div className="investment-chat-floating-resize-handles">
             {(
               [
                 'top',
@@ -1542,13 +1680,49 @@ export function InvestmentChatPanel({
                 'bottom-right',
                 'bottom-left'
               ] as FloatingResizeEdge[]
-            ).map((edge) => (
-              <span
-                key={edge}
-                className={`investment-chat-floating-resize-handle is-${edge}`}
-                onPointerDown={(event) => startFloatingResize(edge, event)}
-              />
-            ))}
+            ).map((edge) => {
+              // 只有右边缘(调宽)和下边缘(调高)有键盘入口,见 handleFloatingResizeKeyDown。
+              const keyboardAxis =
+                edge === 'right' ? 'width' : edge === 'bottom' ? 'height' : null;
+              return (
+                <span
+                  key={edge}
+                  className={`investment-chat-floating-resize-handle is-${edge}`}
+                  {...(keyboardAxis
+                    ? {
+                        role: 'separator',
+                        tabIndex: 0,
+                        'aria-orientation': keyboardAxis === 'width' ? 'vertical' : 'horizontal',
+                        'aria-label':
+                          keyboardAxis === 'width'
+                            ? tf('investmentAi.resizeWidthAria', '调整 AI 助手浮窗宽度')
+                            : tf('investmentAi.resizeHeightAria', '调整 AI 助手浮窗高度'),
+                        'aria-valuenow': Math.round(
+                          keyboardAxis === 'width'
+                            ? (floatingCurrent?.width ?? FLOATING_CHAT_MIN_WIDTH)
+                            : (floatingCurrent?.height ?? FLOATING_CHAT_MIN_HEIGHT)
+                        ),
+                        'aria-valuemin':
+                          keyboardAxis === 'width' ? FLOATING_CHAT_MIN_WIDTH : FLOATING_CHAT_MIN_HEIGHT,
+                        'aria-valuemax':
+                          keyboardAxis === 'width' ? floatingMaxWidth : floatingMaxHeight
+                      }
+                    : {})}
+                  onPointerDown={(event) => startFloatingResize(edge, event)}
+                  {...(keyboardAxis
+                    ? {
+                        // 聚焦时重量一次:面板此时早已落位,aria 读到的是真值而不是打开那瞬的过渡尺寸。
+                        onFocus: remeasureFloatingPanel,
+                        onKeyDown: (event: ReactKeyboardEvent<HTMLSpanElement>) =>
+                          handleFloatingResizeKeyDown(
+                            keyboardAxis === 'width' ? 'right' : 'bottom',
+                            event
+                          )
+                      }
+                    : {})}
+                />
+              );
+            })}
           </div>
         ) : null}
         {floating ? (

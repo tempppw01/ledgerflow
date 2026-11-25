@@ -309,6 +309,102 @@ describe('Investment assistant chat', () => {
     expect(container.querySelector('.chat-investment-panel')).toHaveClass('is-floating-hidden');
   });
 
+  /*
+   * WCAG 2.1.1(键盘可达):浮窗原来 8 个调节手柄全是纯指针的,外面还套着 aria-hidden,
+   * 键盘用户既够不到、读屏也不知道它可调。
+   *
+   * jsdom 里 getBoundingClientRect 恒为 0,所以桩一个"跟随内联样式"的矩形 ——
+   * 组件把 left/top/width/height 写成内联样式,读回来就等价于真实布局跟随变化。
+   * 用固定值桩的话,每按一下方向键读到的都是同一个基准,反而测不出真实行为。
+   */
+  const CHAT_PANEL_FALLBACK = { width: 500, height: 600, left: 100, top: 100 };
+  const stubChatPanelRect = () => {
+    const original = Element.prototype.getBoundingClientRect;
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      if (this instanceof HTMLElement && this.classList.contains('chat-investment-panel')) {
+        const width = parseFloat(this.style.width) || CHAT_PANEL_FALLBACK.width;
+        const height = parseFloat(this.style.height) || CHAT_PANEL_FALLBACK.height;
+        const left = parseFloat(this.style.left) || CHAT_PANEL_FALLBACK.left;
+        const top = parseFloat(this.style.top) || CHAT_PANEL_FALLBACK.top;
+        return {
+          width,
+          height,
+          left,
+          top,
+          right: left + width,
+          bottom: top + height,
+          x: left,
+          y: top,
+          toJSON: () => ({})
+        } as DOMRect;
+      }
+      return original.call(this);
+    });
+  };
+
+  it('浮窗的右/下边缘可用键盘调尺寸(WCAG 2.1.1)', () => {
+    stubChatPanelRect();
+    const { container } = render(
+      <MemoryRouter>
+        <InvestmentChatPanel showHero={false} floating />
+      </MemoryRouter>
+    );
+    fireEvent.click(screen.getByRole('button', { name: '打开 AI 投资助手' }));
+
+    const widthEdge = screen.getByRole('separator', { name: '调整 AI 助手浮窗宽度' });
+    const heightEdge = screen.getByRole('separator', { name: '调整 AI 助手浮窗高度' });
+    const value = (el: HTMLElement) => Number(el.getAttribute('aria-valuenow'));
+    const panel = container.querySelector('.chat-investment-panel') as HTMLElement;
+
+    // 两条边各管一根轴:一角同时改宽高在 ARIA 里没有对应的单轴语义。
+    expect(widthEdge).toHaveAttribute('tabindex', '0');
+    expect(widthEdge).toHaveAttribute('aria-orientation', 'vertical');
+    expect(heightEdge).toHaveAttribute('aria-orientation', 'horizontal');
+
+    // 上限必须算上"当前位置到视口边缘":只按视口宽算会报出拖不到的读数。
+    const maxWidth = Math.max(
+      320,
+      Math.min(Math.max(320, window.innerWidth - 32), window.innerWidth - 100 - 16)
+    );
+    const maxHeight = Math.max(
+      360,
+      Math.min(Math.max(360, window.innerHeight - 32), window.innerHeight - 100 - 16)
+    );
+    expect(widthEdge).toHaveAttribute('aria-valuemax', String(maxWidth));
+    expect(heightEdge).toHaveAttribute('aria-valuemax', String(maxHeight));
+
+    // 初值是面板真实尺寸,不是 0(报 0 而 min 是 320 会自相矛盾)
+    expect(value(widthEdge)).toBe(500);
+    expect(value(heightEdge)).toBe(600);
+
+    // 第一下必须从真实尺寸起算 —— 用陈旧测量值当基准的话面板会先缩再涨。
+    fireEvent.keyDown(widthEdge, { key: 'ArrowRight' });
+    expect(value(widthEdge)).toBe(516);
+    expect(panel.style.width).toBe('516px');
+
+    fireEvent.keyDown(widthEdge, { key: 'ArrowRight' });
+    expect(value(widthEdge)).toBe(532);
+
+    fireEvent.keyDown(widthEdge, { key: 'ArrowRight', shiftKey: true });
+    expect(value(widthEdge)).toBe(580);
+
+    fireEvent.keyDown(widthEdge, { key: 'End' });
+    expect(value(widthEdge)).toBe(maxWidth);
+    expect(panel.style.width).toBe(`${maxWidth}px`);
+
+    fireEvent.keyDown(widthEdge, { key: 'Home' });
+    expect(value(widthEdge)).toBe(320);
+    expect(panel.style.width).toBe('320px');
+
+    fireEvent.keyDown(heightEdge, { key: 'ArrowDown' });
+    expect(value(heightEdge)).toBe(616);
+    expect(panel.style.height).toBe('616px');
+
+    fireEvent.keyDown(heightEdge, { key: 'Home' });
+    expect(value(heightEdge)).toBe(360);
+    expect(panel.style.height).toBe('360px');
+  });
+
   it('opens the floating assistant and sends a prompt requested by the investment page', async () => {
     sendAiChatStreamMock.mockResolvedValue({ content: '已收到你的自选问题。', reasoning: '' });
 
