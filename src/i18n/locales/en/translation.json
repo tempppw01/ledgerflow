@@ -1063,7 +1063,9 @@
       "clearFilters": "Clear filters",
       "done": "Done",
       "adjusted": "Adjusted: {count}",
-      "hiddenCount": "· {count} hidden"
+      "hiddenCount": "· {count} hidden",
+      "moveColumnUp": "Move {label} up",
+      "moveColumnDown": "Move {label} down"
     },
     "table": {
       "col": {

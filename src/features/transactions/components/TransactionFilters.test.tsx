@@ -31,6 +31,8 @@ function renderFilters(overrides: Partial<ComponentProps<typeof TransactionFilte
         onImportModeChange={() => undefined}
         onCheckDuplicates={() => undefined}
         columnOptions={[{ key: 'date', label: '日期' }]}
+        columnOrder={['date']}
+        onColumnReorder={() => undefined}
         visibleColumns={{
           date: true,
           type: true,
@@ -99,5 +101,38 @@ describe('TransactionFilters', () => {
     fireEvent.click(screen.getByRole('button', { name: '完成' }));
 
     expect(screen.queryByRole('dialog', { name: '筛选与显示设置' })).not.toBeInTheDocument();
+  });
+});
+
+/*
+ * WCAG 2.5.7(拖拽移动,AA):列序原来只能在表头拖。
+ * 设置面板里的上移/下移必须是真能用的等价入口,并且首尾要禁用。
+ */
+describe('列序:不依赖拖拽的上移/下移', () => {
+  const columns = [
+    { key: 'date' as const, label: '日期' },
+    { key: 'type' as const, label: '类型' },
+    { key: 'note' as const, label: '备注' }
+  ];
+
+  it('点「上移」把当前列移到上一列的key上,并调用同一个 onColumnReorder', () => {
+    const onColumnReorder = vi.fn();
+    renderFilters({ columnOptions: columns, columnOrder: ['date', 'type', 'note'], onColumnReorder });
+    fireEvent.click(screen.getByRole('button', { name: '筛选设置' }));
+
+    fireEvent.click(screen.getByRole('button', { name: '上移 类型' }));
+    expect(onColumnReorder).toHaveBeenCalledWith('type', 'date');
+
+    fireEvent.click(screen.getByRole('button', { name: '下移 类型' }));
+    expect(onColumnReorder).toHaveBeenCalledWith('type', 'note');
+  });
+
+  it('首项不能再上移、末项不能再下移(按钮禁用)', () => {
+    renderFilters({ columnOptions: columns, columnOrder: ['date', 'type', 'note'] });
+    fireEvent.click(screen.getByRole('button', { name: '筛选设置' }));
+
+    expect(screen.getByRole('button', { name: '上移 日期' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '下移 备注' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '下移 日期' })).not.toBeDisabled();
   });
 });

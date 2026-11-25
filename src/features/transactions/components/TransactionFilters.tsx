@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDialogFocus } from '../../../shared/lib/useDialogFocus';
 import { createPortal } from 'react-dom';
 import {
@@ -36,8 +36,11 @@ interface TransactionFiltersProps {
   onImportModeChange: (mode: BillImportMode) => void;
   onCheckDuplicates: () => void;
   columnOptions: Array<{ key: TransactionColumnKey; label: string }>;
+  /** 当前真实列序 —— 列序原来只能拖表头,WCAG 2.5.7 要求有非拖拽入口。 */
+  columnOrder: TransactionColumnKey[];
   visibleColumns: Record<TransactionColumnKey, boolean>;
   onToggleColumn: (key: TransactionColumnKey) => void;
+  onColumnReorder: (fromKey: TransactionColumnKey, toKey: TransactionColumnKey) => void;
   bulkSelectionEnabled: boolean;
   onToggleBulkSelection: () => void;
   minAvailableDate?: string;
@@ -65,8 +68,10 @@ export function TransactionFilters({
   onImportModeChange,
   onCheckDuplicates,
   columnOptions,
+  columnOrder,
   visibleColumns,
   onToggleColumn,
+  onColumnReorder,
   bulkSelectionEnabled,
   onToggleBulkSelection,
   minAvailableDate,
@@ -78,6 +83,22 @@ export function TransactionFilters({
   onToggleSidePanel
 }: TransactionFiltersProps) {
   const tf = useTFallback();
+  /*
+   * 按真实列序排一遍。columnOrder 里如果缺某个 key(比如以后新增了列),
+   * 也要把它补在后面显示出来,否则用户在设置里根本看不到这一列。
+   */
+  const orderedColumnOptions = useMemo(() => {
+    const byKey = new Map(columnOptions.map((option) => [option.key, option]));
+    const ordered = columnOrder
+      .map((key) => byKey.get(key))
+      .filter((option): option is { key: TransactionColumnKey; label: string } => Boolean(option));
+    columnOptions.forEach((option) => {
+      if (!columnOrder.includes(option.key)) {
+        ordered.push(option);
+      }
+    });
+    return ordered;
+  }, [columnOptions, columnOrder]);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const filterDialogRef = useRef<HTMLDivElement | null>(null);
@@ -531,15 +552,60 @@ export function TransactionFilters({
                           </div>
                         </div>
                         <div className="transaction-column-check-grid">
-                          {columnOptions.map((option) => (
-                            <label key={`filter-col-${option.key}`}>
-                              <input
-                                type="checkbox"
-                                checked={visibleColumns[option.key]}
-                                onChange={() => onToggleColumn(option.key)}
-                              />
-                              <span>{option.label}</span>
-                            </label>
+                          {orderedColumnOptions.map((option, index) => (
+                            <div key={`filter-col-${option.key}`} className="transaction-column-check-row">
+                              <label>
+                                <input
+                                  type="checkbox"
+                                  checked={visibleColumns[option.key]}
+                                  onChange={() => onToggleColumn(option.key)}
+                                />
+                                <span>{option.label}</span>
+                              </label>
+                              {/*
+                               * 列序原来只能拖表头(WCAG 2.5.7 拖拽移动,AA)。
+                               * 这里给出不依赖拖拽的等价入口:上移/下移各一个按钮。
+                               * 首尾各禁用一边,避免点出无变化的动作。
+                               */}
+                              <span className="transaction-column-order-actions">
+                                <button
+                                  type="button"
+                                  className="transaction-column-order-btn"
+                                  disabled={index === 0}
+                                  aria-label={tf(
+                                    'transactions.filters.moveColumnUp',
+                                    '上移 {label}'
+                                  ).replace('{label}', option.label)}
+                                  title={tf('transactions.filters.moveColumnUp', '上移 {label}').replace(
+                                    '{label}',
+                                    option.label
+                                  )}
+                                  onClick={() =>
+                                    onColumnReorder(option.key, orderedColumnOptions[index - 1].key)
+                                  }
+                                >
+                                  ↑
+                                </button>
+                                <button
+                                  type="button"
+                                  className="transaction-column-order-btn"
+                                  disabled={index === orderedColumnOptions.length - 1}
+                                  aria-label={tf(
+                                    'transactions.filters.moveColumnDown',
+                                    '下移 {label}'
+                                  ).replace('{label}', option.label)}
+                                  title={tf(
+                                    'transactions.filters.moveColumnDown',
+                                    '下移 {label}'
+                                  ).replace('{label}', option.label)}
+                                  onClick={() =>
+                                    onColumnReorder(option.key, orderedColumnOptions[index + 1].key)
+                                  }
+                                >
+                                  ↓
+                                </button>
+                              </span>
+                            </div>
                           ))}
                         </div>
                       </section>

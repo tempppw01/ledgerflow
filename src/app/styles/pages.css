@@ -948,6 +948,46 @@
   color: var(--color-text-secondary);
 }
 
+/* 每个列设置项:左边是勾选与列名,右边是上移/下移(WCAG 2.5.7 的非拖拽入口)。 */
+.transaction-column-check-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+
+.transaction-column-order-actions {
+  display: inline-flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.transaction-column-order-btn {
+  /* 24×24 是 WCAG 2.5.8(目标尺寸最小值,AA)的底线,不能再小。 */
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.transaction-column-order-btn:hover:not(:disabled) {
+  color: var(--color-text);
+  border-color: var(--color-border-strong, var(--color-border));
+}
+
+.transaction-column-order-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .transaction-filter-inline-note {
   margin-left: auto;
   padding-left: var(--space-2);

@@ -1063,7 +1063,9 @@
       "clearFilters": "清空筛选条件",
       "done": "完成",
       "adjusted": "已调整 {count} 项",
-      "hiddenCount": "· 已收起 {count} 项"
+      "hiddenCount": "· 已收起 {count} 项",
+      "moveColumnUp": "上移 {label}",
+      "moveColumnDown": "下移 {label}"
     },
     "table": {
       "col": {
