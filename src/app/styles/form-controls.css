@@ -1,0 +1,34 @@
+/*
+ * 表单控件的边界对比度(WCAG 1.4.11 非文本对比度,Level AA)
+ * ------------------------------------------------------------------
+ * 要求:用来**识别控件**的视觉信息,与相邻颜色至少 3:1。
+ *
+ * 实测现状(2026-11-25,亮度对比度):
+ *   --color-border #d9dfeb 对白底 1.34、对工具条底 1.23
+ *   --color-border-light #e6eaf3 更低
+ * 也就是说输入框/下拉框的边框在低视力用户眼里基本看不见 —— 11 条路由里
+ * 55 个表单控件都低于 3:1。
+ *
+ * 这个问题**不能靠改 --color-border 解决**:那个 token 同时被卡片、面板、
+ * 分割线使用,一起加深会把整个界面变得生硬。所以单独引入
+ * --color-border-control(见 tokens.css,实测对白底 3.67 / 对工具条 3.37,
+ * 暗色主题下对 #141414 为 3.52 / 对 #1a1a1a 为 3.33)。
+ *
+ * 为什么要一个单独的兜底文件:各页面早就写了自己的
+ * `.xxx-field input { border: 1px solid var(--color-border) }` 之类覆盖,
+ * 而页面 CSS 在 index.css 里排在 global.css **之后**。所以这条规则必须
+ * 最后加载才能稳压住它们(只改 global.css 里那一处,实测还有 27 个控件不达标)。
+ *
+ * 只改 border-color,不动宽度/圆角 —— 保留各组件的观感差异。
+ * 显式写了 border: none 的控件(如聊天输入框,边界由外层容器提供)不受影响。
+ *
+ * 选择器写成 `:is(...)` + 两个 `:not(...)`,有两个作用:
+ *   1. `:is` 让 input / select / textarea 拿到**同一个**特异性(0-2-1),
+ *      否则光写 `select` 只有 0-0-1,会被页面里 `.balance-change-field select`
+ *      这种 0-1-1 的规则压住 —— 实测那样还剩 19 个控件不达标;
+ *   2. `:not([type=checkbox]):not([type=radio])` 是真的要排除:这两个由浏览器
+ *      自绘,1.4.11 对"外观由用户代理决定且作者未修改"的情况不适用。
+ */
+:is(input, select, textarea):not([type='checkbox']):not([type='radio']) {
+  border-color: var(--color-border-control);
+}

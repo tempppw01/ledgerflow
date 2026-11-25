@@ -4106,7 +4106,9 @@
 .chat-input-main {
   width: min(100%, 980px);
   margin: 0 auto;
-  border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
+  /* 这是聊天输入框实际可见的那圈边界:原来 82% 的 --color-border 合成后对白底只有 1.27:1,
+     用户(尤其低视力)看不出输入区在哪。改用达标色(WCAG 1.4.11,见 form-controls.css 说明)。 */
+  border: 1px solid var(--color-border-control);
   border-radius: 22px;
   padding: 14px 12px 10px;
   background: color-mix(in srgb, var(--color-bg-elevated) 92%, var(--color-bg-subtle));

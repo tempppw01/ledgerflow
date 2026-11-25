@@ -17,3 +17,5 @@
 @import './date-picker.css';
 @import './ui-animations.css';
 @import './mobile-shell.css';
+/* 必须最后:它要压住各页面自己写的 input/select/textarea 边框色(见文件内注释)。 */
+@import './form-controls.css';
