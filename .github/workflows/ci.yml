@@ -89,6 +89,7 @@ jobs:
           # 2026-11-25 我"把没接上的闸门接上"时加过一次,结果同一个脚本在 CI 里跑了两遍。
           npm run check:r2-fetch
           npm run check:gate-exceptions
+          npm run check:version-sync
 
   docker-latest:
     needs: verify

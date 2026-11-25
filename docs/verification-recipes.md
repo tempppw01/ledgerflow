@@ -103,7 +103,7 @@ npm run audit:unused-i18n     # i18n 死键:分成可安全删除与需人工确
 | i18n | `npm run i18n:check` + `npm run i18n:check-jsx` |
 | 日期用法 | `npm run check:dates`(独立一步) |
 | 金额格式 | `npm run check:money`(独立一步) |
-| 静态一致性(9 个) | `check:shared-predicates` · `check:docs` · `check:audit-routes` · `audit:sums` · `check:dynamic-i18n` · `check:orphan-methods` · `check:dead-exports` · `check:r2-fetch` · `check:gate-exceptions` |
+| 静态一致性(10 个) | `check:shared-predicates` · `check:docs` · `check:audit-routes` · `audit:sums` · `check:dynamic-i18n` · `check:orphan-methods` · `check:dead-exports` · `check:r2-fetch` · `check:gate-exceptions` · `check:version-sync` |
 
 > **⚠ 坑:`npm test` 只跑前端。** 服务端有 12+ 个测试文件在 `src/` 之外(`server/*.test.js`),
 > 而 vitest 的 `include` 只管 `src/**` —— 所以跑 `npm test` 看到"全绿"时,**服务端一条都没跑**。
