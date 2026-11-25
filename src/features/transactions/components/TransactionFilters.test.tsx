@@ -62,8 +62,12 @@ describe('TransactionFilters', () => {
   it('在自定义日期模式下展示开始和结束日期选择器', () => {
     renderFilters();
 
-    expect(screen.getByRole('button', { name: '筛选开始日期' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '筛选结束日期' })).toBeInTheDocument();
+    /*
+     * 用正则而不是全等:日期按钮的可访问名是「<占位符>, 筛选开始日期」——
+     * 把屏幕上的占位符放在最前面,才满足 2.5.3(可访问名要包含可见文字)。
+     */
+    expect(screen.getByRole('button', { name: /筛选开始日期/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /筛选结束日期/ })).toBeInTheDocument();
   });
 
   it('应在次级栏直接展示批量与隐私快捷开关', () => {

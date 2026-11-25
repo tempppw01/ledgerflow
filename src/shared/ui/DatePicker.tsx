@@ -250,6 +250,23 @@ export function DatePicker({
     return () => window.clearTimeout(timer);
   }, [open, anchorKey]);
 
+  /*
+   * WCAG 2.5.3(标签包含可见文字,A):没选日期时按钮上显示的是占位符,
+   * 调用方常写成「筛选日期」「可选」,而 aria-label 是「选择日期」/「日期」这类用途说明,
+   * 屏幕上的字在可访问名里找不到 —— 语音控制用户喊看到的字会匹配不到。
+   * 所以两者不同时把占位符放到名字最前面。
+   *
+   * 只在**显示占位符**时这么做:已选日期时屏幕上那个日期是控件的"值"而不是标签,
+   * 2.5.3 不要求把值塞进名字,塞了反而会让名字随值变来变去、更难用语音匹配。
+   */
+  const triggerVisibleText = selected
+    ? `${selected.getFullYear()}-${String(selected.getMonth() + 1).padStart(2, '0')}-${String(selected.getDate()).padStart(2, '0')}`
+    : resolvedPlaceholder;
+  const triggerAccessibleName =
+    !selected && resolvedPlaceholder && resolvedPlaceholder !== resolvedAriaLabel
+      ? `${resolvedPlaceholder}, ${resolvedAriaLabel}`
+      : resolvedAriaLabel;
+
   return (
     <div
       ref={rootRef}
@@ -262,15 +279,13 @@ export function DatePicker({
         id={id}
         ref={triggerRef}
         className={`lf-date-trigger${open ? ' is-open' : ''}${!value ? ' is-empty' : ''}`}
-        aria-label={resolvedAriaLabel}
+        aria-label={triggerAccessibleName}
         aria-expanded={open}
         disabled={disabled}
         onClick={() => setOpen((current) => !current)}
       >
         <span>
-          {selected
-            ? `${selected.getFullYear()}-${String(selected.getMonth() + 1).padStart(2, '0')}-${String(selected.getDate()).padStart(2, '0')}`
-            : resolvedPlaceholder}
+          {triggerVisibleText}
         </span>
         <span className="lf-date-icon" aria-hidden="true">
           ▣

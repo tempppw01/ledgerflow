@@ -1556,12 +1556,15 @@ export function TransactionTable({
                   .replace('{page}', String(page))
                   .replace('{pages}', String(pages))}
               </small>
+              {/* WCAG 2.5.3(标签包含可见文字,A):这里的按钮可见文字是
+                  「首页/上页/下页/末页」,而原来配的 aria-label 是「第一页/上一页/下一页/最后一页」,
+                  名字里并不含屏幕上的字 —— 语音控制用户喊「首页」匹配不到。
+                  现在不写 aria-label,让可见文字直接当可访问名(与 GOV.UK 等设计系统做法一致)。 */}
               <div className="transaction-page-nav">
                 <button
                   type="button"
                   disabled={page === 1}
                   onClick={onFirstPage}
-                  aria-label={tf('transactions.table.pager.first', '第一页')}
                 >
                   {tf('transactions.table.pager.shortFirst', '首页')}
                 </button>
@@ -1569,7 +1572,6 @@ export function TransactionTable({
                   type="button"
                   disabled={page === 1}
                   onClick={onPrevPage}
-                  aria-label={tf('transactions.table.pager.prev', '上一页')}
                 >
                   {tf('transactions.table.pager.shortPrev', '上页')}
                 </button>
@@ -1577,7 +1579,6 @@ export function TransactionTable({
                   type="button"
                   disabled={page === pages}
                   onClick={onNextPage}
-                  aria-label={tf('transactions.table.pager.next', '下一页')}
                 >
                   {tf('transactions.table.pager.shortNext', '下页')}
                 </button>
@@ -1585,7 +1586,6 @@ export function TransactionTable({
                   type="button"
                   disabled={page === pages}
                   onClick={onLastPage}
-                  aria-label={tf('transactions.table.pager.last', '最后一页')}
                 >
                   {tf('transactions.table.pager.shortLast', '末页')}
                 </button>

@@ -307,9 +307,15 @@ describe('TransactionTable', () => {
       />
     );
 
-    const datePicker = screen.getByRole('button', { name: '选择日期' }).closest('.lf-date-picker');
+    const dateTrigger = screen.getByRole('button', { name: /选择日期/ });
+    const datePicker = dateTrigger.closest('.lf-date-picker');
     expect(datePicker).toHaveAttribute('data-min-date', '2026-02-01');
     expect(datePicker).toHaveAttribute('data-max-date', '2026-02-28');
+    /*
+     * WCAG 2.5.3(标签包含可见文字,A):按钮上显示的是「筛选日期」,
+     * 所以可访问名里必须能找到「筛选日期」—— 否则语音控制用户喊屏幕上的字匹配不到。
+     */
+    expect(dateTrigger).toHaveAccessibleName(/筛选日期/);
   });
 
   it('批量 AI 重分类进行中时按钮可点击并展示停止状态', () => {
@@ -526,8 +532,12 @@ describe('TransactionTable', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: '第一页' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '最后一页' })).toBeInTheDocument();
+    /*
+     * 分页按钮的可访问名就是屏幕上的字(2.5.3 标签包含可见文字):
+     * 之前可见写「首页」而 aria-label 写「第一页」,语音控制用户喊「首页」匹配不到。
+     */
+    expect(screen.getByRole('button', { name: '首页' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '末页' })).toBeInTheDocument();
     expect(screen.getByText(/汇总（当前页 2 条）/)).toBeInTheDocument();
     expect(screen.getByText(/金额合计 ¥250.00/)).toBeInTheDocument();
   });
