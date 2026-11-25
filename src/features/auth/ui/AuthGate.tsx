@@ -11,6 +11,15 @@ import {
 } from '../../../shared/api/authClient';
 import { APP_LOGO_URL } from '../../../shared/config/app';
 import { describeAuthError } from '../../../shared/lib/authErrorText';
+
+/**
+ * 账号错误的 id。
+ *
+ * 账号错误**大多是表单级**的:`describeAuthError` 那些是凭据不对/网络不通/服务不可用 ——
+ * 分不清是邮箱还是密码错,挂到某个字段上反而是错的,这类保持 role="alert" 即可。
+ * 唯一字段级的是「两次新密码不一致」,它明确指向确认密码框。
+ */
+const AUTH_ERROR_ID = 'auth-error';
 import { useTFallback } from '../../../shared/lib/useTFallback';
 import { PasswordInput } from '../../../shared/ui/PasswordInput';
 import { AuthContext } from './authContext';
@@ -49,12 +58,15 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  /* 只有字段级错误才给值;表单级错误保持 ''。 */
+  const [errorField, setErrorField] = useState<'' | 'passwordConfirmation'>('');
   const [notice, setNotice] = useState('');
 
   const loadStatus = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
+      setErrorField('');
       const status = await getAuthStatus();
       setUser(status.user);
       setRegistrationOpen(status.registrationOpen);
@@ -81,10 +93,12 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError('');
+    setErrorField('');
     setNotice('');
 
     if (mode === 'reset' && password !== passwordConfirmation) {
       setError(tf('auth.passwordMismatch', '两次输入的新密码不一致。'));
+      setErrorField('passwordConfirmation');
       return;
     }
 
@@ -263,6 +277,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
                     onClick={() => {
                       setMode('forgot');
                       setError('');
+                      setErrorField('');
                       setNotice('');
                       setPassword('');
                     }}
@@ -295,6 +310,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
               </label>
               <PasswordInput
                 id="auth-password-confirmation"
+                {...(errorField === 'passwordConfirmation'
+                  ? { 'aria-invalid': true as const, 'aria-describedby': AUTH_ERROR_ID }
+                  : {})}
                 value={passwordConfirmation}
                 onChange={(event) => setPasswordConfirmation(event.target.value)}
                 autoComplete="new-password"
@@ -309,7 +327,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
           ) : null}
 
           {error ? (
-            <p className="auth-error" role="alert">
+            <p id={AUTH_ERROR_ID} className="auth-error" role="alert">
               {error}
             </p>
           ) : null}
@@ -334,6 +352,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
               setMode('login');
               setResetToken('');
               setError('');
+              setErrorField('');
               setNotice('');
               setPassword('');
               setPasswordConfirmation('');
@@ -348,6 +367,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
             onClick={() => {
               setMode((current) => (current === 'register' ? 'login' : 'register'));
               setError('');
+              setErrorField('');
               setNotice('');
             }}
           >

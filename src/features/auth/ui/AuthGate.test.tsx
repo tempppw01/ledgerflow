@@ -187,4 +187,39 @@ describe('AuthGate', () => {
     expect(screen.getByText('密码已重置\uFF0C请使用新密码登录。')).toBeInTheDocument();
     expect(window.location.search).toBe('');
   });
+/*
+   * 账号错误**大多是表单级**的:describeAuthError 那些是凭据不对/网络不通/服务不可用 ——
+   * 分不清是邮箱还是密码错,挂到某个字段上反而是错的。
+   * 唯一字段级的是「两次新密码不一致」,它明确指向确认密码框。
+   */
+  it('两次新密码不一致时,错误关联到确认密码框', async () => {
+    window.history.replaceState({}, '', '/?resetToken=reset-token-from-email');
+    mocks.getAuthStatus.mockResolvedValue({
+      ok: true,
+      authenticated: false,
+      registrationOpen: false,
+      user: null
+    });
+    mocks.resetAccountPassword.mockResolvedValue({ ok: true });
+    const actor = userEvent.setup();
+
+    render(
+      <AuthGate>
+        <div>账本内容</div>
+      </AuthGate>
+    );
+    expect(await screen.findByRole('heading', { name: '设置新密码' })).toBeInTheDocument();
+
+    const confirmation = screen.getByLabelText('确认新密码');
+    await actor.type(screen.getByLabelText('新密码'), 'new-secure-password');
+    await actor.type(confirmation, 'different-password');
+    await actor.click(screen.getByRole('button', { name: '保存新密码' }));
+
+    expect(screen.getByText('两次输入的新密码不一致。')).toBeInTheDocument();
+    expect(confirmation).toHaveAttribute('aria-invalid', 'true');
+    expect(confirmation).toHaveAttribute('aria-describedby', 'auth-error');
+    // 本地就拦下了,不该发请求
+    expect(mocks.resetAccountPassword).not.toHaveBeenCalled();
+  });
 });
+
