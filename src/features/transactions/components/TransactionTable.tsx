@@ -23,6 +23,14 @@ import {
 const NOTE_MAX_LENGTH = 22;
 const DEFAULT_MIN_COLUMN_WIDTH = 90;
 const AMOUNT_COLUMN_MIN_WIDTH = 64;
+/*
+ * 列宽键盘调节(WCAG 2.5.7:拖拽类操作要有非拖拽入口)。
+ * 上限必须与 TransactionsPage 里的 COLUMN_MAX_WIDTH 一致 —— 那里才是最终生效的钳位
+ * (不一致时会出现 aria-valuenow 显示 656、实际列宽却停在 640 的假读数,实测踩到)。
+ */
+const MAX_COLUMN_WIDTH = 640;
+const COLUMN_KEYBOARD_STEP = 16;
+const COLUMN_KEYBOARD_COARSE_STEP = 48;
 const ALIPAY_ACCOUNT_PATTERN = /(支付宝|alipay)/i;
 const WECHAT_ACCOUNT_PATTERN = /(微信|wechat|weixin)/i;
 const BANK_ACCOUNT_PATTERN =
@@ -388,6 +396,10 @@ export function TransactionTable({
    * ↓/↑ 在行之间移动,Enter/空格 打开详情。
    */
   const [rovingRowId, setRovingRowId] = useState<string | null>(null);
+  /* 列宽手柄聚焦时量到的真实宽度(没手动调过的列没有 columnWidths 记录)。 */
+  const [resizerMeasure, setResizerMeasure] = useState<{ key: string; width: number } | null>(
+    null
+  );
   const dragColumnRef = useRef<TransactionColumnKey | null>(null);
   const resizeStateRef = useRef<{
     key: TransactionColumnKey;
@@ -563,9 +575,12 @@ export function TransactionTable({
     const handleMouseMove = (event: MouseEvent) => {
       if (!resizeStateRef.current) return;
       const { key, startX, startWidth } = resizeStateRef.current;
-      const next = Math.max(
-        getMinColumnWidth(key),
-        Math.round(startWidth + (event.clientX - startX))
+      const next = Math.min(
+        MAX_COLUMN_WIDTH,
+        Math.max(
+          getMinColumnWidth(key),
+          Math.round(startWidth + (event.clientX - startX))
+        )
       );
       onColumnResize(key, next);
     };
@@ -794,6 +809,21 @@ export function TransactionTable({
                             ? 'transaction-col-long-text'
                             : 'transaction-col-compact'
                         }`}
+                        /*
+                         * 列宽必须落在 th 自己身上。原来只写 <colgroup><col style="width">,
+                         * 但表格是 `width: max-content` —— 实测(Chromium):
+                         * 把 col 设成 400px 毫无反应,th 仍是 90,表格宽度也不变;
+                         * 改成 th 的 min-width 立刻生效。也就是说「调整列宽」这个功能
+                         * 此前整体是坏的:手柄能拖、状态也变了,表格从不响应。
+                         */
+                        style={
+                          columnWidths[column.key]
+                            ? {
+                                width: columnWidths[column.key],
+                                minWidth: columnWidths[column.key]
+                              }
+                            : undefined
+                        }
                         draggable
                         onDragStart={() => {
                           dragColumnRef.current = column.key;
@@ -823,17 +853,61 @@ export function TransactionTable({
                         <span
                           className="transaction-col-resizer"
                           role="separator"
+                          aria-orientation="vertical"
                           aria-label={tf(
                             'transactions.table.columnResizeAria',
                             '{label}:列宽拖拽调节'
                           ).replace('{label}', column.label)}
+                          /* WCAG 2.5.7(拖拽移动,AA):列宽原来只能拖。
+                             补 Window Splitter 的键盘入口:←/→ 调 16px(Shift 48px),
+                             Home/End 到最窄/最宽。 */
+                          aria-valuenow={Math.round(
+                            resizerMeasure?.key === column.key
+                              ? resizerMeasure.width
+                              : (columnWidths[column.key] ?? getMinColumnWidth(column.key))
+                          )}
+                          aria-valuemin={getMinColumnWidth(column.key)}
+                          aria-valuemax={MAX_COLUMN_WIDTH}
+                          tabIndex={0}
+                          onFocus={(event) => {
+                            /*
+                             * 没手动调过宽度的列没有 columnWidths 记录,实际宽度由 CSS 决定。
+                             * 聚焦时量一次真实宽度,否则第一次按 → 会从「最小宽度」起跳,
+                             * 把本来很宽的列一下压窄。
+                             */
+                            const parent = event.currentTarget.closest('th');
+                            if (!parent) return;
+                            setResizerMeasure({
+                              key: column.key,
+                              width: parent.getBoundingClientRect().width
+                            });
+                          }}
+                          onKeyDown={(event) => {
+                            const min = getMinColumnWidth(column.key);
+                            const base =
+                              resizerMeasure?.key === column.key
+                                ? resizerMeasure.width
+                                : (columnWidths[column.key] ?? min);
+                            const step = event.shiftKey
+                              ? COLUMN_KEYBOARD_COARSE_STEP
+                              : COLUMN_KEYBOARD_STEP;
+                            let next: number | null = null;
+                            if (event.key === 'ArrowLeft') next = base - step;
+                            else if (event.key === 'ArrowRight') next = base + step;
+                            else if (event.key === 'Home') next = min;
+                            else if (event.key === 'End') next = MAX_COLUMN_WIDTH;
+                            if (next === null) return;
+                            event.preventDefault();
+                            event.stopPropagation();
+                            const clamped = Math.min(MAX_COLUMN_WIDTH, Math.max(min, next));
+                            onColumnResize(column.key, clamped);
+                            setResizerMeasure({ key: column.key, width: clamped });
+                          }}
                           onMouseDown={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
                             const currentWidth =
-                              (
-                                event.currentTarget.parentElement as HTMLElement | null
-                              )?.getBoundingClientRect().width ||
+                              event.currentTarget.closest('th')?.getBoundingClientRect().width ||
                               columnWidths[column.key] ||
                               getMinColumnWidth(column.key);
                             resizeStateRef.current = {

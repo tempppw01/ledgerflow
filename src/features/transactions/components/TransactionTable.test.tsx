@@ -1135,3 +1135,79 @@ describe('桌面表格:整行详情必须能用键盘打开(WCAG 2.1.1)', () => 
     expect(onOpenDetail).toHaveBeenCalledWith('tx-kb-1');
   });
 });
+
+/*
+ * 列宽这块有两个独立的问题,分别钉住:
+ * 1) 宽度必须落在 <th> 上。原来只写 <colgroup><col style="width">,而表格是
+ *    `width: max-content` —— 实测(col 设 400px)表格毫无反应,th 仍是 90。
+ * 2) WCAG 2.5.7:列宽原来只能拖,手柄不可聚焦、没有键盘操作。
+ */
+describe('列宽:宽度真的生效 + 键盘可调(WCAG 2.5.7)', () => {
+  const rowsForColumns = [
+    {
+      item: {
+        id: 'tx-col-1',
+        date: '2026-03-10',
+        type: 'expense' as const,
+        categoryId: 'cat-1',
+        accountId: 'acc-1',
+        amount: 32,
+        note: '列宽午餐',
+        tags: []
+      },
+      categoryName: '餐饮',
+      accountName: '现金'
+    }
+  ];
+
+  const renderWith = (overrides: Record<string, unknown> = {}) =>
+    render(
+      <TransactionTable
+        {...baseProps}
+        rows={rowsForColumns}
+        total={1}
+        filteredTotal={1}
+        page={1}
+        pages={1}
+        pageSize={8}
+        pageSizeOptions={[8, 20]}
+        loading={false}
+        hasFilters={false}
+        selectedIds={[]}
+        bulkSelectionEnabled={false}
+        canSelectAllOnPage={false}
+        allPageSelected={false}
+        sortKey="date"
+        sortDirection="desc"
+        {...overrides}
+      />
+    );
+
+  it('列宽要落在 th 上,不能只写 colgroup 的 col', () => {
+    renderWith({ columnWidths: { category: 200 } });
+    const th = document.querySelector('th.transaction-col-category');
+    expect(th).not.toBeNull();
+    expect(th).toHaveStyle({ width: '200px', minWidth: '200px' });
+  });
+
+  it('列宽手柄可聚焦,Home/End 到最窄/最宽并回调 onColumnResize', async () => {
+    const user = userEvent.setup();
+    const onColumnResize = vi.fn();
+    renderWith({ onColumnResize });
+
+    const resizers = Array.from(document.querySelectorAll('.transaction-col-resizer'));
+    expect(resizers.length).toBeGreaterThan(0);
+    const first = resizers[0] as HTMLElement;
+    expect(first).toHaveAttribute('role', 'separator');
+    expect(first).toHaveAttribute('tabindex', '0');
+    expect(first).toHaveAttribute('aria-orientation', 'vertical');
+
+    first.focus();
+    await user.keyboard('{Home}');
+    expect(onColumnResize).toHaveBeenCalledWith('date', 90);
+
+    await user.keyboard('{End}');
+    // 上限必须与 TransactionsPage 的 COLUMN_MAX_WIDTH 一致
+    expect(onColumnResize).toHaveBeenCalledWith('date', 640);
+  });
+});
