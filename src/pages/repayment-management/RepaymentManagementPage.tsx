@@ -1263,8 +1263,39 @@ function getDebtAmountInputValue(value: unknown): string {
   return normalizeDebtAmountInput(raw);
 }
 
+/*
+ * 债务表单的错误关联。错误文案本来就点名字段了(如「剩余本金(¥)必须是大于 0 的数字」),
+ * 缺的是程序化关联 —— 读屏用户逐字段 Tab 过去时听不到它。
+ * 字段由校验分支自己给出,组件不重新判断一遍。
+ */
+type DebtFormErrorField =
+  | 'name'
+  | 'balance'
+  | 'repaymentDay'
+  | 'totalPeriods'
+  | 'paidPeriods'
+  | 'remainingMonths'
+  | 'apr'
+  | 'loanAmount'
+  | 'totalRepayment'
+  | 'simple';
+
+const DEBT_FORM_ERROR_ID = 'debt-form-error';
+
 export function RepaymentManagementPage() {
   const tf = useTFallback();
+  /*
+   * 出错的那个输入框自己声明关联。
+   * **用 debtFormError 做守卫**:清除错误的路径有 29 处,与其在每处都记得重置字段,
+   * 不如"没有错误就不标注" —— 这样字段的唯一来源就是那 12 个校验分支,不会漏。
+   */
+  /* DatePicker 这类组件 props 是封闭的,展开进不去,只能单独传值。 */
+  const debtFieldHasError = (field: DebtFormErrorField) =>
+    Boolean(debtFormError && debtFormErrorField.includes(field));
+  const debtErrorProps = (field: DebtFormErrorField) =>
+    debtFormError && debtFormErrorField.includes(field)
+      ? { 'aria-invalid': true as const, 'aria-describedby': DEBT_FORM_ERROR_ID }
+      : {};
   const { i18n } = useTranslation();
   const location = useLocation();
   const {
@@ -1322,6 +1353,8 @@ export function RepaymentManagementPage() {
   );
   const [debtImagePreview, setDebtImagePreview] = useState('');
   const [debtFormError, setDebtFormError] = useState('');
+  /* 错误出在哪个字段上;null 表示没有单一字段(例如「手动还款计划一条都没填」)。 */
+  const [debtFormErrorField, setDebtFormErrorField] = useState<DebtFormErrorField[]>([]);
   const [debtToastVisible, setDebtToastVisible] = useState(false);
   const [repaymentRecordToastVisible, setRepaymentRecordToastVisible] = useState(false);
   const [repaymentRecordToastMessage, setRepaymentRecordToastMessage] = useState('还款记录已添加');
@@ -2296,6 +2329,7 @@ export function RepaymentManagementPage() {
     if (debtEntryMode === 'simple') {
       if (!canSubmitSimpleDebt) {
         setDebtFormError('请填写还款项目和还款日期；金额如填写，需为大于 0 的数字。');
+        setDebtFormErrorField(['simple']);
         return;
       }
       const simplePayload = {
@@ -2327,22 +2361,28 @@ export function RepaymentManagementPage() {
 
     if (!trimmedDebtName || (!debtBalance.trim() && calculatedRemainingPrincipal === null)) {
       setDebtFormError('请先填写“负债名称”和“剩余本金(¥)”。');
+      /* 这条提示同时点了两个字段,两个都要标。 */
+                              setDebtFormErrorField(['name', 'balance']);
       return;
     }
     if (!Number.isFinite(effectiveBalance) || effectiveBalance <= 0) {
       setDebtFormError('“剩余本金(¥)”必须是大于 0 的数字。');
+      setDebtFormErrorField(['balance']);
       return;
     }
     if (!repaymentDayValid) {
       setDebtFormError('还款日需在 1~31 之间，可留空。');
+      setDebtFormErrorField(['repaymentDay']);
       return;
     }
     if (!totalPeriodsValid || !paidPeriodsValid) {
       setDebtFormError('“总期数/已还期数”需为非负整数，且总期数需大于 0。');
+      setDebtFormErrorField(['totalPeriods']);
       return;
     }
     if (paidPeriodsRaw && totalPeriodsRaw && paidPeriods > totalPeriods) {
       setDebtFormError('“已还期数”不能大于“总期数”。');
+      setDebtFormErrorField(['paidPeriods']);
       return;
     }
     if (debtPlanMode === 'manual') {
@@ -2353,24 +2393,29 @@ export function RepaymentManagementPage() {
     } else if (isLoanType) {
       if (!debtMonths.trim()) {
         setDebtFormError('当前计划方式为“按期数管理”，请填写“剩余期数(月)”。');
+        setDebtFormErrorField(['remainingMonths']);
         return;
       }
       if (!Number.isInteger(months) || months <= 0) {
         setDebtFormError('“剩余期数(月)”需为大于 0 的整数。');
+        setDebtFormErrorField(['remainingMonths']);
         return;
       }
       if (!hasExplicitAnnualRate && !canInferAnnualRateByFormula) {
         setDebtFormError('贷款请填写年化利率，或补充借款金额、总还款、总期数用于反推。');
+        setDebtFormErrorField(['apr']);
         return;
       }
     }
 
     if (loanPrincipalRaw && (!Number.isFinite(loanPrincipal) || loanPrincipal <= 0)) {
       setDebtFormError('“借款金额(¥)”需为大于 0 的数字。');
+      setDebtFormErrorField(['loanAmount']);
       return;
     }
     if (totalRepaymentRaw && (!Number.isFinite(totalRepayment) || totalRepayment <= 0)) {
       setDebtFormError('“总还款(¥)”需为大于 0 的数字。');
+      setDebtFormErrorField(['totalRepayment']);
       return;
     }
 
@@ -4161,6 +4206,7 @@ export function RepaymentManagementPage() {
                             }}
                             placeholder={tf('repayment.form.namePlaceholder', '招商信用卡')}
                             aria-label={tf('repayment.form.nameAria', '负债名称')}
+                            {...debtErrorProps('name')}
                           />
                         </label>
                         <label className="debt-form-field">
@@ -4203,6 +4249,7 @@ export function RepaymentManagementPage() {
                               }}
                               placeholder={tf('repayment.form.balancePlaceholder', '输入剩余本金')}
                               aria-label={tf('repayment.detail.remainingPrincipal', '剩余本金')}
+                              {...debtErrorProps('balance')}
                             />
                           </span>
                           {calculatedRemainingPrincipal !== null ? (
@@ -4289,6 +4336,7 @@ export function RepaymentManagementPage() {
                                   }}
                                   placeholder="—"
                                   aria-label={tf('repayment.list.sortDue', '还款日')}
+                                  {...debtErrorProps('repaymentDay')}
                                 />
                                 <span className="debt-form-money-unit">
                                   {tf('repayment.form.dayUnit', '日')}
@@ -4410,6 +4458,7 @@ export function RepaymentManagementPage() {
                                   '可留空，如 18.25'
                                 )}
                                 aria-label={tf('repayment.form.apr', '年化利率')}
+                                {...debtErrorProps('apr')}
                               />
                               <span className="debt-form-money-unit">%</span>
                             </span>
@@ -4435,6 +4484,7 @@ export function RepaymentManagementPage() {
                                   }}
                                   placeholder={tf('repayment.form.aprOptional', '可留空')}
                                   aria-label={tf('repayment.form.apr', '年化利率')}
+                                  {...debtErrorProps('apr')}
                                 />
                                 <span className="debt-form-money-unit">%</span>
                               </span>
@@ -4455,6 +4505,7 @@ export function RepaymentManagementPage() {
                                   }}
                                   placeholder="—"
                                   aria-label={tf('repayment.form.remainingMonths', '剩余期数')}
+                                  {...debtErrorProps('remainingMonths')}
                                 />
                                 <span className="debt-form-money-unit">
                                   {tf('repayment.form.monthsUnit', '月')}
@@ -4477,6 +4528,7 @@ export function RepaymentManagementPage() {
                                   }}
                                   placeholder="—"
                                   aria-label={tf('repayment.form.totalPeriodsLabel', '总期数')}
+                                  {...debtErrorProps('totalPeriods')}
                                 />
                                 <span className="debt-form-money-unit">
                                   {tf('repayment.form.periodsUnit', '期')}
@@ -4499,6 +4551,7 @@ export function RepaymentManagementPage() {
                                   }}
                                   placeholder="—"
                                   aria-label={tf('repayment.form.paidPeriods', '已还期数')}
+                                  {...debtErrorProps('paidPeriods')}
                                 />
                                 <span className="debt-form-money-unit">
                                   {tf('repayment.form.periodsUnit', '期')}
@@ -4524,6 +4577,7 @@ export function RepaymentManagementPage() {
                                   }}
                                   placeholder="—"
                                   aria-label={tf('repayment.form.loanAmount', '借款金额')}
+                                  {...debtErrorProps('loanAmount')}
                                 />
                               </span>
                             </label>
@@ -4546,6 +4600,7 @@ export function RepaymentManagementPage() {
                                   }}
                                   placeholder="—"
                                   aria-label={tf('repayment.form.totalRepaymentLabel', '总还款')}
+                                  {...debtErrorProps('totalRepayment')}
                                 />
                               </span>
                             </label>
@@ -4716,7 +4771,7 @@ export function RepaymentManagementPage() {
                           )}
                         </p>
                       ) : null}
-                      {debtFormError ? <p className="debt-form-error" role="alert">{debtFormError}</p> : null}
+                      {debtFormError ? <p id={DEBT_FORM_ERROR_ID} className="debt-form-error" role="alert">{debtFormError}</p> : null}
                       <div className="debt-form-actions">
                         <button type="submit" className="primary" disabled={!canSubmitDebt}>
                           {addDebtSuccess
@@ -4840,6 +4895,7 @@ export function RepaymentManagementPage() {
                           )}
                           autoFocus
                           aria-label={tf('repayment.form.simpleProject', '还款项目')}
+                          {...debtErrorProps('simple')}
                         />
                       </label>
                       <label className="debt-form-field">
@@ -4853,7 +4909,11 @@ export function RepaymentManagementPage() {
                             setSimpleDueDate(value);
                             setDebtFormError('');
                           }}
-                          aria-label={tf('repayment.form.simpleDateAria', '简单还款日期')}
+                          /* 这个组件的 props 是封闭的:传 aria-label 会被忽略(它只认 ariaLabel),
+                             展开进来的 aria-* 也一样会被丢掉,所以只能显式传。 */
+                          ariaLabel={tf('repayment.form.simpleDateAria', '简单还款日期')}
+                          ariaInvalid={debtFieldHasError('simple') || undefined}
+                          ariaDescribedBy={debtFieldHasError('simple') ? DEBT_FORM_ERROR_ID : undefined}
                         />
                       </label>
                       <label className="debt-form-field">
@@ -4875,11 +4935,12 @@ export function RepaymentManagementPage() {
                             }}
                             placeholder={tf('repayment.form.simpleAmountPlaceholder', '可选')}
                             aria-label={tf('repayment.form.simpleAmount', '本期应还金额')}
+                            {...debtErrorProps('simple')}
                           />
                         </span>
                       </label>
                     </div>
-                    {debtFormError ? <p className="debt-form-error" role="alert">{debtFormError}</p> : null}
+                    {debtFormError ? <p id={DEBT_FORM_ERROR_ID} className="debt-form-error" role="alert">{debtFormError}</p> : null}
                     <div className="debt-form-actions">
                       <button type="submit" className="primary" disabled={!canSubmitSimpleDebt}>
                         {addDebtSuccess

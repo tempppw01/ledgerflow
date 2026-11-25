@@ -1006,4 +1006,46 @@ describe('RepaymentManagementPage', () => {
 
     expect(appPreferencesMock.state.updateDebt).not.toHaveBeenCalled();
   });
+
+  /*
+   * 「错误要关联到出错的字段」。
+   *
+   * ⚠ 先说清楚这个表单的形态:提交按钮是 disabled={!canSubmitDebt},而 canSubmitDebt
+   * 已经把大部分校验都覆盖了 —— 字段没填全时按钮**是禁用的**,点了根本不触发校验。
+   * 所以 onAddDebt 里那些提示是**兜底**,不是主路径(主路径是禁用按钮 + 下方的缺项提示)。
+   *
+   * 真正"按钮可点但仍然失败"的只有两条:已还期数 > 总期数、借款金额/总还款非法,
+   * 而且都得是贷款类型才渲染得出这些字段。所以这里就用第一条来验关联。
+   */
+  it('债务表单校验失败时把错误关联到出错的字段', () => {
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
+
+    fireEvent.change(screen.getByLabelText('负债名称'), { target: { value: '招商信用卡分期' } });
+    fireEvent.change(screen.getByLabelText('剩余本金'), { target: { value: '12000' } });
+    // 贷款类型才会渲染期数、年化利率这些字段
+    fireEvent.change(screen.getByLabelText('负债类型'), { target: { value: 'loan' } });
+    fireEvent.change(screen.getByLabelText('年化利率'), { target: { value: '18.25' } });
+    fireEvent.change(screen.getByLabelText('剩余期数'), { target: { value: '12' } });
+    fireEvent.change(screen.getByLabelText('总期数'), { target: { value: '3' } });
+    fireEvent.change(screen.getByLabelText('已还期数'), { target: { value: '5' } });
+
+    const submit = screen.getByRole('button', { name: '+ 添加负债' });
+    expect(submit).not.toBeDisabled();
+    fireEvent.click(submit);
+
+    expect(document.getElementById('debt-form-error')).toBeTruthy();
+    const paid = screen.getByLabelText('已还期数');
+    expect(paid).toHaveAttribute('aria-invalid', 'true');
+    expect(paid).toHaveAttribute('aria-describedby', 'debt-form-error');
+    // 错在已还期数,不该把总期数也标红
+    expect(screen.getByLabelText('总期数')).not.toHaveAttribute('aria-invalid');
+  });
 });

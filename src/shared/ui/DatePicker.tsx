@@ -19,6 +19,13 @@ type DatePickerProps = {
   max?: string;
   placeholder?: string;
   ariaLabel?: string;
+  /*
+   * 字段级错误关联。必须**显式声明并透传**:这个组件的 props 类型是封闭的,
+   * 调用方写 {...{ 'aria-invalid': true }} 这种展开时 TSC 不一定报错,
+   * 但组件不接就会**静默丢掉**,属性根本到不了 DOM —— 测也测不出来。
+   */
+  ariaInvalid?: boolean;
+  ariaDescribedBy?: string;
   disabled?: boolean;
   className?: string;
 };
@@ -51,6 +58,8 @@ export function DatePicker({
   max,
   placeholder,
   ariaLabel,
+  ariaInvalid,
+  ariaDescribedBy,
   disabled = false,
   className = ''
 }: DatePickerProps) {
@@ -280,6 +289,8 @@ export function DatePicker({
         ref={triggerRef}
         className={`lf-date-trigger${open ? ' is-open' : ''}${!value ? ' is-empty' : ''}`}
         aria-label={triggerAccessibleName}
+        aria-invalid={ariaInvalid || undefined}
+        aria-describedby={ariaDescribedBy || undefined}
         aria-expanded={open}
         disabled={disabled}
         onClick={() => setOpen((current) => !current)}
