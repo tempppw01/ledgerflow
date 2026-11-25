@@ -4414,5 +4414,11 @@
     "title": "Home debug log",
     "clear": "Clear log",
     "empty": "No debug log yet"
+  },
+  "crashScreen": {
+    "title": "Something went wrong",
+    "hint": "Your data is still saved locally — only the interface failed to render. Reloading usually fixes it.",
+    "reload": "Reload",
+    "details": "Error details"
   }
 }
