@@ -2011,7 +2011,7 @@ button.danger:hover:not(:disabled) {
 
 .transactions-split-layout {
   display: grid;
-  grid-template-columns: auto 12px minmax(320px, 1fr);
+  grid-template-columns: auto 28px minmax(320px, 1fr);
   align-items: start;
   gap: var(--space-2);
   min-height: 520px;
@@ -2038,6 +2038,62 @@ button.danger:hover:not(:disabled) {
   grid-auto-rows: max-content;
   gap: var(--space-3);
   overscroll-behavior: contain;
+}
+
+/*
+ * 分隔条的点击式入口(WCAG 2.5.7):两端各一个 −/+ 按钮。
+ * 中间轨从 12px 加宽到 28px 才放得下 24×24 的按钮 —— 按钮**必须常驻可见**,
+ * 只 hover 出现的话触屏用户仍然够不到。
+ * 注意这里只做「居中」,**不覆盖** .transactions-split-divider 自己的 width ——
+ * 另一处变体把它设成 1px 的细线,覆盖掉会让那个变体的线变粗。
+ */
+.transactions-split-divider-wrap {
+  position: relative;
+  align-self: stretch;
+  min-height: 520px;
+}
+
+.transactions-split-divider-wrap .transactions-split-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.transactions-split-step {
+  position: absolute;
+  left: 50%;
+  z-index: 2;
+  /* 24×24 是 WCAG 2.5.8 的底线。 */
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  transform: translateX(-50%);
+  border: 1px solid var(--color-border-control);
+  border-radius: 999px;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.transactions-split-step:hover:not(:disabled) {
+  color: var(--color-text);
+}
+
+.transactions-split-step:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.transactions-split-step-start {
+  top: 6px;
+}
+
+.transactions-split-step-end {
+  bottom: 6px;
 }
 
 .transactions-split-divider {
@@ -2230,6 +2286,8 @@ button.danger:hover:not(:disabled) {
     grid-template-columns: 1fr;
   }
 
+  /* 包裹层也要一起隐藏:它带着 min-height,只藏里面那条线会留下一个空块。 */
+  .transactions-split-divider-wrap,
   .transactions-split-divider {
     display: none;
   }

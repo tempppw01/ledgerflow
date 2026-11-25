@@ -2856,39 +2856,73 @@ export function TransactionsPage() {
 
         {sidePanelVisible ? (
           <>
-            <div
-              className="transactions-split-divider"
-              role="separator"
-              aria-label={t('transactions.ui.resizePanels')}
-              aria-orientation="vertical"
-              /* WCAG 2.5.7(拖拽移动,AA):这条分隔条原来只有 role 和 label,
-                 既不可聚焦也没有键盘操作 —— 等于"告诉读屏这是个分隔条,却动不了"。
-                 补上 Window Splitter 的键盘入口:←/→ 调宽(Shift 加大步长),
-                 Home/End 到两端;aria-value* 让读屏念得出当前宽度和范围。 */
-              aria-valuenow={Math.round(tablePanelWidth)}
-              aria-valuemin={SPLIT_MIN_LEFT_WIDTH}
-              aria-valuemax={Math.round(splitMaxLeftWidth)}
-              tabIndex={0}
-              onKeyDown={(event) => {
-                if (splitLayoutStacked) {
-                  return;
+            {/*
+              * WCAG 2.5.7(拖拽移动,AA):这条分隔条原来只有拖拽和方向键。
+              * 方向键解决的是 2.1.1,2.5.7 要的是**单指、非拖拽**的入口 ——
+              * 所以两端各放一个 −/+ 按钮。按钮是分隔条的**兄弟节点**,
+              * 不嵌进 role="separator" 里(焦点顺序和语义都会说不清)。
+              */}
+            <div className="transactions-split-divider-wrap">
+              <button
+                type="button"
+                className="transactions-split-step transactions-split-step-start"
+                aria-label={t('transactions.ui.widenTablePanel')}
+                disabled={tablePanelWidth >= splitMaxLeftWidth}
+                onClick={() =>
+                  setTablePanelWidth(
+                    Math.min(splitMaxLeftWidth, tablePanelWidth + SPLIT_KEYBOARD_STEP)
+                  )
                 }
-                const step = event.shiftKey ? SPLIT_KEYBOARD_COARSE_STEP : SPLIT_KEYBOARD_STEP;
-                let next: number | null = null;
-                if (event.key === 'ArrowLeft') next = tablePanelWidth - step;
-                else if (event.key === 'ArrowRight') next = tablePanelWidth + step;
-                else if (event.key === 'Home') next = SPLIT_MIN_LEFT_WIDTH;
-                else if (event.key === 'End') next = splitMaxLeftWidth;
-                if (next === null) {
-                  return;
+              >
+                ＋
+              </button>
+              <div
+                className="transactions-split-divider"
+                role="separator"
+                aria-label={t('transactions.ui.resizePanels')}
+                aria-orientation="vertical"
+                /* WCAG 2.5.7(拖拽移动,AA):这条分隔条原来只有 role 和 label,
+                   既不可聚焦也没有键盘操作 —— 等于"告诉读屏这是个分隔条,却动不了"。
+                   补上 Window Splitter 的键盘入口:←/→ 调宽(Shift 加大步长),
+                   Home/End 到两端;aria-value* 让读屏念得出当前宽度和范围。 */
+                aria-valuenow={Math.round(tablePanelWidth)}
+                aria-valuemin={SPLIT_MIN_LEFT_WIDTH}
+                aria-valuemax={Math.round(splitMaxLeftWidth)}
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (splitLayoutStacked) {
+                    return;
+                  }
+                  const step = event.shiftKey ? SPLIT_KEYBOARD_COARSE_STEP : SPLIT_KEYBOARD_STEP;
+                  let next: number | null = null;
+                  if (event.key === 'ArrowLeft') next = tablePanelWidth - step;
+                  else if (event.key === 'ArrowRight') next = tablePanelWidth + step;
+                  else if (event.key === 'Home') next = SPLIT_MIN_LEFT_WIDTH;
+                  else if (event.key === 'End') next = splitMaxLeftWidth;
+                  if (next === null) {
+                    return;
+                  }
+                  event.preventDefault();
+                  setTablePanelWidth(
+                    Math.min(Math.max(next, SPLIT_MIN_LEFT_WIDTH), splitMaxLeftWidth)
+                  );
+                }}
+                onMouseDown={handleSplitDividerMouseDown}
+              />
+              <button
+                type="button"
+                className="transactions-split-step transactions-split-step-end"
+                aria-label={t('transactions.ui.narrowTablePanel')}
+                disabled={tablePanelWidth <= SPLIT_MIN_LEFT_WIDTH}
+                onClick={() =>
+                  setTablePanelWidth(
+                    Math.max(SPLIT_MIN_LEFT_WIDTH, tablePanelWidth - SPLIT_KEYBOARD_STEP)
+                  )
                 }
-                event.preventDefault();
-                setTablePanelWidth(
-                  Math.min(Math.max(next, SPLIT_MIN_LEFT_WIDTH), splitMaxLeftWidth)
-                );
-              }}
-              onMouseDown={handleSplitDividerMouseDown}
-            />
+              >
+                −
+              </button>
+            </div>
 
             <aside
               className="transactions-split-side panel"

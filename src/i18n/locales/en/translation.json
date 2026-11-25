@@ -990,6 +990,8 @@
       "gotIt": "Got it",
       "importBillFile": "Import statement file",
       "resizePanels": "Resize transaction list and chart panel",
+      "widenTablePanel": "Widen the table panel",
+      "narrowTablePanel": "Narrow the table panel",
       "currentBillChartView": "Current transaction chart view",
       "currentBillView": "Current transaction view",
       "currentBillOverview": "Current transaction overview",

@@ -990,6 +990,8 @@
       "gotIt": "知道了",
       "importBillFile": "导入账单文件",
       "resizePanels": "调整交易列表与图表区域宽度",
+      "widenTablePanel": "加宽表格区",
+      "narrowTablePanel": "收窄表格区",
       "currentBillChartView": "当前交易图表视图",
       "currentBillView": "当前交易视图",
       "currentBillOverview": "当前交易概览",
