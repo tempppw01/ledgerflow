@@ -323,26 +323,26 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   同理,另外三个脚本也全仓零引用:`benchmark:database`、`brands:generate`、`test:watch`
   (前者是性能基线、中者是生成品牌图标、后者是开发用 watch,都属于"按需手动跑",不是坏掉)。
 
-- **\`check:shared-predicates\` 曾被"注释里提到共享名"压制 —— 已修,并因此找出一个一直没被盯的例外(2026-11-25)**。
+- **`check:shared-predicates` 曾被"注释里提到共享名"压制 —— 已修,并因此找出一个一直没被盯的例外(2026-11-25)**。
   这道闸门守的是"不许在别处重写已经共享出来的判断",其中一条判据是:
 
-  \`\`\`js
+  ```js
   /adjustmentKind\\s*[!=]==?\\s*'refund'/.test(text) && !/isTransactionRefundLike/.test(text)
-  \`\`\`
+  ```
 
-  后半个条件对**整份文件全文**做正则 —— 于是**注释里提一句** \`isTransactionRefundLike\` 就算"引用了",
+  后半个条件对**整份文件全文**做正则 —— 于是**注释里提一句** `isTransactionRefundLike` 就算"引用了",
   闸门直接放行。**实测**:同样两处违规(单边 refund 判断 + 本地重定义金额取整),
   注释里提到共享名 → **exit 0(放行)**;不提 → **exit 1(拦住)**。
 
-  修法:匹配前先 \`stripComments()\`(把注释换成空格、**保留换行**所以行号不变)。
+  修法:匹配前先 `stripComments()`(把注释换成空格、**保留换行**所以行号不变)。
   注释既不能触发误报,也不能压制检查。判据的本意是"作者**用**了共享谓词",不是"作者**知道**它"。
 
   **修完之后立刻报出一处真实存在、却一直没被盯的重复实现**:
-  \`src/features/dashboard/model/utils.ts\` 的 \`isActualExpenseType\` —— 而它自己的注释里还写着
-  "改成一处要同时改另一处(\`check:shared-predicates\` **会盯着这两个名字**,契约测试钉着它们必须一致)"。
-  那句话在修之前**不成立**(注释把检查压掉了);现在成立:代码进 \`ALLOW\` 并写明理由
-  (与 shared 的 \`isExpenseLike\` 判定完全相同,「预算」型不算支出是 v0.50.36 的定案,
-  \`expenseScope.contract.test.ts\` 钉着两者一致,该测试实测 4 条全过)。
+  `src/features/dashboard/model/utils.ts` 的 `isActualExpenseType` —— 而它自己的注释里还写着
+  "改成一处要同时改另一处(`check:shared-predicates` **会盯着这两个名字**,契约测试钉着它们必须一致)"。
+  那句话在修之前**不成立**(注释把检查压掉了);现在成立:代码进 `ALLOW` 并写明理由
+  (与 shared 的 `isExpenseLike` 判定完全相同,「预算」型不算支出是 v0.50.36 的定案,
+  `expenseScope.contract.test.ts` 钉着两者一致,该测试实测 4 条全过)。
 
 - **发布链路的四道检查,其中"tag 与版本一致"做过真实弹测试(2026-11-25)**。
   发布出错一次就是"Release 写着 A 版本、内容却是 B 版本",而此前没有任何东西会拦。现在有四处把关:
@@ -418,17 +418,17 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   按"跨入口一致性"这个高产区去查:创建交易至少有这些入口 —— 快速记账、交易页表单、编辑页、
   分类/账户页、账单导入(两个页面)、AI 工具、助手工作台。看着很像会走形,但实际不会:
 
-  \`addTransaction\` 内部统一走 \`createTransactionRow\`,由它在**一个地方**兜住字段:
+  `addTransaction` 内部统一走 `createTransactionRow`,由它在**一个地方**兜住字段:
 
-  \`\`\`js
+  ```js
   amount: roundCurrency(payload.amount),                 // 金额取整(共用 roundMoney 的别名)
   adjustmentKind: payload.adjustmentKind || 'normal',    // 兜 normal
   status: payload.status ?? DEFAULT_TRANSACTION_STATUS,  // 兜状态
   updatedAt: payload.updatedAt || now,
-  \`\`\`
+  ```
 
-  **而且这条兜底本身就是为了修一个同类 bug**:助手导入账单那条路径原来不传 \`status\`,
-  库里就出现 \`transaction_status\` 为 NULL 的行(手工记账都会传 \`completed\`),列表显示成「-」、
+  **而且这条兜底本身就是为了修一个同类 bug**:助手导入账单那条路径原来不传 `status`,
+  库里就出现 `transaction_status` 为 NULL 的行(手工记账都会传 `completed`),列表显示成「-」、
   与筛选器口径不一致。现在写入侧不会再产出这种行(注释里写着来龙去脉)。
 
   **结论**:创建交易这条路是**结构性安全**的 —— 所以之前找到的两个"跨入口"真 bug 不在创建,
@@ -496,10 +496,10 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 
 - **审计脚本也要做"破坏性验证"(2026-11-25 两次都是靠它)**。
   光看代码或看退出码**不够** —— 这轮的教训具体是:
-  · \`audit:sums\` 跑起来 exit 0,我据此推出"它永远不会失败";实测造一个违规文件后是 **exit 1**,推断错了;
-  · \`check-dynamic-i18n\` 删掉一个**动态拼接**的键(两份语言都删)后,所有闸门与 1271 项测试**全过** ——
+  · `audit:sums` 跑起来 exit 0,我据此推出"它永远不会失败";实测造一个违规文件后是 **exit 1**,推断错了;
+  · `check-dynamic-i18n` 删掉一个**动态拼接**的键(两份语言都删)后,所有闸门与 1271 项测试**全过** ——
     确认是真缺口,补上键族后才会失败;
-  · \`check:shared-predicates\` 的"注释压制"也是这么发现的。
+  · `check:shared-predicates` 的"注释压制"也是这么发现的。
   **做法**:造一个**最小的违规**放进去,跑闸门看它**是否失败**;再删掉确认它恢复通过。
   已按这个方法查过的对象(每一条都有实测结论):
 
@@ -534,181 +534,217 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   于是同一个脚本跑了两遍(已撤)。"东西在、没接上"的反面是"**接上了,又接了一遍**":
   接一个能力之前,先确认它是不是**已经**被人接过。
 
-- **\`audit:sums\` 是真闸门(会失败),不是"只打印清单" —— 已证伪验证(2026-11-25)**。
+- **`audit:sums` 是真闸门(会失败),不是"只打印清单" —— 已证伪验证(2026-11-25)**。
   它的输出看起来像一份**清单**(列出手工求和的地方 + ⚠ 标出没引用共享汇总的),而且跑起来
-  \`exit 0\` —— 我据此推断"它永远不会失败,新出现一个 ⚠ 文件没人会知道"。**这个推断是错的**:
+  `exit 0` —— 我据此推断"它永远不会失败,新出现一个 ⚠ 文件没人会知道"。**这个推断是错的**:
 
   脚本里写着"从「清单」升级成「闸门」:被标 ⚠ 的文件必须在下面给出一条**显式理由**,否则非 0 退出",
-  并且有 \`JUSTIFIED\` 清单(\`budgetPlan.ts\` 在里面,理由是"这里求的是预算分配行,不是交易行")。
-  它这次 \`exit 0\` 是因为**唯一的 ⚠ 文件已经写了理由** —— 行为正确。
+  并且有 `JUSTIFIED` 清单(`budgetPlan.ts` 在里面,理由是"这里求的是预算分配行,不是交易行")。
+  它这次 `exit 0` 是因为**唯一的 ⚠ 文件已经写了理由** —— 行为正确。
 
   **实测证伪**:临时造一个"手工求交易金额、不引用共享汇总、也不在 JUSTIFIED 里"的文件 ——
 
   | 状态 | 结果 |
   | --- | --- |
-  | 假文件在 | **exit 1**,点名 \`src/shared/lib/__probe-handrolled-sum.ts\`,并写明两条修法 |
+  | 假文件在 | **exit 1**,点名 `src/shared/lib/__probe-handrolled-sum.ts`,并写明两条修法 |
   | 删掉后 | exit 0 |
 
   所以:CI 里这道闸门**会拦住**新出现的口径漂移(它就是为那次"按月汇总忘了排退款、演示账本多算 ¥781.10"
   立的)。**记这条是为了省下重复推断** —— 也提醒:退出码要**实测**过才算结论,别从"跑起来是 0"推出"它不会失败"。
 
-- **\`server/\` 与 \`scripts/\` 现在也 lint 了 —— 之前它们完全没静态检查,并且真的藏了一个 bug(2026-11-25)**。
-  查 \`eslint.config.js\` 时发现它的 \`files\` 只匹配 TS/TSX,而 \`tsconfig\` 也只 \`include: ["src", "vite.config.ts"]\` ——
-  也就是说 \`server/*.js\`(含 12+ 个测试文件)与 \`scripts/*.mjs\`(约 20 个)**既不过 eslint、也不过 tsc**。
+- **`server/` 与 `scripts/` 现在也 lint 了 —— 之前它们完全没静态检查,并且真的藏了一个 bug(2026-11-25)**。
+  查 `eslint.config.js` 时发现它的 `files` 只匹配 TS/TSX,而 `tsconfig` 也只 `include: ["src", "vite.config.ts"]` ——
+  也就是说 `server/*.js`(含 12+ 个测试文件)与 `scripts/*.mjs`(约 20 个)**既不过 eslint、也不过 tsc**。
 
   **给它们套上 JS 规则后,no-undef 立刻报出一条真 bug**:
 
-  > \`server/relationalDatabase.js:364  'toMysqlDate' is not defined\`
+  > `server/relationalDatabase.js:364  'toMysqlDate' is not defined`
 
-  那个标识符在 \`authService.js\` 与 \`relationalDataRepository.js\` 里各有一份定义,唯独这里既没定义也没 import。
+  那个标识符在 `authService.js` 与 `relationalDataRepository.js` 里各有一份定义,唯独这里既没定义也没 import。
   而这一行走在 **MySQL 迁移路径**上(写「已应用的迁移版本」),所以**任何 MySQL 用户的首次建库 / 升级都会
   ReferenceError,被 catch 抓住后回滚 —— 迁移直接失败**。
 
-  **两个缺口叠在一起才让它活到今天**:CI 的 \`relationalDatabase.test.js\` 走的是 SQLite 默认路径,
+  **两个缺口叠在一起才让它活到今天**:CI 的 `relationalDatabase.test.js` 走的是 SQLite 默认路径,
   MySQL 迁移那一支没有覆盖;而这两个目录没有静态检查。
 
-  修法:把 \`toMysqlDate\` 抽到 \`server/sqlDateTime.js\` 共用(顺手去掉重复实现),两处 import 它;
-  \`eslint.config.js\` 加一段只针对 \`**/*.{js,mjs}\` 的配置(含"下划线开头视为刻意忽略"的约定,
-  globals 同时给 node 与 browser —— \`scripts/\` 里既有纯 Node 脚本也有跑浏览器的审计脚本)。
+  修法:把 `toMysqlDate` 抽到 `server/sqlDateTime.js` 共用(顺手去掉重复实现),两处 import 它;
+  `eslint.config.js` 加一段只针对 `**/*.{js,mjs}` 的配置(含"下划线开头视为刻意忽略"的约定,
+  globals 同时给 node 与 browser —— `scripts/` 里既有纯 Node 脚本也有跑浏览器的审计脚本)。
 
-  **接上时要先量**:第一次跑出来 62 个问题,其中绝大多数来自未追踪的本地草稿目录 \`.audit/\`
-  与 \`document is not defined\` 这类误报(探针只给了 node globals)。加 \`ignores\` 与下划线约定之后
-  **真问题只剩 1 个**(一处多余的 \`\\[\` 转义),扣掉它 \`npm run lint\` 就干净了。
+  **接上时要先量**:第一次跑出来 62 个问题,其中绝大多数来自未追踪的本地草稿目录 `.audit/`
+  与 `document is not defined` 这类误报(探针只给了 node globals)。加 `ignores` 与下划线约定之后
+  **真问题只剩 1 个**(一处多余的 `\\[` 转义),扣掉它 `npm run lint` 就干净了。
   —— 所以"要不要把某个目录纳入 lint"这种问题,**先跑一次看数,再决定**。
 
-- **\`data/\`(本机账本)的四个消费者都查过了 —— 只有 \`.dockerignore\` 曾漏掉(2026-11-25 已补)**。
-  起因是查到 \`.dockerignore\` 漏了 \`data/\`。既然这一处漏了,就把**所有会扫仓库根目录的东西**逐个过一遍:
+- **`data/`(本机账本)的四个消费者都查过了 —— 只有 `.dockerignore` 曾漏掉(2026-11-25 已补)**。
+  起因是查到 `.dockerignore` 漏了 `data/`。既然这一处漏了,就把**所有会扫仓库根目录的东西**逐个过一遍:
 
-  | 谁 | 会不会误吃 \`data/\` | 依据 |
+  | 谁 | 会不会误吃 `data/` | 依据 |
   | --- | --- | --- |
-  | \`.gitignore\` | **不会**(第 12 行就是 \`data/\`) | \`git check-ignore -v\` 实测命中;\`git ls-files data/\` 为空 |
-  | \`vite.config.ts\` | **不会**(\`watch.ignored\` 含 \`**/data/**\`) | 注释写明"它是本机运行时目录" |
-  | **\`.dockerignore\`** | **曾经会** —— 已补上 | \`Dockerfile\` 里是 \`COPY . .\` |
-  | \`prettier\`(无 \`.prettierignore\`) | 不会 | 只格式化已知扩展名,\`.log\` / \`.sqlite\` 被跳过 |
-  | \`eslint\` | 不会 | 只 lint \`**/*.{ts,tsx,js}\` |
-  | \`vitest\` | 不会 | \`include: ['src/**/*.test.{ts,tsx}']\` |
-  | \`tsc\` | 不会 | \`data/\` 里没有 \`.ts\` |
+  | `.gitignore` | **不会**(第 12 行就是 `data/`) | `git check-ignore -v` 实测命中;`git ls-files data/` 为空 |
+  | `vite.config.ts` | **不会**(`watch.ignored` 含 `**/data/**`) | 注释写明"它是本机运行时目录" |
+  | **`.dockerignore`** | **曾经会** —— 已补上 | `Dockerfile` 里是 `COPY . .` |
+  | `prettier`(无 `.prettierignore`) | 不会 | 只格式化已知扩展名,`.log` / `.sqlite` 被跳过 |
+  | `eslint` | 不会 | 只 lint `**/*.{ts,tsx,js}` |
+  | `vitest` | 不会 | `include: ['src/**/*.test.{ts,tsx}']` |
+  | `tsc` | 不会 | `data/` 里没有 `.ts` |
 
-  **所以"本机数据会不会被误用"这件事已经查完** —— 三处写死的忽略规则里 \`.gitignore\` 与 \`vite.config.ts\`
-  都有、唯独 \`.dockerignore\` 缺一半,现在补齐了。**再核这类问题不用从头来**。
+  **所以"本机数据会不会被误用"这件事已经查完** —— 三处写死的忽略规则里 `.gitignore` 与 `vite.config.ts`
+  都有、唯独 `.dockerignore` 缺一半,现在补齐了。**再核这类问题不用从头来**。
 
-- **\`src/test/setup.ts\` 完整读过(54 行):只做环境垫片,干净 —— 但有一条覆盖局限(2026-11-25)**。
-  它做三件事,都写明了原因:给 \`localStorage\` / \`sessionStorage\` 兜一个**内存实现**
-  (Node 22+ 的实验性 \`localStorage\` 是"typeof 是 object 但一用就抛",所以先**探测可用性**再替换);
-  把语言固定成 \`zh\`(jsdom 的 navigator 是 en-US,会让组件渲染英文、与既有中文断言冲突)。
+- **`src/test/setup.ts` 完整读过(54 行):只做环境垫片,干净 —— 但有一条覆盖局限(2026-11-25)**。
+  它做三件事,都写明了原因:给 `localStorage` / `sessionStorage` 兜一个**内存实现**
+  (Node 22+ 的实验性 `localStorage` 是"typeof 是 object 但一用就抛",所以先**探测可用性**再替换);
+  把语言固定成 `zh`(jsdom 的 navigator 是 en-US,会让组件渲染英文、与既有中文断言冲突)。
   **它没有 mock 任何业务模块、也不吞错误** —— 只补环境,这是对的做法。
 
-  **局限(不是 bug,但要知道)**:因为语言被钉在 \`zh\`,**英文渲染路径在测试里从未被走过** ——
-  \`i18n:check\` / \`check:jsx-hardcoded\` 校验的是**键**存不存在,不校验**英文串会不会把布局撑破**。
-  真要看英文版,只能起服务切语言实测(或单独写一条把 \`i18nextLng\` 设成 \`en\` 的用例)。
+  **局限(不是 bug,但要知道)**:因为语言被钉在 `zh`,**英文渲染路径在测试里从未被走过** ——
+  `i18n:check` / `check:jsx-hardcoded` 校验的是**键**存不存在,不校验**英文串会不会把布局撑破**。
+  真要看英文版,只能起服务切语言实测(或单独写一条把 `i18nextLng` 设成 `en` 的用例)。
 
-- **\`.env.example\` 与 \`docker-compose.yml\` 是同步的(2026-11-25 核对,结论是没问题)**。
-  \`docker-compose.yml\` 描述部署配置、\`.env.example\` 描述同一套变量 —— 这类"同一件事写两遍"
+- **`.env.example` 与 `docker-compose.yml` 是同步的(2026-11-25 核对,结论是没问题)**。
+  `docker-compose.yml` 描述部署配置、`.env.example` 描述同一套变量 —— 这类"同一件事写两遍"
   最容易一边漏,所以逐条对过一次:
 
   | 比较 | 结果 |
   | --- | --- |
-  | compose 用到的 **26 个**变量 | \`.env.example\` **一个不漏** |
-  | 只在 \`.env.example\` 里的 **12 个** | 11 个 \`VITE_*\`(前端**构建期**变量)+ \`LEDGERFLOW_API_PROXY_TARGET\`(开发期)—— 本来就不经过 compose |
+  | compose 用到的 **26 个**变量 | `.env.example` **一个不漏** |
+  | 只在 `.env.example` 里的 **12 个** | 11 个 `VITE_*`(前端**构建期**变量)+ `LEDGERFLOW_API_PROXY_TARGET`(开发期)—— 本来就不经过 compose |
 
   顺带核过服务端:它读的 16 个环境变量里,compose 未设的 6 个全是开发/代理用途
-  (\`API_HOST\` / \`API_PROXY_TARGET\` / \`CDN_PROXY_TARGET\` / \`DEV_HOST\` / \`DEV_PORT\` / \`NODE_ENV\`)。
+  (`API_HOST` / `API_PROXY_TARGET` / `CDN_PROXY_TARGET` / `DEV_HOST` / `DEV_PORT` / `NODE_ENV`)。
 
-  **要再核对时**别用 shell 拼 \`\${...}\` 的正则(引号会被吃掉,我因此得到过一份全是假的 diff):
+  **要再核对时**别用 shell 拼 `\${...}` 的正则(引号会被吃掉,我因此得到过一份全是假的 diff):
   写个小脚本读文件再比,几行就够。
 
-- **\`nginx.conf\` 完整读过(57 行):\`/api/\` 不设 \`proxy_read_timeout\` 是安全的(2026-11-25 核实)**。
-  看到 \`location /api/\` 没有 \`proxy_read_timeout\`(走 nginx 默认 60 秒),一度担心长耗时请求
+- **`nginx.conf` 完整读过(57 行):`/api/` 不设 `proxy_read_timeout` 是安全的(2026-11-25 核实)**。
+  看到 `location /api/` 没有 `proxy_read_timeout`(走 nginx 默认 60 秒),一度担心长耗时请求
   (AI 生成)会被切断。核实后**不成立**:
 
-  · AI 请求走的是**流式**(\`openaiCompatibleClient\` 里 \`stream: true\` + 解码缓冲循环),
-    而 nginx 的 \`proxy_read_timeout\` 管的是**两次读取之间**的间隔 —— 模型逐块吐字时不会触发;
-  · 客户端自己还有可配置超时(\`getAiRequestTimeoutMs\` / \`getAiGenerationTimeoutMs\`)与 abort 逻辑。
+  · AI 请求走的是**流式**(`openaiCompatibleClient` 里 `stream: true` + 解码缓冲循环),
+    而 nginx 的 `proxy_read_timeout` 管的是**两次读取之间**的间隔 —— 模型逐块吐字时不会触发;
+  · 客户端自己还有可配置超时(`getAiRequestTimeoutMs` / `getAiGenerationTimeoutMs`)与 abort 逻辑。
 
-  这份配置其余部分也扎实,不必再挖:\`resolver\` + **变量式 \`proxy_pass\`**(域名请求时才解析,
-  避免启动阶段 DNS 未就绪就退出);\`rewrite\` 显式去掉 \`/cdn\` 前缀并保留查询串;
-  \`client_max_body_size 50m\` 与后端的 50 MiB 上限**对得上**;\`location /\` 的 \`try_files\` 是 SPA 回退,
-  而 \`index.html\` 不在 \`/assets/\` 里(不该带长缓存,这点也对)。
+  这份配置其余部分也扎实,不必再挖:`resolver` + **变量式 `proxy_pass`**(域名请求时才解析,
+  避免启动阶段 DNS 未就绪就退出);`rewrite` 显式去掉 `/cdn` 前缀并保留查询串;
+  `client_max_body_size 50m` 与后端的 50 MiB 上限**对得上**;`location /` 的 `try_files` 是 SPA 回退,
+  而 `index.html` 不在 `/assets/` 里(不该带长缓存,这点也对)。
+
+  ⚠ **但这份配置的「行尾」后来真的出过问题**:CRLF 让入口脚本里那段 awk 重写**静默失效**,
+  见下面「Windows 上 `docker build` 会产出『起不来』的镜像」。
 
   **已知的加固缺口(不是 bug,改它需要能跑起容器来验证)**:没有安全响应头 ——
-  \`X-Content-Type-Options\` / \`X-Frame-Options\` / CSP 一个都没有。前两个是安全的加法,
+  `X-Content-Type-Options` / `X-Frame-Options` / CSP 一个都没有。前两个是安全的加法,
   **CSP 需要谨慎**(用错会直接白屏),而 CI 只**构建**镜像、不**运行**它,所以加之前得先起容器实测。
 
-- **\`.dockerignore\` 已排除 \`data/\`(本地账本数据库不进构建上下文)—— 已跑通验证(2026-11-25)**。
-  \`Dockerfile\` 里是 \`COPY . .\`,而 \`data/\` 放着 **SQLite 库与 \`data/backups/\` 里的备份** ——
-  也就是**一个人的完整账本**。推送的镜像里没有它(最终镜像只拷 \`dist\` / \`node_modules\` / \`server\`),
-  而且没配 \`cache-to\`,所以**暂时不会外泄**;但只要有人加上 registry 缓存(很自然的优化),
+- **`.dockerignore` 已排除 `data/`(本地账本数据库不进构建上下文)—— 已跑通验证(2026-11-25)**。
+  `Dockerfile` 里是 `COPY . .`,而 `data/` 放着 **SQLite 库与 `data/backups/` 里的备份** ——
+  也就是**一个人的完整账本**。推送的镜像里没有它(最终镜像只拷 `dist` / `node_modules` / `server`),
+  而且没配 `cache-to`,所以**暂时不会外泄**;但只要有人加上 registry 缓存(很自然的优化),
   它就会被打包上传。
 
-  **这条特别能说明"东西在、没接上"这个模式**:\`vite.config.ts\` 里**早就**有同一条判断 ——
-  \`watch.ignored\` 含 \`**/data/**\`,注释写着"它是本机运行时目录(SQLite 库与 data/backups/ 里的备份)"。
-  作者清楚这个风险,只是 \`.dockerignore\` 漏了另一半。顺手也排除了 \`docs/\` 与 \`release-notes/\`
+  **这条特别能说明"东西在、没接上"这个模式**:`vite.config.ts` 里**早就**有同一条判断 ——
+  `watch.ignored` 含 `**/data/**`,注释写着"它是本机运行时目录(SQLite 库与 data/backups/ 里的备份)"。
+  作者清楚这个风险,只是 `.dockerignore` 漏了另一半。顺手也排除了 `docs/` 与 `release-notes/`
   (构建用不到)。
 
-  验证:\`9b28352\` → run **success**、verify **success**、**docker-latest success**(镜像重建并推送)。
-  也就是说 \`.dockerignore\` 没有误伤构建 —— 这类改动 CI 会自动替你验,改完看 docker job 即可。
+  验证:`9b28352` → run **success**、verify **success**、**docker-latest success**(镜像重建并推送)。
+  也就是说 `.dockerignore` 没有误伤构建 —— 这类改动 CI 会自动替你验,改完看 docker job 即可。
 
-- **Cookie 的 Secure 判定:显式开关优先,别被 \`NODE_ENV\` 那半句吓到(2026-11-25 核实,结论是没问题)**。
-  \`secureCookiesEnabled\` 是三级判断:
+- **Cookie 的 Secure 判定:显式开关优先,别被 `NODE_ENV` 那半句吓到(2026-11-25 核实,结论是没问题)**。
+  `secureCookiesEnabled` 是三级判断:
 
-  \`\`\`js
+  ```js
   if (LEDGERFLOW_COOKIE_SECURE === 'true') return true;
   if (LEDGERFLOW_COOKIE_SECURE === 'false') return false;   // 显式设置直接返回
   return xForwardedProto === 'https' || NODE_ENV === 'production';  // 只是兜底
-  \`\`\`
+  ```
 
-  我一开始看到第三行,以为"谁设了 \`NODE_ENV=production\` 就会让 HTTP 部署的登录坏掉" —— **错了**:
-  compose 里 \`LEDGERFLOW_COOKIE_SECURE\` **总是被显式设置**(默认 \`false\`),所以前两个分支必然命中,
-  第三行只在**两个都没设**时才生效。设计是谨慎的:显式开关 > \`x-forwarded-proto\` > \`NODE_ENV\`。
+  我一开始看到第三行,以为"谁设了 `NODE_ENV=production` 就会让 HTTP 部署的登录坏掉" —— **错了**:
+  compose 里 `LEDGERFLOW_COOKIE_SECURE` **总是被显式设置**(默认 `false`),所以前两个分支必然命中,
+  第三行只在**两个都没设**时才生效。设计是谨慎的:显式开关 > `x-forwarded-proto` > `NODE_ENV`。
 
   **记这条是为了省下一次重复推导**;也提醒:别看到"最后兜底那半句"就当成缺陷去"修" ——
-  上次(交易表 \`table-layout\`)也是量了才发现本来就对。
+  上次(交易表 `table-layout`)也是量了才发现本来就对。
 
 - **生产构建的验证盲区已关闭(2026-11-25,已跑通验证)**。
-  查部署层时发现:CI 的 \`verify\` 有 tsc / lint / 测试 / 十一个闸门,但**没有 \`npm run build\`**;
-  全仓只有 \`Dockerfile\` 会跑 \`vite build\`,而它的构建阶段是 **node:20** —— 运行时与 CI 却是 **24**。
+  查部署层时发现:CI 的 `verify` 有 tsc / lint / 测试 / 十一个闸门,但**没有 `npm run build`**;
+  全仓只有 `Dockerfile` 会跑 `vite build`,而它的构建阶段是 **node:20** —— 运行时与 CI 却是 **24**。
   于是"生产构建能不能在 Node 24 上过"**从来没被验证过**,不过也只有部署时才发现。
 
   修的顺序是刻意的 —— **先让验证存在,再依赖它**:
-  1. 往 CI 的 verify 加 \`npm run build\`(提交 \`9101c07\`);在该 run 上确认 verify = success,
+  1. 往 CI 的 verify 加 `npm run build`(提交 `9101c07`);在该 run 上确认 verify = success,
      即 **vite build 在 Node 24 上确实能过**;
-  2. 然后才把 Dockerfile 的 \`node:20-alpine\` 改成 \`node:24-alpine\`(提交 \`4bd7dec\`)——
-     \`docker-latest\` 会重建镜像,等于把这一行也验证一遍。
+  2. 然后才把 Dockerfile 的 `node:20-alpine` 改成 `node:24-alpine`(提交 `4bd7dec`)——
+     `docker-latest` 会重建镜像,等于把这一行也验证一遍。
 
-  **验证结果**:run \`4bd7dec\` → verify **success**、docker-latest **success**(多架构构建 + 推送成功)。
+  **验证结果**:run `4bd7dec` → verify **success**、docker-latest **success**(多架构构建 + 推送成功)。
 
-  部署层其余部分(这轮完整读过,都扎实,不必再挖):
-  · \`docker/start-ledgerflow.sh\` 同时守护 API 与 nginx、\`trap TERM INT\`、子进程死了就**以它的状态码退出**;
-  · \`nginx.conf\` 用 resolver + **变量式 \`proxy_pass\`**,避免启动阶段 DNS 未就绪就退出;\`/cdn/\` 走反代(R2);
-  · 服务端**不读 \`package.json\`**(运行时镜像没 COPY 它);\`root\` 只用于默认数据目录,
-    而 Dockerfile 显式设了 \`LEDGERFLOW_DATA_DIR\` —— 不需要额外文件。
+  部署层其余部分(这轮读过,大部分扎实;**但下面那条说明"不必再挖"当时下得太早** ——
+  仓库级行尾配置这一层没查,结果真有缺陷):
+  · `docker/start-ledgerflow.sh` 同时守护 API 与 nginx、`trap TERM INT`、子进程死了就**以它的状态码退出**;
+  · `nginx.conf` 用 resolver + **变量式 `proxy_pass`**,避免启动阶段 DNS 未就绪就退出;`/cdn/` 走反代(R2);
+  · 服务端**不读 `package.json`**(运行时镜像没 COPY 它);`root` 只用于默认数据目录,
+    而 Dockerfile 显式设了 `LEDGERFLOW_DATA_DIR` —— 不需要额外文件。
+
+- **Windows 上 `docker build` 会产出「起不来」的镜像(2026-11-25,真 Linux 实测复现)**。
+  仓库当时没有 `.gitattributes`,而本机开着仓库级 `core.autocrlf=true` —— Docker 的构建上下文取的正是
+  工作区磁盘上的字节,于是镜像里的 `docker/start-ledgerflow.sh` 带 CRLF,首行成为 `#!/bin/sh\r`,
+  Linux 上按 shebang exec 直接失败:`env: can't execute '/usr/local/bin/start-ledgerflow.sh':
+  No such file or directory`,退出码 **127**,容器根本起不来。**CI 一直是绿的**,因为它在 Linux 上检出、
+  天然就是 LF —— 这个缺陷只有 Windows 本地构建会中招。
+
+  同一根因还有第二个、更隐蔽的后果:`nginx.conf` 也带 CRLF,而入口脚本用 awk 匹配
+  `$0 == "  listen 80;"`;CRLF 下 `$0` 实际是 `"  listen 80;\r"`,**永不匹配**,于是 PORT 改写
+  **静默失效** —— 脚本照样退出 0,容器只在 80 上监听。
+
+  | 检查项(真 Linux busybox,与 `node:24-alpine` 同类) | 修前 | 修后 |
+  | --- | --- | --- |
+  | 直接 exec 入口脚本 | `not found`,退出码 127 | 正常执行,退出码 0 |
+  | `PORT=8080` 后 `listen 8080;` 的出现次数 | **0**(而脚本退出码仍是 0) | **1** |
+  | 脚本 / `nginx.conf` 的行尾 | CRLF | LF |
+
+  修法刻意分两层:**一层让仓库确定,一层让构建兜底**。
+
+  1. 新增 `.gitattributes`:`* text=auto eol=lf`、二进制显式 `binary`、`*.sh text eol=lf`
+     —— 所有平台的检出都统一 LF,不再取决于每台机器的 `core.autocrlf`;
+  2. `Dockerfile` 的 RUN 里用 `tr -d '\r'` 规范化入口脚本与 `nginx.conf`(不用 `sed 's/\r$//'`,
+     因为 busybox sed 对 `\r` 转义的支持不明确,而 `tr` 是 POSIX 且当场可测),`CMD` 也改成绝对路径。
+
+  验证方式(**实测,不是推断**):把工作区里那些 CRLF 文件按构建上下文原样铺进 WSL 的真 Linux
+  (`/bin/sh -> busybox`),先证坏、再**逐字执行从暂存区抽出的那段 RUN 正文**、最后证好 ——
+  所以"测的那份"和"会发布的那份"是同一份字节。
+
+  顺带修掉同类问题:`docker/start-ledgerflow.sh` 的 git 权限位是 **100644**,而它是个程序、镜像正靠
+  shebang 执行它 —— 已 `git update-index --chmod=+x` 改成 **100755**(仓库里 650 个文件全无可执行位;
+  `.husky/pre-commit` 也是 644,但 husky 的 shim 用 `.` 引入而非执行,故未动)。
 
 - **CI 卫生:concurrency 与 timeout 已补(2026-11-25,已跑通验证)**。
-  完整读了一遍 \`ci.yml\`(99 行)后补上两条标准配置,并在 CI 上确认生效:
+  完整读了一遍 `ci.yml`(99 行)后补上两条标准配置,并在 CI 上确认生效:
 
   | 补了什么 | 为什么 |
   | --- | --- |
-  | \`concurrency: {group: ci-\${{ github.ref }}, cancel-in-progress: true}\` | 连推多次会同时起多个完整 run(实测页面上三个 in_progress),而且两个 docker 构建会同时往 \`:latest\` 推 |
-  | \`verify: timeout-minutes: 20\` / \`docker-latest: 40\` | 没有超时的话卡住的 job 会挂到 GitHub 默认上限(6 小时);实测 verify 不到十分钟、docker 十分钟上下 |
+  | `concurrency: {group: ci-\${{ github.ref }}, cancel-in-progress: true}` | 连推多次会同时起多个完整 run(实测页面上三个 in_progress),而且两个 docker 构建会同时往 `:latest` 推 |
+  | `verify: timeout-minutes: 20` / `docker-latest: 40` | 没有超时的话卡住的 job 会挂到 GitHub 默认上限(6 小时);实测 verify 不到十分钟、docker 十分钟上下 |
 
   验证:改动本身是 CI 配置,所以最直接的验证就是**推上去看 run** —— YAML 被接受(新 run 正常启动)、
-  \`verify\` **success**、\`docker-latest\` 在它之后启动(\`needs:\` 仍生效)。
+  `verify` **success**、`docker-latest` 在它之后启动(`needs:` 仍生效)。
 
   **看到但没动的两处**(都是优化,不是缺陷):
-  · docker 构建没配 \`cache-from/cache-to\`,每次冷构建 —— 这是它慢的主因;
-  · 文档提交也会重建镜像。**但不要**用 \`paths-ignore: docs/**\` 省(原因见上面那条)。
+  · docker 构建没配 `cache-from/cache-to`,每次冷构建 —— 这是它慢的主因;
+  · 文档提交也会重建镜像。**但不要**用 `paths-ignore: docs/**` 省(原因见上面那条)。
 
-- **别用 \`paths-ignore: docs/**\` 去省 CI —— 那会删掉管文档的那道闸门(2026-11-25)**。
-  \`docker-latest\` 在**每次推送**都跑一次完整 Docker 构建(\`npm ci\` + \`npm run build\` + 镜像),doc-only
-  的提交也不例外 —— 一天二十几次推送就是二十几次构建,看着很像"该用 \`paths-ignore\` 省掉"。
+- **别用 `paths-ignore: docs/**` 去省 CI —— 那会删掉管文档的那道闸门(2026-11-25)**。
+  `docker-latest` 在**每次推送**都跑一次完整 Docker 构建(`npm ci` + `npm run build` + 镜像),doc-only
+  的提交也不例外 —— 一天二十几次推送就是二十几次构建,看着很像"该用 `paths-ignore` 省掉"。
 
-  **但不要那么做**:验证一下就知道,\`check:docs\`(校验表格列数、代码块成对、引用的测试文件存在)
-  属于 \`verify\` job —— 而**文档改动恰恰是最容易弄坏它的**。2026-11-25 那天 CI 红了三次,其中
-  **两次是纯文档改动**(一次表格里写了转义的竖线 \`\\|\\|\`,一次注入了列数不一致的测试表格)。
-  加了 \`paths-ignore: docs/**\` 就等于把这层保护关掉。
+  **但不要那么做**:验证一下就知道,`check:docs`(校验表格列数、代码块成对、引用的测试文件存在)
+  属于 `verify` job —— 而**文档改动恰恰是最容易弄坏它的**。2026-11-25 那天 CI 红了三次,其中
+  **两次是纯文档改动**(一次表格里写了转义的竖线 `\\|\\|`,一次注入了列数不一致的测试表格)。
+  加了 `paths-ignore: docs/**` 就等于把这层保护关掉。
 
-  真要想省:把 **docker job 单独拆到一个 workflow**、只给它加 \`paths-ignore\`,
-  **\`verify\` 保持每次推送都跑**。这样省的是构建时间,不是保护。
+  真要想省:把 **docker job 单独拆到一个 workflow**、只给它加 `paths-ignore`,
+  **`verify` 保持每次推送都跑**。这样省的是构建时间,不是保护。
 
 - **闸门红着不许提交 —— CI 确实会拦,但别指望本地拦住你(2026-11-25 实例)**。
   那天我改了文档表格,`check:docs` 已经输出「表格列数不一致」**而我仍然提交推送了**;
@@ -717,14 +753,14 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 
   | 提交 | verify job |
   | --- | --- |
-  | \`f1f4b3d\`(坏表格那次)| **failure** —— CI 拦住了 |
-  | \`5f37f54\` / \`bd29e93\`(修复)| success |
+  | `f1f4b3d`(坏表格那次)| **failure** —— CI 拦住了 |
+  | `5f37f54` / `bd29e93`(修复)| success |
 
   两条结论:
-  1. **本地没有任何东西会拦住你** —— 仓库配了 husky + lint-staged,但 \`.husky/pre-commit\` 长期缺失;
+  1. **本地没有任何东西会拦住你** —— 仓库配了 husky + lint-staged,但 `.husky/pre-commit` 长期缺失;
      2026-11-25 补上后,又发现**这台 Windows 上 git 执行不了 husky 的 hook**
-     (\`env: failed to run command '.husky/_/pre-commit': Permission denied\`,手动 \`sh\` 跑却正常)。
-     所以 \`core.hooksPath\` 保持未设置,提交不受影响 —— **能跑 hook 的环境(Linux/WSL)会受益,Windows 只能靠 CI**。
+     (`env: failed to run command '.husky/_/pre-commit': Permission denied`,手动 `sh` 跑却正常)。
+     所以 `core.hooksPath` 保持未设置,提交不受影响 —— **能跑 hook 的环境(Linux/WSL)会受益,Windows 只能靠 CI**。
   2. **"写下来提醒自己"是没用的**:这条纪律我在那个会话里写过好几轮,然后照样违反两次。
      唯一真正有效的是**机器拦截**,而它恰好在本机不可用 —— 所以**推之前自己把闸门跑一遍**,并**在 CI 里确认**。
 

@@ -274,6 +274,12 @@ cmd.exe /c "set TEMP=C:\\Users\\<你>\<仓库>\.tmp-build&& set TMP=%TEMP%&& npm
 3. **每个修复都要能证伪**:删掉修复 → 测试必须翻红。这一步让我抓到三次「测试其实没测到」。
 4. **把一次性的验证变成守卫**:`check:docs`、`check:audit-routes`、`audit-ui:local`、
    `importReplaceSemantics.test.js` 都是这么来的。
+5. **同一个数,用两种互不相同的数法对一次**:行尾规范化那轮,我自己的 awk 条件写错了,报
+   「待刷新 0 个」,而独立的 `grep -c` 报「还剩 48 个」—— 正是两个数对不上才暴露了工具的错误。
+   凡是"报 0 / 报空"的结论,都该用第二种数法再验一遍。
+6. **改了行尾属性之后,别指望 `git checkout-index -a -f` 刷新工作区**:它按 stat 判定"没变化"就跳过。
+   要 `rm` 掉文件再 `git checkout -- <文件>` 才会按新属性重新物化 —— 先拿**单个文件**试,
+   确认属性真的生效(`file` 看行尾),再批量做。
 
 **代价最大的四类错误**(都发生过,且都伪装成"被测对象有缺陷"):
 
@@ -315,6 +321,19 @@ cmd.exe /c "set TEMP=C:\\Users\\<你>\<仓库>\.tmp-build&& set TMP=%TEMP%&& npm
   不是改测试。
 - **死代码清理**:删掉 8 个没人引用的文件(7 个仪表盘组件 + 一个已废弃的 sync store),`syncClient.ts` 193 → 17 行;
   并加了「声明了却没人用」与「导出了却没人引用」两个闸门。
+- **部署卫生(2026-11-25,未发版、按"攒一批再发"只提交)**:Windows 上 `docker build` 出来的镜像
+  **起不来** —— 构建上下文里的入口脚本带 CRLF,镜像里首行是 `#!/bin/sh\r`,exec 报
+  `No such file or directory` / 退出码 127;同一根因还让 `nginx.conf` 的 CRLF 使 PORT 改写**静默失效**
+  (脚本仍退出 0)。CI 在 Linux 上检出所以一直是绿的,**只有 Windows 本地构建会中招**。
+  修法:新增 `.gitattributes`(`* text=auto eol=lf`)+ Dockerfile 里 `tr -d '\r'` 兜底;
+  顺带把 `docker/start-ledgerflow.sh` 的权限位从 100644 改成 100755。
+  完整复现、逐项前后对比与验证方式见 `docs/verified-invariants.md` 的「Windows 上 `docker build`
+  会产出『起不来』的镜像」那一节。
+- **文档修复(2026-11-25,同上)**:`docs/verified-invariants.md` 里有 **404 处**反引号被写成了 `\`code\``
+  (某个写入工具的转义残留 —— 其余 16 份文档都是 0 处),Markdown 会把它们渲染成**字面反引号**而不是
+  代码样式;`verification-recipes.md` 另有 1 处。已全部反转义(共 405 处)。
+  复核方式是「把 HEAD 版施加同一变换后与工作区比对,差额必须**恰好只有我手写的编辑**」——
+  这样能排除"顺手改坏了别的行"。
 
 **页面测试覆盖地图(2026-11-25,已更正一次)**:
 

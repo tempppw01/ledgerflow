@@ -1,0 +1,29 @@
+# 统一行尾为 LF。
+#
+# 为什么必须有这个文件:Windows 检出时 core.autocrlf 会带来 CRLF,而 Docker 的构建
+# 上下文取的就是工作区磁盘上的原样字节 —— 于是镜像里的 docker/start-ledgerflow.sh
+# 第一行变成 "#!/bin/sh\r",Linux 上 exec 直接失败
+# (env: can't execute ... : No such file or directory,退出码 127),容器起不来;
+# 同时 CRLF 的 nginx.conf 会让入口脚本里 awk 的 `$0 == "  listen 80;"` 永远不匹配,
+# PORT 改写静默失效。CI 在 Linux 上检出,所以这个问题一直是绿的,只有 Windows
+# 本地构建会中招。声明 eol=lf 之后,仓库与各平台检出都统一为 LF,
+# 不再取决于每台机器的 core.autocrlf。
+* text=auto eol=lf
+
+# 二进制文件不做任何行尾转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.xlsx binary
+*.woff binary
+*.woff2 binary
+
+# shell 脚本必须是 LF(镜像里靠 shebang 直接执行)
+*.sh text eol=lf
+
+# 将来若加入 Windows 批处理,它们必须是 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf

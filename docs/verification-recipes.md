@@ -34,7 +34,7 @@ npm run audit:demo-baseline                           # 清完核对演示库基
 | --- | --- |
 | 打开导入 | 空交易列表里的「导入微信账单」/「导入支付宝账单」(v0.50.52 起);有交易时在「当期账单」那一排 |
 | 递文件 | 它会点一个**隐藏的 file input**;Playwright 侧监听 filechooser 事件再 `setFiles` |
-| **文件必须放哪** | MCP 浏览器的上传**只允许** `C:\Users\<你>\.dsh\profiles\desktop\` 下的文件 —— 放别处会报 “outside allowed roots”,先拷进去 |
+| **文件必须放哪** | MCP 浏览器的上传**只允许** `C:\Users\<你>\.dsh\profiles\desktop` 下的文件 —— 放别处会报 “outside allowed roots”,先拷进去 |
 
 ### 改设置类的东西(比点 UI 稳)
 

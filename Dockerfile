@@ -26,6 +26,14 @@ COPY --from=build /app/dist /usr/share/nginx/html
 COPY --from=build /app/node_modules /app/node_modules
 COPY server /app/server
 COPY docker/start-ledgerflow.sh /usr/local/bin/start-ledgerflow.sh
-RUN mkdir -p /app/data && chmod +x /usr/local/bin/start-ledgerflow.sh
+# 规范化行尾,作为 .gitattributes 之外的第二道防线:即使构建上下文来自 CRLF 的
+# 检出(Windows + core.autocrlf),镜像里的入口脚本也必须能被 exec,nginx 配置也
+# 必须能被 awk 正常匹配(否则 PORT 改写会静默失效,容器只在 80 上监听)。
+RUN mkdir -p /app/data \
+ && tr -d '\r' < /usr/local/bin/start-ledgerflow.sh > /tmp/start.sh \
+ && mv /tmp/start.sh /usr/local/bin/start-ledgerflow.sh \
+ && tr -d '\r' < /etc/nginx/http.d/default.conf > /tmp/nginx.conf \
+ && mv /tmp/nginx.conf /etc/nginx/http.d/default.conf \
+ && chmod +x /usr/local/bin/start-ledgerflow.sh
 EXPOSE 80
-CMD ["start-ledgerflow.sh"]
+CMD ["/usr/local/bin/start-ledgerflow.sh"]
