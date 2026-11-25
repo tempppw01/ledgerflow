@@ -336,6 +336,21 @@ cmd.exe /c "set TEMP=C:\\Users\\<你>\<仓库>\.tmp-build&& set TMP=%TEMP%&& npm
   所以 `[*.md]` 单独关掉 `trim_trailing_whitespace`。
   (顺带量到一个更早的问题:`npm run format:check` 是红的,341 个文件 —— 详见
   `docs/verified-invariants.md` 的「已知但故意不当作 bug 的」一节,不要顺手全量重排。)
+- **切一下主题就会把整份账本重新上传(2026-11-25,未发版、按"攒一批再发"只提交)**:
+  `useAppPreferences` 里既有账本数据(`debts` / `monthlyIncome` / `baseCurrency` ...),
+  也有三个**只存浏览器**的纯 UI 偏好(`theme` / `accentTheme` / `defaultLandingPath`,
+  见该 store 的 `persist.partialize`)。而 `SqlDataSyncGate` 是
+  `useAppPreferences.subscribe(handleStoreChange)` —— **任何**字段变化都会把整份快照
+  `PUT /api/data/import`,于是点一下主题切换就重传演示库那 298 笔交易。
+  两个后果:服务端写进用户从没改过的设置行;以及"没改动也要抢先上传"放大第 1 条的风险。
+  **发现方式是它撞红了自己的闸门**:`npm run audit:demo-baseline` 报 `settings` 由 11 变 12,
+  而库里其它数字全对 —— 切主题→查库→复现,再切主题→查库→归零,两次都稳定复现。
+  修法写在 `SqlDataSyncGate` 的订阅处,判据刻意是「**只有**本地字段变了才跳过」而不是
+  「快照相关字段变了才上传」:后者一旦有谁就地改了数组(引用不变)就会**漏传**;
+  反过来认不出来就照旧上传,只砍掉能证明是纯本地的那一次。
+  `SqlDataSyncGate.test.tsx` 加了两条成对的测试(主题不传 / 月收入照传),**证伪过**:
+  把跳过逻辑关掉,第一条立刻翻红(期望 1 次实得 2 次)。浏览器里也验过:切主题两次,
+  上传请求 0 次,基线回到 11。
 - **文档修复(2026-11-25,同上)**:`docs/verified-invariants.md` 里有 **404 处**反引号被写成了 `\`code\``
   (某个写入工具的转义残留 —— 其余 16 份文档都是 0 处),Markdown 会把它们渲染成**字面反引号**而不是
   代码样式;`verification-recipes.md` 另有 1 处。已全部反转义(共 405 处)。

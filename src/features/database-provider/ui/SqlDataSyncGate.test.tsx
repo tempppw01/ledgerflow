@@ -28,7 +28,14 @@ const mocks = vi.hoisted(() => {
     debts: [] as unknown[],
     repaymentRecords: [] as unknown[],
     creditDrafts: [] as unknown[],
-    monthlyIncome: 0
+    monthlyIncome: 0,
+    /*
+     * 只存在浏览器里的 UI 偏好。它们和账本数据同在一个 store,
+     * 所以 "订阅了这个 store" 不等于 "账本变了" —— 这正是下面那组测试要钉住的事。
+     */
+    theme: 'system' as string,
+    accentTheme: 'amber' as string,
+    defaultLandingPath: '' as string
   };
   const memoryState = { memories: [] as unknown[], replaceAllData: vi.fn() };
   const smartBudgetState = {
@@ -45,12 +52,25 @@ const mocks = vi.hoisted(() => {
       subscribe: () => () => undefined
     }
   );
+  let preferencesListener: ((state: typeof preferencesState) => void) | null = null;
+  /*
+   * zustand 的 set() 会**换一个新对象**(浅合并),留下来的旧对象保持原样 ——
+   * 按引用比较"变没变"就建立在这个前提上。所以这里也必须换对象:
+   * 如果就地改同一个对象,两边引用相同,任何按引用的比较都会得出"没变",
+   * 测试就会把实现里的 bug 掩盖成一个"看起来通过"的假象。
+   */
+  let currentPreferencesState: typeof preferencesState = { ...preferencesState };
   const useAppPreferences = Object.assign(
     (selector: (state: typeof preferencesState) => unknown) => selector(preferencesState),
     {
-      getState: () => preferencesState,
+      getState: () => currentPreferencesState,
       setState: vi.fn(),
-      subscribe: () => () => undefined
+      subscribe: (listener: (state: typeof preferencesState) => void) => {
+        preferencesListener = listener;
+        return () => {
+          if (preferencesListener === listener) preferencesListener = null;
+        };
+      }
     }
   );
   const useGlobalMemoryStore = Object.assign(
@@ -80,6 +100,12 @@ const mocks = vi.hoisted(() => {
     useAppPreferences,
     useGlobalMemoryStore,
     useSmartBudgetStore,
+    /** 模拟一次 store 变更:改字段 + 换新对象 + 通知订阅者(和 zustand set 一致)。 */
+    emitPreferencesChange: (patch: Partial<typeof preferencesState>) => {
+      Object.assign(preferencesState, patch);
+      currentPreferencesState = { ...preferencesState };
+      preferencesListener?.(currentPreferencesState);
+    },
     getRelationalBootstrap: vi.fn(),
     importRelationalData: vi.fn(),
     clearScopedBrowserData: vi.fn()
@@ -156,5 +182,56 @@ describe('SqlDataSyncGate initial cloud handling', () => {
 
     expect(await screen.findByText('应用内容')).toBeInTheDocument();
     await waitFor(() => expect(mocks.importRelationalData).toHaveBeenCalledTimes(1));
+  });
+});
+
+/*
+ * 这两条是一对,必须一起看:
+ *   · 第一条钉住"纯本地偏好不触发上传" —— 改之前它会失败(会多出第 2 次调用);
+ *   · 第二条是它的反面,防止有人图省事把订阅整条摘掉(那样"不上传"这条会假绿)。
+ * 同步的定时器是 500ms,所以断言前要等过它。
+ */
+describe('SqlDataSyncGate 的同步触发条件', () => {
+  const SETTLE_MS = 700;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.financeState.transactions = [];
+    mocks.financeState.hasHydrated = true;
+    mocks.memoryState.memories = [];
+    mocks.preferencesState.monthlyIncome = 0;
+    mocks.preferencesState.theme = 'system';
+    mocks.preferencesState.accentTheme = 'amber';
+    mocks.preferencesState.defaultLandingPath = '';
+    mocks.getRelationalBootstrap.mockResolvedValue(emptyBootstrap());
+    mocks.importRelationalData.mockResolvedValue({ ok: true });
+  });
+
+  it('只改本地 UI 偏好(主题)时不重新上传账本', async () => {
+    render(
+      <SqlDataSyncGate>
+        <div>应用内容</div>
+      </SqlDataSyncGate>
+    );
+    expect(await screen.findByText('应用内容')).toBeInTheDocument();
+    await waitFor(() => expect(mocks.importRelationalData).toHaveBeenCalledTimes(1));
+
+    mocks.emitPreferencesChange({ theme: 'dark' });
+    await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
+
+    expect(mocks.importRelationalData).toHaveBeenCalledTimes(1);
+  });
+
+  it('改真正进快照的偏好(月收入)时照旧上传', async () => {
+    render(
+      <SqlDataSyncGate>
+        <div>应用内容</div>
+      </SqlDataSyncGate>
+    );
+    expect(await screen.findByText('应用内容')).toBeInTheDocument();
+    await waitFor(() => expect(mocks.importRelationalData).toHaveBeenCalledTimes(1));
+
+    mocks.emitPreferencesChange({ monthlyIncome: 26000 });
+    await waitFor(() => expect(mocks.importRelationalData).toHaveBeenCalledTimes(2));
   });
 });

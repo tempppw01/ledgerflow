@@ -49,6 +49,18 @@ function isStaleLedgerRevision(message: string) {
   return /另一个窗口|已被.*改动/.test(message);
 }
 
+/**
+ * 只存在浏览器里、**永远不进快照**的 UI 偏好。
+ *
+ * 依据是该 store 自己的持久化白名单(`persist.partialize` 只写这三个),以及
+ * `getPayload()` 里 preferences 那一段不含它们 —— 两处都在说"这是本机偏好"。
+ */
+const LOCAL_ONLY_PREFERENCE_KEYS: ReadonlySet<string> = new Set([
+  'theme',
+  'accentTheme',
+  'defaultLandingPath'
+]);
+
 /** 只接受已知币种;其它一律 undefined(调用方据此决定是"保持原值"还是"忽略")。 */
 function normalizeBaseCurrency(value: unknown): LedgerBaseCurrency | undefined {
   const code = String(value ?? '').trim().toUpperCase();
@@ -378,7 +390,32 @@ export function SqlDataSyncGate({ children }: SqlDataSyncGateProps) {
     };
     const handleStoreChange = () => scheduleSync();
     const unsubscribeFinance = useFinanceStore.subscribe(handleStoreChange);
-    const unsubscribePreferences = useAppPreferences.subscribe(handleStoreChange);
+    /*
+     * theme / accentTheme / defaultLandingPath 和账本数据同在一个 store,但只活在本机。
+     * 直接 subscribe(handleStoreChange) 会把「点一下主题切换」也当成账本改动 ——
+     * 于是把整份账本(演示库 298 笔交易)重新 POST 一遍。
+     *
+     * 两个实际后果:
+     *   · 服务端会写进用户从没改过的设置行 —— 本仓库的 `npm run audit:demo-baseline`
+     *     正是被这个撞红的(settings 由 11 变 12,而库本身没人动过);
+     *   · 没有任何账本改动也要抢先上传,正好放大「快照同步覆盖别的窗口写入」的既有风险。
+     *
+     * 判据刻意写成「**只有**本地字段变了才跳过」,而不是「快照相关字段变了才上传」。
+     * 后者看着更直接,但如果哪里就地改了数组(引用不变),它会把真改动误判成"没变"而**漏传**;
+     * 这里反过来 —— 认不出来就照旧上传,只砍掉能证明是纯本地的那一次。
+     */
+    let previousPreferencesState = useAppPreferences.getState() as unknown as Record<string, unknown>;
+    const unsubscribePreferences = useAppPreferences.subscribe((state) => {
+      const nextState = state as unknown as Record<string, unknown>;
+      const changedKeys = Object.keys(nextState).filter(
+        (key) => !Object.is(previousPreferencesState[key], nextState[key])
+      );
+      previousPreferencesState = nextState;
+      const onlyLocalUiPreferences =
+        changedKeys.length > 0 && changedKeys.every((key) => LOCAL_ONLY_PREFERENCE_KEYS.has(key));
+      if (onlyLocalUiPreferences) return;
+      handleStoreChange();
+    });
     const unsubscribeMemories = useGlobalMemoryStore.subscribe(handleStoreChange);
     const unsubscribeSmartBudget = useSmartBudgetStore.subscribe(handleStoreChange);
     if (dirtyRef.current) scheduleSync();
