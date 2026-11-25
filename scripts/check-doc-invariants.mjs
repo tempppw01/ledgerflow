@@ -157,12 +157,47 @@ for (const rel of ['README.md', ...DOC_FILES]) {
   }
 }
 
-if (missing.length === 0 && columnIssues.length === 0 && fragmentIssues.length === 0 && fenceIssues.length === 0 && commandIssues.length === 0) {
+/**
+ * docker-compose.yml 里用到的环境变量,都得在 .env.example 里出现。
+ *
+ * 为什么:compose 描述"部署时能配什么",.env.example 是"用户照着填什么"。
+ * 往 compose 加一个新变量却忘了写进示例,用户根本不知道它存在 —— 这个文件就是给部署者看的。
+ * 反向不检查:.env.example 里还有一批 VITE_*(前端构建期)和开发期变量,本来就不经过 compose。
+ */
+const composeIssues = [];
+{
+  const composePath = path.join(ROOT, 'docker-compose.yml');
+  const examplePath = path.join(ROOT, '.env.example');
+  if (existsSync(composePath) && existsSync(examplePath)) {
+    const compose = readFileSync(composePath, 'utf8');
+    const example = readFileSync(examplePath, 'utf8');
+
+    const composeVars = new Set();
+    for (const match of compose.matchAll(/\$\{([A-Z_][A-Z0-9_]*)/g)) composeVars.add(match[1]);
+    for (const match of compose.matchAll(/^\s{6}([A-Z_][A-Z0-9_]*):/gm)) composeVars.add(match[1]);
+
+    const exampleVars = new Set();
+    for (const match of example.matchAll(/^([A-Z_][A-Z0-9_]*)=/gm)) exampleVars.add(match[1]);
+
+    for (const name of [...composeVars].sort()) {
+      if (!exampleVars.has(name)) {
+        composeIssues.push(`${name} —— docker-compose.yml 用到它,但 .env.example 里没有`);
+      }
+    }
+  }
+}
+
+if (missing.length === 0 && columnIssues.length === 0 && fragmentIssues.length === 0 && fenceIssues.length === 0 && commandIssues.length === 0 && composeIssues.length === 0) {
   console.log(
     `文档引用体检通过:docs/*.md 共 ${DOC_FILES.length} 份 —— 引用的测试文件全部存在、` +
-      '表格列数一致、没有被打断的表格、代码块成对、文档里写的 npm 脚本都存在。'
+      '表格列数一致、没有被打断的表格、代码块成对、文档里写的 npm 脚本都存在、' +
+      'compose 的环境变量都在 .env.example 里。'
   );
   process.exit(0);
+}
+if (composeIssues.length > 0) {
+  console.log('\ndocker-compose.yml 用到、但 .env.example 没写的环境变量(用户不知道要配它):');
+  for (const issue of composeIssues) console.log('  ✗ ' + issue);
 }
 if (commandIssues.length > 0) {
   console.log('\n文档里写了不存在的 npm 脚本(照着做会失败):');
