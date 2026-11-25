@@ -6,7 +6,7 @@
  * 写完忘了清,还有一次清干净了但忘了回写账户余额缓存,都是靠人肉核对才发现的)。
  * 文档里那张基线表如果不变成可执行的检查,就只是"希望它没变"。
  *
- * 这里只**读**库,核对 counts / 关键余额 / 退款夹具 / 外键与回收站是否为空。
+ * 这里只**读**库,核对 counts / 关键余额 / 退款夹具 / 还款记录 / 外键与回收站是否为空。
  * 钱的恒等式(逐月收支、净值构成等)交给 `npm run audit:ledger-math` —— 两者互补。
  *
  * 用法:node scripts/check-demo-baseline.mjs [--email=...]
@@ -61,6 +61,26 @@ const BASELINE = [
     label: '¥390.55 那对(支出+退款)',
     actual: db.prepare('SELECT COUNT(*) c FROM ledger_transactions WHERE user_id = ? AND amount = 390.55').get(uid).c,
     expected: 2
+  },
+  {
+    // ledger_debt_repayments **没有 user_id 列**(靠 debt_id 关联债务),所以不能用上面的 count() 辅助函数,
+    // 必须 join ledger_debts 才能按账号过滤 —— 写错了会静默数成 0,故这里连金额一起核。
+    label: '还款记录(条数)',
+    actual: db
+      .prepare(
+        'SELECT COUNT(*) c FROM ledger_debt_repayments r JOIN ledger_debts d ON d.id = r.debt_id WHERE d.user_id = ?'
+      )
+      .get(uid).c,
+    expected: 2
+  },
+  {
+    label: '还款记录(金额合计)',
+    actual: db
+      .prepare(
+        'SELECT COALESCE(SUM(r.amount), 0) s FROM ledger_debt_repayments r JOIN ledger_debts d ON d.id = r.debt_id WHERE d.user_id = ?'
+      )
+      .get(uid).s,
+    expected: 6000
   },
   { label: '外键悬垂行', actual: db.prepare('PRAGMA foreign_key_check').all().length, expected: 0 }
 ];
