@@ -1027,3 +1027,101 @@ describe('TransactionTable', () => {
     expect(onOpenDetail).not.toHaveBeenCalled();
   });
 });
+
+/*
+ * WCAG 2.1.1(键盘,A):详情抽屉原来只能点行打开。行是 tabIndex={-1}、行内没有任何按钮,
+ * 键盘用户走完整个 Tab 顺序也碰不到交易,等于看不了详情。
+ * 现在用 roving tabindex:整张表只有一行进 Tab 顺序,↓/↑ 换行,Enter/空格 开详情。
+ * 这个测试盯住三件事:只有一行是 tabindex=0、↓ 会换行、Enter 会带对 id 打开详情。
+ */
+describe('桌面表格:整行详情必须能用键盘打开(WCAG 2.1.1)', () => {
+  const keyboardRows = [
+    {
+      item: {
+        id: 'tx-kb-1',
+        date: '2026-03-10',
+        type: 'expense' as const,
+        categoryId: 'cat-1',
+        accountId: 'acc-1',
+        amount: 32,
+        note: '键盘午餐',
+        tags: []
+      },
+      categoryName: '餐饮',
+      accountName: '现金'
+    },
+    {
+      item: {
+        id: 'tx-kb-2',
+        date: '2026-03-11',
+        type: 'expense' as const,
+        categoryId: 'cat-1',
+        accountId: 'acc-1',
+        amount: 18,
+        note: '键盘咖啡',
+        tags: []
+      },
+      categoryName: '餐饮',
+      accountName: '现金'
+    }
+  ];
+
+  const renderTable = (onOpenDetail: (id: string) => void) =>
+    render(
+      <TransactionTable
+        {...baseProps}
+        rows={keyboardRows}
+        total={2}
+        filteredTotal={2}
+        page={1}
+        pages={1}
+        pageSize={8}
+        pageSizeOptions={[8, 20]}
+        loading={false}
+        hasFilters={false}
+        selectedIds={[]}
+        bulkSelectionEnabled={false}
+        canSelectAllOnPage={false}
+        allPageSelected={false}
+        sortKey="date"
+        sortDirection="desc"
+        onOpenDetail={onOpenDetail}
+      />
+    );
+
+  it('只有一行进 Tab 顺序,↓ 换行,Enter 打开对应交易的详情', async () => {
+    const user = userEvent.setup();
+    const onOpenDetail = vi.fn();
+    renderTable(onOpenDetail);
+
+    const trs = Array.from(
+      document.querySelectorAll<HTMLTableRowElement>('tr.transaction-row-clickable')
+    );
+    expect(trs).toHaveLength(2);
+    // 只有一行是 0,其余 -1 —— 否则几十行会全塞进 Tab 链
+    expect(trs[0].getAttribute('tabindex')).toBe('0');
+    expect(trs[1].getAttribute('tabindex')).toBe('-1');
+
+    trs[0].focus();
+    await user.keyboard('{ArrowDown}');
+    expect(document.activeElement).toBe(trs[1]);
+    // 焦点移过去后,roving 位置也跟着过去
+    expect(document.querySelectorAll('tr.transaction-row-clickable')[1]?.getAttribute('tabindex')).toBe('0');
+
+    await user.keyboard('{Enter}');
+    expect(onOpenDetail).toHaveBeenCalledWith('tx-kb-2');
+  });
+
+  it('空格键同样能打开详情(不是只有 Enter)', async () => {
+    const user = userEvent.setup();
+    const onOpenDetail = vi.fn();
+    renderTable(onOpenDetail);
+
+    const trs = Array.from(
+      document.querySelectorAll<HTMLTableRowElement>('tr.transaction-row-clickable')
+    );
+    trs[0].focus();
+    await user.keyboard(' ');
+    expect(onOpenDetail).toHaveBeenCalledWith('tx-kb-1');
+  });
+});

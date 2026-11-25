@@ -380,6 +380,14 @@ export function TransactionTable({
   // role="menu" 得配方向键:打开时焦点落在第一项,↑↓ 循环,关闭后还给触发按钮。
   useMenuKeyboard(Boolean(contextMenu), contextMenuRef, () => setContextMenu(null));
   const touchStartXRef = useRef<number | null>(null);
+  /*
+   * WCAG 2.1.1(键盘,A):详情抽屉原来只能点行打开 —— 行是 tabIndex={-1},
+   * 行内没有任何按钮,键盘用户走完 40 次 Tab 也碰不到交易,等于"看不了详情"。
+   * 但把每一行都设成 tabIndex={0} 会让几十行全进 Tab 链(原来的注释就是这个顾虑)。
+   * 折中成 roving tabindex:整张表只占**一个** Tab 停靠点,
+   * ↓/↑ 在行之间移动,Enter/空格 打开详情。
+   */
+  const [rovingRowId, setRovingRowId] = useState<string | null>(null);
   const dragColumnRef = useRef<TransactionColumnKey | null>(null);
   const resizeStateRef = useRef<{
     key: TransactionColumnKey;
@@ -1050,10 +1058,30 @@ export function TransactionTable({
                       <tr
                         key={item.id}
                         id={`transaction-row-${item.id}`}
-                        /* -1 而不是 0:让行能被「程序化聚焦」,但不把每一行塞进 Tab 顺序
-                           (表格几十行,全进 Tab 链会变得极难走)。点击时先聚焦本行,
-                           抽屉关闭后焦点才能回到这一行,而不是掉到 body。 */
-                        tabIndex={-1}
+                        /* roving tabindex:整张表只有一行进 Tab 顺序(没操作过时是第一行),
+                           ↓/↑ 换行,Enter/空格 开详情。行内还有其他可聚焦控件(复选框等),
+                           所以这里只解决"整行点开详情"这一个动作的键盘可达性。 */
+                        tabIndex={
+                          (rovingRowId ?? rows[0]?.item.id) === item.id ? 0 : -1
+                        }
+                        onFocus={() => setRovingRowId(item.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                            event.preventDefault();
+                            const all = Array.from(
+                              event.currentTarget.parentElement?.querySelectorAll<
+                                HTMLTableRowElement
+                              >('tr.transaction-row-clickable') ?? []
+                            );
+                            const at = all.indexOf(event.currentTarget);
+                            all[at + (event.key === 'ArrowDown' ? 1 : -1)]?.focus();
+                            return;
+                          }
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            onOpenDetail(item.id);
+                          }
+                        }}
                         className={`transaction-row-clickable ${
                           highlightId === item.id ? 'transaction-row-highlight' : ''
                         } ${
