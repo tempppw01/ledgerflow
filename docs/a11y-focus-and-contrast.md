@@ -531,6 +531,16 @@ for (const message of messages) {
 两条都证伪过:把映射表的逗号改回半角 → 文案测试与英文守卫同时翻红;
 把错误关联摘掉 → 组件测试翻红。
 
-⚠ **其余表单还没做**(还款管理、预算向导、资产负债模拟、登录)。模式已经跑通,
-照同一套改即可:模型给出错字段 → 错误的 `<p>` 给 `id` → 字段挂
-`aria-invalid` + `aria-describedby`。
+⚠ **其余表单还没做**(还款管理、预算向导、登录)。模式已经跑通,照同一套改即可:
+模型给出错字段 → 错误的 `<p>` 给 `id` → 字段挂 `aria-invalid` + `aria-describedby`。
+
+### 同一个模式套到第二处:资产负债模拟的预测账单表单
+
+这一处不需要改模型 —— 两条校验分支本来就各自对应一个字段
+(`forecastAmountInvalid` → 金额框,`forecastDateInvalid` → 日期框),
+只是没有把这个信息传给表单。加一个 `billErrorField` 状态即可。
+
+**关键的一点是"换字段要把上一个清掉"**:金额错一次、再让日期错,
+金额框上不能还留着 `aria-invalid`。测试专门断言了这一条
+(`expect(amount).not.toHaveAttribute('aria-invalid')`) —— 只测"改对了"不测"改回来",
+很容易留下一个一直标红的字段。

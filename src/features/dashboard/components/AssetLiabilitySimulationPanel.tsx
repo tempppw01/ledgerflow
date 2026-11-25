@@ -25,6 +25,9 @@ import { toLocalDateKey } from '../../../shared/lib/localDate';
 
 type Point = { x: number; y: number };
 
+/** 预测账单表单的错误消息 id —— 字段用 aria-describedby 指过来,而不是只在底部报一句。 */
+const FORECAST_BILL_ERROR_ID = 'forecast-bill-error';
+
 function smoothPath(points: Point[]) {
   if (points.length < 2) return '';
   return points.reduce((path, point, index, list) => {
@@ -81,6 +84,11 @@ export function AssetLiabilitySimulationPanel({
   const [billDirection, setBillDirection] = useState<ForecastBillDirection>('expense');
   const [billRepeat, setBillRepeat] = useState<ForecastBillRepeat>('once');
   const [billError, setBillError] = useState('');
+  /*
+   * 错误出在哪个字段上。表单据此把 aria-invalid / aria-describedby 挂到**那个**输入框,
+   * 而不是只在表单底部报一句 —— 读屏用户逐字段 Tab 过去时才听得到哪里错了。
+   */
+  const [billErrorField, setBillErrorField] = useState<'' | 'amount' | 'date'>('');
   const [editingBillId, setEditingBillId] = useState('');
   const width = 720;
   const height = 280;
@@ -167,6 +175,7 @@ export function AssetLiabilitySimulationPanel({
     setBillName('');
     setBillAmount('');
     setBillError('');
+    setBillErrorField('');
   };
 
   const beginEditForecastBill = (bill: ForecastBill) => {
@@ -177,16 +186,19 @@ export function AssetLiabilitySimulationPanel({
     setBillDirection(bill.direction);
     setBillRepeat(bill.repeat);
     setBillError('');
+    setBillErrorField('');
   };
 
   const submitForecastBill = () => {
     const amount = Number(billAmount);
     if (!Number.isFinite(amount) || amount <= 0) {
       setBillError(t('dashboard.ui.simulation.forecastAmountInvalid'));
+      setBillErrorField('amount');
       return;
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(billDate)) {
       setBillError(t('dashboard.ui.simulation.forecastDateInvalid'));
+      setBillErrorField('date');
       return;
     }
     const payload = {
@@ -516,6 +528,9 @@ export function AssetLiabilitySimulationPanel({
             value={billAmount}
             placeholder={t('dashboard.ui.simulation.forecastAmountPlaceholder')}
             aria-label={t('dashboard.ui.simulation.forecastAmountPlaceholder')}
+            {...(billErrorField === 'amount'
+              ? { 'aria-invalid': true as const, 'aria-describedby': FORECAST_BILL_ERROR_ID }
+              : {})}
             onChange={(event) => setBillAmount(event.target.value)}
           />
           <input
@@ -523,6 +538,9 @@ export function AssetLiabilitySimulationPanel({
             type="date"
             value={billDate}
             aria-label={t('dashboard.ui.simulation.forecastDateLabel')}
+            {...(billErrorField === 'date'
+              ? { 'aria-invalid': true as const, 'aria-describedby': FORECAST_BILL_ERROR_ID }
+              : {})}
             onChange={(event) => setBillDate(event.target.value)}
           />
           <div
@@ -568,7 +586,7 @@ export function AssetLiabilitySimulationPanel({
         </form>
 
         {billError ? (
-          <p className="dashboard-forecast-error" role="alert">
+          <p id={FORECAST_BILL_ERROR_ID} className="dashboard-forecast-error" role="alert">
             {billError}
           </p>
         ) : null}

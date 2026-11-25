@@ -1,4 +1,6 @@
+import { fireEvent, render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { AssetLiabilitySimulationPanel } from './AssetLiabilitySimulationPanel';
 import { formatCalendarAmount } from '../model/assetLiabilitySimulationFormat';
 import { describeSimulationEvent } from '../model/assetLiabilitySimulationFormat';
 
@@ -33,5 +35,60 @@ describe('describeSimulationEvent', () => {
     expect(describeSimulationEvent({ kind: 'plannedIncome', name: '' }, echo)).toBe(
       'plannedIncome'
     );
+  });
+});
+
+/*
+ * 「错误要关联到出错的字段」。
+ *
+ * 预测账单表单原来只有底部一句 role="alert":读屏用户逐字段 Tab 过去听不到提示。
+ * 这里钉的是**接线** —— 金额错时标金额框、日期错时标日期框,而且**不要挂错**。
+ */
+describe('AssetLiabilitySimulationPanel 的错误关联到字段', () => {
+  const renderPanel = () => {
+    const { container } = render(
+      <AssetLiabilitySimulationPanel
+        rows={[]}
+        initialAssets={1000}
+        initialLiabilities={0}
+        horizonMonths={1}
+        onHorizonChange={() => undefined}
+        forecastBills={[]}
+        onAddForecastBill={() => 'forecast-bill-test'}
+        onUpdateForecastBill={() => undefined}
+        onRemoveForecastBill={() => undefined}
+      />
+    );
+    return {
+      container,
+      form: container.querySelector('form.dashboard-forecast-form') as HTMLFormElement,
+      amount: container.querySelector('.dashboard-forecast-input.is-amount') as HTMLInputElement,
+      date: container.querySelector('.dashboard-forecast-input.is-date') as HTMLInputElement
+    };
+  };
+
+  it('金额非法时标金额框,日期框不动', () => {
+    const { container, form, amount, date } = renderPanel();
+
+    fireEvent.change(amount, { target: { value: '0' } });
+    fireEvent.submit(form);
+
+    expect(amount).toHaveAttribute('aria-invalid', 'true');
+    expect(amount).toHaveAttribute('aria-describedby', 'forecast-bill-error');
+    expect(date).not.toHaveAttribute('aria-invalid');
+    expect(container.querySelector('#forecast-bill-error')).toBeTruthy();
+  });
+
+  it('金额合法但日期非法时改标日期框', () => {
+    const { form, amount, date } = renderPanel();
+
+    fireEvent.change(amount, { target: { value: '100' } });
+    fireEvent.change(date, { target: { value: '' } });
+    fireEvent.submit(form);
+
+    expect(date).toHaveAttribute('aria-invalid', 'true');
+    expect(date).toHaveAttribute('aria-describedby', 'forecast-bill-error');
+    // 上一步是金额错,这一步换了字段 —— 金额框不能还留着 aria-invalid
+    expect(amount).not.toHaveAttribute('aria-invalid');
   });
 });
