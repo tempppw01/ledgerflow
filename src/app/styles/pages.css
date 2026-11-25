@@ -2037,13 +2037,15 @@
   font-weight: 600;
 }
 .help-header h1,
+.help-header h2,
 .help-faq h2 {
   margin: 0;
   color: var(--color-text);
   font-weight: 680;
   letter-spacing: 0;
 }
-.help-header h1 {
+.help-header h1,
+.help-header h2 {
   font-size: clamp(27px, 4vw, 40px);
   line-height: 1.2;
 }
@@ -2732,6 +2734,7 @@
 }
 
 .about-console-header h1,
+.about-console-header h2,
 .about-console-header p,
 .about-workspace h2,
 .about-content-section h2,
@@ -2740,7 +2743,8 @@
   margin: 0;
 }
 
-.about-console-header h1 {
+.about-console-header h1,
+.about-console-header h2 {
   color: var(--color-text-primary);
   font-size: 28px;
   line-height: 1.15;

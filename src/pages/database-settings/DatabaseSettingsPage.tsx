@@ -1169,7 +1169,7 @@ export function DatabaseSettingsPage() {
           <p className="database-console-eyebrow">
             {tf('dataBackup.eyebrow', '数据管理')}
           </p>
-          <h1>{tf('dataBackup.title', '数据与备份')}</h1>
+          <h2>{tf('dataBackup.title', '数据与备份')}</h2>
         </div>
         <div
           className="database-console-stat"

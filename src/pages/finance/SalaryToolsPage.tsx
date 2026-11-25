@@ -9,7 +9,7 @@ export function SalaryToolsPage() {
       <header className="vi-hero finance-salary-hero">
         <div className="vi-hero-copy">
           <span className="vi-page-kicker">{tf('salaryTools.title', '工资估算')}</span>
-          <h1>{tf('salaryTools.headline', '把每一小时的价值算清楚')}</h1>
+          <h2>{tf('salaryTools.headline', '把每一小时的价值算清楚')}</h2>
           <p>
             {tf(
               'salaryTools.subtitle',

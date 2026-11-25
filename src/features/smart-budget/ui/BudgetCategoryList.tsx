@@ -66,7 +66,7 @@ function CategoryRow(props: {
       }}
     >
       <header className="sb-category-card-head">
-        <h4>{resolveBudgetCategoryLabel(row.category, tf)}</h4>
+        <h3>{resolveBudgetCategoryLabel(row.category, tf)}</h3>
         <span className={`sb-status-tag is-${status.key}`}>
           {tf(`smartBudget.categoryList.status.${status.key}`, status.label)}
         </span>

@@ -4622,7 +4622,8 @@
   font-size: 18px;
 }
 
-.chat-key-required-copy h3 {
+.chat-key-required-copy h3,
+.chat-key-required-copy h2 {
   margin: 0;
   font-size: 13px;
 }

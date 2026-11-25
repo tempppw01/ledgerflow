@@ -1565,7 +1565,27 @@ body {
   flex-shrink: 0;
 }
 
-.workspace-topbar h1 {
+/* 顶栏那个标题现在是 <h1>(WCAG 2.4.6:每页一个主标题),但它必须跟原来的
+   <div> 长得一模一样:12px、窄屏 13px、600、超长省略号。
+   下面 .workspace-topbar h1 那条是给**品牌名**写的(品牌名原来是个 h1,
+   17px),特异性 0-1-1;这里用 0-2-1 压过它,字号改为跟随外层容器。
+   星号那个助手分区的 spark 是 flex 兄弟,min-width:0 保证长标题能省略。 */
+.workspace-topbar .workspace-topbar-title h1 {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 品牌名(侧栏折叠时显示)的字号;它现在是 <span>,见 AppLayout。 */
+.workspace-topbar h1,
+.workspace-topbar .topbar-brand-name {
   margin: 0;
   font-size: var(--font-lg);
   font-weight: 600;
@@ -1602,9 +1622,11 @@ body {
   gap: var(--space-2);
 }
 
-.layout-shell.sidebar-is-collapsed .topbar-brand-copy.compact span {
-  display: none;
-}
+/* 这里原来有一条 `.topbar-brand-copy.compact span { display: none }`。
+   它是死规则:折叠态的 .compact 里当时只有 <img> 和 <h1>,没有 span,匹配不到任何元素。
+   现在品牌名从 <h1> 改成 <span>(品牌名不是标题),那条规则会**正好命中**它,
+   于是侧栏一折叠品牌名就被藏起来 —— 而折叠态正是显示 .compact 的时候。
+   所以删掉:折叠时品牌名要显示。 */
 
 .layout-shell.sidebar-is-collapsed .logo-circle {
   width: 32px;
@@ -9436,13 +9458,15 @@ body.exchange-resizing {
 }
 
 .categories-console-header h1,
+.categories-console-header h2,
 .categories-console-header p,
 .categories-accounts-head h2,
 .categories-accounts-head p {
   margin: 0;
 }
 
-.categories-console-header h1 {
+.categories-console-header h1,
+.categories-console-header h2 {
   color: var(--color-text-primary);
   font-size: 28px;
   line-height: 1.15;
@@ -11913,12 +11937,14 @@ body.categories-accounts-resizing {
 }
 
 .database-console-header h1,
+.database-console-header h2,
 .database-console-header p,
 .database-console-workspace h2 {
   margin: 0;
 }
 
-.database-console-header h1 {
+.database-console-header h1,
+.database-console-header h2 {
   color: var(--color-text-primary);
   font-size: 28px;
   line-height: 1.15;
@@ -21290,7 +21316,8 @@ select.debt-form-input {
   padding: 18px 0 24px;
   border-bottom: 1px solid var(--color-divider);
 }
-.finance-salary-hero h1 {
+.finance-salary-hero h1,
+.finance-salary-hero h2 {
   margin: 6px 0 8px;
   max-width: 640px;
   font-size: clamp(28px, 4vw, 44px);

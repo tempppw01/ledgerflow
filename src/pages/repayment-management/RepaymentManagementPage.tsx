@@ -2830,7 +2830,7 @@ export function RepaymentManagementPage() {
             <p className="repayment-console-eyebrow">
               {tf('repayment.eyebrow', '资产负债 / 还款管理')}
             </p>
-            <h1>{tf('repayment.title', '还款管理')}</h1>
+            <h2>{tf('repayment.title', '还款管理')}</h2>
           </div>
           <div
             className="repayment-console-status"

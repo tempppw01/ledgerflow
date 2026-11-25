@@ -949,7 +949,7 @@ export function CategoriesAccountsPage() {
           <p className="categories-console-eyebrow">
             {tf('categoriesAccounts.eyebrow', '记账设置')}
           </p>
-          <h1>{tf('nav.categoriesAccounts', '账户与分类')}</h1>
+          <h2>{tf('nav.categoriesAccounts', '账户与分类')}</h2>
         </div>
         <div
           className="categories-console-stat"

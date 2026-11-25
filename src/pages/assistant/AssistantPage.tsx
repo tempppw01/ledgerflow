@@ -2415,7 +2415,7 @@ export function AssistantPage() {
                     ⌁
                   </div>
                   <div className="chat-key-required-copy">
-                    <h3>{t('assistant.ui.needApiKeyTitle')}</h3>
+                    <h2>{t('assistant.ui.needApiKeyTitle')}</h2>
                     <p>{t('assistant.ui.needApiKeyDesc')}</p>
                   </div>
                   <Link className="chat-key-required-link" to="/settings">

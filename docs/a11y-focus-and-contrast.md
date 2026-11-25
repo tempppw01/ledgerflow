@@ -1,7 +1,7 @@
-# 焦点与对比度(a11y 现状与复测方法)
+# 焦点、对比度与页面结构(a11y 现状与复测方法)
 
-这份文档记录两件容易被忽略、但直接影响「能不能用」的事:**键盘焦点看不看得见**、
-**文字/图标够不够清楚**。两处都附了复测方法,改动后可以重新量一遍。
+这份文档记录容易被忽略、但直接影响「能不能用」的几件事:**键盘焦点看不看得见**、
+**文字/图标够不够清楚**、**页面结构机器读不读得懂**。每处都附了复测方法,改动后可以重新量一遍。
 
 ## 1. 焦点可见性
 
@@ -74,3 +74,73 @@ violet `#8b5cf6` 白字 4.23 / 黑字 4.13,两头都不合格,所以压深主色
 - 行内菜单方向键(`role="menu"`):`useMenuKeyboard`
 - 表单标签覆盖:13 个路由 + 两个弹层实测**全部有可访问名称**,无需修
 - 异步错误/状态播报:`docs/a11y-live-regions.md`
+
+## 4. 页面结构:跳转链接、文档标题、标题层级(2026-11 修好)
+
+这三条都是 Level A / AA 的硬要求,而且都不能靠「看起来对」判断,只能实测。
+
+### 4.1 跳转链接(WCAG 2.4.1,Level A)
+
+侧边导航有几十个链接,键盘/读屏用户每换一页都得 Tab 穿过整条导航才能到正文。
+`AppLayout` 首位现在有一个 `.skip-to-content`,目标是 `<main id="main-content" tabIndex={-1}>`。
+
+两个容易做错的地方:
+
+- **只加 `id` 不够**。焦点不会跟着锚点跑,回车后 Tab 仍然从导航继续走,所以要
+  `tabIndex={-1}`(不进入 Tab 序列,但可由脚本/锚点聚焦)。
+- **必须真的可见**。清单明确写「聚焦时必须可见」,所以 `.skip-to-content` 平时
+  1×1 裁切,`:focus` 时恢复成正常尺寸。写成 `display:none` 或永远 `opacity:0`
+  等于没有 —— 屏幕阅读器拿得到,键盘用户看不到。
+
+实测:22 条路由 22/22 存在;未聚焦时 1×1,聚焦后 102×42、背景 `#f59e0b`。
+
+### 4.2 文档标题(WCAG 2.4.2,Level A)
+
+此前**所有路由共用一个 `document.title`**(只在 i18n 初始化时写一次),浏览器标签页、
+历史记录、书签里完全分不出页面。
+
+现在唯一写入方是 `src/shared/lib/documentTitle.ts` 的 `useDocumentTitle(pathname)`,
+它是一张「路由 → 标题 key」的表 + 兜底。i18n 里原来的 `applyDocumentTitle` 已删除:
+留着就是第二个写入方,切语言时两边会打架。
+
+踩过的坑:`/transactions` 与 `/transactions/new` 前缀重叠,最早那版把尾斜杠归一化后
+`/transactions` 命中了「编辑流水」。现在用显式 `exactKey` / `exactFallback` 区分,
+并有单测钉住(`documentTitle.test.ts`,9 条)。
+
+实测:22 条路由标题两两不同,且随语言切换跟随。
+
+### 4.3 标题层级(WCAG 2.4.6,AA)
+
+**根因是两个「条件性 h1」**:侧栏品牌名写成 `<h1>` 但只在侧栏折叠时渲染,而真正的
+页面标题(`currentWorkspaceTitle`)渲染成了 `<div>`。结果侧栏展开时全站 `h1` 数量为 0,
+折叠时又变成两个。
+
+现在的约定是**顶栏标题就是页面唯一的 `<h1>`**,正文各区块从 `h2` 起:
+
+- `AppLayout`:顶栏标题改成 `<h1>`;品牌名改成 `<span class="topbar-brand-name">`
+  (品牌名不是标题)。样式在 `global.css` 用 `.workspace-topbar .workspace-topbar-title h1`
+  拉回继承值 —— 不这么做会被原来那条给品牌名写的 17px 规则顶掉,顶栏标题会突然变大。
+- 8 个页面(账户与分类 / 智能预算 / 投资理财 / 帮助 / 关于 / 数据与备份 / 还款管理 /
+  工资工具)正文里原来也渲染 `<h1>`,与顶栏同名,现在降为 `<h2>`。
+  **降级必须同步改 CSS**:这些页面的样式是 `.xxx-header h2` 这种「类名 + 标签」复合
+  选择器,只改 JSX 会丢样式。
+- 除首页外还有 3 处跳级:订阅概览的统计标题 `h4`→`h3`、智能预算分类卡 `h4`→`h3`、
+  AI 助手「请先配置 API 密钥」`h3`→`h2`。
+
+同一轮还发现 **404 页在 `AppLayout` 的 `<main>` 里又套了一个 `<main>`**(HTML 规范不允许
+嵌套,地标重复):`RouteErrorView` 加了 `insideLayout`,站内 404 用 `<div>` + `<h2>`,
+根级错误边界(整页接管、没有外层布局)仍是 `<main>` + `<h1>`。
+
+### 4.4 怎么复测
+
+`scripts/audit-ui-browser.mjs` 已把这些做成断言(`h1Count`、`headingSkip`、`skipLink`、
+`mainLandmark`、`duplicateIds`、`missingAlt`、`buttonsWithoutType`、`positiveTabindex`、
+`autofocus`),任一不合就致败。注意 `mainLandmark !== 1` 同时能抓到「没有 main」和
+「嵌套 main」两种。
+
+本机跑不起来时(Playwright 浏览器版本不匹配,见 `docs/HANDOVER.md`)用 MCP 浏览器按
+同样口径量:逐路由读 `document.querySelectorAll('main').length`、可见标题序列、
+`h1` 数量、`a[href="#main-content"]`。
+
+当前结果:**21 条路由全部通过** —— 每条 1 个 `h1`、无跳级、恰好 1 个 `main` 且不嵌套、
+有跳转链接、`#main-content` 存在、无重复 id、文档标题唯一。

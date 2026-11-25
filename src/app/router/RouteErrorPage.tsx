@@ -5,6 +5,13 @@ interface RouteErrorViewProps {
   code: string;
   title: string;
   description: string;
+  /**
+   * 站内 404 仍然渲染在 AppLayout 内部,那里已经有一个 <main> 和顶栏的 <h1>。
+   * 再套一层 <main> 会得到两个 main 地标(HTML 规范不允许嵌套),
+   * 再放一个 <h1> 会让页面有两个一级标题。所以站内用法传 true,
+   * 根级错误边界(整页接管、没有外层布局)保持 <main> + <h1>。
+   */
+  insideLayout?: boolean;
 }
 
 function isChunkLoadError(error: unknown) {
@@ -17,17 +24,19 @@ function isChunkLoadError(error: unknown) {
   );
 }
 
-function RouteErrorView({ code, title, description }: RouteErrorViewProps) {
+function RouteErrorView({ code, title, description, insideLayout = false }: RouteErrorViewProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const Root = (insideLayout ? 'div' : 'main') as 'div' | 'main';
+  const Title = (insideLayout ? 'h2' : 'h1') as 'h2' | 'h1';
 
   return (
-    <main className="route-error" role="alert">
+    <Root className="route-error" role="alert">
       <div className="route-error-panel">
         <p className="route-error-code" aria-hidden="true">
           {code}
         </p>
-        <h1 className="route-error-title">{title}</h1>
+        <Title className="route-error-title">{title}</Title>
         <p className="route-error-description">{description}</p>
         <div className="route-error-actions">
           <Link className="route-error-primary" to="/">
@@ -38,7 +47,7 @@ function RouteErrorView({ code, title, description }: RouteErrorViewProps) {
           </button>
         </div>
       </div>
-    </main>
+    </Root>
   );
 }
 
@@ -53,6 +62,7 @@ export function NotFoundPage() {
       code="404"
       title={t('errors.notFoundTitle')}
       description={t('errors.notFoundDescription')}
+      insideLayout
     />
   );
 }

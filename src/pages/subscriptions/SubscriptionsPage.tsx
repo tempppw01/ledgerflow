@@ -612,7 +612,7 @@ export function SubscriptionsPage() {
               {monthlySummaryByCurrency.length > 0 ? (
                 <div className="subscriptions-compact-group">
                   <div className="dashboard-section-header">
-                    <h4>{tf('subscriptions.overview.monthlyCost', '预计月度固定成本')}</h4>
+                    <h3>{tf('subscriptions.overview.monthlyCost', '预计月度固定成本')}</h3>
                     <span>{tf('subscriptions.overview.groupedByCurrency', '按币种分组')}</span>
                   </div>
                   <div className="subscriptions-monthly-summary-list">

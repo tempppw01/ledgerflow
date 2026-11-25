@@ -684,7 +684,7 @@ export function SmartBudgetPage() {
       <div className="vi-page sb-page">
         <header className="vi-page-head">
           <div className="vi-page-title">
-            <h1>{tf('smartBudget.title', '智能预算')}</h1>
+            <h2>{tf('smartBudget.title', '智能预算')}</h2>
           </div>
           {confirmedPlan ? (
             <div className="vi-page-actions">
@@ -734,7 +734,7 @@ export function SmartBudgetPage() {
     <div className="vi-page sb-page">
       <header className="vi-page-head">
         <div className="vi-page-title">
-          <h1>{tf('smartBudget.title', '智能预算')}</h1>
+          <h2>{tf('smartBudget.title', '智能预算')}</h2>
           <p>
             {tf(
               `smartBudget.identity.${confirmedPlan.answers.identity}`,

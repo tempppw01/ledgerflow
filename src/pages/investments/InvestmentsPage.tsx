@@ -5577,7 +5577,7 @@ export function InvestmentsPage() {
       <header className="investments-console-header">
         <div>
           <p className="investments-console-eyebrow">{tf('investments.eyebrow', '投资管理')}</p>
-          <h1>{tf('investments.title', '投资理财')}</h1>
+          <h2>{tf('investments.title', '投资理财')}</h2>
         </div>
         <div
           className="investments-console-stat"
@@ -5694,7 +5694,7 @@ export function InvestmentsPage() {
 
       <MarketClosureBanner />
 
-      <main className="investments-console-workspace">
+      <section className="investments-console-workspace">
         {investmentWorkspace === 'overview' ? (
           <>
             <section
@@ -6391,7 +6391,7 @@ export function InvestmentsPage() {
           focus={aiFocus}
           requestedPrompt={aiPromptRequest}
         />
-      </main>
+      </section>
 
       <Toast
         visible={toast.visible}

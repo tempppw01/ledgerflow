@@ -9,7 +9,8 @@
   gap: var(--space-4);
 }
 
-.sb-page .vi-page-title h1 {
+.sb-page .vi-page-title h1,
+.sb-page .vi-page-title h2 {
   font-size: var(--font-xl);
 }
 
@@ -467,7 +468,8 @@
   min-width: 0;
 }
 
-.sb-category-card-head h4 {
+.sb-category-card-head h4,
+.sb-category-card-head h3 {
   margin: 0;
   color: var(--color-text);
   font-size: var(--font-base);

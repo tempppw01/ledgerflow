@@ -223,7 +223,8 @@
   font-weight: 750;
 }
 
-.repayment-console-header h1 {
+.repayment-console-header h1,
+.repayment-console-header h2 {
   margin: 0;
   color: var(--color-text-primary);
   font-size: 28px;

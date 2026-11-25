@@ -48,11 +48,13 @@
 }
 
 .investments-console-header h1,
+.investments-console-header h2,
 .investments-console-header p {
   margin: 0;
 }
 
-.investments-console-header h1 {
+.investments-console-header h1,
+.investments-console-header h2 {
   color: var(--color-text-primary);
   font-size: 28px;
   line-height: 1.15;

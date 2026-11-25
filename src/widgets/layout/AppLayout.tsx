@@ -854,7 +854,9 @@ export function AppLayout() {
             {collapsed && !isMobileViewport ? (
               <div className="topbar-brand-copy compact">
                 <img className="brand-logo compact" src={APP_LOGO_URL} alt="" />
-                <h1>{tFallback('layout.brand', 'LedgerFlow')}</h1>
+                {/* 品牌名不是标题:页面标题是右边那个 h1。这里原来也写成 h1,
+                    侧栏一折叠就变成两个 h1(WCAG 2.4.6 要求每页一个主标题)。 */}
+                <span className="topbar-brand-name">{tFallback('layout.brand', 'LedgerFlow')}</span>
               </div>
             ) : null}
             <div className="workspace-topbar-title" title={currentWorkspaceTitle}>
@@ -867,7 +869,9 @@ export function AppLayout() {
                   {getAssistantModeSpark(assistantWorkspaceMode)}
                 </span>
               ) : null}
-              {currentWorkspaceTitle}
+              {/* 顶栏这个标题就是当前页面的名字,所以它是文档里唯一的 <h1>;
+                  正文各区块的 h2/h3 是它的下级。样式在 global.css 里拉回原样。 */}
+              <h1>{currentWorkspaceTitle}</h1>
             </div>
           </div>
 

@@ -100,7 +100,7 @@ export function AboutPage() {
           <p className="about-console-eyebrow">{t('about.kicker')}</p>
           <div className="about-product-title">
             <img src={APP_LOGO_URL} alt="" />
-            <h1>LedgerFlow</h1>
+            <h2>LedgerFlow</h2>
           </div>
           <p>{t('about.intro')}</p>
         </div>

@@ -56,10 +56,10 @@ export function HelpPage() {
   }));
 
   return (
-    <main className="help-page vi-page" aria-labelledby="help-title">
+    <section className="help-page vi-page" aria-labelledby="help-title">
       <header className="help-header">
         <p className="help-eyebrow">{t('help.eyebrow')}</p>
-        <h1 id="help-title">{t('help.title')}</h1>
+        <h2 id="help-title">{t('help.title')}</h2>
         <p>{t('help.description')}</p>
       </header>
       <nav className="help-jump-nav" aria-label={t('help.jumpNavAria')}>
@@ -112,6 +112,6 @@ export function HelpPage() {
           </details>
         ))}
       </section>
-    </main>
+    </section>
   );
 }
