@@ -1281,6 +1281,7 @@ type DebtFormErrorField =
   | 'simple';
 
 const DEBT_FORM_ERROR_ID = 'debt-form-error';
+const DEBT_FORM_HINT_ID = 'debt-form-hint';
 
 export function RepaymentManagementPage() {
   const tf = useTFallback();
@@ -1296,6 +1297,10 @@ export function RepaymentManagementPage() {
     debtFormError && debtFormErrorField.includes(field)
       ? { 'aria-invalid': true as const, 'aria-describedby': DEBT_FORM_ERROR_ID }
       : {};
+  /*
+   * 刻意**不**把「还差:…」挂到每个字段的 aria-describedby 上:那会让每进一个字段
+   * 都念一整串缺项,比不念更吵。那行提示改用 role="status" 在缺项变化时播报一次。
+   */
   const { i18n } = useTranslation();
   const location = useLocation();
   const {
@@ -4762,7 +4767,16 @@ export function RepaymentManagementPage() {
                         ) : null}
                       </div>
                       {!canSubmitDebt && missingDebtFields.length > 0 ? (
-                        <p className="debt-form-helper">
+                        /*
+                         * 这行提示是**禁用按钮之外唯一的"为什么不能提交"**。
+                         * 原来它既没有 id 也没被任何字段描述,逐字段 Tab 的读屏用户完全听不到;
+                         * role="status" 让它在缺项变化时被播报一次(polite,不打断输入)。
+                         */
+                        <p
+                          id={DEBT_FORM_HINT_ID}
+                          className="debt-form-helper"
+                          role="status"
+                        >
                           {tf('repayment.form.missingFields', '还差：{fields}').replace(
                             '{fields}',
                             missingDebtFields.join(

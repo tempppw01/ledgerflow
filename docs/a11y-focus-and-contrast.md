@@ -616,3 +616,8 @@ for (const message of messages) {
 `aria-label`(带短横线,TS 不检查组件上的这类属性)从来没到过 DOM —— 它只认 `ariaLabel`。
 给组件补了显式的 `ariaInvalid` / `ariaDescribedBy` 并透传到触发按钮,同时把那一处改成
 `ariaLabel`。**这类"属性写上了但组件不接"的问题不会有任何提示**,只能靠读组件代码发现。
+
+**（2026-11-25 补）上面第 2 条已修**:「还差:…」那行提示加了稳定 id 与 `role="status"`
+—— 缺项变化时会被播报一次(polite,不打断输入)。
+**刻意没有**把它挂到 12 个字段的 `aria-describedby` 上:那会让每进一个字段都念一整串缺项,
+比不念更吵。第 1 条(禁用提交按钮要不要改)仍需产品决定,没动。

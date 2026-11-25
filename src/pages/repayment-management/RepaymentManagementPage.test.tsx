@@ -1048,4 +1048,27 @@ describe('RepaymentManagementPage', () => {
     // 错在已还期数,不该把总期数也标红
     expect(screen.getByLabelText('总期数')).not.toHaveAttribute('aria-invalid');
   });
+
+  /*
+   * 提交按钮是禁用的,所以「还差:…」这行提示就是**唯一的"为什么不能提交"**。
+   * 它原来既没有 id 也没挂 role,读屏用户完全听不到 —— 这条钉住它可被感知。
+   */
+  it('缺项提示要能被读屏感知(role=status + 稳定 id)', () => {
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
+
+    const hint = document.getElementById('debt-form-hint');
+    expect(hint).toBeTruthy();
+    expect(hint).toHaveAttribute('role', 'status');
+    expect(hint?.textContent).toContain('还差');
+    // 按钮此时应当是禁用的 —— 提示就是它"为什么不能点"的解释
+    expect(screen.getByRole('button', { name: '+ 添加负债' })).toBeDisabled();
+  });
 });
