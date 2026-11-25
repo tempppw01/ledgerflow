@@ -3726,6 +3726,8 @@
     },
     "dataTitle": "汇率数据",
     "resizeAria": "调整汇率换算器与汇率数据宽度",
+    "widenLeftPanel": "加宽汇率换算器",
+    "narrowLeftPanel": "收窄汇率换算器",
     "converter": {
       "title": "💱 货币换算",
       "from": "从",

@@ -3726,6 +3726,8 @@
     },
     "dataTitle": "Exchange rates",
     "resizeAria": "Resize the converter and exchange rate panels",
+    "widenLeftPanel": "Widen the converter panel",
+    "narrowLeftPanel": "Narrow the converter panel",
     "converter": {
       "title": "💱 Currency conversion",
       "from": "From",

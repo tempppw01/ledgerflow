@@ -8718,7 +8718,7 @@ input[type='date']:focus {
 
 .exchange-layout {
   display: grid;
-  grid-template-columns: minmax(320px, var(--exchange-left-width, 420px)) 12px minmax(0, 1fr);
+  grid-template-columns: minmax(320px, var(--exchange-left-width, 420px)) 28px minmax(0, 1fr);
   align-items: stretch;
   column-gap: var(--space-3);
 }
@@ -8749,6 +8749,59 @@ input[type='date']:focus {
 .exchange-data-header {
   display: flex;
   align-items: center;
+}
+
+/*
+ * 分隔条的点击式入口(WCAG 2.5.7)。中间轨 12px → 28px 才放得下 24×24 的按钮,
+ * 按钮必须常驻可见。这里只做居中定位,**不覆盖** divider 自己的 width。
+ */
+.exchange-resize-divider-wrap {
+  position: relative;
+  align-self: stretch;
+  min-width: 28px;
+}
+
+.exchange-resize-divider-wrap .exchange-resize-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.exchange-resize-step {
+  position: absolute;
+  left: 50%;
+  z-index: 2;
+  /* 24×24 是 WCAG 2.5.8 的底线。 */
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  transform: translateX(-50%);
+  border: 1px solid var(--color-border-control);
+  border-radius: 999px;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.exchange-resize-step:hover:not(:disabled) {
+  color: var(--color-text);
+}
+
+.exchange-resize-step:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.exchange-resize-step-start {
+  top: 6px;
+}
+
+.exchange-resize-step-end {
+  bottom: 6px;
 }
 
 .exchange-resize-divider {
@@ -12449,6 +12502,8 @@ body.categories-accounts-resizing {
     padding-inline: 0 !important;
   }
 
+  /* 包裹层一起隐藏:只藏里面那条线会留下一个空块。 */
+  .exchange-resize-divider-wrap,
   .exchange-resize-divider {
     display: none;
   }

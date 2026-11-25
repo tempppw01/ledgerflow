@@ -100,4 +100,37 @@ describe('ExchangePage 分隔条键盘可达(WCAG 2.1.1)', () => {
     fireEvent.keyDown(divider, { key: 'ArrowLeft' });
     expect(value()).toBe(320);
   });
+
+  /*
+   * WCAG 2.5.7(拖拽移动,AA):分隔条两侧的 −/+ 按钮是**单指、非拖拽**入口。
+   */
+  it('两侧按钮能改宽度,并在边界禁用', async () => {
+    await renderPage();
+
+    const divider = screen.getByRole('separator', { name: /调整汇率换算器与汇率数据宽度/ });
+    const value = () => Number(divider.getAttribute('aria-valuenow'));
+    const max = Number(divider.getAttribute('aria-valuemax'));
+    const min = Number(divider.getAttribute('aria-valuemin'));
+    const widen = screen.getByRole('button', { name: '加宽汇率换算器' });
+    const narrow = screen.getByRole('button', { name: '收窄汇率换算器' });
+
+    expect(value()).toBe(420);
+
+    fireEvent.click(widen);
+    expect(value()).toBe(420 + 16);
+    fireEvent.click(narrow);
+    fireEvent.click(narrow);
+    expect(value()).toBe(420 - 16);
+
+    // 一路收窄到底:停在最小值,「收窄」自行禁用
+    for (let i = 0; i < 30; i += 1) fireEvent.click(narrow);
+    expect(value()).toBe(min);
+    expect(narrow).toBeDisabled();
+    expect(widen).not.toBeDisabled();
+
+    // 一路加宽到顶
+    for (let i = 0; i < 60; i += 1) fireEvent.click(widen);
+    expect(value()).toBe(max);
+    expect(widen).toBeDisabled();
+  });
 });

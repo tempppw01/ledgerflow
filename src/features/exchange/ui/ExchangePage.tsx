@@ -155,18 +155,47 @@ export function ExchangePage() {
         <ExchangeConverter rates={rates} base={base} />
       </section>
 
-      <div
-        className="exchange-resize-divider"
-        role="separator"
-        tabIndex={0}
-        aria-label={tf('exchange.resizeAria', '调整汇率换算器与汇率数据宽度')}
-        aria-orientation="vertical"
-        aria-valuenow={Math.round(leftWidth)}
-        aria-valuemin={MIN_LEFT_WIDTH}
-        aria-valuemax={maxLeftWidth}
-        onMouseDown={handleDividerMouseDown}
-        onKeyDown={handleDividerKeyDown}
-      />
+      {/*
+        * WCAG 2.5.7(拖拽移动,AA):这条分隔条原来只有拖拽和方向键。
+        * 两端各放一个 −/+ 按钮,常驻可见 —— 只 hover 出现的话触屏用户仍然够不到。
+        * 按钮是分隔条的**兄弟节点**,不嵌进 role="separator" 里。
+        */}
+      <div className="exchange-resize-divider-wrap">
+        <button
+          type="button"
+          className="exchange-resize-step exchange-resize-step-start"
+          aria-label={tf('exchange.widenLeftPanel', '加宽汇率换算器')}
+          disabled={leftWidth >= maxLeftWidth}
+          onClick={() =>
+            setLeftWidth(Math.min(maxLeftWidth, leftWidth + DIVIDER_KEYBOARD_STEP))
+          }
+        >
+          ＋
+        </button>
+        <div
+          className="exchange-resize-divider"
+          role="separator"
+          tabIndex={0}
+          aria-label={tf('exchange.resizeAria', '调整汇率换算器与汇率数据宽度')}
+          aria-orientation="vertical"
+          aria-valuenow={Math.round(leftWidth)}
+          aria-valuemin={MIN_LEFT_WIDTH}
+          aria-valuemax={maxLeftWidth}
+          onMouseDown={handleDividerMouseDown}
+          onKeyDown={handleDividerKeyDown}
+        />
+        <button
+          type="button"
+          className="exchange-resize-step exchange-resize-step-end"
+          aria-label={tf('exchange.narrowLeftPanel', '收窄汇率换算器')}
+          disabled={leftWidth <= MIN_LEFT_WIDTH}
+          onClick={() =>
+            setLeftWidth(Math.max(MIN_LEFT_WIDTH, leftWidth - DIVIDER_KEYBOARD_STEP))
+          }
+        >
+          −
+        </button>
+      </div>
 
       <section className="panel exchange-data-card">
         <div className="exchange-data-header exchange-card-header">
