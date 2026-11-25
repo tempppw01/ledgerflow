@@ -1,7 +1,8 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { TransactionTable, type TransactionColumnKey } from './TransactionTable';
+import { TransactionTable } from './TransactionTable';
+import type { TransactionColumnKey } from '../model/transactionColumns';
 import { ALIPAY_LOGO_URL, WECHAT_LOGO_URL } from '../../../shared/config/brandAssets';
 
 vi.mock('react-i18next', () => ({

@@ -7,7 +7,7 @@ import {
   TransactionSourceFilter,
   TransactionTypeFilter
 } from '../hooks/useTransactionFilters';
-import { TransactionColumnKey } from './TransactionTable';
+import type { TransactionColumnKey } from '../model/transactionColumns';
 import { BillImportMode } from '../../../shared/lib/billImport';
 import {
   ARCHIVE_ICON_URL,

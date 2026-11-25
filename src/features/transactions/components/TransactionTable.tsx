@@ -3,6 +3,13 @@ import { useMenuKeyboard } from '../../../shared/lib/useMenuKeyboard';
 import { createPortal } from 'react-dom';
 import { TransactionItem, TransactionStatus } from '../../../entities/transaction/types';
 import { EMPTY_CATEGORY_FILTER_VALUE } from '../model/categoryQuickFilter';
+import {
+  COLUMN_KEYBOARD_COARSE_STEP,
+  COLUMN_KEYBOARD_STEP,
+  getMinColumnWidth,
+  MAX_COLUMN_WIDTH,
+  type TransactionColumnKey
+} from '../model/transactionColumns';
 import { formatCurrencyAuto, formatDate } from '../../../shared/lib/format';
 import {
   getTransactionDirection,
@@ -21,16 +28,6 @@ import {
 } from '../../../shared/config/brandAssets';
 
 const NOTE_MAX_LENGTH = 22;
-const DEFAULT_MIN_COLUMN_WIDTH = 90;
-const AMOUNT_COLUMN_MIN_WIDTH = 64;
-/*
- * 列宽键盘调节(WCAG 2.5.7:拖拽类操作要有非拖拽入口)。
- * 上限必须与 TransactionsPage 里的 COLUMN_MAX_WIDTH 一致 —— 那里才是最终生效的钳位
- * (不一致时会出现 aria-valuenow 显示 656、实际列宽却停在 640 的假读数,实测踩到)。
- */
-const MAX_COLUMN_WIDTH = 640;
-const COLUMN_KEYBOARD_STEP = 16;
-const COLUMN_KEYBOARD_COARSE_STEP = 48;
 const ALIPAY_ACCOUNT_PATTERN = /(支付宝|alipay)/i;
 const WECHAT_ACCOUNT_PATTERN = /(微信|wechat|weixin)/i;
 const BANK_ACCOUNT_PATTERN =
@@ -125,10 +122,6 @@ function renderAttachmentIndicator(count: number | undefined, tf: TfFallback, co
   );
 }
 
-function getMinColumnWidth(key: TransactionColumnKey): number {
-  return key === 'amount' ? AMOUNT_COLUMN_MIN_WIDTH : DEFAULT_MIN_COLUMN_WIDTH;
-}
-
 function isLongTextColumn(key: TransactionColumnKey): boolean {
   return key === 'orderNo' || key === 'merchantOrderNo' || key === 'note';
 }
@@ -210,17 +203,6 @@ export interface TransactionRowView {
   categoryName: string;
   accountName: string;
 }
-
-export type TransactionColumnKey =
-  | 'date'
-  | 'type'
-  | 'status'
-  | 'category'
-  | 'account'
-  | 'amount'
-  | 'orderNo'
-  | 'merchantOrderNo'
-  | 'note';
 
 function maskAmount(): string {
   return '¥••••';

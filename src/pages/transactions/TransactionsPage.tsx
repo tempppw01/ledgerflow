@@ -60,6 +60,10 @@ import {
 } from '../../shared/lib/transactionMetrics';
 import { AmountBreakdown } from '../../shared/ui/AmountBreakdown';
 import { buildTransactionRowComparator } from '../../features/transactions/model/rowSort';
+import {
+  clampColumnWidth,
+  type TransactionColumnKey
+} from '../../features/transactions/model/transactionColumns';
 import { resolveImportDefaultAccountId } from '../../shared/lib/importAccount';
 import { Toast, ToastVariant } from '../../shared/ui/Toast';
 import { DatePicker } from '../../shared/ui/DatePicker';
@@ -68,7 +72,6 @@ import { TransactionDetailDrawer } from '../../features/transactions/components/
 import { TransactionFilters } from '../../features/transactions/components/TransactionFilters';
 import { AmountKeypad } from '../../features/transactions/components/AmountKeypad';
 import {
-  TransactionColumnKey,
   TransactionQuickFilters,
   TransactionRowView,
   TransactionSortDirection,
@@ -202,19 +205,6 @@ const TX_VISIBLE_COLUMNS_KEY = 'ledgerflow.transactions.visibleColumns';
 const TX_COLUMN_ORDER_KEY = 'ledgerflow.transactions.columnOrder';
 const TX_COLUMN_WIDTHS_KEY = 'ledgerflow.transactions.columnWidths';
 
-const COLUMN_MIN_WIDTHS: Record<TransactionColumnKey, number> = {
-  date: 90,
-  type: 90,
-  status: 90,
-  category: 90,
-  account: 90,
-  amount: 72,
-  orderNo: 90,
-  merchantOrderNo: 90,
-  note: 90
-};
-const COLUMN_MAX_WIDTH = 640;
-
 const IMPORT_CATEGORY_RULES: Array<{ pattern: RegExp; names: string[] }> = [
   { pattern: /工资|薪资|salary|payroll|奖金/i, names: ['工资', '收入'] },
   {
@@ -293,7 +283,7 @@ function restoreColumnWidths(storageKey: string): Partial<Record<TransactionColu
     const next: Partial<Record<TransactionColumnKey, number>> = {};
     DEFAULT_COLUMN_ORDER.forEach((key) => {
       const value = Number(parsed[key]);
-      if (Number.isFinite(value) && value >= COLUMN_MIN_WIDTHS[key] && value <= COLUMN_MAX_WIDTH) {
+      if (Number.isFinite(value) && value === clampColumnWidth(key, value)) {
         next[key] = Math.round(value);
       }
     });
@@ -2253,7 +2243,7 @@ export function TransactionsPage() {
   const handleColumnResize = (key: TransactionColumnKey, width: number) => {
     setColumnWidths((prev) => ({
       ...prev,
-      [key]: Math.max(COLUMN_MIN_WIDTHS[key], Math.min(COLUMN_MAX_WIDTH, Math.round(width)))
+      [key]: clampColumnWidth(key, width)
     }));
   };
 
