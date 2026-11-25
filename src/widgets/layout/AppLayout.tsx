@@ -659,6 +659,26 @@ export function AppLayout() {
     setAccountMenuOpen(false);
   }, [location.pathname]);
 
+  /*
+   * 路由切换后把焦点交回正文。
+   * 不做这一步时,点完导航 activeElement 会变成 <body>(被点的链接卸载了):
+   * 读屏用户听不到"已经换页了",键盘用户再按 Tab 又得从文档最顶部(跳转链接)
+   * 重新走一遍,而不是接着看新页面的内容。
+   * 首次挂载**不**抢焦点 —— 刚打开页面时焦点该留在地址栏/页面开头。
+   *
+   * 用"比较上一次路径"而不是"首渲染标志位":StrictMode 在开发环境下会把
+   * effect 连跑两次,标志位只能挡住第一次,第二次照样把焦点抢走(实测踩到)。
+   * 比较路径是幂等的,跑几次都不会多聚焦一次。
+   */
+  const lastFocusedPathRef = useRef(location.pathname);
+  useEffect(() => {
+    if (lastFocusedPathRef.current === location.pathname) {
+      return;
+    }
+    lastFocusedPathRef.current = location.pathname;
+    document.getElementById('main-content')?.focus();
+  }, [location.pathname]);
+
   useEffect(() => {
     if (!accountMenuOpen) {
       return;
@@ -870,8 +890,9 @@ export function AppLayout() {
                 </span>
               ) : null}
               {/* 顶栏这个标题就是当前页面的名字,所以它是文档里唯一的 <h1>;
-                  正文各区块的 h2/h3 是它的下级。样式在 global.css 里拉回原样。 */}
-              <h1>{currentWorkspaceTitle}</h1>
+                  正文各区块的 h2/h3 是它的下级。样式在 global.css 里拉回原样。
+                  id 给下面 <main> 的 aria-labelledby 用:焦点落到 main 时会念出页面名。 */}
+              <h1 id="workspace-title">{currentWorkspaceTitle}</h1>
             </div>
           </div>
 
@@ -967,6 +988,9 @@ export function AppLayout() {
 
         <main
           id="main-content"
+          // 用顶栏标题当名字:焦点落到 main(跳转链接、或换页后自动聚焦)时,
+          // 读屏会念出「交易流水, main」,而不是干巴巴一个 "main"。
+          aria-labelledby="workspace-title"
           // tabIndex=-1 让跳转链接真的能把焦点移进来(只加 id 的话焦点留在原地,
           // 键盘用户按 Enter 后 Tab 还会从导航继续走)。-1 不进入 Tab 序列,符合要求。
           tabIndex={-1}
