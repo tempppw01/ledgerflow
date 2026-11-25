@@ -278,6 +278,8 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 
   `shared/lib/expenseScope.contract.test.ts` 现在钉的是**统一后**的契约(两边判定必须一致、
   预算型两边都不算);谁再让某个类型两边不同,那 4 条会先翻红。
+## 核对结论与度量记录(已查完、有结论 —— 不是待决策)
+
 - **`npm run format:check` 全仓不过(349 个文件)—— 不要顺手跑 `npm run format`(2026-11-25 实测)**。
   `package.json` 里有 `format` / `format:check`(prettier),但这两个脚本**从来没有被任何地方引用**:
   不在 CI、不在文档、不在别的脚本里。实测 `npm run format:check` → **退出码 1,349 个文件不合格**。
@@ -768,6 +770,8 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   当时的机器状态:同时开着 dev 服务(5333)、preview(5444)、API(8799)与浏览器自动化 ——
   倾向是资源紧张下的偶发,而非代码缺陷。**下次遇到先看这几条,不要从零复现**;
   若能在干净环境下稳定复现,那就是真问题。
+
+## 实现细节与不变量(逐条核对过)
 
 - **彻底删除账户会静默删掉其交易**:根因 `account_id NOT NULL`,四方案见
   `server/orphanAccountReferences.test.js` 顶部。
