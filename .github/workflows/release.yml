@@ -23,6 +23,30 @@ jobs:
         with:
           ref: ${{ inputs.tag || github.ref_name }}
 
+      - name: Verify tag matches package.json version
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          # tag 名与仓库里的版本号必须一致。
+          # 没有这一步的话,一个手误的 tag(比如 v0.50.56 打在 0.50.55 的提交上)会顺利地
+          # 发出去:Release 标题写着这个版本,内容却是另一个版本的 —— 而且没有任何东西会拦。
+          # 2026-11-25 加上:此前 release.yml 只负责发,不检查任何一致性。
+          TAG_VERSION="${TAG#v}"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          APP_VERSION="$(node -e "const fs=require('fs');const m=fs.readFileSync('src/shared/config/app.ts','utf8').match(/export const APP_VERSION\\s*=\\s*'([^']+)'/);process.stdout.write(m?m[1]:'')")"
+
+          echo "tag=${TAG} (${TAG_VERSION}) package.json=${PKG_VERSION} APP_VERSION=${APP_VERSION}"
+
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::tag ${TAG} 与 package.json 的版本 ${PKG_VERSION} 不一致 —— 要么 tag 打错了,要么发布前忘了改版本号"
+            exit 1
+          fi
+          if [ "$APP_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::APP_VERSION(${APP_VERSION})与 package.json(${PKG_VERSION})不一致 —— 应用内显示的版本会是错的"
+            exit 1
+          fi
+
       - name: Resolve release notes
         env:
           GH_TOKEN: ${{ github.token }}
