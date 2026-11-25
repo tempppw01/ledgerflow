@@ -8671,7 +8671,10 @@ input[type='date']:focus {
   );
 }
 
-.exchange-resize-divider:hover {
+/* :focus-visible 与 :hover 同一套高亮 —— 这个分隔条现在可以用键盘调到(WCAG 2.1.1),
+   键盘用户必须看得见焦点停在它上面(2.4.7 / 2.4.11)。 */
+.exchange-resize-divider:hover,
+.exchange-resize-divider:focus-visible {
   background: linear-gradient(
     90deg,
     transparent 0,

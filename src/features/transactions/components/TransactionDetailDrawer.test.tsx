@@ -273,3 +273,70 @@ describe('TransactionDetailDrawer', () => {
     openSpy.mockRestore();
   });
 });
+
+/*
+ * WCAG 2.1.1(键盘可达):抽屉高度原来只能拖。手柄是个 button,能 Tab 到,
+ * 但按什么都不动 —— 所以"能被聚焦"不等于"功能可达",测试要按**值有没有变**来断言。
+ */
+describe('TransactionDetailDrawer 高度可调(WCAG 2.1.1)', () => {
+  const renderDrawer = () =>
+    render(
+      <MemoryRouter>
+        <TransactionDetailDrawer
+          open
+          transaction={sample}
+          categoryName="餐饮"
+          accountName="现金"
+          source="manual"
+          onClose={() => undefined}
+          onCopyNote={() => undefined}
+          onCopyJson={() => undefined}
+          onShareBill={() => undefined}
+          onDelete={() => undefined}
+          onRefund={() => undefined}
+          onAiRecategorize={() => undefined}
+          onQuickAdd={() => undefined}
+        />
+      </MemoryRouter>
+    );
+
+  const getHandle = () => screen.getByRole('separator', { name: /调整详情抽屉高度/ });
+
+  it('手柄是 Window Splitter:可聚焦,并报告当前值与上下限', () => {
+    renderDrawer();
+    const handle = getHandle();
+
+    expect(handle).toHaveAttribute('tabindex', '0');
+    const min = Number(handle.getAttribute('aria-valuemin'));
+    const max = Number(handle.getAttribute('aria-valuemax'));
+    const now = Number(handle.getAttribute('aria-valuenow'));
+    expect(min).toBeGreaterThan(0);
+    expect(max).toBeGreaterThan(min);
+    // 初值必须落在区间内:报 0 而 min 是 300 多,读屏用户会听到自相矛盾的值。
+    expect(now).toBeGreaterThanOrEqual(min);
+    expect(now).toBeLessThanOrEqual(max);
+  });
+
+  it('箭头键 / Shift 粗档 / Home / End 都能改高度', () => {
+    renderDrawer();
+    const handle = getHandle();
+    const value = () => Number(handle.getAttribute('aria-valuenow'));
+    const min = Number(handle.getAttribute('aria-valuemin'));
+    const max = Number(handle.getAttribute('aria-valuemax'));
+
+    fireEvent.keyDown(handle, { key: 'End' });
+    expect(value()).toBe(max);
+
+    fireEvent.keyDown(handle, { key: 'ArrowDown' });
+    expect(value()).toBe(max - 16);
+
+    fireEvent.keyDown(handle, { key: 'ArrowDown', shiftKey: true });
+    expect(value()).toBe(max - 16 - 48);
+
+    fireEvent.keyDown(handle, { key: 'Home' });
+    expect(value()).toBe(min);
+
+    fireEvent.keyDown(handle, { key: 'ArrowUp' });
+    expect(value()).toBe(min + 16);
+  });
+});

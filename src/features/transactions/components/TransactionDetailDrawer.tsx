@@ -71,6 +71,26 @@ const TYPE_BADGE_ENTRIES = {
   reversal: { key: 'transactions.table.badge.reversal', fallback: '冲' }
 } as const;
 
+/**
+ * 抽屉高度的上下限。
+ *
+ * 抽出来是为了让**指针拖拽和键盘调节用同一份计算** —— 两边各写一遍的话,
+ * 键盘会调到一个拖拽永远到不了的高度,aria-valuenow 也会报出假读数
+ * (表格列宽那里就踩过:报 656 而实际被钳在 640)。
+ */
+const DRAWER_MIN_HEIGHT_CAP = 420;
+const DRAWER_VIEWPORT_MARGIN = 24;
+/** 键盘一次调多少;按住 Shift 用粗档。 */
+const DRAWER_KEYBOARD_STEP = 16;
+const DRAWER_KEYBOARD_COARSE_STEP = 48;
+
+function getDrawerHeightBounds() {
+  return {
+    min: Math.min(DRAWER_MIN_HEIGHT_CAP, Math.round(window.innerHeight * 0.42)),
+    max: Math.round(window.innerHeight - DRAWER_VIEWPORT_MARGIN)
+  };
+}
+
 function statusLabel(status: TransactionStatus, tf: TfFallback): string {
   const entry = STATUS_LABEL_ENTRIES[status];
   return entry ? tf(entry.key, entry.fallback) : status;
@@ -455,6 +475,8 @@ export function TransactionDetailDrawer({
 }: TransactionDetailDrawerProps) {
   const [attachmentUploading, setAttachmentUploading] = useState(false);
   const [drawerHeight, setDrawerHeight] = useState<number | null>(null);
+  /** 打开时量到的真实高度,用于在用户还没调过时报告 aria-valuenow。 */
+  const [drawerMeasuredHeight, setDrawerMeasuredHeight] = useState(0);
   /** 单笔打印也先给预览:之前这里 window.open 带 noopener 返回值恒为 null,点了等于没反应。 */
   const [printPreviewHtml, setPrintPreviewHtml] = useState<string | null>(null);
   const drawerRef = useRef<HTMLDivElement | null>(null);
@@ -598,6 +620,13 @@ export function TransactionDetailDrawer({
   useEffect(() => {
     if (!open) return;
     setDrawerHeight(null);
+    /*
+     * 打开时量一次真实高度:抽屉的初始高度是 CSS 决定的,而 aria-valuenow 需要一个
+     * 渲染期就能读到的数字。不量的话它会报 0,而同一元素上的 aria-valuemin 是 300 多 ——
+     * 读屏用户会听到一个自相矛盾的值。量一次也让第一下方向键从当前高度起算。
+     */
+    const node = drawerRef.current;
+    setDrawerMeasuredHeight(node ? Math.round(node.getBoundingClientRect().height) : 0);
   }, [open, transaction?.id]);
 
   // 抽屉关闭时把预览一起收起,避免下次打开残留上一笔的打印内容。
@@ -611,10 +640,9 @@ export function TransactionDetailDrawer({
     const onPointerMove = (event: PointerEvent) => {
       const state = resizeStateRef.current;
       if (!state) return;
-      const minHeight = Math.min(420, Math.round(window.innerHeight * 0.42));
-      const maxHeight = Math.round(window.innerHeight - 24);
+      const { min, max } = getDrawerHeightBounds();
       const next = state.startHeight + (state.startY - event.clientY);
-      setDrawerHeight(Math.min(maxHeight, Math.max(minHeight, next)));
+      setDrawerHeight(Math.min(max, Math.max(min, next)));
     };
 
     const stopResize = () => {
@@ -634,7 +662,7 @@ export function TransactionDetailDrawer({
     };
   }, []);
 
-  const handleResizeStart = (event: React.PointerEvent<HTMLButtonElement>) => {
+  const handleResizeStart = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!drawerRef.current) return;
     resizeStateRef.current = {
       startY: event.clientY,
@@ -645,7 +673,43 @@ export function TransactionDetailDrawer({
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
 
+  /*
+   * WCAG 2.1.1(键盘可达):这个手柄原来只有 onPointerDown —— 能 Tab 到,
+   * 但按什么都调不动高度,等于只有鼠标用户能改。补 Window Splitter 的键盘入口。
+   *
+   * 从**当前实际高度**起算:首次调节前抽屉高度由 CSS 决定,要先量一次,
+   * 否则第一下会从 min 起跳,把抽屉一下压到最矮。
+   */
+  const handleResizeKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const node = drawerRef.current;
+    if (!node) return;
+    const { min, max } = getDrawerHeightBounds();
+    const base = drawerHeight ?? (node.getBoundingClientRect().height || drawerMeasuredHeight);
+    const step = event.shiftKey ? DRAWER_KEYBOARD_COARSE_STEP : DRAWER_KEYBOARD_STEP;
+    let next: number | null = null;
+    // 手柄在抽屉**顶部**,往上拖是变高 —— 所以 ArrowUp 增、ArrowDown 减,和拖拽方向一致。
+    if (event.key === 'ArrowUp') next = base + step;
+    else if (event.key === 'ArrowDown') next = base - step;
+    else if (event.key === 'Home') next = min;
+    else if (event.key === 'End') next = max;
+    if (next === null) return;
+    event.preventDefault();
+    setDrawerHeight(Math.min(max, Math.max(min, next)));
+  };
+
   if (!open || !transaction) return null;
+
+  /*
+   * 报给辅助技术的当前值必须落在 [min, max] 里。测量失败时(元素还没布局,
+   * 比如 jsdom 里 getBoundingClientRect 恒为 0)会量到 0,而 min 是 300 多 ——
+   * 直接把 0 报出去就是"最小值 323、当前值 0"这种自相矛盾的话。
+   * 钳一下只会影响测量失败那一瞬;真实浏览器里量到的就是真实高度,不受影响。
+   */
+  const drawerBounds = getDrawerHeightBounds();
+  const drawerValueNow = Math.min(
+    drawerBounds.max,
+    Math.max(drawerBounds.min, Math.round(drawerHeight ?? drawerMeasuredHeight))
+  );
 
   const abnormalAlert = buildAbnormalAlert(transaction, tf);
   const isRefundOrReversal = isTransactionRefundLike(transaction);
@@ -669,14 +733,25 @@ export function TransactionDetailDrawer({
         style={drawerHeight ? { height: `${drawerHeight}px` } : undefined}
         onClick={(event) => event.stopPropagation()}
       >
-        <button
-          type="button"
+        <div
           className="drawer-resize-handle"
+          /*
+           * 用 separator(Window Splitter)而不是 button:手柄要报告"当前高度是多少、
+           * 能调到多少",而 aria-valuenow 只对 range 类角色有效 —— 挂在 button 上
+           * 无障碍树会直接忽略它。CSS 里本来就把边框和背景清空了,换成 div 视觉不变。
+           */
+          role="separator"
+          tabIndex={0}
+          aria-orientation="horizontal"
           aria-label={tf('txDrawer.resizeAria', '拖拽调整详情抽屉高度')}
+          aria-valuenow={drawerValueNow}
+          aria-valuemin={drawerBounds.min}
+          aria-valuemax={drawerBounds.max}
           onPointerDown={handleResizeStart}
+          onKeyDown={handleResizeKeyDown}
         >
           <span />
-        </button>
+        </div>
         <header className="drawer-header">
           <div>
             <h3>{tf('txDrawer.title', '交易详情')}</h3>
