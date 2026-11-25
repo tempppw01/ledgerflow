@@ -339,4 +339,36 @@ describe('TransactionDetailDrawer 高度可调(WCAG 2.1.1)', () => {
     fireEvent.keyDown(handle, { key: 'ArrowUp' });
     expect(value()).toBe(min + 16);
   });
+
+  /*
+   * WCAG 2.5.7(拖拽移动,AA):方向键解决的是 2.1.1,2.5.7 要的是**单指、非拖拽**的入口。
+   * 所以抽屉顶部两侧各有一个 −/+ 按钮,点一下就能改。
+   */
+  it('两侧的 −/+ 按钮能改高度,并在边界禁用', () => {
+    renderDrawer();
+    const handle = screen.getByRole('separator', { name: /调整详情抽屉高度/ });
+    const value = () => Number(handle.getAttribute('aria-valuenow'));
+    const min = Number(handle.getAttribute('aria-valuemin'));
+    const max = Number(handle.getAttribute('aria-valuemax'));
+    const down = screen.getByRole('button', { name: '调低详情抽屉' });
+    const up = screen.getByRole('button', { name: '调高详情抽屉' });
+
+    // jsdom 量不到真实高度,起点被钳到最小 → 「调低」应当是禁用的
+    expect(value()).toBe(min);
+    expect(down).toBeDisabled();
+
+    fireEvent.click(up);
+    expect(value()).toBe(min + 16);
+    fireEvent.click(up);
+    expect(value()).toBe(min + 32);
+    expect(down).not.toBeDisabled();
+
+    fireEvent.click(down);
+    expect(value()).toBe(min + 16);
+
+    // 一直加到底:停在最大值,「调高」自行禁用(点禁用按钮不会有反应,循环是安全的)
+    for (let i = 0; i < 40; i += 1) fireEvent.click(up);
+    expect(value()).toBe(max);
+    expect(up).toBeDisabled();
+  });
 });

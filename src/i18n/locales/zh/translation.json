@@ -3901,6 +3901,8 @@
     },
     "relatedOrigin": "关联原单：{note}",
     "resizeAria": "拖拽调整详情抽屉高度",
+    "decreaseHeight": "调低详情抽屉",
+    "increaseHeight": "调高详情抽屉",
     "share": "分享",
     "summaryAria": "账单摘要",
     "title": "交易详情",

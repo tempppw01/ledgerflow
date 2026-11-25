@@ -7397,8 +7397,46 @@ small.mono {
   overflow: hidden;
 }
 
+/*
+ * 抽屉顶部的调节条:两侧各一个 −/+ 按钮(WCAG 2.5.7 的点击式入口),
+ * 中间那条才是拖拽/键盘操作的 separator。
+ * 高度要容得下 24×24 的按钮(2.5.8 的底线),所以这里比原来的纯手柄高一些。
+ */
+.drawer-resize-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 12px;
+}
+
+.drawer-resize-step-btn {
+  /* 24×24 是 WCAG 2.5.8 的底线,不能再小。 */
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.drawer-resize-step-btn:hover:not(:disabled) {
+  color: var(--color-text);
+}
+
+.drawer-resize-step-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .drawer-resize-handle {
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 64px;
   display: grid;
   place-items: center;
   padding: 10px 0 6px;

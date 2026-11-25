@@ -3901,6 +3901,8 @@
     },
     "relatedOrigin": "Linked original: {note}",
     "resizeAria": "Drag to resize the details drawer",
+    "decreaseHeight": "Make the details drawer shorter",
+    "increaseHeight": "Make the details drawer taller",
     "share": "Share",
     "summaryAria": "Bill summary",
     "title": "Transaction details",

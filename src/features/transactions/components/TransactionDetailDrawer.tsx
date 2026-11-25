@@ -680,11 +680,34 @@ export function TransactionDetailDrawer({
    * 从**当前实际高度**起算:首次调节前抽屉高度由 CSS 决定,要先量一次,
    * 否则第一下会从 min 起跳,把抽屉一下压到最矮。
    */
+  /**
+   * 当前高度。三级回退:**用户设过的值 > 真实测量 > 最小值**。
+   *
+   * 中间那级必须判断 `> 0` —— 测量失败时 rect.height 是 0,拿 0 当基准会让
+   * 第一下调节直接撞进钳位、看起来"按钮没反应"(jsdom 里就是这样,真实浏览器
+   * 即便量到了,这个兜底也让行为一致)。
+   */
+  const currentDrawerHeight = (): number => {
+    const { min } = getDrawerHeightBounds();
+    if (drawerHeight !== null) return drawerHeight;
+    const node = drawerRef.current;
+    const measured = node ? Math.round(node.getBoundingClientRect().height) : 0;
+    if (measured > 0) return measured;
+    return drawerMeasuredHeight > 0 ? drawerMeasuredHeight : min;
+  };
+
+  /** 按一步改高度(按钮和键盘共用)。钳位在这里做,保证状态里不会留越界值。 */
+  const stepDrawerHeight = (delta: number) => {
+    const { min, max } = getDrawerHeightBounds();
+    const base = currentDrawerHeight();
+    setDrawerHeight(Math.min(max, Math.max(min, base + delta)));
+  };
+
   const handleResizeKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const node = drawerRef.current;
     if (!node) return;
     const { min, max } = getDrawerHeightBounds();
-    const base = drawerHeight ?? (node.getBoundingClientRect().height || drawerMeasuredHeight);
+    const base = currentDrawerHeight();
     const step = event.shiftKey ? DRAWER_KEYBOARD_COARSE_STEP : DRAWER_KEYBOARD_STEP;
     let next: number | null = null;
     // 手柄在抽屉**顶部**,往上拖是变高 —— 所以 ArrowUp 增、ArrowDown 减,和拖拽方向一致。
@@ -733,24 +756,51 @@ export function TransactionDetailDrawer({
         style={drawerHeight ? { height: `${drawerHeight}px` } : undefined}
         onClick={(event) => event.stopPropagation()}
       >
-        <div
-          className="drawer-resize-handle"
-          /*
-           * 用 separator(Window Splitter)而不是 button:手柄要报告"当前高度是多少、
-           * 能调到多少",而 aria-valuenow 只对 range 类角色有效 —— 挂在 button 上
-           * 无障碍树会直接忽略它。CSS 里本来就把边框和背景清空了,换成 div 视觉不变。
-           */
-          role="separator"
-          tabIndex={0}
-          aria-orientation="horizontal"
-          aria-label={tf('txDrawer.resizeAria', '拖拽调整详情抽屉高度')}
-          aria-valuenow={drawerValueNow}
-          aria-valuemin={drawerBounds.min}
-          aria-valuemax={drawerBounds.max}
-          onPointerDown={handleResizeStart}
-          onKeyDown={handleResizeKeyDown}
-        >
-          <span />
+        {/*
+          * WCAG 2.5.7(拖拽移动,AA):这个手柄原来只能拖。方向键解决的是 2.1.1,
+          * 而 2.5.7 要的是**单指、非拖拽**的入口 —— 所以两侧各放一个按钮,点一下就能改。
+          *
+          * 按钮是分隔条的**兄弟节点**而不是子节点:把可聚焦按钮嵌进一个
+          * role="separator" 的元素里,焦点顺序和语义都说不清楚。
+          */}
+        <div className="drawer-resize-bar">
+          <button
+            type="button"
+            className="drawer-resize-step-btn"
+            aria-label={tf('txDrawer.decreaseHeight', '调低详情抽屉')}
+            disabled={drawerValueNow <= drawerBounds.min}
+            onClick={() => stepDrawerHeight(-DRAWER_KEYBOARD_STEP)}
+          >
+            −
+          </button>
+          <div
+            className="drawer-resize-handle"
+            /*
+             * 用 separator(Window Splitter)而不是 button:手柄要报告"当前高度是多少、
+             * 能调到多少",而 aria-valuenow 只对 range 类角色有效 —— 挂在 button 上
+             * 无障碍树会直接忽略它。CSS 里本来就把边框和背景清空了,换成 div 视觉不变。
+             */
+            role="separator"
+            tabIndex={0}
+            aria-orientation="horizontal"
+            aria-label={tf('txDrawer.resizeAria', '拖拽调整详情抽屉高度')}
+            aria-valuenow={drawerValueNow}
+            aria-valuemin={drawerBounds.min}
+            aria-valuemax={drawerBounds.max}
+            onPointerDown={handleResizeStart}
+            onKeyDown={handleResizeKeyDown}
+          >
+            <span />
+          </div>
+          <button
+            type="button"
+            className="drawer-resize-step-btn"
+            aria-label={tf('txDrawer.increaseHeight', '调高详情抽屉')}
+            disabled={drawerValueNow >= drawerBounds.max}
+            onClick={() => stepDrawerHeight(DRAWER_KEYBOARD_STEP)}
+          >
+            ＋
+          </button>
         </div>
         <header className="drawer-header">
           <div>
