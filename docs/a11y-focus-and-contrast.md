@@ -463,3 +463,74 @@ left/top/width/height 写成内联样式,读回来就等价于布局跟随变化
   这一步要手工合成颜色再算。
 - 隐藏控件(`display:none` / `visibility:hidden` / `offsetParent === null`)要跳过,
   否则会把弹窗里没打开的控件算进来。
+## 9. 错误必须关联到出错的字段(表单规范里标 High)
+
+### 问题
+
+UX 规范把「只在顶部报一句错、不指出是哪个字段」列为**高严重度**问题,
+要求是「Show a specific error below the input and reference it with aria-describedby」。
+
+实测全仓库只有**一处**做对了:`TransactionEditPage` 的金额输入框
+(`aria-invalid` + `aria-describedby="tx-amount-error"`)。其余表单(薪资工具、
+还款管理、预算向导、资产负债模拟、登录)都是顶部一句 `role="alert"` ——
+**读屏用户逐字段 Tab 过去时听不到任何提示**,只有碰巧经过那句话才知道哪里错了。
+
+### 改法与两个真问题
+
+先在**薪资工具**上把模式做对(4 个输入框、7 条错误文案),过程中撞出两个真问题:
+
+**（1）文案表里的一条键是坏的,英文界面漏出中文。**
+`SALARY_ERROR_EN` 有 7 条映射,其中「请先完成上方工资基础输入,才能计算加班工资」
+那条的**键**用的是**半角逗号** `U+002C`,而模型返回的是**全角逗号** `U+FF0C` ——
+键对不上,`SALARY_ERROR_EN[error] || error` 就退回中文。**7 条里坏 1 条**,
+而且肉眼看两个字符串一模一样,只有按码点比才看得出来。
+
+顺带说明这个 bug 是怎么暴露的:改模型时我手抄这行文案,抄成了半角逗号,
+**既有测试立刻翻红**(它一直钉着全角)。顺着这条线去核对整张映射表,才发现
+坏的是**卡片里的键**而不是我的新代码 —— 也就是说这个中文泄漏在改动之前就存在。
+
+新增的守卫测试**用会触发错误的输入枚举消息**,而不是手抄字符串:
+
+```ts
+const messages = [
+  getSalaryInputError({ monthlySalary: '', workingDays: '', dailyHours: '' }),
+  getSalaryInputError({ monthlySalary: 'abc', workingDays: '21.75', dailyHours: '8' }),
+  // ...每条各一个触发它的输入
+];
+for (const message of messages) {
+  const en = localizeCalculatorError(message, 'en');
+  expect(en).not.toBe(message);
+  expect(/[\u4e00-\u9fff]/.test(en)).toBe(false); // 英文里不许出现汉字
+}
+```
+
+这样将来改文案或加分支时,漏翻译会被立刻抓住,而不是等用户看到中文才发现。
+
+**（2）判断只写一遍,字段由模型给出。**
+模型原来在 `getSalaryInputError` 里直接 `return` 文案。表单还需要知道**是哪几个字段**
+错了 —— 两处各写一遍判断迟早走形。改成「**一次求值 → 映射成文案**」:
+`evaluateSalaryInput` 返回 `{ kind: 'empty', fields }` 或 `{ kind: 'invalid', field }`,
+文案和 `getSalaryInputErrorFields` 都由它派生。既有的 7 条文案测试一条没改、全部通过。
+
+**这一层还要分清"错在谁身上"**:`salaryBase` 那条错误指的是**上方的工资基础输入**,
+把加班框标成 `aria-invalid` 是错的。所以额外导出 `getOvertimeInputProblem`,
+只有错误确实出在加班字段本身时才标它。
+
+### 复测(浏览器 + 数据库)
+
+清空「月薪」后,只有它被标:
+
+| 字段 | `aria-invalid` | `aria-describedby` |
+| --- | --- | --- |
+| 月薪 | `true` | `salary-input-error` → 「请先填写月薪、计薪天数和每日工时」 |
+| 计薪天数 / 每日工时 | 无 | 无 —— **没被误标** |
+| 加班时长 | 无 | 无 —— 错误指的是上方字段,不在它身上 |
+
+测试两层都钉住:`salaryCalculator.test.ts` 钉模型(出错字段、每条错误都有英文),
+新增的 `SalaryToolCard.test.tsx` 钉**接线**(属性有没有真的挂到对应输入框上、有没有挂错)。
+两条都证伪过:把映射表的逗号改回半角 → 文案测试与英文守卫同时翻红;
+把错误关联摘掉 → 组件测试翻红。
+
+⚠ **其余表单还没做**(还款管理、预算向导、资产负债模拟、登录)。模式已经跑通,
+照同一套改即可:模型给出错字段 → 错误的 `<p>` 给 `id` → 字段挂
+`aria-invalid` + `aria-describedby`。

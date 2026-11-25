@@ -5,29 +5,20 @@ import {
   calculateOvertimePay,
   calculateSalaryMetrics,
   getOvertimeInputError,
+  getOvertimeInputProblem,
   getSalaryInputError,
+  getSalaryInputErrorFields,
+  localizeCalculatorError,
+  type SalaryInputField,
   sanitizePositiveNumberInput
 } from './salaryCalculator';
 
-/** salaryCalculator 的错误码是稳定的中文串,这里映射到英文,避免 EN 界面里冒出中文报错。 */
-const SALARY_ERROR_EN: Record<string, string> = {
-  '请先填写月薪、计薪天数和每日工时': 'Please fill in monthly salary, paid days and daily hours first',
-  '月薪需为大于 0 的合法数字': 'Monthly salary must be a valid number greater than 0',
-  '计薪天数需为大于 0 且不超过 31 的合法数字':
-    'Paid days must be a valid number greater than 0 and no more than 31',
-  '每日工时需为大于 0 且不超过 24 的合法数字':
-    'Daily hours must be a valid number greater than 0 and no more than 24',
-  '请先完成上方工资基础输入,才能计算加班工资':
-    'Complete the salary inputs above before calculating overtime pay',
-  '请输入加班时长': 'Please enter the overtime hours',
-  '加班时长需为大于 0 且不超过 24 的合法数字':
-    'Overtime hours must be a valid number greater than 0 and no more than 24'
-};
-
-function localizeCalculatorError(error: string, language: string): string {
-  if (!error || !language.toLowerCase().startsWith('en')) return error;
-  return SALARY_ERROR_EN[error] || error;
-}
+/*
+ * 错误消息的 id。表单用 aria-describedby 指向它们,把"顶部一句话"变成
+ * "这个字段错了" —— 读屏用户逐字段 Tab 时才听得到。
+ */
+const SALARY_INPUT_ERROR_ID = 'salary-input-error';
+const OVERTIME_INPUT_ERROR_ID = 'overtime-input-error';
 
 export function SalaryToolCard() {
   const tf = useTFallback();
@@ -74,6 +65,33 @@ export function SalaryToolCard() {
   const salaryErrorText = localizeCalculatorError(salaryInputError, language);
   const overtimeErrorText = localizeCalculatorError(overtimeInputError, language);
 
+  /*
+   * 「错误要关联到出错的那个字段」。
+   *
+   * 这两块原来只有顶部一句 role="alert":读屏用户逐字段 Tab 过去时**听不到任何提示**,
+   * 只有碰巧经过那句提示才知道哪里错了。文案本身已经点名了字段,缺的只是程序化关联。
+   * 字段由模型给出(getSalaryInputErrorFields / getOvertimeInputProblem),
+   * 不在组件里重新判断一遍 —— 那样迟早和模型走形。
+   */
+  const salaryErrorFields = getSalaryInputErrorFields({ monthlySalary, workingDays, dailyHours });
+  const overtimeProblem = getOvertimeInputProblem(
+    salaryMetrics?.hourlySalary || 0,
+    overtimeHours,
+    Boolean(salaryMetrics)
+  );
+  const salaryFieldError = (field: SalaryInputField) =>
+    salaryErrorFields.includes(field)
+      ? { 'aria-invalid': true as const, 'aria-describedby': SALARY_INPUT_ERROR_ID }
+      : {};
+  /*
+   * 加班框只在错误确实出在它自己身上时才标 aria-invalid:
+   * "请先完成上方工资基础输入"指的是**上面的字段**,标到加班框上是错的。
+   */
+  const overtimeFieldError =
+    overtimeProblem === 'overtimeHours'
+      ? { 'aria-invalid': true as const, 'aria-describedby': OVERTIME_INPUT_ERROR_ID }
+      : {};
+
   return (
     <section className="vi-section finance-salary-card">
       <div className="finance-salary-input-pane vi-split">
@@ -90,6 +108,7 @@ export function SalaryToolCard() {
               className="vi-input"
               inputMode="decimal"
               value={monthlySalary}
+              {...salaryFieldError('monthlySalary')}
               onChange={(event) => setMonthlySalary(sanitizePositiveNumberInput(event.target.value))}
               placeholder={tf('salaryTools.inputs.monthlySalaryPlaceholder', '例如 12000')}
             />
@@ -104,6 +123,7 @@ export function SalaryToolCard() {
               className="vi-input"
               inputMode="decimal"
               value={workingDays}
+              {...salaryFieldError('workingDays')}
               onChange={(event) => setWorkingDays(sanitizePositiveNumberInput(event.target.value))}
               placeholder={tf('salaryTools.inputs.workingDaysPlaceholder', '例如 21.75')}
             />
@@ -118,6 +138,7 @@ export function SalaryToolCard() {
               className="vi-input"
               inputMode="decimal"
               value={dailyHours}
+              {...salaryFieldError('dailyHours')}
               onChange={(event) => setDailyHours(sanitizePositiveNumberInput(event.target.value))}
               placeholder={tf('salaryTools.inputs.dailyHoursPlaceholder', '例如 8')}
             />
@@ -127,7 +148,11 @@ export function SalaryToolCard() {
       </div>
       </div>
 
-      {salaryErrorText ? <p className="finance-debt-form-error muted" role="alert">{salaryErrorText}</p> : null}
+      {salaryErrorText ? (
+        <p id={SALARY_INPUT_ERROR_ID} className="finance-debt-form-error muted" role="alert">
+          {salaryErrorText}
+        </p>
+      ) : null}
 
       <div className="finance-salary-result-grid">
         <article className="finance-salary-metric is-primary">
@@ -165,6 +190,7 @@ export function SalaryToolCard() {
               className="vi-input"
                 inputMode="decimal"
                 value={overtimeHours}
+                {...overtimeFieldError}
                 onChange={(event) => setOvertimeHours(sanitizePositiveNumberInput(event.target.value))}
                 placeholder={tf('salaryTools.inputs.overtimeHoursPlaceholder', '例如 2')}
               />
@@ -173,7 +199,11 @@ export function SalaryToolCard() {
           </label>
         </div>
 
-        {overtimeErrorText ? <p className="finance-debt-form-error muted" role="alert">{overtimeErrorText}</p> : null}
+        {overtimeErrorText ? (
+          <p id={OVERTIME_INPUT_ERROR_ID} className="finance-debt-form-error muted" role="alert">
+            {overtimeErrorText}
+          </p>
+        ) : null}
 
         {salaryMetrics ? (
           <p className="finance-salary-inline-tip muted">
