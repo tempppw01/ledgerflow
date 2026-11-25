@@ -329,6 +329,13 @@ cmd.exe /c "set TEMP=C:\\Users\\<你>\<仓库>\.tmp-build&& set TMP=%TEMP%&& npm
   顺带把 `docker/start-ledgerflow.sh` 的权限位从 100644 改成 100755。
   完整复现、逐项前后对比与验证方式见 `docs/verified-invariants.md` 的「Windows 上 `docker build`
   会产出『起不来』的镜像」那一节。
+- **`.editorconfig`(2026-11-25,同上)**:`.gitattributes` 管的是 git 检出的字节,而这次的坑出在
+  **工作区磁盘上的字节**(Docker 构建上下文读的就是它)—— 有人用编辑器把 `nginx.conf` 存成 CRLF
+  就又踩回去了。于是补一份 `.editorconfig` 把行尾/编码钉死。值都是**量出来**的,不是编的:
+  `.prettierrc` 是 2 空格、仓库无 Tab 缩进、而 `README.md` 里确实有 1 处用「行尾双空格 = 硬换行」,
+  所以 `[*.md]` 单独关掉 `trim_trailing_whitespace`。
+  (顺带量到一个更早的问题:`npm run format:check` 是红的,341 个文件 —— 详见
+  `docs/verified-invariants.md` 的「已知但故意不当作 bug 的」一节,不要顺手全量重排。)
 - **文档修复(2026-11-25,同上)**:`docs/verified-invariants.md` 里有 **404 处**反引号被写成了 `\`code\``
   (某个写入工具的转义残留 —— 其余 16 份文档都是 0 处),Markdown 会把它们渲染成**字面反引号**而不是
   代码样式;`verification-recipes.md` 另有 1 处。已全部反转义(共 405 处)。

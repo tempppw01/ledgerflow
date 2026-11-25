@@ -1,0 +1,21 @@
+# 编辑器层面的兜底。.gitattributes 管的是 git 检出,这一份管的是「人手里的编辑器别写坏」——
+# 两者管的是不同的字节,缺一不可。
+#
+# 背景(完整复现见 docs/verified-invariants.md 的「Windows 上 docker build 会产出『起不来』的镜像」):
+# Windows 上 core.autocrlf 会让检出带 CRLF,而 Docker 的构建上下文取的就是工作区磁盘上的字节。
+# 一份 CRLF 的 shell 脚本进到镜像里,首行成了 "#!/bin/sh\r",Linux 上 exec 直接失败,容器起不来;
+# 同一根因还会让入口脚本里 awk 的 `$0 == "  listen 80;"` 永不匹配,PORT 改写静默失效。
+# 这一次是检出造成的,但同样可能由编辑器造成 —— 所以在这里也把行尾钉死。
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.md]
+# README.md 里用到了「行尾双空格 = 硬换行」,所以文档不能自动去掉行尾空格
+trim_trailing_whitespace = false

@@ -1046,3 +1046,14 @@ PLAYWRIGHT_MODULE=<path>/node_modules/playwright/index.mjs npm run audit:ui
   但方案一旦生成就固定了 —— 用户之后改了收入,两页会显示不同的「月收入」
   (演示账本正是如此:方案 10,000 / 登记 26,000)。方案是快照,这是取舍不是 bug;
   要不要在方案页提示「与当前登记收入不一致,建议重新生成」属于产品决定。
+
+- **`npm run format:check` 是红的,而且已经红了很久**:实测 `npx prettier --check .` 报
+  **341 个文件**不合 prettier 格式(含 `docs/HANDOVER.md`、`src/app/styles/finance.css` 等)。
+  **与 `.editorconfig` 无关** —— 做过 A/B:把 `.editorconfig` 临时挪走,报错一字不差;
+  也把 `docs/HANDOVER.md` 在 HEAD~1 的旧版取出来单独查过,同样是红的。
+  这个脚本**不在 CI 里**(CI 只跑 eslint),所以一直没人发现。
+
+  记在这里是因为**别顺手跑 `prettier --write .`**:那是一次 341 个文件的重排,会与正在编辑的工作区
+  冲突,而且这是"要不要统一格式"的产品/团队决定 —— 要么全量重排一次并把 `format:check` 加进 CI,
+  要么把这个脚本删掉别留着误导人。在决定之前,新写的代码**保持 prettier 风格**就行
+  (`.prettierrc` 仍然是 prettier 的配置来源;`.editorconfig` 只管编辑器行为,不是格式化配置)。
