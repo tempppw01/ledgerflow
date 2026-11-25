@@ -194,4 +194,39 @@ describe('SmartBudgetPage', () => {
     const total = plan?.recommendation.categoryBudgets.reduce((sum, item) => sum + item.amount, 0);
     expect(total).toBe(plan?.recommendation.monthlyIncome);
   });
+
+  /*
+   * 「错误要关联到出错的字段」。
+   *
+   * 向导原来只有底部一句 role="alert":读屏用户 Tab 到输入框时听不到哪里错了。
+   * 每步只渲染一个输入框,所以就要标**那一个** —— 标错字段比不标更糟。
+   */
+  it('收入不合法时把错误标到收入框上', () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: /下一步/ }));
+
+    const income = document.getElementById('sb-income') as HTMLInputElement;
+    fireEvent.change(income, { target: { value: '0' } });
+    fireEvent.click(screen.getByRole('button', { name: /下一步/ }));
+
+    expect(screen.getByText('每月收入必须大于 0。')).toBeInTheDocument();
+    expect(income).toHaveAttribute('aria-invalid', 'true');
+    expect(income).toHaveAttribute('aria-describedby', 'sb-wizard-error');
+    expect(document.getElementById('sb-wizard-error')?.textContent).toContain('每月收入必须大于 0');
+  });
+
+  it('固定支出不合法时标到固定支出框上,而不是收入框', () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: /下一步/ }));
+    fireEvent.click(screen.getByRole('button', { name: /下一步/ }));
+
+    const fixed = document.getElementById('sb-fixed') as HTMLInputElement;
+    // 固定支出 >= 月收入
+    fireEvent.change(fixed, { target: { value: '999999' } });
+    fireEvent.click(screen.getByRole('button', { name: /下一步/ }));
+
+    expect(fixed).toHaveAttribute('aria-invalid', 'true');
+    expect(fixed).toHaveAttribute('aria-describedby', 'sb-wizard-error');
+    expect(document.getElementById('sb-wizard-error')?.textContent).toContain('固定支出需要小于月收入');
+  });
 });

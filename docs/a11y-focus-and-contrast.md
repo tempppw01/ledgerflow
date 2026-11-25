@@ -544,3 +544,20 @@ for (const message of messages) {
 金额框上不能还留着 `aria-invalid`。测试专门断言了这一条
 (`expect(amount).not.toHaveAttribute('aria-invalid')`) —— 只测"改对了"不测"改回来",
 很容易留下一个一直标红的字段。
+
+### 第三处:预算向导(每步只渲染一个输入框)
+
+向导的错误是**按步骤**的,而每步只渲染一个输入框(第 2 步收入、第 3 步固定支出),
+所以"错误属于哪个字段"这件事**只有页面在那条分支上才知道** —— 于是让页面把它
+一路传下来(`wizardErrorField`),而不是让向导按 `step` 去猜。
+
+两个要点:
+
+- **第 4 步那次错误不该标任何字段**:它是 `generateBudgetRecommendation` 抛出来的
+  「预算生成失败」,不是某个输入框的问题。传 `null`。
+- **第 3 步「固定支出 ≥ 月收入」标的是固定支出框**,不是收入框 ——
+  收入在上一步、**已经不在 DOM 里**,标一个不存在(或已卸载)的字段毫无意义;
+  而这一步唯一能改的就是固定支出。
+
+浏览器复测:第 2 步把收入改成 0 → 该输入框 `aria-invalid="true"`、
+`aria-describedby="sb-wizard-error"`,对应的 `<p>` 仍是 `role="alert"`。

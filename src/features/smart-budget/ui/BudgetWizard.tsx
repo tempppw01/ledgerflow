@@ -10,11 +10,19 @@ import {
 } from '../model/budgetPlanner';
 import { BudgetCheckIcon, BudgetChevronIcon, BudgetSparkIcon } from './budgetIcons';
 
+/** 向导错误消息的 id —— 出错的那个输入框用 aria-describedby 指过来。 */
+const WIZARD_ERROR_ID = 'sb-wizard-error';
+
+/** 错误出在哪一步的哪个输入框上。生成失败那种不属于任何字段,传 null。 */
+export type WizardErrorField = 'income' | 'fixed';
+
 export type BudgetWizardProps = {
   answers: BudgetAnswers;
   step: number;
   stepCount: number;
   error: string | null;
+  /** 与 error 配套:错误属于哪个字段。只在字段级错误时给。 */
+  errorField?: WizardErrorField | null;
   draftRecommendation: BudgetRecommendation | null;
   onAnswersChange: (next: BudgetAnswers) => void;
   onNext: () => void;
@@ -45,11 +53,20 @@ const fixedShortcuts = [0, 1500, 3000, 5000, 8000];
 
 export function BudgetWizard(props: BudgetWizardProps) {
   const tf = useTFallback();
+  /*
+   * 出错的那个输入框自己声明关联,而不是把逻辑散在渲染里 —— 每步只渲染一个输入框,
+   * 但"错误属于哪个字段"是页面在那条分支上才知道的事实(生成失败就不属于任何字段)。
+   */
+  const wizardFieldError = (field: WizardErrorField) =>
+    errorField === field
+      ? { 'aria-invalid': true as const, 'aria-describedby': WIZARD_ERROR_ID }
+      : {};
   const {
     answers,
     step,
     stepCount,
     error,
+    errorField,
     draftRecommendation,
     onAnswersChange,
     onNext,
@@ -172,6 +189,7 @@ export function BudgetWizard(props: BudgetWizardProps) {
             <span aria-hidden="true">¥</span>
             <input
               id="sb-income"
+              {...wizardFieldError('income')}
               type="number"
               min={0}
               step={100}
@@ -211,6 +229,7 @@ export function BudgetWizard(props: BudgetWizardProps) {
             <span aria-hidden="true">¥</span>
             <input
               id="sb-fixed"
+              {...wizardFieldError('fixed')}
               type="number"
               min={0}
               step={100}
@@ -385,7 +404,7 @@ export function BudgetWizard(props: BudgetWizardProps) {
       ) : null}
 
       {error ? (
-        <p className="sb-error" role="alert">
+        <p id={WIZARD_ERROR_ID} className="sb-error" role="alert">
           {error}
         </p>
       ) : null}

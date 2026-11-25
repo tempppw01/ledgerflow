@@ -225,6 +225,8 @@ export function SmartBudgetPage() {
     () => initialDraft?.recommendation ?? null
   );
   const [wizardError, setWizardError] = useState<string | null>(null);
+  /* 与 wizardError 配套:错误出在哪个字段上,传给向导做字段级关联。 */
+  const [wizardErrorField, setWizardErrorField] = useState<'income' | 'fixed' | null>(null);
 
   const [statusFilter, setStatusFilter] = useState<'all' | 'overspent' | 'safe'>('all');
   const [selectedMonthKey, setSelectedMonthKey] = useState('');
@@ -444,15 +446,18 @@ export function SmartBudgetPage() {
 
   const handleWizardNext = () => {
     setWizardError(null);
+    setWizardErrorField(null);
 
     if (step === 2 && answers.monthlyIncome <= 0) {
       setWizardError(tf('smartBudget.error.incomePositive', '每月收入必须大于 0。'));
+      setWizardErrorField('income');
       return;
     }
 
     if (step === 3) {
       if (answers.monthlyFixedExpense < 0) {
         setWizardError(tf('smartBudget.error.fixedNonNegative', '固定支出不能小于 0。'));
+        setWizardErrorField('fixed');
         return;
       }
       if (answers.monthlyFixedExpense >= answers.monthlyIncome) {
@@ -462,6 +467,8 @@ export function SmartBudgetPage() {
             '固定支出需要小于月收入，才能生成可执行预算。'
           )
         );
+        /* 这一步只有「固定支出」是可改的输入框(收入在上一步,已经不渲染了)。 */
+        setWizardErrorField('fixed');
         return;
       }
     }
@@ -485,6 +492,7 @@ export function SmartBudgetPage() {
 
   const handleWizardPrev = () => {
     setWizardError(null);
+    setWizardErrorField(null);
     setStep((current) => Math.max(current - 1, 1));
   };
 
@@ -507,6 +515,7 @@ export function SmartBudgetPage() {
     setAnswers(wizardDefaultAnswers);
     setStep(1);
     setWizardError(null);
+    setWizardErrorField(null);
     setMode('setup');
   };
 
@@ -705,6 +714,7 @@ export function SmartBudgetPage() {
             step={step}
             stepCount={WIZARD_STEP_COUNT}
             error={wizardError}
+            errorField={wizardErrorField}
             draftRecommendation={draftRecommendation}
             onAnswersChange={setAnswers}
             onNext={handleWizardNext}
