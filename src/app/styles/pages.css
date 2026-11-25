@@ -988,6 +988,43 @@
   cursor: not-allowed;
 }
 
+/*
+ * 列宽的收窄/加宽按钮(WCAG 2.5.7:拖拽要有单指非拖拽入口)。
+ * 尺寸与上面的 ↑/↓ 完全一致 —— 同一行里两对按钮一大一小会很难看,
+ * 而 24×24 是 2.5.8 的底线,不能再小。间距 6px 保证两对按钮之间的
+ * 24px 圆不相交(2.5.8 的间距例外只在必要时才依赖)。
+ */
+.transaction-column-width-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 6px;
+}
+
+.transaction-column-width-btn {
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.transaction-column-width-btn:hover:not(:disabled) {
+  color: var(--color-text);
+  border-color: var(--color-border-strong, var(--color-border));
+}
+
+.transaction-column-width-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .transaction-filter-inline-note {
   margin-left: auto;
   padding-left: var(--space-2);

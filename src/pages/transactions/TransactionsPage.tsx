@@ -2695,6 +2695,8 @@ export function TransactionsPage() {
           /* 列序原来只能在表头拖拽;设置面板里的上移/下移走同一条处理函数,
              保证两条路径改的是同一处状态。 */
           onColumnReorder={handleColumnReorder}
+          columnWidths={columnWidths}
+          onColumnResize={handleColumnResize}
           bulkSelectionEnabled={bulkSelectionEnabled}
           onToggleBulkSelection={() => setBulkSelectionEnabled((prev) => !prev)}
           minAvailableDate={availableDateBounds.min}

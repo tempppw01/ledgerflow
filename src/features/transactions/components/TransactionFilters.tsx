@@ -8,6 +8,12 @@ import {
   TransactionTypeFilter
 } from '../hooks/useTransactionFilters';
 import type { TransactionColumnKey } from '../model/transactionColumns';
+import {
+  clampColumnWidth,
+  COLUMN_KEYBOARD_STEP,
+  getMinColumnWidth,
+  MAX_COLUMN_WIDTH
+} from '../model/transactionColumns';
 import { BillImportMode } from '../../../shared/lib/billImport';
 import {
   ARCHIVE_ICON_URL,
@@ -41,6 +47,9 @@ interface TransactionFiltersProps {
   visibleColumns: Record<TransactionColumnKey, boolean>;
   onToggleColumn: (key: TransactionColumnKey) => void;
   onColumnReorder: (fromKey: TransactionColumnKey, toKey: TransactionColumnKey) => void;
+  /** 当前各列宽度(用户改过的才有值),以及改动回调 —— 面板里的收窄/加宽按钮用。 */
+  columnWidths: Partial<Record<TransactionColumnKey, number>>;
+  onColumnResize: (key: TransactionColumnKey, width: number) => void;
   bulkSelectionEnabled: boolean;
   onToggleBulkSelection: () => void;
   minAvailableDate?: string;
@@ -72,6 +81,8 @@ export function TransactionFilters({
   visibleColumns,
   onToggleColumn,
   onColumnReorder,
+  columnWidths,
+  onColumnResize,
   bulkSelectionEnabled,
   onToggleBulkSelection,
   minAvailableDate,
@@ -603,6 +614,70 @@ export function TransactionFilters({
                                   }
                                 >
                                   ↓
+                                </button>
+                              </span>
+                              {/*
+                               * 列宽原来只能拖表头(WCAG 2.5.7 拖拽移动,AA)。
+                               * 方向键解决的是 2.1.1(键盘可达),而 2.5.7 要的是
+                               * **单指、非拖拽**的入口 —— 点一下就能改,所以这里给按钮。
+                               * 与列序的 ↑/↓ 同一套做法,也放在同一个面板里。
+                               */}
+                              <span className="transaction-column-width-actions">
+                                <button
+                                  type="button"
+                                  className="transaction-column-width-btn"
+                                  disabled={
+                                    (columnWidths[option.key] ?? getMinColumnWidth(option.key)) <=
+                                    getMinColumnWidth(option.key)
+                                  }
+                                  aria-label={tf(
+                                    'transactions.filters.narrowColumn',
+                                    '收窄 {label}'
+                                  ).replace('{label}', option.label)}
+                                  title={tf('transactions.filters.narrowColumn', '收窄 {label}').replace(
+                                    '{label}',
+                                    option.label
+                                  )}
+                                  onClick={() =>
+                                    onColumnResize(
+                                      option.key,
+                                      clampColumnWidth(
+                                        option.key,
+                                        (columnWidths[option.key] ?? getMinColumnWidth(option.key)) -
+                                          COLUMN_KEYBOARD_STEP
+                                      )
+                                    )
+                                  }
+                                >
+                                  −
+                                </button>
+                                <button
+                                  type="button"
+                                  className="transaction-column-width-btn"
+                                  disabled={
+                                    (columnWidths[option.key] ?? getMinColumnWidth(option.key)) >=
+                                    MAX_COLUMN_WIDTH
+                                  }
+                                  aria-label={tf(
+                                    'transactions.filters.widenColumn',
+                                    '加宽 {label}'
+                                  ).replace('{label}', option.label)}
+                                  title={tf('transactions.filters.widenColumn', '加宽 {label}').replace(
+                                    '{label}',
+                                    option.label
+                                  )}
+                                  onClick={() =>
+                                    onColumnResize(
+                                      option.key,
+                                      clampColumnWidth(
+                                        option.key,
+                                        (columnWidths[option.key] ?? getMinColumnWidth(option.key)) +
+                                          COLUMN_KEYBOARD_STEP
+                                      )
+                                    )
+                                  }
+                                >
+                                  ＋
                                 </button>
                               </span>
                             </div>

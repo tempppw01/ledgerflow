@@ -33,6 +33,8 @@ function renderFilters(overrides: Partial<ComponentProps<typeof TransactionFilte
         columnOptions={[{ key: 'date', label: '日期' }]}
         columnOrder={['date']}
         onColumnReorder={() => undefined}
+        columnWidths={{}}
+        onColumnResize={() => undefined}
         visibleColumns={{
           date: true,
           type: true,
@@ -134,5 +136,55 @@ describe('列序:不依赖拖拽的上移/下移', () => {
     expect(screen.getByRole('button', { name: '上移 日期' })).toBeDisabled();
     expect(screen.getByRole('button', { name: '下移 备注' })).toBeDisabled();
     expect(screen.getByRole('button', { name: '下移 日期' })).not.toBeDisabled();
+  });
+
+  /*
+   * WCAG 2.5.7(拖拽移动,AA):列宽原来只能拖表头。方向键解决的是 2.1.1,
+   * 而 2.5.7 要的是**单指、非拖拽**的入口,所以这里必须是能点的按钮。
+   */
+  it('点「加宽」按钮改列宽,不依赖拖拽;没设置过宽度的列按最小宽度起算', () => {
+    const onColumnResize = vi.fn();
+    renderFilters({
+      columnOptions: columns,
+      columnOrder: ['date', 'type', 'note'],
+      columnWidths: {},
+      onColumnResize
+    });
+    fireEvent.click(screen.getByRole('button', { name: '筛选设置' }));
+
+    fireEvent.click(screen.getByRole('button', { name: '加宽 日期' }));
+    expect(onColumnResize).toHaveBeenCalledWith('date', 90 + 16);
+  });
+
+  it('已设置过宽度的列从当前宽度起算,不是回到最小值', () => {
+    const onColumnResize = vi.fn();
+    renderFilters({
+      columnOptions: columns,
+      columnOrder: ['date', 'type', 'note'],
+      columnWidths: { note: 200 },
+      onColumnResize
+    });
+    fireEvent.click(screen.getByRole('button', { name: '筛选设置' }));
+
+    fireEvent.click(screen.getByRole('button', { name: '加宽 备注' }));
+    expect(onColumnResize).toHaveBeenCalledWith('note', 216);
+
+    fireEvent.click(screen.getByRole('button', { name: '收窄 备注' }));
+    expect(onColumnResize).toHaveBeenCalledWith('note', 184);
+  });
+
+  it('已经到边界的列,对应按钮禁用(点不出无变化的动作)', () => {
+    renderFilters({
+      columnOptions: columns,
+      columnOrder: ['date', 'type', 'note'],
+      // 备注已在最窄(90),日期已在最宽(640)
+      columnWidths: { note: 90, date: 640 }
+    });
+    fireEvent.click(screen.getByRole('button', { name: '筛选设置' }));
+
+    expect(screen.getByRole('button', { name: '收窄 备注' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '加宽 备注' })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: '加宽 日期' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '收窄 日期' })).not.toBeDisabled();
   });
 });

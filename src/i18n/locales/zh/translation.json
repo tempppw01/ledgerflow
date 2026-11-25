@@ -1065,6 +1065,8 @@
       "adjusted": "已调整 {count} 项",
       "hiddenCount": "· 已收起 {count} 项",
       "moveColumnUp": "上移 {label}",
+      "narrowColumn": "收窄 {label}",
+      "widenColumn": "加宽 {label}",
       "moveColumnDown": "下移 {label}"
     },
     "table": {

@@ -1065,6 +1065,8 @@
       "adjusted": "Adjusted: {count}",
       "hiddenCount": "· {count} hidden",
       "moveColumnUp": "Move {label} up",
+      "narrowColumn": "Narrow {label}",
+      "widenColumn": "Widen {label}",
       "moveColumnDown": "Move {label} down"
     },
     "table": {
