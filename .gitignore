@@ -9,7 +9,9 @@ coverage
 .env
 .env.*
 !.env.example
-data/
+# 前导 / 不能省:写成 data/ 会匹配**任意层级**的 data 目录,
+# 于是哪天有人在 src/ 下建一个 data/,那里的源码会静默进不了仓库,而 git status 一直显示干净。
+/data/
 
 # Browser automation artifacts
 .playwright-cli/
