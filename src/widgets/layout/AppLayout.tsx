@@ -13,6 +13,7 @@ import { LanguageSwitcher } from '../../features/language-switcher/LanguageSwitc
 import { useAuth } from '../../features/auth/ui/authContext';
 import { useMenuKeyboard } from '../../shared/lib/useMenuKeyboard';
 import { useDialogFocus } from '../../shared/lib/useDialogFocus';
+import { useDocumentTitle } from '../../shared/lib/documentTitle';
 import { SettingsPage } from '../../pages/settings/SettingsPage';
 import { APP_LOGO_URL } from '../../shared/config/app';
 import {
@@ -390,6 +391,10 @@ export function AppLayout() {
     [assistantWorkspaceMode, recycleBinIconUrl, t, tFallback]
   );
 
+  // WCAG 2.4.2(Page Titled,Level A):每个路由要有自己的文档标题。
+  // 这里是唯一写入 document.title 的地方(原先 i18n 初始化里那次已删掉)。
+  useDocumentTitle(location.pathname);
+
   const currentWorkspaceTitle = useMemo(() => {
     const pathname = location.pathname;
 
@@ -729,6 +734,11 @@ export function AppLayout() {
         ['--sidebar-width' as string]: `${collapsed ? SIDEBAR_COLLAPSED_WIDTH : sidebarWidth}px`
       }}
     >
+      {/* WCAG 2.4.1(跳过重复导航块,Level A):键盘用户 Tab 到的第一个元素就能跳过侧边导航,
+          直达 <main>。平时视觉隐藏,聚焦时才出现(清单要求"聚焦时必须可见")。 */}
+      <a className="skip-to-content" href="#main-content">
+        {tFallback('a11y.skipToContent', '跳到主内容')}
+      </a>
       <aside className={collapsed ? 'sidebar collapsed' : 'sidebar'}>
         <div className="sidebar-header">
           {!collapsed ? (
@@ -951,7 +961,13 @@ export function AppLayout() {
           </div>
         </header>
 
-        <main className={isInvestmentsRoute ? 'content content-investments' : 'content'}>
+        <main
+          id="main-content"
+          // tabIndex=-1 让跳转链接真的能把焦点移进来(只加 id 的话焦点留在原地,
+          // 键盘用户按 Enter 后 Tab 还会从导航继续走)。-1 不进入 Tab 序列,符合要求。
+          tabIndex={-1}
+          className={isInvestmentsRoute ? 'content content-investments' : 'content'}
+        >
           <Outlet />
         </main>
       </div>

@@ -19,6 +19,14 @@
   "app": {
     "title": "LedgerFlow Bookkeeping"
   },
+  "a11y": {
+    "skipToContent": "Skip to main content"
+  },
+  "docTitle": {
+    "newTransaction": "New entry",
+    "editTransaction": "Edit entry",
+    "notFound": "Page not found"
+  },
   "errors": {
     "notFoundTitle": "This page does not exist",
     "notFoundDescription": "The link may have expired or the address was mistyped. Head back to the workspace to keep tracking.",

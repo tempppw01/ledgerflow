@@ -4,6 +4,8 @@ coverage
 .vscode
 .DS_Store
 *.log
+# tsc 项目引用构建的增量缓存(tsc -b 生成),不是产物也不是源码。
+*.tsbuildinfo
 
 # Local runtime data and credentials
 .env

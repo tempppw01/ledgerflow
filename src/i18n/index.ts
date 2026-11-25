@@ -21,21 +21,15 @@ function applyDocumentLanguage(language: string) {
   document.documentElement.setAttribute('lang', language.startsWith('en') ? 'en' : 'zh-CN');
 }
 
-function applyDocumentTitle(language: string) {
-  if (typeof document === 'undefined') return;
-  document.title = i18n.t('app.title', {
-    lng: language.startsWith('en') ? 'en' : 'zh',
-    defaultValue: language.startsWith('en') ? 'LedgerFlow Bookkeeping' : 'LedgerFlow 记账软件'
-  });
-}
-
 /**
  * 语言切换后同步 <html lang>,避免浏览器/字体回退策略仍按旧语言渲染,
  * 也让需要区分中英文的输入法、朗读工具拿到正确语言。
  */
 function handleLanguageChanged(language: string) {
   applyDocumentLanguage(language);
-  applyDocumentTitle(language);
+  // 文档标题不在这里改:它要跟着**路由**走(WCAG 2.4.2 要求每个页面有自己的标题),
+  // 由 src/shared/lib/documentTitle.ts 的 useDocumentTitle 统一写入,
+  // 那里同时依赖 i18n.language —— 切语言时会跟着重算,不需要第二个写入方。
   // 金额简写(万/亿 与 K/M/B)跟随界面语言,避免英文界面里出现「¥1.84万」。
   setFormattingLocale(language);
 }
@@ -71,7 +65,6 @@ i18n
   });
 
 applyDocumentLanguage(i18n.language || initialLanguage);
-applyDocumentTitle(i18n.language || initialLanguage);
 setFormattingLocale(i18n.language || initialLanguage);
 i18n.off('languageChanged', handleLanguageChanged);
 i18n.on('languageChanged', handleLanguageChanged);

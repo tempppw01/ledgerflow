@@ -118,6 +118,40 @@ function isAllowedOverflow(className) {
   return ALLOWED_OVERFLOW_CLASSES.some((allowed) => className.includes(allowed));
 }
 
+/**
+ * 文档标题的唯一性(WCAG 2.4.2 Page Titled)。
+ *
+ * 光看「有标题」不够 —— 修这条之前,22 条路由的标题全是「LedgerFlow 记账软件」,
+ * 浏览器历史里全是同名条目、读屏器也分不出页面。所以这里按**每个视口**统计:
+ * 不同路由的标题必须各不相同(`/` 与 `/这条路径不存在` 这种当然也是不同的)。
+ *
+ * 重定向路由(/investments/flow -> /investments、/tags -> /categories-accounts)
+ * 与它的目标页同标题是**正确**的 —— 那时 location 已经变了,所以按最终 title 去重即可,
+ * 不去比较「请求的路由」。
+ */
+function summarizeTitles(rows) {
+  const byViewport = new Map();
+  for (const row of rows) {
+    if (!byViewport.has(row.viewport)) byViewport.set(row.viewport, []);
+    byViewport.get(row.viewport).push(row);
+  }
+  const out = { checked: rows.length, duplicated: [] };
+  for (const [viewport, list] of byViewport) {
+    const seen = new Map();
+    for (const item of list) {
+      if (!seen.has(item.title)) seen.set(item.title, []);
+      seen.get(item.title).push(item.route);
+    }
+    for (const [title, routes] of seen) {
+      // 只报告"多个不同路由共用同一标题",且这些路由不是同一个重定向对
+      if (routes.length > 1) {
+        out.duplicated.push({ viewport, title: title.slice(0, 60), routes });
+      }
+    }
+  }
+  return out;
+}
+
 const AUDIT_FN = () => {
   const vw = document.documentElement.clientWidth;
   const out = {
@@ -125,7 +159,28 @@ const AUDIT_FN = () => {
     tinyText: [],
     unnamedControls: [],
     emptyMain: false,
-    mainTextLength: 0
+    mainTextLength: 0,
+    // —— 以下来自 WCAG / The A11Y Project 清单(2026-11-25 补)——
+    missingAlt: [],
+    lang: document.documentElement.lang || '',
+    h1Count: document.querySelectorAll('h1').length,
+    headingSkip: null,
+    buttonsWithoutType: 0,
+    positiveTabindex: 0,
+    autofocus: 0,
+    duplicateIds: [],
+    skipLink: 0,
+    mainLandmark: 0,
+    smallTargets: [],
+    imageCount: 0,
+    fieldCount: 0
+  };
+
+  const visible = (el) => {
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) return false;
+    const s = getComputedStyle(el);
+    return s.visibility !== 'hidden' && s.display !== 'none';
   };
 
   for (const el of document.querySelectorAll('body *')) {
@@ -197,6 +252,97 @@ const AUDIT_FN = () => {
     out.emptyMain = out.mainTextLength < 60;
   }
 
+  /*
+   * ===== WCAG / A11Y Project 清单的自动化部分 =====
+   * 每一条都能对上清单里的具体条目,所以报红时可以直接查对应准则:
+   *   missingAlt       1.1.1 非文本内容      —— img 必须有 alt(装饰图用 alt="")
+   *   lang             3.1.1 页面语言        —— <html lang> 必须存在
+   *   h1Count          2.4.6 标题与标签      —— 每个视图恰好一个 h1
+   *   headingSkip      2.4.6 标题与标签      —— 不许跳级(h2 后面直接 h4)
+   *   buttonsWithoutType 1.3.1 信息与关系    —— button 默认 type=submit,会误提交表单
+   *   positiveTabindex 2.4.3 焦点顺序        —— tabindex>0 打乱视觉顺序
+   *   autofocus        2.4.3 焦点顺序        —— 未经允许移动焦点
+   *   duplicateIds     4.1.1 解析            —— id 重复会让 label/aria 指向错的元素
+   *   skipLink         2.4.1 绕过区块        —— 有导航就必须有跳转链接
+   *   mainLandmark     4.1.2 名称角色值      —— 必须有 main 地标
+   */
+  out.imageCount = document.querySelectorAll('img').length;
+  for (const img of document.querySelectorAll('img')) {
+    if (!img.hasAttribute('alt')) {
+      out.missingAlt.push({ src: (img.getAttribute('src') || '').slice(0, 50) });
+    }
+  }
+
+  const headings = [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].filter(visible);
+  for (let i = 1; i < headings.length; i++) {
+    const prev = Number(headings[i - 1].tagName[1]);
+    const cur = Number(headings[i].tagName[1]);
+    if (cur - prev > 1) {
+      out.headingSkip = `h${prev} -> h${cur},在「${headings[i].textContent.trim().slice(0, 20)}」`;
+      break;
+    }
+  }
+
+  for (const btn of document.querySelectorAll('button')) {
+    if (!btn.hasAttribute('type')) out.buttonsWithoutType += 1;
+  }
+  for (const el of document.querySelectorAll('[tabindex]')) {
+    if (Number(el.getAttribute('tabindex')) > 0) out.positiveTabindex += 1;
+  }
+  out.autofocus = document.querySelectorAll('[autofocus]').length;
+
+  const idCount = Object.create(null);
+  for (const el of document.querySelectorAll('[id]')) {
+    idCount[el.id] = (idCount[el.id] || 0) + 1;
+  }
+  for (const [id, n] of Object.entries(idCount)) {
+    if (n > 1) out.duplicateIds.push({ id: id.slice(0, 40), count: n });
+  }
+
+  /*
+   * 跳转链接(WCAG 2.4.1):有导航(或侧边栏)时,必须有一个指向页内锚点的链接,
+   * 锚点要真实存在,而且**聚焦后必须真的可见** —— 清单特别强调这一点,
+   * 只"存在但永远看不见"等于没有。这里临时聚焦再量一次(无副作用:不移出视口、不改 DOM)。
+   */
+  out.navCount = document.querySelectorAll('nav, aside').length;
+  out.skipLink = 0;
+  if (out.navCount > 0) {
+    for (const a of document.querySelectorAll('a[href^="#"]')) {
+      const target = (a.getAttribute('href') || '').slice(1);
+      if (!target) continue;
+      const anchor = document.getElementById(target);
+      if (!anchor) continue;
+      const active = document.activeElement;
+      a.focus();
+      const r = a.getBoundingClientRect();
+      const shownWhenFocused = r.width > 8 && r.height > 8;
+      if (active && typeof active.focus === 'function') active.focus();
+      if (shownWhenFocused) {
+        out.skipLink += 1;
+        break;
+      }
+    }
+  }
+  out.mainLandmark = document.querySelectorAll('main').length;
+  out.fieldCount = document.querySelectorAll('input, select, textarea').length;
+
+  /*
+   * 触控目标尺寸:只报告、不致败。
+   * WCAG 2.5.8(AA)要求 24×24,而 44×44 是 2.5.5(AAA)与各移动平台指南的线 ——
+   * 拿 AAA 去致败会把大量 38px 高的导航行误报成缺陷(它们过 AA)。
+   */
+  for (const el of document.querySelectorAll('button, a[href], [role="button"]')) {
+    if (!visible(el)) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width < 44 || r.height < 44) {
+      out.smallTargets.push({
+        text: (el.textContent || el.getAttribute('aria-label') || '').trim().slice(0, 20),
+        w: Math.round(r.width),
+        h: Math.round(r.height)
+      });
+    }
+  }
+
   return out;
 };
 
@@ -215,6 +361,8 @@ const { chromium } = await import(resolvePlaywright());
 const browser = await chromium.launch();
 const problems = [];
 const tinyTextFindings = [];
+const smallTargetFindings = [];
+const documentTitles = [];
 let checked = 0;
 
 for (const [label, viewport] of VIEWPORTS) {
@@ -261,19 +409,55 @@ for (const [label, viewport] of VIEWPORTS) {
       overflowing.length ||
       audit.unnamedControls.length ||
       audit.emptyMain ||
-      newErrors.length
+      newErrors.length ||
+      // —— a11y(WCAG)致败项 ——
+      audit.missingAlt.length ||
+      !audit.lang ||
+      audit.h1Count !== 1 ||
+      audit.headingSkip !== null ||
+      audit.buttonsWithoutType ||
+      audit.positiveTabindex ||
+      audit.autofocus ||
+      audit.duplicateIds.length ||
+      audit.mainLandmark !== 1 ||
+      (audit.navCount > 0 && audit.skipLink === 0)
     ) {
       problems.push({
         viewport: label,
         route,
+        title: await page.title(),
         scrollOverflow,
         overflowing,
         unnamedControls: audit.unnamedControls,
         emptyMain: audit.emptyMain,
         mainTextLength: audit.mainTextLength,
-        consoleErrors: newErrors
+        consoleErrors: newErrors,
+        a11y: {
+          lang: audit.lang,
+          h1Count: audit.h1Count,
+          headingSkip: audit.headingSkip,
+          missingAlt: audit.missingAlt,
+          buttonsWithoutType: audit.buttonsWithoutType,
+          positiveTabindex: audit.positiveTabindex,
+          autofocus: audit.autofocus,
+          duplicateIds: audit.duplicateIds,
+          mainLandmark: audit.mainLandmark,
+          navCount: audit.navCount,
+          skipLink: audit.skipLink
+        }
       });
     }
+
+    // 只报告、不致败的项
+    if (audit.smallTargets.length) {
+      smallTargetFindings.push({
+        viewport: label,
+        route,
+        count: audit.smallTargets.length,
+        samples: audit.smallTargets.slice(0, 5)
+      });
+    }
+    documentTitles.push({ viewport: label, route, title: await page.title() });
   }
 
   await context.close();
@@ -285,9 +469,11 @@ const report = {
   base,
   checked,
   problemCount: problems.length,
-  note: '字号 < 11px(tinyText)与滑动手势初始态只报告、不计入 problemCount —— 前者是设计取舍,先看趋势',
+  note: '字号 < 11px(tinyText)、触控目标 < 44px(smallTargets)只报告、不计入 problemCount —— 前者是设计取舍,后者低于的是 AAA/平台指南线而不是 AA(2.5.8 只要求 24×24)',
   problems,
-  tinyText: tinyTextFindings
+  tinyText: tinyTextFindings,
+  smallTargets: smallTargetFindings,
+  documentTitles: summarizeTitles(documentTitles)
 };
 console.log(JSON.stringify(report, null, 2));
 process.exit(problems.length ? 1 : 0);

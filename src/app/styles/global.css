@@ -708,6 +708,45 @@ body {
   min-width: 0;
 }
 
+/*
+ * 跳转链接(WCAG 2.4.1 Bypass Blocks,Level A)。
+ * 平时视觉隐藏(用 clip 那套写法,不用 left:-9999px —— 后者在长页面里聚焦后可能仍在视口外),
+ * 键盘聚焦时出现在左上角。清单明确要求"聚焦时必须可见"。
+ * 焦点环用 --color-on-primary:全局那条 :focus-visible 用的是 --color-primary,
+ * 画在同色按钮上等于看不见。
+ */
+.skip-to-content {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 9999;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.skip-to-content:focus,
+.skip-to-content:focus-visible {
+  width: auto;
+  height: auto;
+  padding: 10px 16px;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  outline: 2px solid var(--color-on-primary);
+  outline-offset: 2px;
+}
+
 .workspace-topbar-title {
   display: flex;
   align-items: center;

@@ -19,6 +19,14 @@
   "app": {
     "title": "LedgerFlow 记账软件"
   },
+  "a11y": {
+    "skipToContent": "跳到主内容"
+  },
+  "docTitle": {
+    "newTransaction": "记一笔",
+    "editTransaction": "编辑流水",
+    "notFound": "页面不存在"
+  },
   "errors": {
     "notFoundTitle": "这个页面不存在",
     "notFoundDescription": "链接可能已经失效，或者地址被输错了。回到工作台继续记账吧。",
