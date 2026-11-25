@@ -344,6 +344,31 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   (与 shared 的 \`isExpenseLike\` 判定完全相同,「预算」型不算支出是 v0.50.36 的定案,
   \`expenseScope.contract.test.ts\` 钉着两者一致,该测试实测 4 条全过)。
 
+- **发布链路的四道检查,其中"tag 与版本一致"做过真实弹测试(2026-11-25)**。
+  发布出错一次就是"Release 写着 A 版本、内容却是 B 版本",而此前没有任何东西会拦。现在有四处把关:
+
+  | 检查 | 什么时候跑 | 查什么 |
+  | --- | --- | --- |
+  | `check:version-sync`(CI)| 每次推送 | `package.json` 的 version = `APP_VERSION`;当前版本有 `release-notes/RELEASE_NOTES_v<version>.md` |
+  | `check:docs`(CI)| 每次推送 | 文档里的 npm 脚本存在;compose 的环境变量都在 `.env.example` 里 |
+  | **`release.yml` 的 `Verify tag matches package.json version`** | **打 tag 时** | **tag(去 v)= version,且 = `APP_VERSION`** |
+  | `release.yml` 的 `Resolve release notes` | 打 tag 时 | 说明文件在 tag 指向的提交里(原本就有)|
+
+  **实弹验证(2026-11-25)**:推了一个**故意错的** `v0.50.99`(当时版本是 0.50.54)—— 结果:
+
+  | step | 结果 |
+  | --- | --- |
+  | Checkout release tag | success |
+  | **Verify tag matches package.json version** | **failure** ← 新加的那一步 |
+  | Resolve release notes | **skipped** |
+  | **Publish GitHub Release** | **skipped** |
+
+  并且 `gh release view v0.50.99` → **release not found**:链条停在该停的地方,**一个 Release 都没发**。
+  测试用的 tag 随后本地与远端都删干净了。
+
+  **注意**:此后打任何 tag 之前,`package.json` 与 `APP_VERSION` 必须已经改成同一个版本 ——
+  否则新这步会直接把发布拦下来(这是设计如此,不要为了让发布过关去删这一步)。
+
 - **崩溃不再白屏:整个应用已包上错误边界(2026-11-25 新增,已端到端验证)**。
   此前 `main.tsx` 只有 `StrictMode`、`App.tsx` 只有 `Suspense`(管加载不管抛错),**没有错误边界** ——
   任何组件运行时抛错都会让整棵树卸载,用户看到的是一整页白屏,没有提示也没有按钮;如果错误是
