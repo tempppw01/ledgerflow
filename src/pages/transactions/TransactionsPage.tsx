@@ -29,6 +29,13 @@ const QUICK_ADD_ERROR_KEYS: Record<QuickAddValidationError, { key: string }> = {
   selectAccount: { key: 'transactions.quickAdd.error.selectAccount' },
   invalidAmount: { key: 'transactions.quickAdd.error.invalidAmount' }
 };
+
+/* 表格区/侧栏分栏的宽度约束(原来这两个数字散在三处 560/320,提出来一份)。 */
+const SPLIT_MIN_LEFT_WIDTH = 560;
+const SPLIT_MIN_RIGHT_WIDTH = 320;
+/* 键盘调分栏的步长:细调 24px,按住 Shift 粗调 64px。 */
+const SPLIT_KEYBOARD_STEP = 24;
+const SPLIT_KEYBOARD_COARSE_STEP = 64;
 import { extractJsonString } from '../../features/assistant/workbench/workbenchUtils';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { exportTransactionsCsv } from '../../shared/lib/csv';
@@ -600,6 +607,9 @@ export function TransactionsPage() {
   // 打开时收进抽屉、Tab 循环、关闭后还给「记一笔」按钮。
   useDialogFocus(quickAddOpen, quickAddDrawerRef);
   const [tablePanelWidth, setTablePanelWidth] = useState(860);
+  /* 分栏上限跟着容器宽度变(右侧至少留 SPLIT_MIN_RIGHT_WIDTH),
+     键盘调宽时要用它当 aria-valuemax,所以单独记一份。 */
+  const [splitMaxLeftWidth, setSplitMaxLeftWidth] = useState(1200);
   const [sidePanelVisible, setSidePanelVisible] = useState(() => restoreSidePanelVisible());
   const [pieAnimationProgress, setPieAnimationProgress] = useState(1);
   const [splitLayoutStacked, setSplitLayoutStacked] = useState(() =>
@@ -2051,19 +2061,40 @@ export function TransactionsPage() {
     }
     const container = splitLayoutRef.current;
 
-    const resizeObserver = new ResizeObserver(() => {
+    /*
+     * 判"要不要堆叠"必须和 CSS 用同一个尺子。
+     * CSS 是按**视口**宽度切的(`@media (max-width: 1100px)` 里 grid 变单列、分隔条 display:none),
+     * 这里原来按**容器**宽度算(total <= 1100)。视口 1440 时容器正好 1084,于是:
+     * CSS 照常显示分隔条 + col-resize 光标,JS 却认为"已堆叠"把调整逻辑关掉 ——
+     * 结果分隔条看得见、也有手型光标,拖拽毫无反应(实测 mainW 720 拖完还是 720)。
+     * 现在两边都按视口媒体查询判断,容器宽度只用来算宽度上限。
+     */
+    const compute = () => {
       const total = container.getBoundingClientRect().width;
-      const shouldStack = total <= 1100;
+      const shouldStack = window.matchMedia('(max-width: 1100px)').matches;
       setSplitLayoutStacked(shouldStack);
       if (shouldStack) {
         return;
       }
-      const maxLeft = Math.max(560, total - 320);
-      setTablePanelWidth((prev) => Math.min(Math.max(prev, 560), maxLeft));
-    });
+      const maxLeft = Math.max(SPLIT_MIN_LEFT_WIDTH, total - SPLIT_MIN_RIGHT_WIDTH);
+      setSplitMaxLeftWidth(maxLeft);
+      setTablePanelWidth((prev) =>
+        Math.min(Math.max(prev, SPLIT_MIN_LEFT_WIDTH), maxLeft)
+      );
+    };
 
+    const resizeObserver = new ResizeObserver(compute);
     resizeObserver.observe(container);
-    return () => resizeObserver.disconnect();
+
+    // 容器没变、只有视口跨过 1100 时,ResizeObserver 不一定触发,所以媒体查询也监听一份。
+    const stackingQuery = window.matchMedia('(max-width: 1100px)');
+    stackingQuery.addEventListener('change', compute);
+    compute();
+
+    return () => {
+      resizeObserver.disconnect();
+      stackingQuery.removeEventListener('change', compute);
+    };
   }, []);
 
   const handleSplitDividerMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
@@ -2077,8 +2108,8 @@ export function TransactionsPage() {
     }
 
     const rect = container.getBoundingClientRect();
-    const minLeft = 560;
-    const minRight = 320;
+    const minLeft = SPLIT_MIN_LEFT_WIDTH;
+    const minRight = SPLIT_MIN_RIGHT_WIDTH;
     const maxLeft = Math.max(minLeft, rect.width - minRight);
 
     const onMouseMove = (moveEvent: MouseEvent) => {
@@ -2834,6 +2865,32 @@ export function TransactionsPage() {
               role="separator"
               aria-label={t('transactions.ui.resizePanels')}
               aria-orientation="vertical"
+              /* WCAG 2.5.7(拖拽移动,AA):这条分隔条原来只有 role 和 label,
+                 既不可聚焦也没有键盘操作 —— 等于"告诉读屏这是个分隔条,却动不了"。
+                 补上 Window Splitter 的键盘入口:←/→ 调宽(Shift 加大步长),
+                 Home/End 到两端;aria-value* 让读屏念得出当前宽度和范围。 */
+              aria-valuenow={Math.round(tablePanelWidth)}
+              aria-valuemin={SPLIT_MIN_LEFT_WIDTH}
+              aria-valuemax={Math.round(splitMaxLeftWidth)}
+              tabIndex={0}
+              onKeyDown={(event) => {
+                if (splitLayoutStacked) {
+                  return;
+                }
+                const step = event.shiftKey ? SPLIT_KEYBOARD_COARSE_STEP : SPLIT_KEYBOARD_STEP;
+                let next: number | null = null;
+                if (event.key === 'ArrowLeft') next = tablePanelWidth - step;
+                else if (event.key === 'ArrowRight') next = tablePanelWidth + step;
+                else if (event.key === 'Home') next = SPLIT_MIN_LEFT_WIDTH;
+                else if (event.key === 'End') next = splitMaxLeftWidth;
+                if (next === null) {
+                  return;
+                }
+                event.preventDefault();
+                setTablePanelWidth(
+                  Math.min(Math.max(next, SPLIT_MIN_LEFT_WIDTH), splitMaxLeftWidth)
+                );
+              }}
               onMouseDown={handleSplitDividerMouseDown}
             />
 

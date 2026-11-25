@@ -66,6 +66,9 @@ type QuickEntry = {
 const SIDEBAR_COLLAPSED_WIDTH = 76;
 const SIDEBAR_MIN_WIDTH = 220;
 const SIDEBAR_MAX_WIDTH = 420;
+/* 键盘调宽的步长:细调 16px,按住 Shift 粗调 48px。 */
+const SIDEBAR_KEYBOARD_STEP = 16;
+const SIDEBAR_KEYBOARD_COARSE_STEP = 48;
 
 function truncateMobileInsightText(value: string, maxLength: number) {
   if (value.length <= maxLength) return value;
@@ -848,7 +851,37 @@ export function AppLayout() {
         </nav>
 
         {!collapsed ? (
-          <div className="sidebar-resize-handle" onMouseDown={() => (draggingRef.current = true)} />
+          /*
+           * WCAG 2.5.7(拖拽移动,AA):侧栏宽度原来只能拖,键盘和只用单指的人改不了。
+           * 按 ARIA Window Splitter 模式补一个等价入口:手柄本身可聚焦,
+           * ←/→ 调宽(Shift 加大步长),Home/End 直接到最窄/最宽。
+           * role=separator + aria-valuenow 让读屏能念出「当前 260,范围 220 到 420」。
+           * 拖拽照旧可用,这里只是加了一条不依赖拖拽的路。
+           */
+          <div
+            className="sidebar-resize-handle"
+            onMouseDown={() => (draggingRef.current = true)}
+            role="separator"
+            aria-orientation="vertical"
+            aria-label={tFallback('layout.sidebarResize', '调整侧边栏宽度')}
+            aria-valuenow={sidebarWidth}
+            aria-valuemin={SIDEBAR_MIN_WIDTH}
+            aria-valuemax={SIDEBAR_MAX_WIDTH}
+            tabIndex={0}
+            onKeyDown={(event) => {
+              const step = event.shiftKey ? SIDEBAR_KEYBOARD_COARSE_STEP : SIDEBAR_KEYBOARD_STEP;
+              let next: number | null = null;
+              if (event.key === 'ArrowLeft') next = sidebarWidth - step;
+              else if (event.key === 'ArrowRight') next = sidebarWidth + step;
+              else if (event.key === 'Home') next = SIDEBAR_MIN_WIDTH;
+              else if (event.key === 'End') next = SIDEBAR_MAX_WIDTH;
+              if (next === null) {
+                return;
+              }
+              event.preventDefault();
+              setSidebarWidth(Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, next)));
+            }}
+          />
         ) : null}
       </aside>
 

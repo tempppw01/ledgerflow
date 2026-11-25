@@ -139,7 +139,8 @@
     "currentAccount": "Current account",
     "accountSettings": "Account settings",
     "accountSettingsHint": "Profile and account security",
-    "logout": "Log out"
+    "logout": "Log out",
+    "sidebarResize": "Resize sidebar"
   },
   "nav": {
     "assistant": "AI Assistant",
@@ -2497,8 +2498,8 @@
       "historyToggleHint": "Expand on demand without interrupting your read",
       "indexNameFallback": "Market index",
       "closeSuffix": " close",
-        "extendedPre": "Pre-market",
-        "extendedPost": "After-hours",
+      "extendedPre": "Pre-market",
+      "extendedPost": "After-hours",
       "realtimeTrendSuffix": " live trend",
       "candleChartSuffix": " candlestick chart",
       "intradayHintSuffix": " intraday data will appear here once loaded.",
@@ -2777,7 +2778,7 @@
       "down": "Down"
     },
     "metric": {
-    "lastPrice": "Price",
+      "lastPrice": "Price",
       "netValue": "NAV",
       "return": "Return",
       "holding": "Holding"
@@ -4032,7 +4033,7 @@
       "cancelAria": "Cancel quick add",
       "title": "New entry",
       "done": "Done",
-        "saveAndNext": "Save & next",
+      "saveAndNext": "Save & next",
       "typeGroupAria": "Entry type",
       "expense": "Expense",
       "income": "Income",

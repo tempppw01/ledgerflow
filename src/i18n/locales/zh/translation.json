@@ -139,7 +139,8 @@
     "currentAccount": "当前账号",
     "accountSettings": "账号设置",
     "accountSettingsHint": "个人资料与账号安全",
-    "logout": "退出登录"
+    "logout": "退出登录",
+    "sidebarResize": "调整侧边栏宽度"
   },
   "nav": {
     "assistant": "AI 助手",
@@ -2497,8 +2498,8 @@
       "historyToggleHint": "按需展开，不打断当前行情判断",
       "indexNameFallback": "大盘指数",
       "closeSuffix": " 收盘",
-        "extendedPre": "盘前",
-        "extendedPost": "盘后",
+      "extendedPre": "盘前",
+      "extendedPost": "盘后",
       "realtimeTrendSuffix": "实时走势",
       "candleChartSuffix": "K线图",
       "intradayHintSuffix": "分时线加载后会显示在这里。",
@@ -2777,7 +2778,7 @@
       "down": "跌"
     },
     "metric": {
-    "lastPrice": "现价",
+      "lastPrice": "现价",
       "netValue": "净值",
       "return": "收益",
       "holding": "持有"
@@ -4032,7 +4033,7 @@
       "cancelAria": "取消快速记账",
       "title": "记一笔",
       "done": "完成",
-        "saveAndNext": "再记一笔",
+      "saveAndNext": "再记一笔",
       "typeGroupAria": "账目类型",
       "expense": "支出",
       "income": "收入",
