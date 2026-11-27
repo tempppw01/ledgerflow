@@ -10613,6 +10613,14 @@ body.categories-accounts-resizing {
   height: 24px;
 }
 
+/* 没有品牌图标时的回退图标(线性 SVG,和 .account-card-brand-icon 同尺寸,
+   这样有品牌图和没品牌图的卡片视觉重量一致)。 */
+.account-card-fallback-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--color-text-secondary);
+}
+
 .account-card-main {
   display: flex;
   flex-direction: column;

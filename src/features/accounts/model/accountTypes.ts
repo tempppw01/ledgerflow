@@ -18,6 +18,37 @@ export type AccountType =
   | 'liability'
   | 'receivable';
 
+/**
+ * 账户图标种类 —— 由 `features/accounts/ui/accountIcons.tsx` 渲染成线性 SVG。
+ * 定义放在 model 层:ui 只依赖 model,model 不反向依赖 ui。
+ *
+ * 这里刻意不复用 emoji:emoji 由操作系统字体渲染(彩色、各平台不一),
+ * 和全站单色线性图标的语言不一致;而且 `debit` 与 `credit` 原本都用 💳,
+ * 两种账户类型看起来完全一样。
+ */
+export type AccountIconKind =
+  | 'cash'
+  | 'debit'
+  | 'bank'
+  | 'credit'
+  | 'virtual'
+  | 'ewallet'
+  | 'liability'
+  | 'receivable'
+  | 'wallet';
+
+/** 各账户类型对应的图标种类 */
+export const ACCOUNT_TYPE_ICON_KIND: Record<AccountType, AccountIconKind> = {
+  cash: 'cash',
+  debit: 'debit',
+  savings: 'bank',
+  credit: 'credit',
+  virtual: 'virtual',
+  ewallet: 'ewallet',
+  liability: 'liability',
+  receivable: 'receivable'
+};
+
 /** 账户类型中文标签 */
 export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   cash: '现金',
@@ -28,18 +59,6 @@ export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   ewallet: '电子钱包',
   liability: '负债',
   receivable: '应收'
-};
-
-/** 账户类型图标 */
-export const ACCOUNT_TYPE_ICONS: Record<AccountType, string> = {
-  cash: '💵',
-  debit: '💳',
-  savings: '🏦',
-  credit: '💳',
-  virtual: '🧾',
-  ewallet: '👛',
-  liability: '📄',
-  receivable: '📥'
 };
 
 /** 预设账户模板 */
@@ -104,25 +123,35 @@ export function getAccountDisplayIconUrl(name: string, type?: AccountType): stri
   return undefined;
 }
 
-/** 根据账户名称 + 类型推断展示图标 */
-export function getAccountDisplayIcon(name: string, type?: AccountType): string {
+/**
+ * 根据账户名称 + 类型推断展示图标。
+ *
+ * 返回的是**图标种类标识**,由 `AccountIcon` 组件渲染成线性 SVG。
+ * 以前这里返回 emoji(💵 🧾 👛 📄 📥),两个问题:
+ *   1. emoji 由操作系统字体渲染,彩色且各平台不一,和全站单色线性图标不是一套语言;
+ *   2. `debit` 与 `credit` 原本都映射到 💳,两种账户类型看起来完全一样。
+ */
+export function getAccountDisplayIconKind(
+  name: string,
+  type?: AccountType
+): AccountIconKind {
   const normalized = name.trim().toLowerCase();
 
   if (isAlipayAccountName(name)) {
-    return ACCOUNT_TYPE_ICONS.virtual;
+    return 'virtual';
   }
   if (isWechatAccountName(name)) {
-    return '🟩';
+    return 'ewallet';
   }
   if (normalized.includes('云闪付')) {
-    return '⚡';
+    return 'ewallet';
   }
   if (normalized.includes('现金')) {
-    return '💵';
+    return 'cash';
   }
   if (normalized.includes('花呗') || normalized.includes('白条')) {
-    return '💳';
+    return 'credit';
   }
 
-  return type ? ACCOUNT_TYPE_ICONS[type] : '💼';
+  return type ? ACCOUNT_TYPE_ICON_KIND[type] : 'wallet';
 }

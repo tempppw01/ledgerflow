@@ -18,12 +18,13 @@ import { LoadingSkeleton } from '../../shared/ui/LoadingSkeleton';
 import { ConfirmDialog } from '../../shared/ui/ConfirmDialog';
 import { ALIPAY_LOGO_URL, WECHAT_LOGO_URL } from '../../shared/config/brandAssets';
 import {
-  getAccountDisplayIcon,
+  getAccountDisplayIconKind,
   getAccountDisplayIconUrl,
   getAccountTypeLabel,
   isAlipayAccountName,
   isWechatAccountName
 } from '../../features/accounts/model/accountTypes';
+import { AccountIcon } from '../../features/accounts/ui/accountIcons';
 import type { AccountType } from '../../features/accounts/model/accountTypes';
 import type { Category } from '../../entities/category/types';
 import { roundMoney } from '../../shared/lib/money';
@@ -1365,6 +1366,12 @@ export function CategoriesAccountsPage() {
                 </div>
                 <div className="field">
                   <label>{tf('categoriesAccounts.accountTypeLabel', '账户类型')}</label>
+                  {/*
+                    这里是有意保留 emoji 的:原生 <select> 的 <option> 只能放文本,
+                    塞不进 SVG(浏览器对 option 内的元素支持不可靠)。
+                    账户卡片那边的回退图标已改成线性 SVG(见 AccountIcon),
+                    这一处属于「原生控件限制」而不是遗漏。
+                  */}
                   <select
                     aria-label={tf('categoriesAccounts.accountTypeLabel', '账户类型')}
                     value={accountType}
@@ -1464,7 +1471,10 @@ export function CategoriesAccountsPage() {
                           ) : accountIconUrl ? (
                             <img className="account-card-brand-icon" src={accountIconUrl} alt="" />
                           ) : (
-                            getAccountDisplayIcon(item.name, item.type)
+                            <AccountIcon
+                              className="account-card-fallback-icon"
+                              kind={getAccountDisplayIconKind(item.name, item.type)}
+                            />
                           )}
                         </span>
                         <div className="account-card-main">
