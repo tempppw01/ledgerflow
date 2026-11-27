@@ -604,9 +604,28 @@
   .dashboard-forecast-toggle { justify-content: center; }
 }
 
+/*
+ * 窄屏时「构成」摘要要整行落到数值下面。
+ *
+ * 原来这里只写了 `grid-column: 1 / -1` —— 但 `.stat-card` 是 `display:flex`,
+ * **grid-column 在 flex 父元素里完全不生效**,所以摘要一直挤在数值右边,
+ * 只能分到 160~187px(base 的 min-width 也压着),还看不见任何报错:
+ *   720px:三列各 48px(标签和金额都被省略号截)
+ *   439/390px:变成 2+1 两行,「负债」单独掉到第二行,行高还比隔壁卡高一大截
+ * 实测:390px 下卡高 133px,而右边那张「本月结余」只有 92px。
+ *
+ * 所以补上 flex 侧的等价写法:父级允许换行 + 摘要占满整行。
+ */
 @media (max-width: 720px) {
+  .dashboard-stat-grid .stat-card {
+    flex-wrap: wrap;
+  }
+
   .dashboard-net-worth-summary {
+    /* 留给将来父级改成 grid 的情况 */
     grid-column: 1 / -1;
+    /* flex 父元素下真正起作用的是这两条 */
+    flex: 0 0 100%;
     width: 100%;
     max-width: none;
     margin: 8px 0 0;
@@ -615,16 +634,27 @@
     border-top: 1px solid var(--color-border-light);
   }
 
+  /*
+   * 上面那条 flex 单独写是**不生效**的:摘要本身是个 div,
+   * global.css 里的 `.stat-card > div { flex: 1; min-width: 0 }`(0,1,1)
+   * 同时命中它,而且优先级高于 `.dashboard-net-worth-summary`(0,1,0) ——
+   * 连 base 里的 `min-width: 210px` 也是被这条悄悄清成 0 的(实测 minWidth=0px)。
+   * 所以这里必须把优先级抬上去,否则摘要在窄屏永远换不了行。
+   */
+  .dashboard-stat-grid .stat-card > .dashboard-net-worth-summary {
+    flex: 0 0 100%;
+  }
+
   .dashboard-net-worth-summary-items {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 440px) {
-  .dashboard-net-worth-summary-items {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
+/*
+ * 440px 以下原来把 3 列改成 2 列。摘要在窄屏已经是**整行独占**了,
+ * 300px 左右放 3 列每列还有 ~92px(标签 ~24px + 金额 ~64px)放得下,
+ * 改 2 列反而必然排成 2+1,让「负债」孤零零掉到第二行。所以这条去掉了。
+ */
 
 .dashboard-stat-label {
   font-size: 14px;
