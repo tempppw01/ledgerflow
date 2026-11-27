@@ -5082,7 +5082,7 @@
   padding: 7px 9px;
   border: 1px solid var(--color-border-light);
   border-radius: 10px;
-  background: color-mix(in srgb, var(--color-bg-elevated) 88%, var(--color-accent-bg));
+  background: color-mix(in srgb, var(--color-bg-elevated) 88%, var(--color-primary-bg));
   color: var(--color-text-primary);
   cursor: pointer;
 }
@@ -5403,7 +5403,7 @@
   border: 1px solid var(--color-primary);
   border-radius: 3px;
   outline: none;
-  background: var(--color-bg-base);
+  background: var(--color-bg);
   color: var(--color-text-primary);
   font: inherit;
   font-size: 11px;

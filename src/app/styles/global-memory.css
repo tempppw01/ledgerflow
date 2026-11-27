@@ -129,7 +129,7 @@
 .global-memory-state.is-muted { color: var(--color-warning-text); }
 .global-memory-content { font-size: 14px; line-height: 1.6; }
 .global-memory-foot { gap: 4px 12px; color: var(--color-text-tertiary); font-size: 11px; }
-.global-memory-foot span + span::before { content: '·'; margin-right: 12px; color: var(--color-border-strong); }
+.global-memory-foot span + span::before { content: '·'; margin-right: 12px; color: var(--color-border-strong, var(--color-border)); }
 
 .global-memory-actions {
   align-self: center;

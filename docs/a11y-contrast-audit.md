@@ -173,24 +173,47 @@
 确认新配色是「更沉稳」而不是「发脏」:侧栏选中项是暖棕、金额红/绿一眼能分清、
 状态徽标仍然按语义着色。
 
-## 7. 自定义属性被引用但**从未定义**(已从 29 个 / 319 处降到 13 个 / 31 处)
+## 7. 自定义属性被引用但**从未定义**(已从 29 个 / 319 处降到 4 个 / 22 处)
 
 静态统计(去掉注释后的真实引用):`src/` 里 **192 个**自定义属性有定义,
-另有 **13 个**被 `var()` 引用(且没写 fallback)却**没有任何定义处**,合计 **31 处**。
+另有 **4 个**被 `var()` 引用却**没有任何定义处**,合计 **22 处** ——
+而且其中 **18 处是运行时逐条注入**,那是设计如此、不是缺陷:
 
-剩下的 13 个里有 18 处是**运行时逐条注入**的(`--market-color` / `--brand-color` /
-`--calendar-intensity`),那是设计如此、不是缺陷。真正待定的只剩 13 处零星引用。
+| token                  | 被引用 | 状态                                       |
+| ---------------------- | ------ | ------------------------------------------ |
+| `--market-color`       | 12     | ✅ 运行时逐条设置(正常)                    |
+| `--brand-color`        | 4      | ✅ 运行时逐条设置(品牌色由数据决定,正常)  |
+| `--calendar-intensity` | 2      | ✅ 运行时逐条设置(正常)                    |
+| `--color-accent`       | 4      | ⏸ 唯一真正待定的,见下                      |
 
-| token                    | 被引用 | 状态                            |
-| ------------------------ | ------ | ------------------------------- |
-| `--market-color`         | 12     | ⏸ 运行时逐条设置(正常)         |
-| `--color-accent`         | 4      | ⏸ 目标值不唯一                  |
-| `--brand-color`          | 4      | ⏸ 运行时逐条设置(品牌色,正常) |
-| `--calendar-intensity`   | 2      | ⏸ 运行时逐条设置(正常)         |
-| `--color-border-strong`  | 1      | ⏸ 目标值不唯一                  |
-| `--color-text-warning`   | 1      | ⏸ 目标值不唯一                  |
-| `--color-primary-50/500/700` | 各 1 | ⏸ 色阶未定义                    |
-| `--color-bg-muted` / `--color-panel` / `--color-accent-bg` / `--color-bg-base` | 各 1 | ⏸ 目标值不唯一 |
+**`--color-accent` 为什么留着**:4 处全是「渐变的第二个色标」,
+写成 `linear-gradient(主色 → color-mix(accent 72%, 主色))`。换成同色系会让渐变退化成单色,
+换成 `--color-accent-cyan/purple/orange` 里任何一个都是替用户选配色 —— 属 §6 那类品牌决定。
+
+而且其中**最显眼的那处是死代码**:`.investment-chat-floating-launcher` 在 5595 行
+(用 `--color-accent` 写渐变)被 8289 行同名规则**整块覆盖**(display / width / height /
+background / border 全给了新值,且只用已定义的 token),实测确认浮动按钮的渐变正常渲染。
+所以这条不改也没坏处 —— 但这也是为什么**每一处都得先看级联再动手**,
+不能看见「未定义」就当成缺陷。
+
+其余原本列为「待定」的 9 处零星引用,核对实际用法后确认目标唯一,已改写成已有 token
+(改的是**调用点**,没有凭空造色阶):
+
+| 原引用                 | 改为                     | 理由                       |
+| ---------------------- | ------------------------ | -------------------------- |
+| `--color-text-warning` | `--color-warning-text`   | 就是警告文字色             |
+| `--color-primary-700`  | `--color-primary-text`   | 悬停时的深主色             |
+| `--color-primary-500`  | `--color-primary`        | 500 档即基准主色           |
+| `--color-primary-50`   | `--color-primary-bg`     | 极浅主色 = 现成的浅底      |
+| `--color-bg-muted`     | `--color-bg-subtle`      | 同义                       |
+| `--color-panel`        | `--color-bg-elevated`    | 面板底                     |
+| `--color-bg-base`      | `--color-bg`             | 页面底                     |
+| `--color-accent-bg`    | `--color-primary-bg`     | 强调色浅底                 |
+| `--color-border-strong`| 补 `, var(--color-border)` 兜底 | 与 `global.css`/`pages.css` 已有写法统一 |
+
+改完逐个在浏览器里量过计算值,确认从「整条声明作废」变成真的生效:
+信贷进度条底由透明变成可见浅底、`dashboard-module-chip` 底由透明变成白、
+`bg-base` 底变成 `#f3f5f9`、兜底那处得到 `1px solid #d9dfeb`。
 
 ### 7.0 「简写里的未定义 var」到底有多严重:实测结论
 
@@ -286,17 +309,17 @@ border: 1px solid var(--color-success-border);   /* 卡片想要的柔和描边 
 取值沿用同族已有的 `--color-danger-border` 做法(与同名的 `*-bg` 同一透明度基调、只轻微加深),
 所以是「补齐缺失的定义」而不是「新造一套配色」。
 
-### 7.2 剩下 13 个为什么还没补
+### 7.2 判断「要不要补」的标准
 
-补别名的风险不是「变了」,而是「变成什么」:
+补的代价不是「变了」,而是「变成什么」。所以只补**目标唯一、且不涉及品牌取值**的;
+其余一律留着并写清理由,不靠猜:
 
-- **运行时变量**(`--market-color` 12 处、`--brand-color` 4 处、`--calendar-intensity` 2 处)
-  的值来自数据而不是主题,本来就该由 JS 逐条注入 —— **这是正常设计,不是缺陷**;
-- **目标值不唯一**(`--color-accent`、`--color-border-strong`、`--color-text-warning`、
-  `--color-bg-muted`、`--color-panel`、`--color-accent-bg`、`--color-bg-base`、
-  `--color-primary-50/500/700`)合计只剩 13 处零星引用,补错会造出新的可见缺陷。
+- **运行时变量**(`--market-color`、`--brand-color`、`--calendar-intensity`)的值来自数据
+  而不是主题,本来就该由 JS 逐条注入 —— **这是正常设计,不是缺陷**,不要"补"上静态值;
+- **`--color-accent`** 是要用户在几套配色里选一个,属品牌决定(理由见上表)。
 
-剩下这 13 处要逐处看实际渲染,不能靠猜。
+判断前**必须先看级联**:`.investment-chat-floating-launcher` 那处就是典型 ——
+单看源码会以为浮动按钮没有背景色标,实际它被后面的同名规则整块覆盖,根本没有缺陷。
 
 ### 7.3 怎么证明别名没有改坏东西
 
