@@ -34,6 +34,7 @@
     "check:version-sync": "node scripts/check-version-sync.mjs",
     "audit:ui": "node scripts/audit-ui-browser.mjs",
     "audit:ui:local": "node scripts/audit-ui-local.mjs",
+    "audit:contrast": "node scripts/audit-contrast.mjs",
     "check:audit-routes": "node scripts/check-audit-routes.mjs",
     "audit:ledger-math": "node scripts/audit-ledger-math.mjs",
     "check:shared-predicates": "node scripts/check-shared-predicates.mjs",

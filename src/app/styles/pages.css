@@ -2576,7 +2576,15 @@
 
 .financial-analysis-range-switcher button.active {
   background: var(--color-primary);
-  color: var(--color-btn-primary-text);
+  /*
+   * 原来写的是 var(--color-btn-primary-text) —— 这个 token 全仓库从未定义过
+   * (只在这一行被引用,别处没有定义)。自定义属性未定义时,var() 在计算值阶段
+   * 失效,color 是继承属性,于是这里继承了外层文字色:
+   *   浅色主题继承到近黑 → 对琥珀底 7.87:1,「看起来没问题」;
+   *   深色主题继承到 #f0eeea → 对琥珀底只有 1.85:1,实测被对比度扫描抓出来。
+   * 换成仓库既有的 --color-on-primary(#1c1917,两种主题都定义),琥珀底上 8.14:1。
+   */
+  color: var(--color-on-primary);
   border-color: var(--color-primary);
 }
 
