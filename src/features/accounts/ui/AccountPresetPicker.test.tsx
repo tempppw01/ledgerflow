@@ -6,10 +6,10 @@ import type { AccountPreset } from '../model/accountTypes';
 import { ALIPAY_LOGO_URL, WECHAT_LOGO_URL } from '../../../shared/config/brandAssets';
 
 const mockPresets: AccountPreset[] = [
-  { name: '现金', type: 'cash', icon: '💵' },
-  { name: '支付宝', type: 'virtual', icon: '📱', iconUrl: ALIPAY_LOGO_URL },
-  { name: '微信钱包', type: 'virtual', icon: '📱', iconUrl: WECHAT_LOGO_URL },
-  { name: '招商银行', type: 'debit', icon: '🏦' }
+  { name: '现金', type: 'cash' },
+  { name: '支付宝', type: 'virtual', iconUrl: ALIPAY_LOGO_URL },
+  { name: '微信钱包', type: 'virtual', iconUrl: WECHAT_LOGO_URL },
+  { name: '招商银行', type: 'debit' }
 ];
 
 describe('AccountPresetPicker', () => {

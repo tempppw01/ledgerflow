@@ -67,28 +67,26 @@ export interface AccountPreset {
   name: string;
   /** 账户类型 */
   type: AccountType;
-  /** 图标 */
-  icon: string;
-  /** 品牌图标地址 */
+  /** 品牌图标地址;没有时按 type 用 AccountIcon 渲染线性图标 */
   iconUrl?: string;
 }
 
 /** 内置预设列表 */
 export const ACCOUNT_PRESETS: AccountPreset[] = [
-  { name: '现金', type: 'cash', icon: '💵' },
-  { name: '支付宝', type: 'virtual', icon: '📱', iconUrl: ALIPAY_LOGO_URL },
-  { name: '微信钱包', type: 'virtual', icon: '📱', iconUrl: WECHAT_LOGO_URL },
-  { name: '工商银行', type: 'debit', icon: '🏦', iconUrl: LANDMARK_ICON_URL },
-  { name: '招商银行', type: 'debit', icon: '🏦', iconUrl: LANDMARK_ICON_URL },
-  { name: '建设银行', type: 'debit', icon: '🏦', iconUrl: LANDMARK_ICON_URL },
-  { name: '农业银行', type: 'debit', icon: '🏦', iconUrl: LANDMARK_ICON_URL },
-  { name: '交通银行', type: 'debit', icon: '🏦', iconUrl: LANDMARK_ICON_URL },
-  { name: '储蓄账户', type: 'savings', icon: '🏦', iconUrl: WALLET_CARDS_ICON_URL },
-  { name: '信用卡', type: 'credit', icon: '💳', iconUrl: CREDIT_CARDS_ICON_URL },
-  { name: '花呗', type: 'credit', icon: '💳', iconUrl: CREDIT_CARDS_ICON_URL },
-  { name: '京东白条', type: 'credit', icon: '💳', iconUrl: CREDIT_CARDS_ICON_URL },
-  { name: '借款', type: 'liability', icon: '📄' },
-  { name: '应收款', type: 'receivable', icon: '📥' }
+  { name: '现金', type: 'cash' },
+  { name: '支付宝', type: 'virtual', iconUrl: ALIPAY_LOGO_URL },
+  { name: '微信钱包', type: 'virtual', iconUrl: WECHAT_LOGO_URL },
+  { name: '工商银行', type: 'debit', iconUrl: LANDMARK_ICON_URL },
+  { name: '招商银行', type: 'debit', iconUrl: LANDMARK_ICON_URL },
+  { name: '建设银行', type: 'debit', iconUrl: LANDMARK_ICON_URL },
+  { name: '农业银行', type: 'debit', iconUrl: LANDMARK_ICON_URL },
+  { name: '交通银行', type: 'debit', iconUrl: LANDMARK_ICON_URL },
+  { name: '储蓄账户', type: 'savings', iconUrl: WALLET_CARDS_ICON_URL },
+  { name: '信用卡', type: 'credit', iconUrl: CREDIT_CARDS_ICON_URL },
+  { name: '花呗', type: 'credit', iconUrl: CREDIT_CARDS_ICON_URL },
+  { name: '京东白条', type: 'credit', iconUrl: CREDIT_CARDS_ICON_URL },
+  { name: '借款', type: 'liability' },
+  { name: '应收款', type: 'receivable' }
 ];
 
 /** 获取账户类型标签 */

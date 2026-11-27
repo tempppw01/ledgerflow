@@ -9606,6 +9606,13 @@ body.exchange-resizing {
   height: 18px;
 }
 
+/* 没有品牌图时的回退图标:与 .account-preset-brand-icon 同尺寸。 */
+.account-preset-fallback-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-secondary);
+}
+
 .account-type-badge {
   display: inline-block;
   font-size: var(--font-xs);

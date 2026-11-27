@@ -1,4 +1,5 @@
-import type { AccountPreset } from '../model/accountTypes';
+import { ACCOUNT_TYPE_ICON_KIND, type AccountPreset } from '../model/accountTypes';
+import { AccountIcon } from './accountIcons';
 import { useTranslation } from 'react-i18next';
 
 interface AccountPresetPickerProps {
@@ -28,7 +29,11 @@ export function AccountPresetPicker({ presets, onSelect }: AccountPresetPickerPr
                 aria-hidden="true"
               />
             ) : (
-              preset.icon
+              /* 没有品牌图时按账户类型给线性图标,不再用 emoji(理由见 accountIcons.tsx)。 */
+              <AccountIcon
+                className="account-preset-fallback-icon"
+                kind={ACCOUNT_TYPE_ICON_KIND[preset.type]}
+              />
             )}
           </span>
           {preset.name}
