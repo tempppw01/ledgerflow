@@ -16,6 +16,9 @@
  *   - 没有可读名称(aria-label / 文本 / title 都空)的 button 与 a[href]
  *   - 每个路由新产生的 console error
  *   - 触屏语义下 font-size < 16px 的表单控件(iOS 聚焦会自动放大整页)
+ *   - 可点区域小于 24×24 且不命中 WCAG 2.5.8 的四条豁免(AA)
+ *   - 表格格子里内容画到隔壁格子上
+ *   - placeholder 长到显示不全(只报告)
  *
  * 为什么窄屏两档必须带 hasTouch:不带的话 Chromium 报 `pointer: fine`,
  * 全站 `@media (pointer: coarse)` 里那一批「为触屏放大点按区域 / 抬字号」的规则
@@ -192,6 +195,9 @@ const AUDIT_FN = () => {
     skipLink: 0,
     mainLandmark: 0,
     smallTargets: [],
+    // WCAG 2.5.8(AA)24×24:命中四条豁免的不算,见下面判定处
+    targetSize25x8: [],
+    minTargetSkipped: { srOnly: 0, exempt: 0 },
     // 触屏语义下字号 < 16px 的表单控件(只在这两档窄屏 + hasTouch 时才可能有内容)
     coarseControlFont: [],
     // 单元格里的内容画到隔壁格子上(见下面判定处的说明)
@@ -395,6 +401,124 @@ const AUDIT_FN = () => {
     }
   }
 
+  /*
+   * WCAG 2.5.8 Target Size (Minimum, AA):可点区域至少 24×24 CSS px ——
+   * 除非命中它自己列出的四条豁免。这一条**比 44px 那档重要得多**:
+   * 44 是 AAA / 平台指南线,24 才是 AA 的底线。
+   *
+   * 以前这里是"一律报小于 44 的",结果 63 个组合报出 1989 条,全是噪声
+   * (桌面上的跳转链接、品牌链接、24×24 的图标按钮……),真正不达标的混在里面看不见。
+   * 现在按 2.5.8 的判据来:
+   *
+   *   1) 间距:居中于目标的 24px 直径圆,若与其它目标都不相交 → 豁免
+   *   2) 行内:目标处在句子里(所在块级元素还有明显更多的文字)→ 豁免
+   *   3) 用户代理:原生控件且作者没改尺寸(未改过的 checkbox/radio/range/select)→ 豁免
+   *   4) 必要:尺寸本身就是信息 —— 机器判不了,留在结果里人工复核
+   *
+   * 另外排除「只在获得焦点时出现」的跳转链接:平时是 1×1 裁着的,
+   * 那是标准做法(键盘与读屏仍可用),不是一个"指不到"的目标。
+   */
+  out.targetSize25x8 = [];
+  out.minTargetSkipped = { srOnly: 0, exempt: 0 };
+  {
+    const SEL =
+      'button, a[href], select, input:not([type=hidden]), textarea, summary, [role=button], [role=tab], [role=switch], [role=checkbox], [role=radio], [tabindex]:not([tabindex="-1"])';
+    const targets = [];
+    for (const el of document.querySelectorAll(SEL)) {
+      if (!visible(el)) continue;
+      targets.push({ el, r: el.getBoundingClientRect() });
+    }
+    const label = (el) =>
+      String(
+        el.getAttribute('aria-label') ||
+          el.textContent ||
+          el.getAttribute('title') ||
+          el.getAttribute('placeholder') ||
+          ''
+      )
+        .trim()
+        .slice(0, 24);
+
+    for (const t of targets) {
+      const w = t.r.width;
+      const h = t.r.height;
+      if (w <= 2 && h <= 2) {
+        out.minTargetSkipped.srOnly += 1;
+        continue;
+      }
+      if (w >= 24 && h >= 24) continue;
+
+      const tag = t.el.tagName.toLowerCase();
+      const kind = (t.el.getAttribute('type') || '').toLowerCase();
+      const uaNative =
+        (tag === 'input' && ['checkbox', 'radio', 'range', 'file', 'color'].includes(kind)) ||
+        tag === 'select';
+      const uaUnstyled = uaNative && getComputedStyle(t.el).width === 'auto';
+
+      let inline = false;
+      for (let p = t.el.parentElement; p; p = p.parentElement) {
+        if (['P', 'LI', 'TD', 'DD', 'LABEL', 'SPAN', 'SMALL'].includes(p.tagName)) {
+          if ((p.textContent || '').trim().length > label(t.el).length + 12) {
+            inline = true;
+            break;
+          }
+        }
+        if (p.tagName === 'TD') break;
+      }
+
+      // 间距豁免:把 24px 直径的圆居中在目标上,看它与别的目标相不相交
+      const cx = t.r.left + w / 2;
+      const cy = t.r.top + h / 2;
+      let spaced = true;
+      for (const o of targets) {
+        if (o.el === t.el || t.el.contains(o.el) || o.el.contains(t.el)) continue;
+        const ox = Math.min(Math.max(cx, o.r.left), o.r.right);
+        const oy = Math.min(Math.max(cy, o.r.top), o.r.bottom);
+        if ((cx - ox) ** 2 + (cy - oy) ** 2 < 12 * 12) {
+          spaced = false;
+          break;
+        }
+      }
+
+      const reasons = [];
+      if (inline) reasons.push('行内');
+      if (uaUnstyled) reasons.push('用户代理');
+      if (spaced) reasons.push('间距');
+      if (reasons.length) {
+        out.minTargetSkipped.exempt += 1;
+        continue;
+      }
+      out.targetSize25x8.push({
+        tag: t.el.tagName,
+        size: `${w.toFixed(1)}x${h.toFixed(1)}`,
+        name: label(t.el),
+        cls: String(t.el.className).split(' ').filter(Boolean).slice(0, 2).join('.')
+      });
+    }
+  }
+
+  /*
+   * 44px 那档(AAA / iOS 44pt / Android 48dp)保留,但**只在触屏上算**。
+   * 以前不分档位一律报,桌面也跟着报,63 个组合 1989 条 —— 那种量级的噪声
+   * 只会让人学会忽略它,所以它此前一直是"只报告"里最没人看的一项。
+   */
+  if (window.matchMedia('(pointer: coarse)').matches) {
+    for (const el of document.querySelectorAll(
+      'button, a[href], select, input:not([type=hidden]), textarea'
+    )) {
+      if (!visible(el)) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width <= 2 && r.height <= 2) continue;
+      if (r.width < 44 || r.height < 44) {
+        out.smallTargets.push({
+          text: (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 30),
+          w: Math.round(r.width),
+          h: Math.round(r.height)
+        });
+      }
+    }
+  }
+
   const main = document.querySelector('main');
   if (main) {
     out.mainTextLength = main.innerText.trim().length;
@@ -487,23 +611,6 @@ const AUDIT_FN = () => {
   }
   out.mainLandmark = document.querySelectorAll('main').length;
   out.fieldCount = document.querySelectorAll('input, select, textarea').length;
-
-  /*
-   * 触控目标尺寸:只报告、不致败。
-   * WCAG 2.5.8(AA)要求 24×24,而 44×44 是 2.5.5(AAA)与各移动平台指南的线 ——
-   * 拿 AAA 去致败会把大量 38px 高的导航行误报成缺陷(它们过 AA)。
-   */
-  for (const el of document.querySelectorAll('button, a[href], [role="button"]')) {
-    if (!visible(el)) continue;
-    const r = el.getBoundingClientRect();
-    if (r.width < 44 || r.height < 44) {
-      out.smallTargets.push({
-        text: (el.textContent || el.getAttribute('aria-label') || '').trim().slice(0, 20),
-        w: Math.round(r.width),
-        h: Math.round(r.height)
-      });
-    }
-  }
 
   return out;
 };
@@ -660,7 +767,9 @@ for (const [label, viewport] of VIEWPORTS) {
       // 触屏下 < 16px 的输入控件:iOS 会放大整页,属于真实可感的缺陷,直接致败
       audit.coarseControlFont.length ||
       // 格子里的字画到隔壁格子上:两组字叠在一起,读不了,直接致败
-      audit.cellOverflow.length
+      audit.cellOverflow.length ||
+      // WCAG 2.5.8(AA):可点区域小于 24×24 且不命中任何豁免
+      audit.targetSize25x8.length
     ) {
       problems.push({
         viewport: label,
@@ -674,6 +783,7 @@ for (const [label, viewport] of VIEWPORTS) {
         consoleErrors: newErrors,
         coarseControlFont: audit.coarseControlFont,
         cellOverflow: audit.cellOverflow,
+        targetSize25x8: audit.targetSize25x8,
         a11y: {
           lang: audit.lang,
           h1Count: audit.h1Count,
@@ -720,7 +830,7 @@ const report = {
   base,
   checked,
   problemCount: problems.length,
-  note: '字号 < 11px(tinyText)、触控目标 < 44px(smallTargets)、placeholder 显示不全(longPlaceholders)只报告、不计入 problemCount —— 前者是设计取舍,后者低于的是 AAA/平台指南线而不是 AA(2.5.8 只要求 24×24),placeholder 不违反任何 WCAG 条款',
+  note: '字号 < 11px(tinyText)、触控目标 < 44px(smallTargets,只在触屏档位算)、placeholder 显示不全(longPlaceholders)只报告、不计入 problemCount —— 44px 是 AAA/平台指南线而不是 AA(2.5.8 只要求 24×24,那一项另算且致败),字号与 placeholder 是设计取舍/不违反 WCAG 条款',
   problems,
   tinyText: tinyTextFindings,
   smallTargets: smallTargetFindings,

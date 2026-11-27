@@ -3764,6 +3764,9 @@ small.mono {
   opacity: 0.45;
   padding: 2px 6px;
   line-height: 1;
+  /* 图标 + 2×6px 内边距实测只有 23.7px 宽,差 0.3px 不到 WCAG 2.5.8 的 24×24。
+     用 min-width 兜住:肉眼无差别,但窄了就是窄了。 */
+  min-width: 24px;
   transition: opacity var(--transition-fast);
 }
 
