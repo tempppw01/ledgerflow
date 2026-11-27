@@ -34,8 +34,12 @@ describe('recentReleases.generated', () => {
     expect(RELEASE_HISTORY).toHaveLength(RELEASE_HISTORY_LIMIT);
   });
 
-  it('第一条就是当前版本(改版本号后必须重新生成)', () => {
-    expect(RELEASE_HISTORY[0]?.version).toBe(APP_VERSION);
+  it('第一条就是当前版本(改版本号/加发布说明后必须重新生成)', () => {
+    expect(
+      RELEASE_HISTORY[0]?.version,
+      '关于页的第一条应当是当前版本。两种可能:① 改版本号/加发布说明之后忘了跑 npm run gen:release-history;' +
+        '② 提交了比当前版本更新的发布说明(那会让界面显示一个用户还没有的版本)'
+    ).toBe(APP_VERSION);
   });
 
   it('每条都是 x.y.z、有标题、有中文摘要', () => {
