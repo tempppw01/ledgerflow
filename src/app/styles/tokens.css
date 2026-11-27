@@ -619,3 +619,35 @@
   );
   --color-on-primary: #ffffff;
 }
+
+/*
+ * ---- 历史名称 → 规范 token 的别名(2026-11-27)----
+ *
+ * 下面这些名字在全仓库被引用,但**从来没有定义处**。自定义属性未定义时,
+ * var() 在计算值阶段失效、整条声明作废,属性于是退化成继承或初始值:
+ *   color 退化成继承、background 退化成透明、border-color 退化成 currentColor。
+ * 多数情况下「继承到的颜色刚好也对」,所以长期没被发现 ——
+ * 但 --color-btn-primary-text 就是同一个机制在深色主题下压出了 1.85:1 的对比度。
+ *
+ * 这里只补「目标唯一、且不涉及品牌取值」的三个:
+ *   --color-text-primary → --color-text(142 处 color + 1 处 stroke)
+ *   --color-text-muted   → --color-text-tertiary(14 处 color)
+ *   --radius-pill        → --radius-full(8 处)
+ * 值写成「引用另一个自定义属性」,所以浅色/深色主题各自解析到正确的颜色,
+ * 不需要在两个主题块里各写一遍。
+ *
+ * 刻意**没有**补的(理由见 docs/a11y-contrast-audit.md §7):
+ *   · *-text / *-soft / *-border 这些语义族 —— 它们的「目标色」本身还没定,
+ *     属于待定的品牌决定(见同文档 §6),凭空取值等于替用户改品牌;
+ *   · --market-color / --brand-color / --calendar-intensity 这类由运行时逐条设置的变量,
+ *     值来自数据而不是主题;
+ *   · --color-text-quaternary / --color-panel / --color-surface / --color-bg-base /
+ *     --color-bg-muted / --color-accent / --color-accent-bg / --color-focus /
+ *     --color-border-strong / --mobile-nav-height / --color-primary-50/500/700 ——
+ *     目标值不唯一或用在背景/边框上,改错会造出新的可见缺陷,需要逐处核对实际渲染。
+ */
+:root {
+  --color-text-primary: var(--color-text);
+  --color-text-muted: var(--color-text-tertiary);
+  --radius-pill: var(--radius-full);
+}
