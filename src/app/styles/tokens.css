@@ -207,6 +207,28 @@
   --color-danger-bg: rgba(234, 67, 53, 0.08);
   --color-danger-border: rgba(234, 67, 53, 0.22);
 
+  /*
+   * success / warning 的边框色和四种「柔和填充」色:全站引用了 80 处,但**从来没定义过**。
+   *
+   * 为什么必须补:这些引用大多写在**简写**里,例如
+   *     border: 1px solid var(--color-success-border);
+   * 自定义属性未定义时,var() 在计算值阶段失效,而简写一旦失效是**整条声明作废**
+   * (已在浏览器里实测确认:border-width 计算成 0px、border-style 成 none),
+   * 于是卡片连边框一起没了 —— 不是"颜色不对",是**根本没画出来**。
+   * 对照:写在长写里(border-color:)只丢那一条,边框还在。
+   *
+   * 取值沿用同族已有的 --color-danger-border 做法:与同名的 *-bg 同一个透明度基调,
+   * 只做轻微加深,保持"柔和描边"的观感。
+   */
+  --color-success-border: rgba(52, 168, 83, 0.2);
+  --color-warning-border: rgba(245, 158, 11, 0.22);
+
+  /* 四种次要语义填充:引用方都是 background,与 *-bg 同族。 */
+  --color-primary-soft: rgba(245, 158, 11, 0.09);
+  --color-success-soft: rgba(52, 168, 83, 0.08);
+  --color-warning-soft: rgba(245, 158, 11, 0.08);
+  --color-danger-soft: rgba(234, 67, 53, 0.08);
+
   --color-income: #34a853;
   --color-expense: #ea4335;
 
@@ -499,6 +521,13 @@
   --color-danger: #f87171;
   --color-danger-bg: rgba(248, 113, 113, 0.12);
   --color-danger-border: rgba(248, 113, 113, 0.3);
+  /* 与浅色同族,按暗底惯例把透明度略微提高(对照 --color-danger-border 0.22 → 0.3)。 */
+  --color-success-border: rgba(74, 222, 128, 0.28);
+  --color-warning-border: rgba(251, 191, 36, 0.3);
+  --color-primary-soft: rgba(245, 158, 11, 0.12);
+  --color-success-soft: rgba(74, 222, 128, 0.12);
+  --color-warning-soft: rgba(251, 191, 36, 0.12);
+  --color-danger-soft: rgba(248, 113, 113, 0.12);
 
   --color-income: #4ade80;
   --color-expense: #f87171;
@@ -682,19 +711,24 @@
  * 不需要在两个主题块里各写一遍。
  *
  * 刻意**没有**补的(理由见 docs/a11y-contrast-audit.md §7):
- *   · *-text / *-soft / *-border 这些语义族 —— 它们的「目标色」本身还没定,
- *     属于待定的品牌决定(见同文档 §6),凭空取值等于替用户改品牌;
  *   · --market-color / --brand-color / --calendar-intensity 这类由运行时逐条设置的变量,
  *     值来自数据而不是主题;
- *   · --color-text-quaternary / --color-panel / --color-surface / --color-bg-base /
- *     --color-bg-muted / --color-accent / --color-accent-bg / --color-focus /
- *     --color-border-strong / --mobile-nav-height / --color-primary-50/500/700 ——
+ *   · --color-panel / --color-bg-base / --color-bg-muted / --color-accent / --color-accent-bg /
+ *     --color-border-strong / --color-primary-50/500/700 ——
  *     目标值不唯一或用在背景/边框上,改错会造出新的可见缺陷,需要逐处核对实际渲染。
+ *
+ * 2026-11-27 追加:原来这份清单里还有 --color-surface 和 --color-text-quaternary,
+ * 核对完实际用法后确认目标唯一,一并补上了(见下面两行)。它们的引用点是
+ * background(面板底)和次要装饰/占位文字,语义分别等同于 bg-elevated 与 placeholder。
  */
 :root {
   --color-text-primary: var(--color-text);
   --color-text-muted: var(--color-text-tertiary);
   --radius-pill: var(--radius-full);
+  /* 面板/卡片底:引用方全是 background,等同 elevated。 */
+  --color-surface: var(--color-bg-elevated);
+  /* 四级文字(= 最淡一级):引用方是占位符与装饰性拖拽把手,等同 placeholder。 */
+  --color-text-quaternary: var(--color-text-placeholder);
 }
 
 /*

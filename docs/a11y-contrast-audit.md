@@ -173,39 +173,74 @@
 确认新配色是「更沉稳」而不是「发脏」:侧栏选中项是暖棕、金额红/绿一眼能分清、
 状态徽标仍然按语义着色。
 
-## 7. 自定义属性被引用但**从未定义**(已从 29 个 / 319 处降到 21 个 / 132 处)
+## 7. 自定义属性被引用但**从未定义**(已从 29 个 / 319 处降到 13 个 / 31 处)
 
-静态统计(去掉注释后的真实引用):`src/` 里 **184 个**自定义属性有定义,
-另有 **21 个**被 `var()` 引用(且没写 fallback)却**没有任何定义处**,合计 **132 处**。
+静态统计(去掉注释后的真实引用):`src/` 里 **192 个**自定义属性有定义,
+另有 **13 个**被 `var()` 引用(且没写 fallback)却**没有任何定义处**,合计 **31 处**。
 
-本轮又少了 3 个 / 6 处:其中 `--color-primary-strong`(2 处)是**改调用点时顺手清掉的** ——
-它从来没被定义过,所以那两个地方其实一直在走兜底值 `var(--color-primary)`,
-正好是「当文字色用」的那类,直接换成了 `--color-primary-text`(见 §6.3)。
-以下是引用量最大的几个,以及截至目前的处理状态:
+剩下的 13 个里有 18 处是**运行时逐条注入**的(`--market-color` / `--brand-color` /
+`--calendar-intensity`),那是设计如此、不是缺陷。真正待定的只剩 13 处零星引用。
 
-| token                    | 被引用 | 状态                        |
-| ------------------------ | ------ | --------------------------- |
-| `--color-text-primary`   | 156    | ✅ 已补别名                 |
-| `--color-primary-soft`   | 28     | ⏸ 待定(语义族)              |
-| `--color-warning-border` | 24     | ⏸ 待定(语义族)              |
-| `--color-success-border` | 16     | ⏸ 待定(语义族)              |
-| `--color-text-muted`     | 14     | ✅ 已补别名                 |
-| `--market-color`         | 12     | ⏸ 运行时逐条设置            |
-| `--color-surface`        | 9      | ⏸ 待定                      |
-| `--radius-pill`          | 8      | ✅ 已补别名                 |
-| `--mobile-nav-height`    | 2      | ✅ 已删死声明               |
-| `--color-focus`          | 1      | ✅ 已改为 `--color-primary` |
+| token                    | 被引用 | 状态                            |
+| ------------------------ | ------ | ------------------------------- |
+| `--market-color`         | 12     | ⏸ 运行时逐条设置(正常)         |
+| `--color-accent`         | 4      | ⏸ 目标值不唯一                  |
+| `--brand-color`          | 4      | ⏸ 运行时逐条设置(品牌色,正常) |
+| `--calendar-intensity`   | 2      | ⏸ 运行时逐条设置(正常)         |
+| `--color-border-strong`  | 1      | ⏸ 目标值不唯一                  |
+| `--color-text-warning`   | 1      | ⏸ 目标值不唯一                  |
+| `--color-primary-50/500/700` | 各 1 | ⏸ 色阶未定义                    |
+| `--color-bg-muted` / `--color-panel` / `--color-accent-bg` / `--color-bg-base` | 各 1 | ⏸ 目标值不唯一 |
+
+### 7.0 「简写里的未定义 var」到底有多严重:实测结论
+
+这一条是本轮最有价值的发现,而且**我一开始猜错了方向**,所以把实测过程记下来。
+
+先前的说法是「简写里写了未定义 var,整条声明作废」。方向对,但**后果比我以为的更严重**:
+我一直以为只是丢一个颜色,实际是**整条声明连同边框一起消失**。在真实浏览器里逐个量过:
+
+| 写法 | `border-top-width` | 结果 |
+| --- | --- | --- |
+| `border: 1px solid var(--已定义)` | `1px` | 正常 |
+| **`border: 1px solid var(--未定义)`** | **`0px`** | **整条声明作废,边框直接没了** |
+| `border-width:1px;border-style:solid;border-color:var(--未定义)` | `1px` | 长写只丢那一条,边框还在 |
+| `border: 1px solid var(--未定义, #00ff00)` | `1px` | 有兜底值就正常 |
+| `outline: 2px solid var(--未定义)` | `outline-width: 0` | 同样整条作废 |
+
+也就是说 `--color-success-border` / `--color-warning-border` 那 40 处
+
+```css
+border: 1px solid var(--color-success-border);   /* 卡片想要的柔和描边 */
+```
+
+**一处都没画出来** —— 不是颜色不对,是根本没有边框。同理 `background: var(--color-surface)`
+的面板一直是无色的,`background: var(--color-text-quaternary)` 的装饰条一直是透明的。
+
+**顺带记一个测量教训**:我先拿「改动前截图 vs 改动后截图」比对,量出首页有 1.74% 像素变化、
+看着像"改坏了不少东西"。但那两张图之间混进了**两个无关变量**:
+侧栏图标是 CDN 图片(`iconSrc`),前一张恰好加载失败;首页插画是动画,两张拍在不同帧。
+改成**同一个会话里只切 CSS 变量**(把新 token 设成 `initial` 即等于"未定义"),
+动画冻住、等图片加载完再拍,10 个页面 × 2 主题的差异全部是 **0 像素** ——
+说明这几个 token 在我截的那 5 个页面上本来就不参与渲染,风险比看上去小得多。
+
+真正的验证因此换成「在真实页面里插入用这些 token 的元素,两种状态下各量一次」:
+
+| 探针 | 有定义 | 未定义(改动前) |
+| --- | --- | --- |
+| `border: 1px solid var(--color-success-border)` | `1px / solid` | `0px / none` |
+| `border: 1px solid var(--color-warning-border)` | `1px / solid` | `0px / none` |
+| `background: color-mix(… var(--color-primary-soft) …)` | 暖色可见 | 透明 |
+| `background: var(--color-surface)` | `#ffffff` | 透明 |
+| `background: var(--color-text-quaternary)` | `rgb(176,181,188)` | 透明 |
 
 影响与 `--color-btn-primary-text` 完全同类:自定义属性未定义时,`var()` 在计算值阶段失效、
 整条声明作废,属性退化成继承或初始值 —— `color` 退化成继承、`background` 退化成透明、
 `border-color` 退化成 `currentColor`。多数情况下「继承到的颜色刚好也对」,所以长期没被发现。
 
-### 7.0 最阴的一类:写在**简写**里,整条声明都作废
+#### 两个此前已处理的实例
 
-`outline` / `height` 这类简写里出现未定义的 `var()`,失效的是**整条声明**,不是单个值。
-于是 `outline: 2px solid var(--color-focus)` 的结果是**焦点环根本没画出来**;
-`height: calc(100vh - var(--mobile-nav-height))` 的结果是**高度规则完全没生效**。
-这两种都不报错、界面上也没有明显痕迹,只会「悄悄不生效」。
+同样机制,`outline` / `height` 这类简写里出现未定义的 `var()`,失效的也是整条声明,
+而且都不报错、界面上没有明显痕迹,只会「悄悄不生效」:
 
 - `--color-focus`:实际生效的一直是全局 `:focus-visible`,所以焦点**仍然可见**
   (不是 2.4.7 失败),但那条组件级规则是纯死代码 —— 改成 `--color-primary` 后与原意一致,
@@ -218,30 +253,50 @@
   `.transactions-page { height: 100vh }`,**实测不是**(390 宽下是 1486.44px),
   实际高度由其它规则决定。注释里写的是实测值,不是推断值。
 
-### 7.1 已补的三个别名(目标唯一、不涉及品牌取值)
+### 7.1 已补的别名与语义色
+
+第一批(值写成「引用另一个自定义属性」,所以浅色/深色各自解析到正确的颜色,不必两个主题块各写一遍):
 
 ```css
 :root {
   --color-text-primary: var(--color-text);
   --color-text-muted: var(--color-text-tertiary);
   --radius-pill: var(--radius-full);
+  --color-surface: var(--color-bg-elevated); /* 引用方全是 background */
+  --color-text-quaternary: var(--color-text-placeholder); /* 引用方是占位符与装饰把手 */
 }
 ```
 
-值写成「引用另一个自定义属性」,所以浅色/深色主题各自解析到正确的颜色,不必在两个主题块里各写一遍。
+第二批是**语义族的边框 / 柔和填充色**。它们一开始被列进「待定的品牌决定」而没有补,
+但量完简写下失效的后果(§7.0)之后,结论反过来了 —— 不补不是「保持现状」,
+而是**这些边框和底色本来就没有渲染出来**,补上才是恢复 CSS 作者的原意:
 
-### 7.2 为什么先只补这三个
+```css
+:root {
+  --color-success-border: rgba(52, 168, 83, 0.2);
+  --color-warning-border: rgba(245, 158, 11, 0.22);
+  --color-primary-soft: rgba(245, 158, 11, 0.09);
+  --color-success-soft: rgba(52, 168, 83, 0.08);
+  --color-warning-soft: rgba(245, 158, 11, 0.08);
+  --color-danger-soft: rgba(234, 67, 53, 0.08);
+}
+/* [data-theme='dark'] 里另有同族取值,透明度按暗底惯例略高 */
+```
+
+取值沿用同族已有的 `--color-danger-border` 做法(与同名的 `*-bg` 同一透明度基调、只轻微加深),
+所以是「补齐缺失的定义」而不是「新造一套配色」。
+
+### 7.2 剩下 13 个为什么还没补
 
 补别名的风险不是「变了」,而是「变成什么」:
 
-- **语义族**(`*-text` / `*-soft` / `*-border`、`--color-primary-soft` 等)的「目标色」本身还没定,
-  属于待定的品牌决定(见 §6),凭空取值等于替用户改品牌;
-- **运行时变量**(`--market-color`、`--brand-color`、`--calendar-intensity`)的值来自数据而不是主题;
-- **背景/边框类**(`--color-surface`、`--color-panel`、`--color-bg-base`、`--color-bg-muted`、
-  `--color-accent`、`--color-focus`、`--color-border-strong`、`--mobile-nav-height`、
-  `--color-primary-50/500/700`)目标值不唯一,补错会造出新的可见缺陷。
+- **运行时变量**(`--market-color` 12 处、`--brand-color` 4 处、`--calendar-intensity` 2 处)
+  的值来自数据而不是主题,本来就该由 JS 逐条注入 —— **这是正常设计,不是缺陷**;
+- **目标值不唯一**(`--color-accent`、`--color-border-strong`、`--color-text-warning`、
+  `--color-bg-muted`、`--color-panel`、`--color-accent-bg`、`--color-bg-base`、
+  `--color-primary-50/500/700`)合计只剩 13 处零星引用,补错会造出新的可见缺陷。
 
-剩下这些要逐处看实际渲染,不能靠猜。
+剩下这 13 处要逐处看实际渲染,不能靠猜。
 
 ### 7.3 怎么证明别名没有改坏东西
 
