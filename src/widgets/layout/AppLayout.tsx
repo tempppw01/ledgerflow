@@ -770,6 +770,44 @@ export function AppLayout() {
               <span>{tFallback('layout.brand', 'LedgerFlow')}</span>
             </Link>
           ) : null}
+          {/*
+            * WCAG 2.5.7(拖拽移动,AA):侧栏宽度原来只有拖拽和方向键改得了。
+            * 方向键解决的是 2.1.1,2.5.7 要的是**单指、非拖拽**的入口。
+            *
+            * 放在侧栏头部而不是那条 8px 的手柄上:手柄贴在侧栏右缘、浮在正文之上,
+            * 往它上面塞 24×24 的按钮会盖住正文;头部本来就有品牌名和折叠按钮,
+            * 是天然的落脚处。
+            */}
+          {!collapsed ? (
+            <span
+              className="sidebar-width-actions"
+              role="group"
+              aria-label={tFallback('layout.sidebarWidthGroup', '侧栏宽度')}
+            >
+              <button
+                type="button"
+                className="sidebar-width-btn"
+                aria-label={tFallback('layout.sidebarNarrow', '收窄侧栏')}
+                disabled={sidebarWidth <= SIDEBAR_MIN_WIDTH}
+                onClick={() =>
+                  setSidebarWidth(Math.max(SIDEBAR_MIN_WIDTH, sidebarWidth - SIDEBAR_KEYBOARD_STEP))
+                }
+              >
+                −
+              </button>
+              <button
+                type="button"
+                className="sidebar-width-btn"
+                aria-label={tFallback('layout.sidebarWiden', '加宽侧栏')}
+                disabled={sidebarWidth >= SIDEBAR_MAX_WIDTH}
+                onClick={() =>
+                  setSidebarWidth(Math.min(SIDEBAR_MAX_WIDTH, sidebarWidth + SIDEBAR_KEYBOARD_STEP))
+                }
+              >
+                ＋
+              </button>
+            </span>
+          ) : null}
           <button
             type="button"
             className="icon-btn sidebar-collapse-btn"

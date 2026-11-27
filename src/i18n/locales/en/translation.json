@@ -140,7 +140,10 @@
     "accountSettings": "Account settings",
     "accountSettingsHint": "Profile and account security",
     "logout": "Log out",
-    "sidebarResize": "Resize sidebar"
+    "sidebarResize": "Resize sidebar",
+    "sidebarWidthGroup": "Sidebar width",
+    "sidebarNarrow": "Narrow the sidebar",
+    "sidebarWiden": "Widen the sidebar"
   },
   "nav": {
     "assistant": "AI Assistant",

@@ -140,7 +140,10 @@
     "accountSettings": "账号设置",
     "accountSettingsHint": "个人资料与账号安全",
     "logout": "退出登录",
-    "sidebarResize": "调整侧边栏宽度"
+    "sidebarResize": "调整侧边栏宽度",
+    "sidebarWidthGroup": "侧栏宽度",
+    "sidebarNarrow": "收窄侧栏",
+    "sidebarWiden": "加宽侧栏"
   },
   "nav": {
     "assistant": "AI 助手",

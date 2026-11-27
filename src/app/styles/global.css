@@ -633,6 +633,42 @@ body {
   transform: scale(0.97);
 }
 
+/*
+ * 侧栏宽度的点击式入口(WCAG 2.5.7)。
+ * 放在头部而不是那条 8px 的手柄上 —— 手柄浮在正文之上,塞按钮会盖住正文。
+ * 两个按钮各 24×24(2.5.8 的底线),并且 `margin-left: auto` 让它们靠右、不挤品牌名。
+ */
+.sidebar-width-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.sidebar-width-btn {
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sidebar-width-btn:hover:not(:disabled) {
+  color: var(--color-text);
+  border-color: var(--color-text-secondary);
+}
+
+.sidebar-width-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .sidebar-resize-handle {
   position: absolute;
   top: 0;
