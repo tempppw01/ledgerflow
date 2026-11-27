@@ -76,8 +76,8 @@ export function LanguageSwitcher() {
         type="button"
         className="language-switcher-trigger"
         onClick={() => setOpen((value) => !value)}
-        title={`${title}: ${current.label}`}
-        aria-label={`${title}：${current.label}`}
+        title={`${title}: ${current.shortLabel}`}
+        aria-label={`${title}：${current.shortLabel}`}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
