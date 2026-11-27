@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 浏览器端页面体检(21 个路由 × 桌面 / 390 移动 / 320 Reflow 三档宽度)。
+ * 浏览器端页面体检(23 个路由 × 桌面 / 390 移动 / 320 Reflow 三档宽度)。
  *
  * 为什么需要它:这一版修的三个问题,`tsc` / `eslint` / 1035 个单元测试**全是绿的** ——
  *   · 概览页 .vi-page 的列被内容顶到 545px,右侧被 overflow-x:hidden 裁掉
@@ -18,6 +18,8 @@
  *   - 触屏语义下 font-size < 16px 的表单控件(iOS 聚焦会自动放大整页)
  *   - 可点区域小于 24×24 且不命中 WCAG 2.5.8 的四条豁免(AA)
  *   - 表格格子里内容画到隔壁格子上
+ *   - 触摸端「悬停粘住」:漏了 @media (hover: hover) 守卫,点过的控件一直亮着
+ *   - 窄屏 @media 里写了 grid 专属属性但父级是 flex(声明等于没写,几何上看得出来)
  *   - placeholder 长到显示不全(只报告)
  *
  * 为什么窄屏两档必须带 hasTouch:不带的话 Chromium 报 `pointer: fine`,
@@ -686,6 +688,99 @@ const HOVER_PROPS = [
   'outlineColor'
 ];
 
+/*
+ * 「写了却一个字都不管用」的窄屏规则。
+ *
+ * 起因:今日财务看板在 ≤720px 想让摘要整行落到数值下面,写的是
+ * `grid-column: 1 / -1`,而父级 `.stat-card` 是 `display: flex` ——
+ * grid item 专属属性在 flex 父级里完全不生效,浏览器不报错、computed style
+ * 照样回显指定值,所以它活了很久没人发现(720px 三列被压到 48px)。
+ * 欢迎横幅上还有一处同类写法(`justify-self`,父级同样 flex)。
+ *
+ * 判据(必须三样同时成立才算问题):
+ *   1. 声明位于某个 @media 里,且该条件在当前视口下 matchMedia().matches;
+ *   2. 选择器命中真实元素、该元素有自己的盒子(排除 display:none/contents);
+ *   3. 元素的**父级** computed display 是 flex/inline-flex ——
+ *      grid 专属声明没有任何作用,规则等于没写。
+ *
+ * 只在 @media 里找:基础样式里的同类写法在静态检查(check:*)之外,
+ * 且历史上出问题的都是窄屏覆盖块。
+ */
+async function findInertGridRules(page, cap = 8) {
+  return page.evaluate((max) => {
+    const GRID_ONLY =
+      /^(grid-column|grid-row|grid-area|grid-column-start|grid-column-end|grid-row-start|grid-row-end|justify-self)$/;
+    const hits = [];
+    const seen = new Set();
+
+    const inspect = (rule, mediaText) => {
+      const props = [];
+      for (let i = 0; i < rule.style.length; i += 1) {
+        const prop = rule.style[i];
+        if (GRID_ONLY.test(prop)) props.push(prop);
+      }
+      if (!props.length) return;
+
+      let els;
+      try {
+        els = document.querySelectorAll(rule.selectorText);
+      } catch {
+        return;
+      }
+      for (const el of els) {
+        const parent = el.parentElement;
+        if (!parent) continue;
+        const self = getComputedStyle(el);
+        if (self.display === 'none' || self.display === 'contents') continue;
+        const pd = getComputedStyle(parent).display;
+        if (pd !== 'flex' && pd !== 'inline-flex') continue;
+
+        const parentCls = typeof parent.className === 'string' ? parent.className : '';
+        const key = `${rule.selectorText}|${parent.tagName}.${parentCls}|${props.join()}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const r = el.getBoundingClientRect();
+        hits.push({
+          selector: rule.selectorText.replace(/\s+/g, ' ').slice(0, 90),
+          props,
+          media: mediaText,
+          parent: `${parent.tagName.toLowerCase()}.${parentCls.split(' ').filter(Boolean).slice(0, 2).join('.')}`,
+          parentDisplay: pd,
+          box: `${Math.round(r.width)}x${Math.round(r.height)}`
+        });
+        if (hits.length >= max) return;
+      }
+    };
+
+    const walk = (list, mediaText) => {
+      for (const rule of list) {
+        // CSSMediaRule 才有 media;嵌套 @media 逐层带下来
+        if (rule.media) {
+          walk(rule.cssRules, mediaText ? `${mediaText} and ${rule.media.mediaText}` : rule.media.mediaText);
+          continue;
+        }
+        if (!mediaText || !rule.selectorText || !rule.style) continue;
+        if (!window.matchMedia(mediaText).matches) continue;
+        inspect(rule, mediaText);
+        if (hits.length >= max) return;
+      }
+    };
+
+    for (const sheet of document.styleSheets) {
+      let rules;
+      // 跨域样式表读 cssRules 会抛;跳过而不是让整页审计挂掉
+      try {
+        rules = sheet.cssRules;
+      } catch {
+        continue;
+      }
+      walk(rules, '');
+      if (hits.length >= max) break;
+    }
+    return hits;
+  }, cap);
+}
+
 async function findTouchHoverReactive(page, cap = 10) {
   const cands = await page.evaluate(
     ({ max, props }) => {
@@ -802,6 +897,7 @@ const tinyTextFindings = [];
 const smallTargetFindings = [];
 const longPlaceholderFindings = [];
 const touchHoverFindings = [];
+const inertGridFindings = [];
 const documentTitles = [];
 let checked = 0;
 
@@ -853,6 +949,15 @@ for (const [label, viewport] of VIEWPORTS) {
       touchHoverFindings.push({ viewport: label, route, items: hoverHits });
     }
 
+    /*
+     * 「窄屏规则写了却不生效」—— 与悬停探测同理,放在算完 newErrors 之后。
+     * 这条不区分触屏/桌面:flex 父级里写 grid-column,两种设备一样无效。
+     */
+    const inertHits = await findInertGridRules(page);
+    if (inertHits.length) {
+      inertGridFindings.push({ viewport: label, route, items: inertHits });
+    }
+
     if (audit.tinyText.length) {
       tinyTextFindings.push({ viewport: label, route, items: audit.tinyText });
     }
@@ -881,7 +986,9 @@ for (const [label, viewport] of VIEWPORTS) {
       // WCAG 2.5.8(AA):可点区域小于 24×24 且不命中任何豁免
       audit.targetSize25x8.length ||
       // 触摸端「悬停粘住」:漏了 @media (hover: hover) 守卫,点过的控件一直亮着
-      hoverHits.length
+      hoverHits.length ||
+      // 窄屏覆盖写了 grid 专属属性、父级却是 flex:这条声明等于没写
+      inertHits.length
     ) {
       problems.push({
         viewport: label,
@@ -897,6 +1004,7 @@ for (const [label, viewport] of VIEWPORTS) {
         cellOverflow: audit.cellOverflow,
         targetSize25x8: audit.targetSize25x8,
         touchHoverReactive: hoverHits,
+        inertGridRules: inertHits,
         a11y: {
           lang: audit.lang,
           h1Count: audit.h1Count,
@@ -943,12 +1051,13 @@ const report = {
   base,
   checked,
   problemCount: problems.length,
-  note: '字号 < 11px(tinyText)、触控目标 < 44px(smallTargets,只在触屏档位算)、placeholder 显示不全(longPlaceholders)只报告、不计入 problemCount —— 44px 是 AAA/平台指南线而不是 AA(2.5.8 只要求 24×24,那一项另算且致败),字号与 placeholder 是设计取舍/不违反 WCAG 条款。touchHoverReactive(触摸端悬停粘住)是致败项',
+  note: '字号 < 11px(tinyText)、触控目标 < 44px(smallTargets,只在触屏档位算)、placeholder 显示不全(longPlaceholders)只报告、不计入 problemCount —— 44px 是 AAA/平台指南线而不是 AA(2.5.8 只要求 24×24,那一项另算且致败),字号与 placeholder 是设计取舍/不违反 WCAG 条款。touchHoverReactive(触摸端悬停粘住)、inertGridRules(@media 里写了 grid 专属属性但父级是 flex,声明等于没写)是致败项',
   problems,
   tinyText: tinyTextFindings,
   smallTargets: smallTargetFindings,
   longPlaceholders: longPlaceholderFindings,
   touchHoverReactive: touchHoverFindings,
+  inertGridRules: inertGridFindings,
   documentTitles: summarizeTitles(documentTitles)
 };
 console.log(JSON.stringify(report, null, 2));

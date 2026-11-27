@@ -622,9 +622,12 @@
   }
 
   .dashboard-net-worth-summary {
-    /* 留给将来父级改成 grid 的情况 */
-    grid-column: 1 / -1;
-    /* flex 父元素下真正起作用的是这两条 */
+    /*
+     * flex 父元素下真正起作用的是下面两条。
+     * 这里原本还写了 `grid-column: 1 / -1`,已删 —— 父级是 flex 时它一个字都不管用,
+     * 留着只会让静态扫描(.audit/probe-inert-grid.mjs)一直当它是「声明了却没生效」。
+     * 真要把父级改成 grid,直接写 `grid-column: 1 / -1` 即可。
+     */
     flex: 0 0 100%;
     width: 100%;
     max-width: none;

@@ -3964,8 +3964,17 @@ small.mono {
     max-width: none;
   }
 
+  /*
+   * 这里原来写的是 `justify-self: stretch` —— 两个问题:
+   *   1. `.welcome-readout` 是 `display: flex`,`justify-self` 在 flex 父级里无效;
+   *   2. 即使父级是 grid,stretch 也正是 grid item 的默认值,写了等于没写。
+   * 结果是 641~900px 这段(插画已隐藏、此块是 readout 里唯一的子元素)网格
+   * 只按内容宽 225px 靠左站,右边空出 445px(768px 实测),一整行像没排完。
+   * 实测 640 以下之所以没事,是因为下面的 `@media (max-width: 640px)` 块写了
+   * `width: 100%` —— 也就是说原本想要的效果一直是 `width`,不是 `justify-self`。
+   */
   .welcome-highlight-grid {
-    justify-self: stretch;
+    width: 100%;
   }
 
   .welcome-highlight-grid article {
