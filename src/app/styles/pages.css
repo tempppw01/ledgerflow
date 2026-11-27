@@ -3675,3 +3675,21 @@
   border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
   color: var(--color-primary);
 }
+
+/*
+ * 市场柱状图:窄屏改为 3 列 ×2 行(WCAG 1.4.10 Reflow)。
+ *
+ * 原来一律 6 列。金额是不可断行的字符串("¥18,563.63" 实测最小宽度 61px),
+ * 而 320px 视口下每列只有 41px,于是每个金额都溢出到相邻列上:
+ * 实测相邻两列重叠 11px、最后一列越出视口 3px,被卡片的 overflow 裁掉。
+ * 截图里那一行数字是糊在一起、读不出来的。
+ *
+ * 6 列要放得下金额,每列需要 ~68px,换算成视口就是 ≥480px;
+ * 低于 480px 便改成 3 列(6/7/8 与 9/10/11 两行),月份顺序不变,金额完整可见。
+ * 该阈值是算出来的,不是试出来的:3 列时 320px 下每列 90px,远超 61px。
+ */
+@media (max-width: 480px) {
+  .financial-analysis-market-bars {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

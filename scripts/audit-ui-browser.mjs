@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 浏览器端页面体检(18 个路由 × 桌面 / 移动两档宽度)。
+ * 浏览器端页面体检(21 个路由 × 桌面 / 390 移动 / 320 Reflow 三档宽度)。
  *
  * 为什么需要它:这一版修的三个问题,`tsc` / `eslint` / 1035 个单元测试**全是绿的** ——
  *   · 概览页 .vi-page 的列被内容顶到 545px,右侧被 overflow-x:hidden 裁掉
@@ -20,15 +20,25 @@
  *   - 交易页移动端的 .transaction-mobile-swipe:滑动手势的初始态,操作走「⋯」菜单
  *   - SVG <text> 的 className 是 SVGAnimatedString,打印成 [object SVGAnimatedString]
  *
+ * 为什么要多一档 320px:那是 WCAG 1.4.10 Reflow 的门槛,而 390px 过**不等于** 320px 过。
+ * 财务分析页的市场柱状图 6 个金额在 390px 下正常,在 320px 下会互相压字 11px、
+ * 最后一列越出视口 3px 被卡片裁掉 —— 只跑 390 就永远看不见。
+ *
+ * 登录这一步必须「等到真的进了应用」才算数:不能一挂载就用 count() 判断。
+ * domcontentloaded 早于 React 渲染,count() 又不会自动等待,于是 count()=0 →
+ * 登录被静默跳过 → 之后每个路由量到的都是登录页,而报告仍然是「0 个问题」。
+ * 假清白比报错危险得多,所以现在登录不成功就直接抛错。
+ *
  * 用法:
  *   node scripts/audit-ui-browser.mjs [--base=http://localhost:5333] [--desktop|--mobile]
+ *   (--mobile 会跑 390 与 320 两档窄宽度)
  *   AUDIT_EMAIL=... AUDIT_PASSWORD=... node scripts/audit-ui-browser.mjs
  *
  * 依赖 playwright,但**不**把它装进 devDependencies:优先用 PLAYWRIGHT_MODULE 指定的
  * 模块路径,否则依次尝试仓库内的 playwright、DSH profile 里那份。
  */
 
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -67,7 +77,9 @@ const ROUTES = [
 
 const VIEWPORTS = [
   ['desktop', { width: 1440, height: 900 }],
-  ['mobile', { width: 390, height: 844 }]
+  ['mobile', { width: 390, height: 844 }],
+  // WCAG 1.4.10 Reflow 的门槛就是 320 CSS px,不是 390。
+  ['reflow-320', { width: 320, height: 844 }]
 ];
 
 /** 已知误报:命中的元素不算问题 */
@@ -160,6 +172,8 @@ const AUDIT_FN = () => {
     unnamedControls: [],
     emptyMain: false,
     mainTextLength: 0,
+    mainHeadingCount: 0,
+    mainControlCount: 0,
     // —— 以下来自 WCAG / The A11Y Project 清单(2026-11-25 补)——
     missingAlt: [],
     lang: document.documentElement.lang || '',
@@ -249,7 +263,20 @@ const AUDIT_FN = () => {
   const main = document.querySelector('main');
   if (main) {
     out.mainTextLength = main.innerText.trim().length;
-    out.emptyMain = out.mainTextLength < 60;
+    /*
+     * 「主内容渲染空了」不能只看字符数,也不能看全局的 h1。
+     * 原来只看 < 60 字符:/recycle-bin(空回收站的空状态,46 字符)和 404 页
+     * (55 字符)永远被报红 —— 它们都有正经的标题和可点的空状态按钮,是真页面。
+     * 一个永远不会变绿的检查,只会让人学会忽略它。
+     *
+     * 判定必须**只在 main 内部取信号**,否则会瞎:这几个页面的 h1 在 main 之外
+     * (布局头部),拿全局 h1Count 当条件时,把 main 清空仍然 h1Count=1 → 漏报。
+     * 真正「空了」的样子:main 里既没文字、也没标题、也没任何可操作元素。
+     */
+    out.mainHeadingCount = main.querySelectorAll('h1, h2, h3, h4, h5, h6').length;
+    out.mainControlCount = main.querySelectorAll('button, a[href], input, select, textarea').length;
+    out.emptyMain =
+      out.mainTextLength < 60 && out.mainHeadingCount === 0 && out.mainControlCount === 0;
   }
 
   /*
@@ -348,17 +375,87 @@ const AUDIT_FN = () => {
 
 async function login(page) {
   await page.goto(`${base}/`, { waitUntil: 'domcontentloaded' });
-  const emailBox = page.getByRole('textbox', { name: '邮箱' });
-  if (await emailBox.count()) {
+
+  // 等「登录表单出现」或「应用外壳出现」其中的一个,不能一挂载就 count()
+  // (domcontentloaded 早于 React 渲染,count() 不自动等待 → 会静默漏掉登录)。
+  // 邮箱框没有 type 属性(React 省略了,el.type 只是默认值 'text'),
+  // 所以 input[type="text"] 选不到它,必须用 label 定位。
+  const passwordBox = page.locator('input[type="password"]');
+  const emailBox = page.getByLabel('邮箱').first();
+
+  await page
+    .waitForFunction(
+      () =>
+        !!document.querySelector('input[type="password"]') ||
+        document.querySelectorAll('nav').length > 0,
+      undefined,
+      { timeout: 20000 }
+    )
+    .catch(() => {});
+
+  if (await passwordBox.count()) {
     await emailBox.fill(EMAIL);
-    await page.getByRole('textbox', { name: '密码' }).fill(PASSWORD);
+    await passwordBox.fill(PASSWORD);
     await page.getByRole('button', { name: '登录' }).click();
-    await page.waitForTimeout(2500);
+    // 登录表单卸载 = 已认证。不能用「nav 可见」:320/390 下侧栏本来就收起来。
+    await passwordBox.waitFor({ state: 'detached', timeout: 25000 });
+
+    // 但表单卸载之后还有一道「正在载入账本」的数据门(SqlDataSyncGate),
+    // 那段时间 nav 还不存在。必须等到外壳真的渲染出来,否则会被误判成登录失败。
+    await page.waitForFunction(() => document.querySelectorAll('nav').length > 0, undefined, {
+      timeout: 30000
+    });
+  }
+
+  // 硬断言:没进应用就不许继续,否则后面每个路由量的都是登录页。
+  const state = await page.evaluate(() => ({
+    nav: document.querySelectorAll('nav').length,
+    onLogin: (document.querySelector('h1')?.innerText || '').includes('登录')
+  }));
+  if (state.nav === 0 || state.onLogin) {
+    throw new Error(
+      `登录失败,仍在登录页(nav=${state.nav}) —— 后续所有结果都不可信。` +
+        `请检查 AUDIT_EMAIL / AUDIT_PASSWORD 与服务是否正常。`
+    );
   }
 }
 
 const { chromium } = await import(resolvePlaywright());
-const browser = await chromium.launch();
+/**
+ * 机器上装的 chromium 常常比 playwright 期望的版本旧
+ * (例如 playwright 要 1255、ms-playwright 里只有 1248),
+ * 这时默认路径必然报 "Executable doesn't exist" —— 审计根本跑不起来,
+ * 而「跑不起来」很容易被当成「没时间跑」。所以退一步用已装的那一份。
+ * 也可以用 AUDIT_CHROME_EXE 显式指定。
+ */
+function resolveInstalledChromium() {
+  if (process.env.AUDIT_CHROME_EXE) return process.env.AUDIT_CHROME_EXE;
+  const root = path.join(process.env.LOCALAPPDATA || '', 'ms-playwright');
+  if (!existsSync(root)) return undefined;
+  const builds = readdirSync(root)
+    .filter((name) => /^chromium-\d+$/.test(name))
+    .sort((a, b) => Number(b.split('-')[1]) - Number(a.split('-')[1]));
+  for (const build of builds) {
+    for (const rel of ['chrome-win64/chrome.exe', 'chrome-win/chrome.exe']) {
+      const exe = path.join(root, build, rel);
+      if (existsSync(exe)) return exe;
+    }
+  }
+  return undefined;
+}
+
+async function launchBrowser(chromium) {
+  try {
+    return await chromium.launch();
+  } catch (error) {
+    const exe = resolveInstalledChromium();
+    if (!exe) throw error;
+    console.log('(默认 chromium 不可用,改用已装的:' + exe + ')');
+    return chromium.launch({ executablePath: exe });
+  }
+}
+
+const browser = await launchBrowser(chromium);
 const problems = [];
 const tinyTextFindings = [];
 const smallTargetFindings = [];
@@ -366,8 +463,10 @@ const documentTitles = [];
 let checked = 0;
 
 for (const [label, viewport] of VIEWPORTS) {
-  if (onlyDesktop && label !== 'desktop') continue;
-  if (onlyMobile && label !== 'mobile') continue;
+  // --mobile 指的是「所有窄宽度」:390 与 320 都跑,否则 1.4.10 那档又被漏掉。
+  const narrow = label !== 'desktop';
+  if (onlyDesktop && narrow) continue;
+  if (onlyMobile && !narrow) continue;
 
   const context = await browser.newContext({ viewport });
   const page = await context.newPage();
