@@ -133,9 +133,11 @@
     color var(--transition-fast);
 }
 
-.sb-btn:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border));
-  background: var(--color-bg-hover);
+@media (hover: hover) {
+  .sb-btn:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border));
+    background: var(--color-bg-hover);
+  }
 }
 
 .sb-btn:focus-visible {
@@ -154,9 +156,11 @@
   color: #1a1d23;
 }
 
-.sb-btn--primary:hover:not(:disabled) {
-  border-color: transparent;
-  background: var(--color-primary-hover);
+@media (hover: hover) {
+  .sb-btn--primary:hover:not(:disabled) {
+    border-color: transparent;
+    background: var(--color-primary-hover);
+  }
 }
 
 .sb-btn--ghost {
@@ -165,9 +169,11 @@
   color: var(--color-text-secondary);
 }
 
-.sb-btn--ghost:hover:not(:disabled) {
-  color: var(--color-text);
-  background: var(--color-bg-subtle);
+@media (hover: hover) {
+  .sb-btn--ghost:hover:not(:disabled) {
+    color: var(--color-text);
+    background: var(--color-bg-subtle);
+  }
 }
 
 .sb-btn--xs {
@@ -194,10 +200,12 @@
     color var(--transition-fast);
 }
 
-.sb-icon-btn:hover {
-  border-color: var(--color-border);
-  background: var(--color-bg-hover);
-  color: var(--color-text);
+@media (hover: hover) {
+  .sb-icon-btn:hover {
+    border-color: var(--color-border);
+    background: var(--color-bg-hover);
+    color: var(--color-text);
+  }
 }
 
 .sb-icon-btn:focus-visible {
@@ -243,9 +251,11 @@
     color var(--transition-fast);
 }
 
-.sb-filter-group button:hover {
-  background: var(--color-bg-hover);
-  color: var(--color-text);
+@media (hover: hover) {
+  .sb-filter-group button:hover {
+    background: var(--color-bg-hover);
+    color: var(--color-text);
+  }
 }
 
 .sb-filter-group button.is-active {
@@ -437,10 +447,12 @@
     transform var(--transition-fast);
 }
 
-.sb-category-card:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 26%, var(--color-border-light));
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .sb-category-card:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 26%, var(--color-border-light));
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-1px);
+  }
 }
 
 .sb-category-card:focus-visible {
@@ -777,8 +789,10 @@
   line-height: var(--leading-normal);
 }
 
-.sb-choice-card:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border-light));
+@media (hover: hover) {
+  .sb-choice-card:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border-light));
+  }
 }
 
 .sb-choice-card.is-active {
@@ -819,10 +833,12 @@
     color var(--transition-fast);
 }
 
-.sb-shortcut-row button:hover,
-.sb-ratio-options button:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border-light));
-  color: var(--color-text);
+@media (hover: hover) {
+  .sb-shortcut-row button:hover,
+  .sb-ratio-options button:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border-light));
+    color: var(--color-text);
+  }
 }
 
 .sb-shortcut-row button.is-active,
@@ -1028,8 +1044,10 @@
     background var(--transition-fast);
 }
 
-.sb-anomaly-row:hover {
-  background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+@media (hover: hover) {
+  .sb-anomaly-row:hover {
+    background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+  }
 }
 
 .sb-anomaly-row:focus-visible {
@@ -1087,8 +1105,10 @@
   transition: background var(--transition-fast);
 }
 
-.sb-compare-row:hover {
-  background: var(--color-bg-subtle);
+@media (hover: hover) {
+  .sb-compare-row:hover {
+    background: var(--color-bg-subtle);
+  }
 }
 
 .sb-compare-row:focus-visible {
@@ -1366,9 +1386,11 @@
     background var(--transition-fast);
 }
 
-.sb-history-item:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border-light));
-  background: var(--color-bg-subtle);
+@media (hover: hover) {
+  .sb-history-item:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border-light));
+    background: var(--color-bg-subtle);
+  }
 }
 
 .sb-history-item:focus-visible {

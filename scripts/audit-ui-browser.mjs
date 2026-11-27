@@ -662,6 +662,105 @@ async function login(page) {
   }
 }
 
+/*
+ * 触摸端的「悬停粘住」—— 这里量的是「漏没漏 @media (hover: hover) 守卫」。
+ *
+ * 触摸设备没有真正的悬停能力,浏览器却会把一次点按当成 hover,松手后还不撤销:
+ * 实测 390 触摸视口点一下 .mobile-nav-toggle,它的 background 从 transparent
+ * 变成 oklab(...)/0.083 并一直保持到用户点别处 —— 点过的控件看起来一直是"热"的。
+ *
+ * 判据很直接:在 (hover: none) 的环境里用鼠标移上去,如果可见样式变了,
+ * 就说明那条 :hover 规则在触摸端也会生效,也就是漏了守卫。
+ * 桌面档位不跑这一项 —— 那里的 hover 本来就该生效。
+ *
+ * 注意必须从 Node 侧驱动鼠标:page.evaluate 里的函数跑在页面里,没法自己造 hover。
+ */
+const HOVER_PROPS = [
+  'backgroundColor',
+  'transform',
+  'boxShadow',
+  'borderColor',
+  'color',
+  'opacity',
+  'filter',
+  'outlineColor'
+];
+
+async function findTouchHoverReactive(page, cap = 10) {
+  const cands = await page.evaluate(
+    ({ max, props }) => {
+      const SEL =
+        'button, a[href], [role="button"], li, tr, [class*="card"], [class*="btn"], [class*="item"], [class*="row"]';
+      const els = [];
+      for (const el of document.querySelectorAll(SEL)) {
+        const r = el.getBoundingClientRect();
+        if (r.width < 40 || r.height < 16) continue;
+        if (r.bottom < 0 || r.top > window.innerHeight * 3) continue;
+        const cs = getComputedStyle(el);
+        if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+        els.push(el);
+        if (els.length >= max) break;
+      }
+      // 存下来,后面按索引读同一个元素的前后样式
+      window.__hoverProbe = els;
+      window.__hoverProps = props;
+      return els.map((el, i) => {
+        const r = el.getBoundingClientRect();
+        return {
+          i,
+          x: Math.round(r.x + r.width / 2),
+          y: Math.round(r.y + r.height / 2),
+          tag: el.tagName.toLowerCase(),
+          cls: String(el.className || '')
+            .split(' ')
+            .filter(Boolean)
+            .slice(0, 2)
+            .join('.')
+        };
+      });
+    },
+    { max: cap, props: HOVER_PROPS }
+  );
+
+  if (!cands.length) return [];
+
+  const sig = (i) =>
+    page.evaluate((idx) => {
+      const el = window.__hoverProbe[idx];
+      if (!el) return null;
+      const cs = getComputedStyle(el);
+      const o = {};
+      for (const p of window.__hoverProps) o[p] = cs[p];
+      return o;
+    }, i);
+
+  await page.mouse.move(1, 1);
+  await page.waitForTimeout(120);
+  const pre = {};
+  for (const c of cands) pre[c.i] = await sig(c.i);
+
+  const hits = [];
+  for (const c of cands) {
+    await page.mouse.move(c.x, c.y);
+    await page.waitForTimeout(120);
+    const post = await sig(c.i);
+    if (pre[c.i] && post) {
+      const changed = HOVER_PROPS.filter((p) => pre[c.i][p] !== post[p]);
+      if (changed.length) {
+        hits.push({
+          el: `${c.tag}.${c.cls}`.replace(/\.$/, ''),
+          changed,
+          before: Object.fromEntries(changed.map((p) => [p, pre[c.i][p]])),
+          onHover: Object.fromEntries(changed.map((p) => [p, post[p]]))
+        });
+      }
+    }
+    await page.mouse.move(1, 1);
+    await page.waitForTimeout(40);
+  }
+  return hits;
+}
+
 const { chromium } = await import(resolvePlaywright());
 /**
  * 机器上装的 chromium 常常比 playwright 期望的版本旧
@@ -702,6 +801,7 @@ const problems = [];
 const tinyTextFindings = [];
 const smallTargetFindings = [];
 const longPlaceholderFindings = [];
+const touchHoverFindings = [];
 const documentTitles = [];
 let checked = 0;
 
@@ -743,6 +843,16 @@ for (const [label, viewport] of VIEWPORTS) {
     const overflowing = audit.overflowing.filter((item) => !isAllowedOverflow(item.cls));
     checked += 1;
 
+    /*
+     * 悬停探测放在这里(算完 newErrors 之后):移鼠标可能顺手触发一些
+     * 懒加载 / tooltip,那些报错不该算到这条路由头上。
+     * 只跑触摸档位 —— 桌面档的悬停本来就该生效。
+     */
+    const hoverHits = narrow ? await findTouchHoverReactive(page) : [];
+    if (hoverHits.length) {
+      touchHoverFindings.push({ viewport: label, route, items: hoverHits });
+    }
+
     if (audit.tinyText.length) {
       tinyTextFindings.push({ viewport: label, route, items: audit.tinyText });
     }
@@ -769,7 +879,9 @@ for (const [label, viewport] of VIEWPORTS) {
       // 格子里的字画到隔壁格子上:两组字叠在一起,读不了,直接致败
       audit.cellOverflow.length ||
       // WCAG 2.5.8(AA):可点区域小于 24×24 且不命中任何豁免
-      audit.targetSize25x8.length
+      audit.targetSize25x8.length ||
+      // 触摸端「悬停粘住」:漏了 @media (hover: hover) 守卫,点过的控件一直亮着
+      hoverHits.length
     ) {
       problems.push({
         viewport: label,
@@ -784,6 +896,7 @@ for (const [label, viewport] of VIEWPORTS) {
         coarseControlFont: audit.coarseControlFont,
         cellOverflow: audit.cellOverflow,
         targetSize25x8: audit.targetSize25x8,
+        touchHoverReactive: hoverHits,
         a11y: {
           lang: audit.lang,
           h1Count: audit.h1Count,
@@ -830,11 +943,12 @@ const report = {
   base,
   checked,
   problemCount: problems.length,
-  note: '字号 < 11px(tinyText)、触控目标 < 44px(smallTargets,只在触屏档位算)、placeholder 显示不全(longPlaceholders)只报告、不计入 problemCount —— 44px 是 AAA/平台指南线而不是 AA(2.5.8 只要求 24×24,那一项另算且致败),字号与 placeholder 是设计取舍/不违反 WCAG 条款',
+  note: '字号 < 11px(tinyText)、触控目标 < 44px(smallTargets,只在触屏档位算)、placeholder 显示不全(longPlaceholders)只报告、不计入 problemCount —— 44px 是 AAA/平台指南线而不是 AA(2.5.8 只要求 24×24,那一项另算且致败),字号与 placeholder 是设计取舍/不违反 WCAG 条款。touchHoverReactive(触摸端悬停粘住)是致败项',
   problems,
   tinyText: tinyTextFindings,
   smallTargets: smallTargetFindings,
   longPlaceholders: longPlaceholderFindings,
+  touchHoverReactive: touchHoverFindings,
   documentTitles: summarizeTitles(documentTitles)
 };
 console.log(JSON.stringify(report, null, 2));

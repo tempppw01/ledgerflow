@@ -51,8 +51,10 @@
   font-size: 18px;
 }
 
-.transactions-action-btn:hover {
-  background: var(--border-color);
+@media (hover: hover) {
+  .transactions-action-btn:hover {
+    background: var(--border-color);
+  }
 }
 
 /* 筛选栏 */
@@ -115,8 +117,10 @@
   color: white;
 }
 
-.transactions-bulk-btn.primary:hover {
-  background: var(--primary-color-dark);
+@media (hover: hover) {
+  .transactions-bulk-btn.primary:hover {
+    background: var(--primary-color-dark);
+  }
 }
 
 .transactions-bulk-btn.secondary {
@@ -124,8 +128,10 @@
   color: var(--text-primary);
 }
 
-.transactions-bulk-btn.secondary:hover {
-  background: var(--border-color);
+@media (hover: hover) {
+  .transactions-bulk-btn.secondary:hover {
+    background: var(--border-color);
+  }
 }
 
 .transactions-bulk-btn.danger {
@@ -133,8 +139,10 @@
   color: var(--danger-color);
 }
 
-.transactions-bulk-btn.danger:hover {
-  background: var(--danger-color-opacity-20);
+@media (hover: hover) {
+  .transactions-bulk-btn.danger:hover {
+    background: var(--danger-color-opacity-20);
+  }
 }
 
 /* 交易表格 */
@@ -172,8 +180,10 @@
   transition: background 0.2s ease;
 }
 
-.transactions-table th:hover {
-  background: var(--hover-bg);
+@media (hover: hover) {
+  .transactions-table th:hover {
+    background: var(--hover-bg);
+  }
 }
 
 .transactions-table th.sortable {
@@ -209,8 +219,10 @@
   transition: background 0.2s ease;
 }
 
-.transactions-table tr:hover td {
-  background: var(--hover-bg);
+@media (hover: hover) {
+  .transactions-table tr:hover td {
+    background: var(--hover-bg);
+  }
 }
 .transactions-table tbody tr {
   border-left: 3px solid transparent;
@@ -218,8 +230,10 @@
     border-color 0.2s ease,
     background 0.2s ease;
 }
-.transactions-table tbody tr:hover {
-  border-left-color: var(--color-primary);
+@media (hover: hover) {
+  .transactions-table tbody tr:hover {
+    border-left-color: var(--color-primary);
+  }
 }
 .transactions-table tbody tr.type-income {
   border-left-color: var(--color-stripe-income);
@@ -415,8 +429,10 @@
   transition: background 0.2s ease;
 }
 
-.transaction-attachment-indicator:hover {
-  background: var(--info-color-opacity-20);
+@media (hover: hover) {
+  .transaction-attachment-indicator:hover {
+    background: var(--info-color-opacity-20);
+  }
 }
 
 .transaction-attachment-indicator.is-compact {
@@ -432,8 +448,10 @@
   transition: opacity 0.2s ease;
 }
 
-.transactions-table tr:hover .transaction-actions {
-  opacity: 1;
+@media (hover: hover) {
+  .transactions-table tr:hover .transaction-actions {
+    opacity: 1;
+  }
 }
 
 .transaction-action-btn {
@@ -449,8 +467,10 @@
   font-size: 14px;
 }
 
-.transaction-action-btn:hover {
-  background: var(--border-color);
+@media (hover: hover) {
+  .transaction-action-btn:hover {
+    background: var(--border-color);
+  }
 }
 
 /* 选择框 */
@@ -495,8 +515,10 @@
   outline: none;
 }
 
-.transactions-pagination-btn:hover:not(:disabled) {
-  background: var(--border-color);
+@media (hover: hover) {
+  .transactions-pagination-btn:hover:not(:disabled) {
+    background: var(--border-color);
+  }
 }
 
 .transactions-pagination-btn:disabled {
@@ -573,8 +595,10 @@
   font-size: 18px;
 }
 
-.transactions-split-side-close:hover {
-  background: var(--border-color);
+@media (hover: hover) {
+  .transactions-split-side-close:hover {
+    background: var(--border-color);
+  }
 }
 
 .transactions-split-side-content {
@@ -639,8 +663,10 @@
   font-size: 18px;
 }
 
-.quick-add-close:hover {
-  background: var(--border-color);
+@media (hover: hover) {
+  .quick-add-close:hover {
+    background: var(--border-color);
+  }
 }
 
 .quick-add-content {
@@ -720,9 +746,11 @@
   transition: all 0.2s ease;
 }
 
-.share-template-option:hover {
-  border-color: var(--primary-color-opacity-50);
-  background: var(--hover-bg);
+@media (hover: hover) {
+  .share-template-option:hover {
+    border-color: var(--primary-color-opacity-50);
+    background: var(--hover-bg);
+  }
 }
 
 .share-template-option.selected {

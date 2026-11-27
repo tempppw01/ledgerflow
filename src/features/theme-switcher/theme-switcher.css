@@ -14,7 +14,14 @@
     box-shadow var(--transition-fast);
 }
 
-.theme-switcher:hover,
+@media (hover: hover) {
+  .theme-switcher:hover {
+    gap: 4px;
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+  }
+}
 .theme-switcher:has(.theme-icon-btn:focus-visible) {
   gap: 4px;
   border-color: transparent;
@@ -56,8 +63,10 @@
   pointer-events: none;
 }
 
-.theme-icon-btn:hover {
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+@media (hover: hover) {
+  .theme-icon-btn:hover {
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  }
 }
 
 .theme-icon {
@@ -94,7 +103,12 @@
     overflow: visible;
   }
 
-  .theme-switcher:hover,
+  @media (hover: hover) {
+    .theme-switcher:hover {
+      width: auto;
+      gap: 2px;
+    }
+  }
   .theme-switcher:has(.theme-icon-btn:focus-visible),
   .theme-switcher[data-expanded='true'] {
     width: auto;

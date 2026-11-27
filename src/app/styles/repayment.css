@@ -76,7 +76,13 @@
     transform 160ms ease;
 }
 
-.repayment-debt-preset:hover,
+@media (hover: hover) {
+  .repayment-debt-preset:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 48%, var(--color-border-light));
+    background: color-mix(in srgb, var(--color-primary) 6%, var(--color-bg-subtle));
+    transform: translateY(-1px);
+  }
+}
 .repayment-debt-preset:focus-visible {
   border-color: color-mix(in srgb, var(--color-primary) 48%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-primary) 6%, var(--color-bg-subtle));
@@ -492,7 +498,13 @@
   cursor: pointer;
 }
 
-.repayment-overview-health .finance-metric-help:hover,
+@media (hover: hover) {
+  .repayment-overview-health .finance-metric-help:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary-text);
+    outline: none;
+  }
+}
 .repayment-overview-health .finance-metric-help:focus-visible {
   border-color: var(--color-primary);
   color: var(--color-primary-text);
@@ -537,7 +549,13 @@
   line-height: 1;
 }
 
-.repayment-health-explanation-head button:hover,
+@media (hover: hover) {
+  .repayment-health-explanation-head button:hover {
+    background: var(--color-bg-subtle);
+    color: var(--color-text-primary);
+    outline: none;
+  }
+}
 .repayment-health-explanation-head button:focus-visible {
   background: var(--color-bg-subtle);
   color: var(--color-text-primary);
@@ -670,9 +688,14 @@
   white-space: nowrap;
 }
 
-.repayment-plan-fill-button.repayment-record-icon-button:hover::after,
+@media (hover: hover) {
+  .repayment-plan-fill-button.repayment-record-icon-button:hover::after,
+  .repayment-today-button.repayment-record-icon-button:hover::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
 .repayment-plan-fill-button.repayment-record-icon-button:focus-visible::after,
-.repayment-today-button.repayment-record-icon-button:hover::after,
 .repayment-today-button.repayment-record-icon-button:focus-visible::after {
   opacity: 1;
   transform: translate(-50%, 0);
@@ -1203,10 +1226,12 @@
   font-size: 12px;
   cursor: pointer;
 }
-.repayment-agent-quick button:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--color-primary) 26%, var(--color-border));
-  background: var(--color-bg-hover);
-  color: var(--color-text);
+@media (hover: hover) {
+  .repayment-agent-quick button:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--color-primary) 26%, var(--color-border));
+    background: var(--color-bg-hover);
+    color: var(--color-text);
+  }
 }
 .repayment-agent-error {
   margin: 0;

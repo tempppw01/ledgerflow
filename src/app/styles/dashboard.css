@@ -26,9 +26,11 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.dashboard-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--card-hover-shadow);
+@media (hover: hover) {
+  .dashboard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--card-hover-shadow);
+  }
 }
 
 .dashboard-card-header {
@@ -54,8 +56,10 @@
   transition: background 0.2s ease;
 }
 
-.dashboard-card-action:hover {
-  background: var(--primary-color-opacity-10);
+@media (hover: hover) {
+  .dashboard-card-action:hover {
+    background: var(--primary-color-opacity-10);
+  }
 }
 
 /* 统计卡片 */
@@ -67,9 +71,11 @@
   border-left: 4px solid var(--color-stripe-neutral);
   transition: border-left-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
-.dashboard-stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--card-hover-shadow);
+@media (hover: hover) {
+  .dashboard-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--card-hover-shadow);
+  }
 }
 .dashboard-stat-card.dashboard-stat-income {
   background: var(--gradient-card-income);
@@ -181,7 +187,9 @@
 .dashboard-cashflow-timeline.has-brand-logos .dashboard-cashflow-event { grid-template-columns: 58px 26px minmax(0, 1fr) auto; }
 .dashboard-cashflow-event-logo { display: grid; place-items: center; }
 .dashboard-cashflow-event { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; gap: var(--space-3); align-items: center; width: 100%; padding: 11px 0; border: 0; border-bottom: 1px solid var(--color-divider); background: transparent; color: var(--color-text); text-align: left; cursor: pointer; }
-.dashboard-cashflow-event:hover strong { color: var(--color-primary-text); }
+@media (hover: hover) {
+  .dashboard-cashflow-event:hover strong { color: var(--color-primary-text); }
+}
 .dashboard-cashflow-event-date { color: var(--color-text-secondary); font-size: var(--font-xs); font-variant-numeric: tabular-nums; }
 .dashboard-cashflow-event-main { display: grid; gap: 2px; min-width: 0; }
 .dashboard-cashflow-event-main strong { overflow: hidden; font-size: var(--font-sm); text-overflow: ellipsis; white-space: nowrap; }
@@ -193,7 +201,9 @@
 .dashboard-finance-todos { display: grid; align-content: start; gap: 6px; padding-left: var(--space-4); border-left: 1px solid var(--color-divider); }
 .dashboard-cashflow-todo-title { margin-bottom: 4px; color: var(--color-text-secondary); font-size: var(--font-xs); font-weight: 700; }
 .dashboard-finance-todos button { display: flex; align-items: center; gap: 8px; padding: 7px 0; border: 0; background: transparent; color: var(--color-text); text-align: left; cursor: pointer; }
-.dashboard-finance-todos button:hover span { color: var(--color-primary-text); }
+@media (hover: hover) {
+  .dashboard-finance-todos button:hover span { color: var(--color-primary-text); }
+}
 .dashboard-finance-todos button b { display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 50%; background: var(--color-primary-bg); color: var(--color-primary-text); font-family: var(--font-number); font-size: var(--font-xs); }
 .dashboard-finance-todos button span,.dashboard-finance-todos p { margin: 0; color: var(--color-text-secondary); font-size: var(--font-sm); line-height: var(--leading-relaxed); }
 
@@ -236,7 +246,9 @@
 .dashboard-simulation-actions { display: grid; justify-items: end; gap: 8px; }
 .dashboard-simulation-pills { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--color-border-light); border-radius: var(--radius-full); background: var(--color-bg-subtle); }
 .dashboard-simulation-pills button { border: 0; border-radius: var(--radius-full); padding: 5px 10px; background: transparent; color: var(--color-text-secondary); font-size: var(--font-xs); cursor: pointer; white-space: nowrap; }
-.dashboard-simulation-pills button:hover { color: var(--color-text); background: var(--color-bg-hover); }
+@media (hover: hover) {
+  .dashboard-simulation-pills button:hover { color: var(--color-text); background: var(--color-bg-hover); }
+}
 .dashboard-simulation-pills button.is-active { background: var(--color-primary); color: var(--color-on-primary); }
 .dashboard-asset-liability-layout {
   display: grid;
@@ -285,7 +297,9 @@
 .dashboard-calendar-weekdays { margin-bottom: 4px; color: var(--color-text-tertiary); font-size: 10px; text-align: center; }
 .dashboard-calendar-day,.dashboard-calendar-empty { min-height: 46px; }
 .dashboard-calendar-day { position: relative; display: grid; place-items: center; align-content: center; gap: 2px; border: 1px solid var(--color-border-light); border-radius: var(--radius-sm); background: color-mix(in srgb, var(--color-bg-subtle) 62%, var(--color-bg-elevated)); transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast); }
-.dashboard-calendar-day:hover { border-color: var(--color-primary-border); background: color-mix(in srgb, var(--color-primary-bg) 58%, var(--color-bg-elevated)); transform: translateY(-1px); }
+@media (hover: hover) {
+  .dashboard-calendar-day:hover { border-color: var(--color-primary-border); background: color-mix(in srgb, var(--color-primary-bg) 58%, var(--color-bg-elevated)); transform: translateY(-1px); }
+}
 /* 月首格子只用来标出月份边界,不能改变几何尺寸:
    之前用 margin-left: 5px + 外阴影补位,会让这一格变成 37px(其它格 42px),
    整列与上下行错位,格内金额也被挤掉。改用 inset 阴影画强调条,尺寸与其它格一致;
@@ -500,7 +514,9 @@
   white-space: nowrap;
   cursor: pointer;
 }
-.dashboard-forecast-item-name:hover { color: var(--color-primary-text); }
+@media (hover: hover) {
+  .dashboard-forecast-item-name:hover { color: var(--color-primary-text); }
+}
 .dashboard-forecast-item.is-editing {
   border-color: var(--color-primary-border);
   background: var(--color-primary-bg);
@@ -520,7 +536,9 @@
 .dashboard-forecast-item-outofrange { flex: 0 0 auto; padding: 0 5px; border: 1px solid var(--color-border); border-radius: 999px; color: var(--color-text-secondary); font-size: 10px; line-height: 1.5; white-space: nowrap; }
 .dashboard-forecast-outofrange-hint { margin: 6px 0 0; color: var(--color-text-tertiary); font-size: var(--font-xs); line-height: 1.5; }
 .dashboard-forecast-outofrange-action { margin-left: 6px; padding: 1px 8px; border: 1px solid color-mix(in srgb, var(--color-primary) 32%, var(--color-border)); border-radius: 999px; background: color-mix(in srgb, var(--color-primary) 8%, transparent); color: var(--color-primary-text); font: inherit; font-weight: 600; cursor: pointer; }
-.dashboard-forecast-outofrange-action:hover { background: color-mix(in srgb, var(--color-primary) 16%, transparent); }
+@media (hover: hover) {
+  .dashboard-forecast-outofrange-action:hover { background: color-mix(in srgb, var(--color-primary) 16%, transparent); }
+}
 .dashboard-forecast-item-times {
   color: var(--color-text-tertiary);
   font-family: var(--font-number);
@@ -546,9 +564,11 @@
   line-height: 1;
   cursor: pointer;
 }
-.dashboard-forecast-item-remove:hover {
-  background: color-mix(in srgb, var(--color-danger) 14%, transparent);
-  color: var(--color-danger-text);
+@media (hover: hover) {
+  .dashboard-forecast-item-remove:hover {
+    background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+    color: var(--color-danger-text);
+  }
 }
 .dashboard-forecast-summary { display: flex; flex-wrap: wrap; gap: 8px 20px; color: var(--color-text-tertiary); font-size: var(--font-xs); }
 .dashboard-forecast-summary span { display: inline-flex; align-items: baseline; gap: 6px; }
@@ -692,7 +712,11 @@
   transition: background 0.2s ease;
 }
 
-.dashboard-expense-trend-bar:hover,
+@media (hover: hover) {
+  .dashboard-expense-trend-bar:hover {
+    background: var(--primary-color-opacity-10);
+  }
+}
 .dashboard-expense-trend-bar.is-active {
   background: var(--primary-color-opacity-10);
 }
@@ -809,8 +833,10 @@
   cursor: pointer;
 }
 
-.dashboard-category-item:hover {
-  background: var(--hover-bg);
+@media (hover: hover) {
+  .dashboard-category-item:hover {
+    background: var(--hover-bg);
+  }
 }
 
 .dashboard-category-color {
@@ -935,8 +961,10 @@
   transition: background 0.2s ease;
 }
 
-.dashboard-module-item:hover {
-  background: var(--border-color);
+@media (hover: hover) {
+  .dashboard-module-item:hover {
+    background: var(--border-color);
+  }
 }
 
 .dashboard-module-item:active {
@@ -1010,9 +1038,11 @@
   z-index: 100;
 }
 
-.dashboard-fab:hover {
-  transform: scale(1.05);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+@media (hover: hover) {
+  .dashboard-fab:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  }
 }
 
 .dashboard-fab:active {

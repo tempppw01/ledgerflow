@@ -47,7 +47,9 @@
   }
   .mobile-nav-grid-item strong { font-size: 12px; line-height: 1.5; font-weight: 500; overflow-wrap: anywhere; }
   .mobile-nav-grid-icon { width: 23px; height: 23px; flex-shrink: 0; }
-  .mobile-nav-drawer .mobile-nav-grid-item:hover,
+  @media (hover: hover) {
+    .mobile-nav-drawer .mobile-nav-grid-item:hover { background: var(--color-bg-subtle); box-shadow: none; color: var(--color-primary-text); }
+  }
   .mobile-nav-drawer .mobile-nav-grid-item.active { background: var(--color-bg-subtle); box-shadow: none; color: var(--color-primary-text); }
   .mobile-nav-drawer .mobile-nav-grid-item:focus-visible,
   .mobile-nav-drawer .mobile-nav-insight-link:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }

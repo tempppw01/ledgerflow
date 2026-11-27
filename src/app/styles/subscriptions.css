@@ -53,7 +53,9 @@
 .subscriptions-template-copy p { margin: 0; color: var(--color-text-secondary); font-size: var(--font-sm); }
 .subscriptions-template-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--color-border-light); border-left: 1px solid var(--color-border-light); }
 .subscriptions-template-item { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); min-height: 60px; padding: var(--space-2) var(--space-3); border: 0; border-right: 1px solid var(--color-border-light); border-bottom: 1px solid var(--color-border-light); border-radius: 0; background: transparent; color: var(--color-text); text-align: left; transition: background var(--transition-fast), color var(--transition-fast); }
-.subscriptions-template-item:hover { background: var(--color-bg-hover); color: var(--color-primary-text); }
+@media (hover: hover) {
+  .subscriptions-template-item:hover { background: var(--color-bg-hover); color: var(--color-primary-text); }
+}
 .subscriptions-template-item:focus-visible { outline: none; box-shadow: inset var(--vi-focus-ring); }
 .subscriptions-template-logo { display: grid; place-items: center; width: 28px; height: 28px; color: var(--color-text-secondary); }
 .subscriptions-template-logo svg { width: 19px; height: 19px; fill: currentColor; }
@@ -215,7 +217,12 @@
   cursor: pointer;
 }
 
-.subscriptions-more-toggle:hover,
+@media (hover: hover) {
+  .subscriptions-more-toggle:hover {
+    color: var(--color-primary-text);
+    border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  }
+}
 .subscriptions-more-toggle.is-open {
   color: var(--color-primary-text);
   border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
@@ -246,8 +253,10 @@
   cursor: pointer;
 }
 
-.subscriptions-more-menu button:hover {
-  background: var(--color-bg-hover);
+@media (hover: hover) {
+  .subscriptions-more-menu button:hover {
+    background: var(--color-bg-hover);
+  }
 }
 
 .subscriptions-more-menu button.danger {
@@ -272,8 +281,10 @@
   cursor: pointer;
 }
 
-.subscriptions-form-toggle:hover {
-  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+@media (hover: hover) {
+  .subscriptions-form-toggle:hover {
+    background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  }
 }
 
 /* 表单收起时:清单跨整行,不让左边的空面板占着半屏 */

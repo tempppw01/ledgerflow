@@ -142,7 +142,13 @@
   content: '';
 }
 
-.investments-console-tabs button:hover,
+@media (hover: hover) {
+  .investments-console-tabs button:hover {
+    color: var(--color-text-primary);
+    transform: none;
+    box-shadow: none;
+  }
+}
 .investments-console-tabs button:focus-visible {
   color: var(--color-text-primary);
   transform: none;
@@ -349,7 +355,13 @@
   overflow-anchor: none;
 }
 
-.investments-ai-panel:hover,
+@media (hover: hover) {
+  .investments-ai-panel:hover {
+    transform: none;
+    border-color: transparent;
+    box-shadow: none;
+  }
+}
 .investments-ai-panel:focus-within {
   transform: none;
   border-color: transparent;
@@ -412,11 +424,16 @@
   border-bottom: 0;
 }
 
-.investments-support-column > .panel:hover,
+@media (hover: hover) {
+  .investments-support-column > .panel:hover,
+  .investments-support-column .investments-overview-card:hover,
+  .investments-support-column .investments-panel:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
 .investments-support-column > .panel:focus-within,
-.investments-support-column .investments-overview-card:hover,
 .investments-support-column .investments-overview-card:focus-within,
-.investments-support-column .investments-panel:hover,
 .investments-support-column .investments-panel:focus-within {
   transform: none;
   box-shadow: none;
@@ -737,8 +754,10 @@
   cursor: pointer;
 }
 
-.investments-market-insight-retry:hover {
-  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-bg-elevated));
+@media (hover: hover) {
+  .investments-market-insight-retry:hover {
+    background: color-mix(in srgb, var(--color-primary) 14%, var(--color-bg-elevated));
+  }
 }
 
 .investments-market-insight-retry:focus-visible {
@@ -1056,7 +1075,14 @@
   user-select: none;
 }
 
-.investments-global-quote-card:hover,
+@media (hover: hover) {
+  .investments-global-quote-card:hover {
+    border-right-color: var(--color-divider);
+    background: color-mix(in srgb, var(--color-primary-bg) 52%, transparent);
+    box-shadow: inset 0 -2px 0 var(--color-primary);
+    transform: none;
+  }
+}
 .investments-global-quote-card:focus-visible,
 .investments-global-quote-card.is-selected {
   border-right-color: var(--color-divider);
@@ -1825,7 +1851,14 @@
   background: color-mix(in srgb, var(--color-bg-subtle) 60%, transparent);
 }
 
-.investments-market-rail-control:hover,
+@media (hover: hover) {
+  .investments-market-rail-control:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border-light));
+    background: color-mix(in srgb, var(--color-primary-bg) 62%, var(--color-bg-elevated));
+    box-shadow: none;
+    transform: none;
+  }
+}
 .investments-market-rail-control:focus-visible {
   border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-primary-bg) 62%, var(--color-bg-elevated));
@@ -1868,7 +1901,15 @@
     box-shadow 180ms ease;
 }
 
-.investments-market-tab:hover,
+@media (hover: hover) {
+  .investments-market-tab:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border-light));
+    border-left-color: var(--market-quote-tone, var(--color-primary));
+    background: color-mix(in srgb, var(--color-bg-elevated) 78%, var(--color-primary-bg));
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--color-primary) 8%, transparent);
+    transform: none;
+  }
+}
 .investments-market-tab:focus-visible,
 .investments-market-tab.is-active {
   border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border-light));
@@ -2471,7 +2512,11 @@
   color: var(--color-danger-text);
 }
 
-.investments-support-column .investments-market-news-panel:hover,
+@media (hover: hover) {
+  .investments-support-column .investments-market-news-panel:hover {
+    box-shadow: 0 14px 34px color-mix(in srgb, var(--color-text-primary) 6%, transparent);
+  }
+}
 .investments-support-column .investments-market-news-panel:focus-within {
   box-shadow: 0 14px 34px color-mix(in srgb, var(--color-text-primary) 6%, transparent);
 }
@@ -2549,7 +2594,14 @@
   font-weight: 800;
 }
 
-.investments-market-news-tabs button:hover,
+@media (hover: hover) {
+  .investments-market-news-tabs button:hover {
+    background: transparent;
+    color: var(--color-text-primary);
+    box-shadow: inset 0 -2px 0 var(--color-primary);
+    transform: none;
+  }
+}
 .investments-market-news-tabs button:focus-visible,
 .investments-market-news-tabs button.is-active {
   background: transparent;
@@ -2586,7 +2638,14 @@
   font-weight: 800;
 }
 
-.investments-market-board-tabs button:hover,
+@media (hover: hover) {
+  .investments-market-board-tabs button:hover {
+    background: var(--color-bg-elevated);
+    color: var(--color-text-primary);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+    transform: none;
+  }
+}
 .investments-market-board-tabs button:focus-visible,
 .investments-market-board-tabs button.is-active {
   background: var(--color-bg-elevated);
@@ -3201,7 +3260,11 @@
     color-mix(in srgb, var(--color-border-light) 78%, var(--color-text-tertiary));
 }
 
-.investments-market-news-item:hover strong,
+@media (hover: hover) {
+  .investments-market-news-item:hover strong {
+    text-decoration: underline;
+  }
+}
 .investments-market-news-item:focus-visible strong {
   text-decoration: underline;
 }
@@ -3584,7 +3647,13 @@
   line-height: 1.35;
 }
 
-.investments-ai-settings-link:hover,
+@media (hover: hover) {
+  .investments-ai-settings-link:hover {
+    border-color: color-mix(in srgb, var(--color-danger) 28%, var(--color-border-light));
+    background: color-mix(in srgb, var(--color-danger-bg) 78%, var(--color-bg-elevated));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-danger-bg) 54%, transparent);
+  }
+}
 .investments-ai-settings-link:focus-visible {
   border-color: color-mix(in srgb, var(--color-danger) 28%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-danger-bg) 78%, var(--color-bg-elevated));
@@ -3684,17 +3753,19 @@
   background-clip: content-box;
 }
 
-.investments-ai-thread::-webkit-scrollbar-thumb:hover,
-.investments-support-column::-webkit-scrollbar-thumb:hover,
-.investments-watchlist-panel::-webkit-scrollbar-thumb:hover,
-.investments-ai-streaming::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-primary) 62%, var(--color-bg-elevated)),
-      color-mix(in srgb, var(--color-accent) 48%, var(--color-bg-elevated))
-    )
-    border-box;
-  background-clip: content-box;
+@media (hover: hover) {
+  .investments-ai-thread::-webkit-scrollbar-thumb:hover,
+  .investments-support-column::-webkit-scrollbar-thumb:hover,
+  .investments-watchlist-panel::-webkit-scrollbar-thumb:hover,
+  .investments-ai-streaming::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-primary) 62%, var(--color-bg-elevated)),
+        color-mix(in srgb, var(--color-accent) 48%, var(--color-bg-elevated))
+      )
+      border-box;
+    background-clip: content-box;
+  }
 }
 
 .investments-watchlist-empty,
@@ -4236,7 +4307,11 @@
   color: var(--color-text-tertiary);
 }
 
-.investments-ai-scroll-top-btn:hover:not(:disabled),
+@media (hover: hover) {
+  .investments-ai-scroll-top-btn:hover:not(:disabled) {
+    color: var(--color-primary-text);
+  }
+}
 .investments-ai-scroll-top-btn:focus-visible {
   color: var(--color-primary-text);
 }
@@ -4429,8 +4504,14 @@
   background: transparent;
 }
 
+@media (hover: hover) {
+  .investments-market-board-tabs button:hover {
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+}
 .investments-market-board-tabs button,
-.investments-market-board-tabs button:hover,
 .investments-market-board-tabs button:focus-visible,
 .investments-market-board-tabs button.is-active {
   border-radius: 0;
@@ -4496,9 +4577,11 @@
   white-space: nowrap;
 }
 
-.investments-ai-clear-context:hover {
-  border-color: color-mix(in srgb, var(--color-danger, #d9485f) 48%, var(--color-border-light));
-  color: var(--color-danger-text, #d9485f);
+@media (hover: hover) {
+  .investments-ai-clear-context:hover {
+    border-color: color-mix(in srgb, var(--color-danger, #d9485f) 48%, var(--color-border-light));
+    color: var(--color-danger-text, #d9485f);
+  }
 }
 
 .investments-ai-progress {
@@ -4588,7 +4671,13 @@
   font-size: 12px;
 }
 
-.investments-ai-suggestion-row button:hover:not(:disabled),
+@media (hover: hover) {
+  .investments-ai-suggestion-row button:hover:not(:disabled) {
+    color: var(--color-primary-text);
+    border-color: color-mix(in srgb, var(--color-primary) 38%, var(--color-border-light));
+    background: color-mix(in srgb, var(--color-primary-bg) 78%, var(--color-bg-elevated));
+  }
+}
 .investments-ai-suggestion-row button:focus-visible {
   color: var(--color-primary-text);
   border-color: color-mix(in srgb, var(--color-primary) 38%, var(--color-border-light));
@@ -4677,7 +4766,12 @@
   white-space: nowrap;
 }
 
-.investments-ai-input-toolbar .investments-ai-model-trigger:hover,
+@media (hover: hover) {
+  .investments-ai-input-toolbar .investments-ai-model-trigger:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border-light));
+    background: color-mix(in srgb, var(--color-primary-bg) 84%, var(--color-bg-elevated));
+  }
+}
 .investments-ai-input-toolbar .investments-ai-model-trigger.is-open {
   border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-primary-bg) 84%, var(--color-bg-elevated));
@@ -4739,7 +4833,11 @@
   background: transparent;
 }
 
-.investments-watchlist-list.is-list .investments-watch-card:hover,
+@media (hover: hover) {
+  .investments-watchlist-list.is-list .investments-watch-card:hover {
+    background: color-mix(in srgb, var(--color-primary-bg) 35%, transparent);
+  }
+}
 .investments-watchlist-list.is-list .investments-watch-card.is-expanded {
   background: color-mix(in srgb, var(--color-primary-bg) 35%, transparent);
 }
@@ -4873,8 +4971,16 @@
   opacity: 0.46;
 }
 
+@media (hover: hover) {
+  .investments-watch-category-tabs button:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border-light));
+    background: color-mix(in srgb, var(--color-primary-bg) 72%, var(--color-bg-elevated));
+    color: var(--color-text-primary);
+    box-shadow: none;
+    transform: none;
+  }
+}
 .investments-watch-category-tabs button.is-active,
-.investments-watch-category-tabs button:hover:not(:disabled),
 .investments-watch-category-tabs button:focus-visible {
   border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-primary-bg) 72%, var(--color-bg-elevated));
@@ -4939,8 +5045,15 @@
   font-variant-numeric: tabular-nums;
 }
 
+@media (hover: hover) {
+  .investments-watch-grid-controls button:hover {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    box-shadow: none;
+    transform: none;
+  }
+}
 .investments-watch-grid-controls button.is-active,
-.investments-watch-grid-controls button:hover,
 .investments-watch-grid-controls button:focus-visible {
   background: var(--color-primary);
   color: var(--color-on-primary);
@@ -5121,7 +5234,11 @@
     transform 0.2s ease;
 }
 
-.investments-watch-card:hover,
+@media (hover: hover) {
+  .investments-watch-card:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border-light));
+  }
+}
 .investments-watch-card:focus-visible,
 .investments-watch-card.is-expanded {
   border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border-light));
@@ -5138,8 +5255,10 @@
   outline-offset: 2px;
 }
 
-.investments-watch-card:hover {
-  transform: none;
+@media (hover: hover) {
+  .investments-watch-card:hover {
+    transform: none;
+  }
 }
 
 .investments-watch-context-menu {
@@ -5169,7 +5288,11 @@
   border-radius: 10px;
 }
 
-.investments-watch-context-menu button:hover,
+@media (hover: hover) {
+  .investments-watch-context-menu button:hover {
+    background: color-mix(in srgb, var(--color-primary-bg) 78%, transparent);
+  }
+}
 .investments-watch-context-menu button:focus-visible {
   background: color-mix(in srgb, var(--color-primary-bg) 78%, transparent);
 }
@@ -5389,7 +5512,12 @@
   color: var(--color-text-secondary);
 }
 
-.investments-watch-holding-btn:hover,
+@media (hover: hover) {
+  .investments-watch-holding-btn:hover {
+    color: var(--color-primary-text);
+    box-shadow: none;
+  }
+}
 .investments-watch-holding-btn:focus-visible {
   color: var(--color-primary-text);
   box-shadow: none;
@@ -5579,14 +5707,25 @@
   animation: spin 0.8s linear infinite;
 }
 
-.investments-watch-card-ai-actions button:hover:not(:disabled),
+@media (hover: hover) {
+  .investments-watch-card-ai-actions button:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--color-primary) 36%, var(--color-border-light));
+    background: color-mix(in srgb, var(--color-primary-bg) 88%, var(--color-bg-elevated));
+    box-shadow: 0 10px 20px color-mix(in srgb, var(--color-primary) 12%, transparent);
+  }
+}
 .investments-watch-card-ai-actions button:focus-visible {
   border-color: color-mix(in srgb, var(--color-primary) 36%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-primary-bg) 88%, var(--color-bg-elevated));
   box-shadow: 0 10px 20px color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 
-.investments-watch-card-ai-actions .investments-watch-analyze-btn:hover:not(:disabled),
+@media (hover: hover) {
+  .investments-watch-card-ai-actions .investments-watch-analyze-btn:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-primary) 88%, black);
+    color: #fff;
+  }
+}
 .investments-watch-card-ai-actions .investments-watch-analyze-btn:focus-visible {
   background: color-mix(in srgb, var(--color-primary) 88%, black);
   color: #fff;
@@ -5618,7 +5757,13 @@
     filter 180ms ease;
 }
 
-.investment-chat-floating-launcher:hover,
+@media (hover: hover) {
+  .investment-chat-floating-launcher:hover {
+    transform: translateY(-3px) scale(1.04);
+    filter: saturate(1.08);
+    box-shadow: 0 14px 28px color-mix(in srgb, var(--color-primary) 28%, transparent);
+  }
+}
 .investment-chat-floating-launcher:focus-visible {
   transform: translateY(-3px) scale(1.04);
   filter: saturate(1.08);
@@ -5707,9 +5852,11 @@
   cursor: pointer;
 }
 
-.investment-chat-floating-size-btn:hover {
-  color: var(--color-text);
-  border-color: var(--color-text-secondary);
+@media (hover: hover) {
+  .investment-chat-floating-size-btn:hover {
+    color: var(--color-text);
+    border-color: var(--color-text-secondary);
+  }
 }
 
 .investment-chat-floating-size-btn:focus-visible {
@@ -5913,9 +6060,15 @@
   stroke-linejoin: round;
 }
 
-.investment-chat-floating-pin:hover,
+@media (hover: hover) {
+  .investment-chat-floating-pin:hover,
+  .investment-chat-floating-close:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-border-light));
+    background: color-mix(in srgb, var(--color-primary-bg) 80%, var(--color-bg-elevated));
+    color: var(--color-primary-text);
+  }
+}
 .investment-chat-floating-pin:focus-visible,
-.investment-chat-floating-close:hover,
 .investment-chat-floating-close:focus-visible {
   border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-primary-bg) 80%, var(--color-bg-elevated));
@@ -5933,7 +6086,11 @@
   font-size: 20px;
 }
 
-.investment-chat-floating-close:hover,
+@media (hover: hover) {
+  .investment-chat-floating-close:hover {
+    transform: rotate(8deg);
+  }
+}
 .investment-chat-floating-close:focus-visible {
   transform: rotate(8deg);
 }
@@ -6730,8 +6887,10 @@
   font-weight: 700;
 }
 
-.investments-history-row:not(.is-head):hover {
-  background: color-mix(in srgb, var(--color-primary-bg) 36%, transparent);
+@media (hover: hover) {
+  .investments-history-row:not(.is-head):hover {
+    background: color-mix(in srgb, var(--color-primary-bg) 36%, transparent);
+  }
 }
 
 .investments-history-row span {
@@ -6819,7 +6978,12 @@
   font-weight: 700;
 }
 
-.investments-quick-actions-trigger:hover,
+@media (hover: hover) {
+  .investments-quick-actions-trigger:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 26%, var(--color-border-light));
+    background: color-mix(in srgb, var(--color-primary-bg) 64%, var(--color-bg-elevated));
+  }
+}
 .investments-quick-actions-trigger:focus-visible {
   border-color: color-mix(in srgb, var(--color-primary) 26%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-primary-bg) 64%, var(--color-bg-elevated));
@@ -6852,7 +7016,11 @@
   border-radius: 10px;
 }
 
-.investments-quick-actions-menu button:hover,
+@media (hover: hover) {
+  .investments-quick-actions-menu button:hover {
+    background: color-mix(in srgb, var(--color-primary-bg) 78%, transparent);
+  }
+}
 .investments-quick-actions-menu button:focus-visible {
   background: color-mix(in srgb, var(--color-primary-bg) 78%, transparent);
 }
@@ -6879,7 +7047,11 @@
   font-weight: 700;
 }
 
-.investments-watch-add-position-btn:hover,
+@media (hover: hover) {
+  .investments-watch-add-position-btn:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border-light));
+  }
+}
 .investments-watch-add-position-btn:focus-visible {
   border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border-light));
 }
@@ -7733,7 +7905,14 @@
     box-shadow: none;
   }
 
-  .investments-support-toggle:hover,
+  @media (hover: hover) {
+    .investments-support-toggle:hover {
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      transform: none;
+    }
+  }
   .investments-support-toggle:focus-visible {
     border: 0;
     background: transparent;
@@ -8187,9 +8366,16 @@
     transform 160ms ease;
 }
 
-.investments-ai-context-actions button:hover,
+@media (hover: hover) {
+  .investments-ai-context-actions button:hover,
+  .investments-ai-inline-btn:hover {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    transform: translateY(-1px);
+  }
+}
 .investments-ai-context-actions button:focus-visible,
-.investments-ai-inline-btn:hover,
 .investments-ai-inline-btn:focus-visible {
   border-color: var(--color-primary);
   background: var(--color-primary);
@@ -8241,7 +8427,11 @@
     color 160ms ease;
 }
 
-.investments-position-glance-row:hover .investments-position-ai-btn,
+@media (hover: hover) {
+  .investments-position-glance-row:hover .investments-position-ai-btn {
+    opacity: 1;
+  }
+}
 .investments-position-ai-btn:focus-visible {
   opacity: 1;
 }
@@ -8260,7 +8450,12 @@
   }
 }
 
-.investments-position-ai-btn:hover,
+@media (hover: hover) {
+  .investments-position-ai-btn:hover {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+}
 .investments-position-ai-btn:focus-visible {
   background: var(--color-primary);
   color: var(--color-on-primary);
@@ -8421,7 +8616,13 @@
   stroke-linejoin: round;
 }
 
-.investment-chat-floating-expand:hover,
+@media (hover: hover) {
+  .investment-chat-floating-expand:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 32%, var(--color-border-light));
+    background: color-mix(in srgb, var(--color-primary-bg) 82%, var(--color-bg-elevated));
+    color: var(--color-primary-text);
+  }
+}
 .investment-chat-floating-expand:focus-visible {
   border-color: color-mix(in srgb, var(--color-primary) 32%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-primary-bg) 82%, var(--color-bg-elevated));
@@ -8535,7 +8736,12 @@
   text-decoration: none;
 }
 
-.investments-ai-settings-hint a:hover,
+@media (hover: hover) {
+  .investments-ai-settings-hint a:hover {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+}
 .investments-ai-settings-hint a:focus-visible {
   background: var(--color-primary);
   color: var(--color-on-primary);
@@ -8580,7 +8786,12 @@
   cursor: pointer;
 }
 
-.investment-ai-agent-action-undo:hover,
+@media (hover: hover) {
+  .investment-ai-agent-action-undo:hover {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+}
 .investment-ai-agent-action-undo:focus-visible {
   background: var(--color-primary);
   color: var(--color-on-primary);

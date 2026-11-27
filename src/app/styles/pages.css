@@ -49,9 +49,11 @@
   border-left: 1px solid var(--color-divider);
 }
 
-.dashboard-overview-workspace .stat-card:hover {
-  transform: none;
-  box-shadow: none;
+@media (hover: hover) {
+  .dashboard-overview-workspace .stat-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
 }
 
 .dashboard-overview-workspace .stat-card h3 {
@@ -128,9 +130,11 @@
   background: transparent;
 }
 
-.dashboard-overview-workspace .dashboard-module-manage-item:hover {
-  border-color: var(--color-primary-border);
-  box-shadow: none;
+@media (hover: hover) {
+  .dashboard-overview-workspace .dashboard-module-manage-item:hover {
+    border-color: var(--color-primary-border);
+    box-shadow: none;
+  }
 }
 
 .dashboard-overview-workspace .dashboard-module-manage-item.is-disabled {
@@ -350,10 +354,12 @@
   font-size: 12px;
 }
 
-.dashboard-top-toggle:hover {
-  border-color: var(--color-primary-border);
-  color: var(--color-primary-text);
-  background: color-mix(in srgb, var(--color-primary-bg) 56%, var(--color-bg-elevated));
+@media (hover: hover) {
+  .dashboard-top-toggle:hover {
+    border-color: var(--color-primary-border);
+    color: var(--color-primary-text);
+    background: color-mix(in srgb, var(--color-primary-bg) 56%, var(--color-bg-elevated));
+  }
 }
 
 .dashboard-donut-list-item {
@@ -847,8 +853,10 @@
   justify-content: center;
 }
 
-.transaction-filter-trigger:hover {
-  background: var(--color-bg-hover);
+@media (hover: hover) {
+  .transaction-filter-trigger:hover {
+    background: var(--color-bg-hover);
+  }
 }
 
 .transaction-filter-trigger.active {
@@ -978,9 +986,11 @@
   cursor: pointer;
 }
 
-.transaction-column-order-btn:hover:not(:disabled) {
-  color: var(--color-text);
-  border-color: var(--color-border-strong, var(--color-border));
+@media (hover: hover) {
+  .transaction-column-order-btn:hover:not(:disabled) {
+    color: var(--color-text);
+    border-color: var(--color-border-strong, var(--color-border));
+  }
 }
 
 .transaction-column-order-btn:disabled {
@@ -1015,9 +1025,11 @@
   cursor: pointer;
 }
 
-.transaction-column-width-btn:hover:not(:disabled) {
-  color: var(--color-text);
-  border-color: var(--color-border-strong, var(--color-border));
+@media (hover: hover) {
+  .transaction-column-width-btn:hover:not(:disabled) {
+    color: var(--color-text);
+    border-color: var(--color-border-strong, var(--color-border));
+  }
 }
 
 .transaction-column-width-btn:disabled {
@@ -1425,7 +1437,13 @@
   padding-inline: 9px;
 }
 
-.transaction-filter-trigger:hover,
+@media (hover: hover) {
+  .transaction-filter-trigger:hover {
+    border: 0;
+    background: var(--color-bg-hover);
+    color: var(--color-primary-text);
+  }
+}
 .transaction-filter-trigger.active {
   border: 0;
   background: var(--color-bg-hover);
@@ -1640,9 +1658,11 @@
   font-size: var(--font-sm);
 }
 
-.transaction-filter-reset:hover {
-  color: var(--color-danger-text, #c2413b);
-  background: color-mix(in srgb, var(--color-danger, #c2413b) 8%, transparent);
+@media (hover: hover) {
+  .transaction-filter-reset:hover {
+    color: var(--color-danger-text, #c2413b);
+    background: color-mix(in srgb, var(--color-danger, #c2413b) 8%, transparent);
+  }
 }
 
 .transaction-filter-done {
@@ -1821,9 +1841,11 @@
   background-clip: content-box;
 }
 
-.transaction-ledger-surface .transaction-table-wrap:hover::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--color-primary) 52%, var(--color-text-tertiary));
-  background-clip: content-box;
+@media (hover: hover) {
+  .transaction-ledger-surface .transaction-table-wrap:hover::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-primary) 52%, var(--color-text-tertiary));
+    background-clip: content-box;
+  }
 }
 
 .transaction-ledger-surface .transaction-table-wrap::-webkit-scrollbar-corner {
@@ -1836,8 +1858,10 @@
   border-bottom-color: color-mix(in srgb, var(--color-divider) 78%, transparent);
 }
 
-.transaction-ledger-surface .transaction-row-clickable:hover td {
-  background: color-mix(in srgb, var(--color-primary-bg) 42%, transparent);
+@media (hover: hover) {
+  .transaction-ledger-surface .transaction-row-clickable:hover td {
+    background: color-mix(in srgb, var(--color-primary-bg) 42%, transparent);
+  }
 }
 
 .transaction-ledger-surface .transaction-type-badge {
@@ -2092,9 +2116,11 @@
   text-align: left;
 }
 
-.transaction-detail-actions-more button:hover {
-  color: var(--color-text);
-  background: var(--color-bg-subtle);
+@media (hover: hover) {
+  .transaction-detail-actions-more button:hover {
+    color: var(--color-text);
+    background: var(--color-bg-subtle);
+  }
 }
 
 /* Documentation page: a reading surface, not a stack of cards. */
@@ -2146,9 +2172,11 @@
   font-size: var(--font-sm);
   text-decoration: none;
 }
-.help-jump-nav a:hover,
-.help-guide-content > a:hover {
-  color: var(--color-primary-text);
+@media (hover: hover) {
+  .help-jump-nav a:hover,
+  .help-guide-content > a:hover {
+    color: var(--color-primary-text);
+  }
 }
 
 /* 目录链接原先只有 19px 的文本高度,触屏上很容易点到隔壁。
@@ -2911,9 +2939,11 @@
   font-weight: 600;
 }
 
-.about-update-result a:hover,
-.about-link-row a:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .about-update-result a:hover,
+  .about-link-row a:hover {
+    text-decoration: underline;
+  }
 }
 
 .about-update-result.up-to-date {
@@ -3492,7 +3522,12 @@
   text-decoration: none;
 }
 
-.finance-source-strip nav a:hover,
+@media (hover: hover) {
+  .finance-source-strip nav a:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border-light));
+    background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+  }
+}
 .finance-source-strip nav a:focus-visible {
   border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
@@ -3543,7 +3578,13 @@
   font-weight: 700;
 }
 
-.finance-category-tabs button:hover,
+@media (hover: hover) {
+  .finance-category-tabs button:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border-light));
+    color: var(--color-primary-text);
+    background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+  }
+}
 .finance-category-tabs button:focus-visible {
   border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border-light));
   color: var(--color-primary-text);
@@ -3568,7 +3609,12 @@
   font-weight: 700;
 }
 
-.finance-news-refresh-button:hover,
+@media (hover: hover) {
+  .finance-news-refresh-button:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border-light));
+    background: color-mix(in srgb, var(--color-primary) 7%, var(--color-surface));
+  }
+}
 .finance-news-refresh-button:focus-visible {
   border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-primary) 7%, var(--color-surface));
@@ -3667,7 +3713,11 @@
   color: #1f1300;
 }
 
-.route-error-primary:hover,
+@media (hover: hover) {
+  .route-error-primary:hover {
+    background: var(--color-primary-hover);
+  }
+}
 .route-error-primary:focus-visible {
   background: var(--color-primary-hover);
 }
@@ -3678,7 +3728,12 @@
   color: var(--color-text-secondary);
 }
 
-.route-error-secondary:hover,
+@media (hover: hover) {
+  .route-error-secondary:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
+    color: var(--color-primary-text);
+  }
+}
 .route-error-secondary:focus-visible {
   border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
   color: var(--color-primary-text);

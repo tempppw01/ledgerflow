@@ -29,7 +29,16 @@
     transform var(--transition-fast);
 }
 
-.language-switcher-trigger:hover,
+@media (hover: hover) {
+  .language-switcher-trigger:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 52%, var(--color-border));
+    background: color-mix(in srgb, var(--color-primary) 15%, var(--color-bg-elevated));
+    color: var(--color-primary);
+    box-shadow:
+      0 4px 12px color-mix(in srgb, var(--color-primary) 14%, transparent),
+      inset 0 1px 0 color-mix(in srgb, white 70%, transparent);
+  }
+}
 .language-switcher[data-open='true'] .language-switcher-trigger {
   border-color: color-mix(in srgb, var(--color-primary) 52%, var(--color-border));
   background: color-mix(in srgb, var(--color-primary) 15%, var(--color-bg-elevated));
@@ -148,7 +157,13 @@
     color var(--transition-fast);
 }
 
-.language-switcher-option:hover,
+@media (hover: hover) {
+  .language-switcher-option:hover {
+    outline: none;
+    background: var(--color-bg-hover);
+    color: var(--color-text);
+  }
+}
 .language-switcher-option:focus-visible {
   outline: none;
   background: var(--color-bg-hover);

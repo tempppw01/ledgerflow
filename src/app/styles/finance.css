@@ -44,9 +44,11 @@
   border-left: 4px solid var(--color-stripe-neutral);
 }
 
-.finance-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--card-hover-shadow);
+@media (hover: hover) {
+  .finance-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--card-hover-shadow);
+  }
 }
 
 .finance-card-header {
@@ -72,8 +74,10 @@
   transition: background 0.2s ease;
 }
 
-.finance-card-action:hover {
-  background: var(--primary-color-opacity-10);
+@media (hover: hover) {
+  .finance-card-action:hover {
+    background: var(--primary-color-opacity-10);
+  }
 }
 
 /* 概览统计卡片 */
@@ -280,8 +284,10 @@
   transition: transform 0.2s ease;
 }
 
-.finance-ledger-card:hover {
-  transform: translateX(4px);
+@media (hover: hover) {
+  .finance-ledger-card:hover {
+    transform: translateX(4px);
+  }
 }
 
 .finance-ledger-card-header {
@@ -499,8 +505,10 @@
   transition: background 0.2s ease;
 }
 
-.finance-form-inline-manual button:hover {
-  background: var(--primary-color-dark);
+@media (hover: hover) {
+  .finance-form-inline-manual button:hover {
+    background: var(--primary-color-dark);
+  }
 }
 
 /* 折叠面板 */

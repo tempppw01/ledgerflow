@@ -256,10 +256,12 @@ button.danger:active:not(:disabled) {
     box-shadow 0.15s ease;
 }
 
-.list-item:hover {
-  background: var(--color-bg-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-xs);
+@media (hover: hover) {
+  .list-item:hover {
+    background: var(--color-bg-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-xs);
+  }
 }
 
 /* ============================================================

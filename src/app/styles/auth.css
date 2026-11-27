@@ -112,8 +112,10 @@
   font-weight: 600;
 }
 
-.auth-forgot-button:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .auth-forgot-button:hover {
+    text-decoration: underline;
+  }
 }
 
 .auth-forgot-button:focus-visible {
@@ -165,7 +167,12 @@
     color 160ms ease;
 }
 
-.topbar-account-trigger:hover,
+@media (hover: hover) {
+  .topbar-account-trigger:hover {
+    border-color: var(--color-border-light);
+    background: var(--color-bg-hover);
+  }
+}
 .topbar-account-trigger.active {
   border-color: var(--color-border-light);
   background: var(--color-bg-hover);
@@ -307,7 +314,11 @@
     color 160ms ease;
 }
 
-.topbar-account-menu-item:hover,
+@media (hover: hover) {
+  .topbar-account-menu-item:hover {
+    background: var(--color-bg-hover);
+  }
+}
 .topbar-account-menu-item:focus-visible {
   background: var(--color-bg-hover);
 }

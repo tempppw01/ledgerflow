@@ -60,7 +60,12 @@
   font-variant-numeric: tabular-nums;
 }
 
-.global-memory-filter-pill:hover,
+@media (hover: hover) {
+  .global-memory-filter-pill:hover {
+    color: var(--color-primary-text);
+    background: var(--color-primary-bg);
+  }
+}
 .global-memory-filter-pill.is-active {
   color: var(--color-primary-text);
   background: var(--color-primary-bg);
@@ -114,7 +119,12 @@
   transition: background .18s ease, padding-left .18s ease;
 }
 
-.global-memory-card:hover,
+@media (hover: hover) {
+  .global-memory-card:hover {
+    padding-left: 10px;
+    background: color-mix(in srgb, var(--color-primary-bg) 42%, transparent);
+  }
+}
 .global-memory-card.is-selected {
   padding-left: 10px;
   background: color-mix(in srgb, var(--color-primary-bg) 42%, transparent);
@@ -137,7 +147,9 @@
   opacity: 0;
   transition: opacity .18s ease;
 }
-.global-memory-card:hover .global-memory-actions,
+@media (hover: hover) {
+  .global-memory-card:hover .global-memory-actions { opacity: 1; }
+}
 .global-memory-card:focus-within .global-memory-actions { opacity: 1; }
 .global-memory-actions button {
   min-height: 28px;
@@ -146,8 +158,12 @@
   background: transparent;
   color: var(--color-text-tertiary);
 }
-.global-memory-actions button:hover { color: var(--color-primary-text); background: var(--color-primary-bg); }
-.global-memory-actions .danger:hover { color: var(--color-danger-text); background: var(--color-danger-bg); }
+@media (hover: hover) {
+  .global-memory-actions button:hover { color: var(--color-primary-text); background: var(--color-primary-bg); }
+}
+@media (hover: hover) {
+  .global-memory-actions .danger:hover { color: var(--color-danger-text); background: var(--color-danger-bg); }
+}
 
 @media (max-width: 768px) {
   .global-memory-header { align-items: start; }

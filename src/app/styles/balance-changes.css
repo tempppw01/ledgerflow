@@ -44,9 +44,11 @@
   cursor: pointer;
 }
 
-.balance-change-reset:hover {
-  color: var(--color-primary-text);
-  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+@media (hover: hover) {
+  .balance-change-reset:hover {
+    color: var(--color-primary-text);
+    border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  }
 }
 
 .balance-change-metrics {
@@ -283,8 +285,10 @@
   border-left-color: var(--color-expense);
 }
 
-.balance-change-row:hover td {
-  background: var(--color-bg-hover);
+@media (hover: hover) {
+  .balance-change-row:hover td {
+    background: var(--color-bg-hover);
+  }
 }
 
 .balance-change-row.is-expanded td {
@@ -433,9 +437,11 @@
   cursor: pointer;
 }
 
-.balance-change-pagination-actions button:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
-  color: var(--color-primary-text);
+@media (hover: hover) {
+  .balance-change-pagination-actions button:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+    color: var(--color-primary-text);
+  }
 }
 
 .balance-change-pagination-actions button:disabled {

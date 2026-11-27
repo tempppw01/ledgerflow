@@ -45,10 +45,12 @@
   box-shadow: var(--shadow-surface);
 }
 
-.panel:hover,
-.card:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 18%, var(--border-subtle));
-  box-shadow: var(--shadow-surface-hover);
+@media (hover: hover) {
+  .panel:hover,
+  .card:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 18%, var(--border-subtle));
+    box-shadow: var(--shadow-surface-hover);
+  }
 }
 
 .panel > .card,
@@ -211,9 +213,11 @@
   color: color-mix(in srgb, var(--color-text-secondary) 62%, transparent);
 }
 
-.vi-input:hover:not(:disabled),
-.vi-textarea:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border-light));
+@media (hover: hover) {
+  .vi-input:hover:not(:disabled),
+  .vi-textarea:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border-light));
+  }
 }
 
 .vi-input:focus,
@@ -280,10 +284,12 @@
     transform var(--transition-fast);
 }
 
-.vi-card--interactive:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 24%, var(--color-border-light));
-  box-shadow: var(--vi-surface-shadow-hover);
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .vi-card--interactive:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 24%, var(--color-border-light));
+    box-shadow: var(--vi-surface-shadow-hover);
+    transform: translateY(-1px);
+  }
 }
 
 .vi-card--interactive:focus-visible {
