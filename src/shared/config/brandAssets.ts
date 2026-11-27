@@ -1,163 +1,163 @@
 export const ALIPAY_LOGO_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/alipay-logo.svg';
+  '/cdn/ui/alipay-logo.svg';
 
 export const WECHAT_LOGO_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/wechat-logo.svg';
+  '/cdn/ui/wechat-logo.svg';
 
 export const CHAT_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/chat.svg';
+  '/cdn/ui/chat.svg';
 
 export const USER_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/user.svg';
+  '/cdn/ui/user.svg';
 
 export const BOT_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/bot.svg';
+  '/cdn/ui/bot.svg';
 
 export const CIRCLE_USER_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/circle-user.svg';
+  '/cdn/ui/circle-user.svg';
 
 export const DEFAULT_ANIME_AVATAR_URL = '/default-anime-avatar.svg';
 
 export const CLOUD_SYNC_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/cloud-sync.svg';
+  '/cdn/ui/cloud-sync.svg';
 
 export const PACKAGE_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/package.svg';
+  '/cdn/ui/package.svg';
 
 export const GLOBE_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/globe.svg';
+  '/cdn/ui/globe.svg';
 
 export const COPY_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/copy.svg';
+  '/cdn/ui/copy.svg';
 
 export const ROTATE_CCW_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/rotate-ccw.svg';
+  '/cdn/ui/rotate-ccw.svg';
 
 export const SUN_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/sun.svg';
+  '/cdn/ui/sun.svg';
 
 export const MOON_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/moon.svg';
+  '/cdn/ui/moon.svg';
 
 export const MONITOR_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/monitor.svg';
+  '/cdn/ui/monitor.svg';
 
 export const CHEVRONS_RIGHT_LEFT_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/chevrons-right-left.svg';
+  '/cdn/ui/chevrons-right-left.svg';
 
 export const CHEVRONS_LEFT_RIGHT_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/chevrons-left-right.svg';
+  '/cdn/ui/chevrons-left-right.svg';
 
 export const CHEVRON_DOWN_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/chevron-down.svg';
+  '/cdn/ui/chevron-down.svg';
 
 export const EYE_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/eye.svg';
+  '/cdn/ui/eye.svg';
 
 export const EYE_OFF_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/eye-off.svg';
+  '/cdn/ui/eye-off.svg';
 
 export const DASHBOARD_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/chart-no-axes-combined.svg';
+  '/cdn/ui/chart-no-axes-combined.svg';
 
 export const INVESTMENTS_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/chart-spline.svg';
+  '/cdn/ui/chart-spline.svg';
 
 export const BACKUP_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/cloud-upload.svg';
+  '/cdn/ui/cloud-upload.svg';
 
 export const RESTORE_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/cloud-download.svg';
+  '/cdn/ui/cloud-download.svg';
 
 export const SETTINGS_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/settings.svg';
+  '/cdn/ui/settings.svg';
 
 export const DATA_INPUT_ILLUSTRATION_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/data-input.svg';
+  '/cdn/ui/data-input.svg';
 
 export const BRAIN_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/brain.svg';
+  '/cdn/ui/brain.svg';
 
 export const CALENDAR_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/calendar.svg';
+  '/cdn/ui/calendar.svg';
 
 export const DATABASE_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/database.svg';
+  '/cdn/ui/database.svg';
 
 export const BADGE_DOLLAR_SIGN_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/badge-dollar-sign.svg';
+  '/cdn/ui/badge-dollar-sign.svg';
 
 export const WALLET_CARDS_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/wallet-cards.svg';
+  '/cdn/ui/wallet-cards.svg';
 
 export const CREDIT_CARDS_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/credit-card.svg';
+  '/cdn/ui/credit-card.svg';
 
 export const SCALE_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/scale.svg';
+  '/cdn/ui/scale.svg';
 
 export const LANDMARK_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/landmark.svg';
+  '/cdn/ui/landmark.svg';
 
 export const IMAGE_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/image.svg';
+  '/cdn/ui/image.svg';
 
 export const WEBANK_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/public/webank.png';
+  '/cdn/public/webank.png';
 
 export const JIEBEI_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/public/jiebei.png';
+  '/cdn/public/jiebei.png';
 
 export const BAITIAO_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/public/baitiao.png';
+  '/cdn/public/baitiao.png';
 
 export const ANYIHUA_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/public/msxf.png';
+  '/cdn/public/msxf.png';
 
 export const FANGXINJIE_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/public/fangxinjie.png';
+  '/cdn/public/fangxinjie.png';
 
 export const QIFUJIETIAO_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/public/qifujietiao.webp';
+  '/cdn/public/qifujietiao.webp';
 
 export const CARD_SD_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/card-sd.svg';
+  '/cdn/ui/card-sd.svg';
 
 export const ARCHIVE_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/archive.svg';
+  '/cdn/ui/archive.svg';
 
 export const TRASH_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/trash.svg';
+  '/cdn/ui/trash.svg';
 
 export const TRASH_2_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/trash-2.svg';
+  '/cdn/ui/trash-2.svg';
 
 export const STAR_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/star.svg';
+  '/cdn/ui/star.svg';
 
 export const STAR_OFF_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/star-off.svg';
+  '/cdn/ui/star-off.svg';
 
 export const PRINTER_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/printer.svg';
+  '/cdn/ui/printer.svg';
 
 export const PEN_TOOL_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/pen-tool.svg';
+  '/cdn/ui/pen-tool.svg';
 
 export const QUESTION_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/question.svg';
+  '/cdn/ui/question.svg';
 
 export const INFO_ICON_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/info.svg';
+  '/cdn/ui/info.svg';
 
 export const ABOUT_HAPPY_ILLUSTRATION_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/ui/happy.svg';
+  '/cdn/ui/happy.svg';
 
 export const AWESOME_ILLUSTRATION_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/Illustrations/awesome.svg';
+  '/cdn/Illustrations/awesome.svg';
 
 export const INVESTMENT_HERO_ILLUSTRATION_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/Illustrations/investment-hero.svg';
+  '/cdn/Illustrations/investment-hero.svg';
 
 /**
  * PDF 导出用的中文字体。

@@ -266,7 +266,7 @@ const LEGACY_BOOKKEEPING_HISTORY_KEY = 'ledgerflow.assistant.chatHistory.bookkee
 const ASSISTANT_MODE_ORDER: AssistantMode[] = ['assistant', 'credit', 'investment'];
 
 const ASSISTANT_INTRO_ILLUSTRATION_URL =
-  'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/Illustrations/importing.svg';
+  '/cdn/Illustrations/importing.svg';
 
 function renderChatAvatar(kind: 'assistant' | 'user' | 'success') {
   if (kind === 'success') {

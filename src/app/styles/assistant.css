@@ -1706,7 +1706,7 @@
   width: 58px;
   height: 58px;
   flex: 0 0 auto;
-  background: url('https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/Illustrations/calculator.svg')
+  background: url('/cdn/Illustrations/calculator.svg')
     center / contain no-repeat;
 }
 

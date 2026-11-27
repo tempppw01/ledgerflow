@@ -254,7 +254,9 @@ describe('Investment assistant chat', () => {
     );
 
     expect(screen.getByRole('region', { name: 'AI 投资助手' })).toBeInTheDocument();
-    expect(welcomeIllustration?.src).toBe(INVESTMENT_HERO_ILLUSTRATION_URL);
+    // 用 getAttribute 而不是 .src:插图走同源相对路径(/cdn/...),而 img.src 的
+    // getter 会按文档 base URL 把它解析成绝对地址,直接比相对常量会假失败。
+    expect(welcomeIllustration?.getAttribute('src')).toBe(INVESTMENT_HERO_ILLUSTRATION_URL);
   });
 
   it('centers the compact empty state and shows a prompt', () => {
