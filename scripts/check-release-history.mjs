@@ -37,18 +37,34 @@ const { entries, estimated, source } = buildReleaseHistory({
   limit: HISTORY_LIMIT
 });
 
+/** 日期是从哪来的 —— 只有 "tag" 那部分是**核对过的**,其余是沿用/估算。 */
+function dateProvenance() {
+  const count = (kind) => entries.filter((entry) => entry.dateSource === kind).length;
+  return {
+    fromTag: count('tag'),
+    reused: count('committed'),
+    estimated: count('today')
+  };
+}
+
 if (committed === source) {
-  const dated = entries.filter((entry) => entry.publishedOn).length;
+  const dates = dateProvenance();
   console.log(
     `最近更新数据是最新的:${entries.length} 个版本 ` +
-      `(v${entries[0]?.version ?? '?'} … v${entries[entries.length - 1]?.version ?? '?'}),` +
-      `${dated} 条带日期。`
+      `(v${entries[0]?.version ?? '?'} … v${entries[entries.length - 1]?.version ?? '?'});` +
+      `日期:取自 tag ${dates.fromTag} 条 · 沿用已提交值 ${dates.reused} 条 · 按当天 ${dates.estimated} 条。`
   );
-  if (estimated.length > 0) {
-    // 放行,但要说清楚:这些日期是"沿用已提交值 / 当天"来的,不是 tag 的真实日期。
+  if (dates.fromTag < entries.length) {
+    // 说清楚,免得把这一行读成"日期也核对过了":CI 的 checkout 默认不取 tag。
     console.log(
-      `注意:${estimated.join(', ')} 本机取不到对应 tag,日期沿用已提交值/当天 —— ` +
-        '本机没有 tag 时无法核对这几个日期。'
+      `注意:只有那 ${dates.fromTag} 条的日期是本次核对过的` +
+        `(tag 取不到时只能沿用已提交值或按当天记)—— 见 docs/verified-invariants.md 的已知局限。`
+    );
+  }
+  if (estimated.length > 0) {
+    console.log(
+      `注意:${estimated.join(', ')} 本机取不到对应 tag,日期先按当天写入 —— ` +
+        '打完 tag 再跑一次 `npm run gen:release-history` 即可校准。'
     );
   }
   process.exit(0);

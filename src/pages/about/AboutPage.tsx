@@ -143,7 +143,10 @@ export function AboutPage() {
         ) : null}
       </section>
 
-      <section className="about-content-section about-releases" aria-labelledby="about-releases-heading">
+      <section
+        className="about-content-section about-releases"
+        aria-labelledby="about-releases-heading"
+      >
         <div className="about-releases-head">
           <p className="about-section-label">{t('about.releases.label')}</p>
           <h2 id="about-releases-heading">{t('about.releases.title')}</h2>
