@@ -109,6 +109,43 @@ const FLOATING_CHAT_KEYBOARD_STEP = 16;
 const FLOATING_CHAT_KEYBOARD_COARSE_STEP = 48;
 
 /**
+ * 浮窗尺寸档位。
+ *
+ * WCAG 2.5.7(拖拽移动,AA)要求拖拽之外有**单指、非拖拽**的入口;
+ * 而这个浮窗有宽度和高度**两个独立值**,给两条边各配一对按钮就是 4 个。
+ * 三个档位一次点击同时定下两个维度,按钮更少、也一步到位。
+ */
+const FLOATING_CHAT_SIZE_PRESETS = [
+  {
+    key: 'small',
+    width: 380,
+    height: 480,
+    labelKey: 'investmentAi.sizeSmall',
+    label: '小尺寸',
+    shortKey: 'investmentAi.sizeSmallShort',
+    short: '小'
+  },
+  {
+    key: 'medium',
+    width: 520,
+    height: 640,
+    labelKey: 'investmentAi.sizeMedium',
+    label: '中尺寸',
+    shortKey: 'investmentAi.sizeMediumShort',
+    short: '中'
+  },
+  {
+    key: 'large',
+    width: 720,
+    height: 820,
+    labelKey: 'investmentAi.sizeLarge',
+    label: '大尺寸',
+    shortKey: 'investmentAi.sizeLargeShort',
+    short: '大'
+  }
+] as const;
+
+/**
  * 浮窗某一轴能到多大。
  *
  * 公式与 `startFloatingResize` 里那一份**完全一致**:不能超过视口减两边留白,
@@ -1435,6 +1472,22 @@ export function InvestmentChatPanel({
     ? getFloatingAxisMax(FLOATING_CHAT_MIN_HEIGHT, floatingCurrent.top, window.innerHeight)
     : FLOATING_CHAT_MIN_HEIGHT;
 
+  /** 套用一个尺寸档位。钳位规则与拖拽/键盘共用,不会调出界面外的尺寸。 */
+  const applyFloatingSize = (preset: (typeof FLOATING_CHAT_SIZE_PRESETS)[number]) => {
+    const node = floatingPanelRef.current;
+    const rect = node ? node.getBoundingClientRect() : null;
+    const left = Math.round(rect?.left ?? FLOATING_CHAT_VIEWPORT_GUTTER);
+    const top = Math.round(rect?.top ?? FLOATING_CHAT_VIEWPORT_GUTTER);
+    const maxWidth = getFloatingAxisMax(FLOATING_CHAT_MIN_WIDTH, left, window.innerWidth);
+    const maxHeight = getFloatingAxisMax(FLOATING_CHAT_MIN_HEIGHT, top, window.innerHeight);
+    setFloatingBounds({
+      left,
+      top,
+      width: Math.min(maxWidth, Math.max(FLOATING_CHAT_MIN_WIDTH, preset.width)),
+      height: Math.min(maxHeight, Math.max(FLOATING_CHAT_MIN_HEIGHT, preset.height))
+    });
+  };
+
   /** 聚焦手柄时重量一次:此时面板早已落位,量到的是真值。 */
   const remeasureFloatingPanel = useCallback(() => {
     const node = floatingPanelRef.current;
@@ -1742,6 +1795,27 @@ export function InvestmentChatPanel({
               </div>
             </div>
             <div className="investment-chat-floating-head-actions">
+              {/*
+                * WCAG 2.5.7:尺寸拖拽的非拖拽入口。三个档位是**命令**而不是可切换状态,
+                * 所以不加 aria-pressed —— 用户拖过之后按"哪个档位生效"就会是假读数。
+                */}
+              <div
+                className="investment-chat-floating-size"
+                role="group"
+                aria-label={tf('investmentAi.sizeGroup', '浮窗大小')}
+              >
+                {FLOATING_CHAT_SIZE_PRESETS.map((preset) => (
+                  <button
+                    key={preset.key}
+                    type="button"
+                    className="investment-chat-floating-size-btn"
+                    aria-label={tf(preset.labelKey, preset.label)}
+                    onClick={() => applyFloatingSize(preset)}
+                  >
+                    {tf(preset.shortKey, preset.short)}
+                  </button>
+                ))}
+              </div>
               <Link
                 to="/assistant"
                 className="investment-chat-floating-expand"

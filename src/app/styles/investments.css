@@ -5675,6 +5675,42 @@
   animation: investment-chat-floating-in 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/*
+ * 浮窗尺寸档位按钮(WCAG 2.5.7 的点击式入口)。
+ * 每档 24×24,是 2.5.8 的底线;三个加起来也不到原来那对手柄宽。
+ */
+.investment-chat-floating-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-right: 4px;
+}
+
+.investment-chat-floating-size-btn {
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.investment-chat-floating-size-btn:hover {
+  color: var(--color-text);
+  border-color: var(--color-text-secondary);
+}
+
+.investment-chat-floating-size-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
 .investment-chat-floating-resize-handles {
   position: absolute;
   z-index: 8;

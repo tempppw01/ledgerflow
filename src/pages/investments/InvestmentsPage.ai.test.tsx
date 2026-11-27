@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Account } from '../../entities/account/types';
@@ -1157,5 +1157,39 @@ describe('Investment assistant chat', () => {
       expect(useAppPreferences.getState().investmentWatchlist[0]?.holdingShares).toBe(0)
     );
     expect(screen.queryByRole('button', { name: '撤销' })).not.toBeInTheDocument();
+  });
+
+  /*
+   * WCAG 2.5.7(拖拽移动,AA):这个浮窗有宽度和高度**两个独立值**,
+   * 给两条边各配一对按钮就是 4 个。三个尺寸档位一次点击同时定下两个维度,
+   * 按钮更少、也一步到位。它们走的是与拖拽/键盘同一套钳位。
+   */
+  it('尺寸档位按钮一次定下宽高,并且会被容器上限钳住', () => {
+    stubChatPanelRect();
+    const { container } = render(
+      <MemoryRouter>
+        <InvestmentChatPanel showHero={false} floating />
+      </MemoryRouter>
+    );
+    fireEvent.click(screen.getByRole('button', { name: '打开 AI 投资助手' }));
+
+    const panel = container.querySelector('.chat-investment-panel') as HTMLElement;
+    const group = screen.getByRole('group', { name: '浮窗大小' });
+    const small = within(group).getByRole('button', { name: '小尺寸' });
+    const medium = within(group).getByRole('button', { name: '中尺寸' });
+    const large = within(group).getByRole('button', { name: '大尺寸' });
+
+    fireEvent.click(medium);
+    expect(panel.style.width).toBe('520px');
+    expect(panel.style.height).toBe('640px');
+
+    fireEvent.click(small);
+    expect(panel.style.width).toBe('380px');
+    expect(panel.style.height).toBe('480px');
+
+    // 上限按"当前位置到视口边缘"算:768 - 100 - 16 = 652,820 要被钳到这里
+    fireEvent.click(large);
+    expect(panel.style.width).toBe('720px');
+    expect(panel.style.height).toBe('652px');
   });
 });
