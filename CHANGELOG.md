@@ -3,10 +3,20 @@
 > 这份文件由 `node scripts/generate-changelog.mjs` 从 `release-notes/` 生成,**不要手改**。
 > 每条右侧链接指向该版本的完整说明。
 
+## 0.51.x
+
+| 版本 | 说明 |
+| --- | --- |
+| [v0.51.0](release-notes/RELEASE_NOTES_v0.51.0.md) | 新:美股盘前 / 盘后 —— 标记 + 倒计时 |
+
 ## 0.50.x
 
 | 版本 | 说明 |
 | --- | --- |
+| [v0.50.58](release-notes/RELEASE_NOTES_v0.50.58.md) | 修:两条"看着改了、其实一个字都没生效"的窄屏规则,以及键盘看不到的焦点 |
+| [v0.50.57](release-notes/RELEASE_NOTES_v0.50.57.md) | 修:触摸端和"系统偏好"这一层,之前基本没管 |
+| [v0.50.56](release-notes/RELEASE_NOTES_v0.50.56.md) | 修:一批"看着没事、实际坏了"的样式问题 |
+| [v0.50.55](release-notes/RELEASE_NOTES_v0.50.55.md) | 修:6 处无障碍问题,其中两处是**功能坏了**,不只是"体验不好" |
 | [v0.50.54](release-notes/RELEASE_NOTES_v0.50.54.md) | 修:备注里带换行的账单,整笔交易会**静默消失** |
 | [v0.50.53](release-notes/RELEASE_NOTES_v0.50.53.md) | 修:「上传微信账单失败」还有一个漏网的情况 |
 | [v0.50.52](release-notes/RELEASE_NOTES_v0.50.52.md) | 修:新用户想导入账单,**找不到入口** |
