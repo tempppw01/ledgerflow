@@ -1080,7 +1080,6 @@ export function FinancialAnalysisPage() {
                     key={action.label}
                     type="button"
                     title={action.hint}
-                    aria-label={action.label}
                     onClick={action.onClick}
                   >
                     {action.label}
@@ -1143,7 +1142,6 @@ export function FinancialAnalysisPage() {
                 key={action.label}
                 type="button"
                 title={action.hint}
-                aria-label={action.label}
                 onClick={action.onClick}
               >
                 {action.label}
@@ -1203,7 +1201,6 @@ export function FinancialAnalysisPage() {
                 key={action.label}
                 type="button"
                 title={action.hint}
-                aria-label={action.label}
                 onClick={action.onClick}
               >
                 {action.label}
