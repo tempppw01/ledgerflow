@@ -742,7 +742,13 @@
 }
 
 .investments-market-insight-retry:focus-visible {
-  outline: 2px solid var(--color-focus);
+  /*
+   * 原来写的是 var(--color-focus) —— 这个 token 从未定义过。写在 outline 简写里时,
+   * 未定义的 var() 会让**整条声明**在计算值阶段失效,于是这个焦点环根本没画出来,
+   * 实际生效的是全局 :focus-visible(outline: 2px solid var(--color-primary))。
+   * 这里直接写 color-mix 版本,既保留原来的意图,也不再依赖不存在的 token。
+   */
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 

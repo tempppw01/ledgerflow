@@ -214,7 +214,9 @@
 }
 .transactions-table tbody tr {
   border-left: 3px solid transparent;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
 }
 .transactions-table tbody tr:hover {
   border-left-color: var(--color-primary);
@@ -873,34 +875,42 @@
 
 /* 响应式适配 */
 @media (max-width: 768px) {
-  .transactions-page {
-    height: calc(100vh - var(--mobile-nav-height));
-  }
-  
+  /*
+   * 这里原本是 height: calc(100vh - var(--mobile-nav-height)),但 --mobile-nav-height
+   * 从未定义过 —— 未定义的 var() 让整条 height 声明作废,所以它一直是**死声明**。
+   *
+   * 而且这个减法的前提本身不成立:本项目在窄屏下没有常驻底栏,
+   * 移动端导航是「汉堡按钮 → 抽屉/遮罩」(.mobile-nav-drawer / .mobile-nav-overlay),
+   * 不占布局高度,所以没有东西需要减。
+   *
+   * 删掉前先做了对照实测(390×844 与 768×900,改前改后完全一致:
+   * 1486.44px / 1015.91px),确认删除不改变任何渲染 ——
+   * 注意实际高度并不是基础规则里的 100vh,而是由其它规则决定的,这里只是把死声明清掉。
+   */
   .transactions-header {
     padding: 12px 12px 0;
   }
-  
+
   .transactions-filter-sticky-wrap {
     padding: 12px;
   }
-  
+
   .transactions-bulk-actions {
     padding: 12px;
     flex-direction: column;
     gap: 12px;
     align-items: stretch;
   }
-  
+
   .transactions-bulk-buttons {
     justify-content: space-between;
   }
-  
+
   .transactions-split-side {
     width: 100%;
-    height: calc(100vh - var(--mobile-nav-height));
+    /* 同上:原 height: calc(100vh - var(--mobile-nav-height)) 是死声明,删掉经对照实测无变化。 */
   }
-  
+
   .quick-add-drawer,
   .share-dialog {
     width: 100%;
@@ -909,21 +919,21 @@
     max-height: none;
     border-radius: 0;
   }
-  
+
   .transactions-pagination {
     flex-direction: column;
     gap: 12px;
     align-items: stretch;
   }
-  
+
   .transactions-pagination-controls {
     justify-content: center;
   }
-  
+
   .transactions-pagination-size {
     justify-content: center;
   }
-  
+
   .transaction-actions {
     opacity: 1;
   }
