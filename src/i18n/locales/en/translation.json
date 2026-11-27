@@ -3036,7 +3036,7 @@
     "unitDebtShort": "items",
     "income": {
       "title": "Monthly income",
-      "placeholder": "Enter your monthly after-tax income",
+      "placeholder": "Net income",
       "aria": "Manual monthly income",
       "save": "Save income"
     },
@@ -3071,7 +3071,7 @@
       },
       "noResult": "Nothing to return — try phrasing it differently.",
       "title": "AI ledger assistant",
-      "placeholder": "Just say it, e.g. “paid 300 on Huabei today” or “which debt first?”",
+      "placeholder": "Say it, I'll log it",
       "running": "Working…",
       "run": "Run",
       "thisAction": "This change",

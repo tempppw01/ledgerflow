@@ -3036,7 +3036,7 @@
     "unitDebtShort": "笔",
     "income": {
       "title": "月收入设置",
-      "placeholder": "输入每月税后收入",
+      "placeholder": "每月税后收入",
       "aria": "手动月收入",
       "save": "保存收入"
     },
@@ -3071,7 +3071,7 @@
       },
       "noResult": "没有可返回的结果，请换个说法再试。",
       "title": "AI 台账助手",
-      "placeholder": "直接说，例如“花呗今天还了 300”“哪笔最该先还”",
+      "placeholder": "说一句，我来记账",
       "running": "处理中...",
       "run": "执行",
       "thisAction": "本次操作",

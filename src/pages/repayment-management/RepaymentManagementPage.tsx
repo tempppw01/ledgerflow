@@ -3066,7 +3066,7 @@ export function RepaymentManagementPage() {
                 inputMode="decimal"
                 value={manualIncomeInput}
                 onChange={(event) => setManualIncomeInput(event.target.value)}
-                placeholder={tf('repayment.income.placeholder', '输入每月税后收入')}
+                placeholder={tf('repayment.income.placeholder', '每月税后收入')}
                 aria-label={tf('repayment.income.aria', '手动月收入')}
               />
             </label>

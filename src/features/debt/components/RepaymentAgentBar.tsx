@@ -194,7 +194,7 @@ export function RepaymentAgentBar(props: RepaymentAgentBarProps) {
             value={input}
             placeholder={tf(
               'repayment.agent.placeholder',
-              '直接说\uFF0C例如“花呗今天还了 300”“哪笔最该先还”'
+              '说一句\uFF0C我来记账'
             )}
             onChange={(event) => setInput(event.target.value)}
             disabled={running}

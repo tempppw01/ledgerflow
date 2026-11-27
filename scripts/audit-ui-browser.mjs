@@ -196,6 +196,8 @@ const AUDIT_FN = () => {
     coarseControlFont: [],
     // 单元格里的内容画到隔壁格子上(见下面判定处的说明)
     cellOverflow: [],
+    // placeholder 长到显示不全(只报告)
+    longPlaceholders: [],
     imageCount: 0,
     fieldCount: 0
   };
@@ -358,6 +360,38 @@ const AUDIT_FN = () => {
         });
         break;
       }
+    }
+  }
+
+  /*
+   * 占位提示被截断:placeholder 是"示例",不是文档,长到显示不全就失去意义,
+   * 而且用户看不到的那半句等于不存在。用 canvas 按控件自己的字体量出文字宽度,
+   * 再和控件的内容区宽度比。只报告、不致败 —— 它不违反任何 WCAG 条款。
+   *
+   * 注意这份审计只跑中文界面。英文界面里同一行的按钮更宽,输入框因此更窄
+   * (实测还款页那个输入框:英文内容区 98px,中文 126px)—— 改文案时两边都要量。
+   */
+  out.longPlaceholders = [];
+  for (const el of document.querySelectorAll('input[placeholder], textarea[placeholder]')) {
+    if (!visible(el)) continue;
+    const style = getComputedStyle(el);
+    const text = el.getAttribute('placeholder') || '';
+    if (!text) continue;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) continue;
+    ctx.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    const textWidth = ctx.measureText(text).width;
+    const content =
+      el.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);
+    if (content > 0 && textWidth > content + 1) {
+      out.longPlaceholders.push({
+        placeholder: text.slice(0, 30),
+        textWidth: Math.round(textWidth),
+        content: Math.round(content),
+        font: style.fontSize,
+        cls: String(el.className).split(' ').filter(Boolean).slice(0, 2).join('.')
+      });
     }
   }
 
@@ -560,6 +594,7 @@ const browser = await launchBrowser(chromium);
 const problems = [];
 const tinyTextFindings = [];
 const smallTargetFindings = [];
+const longPlaceholderFindings = [];
 const documentTitles = [];
 let checked = 0;
 
@@ -656,6 +691,15 @@ for (const [label, viewport] of VIEWPORTS) {
     }
 
     // 只报告、不致败的项
+    // 只报告、不致败的项
+    if (audit.longPlaceholders.length) {
+      longPlaceholderFindings.push({
+        viewport: label,
+        route,
+        items: audit.longPlaceholders
+      });
+    }
+
     if (audit.smallTargets.length) {
       smallTargetFindings.push({
         viewport: label,
@@ -676,10 +720,11 @@ const report = {
   base,
   checked,
   problemCount: problems.length,
-  note: '字号 < 11px(tinyText)、触控目标 < 44px(smallTargets)只报告、不计入 problemCount —— 前者是设计取舍,后者低于的是 AAA/平台指南线而不是 AA(2.5.8 只要求 24×24)',
+  note: '字号 < 11px(tinyText)、触控目标 < 44px(smallTargets)、placeholder 显示不全(longPlaceholders)只报告、不计入 problemCount —— 前者是设计取舍,后者低于的是 AAA/平台指南线而不是 AA(2.5.8 只要求 24×24),placeholder 不违反任何 WCAG 条款',
   problems,
   tinyText: tinyTextFindings,
   smallTargets: smallTargetFindings,
+  longPlaceholders: longPlaceholderFindings,
   documentTitles: summarizeTitles(documentTitles)
 };
 console.log(JSON.stringify(report, null, 2));
