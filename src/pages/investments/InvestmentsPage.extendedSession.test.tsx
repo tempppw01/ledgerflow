@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAiSettings } from '../../shared/store/useAiSettings';
@@ -12,7 +12,19 @@ import { InvestmentsPage } from './InvestmentsPage';
  *   1. 有 `extended` 时,卡片上必须出现「盘前/盘后」**和 ETF 代码** —— 不写 ETF 代码,
  *      用户会以为是指数本身在动;
  *   2. `extended` 为 null 时(不在盘前/盘后时段),这条**不显示** —— 不能展示过时数据。
+ *
+ * 断言一律限定在 `.investments-global-quote-extended` 这一行里:页面别处也会出现
+ * 「盘前/盘后」字样(例如全球市场时钟的盘前盘后倒计时面板),按整页查字会误判，
+ * 也会在无关功能上线时无故变红。
  */
+
+const EXTENDED_ROW = '.investments-global-quote-extended';
+
+function extendedRow(container: HTMLElement) {
+  const row = container.querySelector(EXTENDED_ROW);
+  expect(row).not.toBeNull();
+  return within(row as HTMLElement);
+}
 
 const financeStoreMock = vi.hoisted(() => ({
   state: { accounts: [], transactions: [] }
@@ -158,17 +170,19 @@ describe('美股盘前/盘后显示', () => {
       ]
     });
 
-    render(
+    const { container } = render(
       <MemoryRouter>
         <InvestmentsPage />
       </MemoryRouter>
     );
 
     await waitFor(() => {
-      expect(screen.getByText('盘前')).toBeInTheDocument();
+      expect(container.querySelector(EXTENDED_ROW)).not.toBeNull();
     });
+    const row = extendedRow(container);
+    expect(row.getByText('盘前')).toBeInTheDocument();
     // ETF 代码必须出现 —— 否则会被误认为指数本身在涨跌
-    expect(screen.getByText('SPY')).toBeInTheDocument();
+    expect(row.getByText('SPY')).toBeInTheDocument();
   });
 
   it('盘后:显示「盘后」', async () => {
@@ -188,15 +202,16 @@ describe('美股盘前/盘后显示', () => {
       ]
     });
 
-    render(
+    const { container } = render(
       <MemoryRouter>
         <InvestmentsPage />
       </MemoryRouter>
     );
 
     await waitFor(() => {
-      expect(screen.getByText('盘后')).toBeInTheDocument();
+      expect(container.querySelector(EXTENDED_ROW)).not.toBeNull();
     });
+    expect(extendedRow(container).getByText('盘后')).toBeInTheDocument();
   });
 
   it('不在盘前/盘后时(extended 为 null)不显示这条', async () => {
@@ -206,7 +221,7 @@ describe('美股盘前/盘后显示', () => {
       quotes: [usQuote(null)]
     });
 
-    render(
+    const { container } = render(
       <MemoryRouter>
         <InvestmentsPage />
       </MemoryRouter>
@@ -215,7 +230,6 @@ describe('美股盘前/盘后显示', () => {
     await waitFor(() => {
       expect(screen.getAllByText(/标普 500/).length).toBeGreaterThan(0);
     });
-    expect(screen.queryByText('盘前')).not.toBeInTheDocument();
-    expect(screen.queryByText('盘后')).not.toBeInTheDocument();
+    expect(container.querySelector(EXTENDED_ROW)).toBeNull();
   });
 });

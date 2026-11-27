@@ -2390,10 +2390,20 @@
       "now": "Now",
       "summaryAria": "Collapsed global market timeline",
       "timelineTitle": "Trading timeline",
-      "timelineHint": "Regular session · shown in your time zone",
+      "timelineHint": "Regular session · shown in your time zone · US pre/after-hours have their own countdown",
       "allClosed": "All regular sessions are closed right now",
       "tradingSuffix": " trading",
       "nameSeparator": ", "
+    },
+    "usExtended": {
+      "title": "US pre-market & after-hours countdown",
+      "hint": "Eastern Time · pre 04:00–09:30 · after 16:00–20:00",
+      "pre": "Pre-market",
+      "after": "After-hours",
+      "active": "Live · {time} left",
+      "pendingToday": "Starts in {time}",
+      "pendingNext": "Next {name} in {time}",
+      "weekendNote": "Weekend — both countdowns point to the next trading day"
     },
     "notice": {
       "holidayEyebrow": "Market holiday",

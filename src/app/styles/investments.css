@@ -1725,6 +1725,18 @@
   transform: translateX(-100%);
 }
 
+/*
+ * 窄屏上 7 个刻度标签会挤到一起:实测 375px 起 00:00↔04:00 与 20:00↔24:00 的间距
+ * 就已经是 -0.5px(贴住,读起来是 "00:0004:00"),320px 时更是直接压掉 6.7px。
+ * 所以 380px 以下隔一个标一个:00 / 08 / 16 / 24,间距翻倍;24 小时轴留 4 个刻度
+ * 照样够认。390px 实测间距正常,不动主流机型。
+ */
+@media (max-width: 380px) {
+  .investments-global-timeline-axis span:nth-child(2n) {
+    display: none;
+  }
+}
+
 .investments-global-timeline-lane {
   display: grid;
   grid-template-columns: 76px minmax(0, 1fr);
@@ -1774,6 +1786,24 @@
 .investments-global-timeline-lane.is-open .investments-global-timeline-track i {
   background: var(--market-color);
   box-shadow: 0 0 10px color-mix(in srgb, var(--market-color) 58%, transparent);
+  opacity: 1;
+}
+
+/*
+ * 盘前/盘后段。这里刻意不用「更浅的同色」做区分:同一色系只改透明度,在低对比
+ * 主题和色觉障碍下会跟常规段糊成一条。改成上下各收 2px 的窄轨 —— 高度差异是
+ * 不依赖颜色的第二重线索,颜色只是补充。常规段仍然压在窄轨之上,重叠处不吃亏。
+ */
+.investments-global-timeline-track i.is-extended {
+  top: 2px;
+  bottom: 2px;
+  background: color-mix(in srgb, var(--market-color) 44%, transparent);
+  opacity: 1;
+}
+
+.investments-global-timeline-lane.is-open .investments-global-timeline-track i.is-extended {
+  background: color-mix(in srgb, var(--market-color) 52%, transparent);
+  box-shadow: none;
   opacity: 1;
 }
 

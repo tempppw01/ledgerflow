@@ -907,8 +907,93 @@ async function findInertGridRules(page, cap = 8) {
   }, cap);
 }
 
-async function findTouchHoverReactive(page, cap = 10) {
-  const cands = await page.evaluate(
+/*
+ * 折叠起来的内容,上面那个检查是看不见的。
+ *
+ * 时间轴的刻度就是这种情况:默认折叠,不点开那 7 个 `<span>` 根本不在 DOM 里,
+ * 于是「叠字」这个缺陷在 69 个组合里**一次都不会被报出来** —— 这和 focusWalk
+ * 第一版只跑桌面档是同一类错误(写了一检查,却抓不到它要抓的东西)。
+ *
+ * 所以:量到没问题时,把页面上「展开」类的开关点开再量一遍。
+ * 限制在 main 里、名字像展开、最多 3 个 —— 开别的东西(模态、菜单)可能引入
+ * 与本次检查无关的假阳性,而这些开关点开只是把更多内容渲染出来。
+ */
+async function expandDisclosures(page, max = 3) {
+  const buttons = page.locator('main button[aria-expanded="false"]');
+  const count = Math.min(await buttons.count(), max);
+  let opened = 0;
+  for (let i = 0; i < count; i += 1) {
+    const button = buttons.nth(i);
+    const name = ((await button.getAttribute('aria-label')) || (await button.innerText()) || '').trim();
+    if (!/展开|更多|显示|show|expand|more/i.test(name)) continue;
+    await button.click({ timeout: 2000 }).catch(() => undefined);
+    await page.waitForTimeout(350);
+    opened += 1;
+  }
+  return opened;
+}
+
+/*
+ * 绝对定位的文字标签互相压住。
+ *
+ * 起因:全球市场时间轴的 24 小时刻度是 7 个 `position: absolute` + `translateX(-50%)`
+ * 的 `<span>`,视口窄到 375px 时首尾两个就已经贴住(-0.5px),320px 时压掉 6.7px:
+ * 「00:00」的尾数被「04:00」盖住,读出来是错的数。单元测试碰不到 —— 标签是绝对定位,
+ * 有没有叠在一起只有渲染完才知道。
+ *
+ * 判据刻意收得很紧,避免把「故意叠」的设计(头像角标、未读小红点)算进来:
+ *   1. 元素是 absolute/fixed,自己**直接**写了文字(包裹层不算),文字 ≤ 24 字;
+ *   2. 同一个父级下两个这样的元素,包围盒在 x 与 y 上**都**重叠 > 1px;
+ *   3. 两者都不是 `visibility: hidden` / `opacity: 0`(那是刻意藏起来的)。
+ * 小红点、角标里通常没有文字(或只有一个字),而且父级不同,不会命中。
+ */
+async function findOverlappingLabels(page, cap = 8) {
+  return page.evaluate((max) => {
+    const byParent = new Map();
+    for (const el of document.querySelectorAll('body *')) {
+      const cs = getComputedStyle(el);
+      if (cs.position !== 'absolute' && cs.position !== 'fixed') continue;
+      if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') continue;
+      const ownText = [...el.childNodes].some(
+        (n) => n.nodeType === 3 && n.textContent.trim().length > 0
+      );
+      if (!ownText) continue;
+      const text = (el.textContent || '').trim();
+      if (!text || text.length > 24) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width < 2 || r.height < 2) continue;
+      if (r.bottom < 0 || r.right < 0 || r.top > window.innerHeight * 3) continue;
+      const parent = el.parentElement;
+      if (!parent) continue;
+      if (!byParent.has(parent)) byParent.set(parent, []);
+      byParent.get(parent).push({ text, r });
+    }
+
+    const hits = [];
+    for (const [parent, list] of byParent) {
+      for (let i = 0; i < list.length; i += 1) {
+        for (let j = i + 1; j < list.length; j += 1) {
+          const a = list[i].r;
+          const b = list[j].r;
+          const dx = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+          const dy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+          if (dx <= 1 || dy <= 1) continue;
+          const pCls = typeof parent.className === 'string' ? parent.className : '';
+          hits.push({
+            parent: `${parent.tagName.toLowerCase()}.${pCls.split(' ').filter(Boolean).slice(0, 2).join('.')}`,
+            a: list[i].text.slice(0, 16),
+            b: list[j].text.slice(0, 16),
+            overlap: `${dx.toFixed(1)}x${dy.toFixed(1)}px`
+          });
+          if (hits.length >= max) return hits;
+        }
+      }
+    }
+    return hits;
+  }, cap);
+}
+
+async function findTouchHoverReactive(page, cap = 10) {  const cands = await page.evaluate(
     ({ max, props }) => {
       const SEL =
         'button, a[href], [role="button"], li, tr, [class*="card"], [class*="btn"], [class*="item"], [class*="row"]';
@@ -1025,6 +1110,7 @@ const longPlaceholderFindings = [];
 const touchHoverFindings = [];
 const inertGridFindings = [];
 const focusWalkFindings = [];
+const overlapFindings = [];
 const documentTitles = [];
 let checked = 0;
 
@@ -1098,6 +1184,19 @@ for (const [label, viewport] of VIEWPORTS) {
       focusWalkFindings.push({ viewport: label, route, items: focusHits });
     }
 
+    /*
+     * 绝对定位的文字互相压住。先量折叠态,干净的话把「展开」类开关点开再量一遍
+     * —— 时间轴刻度只在展开后才存在(见 expandDisclosures 的说明)。
+     */
+    let overlapHits = await findOverlappingLabels(page);
+    if (!overlapHits.length) {
+      const opened = await expandDisclosures(page);
+      if (opened) overlapHits = await findOverlappingLabels(page);
+    }
+    if (overlapHits.length) {
+      overlapFindings.push({ viewport: label, route, items: overlapHits });
+    }
+
     if (audit.tinyText.length) {
       tinyTextFindings.push({ viewport: label, route, items: audit.tinyText });
     }
@@ -1130,7 +1229,9 @@ for (const [label, viewport] of VIEWPORTS) {
       // 窄屏覆盖写了 grid 专属属性、父级却是 flex:这条声明等于没写
       inertHits.length ||
       // 键盘焦点落到看不见的地方(2.4.7)/ 被吸顶内容完全盖住(2.4.11)
-      focusHits.length
+      focusHits.length ||
+      // 绝对定位的文字标签互相压住:字读出来是错的(时间轴刻度、坐标轴标签)
+      overlapHits.length
     ) {
       problems.push({
         viewport: label,
@@ -1148,6 +1249,7 @@ for (const [label, viewport] of VIEWPORTS) {
         touchHoverReactive: hoverHits,
         inertGridRules: inertHits,
         focusWalk: focusHits,
+        overlappingLabels: overlapHits,
         a11y: {
           lang: audit.lang,
           h1Count: audit.h1Count,
@@ -1194,7 +1296,7 @@ const report = {
   base,
   checked,
   problemCount: problems.length,
-  note: '字号 < 11px(tinyText)、触控目标 < 44px(smallTargets,只在触屏档位算)、placeholder 显示不全(longPlaceholders)只报告、不计入 problemCount —— 44px 是 AAA/平台指南线而不是 AA(2.5.8 只要求 24×24,那一项另算且致败),字号与 placeholder 是设计取舍/不违反 WCAG 条款。touchHoverReactive(触摸端悬停粘住)、inertGridRules(@media 里写了 grid 专属属性但父级是 flex,声明等于没写)、focusWalk(键盘焦点不可见 2.4.7 / 被吸顶内容完全遮住 2.4.11,每条路由最多走 60 次 Tab)是致败项',
+  note: '字号 < 11px(tinyText)、触控目标 < 44px(smallTargets,只在触屏档位算)、placeholder 显示不全(longPlaceholders)只报告、不计入 problemCount —— 44px 是 AAA/平台指南线而不是 AA(2.5.8 只要求 24×24,那一项另算且致败),字号与 placeholder 是设计取舍/不违反 WCAG 条款。touchHoverReactive(触摸端悬停粘住)、inertGridRules(@media 里写了 grid 专属属性但父级是 flex,声明等于没写)、focusWalk(键盘焦点不可见 2.4.7 / 被吸顶内容完全遮住 2.4.11,每条路由最多走 60 次 Tab)、overlappingLabels(绝对定位的文字标签互相压住 —— 先量折叠态,干净就点开「展开」类开关再量一遍)是致败项',
   problems,
   tinyText: tinyTextFindings,
   smallTargets: smallTargetFindings,
@@ -1202,6 +1304,7 @@ const report = {
   touchHoverReactive: touchHoverFindings,
   inertGridRules: inertGridFindings,
   focusWalk: focusWalkFindings,
+  overlappingLabels: overlapFindings,
   documentTitles: summarizeTitles(documentTitles)
 };
 console.log(JSON.stringify(report, null, 2));

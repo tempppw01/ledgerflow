@@ -35,6 +35,8 @@ node ./node_modules/vitest/vitest.mjs run --config vitest.config.ts src/shared/s
 | `transactions/hooks/dateRangePresets.test.ts` | 本月/近 30 天/近 3 个月的边界(闰年、跨月、跨年),上个月最后一天不能落进本月                      |
 | `shared/lib/subscriptionSchedule.test.ts`     | 续费推进按 UTC 日历运算(负时区不会跳月)、纯日期进纯日期出、时区无关                             |
 | `features/assistant/model/weeklyExpenseTrend.test.ts` | 「本周 / 上周」按本地日历日分桶(0–6 / 7–13 天),**不按行号切**;乱序 + 稀疏数据(本周 2 笔、上周 5 笔)也要算对 |
+| `features/investments/model/usExtendedSession.test.ts` | 美股盘前/盘后倒计时:盘前 04:00–09:30、盘后 16:00–20:00(美东);**周五收盘后的「距下个盘前」是 66 小时不是 18**;09:30 整点算盘前结束、16:00 整点算盘后开始;夏令时切换日 09:00 ET 仍是盘前 |
+| `features/investments/components/UsExtendedSessionStrip.test.tsx` | 盘前盘后条:状态写在文字里(进行中 / 距开始 / 距下个盘前),**不加 `aria-live` 也不加 `role="timer"`** —— 每秒播报倒计时会淹没读屏器 |
 
 ## 状态与分类身份
 
@@ -960,8 +962,8 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 
 ## 浏览器端页面体检(断言不了的那一类)
 
-`npm run audit:ui` 会把**全部静态路由** × 桌面(1440)/ 移动(390)跑一遍(当前 23 × 2 = **46 个组合**),
-量的是**只有真的渲染出来才存在**的一些事:
+`npm run audit:ui` 会把**全部静态路由** × 桌面(1440)/ 移动(390)/ 窄屏(320)跑一遍
+(当前 23 × 3 = **69 个组合**),量的是**只有真的渲染出来才存在**的一些事:
 
 **覆盖清单必须与路由对齐** —— 这条以前是手工核对的,于是漏掉了三条真实页面
 (`/transactions/new`、`/settings`、`/tags`),而那时「36 个组合、0 个问题」打印得完全正常:
@@ -976,6 +978,9 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 | 没有可读名称的 button / a              | 无障碍问题,只在 DOM 里                                           |
 | 每个路由新产生的 console error         | 只有真跑起来才有                                                 |
 | 字号 < 11px 的纯文本节点               | 只报告不计失败,看趋势                                            |
+| `touchHoverReactive`:触屏点过之后一直亮 | `:hover` 漏了 `@media (hover: hover)` 守卫,**只有触摸端**才复现  |
+| `inertGridRules`:`@media` 里写 grid 专属属性、父级却是 flex | 声明无效**不体现在 computed style** 上,只有父级布局 + 几何能证明 |
+| `focusWalk`:Tab 到看不见 / 被吸顶盖住的地方 | 焦点可见性(2.4.7)与遮挡(2.4.11)是运行时几何,不存在于源码里 |
 
 发现过的问题:`/balance-changes` 整页被内容最小宽度顶到 545px、右半侧被裁(见 v0.48.0 说明)。
 

@@ -108,7 +108,12 @@ import {
   type InvestmentMarketInsight
 } from './investmentAi';
 import { buildTimeContext } from '../../features/assistant/workbench/workbenchUtils';
+import { UsExtendedSessionStrip } from '../../features/investments/components/UsExtendedSessionStrip';
 import { writeCachedMarketContext } from '../../features/investments/model/investmentMarketContext';
+import {
+  getTimeZoneOffsetMinutes,
+  getZonedClock
+} from '../../features/investments/model/marketClock';
 
 const POSITION_CATEGORY_LABELS: Record<InvestmentCategory, string> = {
   cash: '现金理财',
@@ -1367,6 +1372,11 @@ type GlobalMarketDefinition = {
   timeZone: string;
   color: string;
   sessions: Array<{ start: number; end: number }>;
+  /**
+   * 盘前/盘后等扩展时段。只有美股有(指数没有这两段交易,后端用对应 ETF 代替)。
+   * 时间轴会把它们画成浅色段,和常规时段的实心段区分开。
+   */
+  extendedSessions?: Array<{ start: number; end: number; session: 'pre' | 'after' }>;
 };
 
 const GLOBAL_MARKETS: GlobalMarketDefinition[] = [
@@ -1454,59 +1464,19 @@ const GLOBAL_MARKETS: GlobalMarketDefinition[] = [
     flag: '🇺🇸',
     timeZone: 'America/New_York',
     color: '#3b82f6',
-    sessions: [{ start: 9 * 60 + 30, end: 16 * 60 }]
+    sessions: [{ start: 9 * 60 + 30, end: 16 * 60 }],
+    // 与 model/usExtendedSession.ts 里的 US_EXTENDED_WINDOWS 保持一致
+    extendedSessions: [
+      { start: 4 * 60, end: 9 * 60 + 30, session: 'pre' },
+      { start: 16 * 60, end: 20 * 60, session: 'after' }
+    ]
   }
 ];
 
 const AUTO_REFRESH_MARKET_IDS = new Set(['cn', 'jp', 'kr', 'us']);
 
-function getZonedClock(now: Date, timeZone: string) {
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hourCycle: 'h23'
-  });
-  const values = Object.fromEntries(
-    formatter
-      .formatToParts(now)
-      .filter((part) => part.type !== 'literal')
-      .map((part) => [part.type, Number(part.value)])
-  );
-  const year = values.year || now.getUTCFullYear();
-  const month = values.month || now.getUTCMonth() + 1;
-  const day = values.day || now.getUTCDate();
-  const hour = values.hour || 0;
-  const minute = values.minute || 0;
-  const second = values.second || 0;
-  return {
-    year,
-    month,
-    day,
-    hour,
-    minute,
-    second,
-    weekday: new Date(Date.UTC(year, month - 1, day)).getUTCDay(),
-    minutes: hour * 60 + minute + second / 60
-  };
-}
-
-function getTimeZoneOffsetMinutes(now: Date, timeZone: string) {
-  const zoned = getZonedClock(now, timeZone);
-  const asUtc = Date.UTC(
-    zoned.year,
-    zoned.month - 1,
-    zoned.day,
-    zoned.hour,
-    zoned.minute,
-    zoned.second
-  );
-  return (asUtc - now.getTime()) / 60000;
-}
+/* getZonedClock / getTimeZoneOffsetMinutes 已抽到 model/marketClock.ts ——
+ * 美股的盘前盘后倒计时也要用同一套换算,复制一份就会出现"时区算得不一样"。 */
 
 function getGlobalMarketState(market: GlobalMarketDefinition, now: Date, tf: TfFallback) {
   const clock = getZonedClock(now, market.timeZone);
@@ -1626,19 +1596,21 @@ function getMarketClosureNotice(
   };
 }
 
-function buildViewerTimelineSegments(
-  market: GlobalMarketDefinition,
-  now: Date,
-  viewerTimeZone: string
+/**
+ * 把「交易所当地当天第几分钟」的时间段换算成「当前时区当天第几分钟」。
+ *
+ * 跨日要画三份(-1440 / 0 / +1440)再裁到 0–1440:否则「纽约 09:30」在 UTC+8 会落到
+ * 前一天的 22:30,时间轴上直接看不见。常规时段和盘前盘后走的是同一套换算,
+ * 所以抽出来 —— 两份实现迟早会有一份忘了跨日。
+ */
+function toViewerDaySegments(
+  sessions: Array<{ key: string; start: number; end: number }>,
+  shift: number
 ) {
-  const viewerOffset = getTimeZoneOffsetMinutes(now, viewerTimeZone);
-  const marketOffset = getTimeZoneOffsetMinutes(now, market.timeZone);
-  const shift = viewerOffset - marketOffset;
-
-  return market.sessions.flatMap((session, sessionIndex) =>
+  return sessions.flatMap((session) =>
     [-1440, 0, 1440]
       .map((dayShift) => ({
-        key: `${sessionIndex}-${dayShift}`,
+        key: `${session.key}-${dayShift}`,
         start: session.start + shift + dayShift,
         end: session.end + shift + dayShift
       }))
@@ -1648,6 +1620,37 @@ function buildViewerTimelineSegments(
         start: Math.max(0, segment.start),
         end: Math.min(1440, segment.end)
       }))
+  );
+}
+
+function viewerShiftMinutes(now: Date, market: GlobalMarketDefinition, viewerTimeZone: string) {
+  return (
+    getTimeZoneOffsetMinutes(now, viewerTimeZone) - getTimeZoneOffsetMinutes(now, market.timeZone)
+  );
+}
+
+function buildViewerTimelineSegments(
+  market: GlobalMarketDefinition,
+  now: Date,
+  viewerTimeZone: string
+) {
+  return toViewerDaySegments(
+    market.sessions.map((session, index) => ({ key: `s${index}`, ...session })),
+    viewerShiftMinutes(now, market, viewerTimeZone)
+  );
+}
+
+/** 盘前/盘后的浅色段(只有美股有;没有扩展时段的市场返回空数组) */
+function buildViewerExtendedSegments(
+  market: GlobalMarketDefinition,
+  now: Date,
+  viewerTimeZone: string
+) {
+  const extended = market.extendedSessions ?? [];
+  if (!extended.length) return [];
+  return toViewerDaySegments(
+    extended.map((session) => ({ key: `x-${session.session}`, ...session })),
+    viewerShiftMinutes(now, market, viewerTimeZone)
   );
 }
 
@@ -1774,6 +1777,16 @@ function GlobalMarketClock() {
                 {market.flag} {tf(market.nameKey || '', market.name)}
               </span>
               <div className="investments-global-timeline-track">
+                {buildViewerExtendedSegments(market, now, viewerTimeZone).map((segment) => (
+                  <i
+                    key={segment.key}
+                    className="is-extended"
+                    style={{
+                      left: `${(segment.start / 1440) * 100}%`,
+                      width: `${((segment.end - segment.start) / 1440) * 100}%`
+                    }}
+                  />
+                ))}
                 {buildViewerTimelineSegments(market, now, viewerTimeZone).map((segment) => (
                   <i
                     key={segment.key}
@@ -1807,9 +1820,11 @@ function GlobalMarketClock() {
       <p className="investments-global-clock-note">
         {tf(
           'investments.clock.timelineHint',
-          '常规交易时段 · 自动换算当前时区 · 不含节假日与盘前盘后'
+          '常规交易时段 · 已换算当前时区 · 美股另标盘前盘后倒计时'
         )}
       </p>
+
+      <UsExtendedSessionStrip now={now} />
     </div>
   );
 }

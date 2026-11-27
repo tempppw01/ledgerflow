@@ -2390,10 +2390,20 @@
       "now": "现在",
       "summaryAria": "折叠的全球市场时间轴",
       "timelineTitle": "交易时间轴",
-      "timelineHint": "常规交易时段 · 已换算当前时区",
+      "timelineHint": "常规交易时段 · 已换算当前时区 · 美股另标盘前盘后倒计时",
       "allClosed": "当前常规交易时段均已休市",
       "tradingSuffix": "正在交易",
       "nameSeparator": "、"
+    },
+    "usExtended": {
+      "title": "美股盘前盘后倒计时",
+      "hint": "美东时间 · 盘前 04:00–09:30 · 盘后 16:00–20:00",
+      "pre": "盘前",
+      "after": "盘后",
+      "active": "进行中 · 剩余 {time}",
+      "pendingToday": "距开始 {time}",
+      "pendingNext": "距下个{name} {time}",
+      "weekendNote": "周末休市,两个倒计时都指向下个交易日"
     },
     "notice": {
       "holidayEyebrow": "休市公告",

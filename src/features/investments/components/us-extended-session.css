@@ -1,0 +1,125 @@
+/*
+ * 美股盘前 / 盘后:标记 + 倒计时。
+ *
+ * 数字必须用等宽数字(tabular-nums):倒计时每秒重绘,比例数字会让整行左右抖,
+ * 像在跳。全站数字都走 --font-number,这里保持一致。
+ *
+ * 所有颜色都从 token 混出来,不写死色值 —— 深浅两套主题都要能用。
+ * 这一段没有任何 :hover 样式(它不可点击),所以不需要 @media (hover: hover) 守卫。
+ */
+.us-extended {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 82%, transparent);
+}
+
+.us-extended-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.us-extended-eyebrow {
+  color: var(--color-text-primary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.us-extended-hint {
+  color: var(--color-text-tertiary);
+  font-size: 10.5px;
+}
+
+.us-extended-slots {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.us-extended-slot {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--color-bg-elevated) 70%, transparent);
+}
+
+.us-extended-slot-head {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.us-extended-slot strong {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  color: var(--color-text-primary);
+  font-size: 11.5px;
+}
+
+.us-extended-window {
+  color: var(--color-text-tertiary);
+  font-family: var(--font-number);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.us-extended-countdown {
+  color: var(--color-text-secondary);
+  font-family: var(--font-number);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+/* 正在交易的那一段:边框换成市场色 + 一个实心点,让"现在就开着"一眼可见 */
+.us-extended-slot.is-active {
+  border-color: color-mix(in srgb, #3b82f6 42%, var(--color-border-light));
+  background: color-mix(in srgb, #3b82f6 9%, var(--color-bg-elevated));
+}
+
+.us-extended-slot.is-active strong::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3b82f6;
+  content: '';
+}
+
+.us-extended-slot.is-active .us-extended-countdown {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+/* 今天还没开始 / 已经过去:弱化,但文字仍然是正文色,不靠颜色深浅传达信息 */
+.us-extended-slot.is-later .us-extended-countdown {
+  color: var(--color-text-tertiary);
+}
+
+.us-extended-note {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: 10.5px;
+}
+
+@media (max-width: 520px) {
+  .us-extended-slots {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
