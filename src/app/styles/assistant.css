@@ -123,7 +123,7 @@
     var(--color-primary-bg) 0%,
     color-mix(in srgb, var(--color-primary-bg) 80%, var(--color-bg)) 100%
   );
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   border: 1px solid var(--color-primary-border);
 }
 
@@ -160,7 +160,7 @@
   box-shadow:
     0 5px 15px color-mix(in srgb, var(--color-text) 8%, transparent),
     inset 0 1px 0 color-mix(in srgb, white 60%, transparent);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: var(--font-xs);
   font-weight: 700;
 }
@@ -237,7 +237,7 @@
   width: 20px;
   height: 20px;
   place-items: center;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 14px;
   animation: chat-mode-spark 2.8s ease-in-out infinite;
 }
@@ -250,7 +250,7 @@
   margin-right: 7px;
   place-items: center;
   border-radius: 50%;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: color-mix(in srgb, var(--color-primary-bg) 75%, transparent);
   animation: chat-mode-spark 2.8s ease-in-out infinite;
 }
@@ -332,7 +332,7 @@
 .chat-investment-starter-prompts button:focus-visible {
   border-color: color-mix(in srgb, var(--color-primary) 48%, var(--color-border-light));
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-investment-starter-prompts button:disabled {
@@ -359,7 +359,7 @@
 }
 
 .chat-investment-mode-content .investments-ai-links .button-with-icon:hover {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-investment-mode-content .investments-ai-composer {
@@ -512,7 +512,7 @@
 .chat-icon-topbar-btn:hover {
   transform: translateY(-1px);
   border-color: var(--color-primary-border);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-icon-topbar-btn:active {
@@ -522,7 +522,7 @@
 .chat-icon-topbar-btn.is-active {
   border-color: var(--color-primary-border);
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-clear-btn {
@@ -538,7 +538,7 @@
 
 .chat-clear-btn:hover:not(:disabled) {
   border-color: var(--color-primary-border);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-clear-btn:disabled {
@@ -591,7 +591,7 @@
 
 .chat-model-btn:hover {
   border-color: var(--color-primary-border);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-model-arrow {
@@ -623,7 +623,7 @@
 .chat-model-trigger.is-open {
   border-color: var(--color-primary-border);
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
@@ -659,7 +659,7 @@
 
 .chat-model-icon-btn:hover {
   border-color: var(--color-primary-border);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-model-inline-label {
@@ -731,7 +731,7 @@
 
 .chat-model-option.active {
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-model-option-glyph {
@@ -835,7 +835,7 @@
 }
 
 .chat-investment-stage span {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 12px;
   font-weight: 700;
 }
@@ -979,7 +979,7 @@
 .chat-msg-avatar-system {
   background: var(--color-success-bg);
   border-color: var(--color-success-border);
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-weight: 700;
 }
 
@@ -1018,7 +1018,7 @@
 }
 
 .chat-msg-content-rich strong {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 /* ---------- Markdown Rendering ---------- */
@@ -1054,7 +1054,7 @@
 }
 
 .chat-md-list li::marker {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-md-list li + li {
@@ -1152,7 +1152,7 @@
 }
 
 .chat-auto-card strong {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .chat-auto-card button {
@@ -1162,7 +1162,7 @@
   border: 1px solid var(--color-success-border);
   border-radius: var(--radius-md);
   background: var(--color-success-bg);
-  color: var(--color-success);
+  color: var(--color-success-text);
   cursor: pointer;
   transition: all 150ms ease;
 }
@@ -1203,7 +1203,7 @@
   border: 1px solid var(--color-primary-border);
   border-radius: var(--radius-md);
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: var(--font-sm);
   text-decoration: none;
   transition: all 150ms ease;
@@ -1297,7 +1297,7 @@
 .chat-bill-preview h3 {
   margin: 0 0 var(--space-3) 0;
   font-size: var(--font-base);
-  color: var(--color-success);
+  color: var(--color-success-text);
   display: flex;
   align-items: center;
   gap: var(--space-1);
@@ -1311,7 +1311,7 @@
   border-radius: var(--radius-full);
   background: var(--color-success-bg);
   border: 1px solid var(--color-success-border);
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-weight: normal;
   margin-left: var(--space-1);
 }
@@ -1356,7 +1356,7 @@
 
 .chat-preview-toolbar > button:hover {
   border-color: var(--color-primary-border);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-bill-preview > button {
@@ -1402,7 +1402,7 @@
   font-family: var(--font-number);
   font-size: 38px;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   line-height: 1;
   margin-bottom: var(--space-1);
 }
@@ -1425,7 +1425,7 @@
   font-size: var(--font-sm);
   border: 1px solid var(--color-primary-border);
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   cursor: pointer;
   transition: all 150ms ease;
 }
@@ -1828,7 +1828,7 @@
   padding: 2px 6px;
   border-radius: var(--radius-full);
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   border: 1px solid var(--color-primary-border);
   flex-shrink: 0;
 }
@@ -1854,7 +1854,7 @@
 .chat-push-insight-item.warning .chat-push-insight-tag {
   background: var(--color-warning-bg);
   border-color: var(--color-warning-border);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 /* ---------- Recent Timeline ---------- */
@@ -1943,7 +1943,7 @@
 
 .chat-preset-head button:hover {
   border-color: var(--color-primary-border);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-preset-list {
@@ -1971,7 +1971,7 @@
 .chat-preset-item:hover {
   background: color-mix(in srgb, var(--color-primary-bg) 72%, var(--color-bg-elevated));
   border-color: var(--color-primary-border);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
 }
@@ -1995,7 +1995,7 @@
 }
 
 .chat-preset-item-tag {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: var(--font-xs);
   display: inline-block;
   margin-bottom: 2px;
@@ -2049,7 +2049,7 @@
   border: 1px solid var(--color-warning-border);
   border-radius: 999px;
   background: var(--color-warning-bg);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   font-size: 10px;
   font-style: normal;
 }
@@ -2057,7 +2057,7 @@
 .chat-credit-draft-head em.is-ready {
   border-color: var(--color-success-border);
   background: var(--color-success-bg);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .chat-credit-draft-fields {
@@ -2096,7 +2096,7 @@
 
 .chat-secondary-action-btn.is-danger {
   border-color: var(--color-danger-border);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .chat-secondary-action-btn.is-danger:hover {
@@ -2144,7 +2144,7 @@
   border: 1px solid var(--color-warning-border);
   border-radius: 999px;
   background: var(--color-warning-bg);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   font-size: 10px;
   font-style: normal;
   font-weight: 600;
@@ -2153,7 +2153,7 @@
 .chat-credit-state.is-ready {
   border-color: var(--color-success-border);
   background: var(--color-success-bg);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .chat-credit-card-summary {
@@ -2195,7 +2195,7 @@
 }
 
 .chat-credit-card-next.is-ready {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .chat-credit-card-primary-actions {
@@ -2273,19 +2273,19 @@
 .chat-credit-confidence.is-high {
   border-color: var(--color-success-border);
   background: var(--color-success-bg);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .chat-credit-confidence.is-medium {
   border-color: var(--color-warning-border);
   background: var(--color-warning-bg);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .chat-credit-confidence.is-low {
   border-color: var(--color-danger-border);
   background: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .chat-credit-card-head-meta {
@@ -2413,19 +2413,19 @@
 .chat-credit-field-chip.is-confirmed {
   border-color: var(--color-success-border);
   background: var(--color-success-bg);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .chat-credit-field-chip.is-needs-confirmation {
   border-color: var(--color-warning-border);
   background: var(--color-warning-bg);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .chat-credit-field-chip.is-low-confidence {
   border-color: var(--color-danger-border);
   background: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 /* ---------- Credit Overview ---------- */
@@ -2505,7 +2505,7 @@
 .chat-credit-overview-due-chip.is-overdue {
   border-color: var(--color-danger-border);
   background: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .chat-credit-overview-details {
@@ -2628,7 +2628,7 @@
   border-radius: var(--radius-full);
   border: 1px solid var(--color-success-border);
   background: var(--color-success-bg);
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-weight: 500;
 }
 
@@ -2688,7 +2688,7 @@
 
 .chat-credit-gap-head strong {
   font-size: var(--font-sm);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .chat-credit-gap-head span,
@@ -2731,7 +2731,7 @@
   background: var(--color-bg);
   border: 1px solid var(--color-warning-border);
   font-size: var(--font-xs);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .chat-credit-gap-action {
@@ -2825,7 +2825,7 @@
   background: var(--color-warning-bg);
   border: 1px solid var(--color-warning-border);
   font-size: var(--font-xs);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   margin-top: var(--space-1);
 }
 
@@ -2968,7 +2968,7 @@
 
 .chat-credit-actions button:hover {
   border-color: var(--color-primary-border);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   transform: translateY(-1px);
 }
 
@@ -3016,7 +3016,7 @@
   border-radius: var(--radius-full);
   padding: 4px 10px;
   font-size: var(--font-xs);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   cursor: pointer;
   transition: all 150ms ease;
 }
@@ -3065,13 +3065,13 @@
 .chat-icon-action-btn:hover:not(:disabled) {
   transform: translateY(-1px);
   border-color: var(--color-primary-border);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-icon-action-btn.is-active {
   border-color: var(--color-primary-border);
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-icon-action-btn:disabled {
@@ -3114,7 +3114,7 @@
 .chat-semantic-status-summary:hover {
   background: color-mix(in srgb, var(--color-bg-elevated) 84%, transparent);
   border-color: var(--color-primary-border);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-semantic-status-summary span:last-child {
@@ -3161,7 +3161,7 @@
 
 .chat-semantic-status-actions button:hover {
   border-color: var(--color-primary-border);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 /* ---------- Reasoning Collapse ---------- */
@@ -3219,11 +3219,11 @@
 }
 
 .chat-token-usage.is-error {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .chat-token-usage.is-warning {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 /* ---------- Disclaimer ---------- */
@@ -3244,7 +3244,7 @@
   background: var(--color-warning-bg);
   border: 1px solid var(--color-warning-border);
   font-size: var(--font-xs);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .chat-dup-alert.subtle {
@@ -3284,7 +3284,7 @@
 .chat-bill-preview-kicker {
   display: block;
   margin-bottom: 3px;
-  color: var(--color-success, #24a86a);
+  color: var(--color-success-text, #24a86a);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -3356,11 +3356,11 @@
 }
 
 .chat-bill-row-value > strong.is-expense {
-  color: var(--color-danger, #df5b55);
+  color: var(--color-danger-text, #df5b55);
 }
 
 .chat-bill-row-value > strong.is-income {
-  color: var(--color-success, #24a86a);
+  color: var(--color-success-text, #24a86a);
 }
 
 .chat-bill-row-currency {
@@ -3428,7 +3428,7 @@
   align-items: center;
   gap: 8px;
   margin: 0;
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   font-size: 11px;
   line-height: 1.5;
 }
@@ -3438,7 +3438,7 @@
   border: 1px solid var(--color-warning-border);
   border-radius: var(--radius-full);
   background: var(--color-bg-elevated);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   font-size: 11px;
   line-height: 1.2;
   cursor: pointer;
@@ -3551,7 +3551,7 @@
   border-radius: var(--radius-full);
   background: var(--color-warning-bg);
   border: 1px solid var(--color-warning-border);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   font-weight: 500;
 }
 
@@ -3571,7 +3571,7 @@
   background: var(--color-primary-bg);
   border: 1px solid var(--color-primary-border);
   font-size: var(--font-sm);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-dup-compare-grid {
@@ -3759,7 +3759,7 @@
 
 .chat-smart-command-chip:hover:not(:disabled) {
   border-color: var(--color-primary);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   transform: translateY(-1px);
 }
 
@@ -3779,7 +3779,7 @@
   background: var(--color-danger-bg);
   border: 1px solid var(--color-danger-border);
   font-size: var(--font-xs);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .chat-error-details {
@@ -3860,7 +3860,7 @@
   border: 1px solid var(--color-danger-border);
   border-radius: var(--radius-md);
   background: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   cursor: pointer;
   transition: all 150ms ease;
   flex-shrink: 0;
@@ -3877,7 +3877,7 @@
   border-radius: var(--radius-md);
   padding: 6px 10px;
   font-size: var(--font-xs);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   margin-top: var(--space-2);
 }
 
@@ -3887,7 +3887,7 @@
   border: 1px solid var(--color-danger-border);
   border-radius: var(--radius-md);
   background: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: var(--font-xs);
   cursor: pointer;
   transition: all 150ms ease;
@@ -3960,7 +3960,7 @@
 
 .chat-image-strip button:hover {
   border-color: var(--color-primary-border);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-input-form {
@@ -4088,7 +4088,7 @@
 .chat-input-toolbar-btn:hover:not(:disabled) {
   border-color: var(--color-primary-border);
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-input-toolbar-btn:disabled {
@@ -4301,7 +4301,7 @@
 .chat-upload-btn:hover:not(:disabled) {
   border-color: var(--color-primary-border);
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-upload-btn:disabled {
@@ -4441,14 +4441,21 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 16px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.04em;
 }
 
+/*
+ * 这里的 span 是分隔用的 "·",属于正文的一部分,不是输入框占位符。
+ * 原来借用 --color-text-placeholder(#b0b5bc,对页面底只有 1.89:1)——
+ * 那个 token 是给输入框里会被覆盖掉的浅灰占位文字用的(WCAG 1.4.3 的
+ * "incidental" 例外),拿来当正文色就过不了线。改用次要文字色,最差 4.25:1,
+ * 视觉上也仍然是"淡一点的说明文字"。
+ */
 .chat-mode-welcome-eyebrow span {
-  color: var(--color-text-placeholder);
+  color: var(--color-text-tertiary);
 }
 
 .chat-mode-welcome h2 {
@@ -4466,7 +4473,7 @@
 }
 
 .chat-mode-welcome h2 em {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-style: normal;
 }
 
@@ -4546,7 +4553,7 @@
 }
 
 .chat-agent-action-undo:hover {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
 }
 
@@ -4620,7 +4627,7 @@
   place-items: center;
   border-radius: 50%;
   background: color-mix(in srgb, var(--color-warning, #e6a23c) 14%, transparent);
-  color: var(--color-warning, #d99917);
+  color: var(--color-warning-text, #d99917);
   font-size: 18px;
 }
 
@@ -4837,11 +4844,11 @@
 }
 
 .assistant-wb-issue.error {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .assistant-wb-issue.review {
-  color: var(--color-warning, #b8860b);
+  color: var(--color-warning-text, #b8860b);
 }
 
 .assistant-wb-save-stats {
@@ -4885,7 +4892,7 @@
 
 .assistant-wb-json-actions button:hover {
   border-color: var(--color-primary-border);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .assistant-wb-inline-actions {
@@ -4908,7 +4915,7 @@
 
 .assistant-wb-inline-actions button:hover {
   border-color: var(--color-primary-border);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .assistant-wb-model-chips {
@@ -4931,7 +4938,7 @@
 .assistant-wb-model-chip.active {
   border-color: var(--color-primary);
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .assistant-wb-empty {
@@ -4942,7 +4949,7 @@
 }
 
 .assistant-wb-error {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: var(--font-sm);
   text-align: center;
   padding: var(--space-4);

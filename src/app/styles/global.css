@@ -170,7 +170,7 @@ body {
   border: 0;
   border-radius: 50%;
   background: transparent;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   box-shadow: none;
 }
 
@@ -178,7 +178,7 @@ body {
   transform: none;
   border-color: transparent;
   background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-  color: var(--color-primary-hover);
+  color: var(--color-primary-text);
   box-shadow: none;
 }
 
@@ -198,7 +198,7 @@ body {
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   box-shadow: none;
 }
 
@@ -206,7 +206,7 @@ body {
   transform: none;
   border-color: transparent;
   background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-  color: var(--color-primary-hover);
+  color: var(--color-primary-text);
   box-shadow: none;
 }
 
@@ -246,11 +246,11 @@ body {
 }
 
 .text-income {
-  color: var(--color-income);
+  color: var(--color-income-text);
 }
 
 .text-expense {
-  color: var(--color-expense);
+  color: var(--color-expense-text);
 }
 
 .mobile-nav-toggle {
@@ -394,7 +394,7 @@ body {
 
 .sidebar-overview-action {
   text-decoration: none;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: var(--color-bg-elevated);
   border: 1px solid var(--color-primary-border);
   border-radius: var(--radius-md);
@@ -588,7 +588,7 @@ body {
 }
 
 .sidebar-link.active {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: color-mix(in srgb, var(--color-primary) 9%, transparent);
   font-weight: 500;
   box-shadow: inset 2px 0 0 var(--color-primary);
@@ -828,14 +828,14 @@ body {
 .topbar-settings-btn:hover {
   border-color: transparent;
   background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   box-shadow: none;
 }
 
 .topbar-settings-btn.active {
   border-color: transparent;
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   box-shadow: none;
 }
 
@@ -1018,11 +1018,11 @@ body {
 }
 
 .settings-account-status.is-error {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .settings-account-status.is-success {
-  color: var(--color-success, #16845b);
+  color: var(--color-success-text, #16845b);
 }
 
 .settings-account-session-error {
@@ -1041,7 +1041,7 @@ body {
 
 .settings-account-eyebrow {
   margin-bottom: 2px !important;
-  color: var(--color-primary) !important;
+  color: var(--color-primary-text) !important;
   font-size: 10px !important;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -1064,7 +1064,7 @@ body {
   min-height: 22px;
   padding: 0 8px;
   border-radius: var(--radius-full);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: color-mix(in srgb, var(--color-primary-bg) 72%, transparent);
   font-size: 11px;
   font-weight: 600;
@@ -1128,7 +1128,7 @@ body {
 
 .settings-data-eyebrow {
   margin: 0 0 4px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -1179,7 +1179,7 @@ body {
 
 .settings-data-error {
   margin: 0;
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: var(--font-sm);
 }
 
@@ -1274,7 +1274,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--color-success, #16845b);
+  color: var(--color-success-text, #16845b);
   font-size: var(--font-xs);
   font-weight: 600;
 }
@@ -1301,7 +1301,7 @@ body {
 }
 
 .settings-password-reverify:hover {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 @keyframes settings-password-step-in {
@@ -1414,7 +1414,7 @@ body {
 }
 
 .settings-account-session-revoke:hover {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 @media (max-width: 920px) {
@@ -1470,7 +1470,7 @@ body {
 
 .settings-page-close:hover {
   border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: color-mix(in srgb, var(--color-primary-bg) 42%, var(--color-bg-elevated));
 }
 
@@ -1953,7 +1953,7 @@ button.primary:hover:not(:disabled) {
 
 button.danger {
   border-color: var(--color-danger-border);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   background: var(--color-danger-bg);
 }
 
@@ -1964,7 +1964,7 @@ button.danger:hover:not(:disabled) {
 }
 
 .error {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: var(--font-sm);
 }
 
@@ -2248,7 +2248,7 @@ button.danger:hover:not(:disabled) {
 
 .transactions-side-quick-filter-buttons button.active {
   border-color: var(--color-primary);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: var(--color-primary-bg);
 }
 
@@ -2506,7 +2506,7 @@ tr:hover td {
 }
 
 .transaction-sort-btn.active {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .transaction-filter-row th {
@@ -2847,14 +2847,14 @@ tr:hover td {
 .transaction-inline-tag-ai {
   border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
   background: color-mix(in srgb, var(--color-primary-bg) 70%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 700;
 }
 
 .transaction-inline-tag-warn {
   border-color: color-mix(in srgb, var(--color-warning) 45%, var(--color-border));
   background: color-mix(in srgb, var(--color-warning-bg) 72%, var(--color-bg-elevated));
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .transaction-inline-alert {
@@ -2865,7 +2865,7 @@ tr:hover td {
 .transaction-inline-alert summary {
   list-style: none;
   cursor: pointer;
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   font-weight: 700;
   border: 1px solid color-mix(in srgb, var(--color-warning) 40%, var(--color-border));
   border-radius: 999px;
@@ -2902,13 +2902,13 @@ tr:hover td {
 }
 
 .transaction-type-badge-income {
-  color: var(--color-income);
+  color: var(--color-income-text);
   background: color-mix(in srgb, var(--color-income) 12%, transparent);
   border-color: color-mix(in srgb, var(--color-income) 32%, transparent);
 }
 
 .transaction-type-badge-expense {
-  color: var(--color-expense);
+  color: var(--color-expense-text);
   background: color-mix(in srgb, var(--color-expense) 12%, transparent);
   border-color: color-mix(in srgb, var(--color-expense) 32%, transparent);
 }
@@ -2976,11 +2976,11 @@ tr:hover td {
 }
 
 .transaction-amount-income {
-  color: var(--color-income);
+  color: var(--color-income-text);
 }
 
 .transaction-amount-expense {
-  color: var(--color-expense);
+  color: var(--color-expense-text);
 }
 
 .transaction-empty-cell {
@@ -3061,7 +3061,7 @@ tr:hover td {
 }
 
 .transaction-action-danger:hover {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   border-color: var(--color-danger-border);
   background: var(--color-danger-bg);
 }
@@ -3234,7 +3234,7 @@ tr:hover td {
 }
 
 .transaction-context-item.danger {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .transaction-context-divider {
@@ -3583,7 +3583,7 @@ small.mono {
   border: 1px solid color-mix(in srgb, var(--color-primary) 26%, var(--color-border));
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-primary) 8%, transparent);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: var(--font-xs);
   font-weight: 600;
 }
@@ -3874,7 +3874,7 @@ small.mono {
 
 .dashboard-onboarding-actions button {
   border-color: var(--color-primary-border);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .dashboard-shortcuts-tip {
@@ -3969,13 +3969,13 @@ small.mono {
 }
 
 .stat-income .stat-value {
-  color: var(--color-income);
+  color: var(--color-income-text);
 }
 .stat-expense .stat-value {
-  color: var(--color-expense);
+  color: var(--color-expense-text);
 }
 .stat-balance .stat-value {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 /* ============================================================
@@ -4074,13 +4074,13 @@ small.mono {
 
 .dashboard-ai-status.status-loading,
 .dashboard-ai-status.status-streaming {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   border-color: var(--color-primary-border);
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 
 .dashboard-ai-status.status-error {
-  color: var(--color-expense);
+  color: var(--color-expense-text);
   border-color: color-mix(in srgb, var(--color-expense) 35%, transparent);
   background: color-mix(in srgb, var(--color-expense) 12%, transparent);
 }
@@ -4132,11 +4132,11 @@ small.mono {
 }
 
 .dashboard-summary-main-amount.positive {
-  color: var(--color-income);
+  color: var(--color-income-text);
 }
 
 .dashboard-summary-main-amount.negative {
-  color: var(--color-expense);
+  color: var(--color-expense-text);
 }
 
 .dashboard-summary-change {
@@ -4149,11 +4149,11 @@ small.mono {
 }
 
 .dashboard-summary-change.positive {
-  color: var(--color-income);
+  color: var(--color-income-text);
 }
 
 .dashboard-summary-change.negative {
-  color: var(--color-expense);
+  color: var(--color-expense-text);
 }
 
 .dashboard-summary-sub {
@@ -4171,11 +4171,11 @@ small.mono {
 }
 
 .dashboard-summary-metric.income {
-  color: var(--color-income);
+  color: var(--color-income-text);
 }
 
 .dashboard-summary-metric.expense {
-  color: var(--color-expense);
+  color: var(--color-expense-text);
 }
 
 .dashboard-summary-metric.neutral {
@@ -4205,7 +4205,7 @@ small.mono {
 .dashboard-ai-title {
   margin: 0;
   font-size: var(--font-sm);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 600;
 }
 
@@ -4239,7 +4239,7 @@ small.mono {
 
 .dashboard-ai-live.status-loading,
 .dashboard-ai-live.status-streaming {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   border-color: var(--color-primary-border);
   background: color-mix(in srgb, var(--color-primary) 8%, var(--color-bg-elevated));
 }
@@ -4250,7 +4250,7 @@ small.mono {
 }
 
 .dashboard-ai-live.status-done {
-  color: var(--color-income);
+  color: var(--color-income-text);
   border-color: color-mix(in srgb, var(--color-income) 34%, transparent);
   background: color-mix(in srgb, var(--color-income) 10%, var(--color-bg-elevated));
 }
@@ -4261,7 +4261,7 @@ small.mono {
 }
 
 .dashboard-ai-live.status-error {
-  color: var(--color-expense);
+  color: var(--color-expense-text);
   border-color: color-mix(in srgb, var(--color-expense) 34%, transparent);
   background: color-mix(in srgb, var(--color-expense) 10%, var(--color-bg-elevated));
 }
@@ -4283,7 +4283,7 @@ small.mono {
 .dashboard-ai-caret {
   display: inline-block;
   margin-left: 2px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   animation: dashboard-caret-blink 0.9s steps(1, end) infinite;
 }
 
@@ -4302,7 +4302,7 @@ small.mono {
 .dashboard-ai-error {
   margin: var(--space-2) 0 0 0;
   font-size: var(--font-xs);
-  color: var(--color-expense);
+  color: var(--color-expense-text);
 }
 
 .dashboard-trend-sections {
@@ -4400,7 +4400,7 @@ small.mono {
 }
 
 .dashboard-top-item strong {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: var(--font-sm);
 }
 
@@ -4523,7 +4523,7 @@ small.mono {
 }
 
 .dashboard-forecast-axis-x span.forecast {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   background: var(--color-warning-bg);
   border: 1px solid color-mix(in srgb, var(--color-warning) 30%, transparent);
 }
@@ -4533,7 +4533,7 @@ small.mono {
 }
 
 .dashboard-forecast-axis-x span.current {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: color-mix(in srgb, var(--color-primary) 16%, transparent);
   border: 1px solid var(--color-primary-border);
   font-weight: 600;
@@ -4559,7 +4559,7 @@ small.mono {
 }
 
 .dashboard-forecast-key span.forecast {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   border-color: color-mix(in srgb, var(--color-warning) 30%, transparent);
   background: var(--color-warning-bg);
 }
@@ -4583,7 +4583,7 @@ small.mono {
 }
 
 .dashboard-forecast-legend span.forecast {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   border-color: color-mix(in srgb, var(--color-warning) 30%, transparent);
   background: var(--color-warning-bg);
 }
@@ -4659,7 +4659,7 @@ small.mono {
 }
 
 .dashboard-future-focus-item {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -5072,7 +5072,7 @@ small.mono {
     color-mix(in srgb, var(--color-primary-bg) 92%, white 8%),
     color-mix(in srgb, var(--color-primary-bg) 96%, var(--color-bg-elevated))
   );
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 600;
   box-shadow:
     0 4px 10px color-mix(in srgb, var(--color-primary) 14%, transparent),
@@ -5146,7 +5146,7 @@ small.mono {
 .chat-icon-topbar-btn.is-active {
   border-color: var(--color-primary-border);
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   box-shadow:
     0 4px 10px color-mix(in srgb, var(--color-primary) 14%, transparent),
     inset 0 1px 0 color-mix(in srgb, white 70%, transparent);
@@ -5253,7 +5253,7 @@ small.mono {
   border-radius: var(--radius-sm);
   border: 1px dashed var(--color-primary-border);
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   cursor: pointer;
   transition: all var(--transition-fast);
 }
@@ -5301,7 +5301,7 @@ small.mono {
 
 .chat-model-option.active {
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 600;
 }
 
@@ -5433,7 +5433,7 @@ small.mono {
 .chat-md-heading {
   margin: 0;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   line-height: 1.45;
   border-left: 3px solid var(--color-primary);
   padding-left: var(--space-2);
@@ -5452,7 +5452,7 @@ small.mono {
 }
 
 .chat-msg-content-rich strong {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 700;
   background: color-mix(in srgb, var(--color-primary-bg) 65%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-primary-border) 70%, transparent);
@@ -5467,7 +5467,7 @@ small.mono {
 }
 
 .chat-md-list li::marker {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-md-list li + li {
@@ -5574,7 +5574,7 @@ small.mono {
 }
 
 .chat-auto-card strong {
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-size: var(--font-sm);
 }
 
@@ -5583,7 +5583,7 @@ small.mono {
   padding: 4px 10px;
   border-radius: var(--radius-sm);
   border-color: var(--color-success-border);
-  color: var(--color-success);
+  color: var(--color-success-text);
   background: var(--color-bg-elevated);
 }
 
@@ -5616,7 +5616,7 @@ small.mono {
   border: 1px solid var(--color-primary-border);
   border-radius: var(--radius-md);
   padding: var(--space-2) var(--space-3);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: var(--color-primary-bg);
   font-size: var(--font-sm);
   font-weight: 500;
@@ -5697,7 +5697,7 @@ small.mono {
   padding: 2px 8px;
   border-radius: var(--radius-full);
   background: var(--color-success-bg);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 /* Code / JSON display — editor feel */
@@ -5787,7 +5787,7 @@ small.mono {
   background: var(--color-bg-elevated);
   font-size: var(--font-xs);
   padding: 6px 10px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-kawaii-mascot {
@@ -5802,7 +5802,7 @@ small.mono {
 
 .chat-kawaii-mascot span {
   font-size: 18px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-kawaii-mascot small {
@@ -6025,7 +6025,7 @@ small.mono {
   text-align: right;
   font-size: var(--font-sm);
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-recent-timeline-content p {
@@ -6107,7 +6107,7 @@ small.mono {
 }
 
 .chat-preset-item-tag {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 11px;
 }
 
@@ -6148,7 +6148,7 @@ small.mono {
 
 .chat-smart-command-chip:hover:not(:disabled) {
   border-color: var(--color-primary);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: var(--color-primary-bg);
 }
 
@@ -6165,7 +6165,7 @@ small.mono {
   background: var(--color-danger-bg);
   border-bottom: 1px solid var(--color-danger-border);
   font-size: var(--font-sm);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   animation: surface-rise 0.24s ease both;
   transition:
     transform var(--transition-fast),
@@ -6178,7 +6178,7 @@ small.mono {
   padding: 3px 10px;
   border-radius: var(--radius-sm);
   border-color: var(--color-danger-border);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .chat-inline-error {
@@ -6233,7 +6233,7 @@ small.mono {
   border-radius: var(--radius-full);
   border: 1px solid var(--color-danger-border);
   background: var(--color-bg-elevated);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: 12px;
   line-height: 1;
   display: inline-flex;
@@ -6246,7 +6246,7 @@ small.mono {
   font-size: var(--font-xs);
   padding: 3px 10px;
   border-radius: var(--radius-sm);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   border-color: var(--color-danger-border);
 }
 
@@ -6371,7 +6371,7 @@ small.mono {
 
 .chat-upload-btn:hover:not(:disabled) {
   border-color: var(--color-primary);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-upload-btn:disabled {
@@ -6811,7 +6811,7 @@ small.mono {
   padding: 2px 4px;
   border: 0;
   background: transparent;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -6933,19 +6933,19 @@ small.mono {
 
 .badge-success {
   background: var(--color-success-bg);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 .badge-danger {
   background: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 .badge-warning {
   background: var(--color-warning-bg);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 .badge-primary {
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 /* Spinner */
@@ -7039,7 +7039,7 @@ small.mono {
 .dialog-cascade-note {
   display: block;
   margin-top: 8px;
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: var(--font-sm);
 }
 
@@ -7100,13 +7100,13 @@ small.mono {
 }
 
 .amount-breakdown-value.is-warning {
-  color: var(--color-warning, #b7791f);
+  color: var(--color-warning-text, #b7791f);
 }
 .amount-breakdown-value.is-danger {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 .amount-breakdown-value.is-success {
-  color: var(--color-success, #16815c);
+  color: var(--color-success-text, #16815c);
 }
 
 .amount-breakdown-total {
@@ -7140,7 +7140,7 @@ small.mono {
 }
 
 .danger-confirm-field strong {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .danger-confirm-field input {
@@ -7329,7 +7329,7 @@ small.mono {
 }
 
 .import-confirm-row-index.neutral {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: color-mix(in srgb, var(--color-primary-bg) 78%, var(--color-bg-elevated));
 }
 
@@ -7644,7 +7644,7 @@ small.mono {
 }
 
 .drawer-adjustment-section h4 {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .drawer-adjustment-section .drawer-kv:last-child {
@@ -7781,7 +7781,7 @@ input[type='date']:focus {
 
 .quick-add-header-action.is-primary {
   justify-self: end;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .quick-add-body {
@@ -7912,7 +7912,7 @@ input[type='date']:focus {
 }
 
 .quick-add-budget-hint strong.is-over {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .quick-add-budget-progress {
@@ -8584,7 +8584,7 @@ input[type='date']:focus {
     border-radius: 999px;
     border: 1px solid color-mix(in srgb, var(--color-primary) 20%, var(--color-border-light));
     background: color-mix(in srgb, var(--color-bg-elevated) 92%, white 8%);
-    color: var(--color-primary);
+    color: var(--color-primary-text);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -8641,7 +8641,7 @@ input[type='date']:focus {
   }
 
   .mobile-nav-grid-item:hover {
-    color: var(--color-primary);
+    color: var(--color-primary-text);
     background: linear-gradient(
       180deg,
       color-mix(in srgb, var(--color-primary-bg) 82%, white 6%),
@@ -8651,7 +8651,7 @@ input[type='date']:focus {
   }
 
   .mobile-nav-grid-item.active {
-    color: var(--color-primary);
+    color: var(--color-primary-text);
     background: linear-gradient(
       180deg,
       color-mix(in srgb, var(--color-primary-bg) 82%, white 6%),
@@ -8921,7 +8921,7 @@ body.exchange-resizing {
 
 .exchange-error {
   background: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   border: 1px solid var(--color-danger-border);
   border-radius: var(--radius-sm);
   padding: var(--space-2) var(--space-3);
@@ -9014,11 +9014,11 @@ body.exchange-resizing {
 }
 
 .exchange-rate-trend-up {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .exchange-rate-trend-down {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .exchange-rate-trend-flat {
@@ -9136,19 +9136,19 @@ body.exchange-resizing {
 .exchange-key-op {
   background: var(--color-primary-bg);
   border-color: var(--color-primary-border);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .exchange-key-fn {
   background: var(--color-warning-bg);
   border-color: var(--color-warning-bg);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .exchange-key-danger {
   background: var(--color-danger-bg);
   border-color: var(--color-danger-border);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .exchange-key-equal,
@@ -9162,7 +9162,7 @@ body.exchange-resizing {
 
 .exchange-calculator-error {
   margin: 0;
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: var(--font-sm);
 }
 
@@ -9460,13 +9460,13 @@ body.exchange-resizing {
 }
 
 .connection-test-success {
-  color: var(--color-success);
+  color: var(--color-success-text);
   background: var(--color-success-bg);
   border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
 }
 
 .connection-test-error {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   background: var(--color-danger-bg);
   border-color: var(--color-danger-border);
 }
@@ -9641,7 +9641,7 @@ body.exchange-resizing {
 .categories-console-eyebrow,
 .categories-console-kicker {
   margin: 0;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0;
@@ -9787,7 +9787,7 @@ body.exchange-resizing {
 
 .categories-console-workspace .categories-fold-summary:hover {
   background: transparent;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .categories-console-workspace .categories-fold-block .categories-list {
@@ -9867,7 +9867,7 @@ body.exchange-resizing {
 }
 
 .metric-chip-highlight strong {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: var(--font-lg);
 }
 
@@ -10116,7 +10116,7 @@ body.exchange-resizing {
 
 .category-icon-action.is-danger:hover {
   background: color-mix(in srgb, var(--color-danger) 14%, transparent);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .category-count-chip {
@@ -10203,7 +10203,7 @@ body.exchange-resizing {
 
 .category-node-main.is-toggle:hover {
   background: var(--color-bg-hover);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .category-node.is-collapsed .category-node-title small {
@@ -10252,7 +10252,7 @@ body.exchange-resizing {
 .category-secondary-actions .category-action.is-danger:hover {
   border-color: color-mix(in srgb, var(--color-danger) 45%, var(--color-border));
   background: color-mix(in srgb, var(--color-danger) 12%, transparent);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .category-edit-form {
@@ -10274,7 +10274,7 @@ body.exchange-resizing {
 .category-action-error {
   flex: 1 1 100%;
   margin: 4px 0 0;
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: var(--font-xs);
 }
 
@@ -10531,7 +10531,7 @@ body.categories-accounts-resizing {
   display: inline-grid;
   place-items: center;
   background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-style: normal;
   font-weight: 700;
 }
@@ -10678,11 +10678,11 @@ body.categories-accounts-resizing {
 }
 
 .account-card-balance-positive {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .account-card-balance-negative {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .account-card-balance-trigger {
@@ -10722,7 +10722,7 @@ body.categories-accounts-resizing {
 
 .account-card-tools[open] summary,
 .account-card-tools summary:hover {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border-light));
   background: var(--color-primary-bg);
 }
@@ -10840,7 +10840,7 @@ body.categories-accounts-resizing {
 }
 
 .settings-provider-state.is-active {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 600;
 }
 
@@ -10897,7 +10897,7 @@ body.categories-accounts-resizing {
 
 .settings-model-chips button.active {
   border-color: var(--color-primary-border);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: color-mix(in srgb, var(--color-primary) 10%, var(--color-bg-subtle));
 }
 
@@ -11028,7 +11028,7 @@ body.categories-accounts-resizing {
 .settings-subpanel-chip.is-active {
   border-color: color-mix(in srgb, var(--color-primary) 36%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-primary) 12%, var(--color-bg-subtle));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .settings-subpanel-primary-action {
@@ -11037,7 +11037,7 @@ body.categories-accounts-resizing {
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--color-primary) 44%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-primary) 14%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: var(--font-xs);
   font-weight: 800;
   box-shadow: 0 8px 18px color-mix(in srgb, var(--color-primary) 12%, transparent);
@@ -11208,7 +11208,7 @@ body.categories-accounts-resizing {
   height: 24px;
   border-radius: 6px;
   background: transparent;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   overflow: hidden;
 }
 
@@ -11314,7 +11314,7 @@ body.categories-accounts-resizing {
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-sm);
   background: var(--color-bg-elevated);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: var(--font-xs);
   font-weight: 600;
   text-decoration: none;
@@ -11677,7 +11677,7 @@ body.categories-accounts-resizing {
 }
 
 .database-backup-import-progress.is-error .database-backup-import-progress-copy strong {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .database-backup-import-progress.is-error .database-backup-import-progress-track > span {
@@ -11781,7 +11781,7 @@ body.categories-accounts-resizing {
 .database-backup-scope-warning {
   margin: 0;
   font-size: 12px;
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .database-remote-backup-card {
@@ -11873,7 +11873,7 @@ body.categories-accounts-resizing {
 }
 
 .database-provider-option.is-unavailable em {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: 11px;
   font-style: normal;
   line-height: 1.4;
@@ -11986,12 +11986,12 @@ body.categories-accounts-resizing {
 
 .sql-sync-notice.is-error {
   border-color: color-mix(in srgb, var(--color-danger) 35%, var(--color-border));
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .sql-sync-notice.is-warning {
   border-color: color-mix(in srgb, var(--color-warning) 35%, var(--color-border));
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .sql-sync-notice.is-error .sql-sync-notice-dot {
@@ -12120,7 +12120,7 @@ body.categories-accounts-resizing {
 .database-console-eyebrow,
 .database-console-kicker {
   margin: 0;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0;
@@ -12436,7 +12436,7 @@ body.categories-accounts-resizing {
 .sync-target-chip.active {
   border-color: var(--color-primary);
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .sync-progress {
@@ -12688,11 +12688,11 @@ body.categories-accounts-resizing {
 .assistant-wb-issue {
   margin: 0;
   font-size: var(--font-xs);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .assistant-wb-issue.error {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .assistant-wb-save-stats {
@@ -12735,7 +12735,7 @@ body.categories-accounts-resizing {
 
 .assistant-wb-model-chip.active {
   border-color: var(--color-primary);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .assistant-wb-empty {
@@ -12744,7 +12744,7 @@ body.categories-accounts-resizing {
 }
 
 .assistant-wb-error {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 @media (max-width: 900px) {
@@ -12920,15 +12920,15 @@ body.categories-accounts-resizing {
 }
 
 .about-update-message.error {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .about-update-message.up-to-date {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .about-update-message.update-available {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .help-page {
@@ -13129,19 +13129,19 @@ body.categories-accounts-resizing {
 .chat-credit-confidence.is-high {
   border-color: var(--color-success-border);
   background: var(--color-success-bg);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .chat-credit-confidence.is-medium {
   border-color: var(--color-warning-border);
   background: var(--color-warning-bg);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .chat-credit-confidence.is-low {
   border-color: var(--color-danger-border);
   background: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .chat-credit-grid {
@@ -13186,19 +13186,19 @@ body.categories-accounts-resizing {
 .chat-credit-field-chip.is-confirmed {
   border-color: var(--color-success-border);
   background: var(--color-success-bg);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .chat-credit-field-chip.is-needs-confirmation {
   border-color: var(--color-warning-border);
   background: var(--color-warning-bg);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .chat-credit-field-chip.is-low-confidence {
   border-color: var(--color-danger-border);
   background: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .chat-credit-overview-card {
@@ -13305,7 +13305,7 @@ body.categories-accounts-resizing {
   border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: color-mix(in srgb, var(--color-primary) 10%, var(--color-bg-elevated));
   border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
 }
@@ -13360,7 +13360,7 @@ body.categories-accounts-resizing {
 
 .chat-credit-binding-note strong {
   font-size: 11px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-credit-binding-note span,
@@ -13414,7 +13414,7 @@ body.categories-accounts-resizing {
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--color-primary) 22%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-primary-bg));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 0.75rem;
   font-style: normal;
   line-height: 1.3;
@@ -13608,7 +13608,7 @@ body.categories-accounts-resizing {
   padding: 8px 10px;
   border-radius: var(--radius-sm);
   background: var(--color-warning-bg);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   border: 1px solid var(--color-warning-border);
   font-size: var(--font-xs);
 }
@@ -13732,7 +13732,7 @@ body.categories-accounts-resizing {
   border-radius: 999px;
   padding: 6px 10px;
   font-size: 11px;
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   border: 1px solid var(--color-warning-border);
   background: color-mix(in srgb, var(--color-warning-bg) 86%, var(--color-bg-elevated));
 }
@@ -13817,7 +13817,7 @@ body.categories-accounts-resizing {
   transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-border));
   background: color-mix(in srgb, var(--color-primary-bg) 50%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .chat-icon-action-btn:disabled {
@@ -13920,7 +13920,7 @@ body.categories-accounts-resizing {
 .chat-dup-alert {
   margin: 0 0 var(--space-2) 0;
   font-size: var(--font-xs);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .chat-dup-alert.subtle {
@@ -13950,7 +13950,7 @@ body.categories-accounts-resizing {
   justify-self: start;
   border: 1px solid color-mix(in srgb, var(--color-warning) 45%, var(--color-border));
   background: var(--color-warning-bg);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   border-radius: var(--radius-full);
   padding: 1px 8px;
   font-size: 11px;
@@ -14405,7 +14405,7 @@ body.categories-accounts-resizing {
   border-radius: 999px;
   font-size: var(--font-xs);
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: color-mix(in srgb, var(--color-primary-soft) 72%, var(--color-bg-elevated));
   border: 1px solid color-mix(in srgb, var(--color-primary) 24%, var(--color-border));
 }
@@ -14461,7 +14461,7 @@ body.categories-accounts-resizing {
   min-height: 26px;
   padding: 0 10px;
   border-radius: var(--radius-pill);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: color-mix(in srgb, var(--color-primary-soft) 62%, transparent);
   font-size: var(--font-xs);
   font-weight: 700;
@@ -14522,7 +14522,7 @@ body.categories-accounts-resizing {
 .smart-budget-inline-link {
   border: none;
   background: transparent;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: var(--font-sm);
   padding: 0;
 }
@@ -14614,11 +14614,11 @@ body.categories-accounts-resizing {
 }
 
 .smart-budget-overview-stats strong.positive {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .smart-budget-overview-stats strong.negative {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .smart-budget-overview-progress-wrap {
@@ -14815,12 +14815,12 @@ body.categories-accounts-resizing {
 }
 
 .smart-budget-progress-card .warn {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-weight: 600;
 }
 
 .smart-budget-progress-card .safe {
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-weight: 600;
 }
 
@@ -14833,7 +14833,7 @@ body.categories-accounts-resizing {
 
 .smart-budget-progress-card .status-tag.normal {
   background: color-mix(in srgb, var(--color-success) 18%, var(--color-bg-elevated));
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .smart-budget-progress-card .status-tag.warning {
@@ -14843,7 +14843,7 @@ body.categories-accounts-resizing {
 
 .smart-budget-progress-card .status-tag.overspent {
   background: color-mix(in srgb, var(--color-danger) 18%, var(--color-bg-elevated));
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .smart-budget-progress-track {
@@ -14899,14 +14899,14 @@ body.categories-accounts-resizing {
 
 .smart-budget-stepper span.active {
   border-color: var(--color-primary);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: var(--color-primary-bg);
   font-weight: 600;
   box-shadow: 0 6px 16px color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 
 .smart-budget-stepper span.done {
-  color: var(--color-success);
+  color: var(--color-success-text);
   border-color: color-mix(in srgb, var(--color-success) 35%, var(--color-border));
   background: color-mix(in srgb, var(--color-success) 8%, var(--color-bg-elevated));
 }
@@ -15102,11 +15102,11 @@ body.categories-accounts-resizing {
 }
 
 .smart-budget-delta.balanced {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .smart-budget-delta.unbalanced {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .smart-budget-actions {
@@ -15214,12 +15214,12 @@ body.categories-accounts-resizing {
 }
 
 .smart-budget-ai-tags .ai-tag.decrease {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   border-color: color-mix(in srgb, var(--color-danger) 35%, var(--color-border));
 }
 
 .smart-budget-ai-tags .ai-tag.increase {
-  color: var(--color-success);
+  color: var(--color-success-text);
   border-color: color-mix(in srgb, var(--color-success) 35%, var(--color-border));
 }
 
@@ -15336,7 +15336,7 @@ body.categories-accounts-resizing {
 
 .smart-budget-error {
   margin: 0;
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: var(--font-sm);
 }
 
@@ -15366,12 +15366,12 @@ body.categories-accounts-resizing {
   padding: 0 9px;
   border: 0;
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .smart-budget-header-badge.is-draft {
   background: color-mix(in srgb, var(--color-warning-bg) 72%, transparent);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .smart-budget-mode-switch {
@@ -15449,7 +15449,7 @@ body.categories-accounts-resizing {
 }
 
 .smart-budget-stepper span.active {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: transparent;
   box-shadow: none;
 }
@@ -15465,7 +15465,7 @@ body.categories-accounts-resizing {
 }
 
 .smart-budget-stepper span.done {
-  color: var(--color-success);
+  color: var(--color-success-text);
   border: 0;
   background: transparent;
 }
@@ -15547,12 +15547,12 @@ body.categories-accounts-resizing {
   font-size: var(--font-sm);
 }
 .smart-budget-history-item em {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: var(--font-xs);
   font-style: normal;
 }
 .smart-budget-history-item:not(.is-current):hover strong {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 @media (max-width: 680px) {
@@ -15910,7 +15910,7 @@ body.categories-accounts-resizing {
 }
 
 .smart-budget-page > .smart-budget-mode-switch button.active {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   border-bottom-color: var(--color-primary);
   background: transparent;
   box-shadow: none;
@@ -16068,7 +16068,7 @@ body.categories-accounts-resizing {
 }
 
 .surface-pill.success {
-  color: var(--color-success);
+  color: var(--color-success-text);
   border-color: color-mix(in srgb, var(--color-success) 30%, var(--color-border));
   background: color-mix(in srgb, var(--color-success-soft) 52%, var(--color-bg-elevated));
 }
@@ -16080,13 +16080,13 @@ body.categories-accounts-resizing {
 }
 
 .surface-pill.danger {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   border-color: color-mix(in srgb, var(--color-danger) 30%, var(--color-border));
   background: color-mix(in srgb, var(--color-danger-soft) 56%, var(--color-bg-elevated));
 }
 
 .surface-pill.primary {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
   background: color-mix(in srgb, var(--color-primary-soft) 58%, var(--color-bg-elevated));
 }
@@ -16161,7 +16161,7 @@ body.categories-accounts-resizing {
   padding: 0 10px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-primary-bg) 84%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 12px;
   font-weight: 700;
 }
@@ -16211,7 +16211,7 @@ body.categories-accounts-resizing {
 .finance-empty-guide-more summary {
   width: fit-content;
   cursor: pointer;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 700;
 }
 
@@ -16474,7 +16474,7 @@ body.categories-accounts-resizing {
   justify-content: center;
   font-size: 12px;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: color-mix(in srgb, var(--color-primary) 12%, var(--color-bg-elevated));
   border: 1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
   pointer-events: none;
@@ -16617,7 +16617,7 @@ body.categories-accounts-resizing {
   padding: 0 10px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-primary-soft) 68%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.01em;
@@ -16789,13 +16789,13 @@ body.categories-accounts-resizing {
   white-space: nowrap;
 }
 .surface-pill.danger {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   border-color: color-mix(in srgb, var(--color-danger) 30%, var(--color-border));
   background: color-mix(in srgb, var(--color-danger-soft) 56%, var(--color-bg-elevated));
 }
 
 .surface-pill.primary {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
   background: color-mix(in srgb, var(--color-primary-soft) 58%, var(--color-bg-elevated));
 }
@@ -16870,7 +16870,7 @@ body.categories-accounts-resizing {
   padding: 0 10px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-primary-bg) 84%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 12px;
   font-weight: 700;
 }
@@ -16920,7 +16920,7 @@ body.categories-accounts-resizing {
 .finance-empty-guide-more summary {
   width: fit-content;
   cursor: pointer;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 700;
 }
 
@@ -17183,7 +17183,7 @@ body.categories-accounts-resizing {
   justify-content: center;
   font-size: 12px;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: color-mix(in srgb, var(--color-primary) 12%, var(--color-bg-elevated));
   border: 1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
   pointer-events: none;
@@ -17637,7 +17637,7 @@ body.categories-accounts-resizing {
 
 .finance-ledger-status-safe {
   background: color-mix(in srgb, var(--color-success-soft) 70%, var(--color-bg-elevated));
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .finance-ledger-status-warning {
@@ -17647,7 +17647,7 @@ body.categories-accounts-resizing {
 
 .finance-ledger-status-danger {
   background: color-mix(in srgb, var(--color-danger-soft) 72%, var(--color-bg-elevated));
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .finance-ledger-status-muted {
@@ -17767,7 +17767,7 @@ body.categories-accounts-resizing {
 
 .finance-generate-done {
   margin: 10px 0 0;
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-weight: 600;
 }
 
@@ -18174,7 +18174,7 @@ body.categories-accounts-resizing {
 .dashboard-expense-trend-tooltip em {
   font-style: normal;
   font-size: 11px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .dashboard-expense-trend-chart {
@@ -18347,7 +18347,7 @@ body.categories-accounts-resizing {
 .dashboard-donut-center em {
   font-style: normal;
   font-size: 11px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .dashboard-donut-list {
@@ -18525,7 +18525,7 @@ body.categories-accounts-resizing {
   padding: 4px 6px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-primary) 12%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .dashboard-net-row small {
@@ -18880,7 +18880,7 @@ body.categories-accounts-resizing {
 .drawer-refund-btn {
   border: 1px solid color-mix(in srgb, var(--color-primary) 32%, var(--color-border));
   background: color-mix(in srgb, var(--color-primary-bg) 72%, white 28%);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 700;
 }
 
@@ -18985,7 +18985,7 @@ body.categories-accounts-resizing {
   padding: 3px 10px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-warning-bg) 60%, var(--color-bg-elevated));
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   font-size: 12px;
   font-weight: 700;
 }
@@ -19014,7 +19014,7 @@ body.categories-accounts-resizing {
   font-family: var(--font-number);
   font-size: 24px;
   font-weight: 800;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .repayment-ring-label {
@@ -19149,7 +19149,7 @@ body.categories-accounts-resizing {
 }
 
 .repayment-timeline-status strong {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 10px;
   font-weight: 800;
   line-height: 1;
@@ -19173,7 +19173,7 @@ body.categories-accounts-resizing {
   border: 1px solid color-mix(in srgb, var(--color-primary) 36%, var(--color-border));
   border-radius: 6px;
   background: color-mix(in srgb, var(--color-primary-bg) 56%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   cursor: pointer;
   font: inherit;
   font-size: 11px;
@@ -19198,15 +19198,15 @@ body.categories-accounts-resizing {
 }
 
 .repayment-timeline-item.is-paid .repayment-timeline-status strong {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .repayment-timeline-due.is-danger {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .repayment-timeline-due.is-warning {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .repayment-timeline-due.is-safe {
@@ -19415,7 +19415,7 @@ body.categories-accounts-resizing {
   gap: 4px;
   min-width: 0;
   container-type: inline-size;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .repayment-projection-stage {
@@ -19520,7 +19520,7 @@ body.categories-accounts-resizing {
 }
 
 .repayment-projection-tooltip strong {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-family: var(--font-number);
   font-size: 12px;
 }
@@ -19587,7 +19587,7 @@ body.categories-accounts-resizing {
   cursor: pointer;
   font-size: 13px;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -19795,7 +19795,7 @@ select.debt-form-input {
 .debt-form-auto-hint {
   display: block;
   margin-top: 5px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 11px;
   line-height: 1.4;
 }
@@ -19830,7 +19830,7 @@ select.debt-form-input {
   border-bottom: 1px solid var(--color-divider);
   font-size: 13px;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .debt-form-advanced-summary small {
@@ -19874,7 +19874,7 @@ select.debt-form-input {
 
 .debt-form-extra > summary::before {
   content: '›';
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 16px;
   transition: transform 160ms ease;
 }
@@ -19898,7 +19898,7 @@ select.debt-form-input {
 
 .debt-form-error {
   margin: 10px 0 0;
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: 13px;
 }
 
@@ -19961,7 +19961,7 @@ select.debt-form-input {
   border-radius: 999px;
   background: transparent;
   padding: 6px 10px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 12px;
   font-weight: 700;
 }
@@ -19988,7 +19988,7 @@ select.debt-form-input {
   width: 28px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 12px;
   font-weight: 800;
 }
@@ -20006,7 +20006,7 @@ select.debt-form-input {
 }
 
 .debt-form-manual-summary strong {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 13px;
 }
 
@@ -20032,7 +20032,7 @@ select.debt-form-input {
   border: 1px solid color-mix(in srgb, var(--color-primary) 26%, transparent);
   border-radius: 8px;
   background: transparent;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 12px;
   font-weight: 700;
 }
@@ -20043,7 +20043,7 @@ select.debt-form-input {
 
 .debt-form-remove-period:hover {
   background: color-mix(in srgb, var(--color-danger) 10%, transparent);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .debt-form-manual-schedule--focus {
@@ -20119,7 +20119,7 @@ select.debt-form-input {
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-success, #16a34a) 14%, transparent);
   padding: 4px 9px;
-  color: var(--color-success, #15803d);
+  color: var(--color-success-text, #15803d);
   font-size: 12px;
   font-weight: 700;
 }
@@ -20215,7 +20215,7 @@ select.debt-form-input {
 }
 
 .debt-pressure-table-row strong {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: 12px;
 }
 
@@ -20431,7 +20431,7 @@ select.debt-form-input {
 
 .repayment-debt-due-badge.tone-safe {
   background: color-mix(in srgb, var(--color-success) 13%, transparent);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .repayment-debt-due-badge.tone-warning {
@@ -20441,7 +20441,7 @@ select.debt-form-input {
 
 .repayment-debt-due-badge.tone-danger {
   background: color-mix(in srgb, var(--color-danger) 12%, transparent);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .repayment-debt-due-badge.tone-muted {
@@ -20474,7 +20474,7 @@ select.debt-form-input {
 }
 
 .repayment-debt-detail-actions button:last-child {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .repayment-debt-detail-metrics {
@@ -20601,19 +20601,19 @@ select.debt-form-input {
 }
 
 .repayment-overview-pressure-safe .finance-overview-number {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .repayment-overview-pressure-warning .finance-overview-number {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .repayment-overview-pressure-danger .finance-overview-number {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .repayment-overview-health .finance-overview-number {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .repayment-overview-income {
@@ -20689,7 +20689,7 @@ select.debt-form-input {
   place-items: center;
   border-right: 1px solid var(--color-divider);
   background: color-mix(in srgb, var(--color-primary-bg) 64%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-family: var(--font-number);
   font-weight: 900;
 }
@@ -20745,7 +20745,7 @@ select.debt-form-input {
 }
 
 .repayment-ai-eyebrow {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 10px;
   font-weight: 850;
   letter-spacing: 0.12em;
@@ -20755,7 +20755,7 @@ select.debt-form-input {
   min-height: 34px;
   padding: 6px 12px;
   border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 12px;
   font-weight: 800;
 }
@@ -20803,15 +20803,15 @@ select.debt-form-input {
 }
 
 .repayment-ai-summary-item.tone-safe strong {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .repayment-ai-summary-item.tone-warning strong {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .repayment-ai-summary-item.tone-danger strong {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .repayment-ai-extra {
@@ -20876,7 +20876,7 @@ select.debt-form-input {
 
 .repayment-ai-details > summary::before {
   content: '›';
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 17px;
   line-height: 1;
   transition: transform 160ms ease;
@@ -21238,7 +21238,7 @@ select.debt-form-input {
   align-items: center;
   gap: 8px;
   padding: 9px 0 2px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   cursor: pointer;
   font-size: 12px;
   font-weight: 800;
@@ -21296,7 +21296,7 @@ select.debt-form-input {
 
 .repayment-debt-trend-next {
   flex: 0 0 auto;
-  color: var(--color-danger, #ef4444) !important;
+  color: var(--color-danger-text, #ef4444) !important;
   font-weight: 750;
   white-space: nowrap;
 }
@@ -21383,7 +21383,7 @@ select.debt-form-input {
   background: var(--color-bg-subtle);
 }
 .repayment-debt-context-menu button.is-danger {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .repayment-inline-form .finance-unit-input > .finance-input-floating-label {
@@ -21525,14 +21525,14 @@ select.debt-form-input {
   line-height: 1.7;
 }
 .finance-eyebrow {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 .finance-salary-hero-mark {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 52px;
   font-weight: 800;
   line-height: 1;
@@ -21578,7 +21578,7 @@ select.debt-form-input {
   content: '主结论';
   display: block;
   margin-bottom: 5px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 10px;
   letter-spacing: 0.1em;
 }
@@ -21597,7 +21597,7 @@ select.debt-form-input {
   border-right: 1px solid var(--color-divider);
 }
 .finance-news-kicker {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -21624,7 +21624,7 @@ select.debt-form-input {
   font-size: 12px;
 }
 .finance-news-lead-meta a {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 700;
 }
 .finance-news-editorial-layout .finance-news-compact-list {

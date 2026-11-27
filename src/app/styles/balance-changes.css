@@ -45,7 +45,7 @@
 }
 
 .balance-change-reset:hover {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
 }
 
@@ -89,11 +89,11 @@
 }
 
 .is-positive {
-  color: var(--color-income);
+  color: var(--color-income-text);
 }
 
 .is-negative {
-  color: var(--color-expense);
+  color: var(--color-expense-text);
 }
 
 .is-neutral {
@@ -435,7 +435,7 @@
 
 .balance-change-pagination-actions button:hover:not(:disabled) {
   border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .balance-change-pagination-actions button:disabled {

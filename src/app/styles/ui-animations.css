@@ -99,13 +99,13 @@ button.danger:active:not(:disabled) {
 }
 
 .amount-income {
-  color: var(--color-income);
+  color: var(--color-income-text);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
 .amount-expense {
-  color: var(--color-expense);
+  color: var(--color-expense-text);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -137,7 +137,7 @@ button.danger:active:not(:disabled) {
   }
   30% {
     transform: translateY(-4px);
-    color: var(--color-success);
+    color: var(--color-success-text);
   }
   100% {
     transform: translateY(0);
@@ -150,7 +150,7 @@ button.danger:active:not(:disabled) {
   }
   30% {
     transform: translateY(4px);
-    color: var(--color-danger);
+    color: var(--color-danger-text);
   }
   100% {
     transform: translateY(0);
@@ -168,12 +168,12 @@ button.danger:active:not(:disabled) {
 
 /* 确保金额在暗色模式下的对比度 */
 [data-theme='dark'] .amount-income {
-  color: var(--color-income);
+  color: var(--color-income-text);
   text-shadow: 0 0 1px rgba(74, 222, 128, 0.2);
 }
 
 [data-theme='dark'] .amount-expense {
-  color: var(--color-expense);
+  color: var(--color-expense-text);
   text-shadow: 0 0 1px rgba(248, 113, 113, 0.2);
 }
 

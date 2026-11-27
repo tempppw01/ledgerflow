@@ -93,7 +93,7 @@
   border: 1px solid var(--color-border-light);
   border-radius: 8px;
   background: var(--color-bg-elevated);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 14px;
   font-weight: 800;
 }
@@ -218,7 +218,7 @@
 
 .repayment-console-eyebrow {
   margin: 0;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 11px;
   font-weight: 750;
 }
@@ -495,7 +495,7 @@
 .repayment-overview-health .finance-metric-help:hover,
 .repayment-overview-health .finance-metric-help:focus-visible {
   border-color: var(--color-primary);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   outline: none;
 }
 
@@ -616,7 +616,7 @@
   border: 1px solid color-mix(in srgb, var(--color-primary) 34%, var(--color-border));
   border-radius: 6px;
   background: color-mix(in srgb, var(--color-primary-bg) 52%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 12px;
   font-weight: 750;
   white-space: nowrap;
@@ -875,6 +875,20 @@
   min-width: 0;
   --principal-color: #409ad6;
   --interest-color: #f2a147;
+  /*
+   * 这两个色是给「债务压力图」的柱子/描边调的,当文字色都过不了 1.4.3:
+   * #f2a147 对页面底只有 1.93:1、#409ad6 只有 2.82:1(实测)。
+   * 所以照 tokens.css 的做法另给文字用的取值,填充/描边继续用上面两个。
+   * #8a5200 对四种浅底最低 4.78:1、#1f6f9e 最低 4.11:1。
+   */
+  --interest-color-text: #8a5200;
+  --principal-color-text: #1f6f9e;
+}
+
+/* 暗色下原色本来就够(#f2a147 8.26:1、#409ad6 5.65:1),文字色直接用原色。 */
+[data-theme='dark'] .debt-pressure-chart--readable {
+  --interest-color-text: var(--interest-color);
+  --principal-color-text: var(--principal-color);
 }
 .debt-pressure-controls {
   display: flex;
@@ -931,7 +945,7 @@
   font-size: 11px;
 }
 .debt-pressure-interest-readout strong {
-  color: var(--interest-color);
+  color: var(--interest-color-text);
   font-size: 14px;
 }
 .debt-pressure-interest-readout em {
@@ -1033,7 +1047,7 @@
   font-variant-numeric: tabular-nums;
 }
 .debt-pressure-interest-summary strong em {
-  color: var(--interest-color);
+  color: var(--interest-color-text);
   font-style: normal;
 }
 .debt-pressure-interest-legend {
@@ -1196,7 +1210,7 @@
 }
 .repayment-agent-error {
   margin: 0;
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: 13px;
 }
 .repayment-agent-result {

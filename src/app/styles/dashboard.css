@@ -170,7 +170,7 @@
 /* Future cashflow and actionable financial follow-ups */
 .dashboard-cashflow-agenda { display: grid; gap: var(--space-3); margin-top: var(--space-3); padding: var(--space-4); }
 .dashboard-cashflow-agenda .dashboard-section-header { margin: 0; }
-.dashboard-cashflow-agenda .dashboard-section-header > strong { color: var(--color-primary); font-size: var(--font-sm); }
+.dashboard-cashflow-agenda .dashboard-section-header > strong { color: var(--color-primary-text); font-size: var(--font-sm); }
 .dashboard-cashflow-agenda-body { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(180px, .4fr); gap: var(--space-3); }
 .dashboard-cashflow-event { min-height: 48px; padding: 8px 10px; }
 .dashboard-cashflow-event-main { gap: 1px; }
@@ -181,20 +181,20 @@
 .dashboard-cashflow-timeline.has-brand-logos .dashboard-cashflow-event { grid-template-columns: 58px 26px minmax(0, 1fr) auto; }
 .dashboard-cashflow-event-logo { display: grid; place-items: center; }
 .dashboard-cashflow-event { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; gap: var(--space-3); align-items: center; width: 100%; padding: 11px 0; border: 0; border-bottom: 1px solid var(--color-divider); background: transparent; color: var(--color-text); text-align: left; cursor: pointer; }
-.dashboard-cashflow-event:hover strong { color: var(--color-primary); }
+.dashboard-cashflow-event:hover strong { color: var(--color-primary-text); }
 .dashboard-cashflow-event-date { color: var(--color-text-secondary); font-size: var(--font-xs); font-variant-numeric: tabular-nums; }
 .dashboard-cashflow-event-main { display: grid; gap: 2px; min-width: 0; }
 .dashboard-cashflow-event-main strong { overflow: hidden; font-size: var(--font-sm); text-overflow: ellipsis; white-space: nowrap; }
 .dashboard-cashflow-event-main small { color: var(--color-text-tertiary); font-size: var(--font-xs); }
 .dashboard-cashflow-event b { font-family: var(--font-number); font-size: var(--font-sm); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.dashboard-cashflow-event b.is-expense { color: var(--color-expense); }
-.dashboard-cashflow-event b.is-income { color: var(--color-income); }
+.dashboard-cashflow-event b.is-expense { color: var(--color-expense-text); }
+.dashboard-cashflow-event b.is-income { color: var(--color-income-text); }
 .dashboard-cashflow-empty { margin: 0; padding: var(--space-4) 0; color: var(--color-text-secondary); font-size: var(--font-sm); }
 .dashboard-finance-todos { display: grid; align-content: start; gap: 6px; padding-left: var(--space-4); border-left: 1px solid var(--color-divider); }
 .dashboard-cashflow-todo-title { margin-bottom: 4px; color: var(--color-text-secondary); font-size: var(--font-xs); font-weight: 700; }
 .dashboard-finance-todos button { display: flex; align-items: center; gap: 8px; padding: 7px 0; border: 0; background: transparent; color: var(--color-text); text-align: left; cursor: pointer; }
-.dashboard-finance-todos button:hover span { color: var(--color-primary); }
-.dashboard-finance-todos button b { display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 50%; background: var(--color-primary-bg); color: var(--color-primary); font-family: var(--font-number); font-size: var(--font-xs); }
+.dashboard-finance-todos button:hover span { color: var(--color-primary-text); }
+.dashboard-finance-todos button b { display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 50%; background: var(--color-primary-bg); color: var(--color-primary-text); font-family: var(--font-number); font-size: var(--font-xs); }
 .dashboard-finance-todos button span,.dashboard-finance-todos p { margin: 0; color: var(--color-text-secondary); font-size: var(--font-sm); line-height: var(--leading-relaxed); }
 
 .dashboard-asset-liability-panel {
@@ -228,7 +228,7 @@
   border: 1px solid var(--color-primary-border);
   border-radius: var(--radius-full);
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: var(--font-xs);
   font-weight: 650;
   white-space: nowrap;
@@ -291,13 +291,13 @@
    整列与上下行错位,格内金额也被挤掉。改用 inset 阴影画强调条,尺寸与其它格一致;
    em 的「12月」标签居中放在顶部,配合 padding-top 把日期/金额整体下移,避免压住日期数字。 */
 .dashboard-calendar-day.is-month-start { padding-top: 8px; box-shadow: inset 2px 0 0 var(--color-primary), inset 5px 0 0 color-mix(in srgb, var(--color-primary) 12%, transparent); }
-.dashboard-calendar-day.is-month-start em { position: absolute; top: 0; right: 0; left: 0; height: 8px; color: var(--color-primary); font-size: 8px; font-style: normal; font-weight: 700; line-height: 8px; text-align: center; }
+.dashboard-calendar-day.is-month-start em { position: absolute; top: 0; right: 0; left: 0; height: 8px; color: var(--color-primary-text); font-size: 8px; font-style: normal; font-weight: 700; line-height: 8px; text-align: center; }
 .dashboard-calendar-day b { color: var(--color-text); font-family: var(--font-number); font-size: 11px; font-weight: 700; }
 .dashboard-calendar-day small { min-width: 0; color: var(--color-text-tertiary); font-family: var(--font-number); font-size: 10px; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; white-space: nowrap; }
 .dashboard-calendar-day.is-positive { border-color: color-mix(in srgb, var(--color-danger) 45%, var(--color-border-light)); background: color-mix(in srgb, var(--color-danger) calc(var(--calendar-intensity) * 100%), var(--color-bg-elevated)); }
-.dashboard-calendar-day.is-positive small { color: var(--color-danger); }
+.dashboard-calendar-day.is-positive small { color: var(--color-danger-text); }
 .dashboard-calendar-day.is-negative { border-color: color-mix(in srgb, var(--color-income) 45%, var(--color-border-light)); background: color-mix(in srgb, var(--color-income) calc(var(--calendar-intensity) * 100%), var(--color-bg-elevated)); }
-.dashboard-calendar-day.is-negative small { color: var(--color-income); }
+.dashboard-calendar-day.is-negative small { color: var(--color-income-text); }
 .dashboard-calendar-grid.is-monthly { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .dashboard-calendar-grid.is-monthly .dashboard-calendar-day { min-height: 42px; }
 .dashboard-calendar-day.has-events { box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--color-primary) 55%, transparent); }
@@ -451,7 +451,7 @@
 .dashboard-forecast-repeat[aria-pressed='true'] {
   border-color: var(--color-primary-border);
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 .dashboard-forecast-submit {
   height: 32px;
@@ -474,7 +474,7 @@
   font-size: var(--font-xs);
   cursor: pointer;
 }
-.dashboard-forecast-error { margin: 0; color: var(--color-danger); font-size: var(--font-xs); }
+.dashboard-forecast-error { margin: 0; color: var(--color-danger-text); font-size: var(--font-xs); }
 .dashboard-forecast-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .dashboard-forecast-item {
   display: inline-flex;
@@ -500,7 +500,7 @@
   white-space: nowrap;
   cursor: pointer;
 }
-.dashboard-forecast-item-name:hover { color: var(--color-primary); }
+.dashboard-forecast-item-name:hover { color: var(--color-primary-text); }
 .dashboard-forecast-item.is-editing {
   border-color: var(--color-primary-border);
   background: var(--color-primary-bg);
@@ -519,7 +519,7 @@
 .dashboard-forecast-item.is-out-of-range .dashboard-forecast-item-amount { color: var(--color-text-tertiary); }
 .dashboard-forecast-item-outofrange { flex: 0 0 auto; padding: 0 5px; border: 1px solid var(--color-border); border-radius: 999px; color: var(--color-text-secondary); font-size: 10px; line-height: 1.5; white-space: nowrap; }
 .dashboard-forecast-outofrange-hint { margin: 6px 0 0; color: var(--color-text-tertiary); font-size: var(--font-xs); line-height: 1.5; }
-.dashboard-forecast-outofrange-action { margin-left: 6px; padding: 1px 8px; border: 1px solid color-mix(in srgb, var(--color-primary) 32%, var(--color-border)); border-radius: 999px; background: color-mix(in srgb, var(--color-primary) 8%, transparent); color: var(--color-primary); font: inherit; font-weight: 600; cursor: pointer; }
+.dashboard-forecast-outofrange-action { margin-left: 6px; padding: 1px 8px; border: 1px solid color-mix(in srgb, var(--color-primary) 32%, var(--color-border)); border-radius: 999px; background: color-mix(in srgb, var(--color-primary) 8%, transparent); color: var(--color-primary-text); font: inherit; font-weight: 600; cursor: pointer; }
 .dashboard-forecast-outofrange-action:hover { background: color-mix(in srgb, var(--color-primary) 16%, transparent); }
 .dashboard-forecast-item-times {
   color: var(--color-text-tertiary);
@@ -530,8 +530,8 @@
 }
 .dashboard-forecast-item-date { color: var(--color-text-tertiary); font-family: var(--font-number); }
 .dashboard-forecast-item-amount { font-family: var(--font-number); font-variant-numeric: tabular-nums; }
-.dashboard-forecast-item-amount.is-income { color: var(--color-income); }
-.dashboard-forecast-item-amount.is-expense { color: var(--color-danger); }
+.dashboard-forecast-item-amount.is-income { color: var(--color-income-text); }
+.dashboard-forecast-item-amount.is-expense { color: var(--color-danger-text); }
 .dashboard-forecast-item-remove {
   display: grid;
   place-items: center;
@@ -548,12 +548,12 @@
 }
 .dashboard-forecast-item-remove:hover {
   background: color-mix(in srgb, var(--color-danger) 14%, transparent);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 .dashboard-forecast-summary { display: flex; flex-wrap: wrap; gap: 8px 20px; color: var(--color-text-tertiary); font-size: var(--font-xs); }
 .dashboard-forecast-summary span { display: inline-flex; align-items: baseline; gap: 6px; }
 .dashboard-forecast-summary strong { color: var(--color-text); font-family: var(--font-number); font-variant-numeric: tabular-nums; }
-.dashboard-forecast-summary .is-net strong { color: var(--color-primary); }
+.dashboard-forecast-summary .is-net strong { color: var(--color-primary-text); }
 
 @media (max-width: 680px) {
   .dashboard-simulation-insights { grid-template-columns: 1fr; }

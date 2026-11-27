@@ -42,7 +42,7 @@
 
 .investments-console-eyebrow {
   margin: 0;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 11px;
   font-weight: 700;
 }
@@ -235,7 +235,7 @@
   padding: 0 10px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-primary-bg) 82%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 12px;
   font-weight: 700;
 }
@@ -285,11 +285,11 @@
 }
 
 .investments-summary-pill.is-positive strong {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .investments-summary-pill.is-negative strong {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .investments-ai-grid {
@@ -532,12 +532,12 @@
 
 .investments-today-summary .is-positive strong,
 .investments-position-glance-row .is-positive strong {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .investments-today-summary .is-negative strong,
 .investments-position-glance-row .is-negative strong {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .investments-today-note {
@@ -548,7 +548,7 @@
 }
 
 .investments-today-note strong {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 850;
   text-decoration: underline;
   text-decoration-thickness: 1.5px;
@@ -613,7 +613,7 @@
   border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-primary-bg) 72%, transparent);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 9px;
   font-variant-numeric: tabular-nums;
   font-weight: 800;
@@ -703,13 +703,13 @@
 .investments-market-insight-signal.is-strong {
   border-color: color-mix(in srgb, var(--color-income) 35%, var(--color-border));
   background: color-mix(in srgb, var(--color-income) 10%, transparent);
-  color: var(--color-income);
+  color: var(--color-income-text);
 }
 
 .investments-market-insight-signal.is-weak {
   border-color: color-mix(in srgb, var(--color-expense) 35%, var(--color-border));
   background: color-mix(in srgb, var(--color-expense) 10%, transparent);
-  color: var(--color-expense);
+  color: var(--color-expense-text);
 }
 
 .investments-market-insight-footer {
@@ -731,7 +731,7 @@
   border: 1px solid color-mix(in srgb, var(--color-primary) 26%, var(--color-border));
   border-radius: 7px;
   background: color-mix(in srgb, var(--color-primary) 8%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
@@ -769,7 +769,7 @@
   display: inline-block;
   min-width: 28px;
   margin-right: 6px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 11px;
   font-weight: 750;
 }
@@ -842,11 +842,11 @@
 }
 
 .investments-board-health.is-green {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .investments-board-health.is-red {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .investments-board-health.is-yellow,
@@ -1026,7 +1026,7 @@
 }
 
 .investments-global-quotes-head small {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .investments-global-quote-grid {
@@ -1243,12 +1243,12 @@
 }
 
 .investments-global-quote-card > span.is-positive {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-weight: 800;
 }
 
 .investments-global-quote-card > span.is-negative {
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-weight: 800;
 }
 
@@ -1317,7 +1317,7 @@
 
 .investments-global-trend-toggle button.is-active {
   background: var(--color-bg-elevated);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   box-shadow: 0 3px 12px color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 
@@ -1373,15 +1373,15 @@
   height: auto;
   min-height: 224px;
   overflow: visible;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .investments-global-kline-svg.is-positive {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .investments-global-kline-svg.is-negative {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .investments-global-kline-candle line {
@@ -1396,11 +1396,11 @@
 }
 
 .investments-global-kline-candle.is-positive {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .investments-global-kline-candle.is-negative {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .investments-global-kline-candle.is-flat {
@@ -1547,7 +1547,7 @@
 }
 
 .investments-global-clock-eyebrow {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.12em;
@@ -1941,14 +1941,14 @@
 .investments-market-chart.is-positive,
 .investments-market-mini-stats .is-positive,
 .investments-market-side-grid .is-positive {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .investments-market-tab.is-negative > em,
 .investments-market-chart.is-negative,
 .investments-market-mini-stats .is-negative,
 .investments-market-side-grid .is-negative {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .investments-market-body {
@@ -2027,7 +2027,7 @@
 }
 
 .investments-market-chart-tooltip span {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 900;
@@ -2054,7 +2054,7 @@
   width: 100%;
   height: 224px;
   min-height: 0;
-  color: var(--color-success);
+  color: var(--color-success-text);
   overflow: visible;
 }
 
@@ -2263,7 +2263,7 @@
 
 .investments-market-history-range-tabs button[aria-selected='true'] {
   border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-border));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: color-mix(in srgb, var(--color-primary-bg) 65%, transparent);
 }
 
@@ -2308,12 +2308,12 @@
 
 .investments-market-history-summary > strong.is-positive,
 .investments-simulation-result .is-positive strong {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .investments-market-history-summary > strong.is-negative,
 .investments-simulation-result .is-negative strong {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .investments-market-history-chart {
@@ -2325,11 +2325,11 @@
 }
 
 .investments-market-history-chart.is-positive {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .investments-market-history-chart.is-negative {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .investments-market-history-axis {
@@ -2468,7 +2468,7 @@
   padding: 8px 10px;
   border-radius: 10px;
   background: color-mix(in srgb, var(--color-danger-bg) 68%, transparent);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .investments-support-column .investments-market-news-panel:hover,
@@ -2805,11 +2805,11 @@
 }
 
 .investments-market-sector-item em.is-positive {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .investments-market-sector-item em.is-negative {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .investments-market-sector-item em.is-flat,
@@ -2884,12 +2884,12 @@
 
 .investments-market-board-card-head > b.is-positive,
 .investments-market-board-card-stocks b.is-positive {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .investments-market-board-card-head > b.is-negative,
 .investments-market-board-card-stocks b.is-negative {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .investments-market-board-card-meta {
@@ -3004,11 +3004,11 @@
 }
 
 .investments-market-breadth-legend .is-up {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .investments-market-breadth-legend .is-down {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .investments-market-board-headline {
@@ -3050,11 +3050,11 @@
 }
 
 .investments-market-board-headline b.is-positive {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .investments-market-board-headline b.is-negative {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .investments-market-board-list {
@@ -3137,11 +3137,11 @@
 }
 
 .investments-market-board-change.is-positive strong {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .investments-market-board-change.is-negative strong {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .investments-market-board-counts {
@@ -3152,11 +3152,11 @@
 }
 
 .investments-market-board-counts span:first-child {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .investments-market-board-counts span:last-child {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .investments-market-news-list {
@@ -3212,7 +3212,7 @@
   padding: 0 8px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-danger-bg) 70%, transparent);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
   font-size: 12px;
@@ -3221,7 +3221,7 @@
 }
 
 .investments-market-news-item strong {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -3249,7 +3249,7 @@
   padding: 0 8px;
   border-radius: 7px;
   background: color-mix(in srgb, var(--color-bg-subtle) 76%, transparent);
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
   font-size: 11px;
@@ -3281,7 +3281,7 @@
 .investments-market-news-error {
   margin: 0;
   background: color-mix(in srgb, var(--color-danger-bg) 68%, transparent);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: 12px;
 }
 
@@ -3394,11 +3394,11 @@
 }
 
 .investments-flat-metric.is-positive strong {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .investments-flat-metric.is-negative strong {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .investments-flat-mini-grid {
@@ -3497,7 +3497,7 @@
   padding: 0 10px;
   margin-bottom: 6px;
   border-radius: 999px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: color-mix(in srgb, var(--color-primary-bg) 84%, var(--color-bg-elevated));
   font-size: 12px;
   font-weight: 800;
@@ -3554,7 +3554,7 @@
   gap: 0;
   border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-bg-elevated) 94%, var(--color-primary-bg));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .investments-support-toggle img {
@@ -3592,7 +3592,7 @@
 }
 
 .investments-ai-settings-link strong {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 12px;
   white-space: nowrap;
 }
@@ -3906,17 +3906,17 @@
 }
 
 .investments-analysis-risk.is-low {
-  color: var(--color-success);
+  color: var(--color-success-text);
   background: color-mix(in srgb, var(--color-success-bg) 78%, var(--color-bg-elevated));
 }
 
 .investments-analysis-risk.is-medium {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: color-mix(in srgb, var(--color-primary-bg) 84%, var(--color-bg-elevated));
 }
 
 .investments-analysis-risk.is-high {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   background: color-mix(in srgb, var(--color-danger-bg) 82%, var(--color-bg-elevated));
 }
 
@@ -4092,7 +4092,7 @@
 
 .investments-analysis-watch-btn.is-active {
   background: color-mix(in srgb, var(--color-primary-bg) 84%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   border-color: color-mix(in srgb, var(--color-primary) 16%, transparent);
 }
 
@@ -4238,7 +4238,7 @@
 
 .investments-ai-scroll-top-btn:hover:not(:disabled),
 .investments-ai-scroll-top-btn:focus-visible {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .investments-ai-composer.is-compact .investments-ai-scroll-top-btn {
@@ -4371,7 +4371,7 @@
 }
 
 .investments-market-closure-eyebrow {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -4498,7 +4498,7 @@
 
 .investments-ai-clear-context:hover {
   border-color: color-mix(in srgb, var(--color-danger, #d9485f) 48%, var(--color-border-light));
-  color: var(--color-danger, #d9485f);
+  color: var(--color-danger-text, #d9485f);
 }
 
 .investments-ai-progress {
@@ -4590,7 +4590,7 @@
 
 .investments-ai-suggestion-row button:hover:not(:disabled),
 .investments-ai-suggestion-row button:focus-visible {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   border-color: color-mix(in srgb, var(--color-primary) 38%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-primary-bg) 78%, var(--color-bg-elevated));
 }
@@ -4657,7 +4657,7 @@
 }
 
 .investments-ai-input-toolbar .chat-upload-btn .chat-svg-icon {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .investments-ai-input-toolbar .chat-model-trigger-glyph {
@@ -4693,7 +4693,7 @@
 
 .investments-ai-submit-btn.is-stop {
   background: color-mix(in srgb, var(--color-danger-bg) 84%, var(--color-bg-elevated));
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   border-color: color-mix(in srgb, var(--color-danger) 18%, var(--color-border-light));
 }
 
@@ -4890,7 +4890,7 @@
   height: 20px;
   border-radius: 7px;
   background: color-mix(in srgb, var(--color-primary-bg) 70%, var(--color-bg-subtle));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 11px;
   font-weight: 900;
 }
@@ -4996,7 +4996,7 @@
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--color-danger) 18%, transparent);
   background: color-mix(in srgb, var(--color-danger-bg) 72%, var(--color-bg-elevated));
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -5057,7 +5057,7 @@
 }
 
 .investments-fund-lookup-error {
-  color: var(--color-danger) !important;
+  color: var(--color-danger-text) !important;
 }
 
 .investments-stock-lookup {
@@ -5255,7 +5255,7 @@
   border: 1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-primary-bg) 58%, transparent);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 11px;
   font-weight: 800;
   line-height: 1;
@@ -5301,7 +5301,7 @@
 
 .investments-watch-card-brief em {
   flex: 0 0 auto;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 11px;
   font-style: normal;
   font-weight: 800;
@@ -5391,7 +5391,7 @@
 
 .investments-watch-holding-btn:hover,
 .investments-watch-holding-btn:focus-visible {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   box-shadow: none;
 }
 
@@ -5507,11 +5507,11 @@
 }
 
 .investments-watch-holding-quote-list em.is-positive {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .investments-watch-holding-quote-list em.is-negative {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .investments-watch-holding-quote-list em.is-flat,
@@ -5538,7 +5538,7 @@
   border-radius: 6px;
   border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-primary-bg) 72%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 11px;
   font-weight: 800;
 }
@@ -5848,7 +5848,7 @@
   border: 1px solid color-mix(in srgb, var(--color-primary) 28%, var(--color-border-light));
   border-radius: 50%;
   background: color-mix(in srgb, var(--color-primary-bg) 84%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-family: Georgia, serif;
   font-size: 20px;
   font-weight: 800;
@@ -5919,7 +5919,7 @@
 .investment-chat-floating-close:focus-visible {
   border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-primary-bg) 80%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .investment-chat-floating-pin.is-active {
@@ -6266,7 +6266,7 @@
   display: grid;
   gap: 7px;
   min-width: 0;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .investments-watch-performance-line svg {
@@ -6335,7 +6335,7 @@
 }
 
 .investments-watch-performance-values em {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-style: normal;
   font-weight: 850;
 }
@@ -6345,7 +6345,7 @@
 }
 
 .investments-watch-performance-values span.is-negative em {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .investments-watch-detail-grid {
@@ -6662,11 +6662,11 @@
 }
 
 .investments-card-grid strong.positive {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .investments-card-grid strong.negative {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .investments-history-head {
@@ -6760,11 +6760,11 @@
 }
 
 .investments-history-row .positive {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .investments-history-row .negative {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .investments-alert-card {
@@ -6874,7 +6874,7 @@
   border-radius: 999px;
   border-color: color-mix(in srgb, var(--color-primary) 18%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-primary-bg) 78%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 12px;
   font-weight: 700;
 }
@@ -7819,7 +7819,7 @@
   cursor: pointer;
 }
 .investments-hot-industry-filters button.is-active {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   border-bottom-color: var(--color-primary);
 }
 .investments-market-board-card-head {
@@ -7868,7 +7868,7 @@
 }
 .investments-market-history-disclosure > summary::before {
   content: '+';
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 18px;
   font-weight: 400;
 }
@@ -7935,10 +7935,10 @@
 }
 
 .investments-industry-sparkline.is-positive {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 .investments-industry-sparkline.is-negative {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 .investments-industry-sparkline.is-flat {
   color: var(--color-text-tertiary);
@@ -8122,7 +8122,7 @@
   border: 1px solid color-mix(in srgb, var(--color-primary) 28%, var(--color-border-light));
   border-radius: 50%;
   background: var(--color-bg-elevated);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   box-shadow: 0 6px 18px color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 
@@ -8175,7 +8175,7 @@
   border: 1px solid color-mix(in srgb, var(--color-primary) 28%, var(--color-border-light));
   border-radius: 7px;
   background: color-mix(in srgb, var(--color-bg-elevated) 84%, var(--color-primary-bg));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 11px;
   font-weight: 750;
   white-space: nowrap;
@@ -8232,7 +8232,7 @@
   border: 1px solid color-mix(in srgb, var(--color-primary) 24%, var(--color-border-light));
   border-radius: 5px;
   background: color-mix(in srgb, var(--color-primary-bg) 76%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   cursor: pointer;
   opacity: 0.72;
   transition:
@@ -8386,7 +8386,7 @@
   border: 1px solid color-mix(in srgb, var(--color-primary) 24%, transparent);
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-primary-bg) 78%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 9px;
   font-style: normal;
   font-weight: 800;
@@ -8425,7 +8425,7 @@
 .investment-chat-floating-expand:focus-visible {
   border-color: color-mix(in srgb, var(--color-primary) 32%, var(--color-border-light));
   background: color-mix(in srgb, var(--color-primary-bg) 82%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .investment-chat-context-strip {
@@ -8462,7 +8462,7 @@
 
 .investment-chat-context-strip > span.is-agent-ready {
   border-color: color-mix(in srgb, var(--color-success) 28%, var(--color-border-light));
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-weight: 700;
 }
 
@@ -8476,7 +8476,7 @@
 
 .investment-chat-context-strip > span.is-agent-offline {
   border-color: var(--color-warning-border);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   font-weight: 700;
 }
 
@@ -8494,7 +8494,7 @@
   padding: 4px 8px;
   border-radius: 5px;
   background: color-mix(in srgb, var(--color-primary-bg) 74%, var(--color-bg-elevated));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 10px;
   font-weight: 750;
   text-overflow: ellipsis;
@@ -8529,7 +8529,7 @@
   border: 1px solid color-mix(in srgb, var(--color-primary) 36%, var(--color-border-light));
   border-radius: 6px;
   background: var(--color-bg-elevated);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 11px;
   font-weight: 750;
   text-decoration: none;
@@ -8573,7 +8573,7 @@
   border: 1px solid color-mix(in srgb, var(--color-primary) 30%, var(--color-border-light));
   border-radius: 999px;
   background: var(--color-bg-elevated);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 9px;
   font-weight: 800;
   line-height: 1.5;
@@ -8593,7 +8593,7 @@
 }
 
 .investment-ai-agent-action.is-update b {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .investment-ai-agent-action.is-undone {

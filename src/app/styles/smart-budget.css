@@ -70,7 +70,7 @@
   border: 1px solid var(--color-danger-border);
   border-radius: var(--radius-xs);
   background: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: var(--font-sm);
   line-height: var(--leading-normal);
 }
@@ -250,7 +250,7 @@
 
 .sb-filter-group button.is-active {
   background: var(--color-primary-bg);
-  color: var(--color-primary-hover);
+  color: var(--color-primary-text);
 }
 
 /* ---- 总览 ---- */
@@ -287,7 +287,7 @@
 }
 
 .sb-kpi-label svg {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .sb-kpi .sb-number {
@@ -392,7 +392,7 @@
 }
 
 .sb-health-factor-penalty.is-penalty {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .sb-pacing-hint {
@@ -489,17 +489,17 @@
 
 .sb-status-tag.is-normal {
   background: var(--color-success-bg);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .sb-status-tag.is-warning {
   background: var(--color-warning-bg);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .sb-status-tag.is-overspent {
   background: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .sb-category-amounts {
@@ -529,11 +529,11 @@
 }
 
 .sb-category-meta .is-safe {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .sb-category-meta .is-warn {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .sb-progress-track {
@@ -636,7 +636,7 @@
 }
 
 .sb-wizard-kicker {
-  color: var(--color-primary-hover);
+  color: var(--color-primary-text);
   font-size: var(--font-xs);
   font-weight: 700;
 }
@@ -732,7 +732,7 @@
 .sb-stepper li.done .sb-stepper-index {
   border-color: transparent;
   background: var(--color-success-bg);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .sb-block {
@@ -829,7 +829,7 @@
 .sb-ratio-options button.is-active {
   border-color: var(--color-primary);
   background: var(--color-primary-bg);
-  color: var(--color-primary-hover);
+  color: var(--color-primary-text);
 }
 
 .sb-block input[type='range'] {
@@ -910,7 +910,7 @@
 }
 
 .sb-edit-hint svg {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .sb-rigid-note {
@@ -1056,7 +1056,7 @@
 
 .sb-anomaly-tip {
   flex: 0 0 auto;
-  color: var(--color-danger) !important;
+  color: var(--color-danger-text) !important;
   font-weight: 700;
 }
 
@@ -1146,11 +1146,11 @@
 }
 
 .sb-compare-delta.is-up {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .sb-compare-delta.is-down {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 /* ---- 趋势 ---- */
@@ -1264,7 +1264,7 @@
   flex: 0 0 auto;
   border-radius: var(--radius-xs);
   background: var(--color-primary-bg);
-  color: var(--color-primary-hover);
+  color: var(--color-primary-text);
 }
 
 .sb-ai-summary {
@@ -1302,17 +1302,17 @@
 
 .sb-tag.is-increase {
   background: var(--color-success-bg);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .sb-tag.is-decrease {
   background: var(--color-danger-bg);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .sb-tag.is-keep {
   background: var(--color-primary-bg);
-  color: var(--color-primary-hover);
+  color: var(--color-primary-text);
 }
 
 .sb-ai-highlight {
@@ -1516,11 +1516,11 @@
 }
 
 .sb-number.is-positive {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .sb-number.is-negative {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .sb-drawer-rate {
@@ -1547,7 +1547,7 @@
 }
 
 .sb-drawer-section h4 svg {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .sb-drawer-note {
@@ -1629,7 +1629,7 @@
 
 .sb-transaction-list .sb-number {
   flex: 0 0 auto;
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: var(--font-sm);
 }
 

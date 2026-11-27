@@ -210,6 +210,30 @@
   --color-income: #34a853;
   --color-expense: #ea4335;
 
+  /*
+   * ---- 「文字专用」色 ----
+   *
+   * 上面这些语义色都是按**填充**调的(按钮底、图表块、徽标底),当文字色用普遍过不了
+   * WCAG 1.4.3 的 4.5:1。实测(对白底 / 页面底 #f3f5f9):
+   *   #f59e0b 2.15 / 1.97、#34a853 3.06 / 2.80、#10b981 2.54 / 2.32、
+   *   #ea4335 3.92 / 3.59、#f43f5e 3.67 / 3.36 —— 全部不达标。
+   *
+   * 所以单独给文字一套取值,原来那批 token 保持不动,继续管填充/边框。
+   * 改动规矩只有一条:凡是 `color:` 用语义色的地方换成 `*-text`,其余
+   * (background / border-color / fill / stroke / accent-color)**一律不动**。
+   * 这样按钮底、图表块仍然是原来的品牌色,只有文字变深,视觉上更沉稳。
+   *
+   * 下面每个取值都对 #ffffff / #f3f5f9 / #eef1f6 / #e8edf5 四种底色做过验证,
+   * 最低 4.83:1(见各条注释);暗色主题下这几个 token 全部直接等于原色,
+   * 因为原色在深底上本来就是达标的(5.7~8.6:1)。
+   */
+  --color-primary-text: #8a4a00; /* 6.86 / 6.29 / 6.06 / 5.84,对最暗的常见底 #d9dfeb 仍有 5.13 */
+  --color-success-text: #12603c; /* 7.60 / 6.96 / 6.71 / 6.46,对 #d9dfeb 5.68 */
+  --color-warning-text: #7d4700; /* 6.86 / 6.29 / 6.06 / 5.84,对 #d9dfeb 5.66 */
+  --color-danger-text: #b3261e; /* 6.54 / 5.99 / 5.77 / 5.56,对 #d9dfeb 4.89 */
+  --color-income-text: var(--color-success-text); /* 同上:7.60 / 6.96 / 6.71 / 6.46 */
+  --color-expense-text: var(--color-danger-text);
+
   /* ---- 主题渐变 ---- */
   --gradient-app-bg:
     radial-gradient(circle at 8% -12%, rgba(79, 110, 247, 0.1), transparent 36%),
@@ -479,6 +503,14 @@
   --color-income: #4ade80;
   --color-expense: #f87171;
 
+  /* 暗色下原色本来就是浅色,对 #1a1a1a 有 6.6~9.9:1,文字色直接沿用,不另调。 */
+  --color-primary-text: var(--color-primary);
+  --color-success-text: var(--color-success);
+  --color-warning-text: var(--color-warning);
+  --color-danger-text: var(--color-danger);
+  --color-income-text: var(--color-income);
+  --color-expense-text: var(--color-expense);
+
   --gradient-app-bg:
     radial-gradient(circle at 12% -8%, rgba(245, 158, 11, 0.13), transparent 34%),
     radial-gradient(circle at 88% -10%, rgba(45, 212, 191, 0.08), transparent 28%),
@@ -565,6 +597,8 @@
   --color-primary-bg: rgba(16, 185, 129, 0.12);
   --color-primary-border: rgba(16, 185, 129, 0.32);
   --color-on-primary: #1c1917;
+  /* 当文字色用:#10b981 对白底只有 2.54:1,#0f6b47 最差 4.89:1(底 #d9dfeb)。 */
+  --color-primary-text: #0f6b47;
 }
 
 [data-accent-theme='violet'] {
@@ -573,6 +607,11 @@
   --color-primary-bg: rgba(139, 92, 246, 0.12);
   --color-primary-border: rgba(139, 92, 246, 0.32);
   --color-on-primary: #ffffff;
+  /*
+   * 当文字色用:#7c3aed 对白底 5.70:1 看着够,但对偏暗的中性底 #d9dfeb 掉到 4.26:1
+   * —— 全站不只有"白色卡片"这一种底。改成 #6d28d9 后最差 5.31:1。
+   */
+  --color-primary-text: #6d28d9;
 }
 
 [data-accent-theme='rose'] {
@@ -581,6 +620,8 @@
   --color-primary-bg: rgba(244, 63, 94, 0.12);
   --color-primary-border: rgba(244, 63, 94, 0.32);
   --color-on-primary: #1c1917;
+  /* 当文字色用:#f43f5e 对白底 3.67:1,#be123c 最差 4.70:1(底 #d9dfeb)。 */
+  --color-primary-text: #be123c;
 }
 
 [data-accent-theme='amber'] {
@@ -589,6 +630,8 @@
   --color-primary-bg: rgba(245, 158, 11, 0.14);
   --color-primary-border: rgba(245, 158, 11, 0.34);
   --color-on-primary: #1c1917;
+  /* 当文字色用:#f59e0b 对白底 2.15:1,#8a4a00 最差 5.13:1(底 #d9dfeb)。 */
+  --color-primary-text: #8a4a00;
 }
 
 [data-accent-theme='aurora'] {
@@ -596,6 +639,8 @@
   --color-primary-hover: #6d28d9;
   --color-primary-bg: rgba(124, 58, 237, 0.16);
   --color-primary-border: rgba(99, 102, 241, 0.4);
+  /* 与 violet 同色;取同一个文字色,最差 5.31:1(底 #d9dfeb)。 */
+  --color-primary-text: #6d28d9;
   --gradient-hero:
     radial-gradient(circle at top right, rgba(236, 72, 153, 0.2), transparent 42%),
     radial-gradient(circle at left center, rgba(34, 197, 94, 0.12), transparent 48%),
@@ -650,4 +695,52 @@
   --color-text-primary: var(--color-text);
   --color-text-muted: var(--color-text-tertiary);
   --radius-pill: var(--radius-full);
+}
+
+/*
+ * ---- 暗色 × 主题色 的组合 ----
+ *
+ * 必须放在文件最后,而且要用两个属性一起选。
+ *
+ * 原因:`[data-theme='dark']` 和 `[data-accent-theme='amber']` 特异性都是 0-1-0,
+ * 而 accent 那几块写在 dark 之后,所以**同特异性下 accent 赢** ——
+ * 暗色 + 琥珀主题时 `--color-primary-text` 会拿到浅底用的 #8a4a00,
+ * 压在 #141414 上只有 2.68:1(实测,不是推断)。
+ * 这两点决定了修法:要么提高特异性,要么挪位置,这里选前者,写在下面对照最清楚。
+ *
+ * 顺带修掉一个更早就存在的暗色问题:`[data-accent-theme='violet'|'aurora']`
+ * 把 --color-primary 钉在 #7c3aed,它在 #1a1a1a 上只有 3.05:1,而默认那种
+ * 琥珀在暗色下是达标的。所以这几块也一并给出暗色取值。
+ *
+ * 文字色取值对五个底色(#141414 / #1a1a1a / #262626 / #303030 / #3a3a3a)
+ * 实测:琥珀 11.04~6.81、翠绿 9.58~5.92、紫罗兰 6.77~4.85、玫红 6.84~4.90。
+ * 最低的 4.85 出现在 #303030(hover 底)上,是全站既有语义色共同的边界,
+ * 没有哪一档能过,所以这里保持一致、不额外标新。
+ */
+[data-theme='dark'][data-accent-theme='emerald'] {
+  --color-primary: #34d399;
+  --color-primary-hover: #10b981;
+  --color-primary-text: var(--color-primary);
+}
+
+[data-theme='dark'][data-accent-theme='violet'] {
+  --color-primary: #a78bfa;
+  --color-primary-hover: #8b5cf6;
+  --color-primary-text: var(--color-primary);
+}
+
+[data-theme='dark'][data-accent-theme='rose'] {
+  --color-primary: #fb7185;
+  --color-primary-hover: #f43f5e;
+  --color-primary-text: var(--color-primary);
+}
+
+[data-theme='dark'][data-accent-theme='amber'] {
+  --color-primary-text: var(--color-primary);
+}
+
+[data-theme='dark'][data-accent-theme='aurora'] {
+  --color-primary: #a78bfa;
+  --color-primary-hover: #8b5cf6;
+  --color-primary-text: var(--color-primary);
 }

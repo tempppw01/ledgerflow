@@ -137,7 +137,25 @@ const SCAN = () => {
     return { color: acc ? over(acc, canvas) : canvas, uncertain: false };
   };
 
-  const out = { checked: 0, failures: [], skipped: 0, srOnly: 0, svgSkipped: 0 };
+  const out = {
+    checked: 0,
+    failures: [],
+    skipped: 0,
+    srOnly: 0,
+    svgSkipped: 0,
+    decorativeSkipped: 0
+  };
+
+  /** 元素自身或任一祖先标了 aria-hidden,或祖先是个 role="img" 的整体图形 */
+  const isDecorative = (el) => {
+    let node = el;
+    while (node && node !== document.body) {
+      if (node.getAttribute && node.getAttribute('aria-hidden') === 'true') return true;
+      if (node.getAttribute && node.getAttribute('role') === 'img') return true;
+      node = node.parentElement;
+    }
+    return false;
+  };
 
   /*
    * 「屏幕阅读器专用 / 视觉上隐藏」的文字不参与对比度判定,否则会得到假失败。
@@ -159,6 +177,20 @@ const SCAN = () => {
     // (文档 §2 的「测量陷阱 1」:首页趋势图标签曾因此误报)。
     if (el.ownerSVGElement) {
       out.svgSkipped += 1;
+      continue;
+    }
+
+    /*
+     * 装饰性文字不参与判定(1.4.3 只管"传达信息的文字")。
+     *
+     * 典型例子是订阅页的品牌文字瓦片:`.subscription-brand-logo` 是 role="img"
+     * 且带 aria-label,里面那层 `.subscription-brand-wordmark` 是 aria-hidden,
+     * 它的颜色是品牌自己的主色(--brand-color 由组件从 brandMarks 注入,
+     * 第三方配色不可控)。这种文字屏幕阅读器根本不读,颜色只是为了"看着像那个牌子",
+     * 拿 4.5:1 去要求它既不成立、也改不动(中国移动蓝改成深色就不像了)。
+     */
+    if (isDecorative(el)) {
+      out.decorativeSkipped += 1;
       continue;
     }
 
@@ -262,6 +294,7 @@ for (const scheme of ['light', 'dark']) {
       checked: r.checked,
       skipped: r.skipped,
       srOnly: r.srOnly,
+      decorativeSkipped: r.decorativeSkipped,
       failures: [...uniq.values()]
     });
   }
@@ -272,9 +305,10 @@ await browser.close();
 
 const total = all.reduce((n, r) => n + r.checked, 0);
 const skipped = all.reduce((n, r) => n + r.skipped, 0);
+const decorative = all.reduce((n, r) => n + (r.decorativeSkipped || 0), 0);
 const failing = all.filter((r) => r.failures.length);
 console.log(
-  `\n===== 共检查 ${total} 个文字节点,跳过 ${skipped}(渐变/透明),${failing.length} 个路由有对比度不达标 =====\n`
+  `\n===== 共检查 ${total} 个文字节点,跳过 ${skipped}(渐变/透明)+ ${decorative}(装饰性 aria-hidden),${failing.length} 个路由有对比度不达标 =====\n`
 );
 
 for (const r of failing) {

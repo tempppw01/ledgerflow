@@ -336,7 +336,7 @@
 .dashboard-core-top-list .dashboard-top-item strong {
   flex: 0 0 auto;
   white-space: nowrap;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .dashboard-top-toggle {
@@ -352,7 +352,7 @@
 
 .dashboard-top-toggle:hover {
   border-color: var(--color-primary-border);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: color-mix(in srgb, var(--color-primary-bg) 56%, var(--color-bg-elevated));
 }
 
@@ -663,19 +663,19 @@
 }
 
 .finance-feed-status-idle {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: color-mix(in srgb, var(--color-primary-bg) 72%, var(--color-bg-elevated));
   border-color: color-mix(in srgb, var(--color-primary-border) 70%, transparent);
 }
 
 .finance-feed-status-loading {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   background: color-mix(in srgb, var(--color-warning-bg) 76%, var(--color-bg-elevated));
   border-color: color-mix(in srgb, var(--color-warning) 28%, transparent);
 }
 
 .finance-feed-status-success {
-  color: var(--color-success);
+  color: var(--color-success-text);
   background: color-mix(in srgb, var(--color-success-bg) 82%, var(--color-bg-elevated));
   border-color: color-mix(in srgb, var(--color-success) 24%, transparent);
 }
@@ -687,7 +687,7 @@
 }
 
 .finance-feed-status-error {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   background: color-mix(in srgb, var(--color-danger-bg) 82%, var(--color-bg-elevated));
   border-color: color-mix(in srgb, var(--color-danger-border) 70%, transparent);
 }
@@ -839,7 +839,7 @@
   padding: 0 6px;
   border-radius: var(--radius-full);
   background: color-mix(in srgb, var(--color-primary) 14%, transparent);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: var(--font-xs);
   font-weight: 700;
   display: inline-flex;
@@ -853,7 +853,7 @@
 
 .transaction-filter-trigger.active {
   border-color: var(--color-primary);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: var(--color-primary-bg);
 }
 
@@ -1118,7 +1118,7 @@
 .transaction-filter-actions-grid > button.is-active {
   border-color: var(--color-primary);
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 @media (max-width: 520px) {
@@ -1429,7 +1429,7 @@
 .transaction-filter-trigger.active {
   border: 0;
   background: var(--color-bg-hover);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .transaction-filter-trigger-icon {
@@ -1495,7 +1495,7 @@
 }
 
 .transaction-filter-dialog-eyebrow {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -1545,7 +1545,7 @@
   place-items: center;
   border-radius: 10px;
   background: var(--color-primary-bg);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 10px;
   font-weight: 750;
   letter-spacing: 0.03em;
@@ -1641,7 +1641,7 @@
 }
 
 .transaction-filter-reset:hover {
-  color: var(--color-danger, #c2413b);
+  color: var(--color-danger-text, #c2413b);
   background: color-mix(in srgb, var(--color-danger, #c2413b) 8%, transparent);
 }
 
@@ -2109,7 +2109,7 @@
 }
 .help-eyebrow {
   margin: 0 0 10px;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: var(--font-sm);
   font-weight: 600;
 }
@@ -2148,7 +2148,7 @@
 }
 .help-jump-nav a:hover,
 .help-guide-content > a:hover {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 /* 目录链接原先只有 19px 的文本高度,触屏上很容易点到隔壁。
@@ -2204,7 +2204,7 @@
   scroll-margin-top: 24px;
 }
 .help-guide-number {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 13px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -2227,7 +2227,7 @@
   line-height: 1.8;
 }
 .help-guide-content > a {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-weight: 600;
 }
 .help-guide-content > a span {
@@ -2483,11 +2483,11 @@
 
 .financial-analysis-market-card.tone-income strong,
 .financial-analysis-market-bar-track i.is-positive {
-  color: var(--color-income);
+  color: var(--color-income-text);
 }
 
 .financial-analysis-market-card.tone-expense strong {
-  color: var(--color-expense);
+  color: var(--color-expense-text);
 }
 
 .financial-analysis-market-bars {
@@ -2605,7 +2605,7 @@
 
 .financial-analysis-ai-error {
   margin: 0;
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .financial-analysis-ai-empty {
@@ -2709,11 +2709,11 @@
 }
 
 .financial-analysis-metric-card.tone-income strong {
-  color: var(--color-income);
+  color: var(--color-income-text);
 }
 
 .financial-analysis-metric-card.tone-expense strong {
-  color: var(--color-expense);
+  color: var(--color-expense-text);
 }
 
 .financial-analysis-ai-card,
@@ -2799,7 +2799,7 @@
 .about-console-eyebrow,
 .about-section-label {
   margin: 0;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0;
@@ -2906,7 +2906,7 @@
 
 .about-update-result a,
 .about-link-row a {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   text-decoration: none;
   font-weight: 600;
 }
@@ -2918,17 +2918,17 @@
 
 .about-update-result.up-to-date {
   border-left-color: var(--color-success);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .about-update-result.update-available {
   border-left-color: var(--color-warning);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .about-update-result.error {
   border-left-color: var(--color-danger);
-  color: var(--color-danger);
+  color: var(--color-danger-text);
 }
 
 .about-content-section {
@@ -3453,7 +3453,7 @@
 }
 
 .finance-source-strip-copy > span {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 10px;
   font-weight: 700;
 }
@@ -3486,7 +3486,7 @@
   border: 1px solid var(--color-border-light);
   border-radius: 6px;
   background: var(--color-surface);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
@@ -3546,14 +3546,14 @@
 .finance-category-tabs button:hover,
 .finance-category-tabs button:focus-visible {
   border-color: color-mix(in srgb, var(--color-primary) 34%, var(--color-border-light));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
 }
 
 .finance-category-tabs button.is-active {
   border-color: color-mix(in srgb, var(--color-primary) 46%, var(--color-primary-border));
   background: color-mix(in srgb, var(--color-primary-bg) 90%, var(--color-surface));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 .finance-news-refresh-button {
@@ -3563,7 +3563,7 @@
   border: 1px solid var(--color-border-light);
   border-radius: 999px;
   background: var(--color-surface);
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: 12px;
   font-weight: 700;
 }
@@ -3681,7 +3681,7 @@
 .route-error-secondary:hover,
 .route-error-secondary:focus-visible {
   border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 /*

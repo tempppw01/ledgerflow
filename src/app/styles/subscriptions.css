@@ -53,7 +53,7 @@
 .subscriptions-template-copy p { margin: 0; color: var(--color-text-secondary); font-size: var(--font-sm); }
 .subscriptions-template-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--color-border-light); border-left: 1px solid var(--color-border-light); }
 .subscriptions-template-item { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); min-height: 60px; padding: var(--space-2) var(--space-3); border: 0; border-right: 1px solid var(--color-border-light); border-bottom: 1px solid var(--color-border-light); border-radius: 0; background: transparent; color: var(--color-text); text-align: left; transition: background var(--transition-fast), color var(--transition-fast); }
-.subscriptions-template-item:hover { background: var(--color-bg-hover); color: var(--color-primary-hover); }
+.subscriptions-template-item:hover { background: var(--color-bg-hover); color: var(--color-primary-text); }
 .subscriptions-template-item:focus-visible { outline: none; box-shadow: inset var(--vi-focus-ring); }
 .subscriptions-template-logo { display: grid; place-items: center; width: 28px; height: 28px; color: var(--color-text-secondary); }
 .subscriptions-template-logo svg { width: 19px; height: 19px; fill: currentColor; }
@@ -136,7 +136,7 @@
 }
 
 .subscriptions-summary-pill.is-active strong {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 /* 待处理提醒:一行说完,不再重复清单内容 */
@@ -217,7 +217,7 @@
 
 .subscriptions-more-toggle:hover,
 .subscriptions-more-toggle.is-open {
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
 }
 
@@ -251,7 +251,7 @@
 }
 
 .subscriptions-more-menu button.danger {
-  color: var(--color-expense);
+  color: var(--color-expense-text);
 }
 
 /* 表单头:折叠按钮 */
@@ -267,7 +267,7 @@
   border: 1px solid color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
   border-radius: 999px;
   background: transparent;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   font-size: var(--font-sm);
   cursor: pointer;
 }
