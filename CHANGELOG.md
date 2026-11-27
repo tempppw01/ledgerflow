@@ -3,6 +3,12 @@
 > 这份文件由 `node scripts/generate-changelog.mjs` 从 `release-notes/` 生成,**不要手改**。
 > 每条右侧链接指向该版本的完整说明。
 
+## 0.52.x
+
+| 版本 | 说明 |
+| --- | --- |
+| [v0.52.0](release-notes/RELEASE_NOTES_v0.52.0.md) | 新:关于页的「最近更新」—— 版本记录 + 中文说明 |
+
 ## 0.51.x
 
 | 版本 | 说明 |

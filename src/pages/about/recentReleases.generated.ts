@@ -34,6 +34,12 @@ export const RELEASE_HISTORY_LIMIT = 10;
 // prettier-ignore
 export const RELEASE_HISTORY: readonly ReleaseHistoryEntry[] = [
   {
+    version: '0.52.0',
+    publishedOn: '2026-11-28',
+    title: '新:关于页的「最近更新」—— 版本记录 + 中文说明',
+    summary: '关于页原来只有当前版本号和一个「检查更新」按钮 —— 版本号背后的那些改动,在这个应用里看不到。这一版补上最近 10 个版本的记录:版本号、发布日期、标题、中文摘要,每条都能点到对应的 GitHub Release。'
+  },
+  {
     version: '0.51.0',
     publishedOn: '2026-11-27',
     title: '新:美股盘前 / 盘后 —— 标记 + 倒计时',
@@ -86,11 +92,5 @@ export const RELEASE_HISTORY: readonly ReleaseHistoryEntry[] = [
     publishedOn: '2026-11-25',
     title: '订阅生成支出:补上四条不变量,并修一处会误导人的提示',
     summary: '「订阅 → 生成支出」这个函数有四个不变量,一条测试都没有(features/subscriptions/model 里测的是品牌图标与状态,不是它)…'
-  },
-  {
-    version: '0.50.50',
-    publishedOn: '2026-11-25',
-    title: '补上「再记一笔」的测试 —— 这条我当初明说没有单测',
-    summary: 'v0.50.41 上线「再记一笔」时,我在发布说明里写了一句实话:只有浏览器+数据库验证,没有单测。这轮把它补上,做法不是硬测页面,而是把与界面无关的逻辑抽出来…'
   }
 ];
