@@ -116,13 +116,23 @@ function resolveRangeStart(range: RangeOption, now: Date): number | null {
   return start.getTime();
 }
 
-function formatDayLabel(dayKey: string, tf: (key: string, fallback: string) => string) {
+/*
+ * 日期与星期**分开返回**,而不是拼成一个字符串。
+ *
+ * 原因:窄屏的时间列只有 ~65px,「11月15日 · 周日」要 79px,塞不下。
+ * 拼成一个字符串时,截断只能从末尾吃 —— 先吃「周日」,再吃「日」,最后连「15」都被吃掉,
+ * 变成「11月1…」,日期就没法读了。分开之后窄屏可以直接把「星期」整块隐藏
+ * (由 CSS 决定),日期永远是完整的。表头那行仍然拼回完整写法。
+ */
+function formatDayLabelParts(dayKey: string, tf: (key: string, fallback: string) => string) {
   const [year, month, day] = dayKey.split('-');
   const today = todayLocalDateKey();
-  if (dayKey === today) return tf('balanceChanges.day.today', '今天');
+  if (dayKey === today) return { date: tf('balanceChanges.day.today', '今天'), weekday: '' };
   const yesterdayDate = new Date();
   yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-  if (dayKey === toLocalDateKey(yesterdayDate)) return tf('balanceChanges.day.yesterday', '昨天');
+  if (dayKey === toLocalDateKey(yesterdayDate)) {
+    return { date: tf('balanceChanges.day.yesterday', '昨天'), weekday: '' };
+  }
   const weekdayNames = [
     tf('balanceChanges.day.weekdaySun', '周日'),
     tf('balanceChanges.day.weekdayMon', '周一'),
@@ -133,10 +143,11 @@ function formatDayLabel(dayKey: string, tf: (key: string, fallback: string) => s
     tf('balanceChanges.day.weekdaySat', '周六')
   ];
   const weekdayIndex = new Date(`${dayKey}T00:00:00`).getDay();
-  return `${Number(month)}月${Number(day)}日 · ${weekdayNames[weekdayIndex] ?? ''}`.replace(
-    /^/,
-    Number(year) === new Date().getFullYear() ? '' : `${year}/`
-  );
+  const prefix = Number(year) === new Date().getFullYear() ? '' : `${year}/`;
+  return {
+    date: `${prefix}${Number(month)}月${Number(day)}日`,
+    weekday: weekdayNames[weekdayIndex] ?? ''
+  };
 }
 
 function formatClock(time: number) {
@@ -290,7 +301,11 @@ export function BalanceChangesPage() {
   const dayGroups = useMemo(() => {
     const groups: Array<{
       key: string;
+      /** 表头用的完整写法:「11月15日 · 周日」 */
       label: string;
+      /** 时间列用的纯日期:「11月15日」。星期交给 CSS 按宽度取舍,见 formatDayLabelParts */
+      dateLabel: string;
+      weekday: string;
       rows: EntryRow[];
       net: number;
       increase: number;
@@ -303,7 +318,17 @@ export function BalanceChangesPage() {
       if (index === undefined) {
         index = groups.length;
         indexByKey.set(key, index);
-        groups.push({ key, label: formatDayLabel(key, tf), rows: [], net: 0, increase: 0, decrease: 0 });
+        const dayParts = formatDayLabelParts(key, tf);
+        groups.push({
+          key,
+          label: dayParts.weekday ? `${dayParts.date} · ${dayParts.weekday}` : dayParts.date,
+          dateLabel: dayParts.date,
+          weekday: dayParts.weekday,
+          rows: [],
+          net: 0,
+          increase: 0,
+          decrease: 0
+        });
       }
       const group = groups[index];
       group.rows.push(row);
@@ -530,7 +555,12 @@ export function BalanceChangesPage() {
                           formatClock(row.time)
                         ) : (
                           <span className="balance-change-time-with-day">
-                            <span className="balance-change-day-inline">{group.label}</span>
+                            <span className="balance-change-day-inline">
+                              {group.dateLabel}
+                              {group.weekday ? (
+                                <span className="balance-change-weekday">{` · ${group.weekday}`}</span>
+                              ) : null}
+                            </span>
                             {formatClock(row.time)}
                           </span>
                         )}

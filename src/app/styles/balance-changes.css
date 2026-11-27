@@ -524,6 +524,15 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /*
+   * 窄屏只丢「星期」,不丢「日」。
+   * 「11月15日 · 周日」整串是 79px,时间列只有 65px —— 截断从末尾吃,先吃「周日」、
+   * 再吃「日」、最后连「15」都吃掉,变成读不出日期的「11月1…」。
+   * 所以日期与星期在数据层就分开(formatDayLabelParts),这里整块隐藏星期。
+   */
+  .balance-change-weekday {
+    display: none;
+  }
 
   /* 类型标签虽然这一档不显示,仍然留着兜底:任何宽度下都不许画到隔壁格子上 */
   .balance-change-type {
@@ -543,20 +552,28 @@
 }
 
 /*
- * 320~360px(WCAG 1.4.10 Reflow 的门槛)再挤一层:金额列必须让到 48%。
- * 实测 12px 等宽数字下「−¥1,234,567.89」要 103px 文本 + 20px 内边距 = 123px,
- * 在 258px 的表宽里就是 48%。金额绝不能被截断,所以这里优先保它,
- * 说明列缩到 26%(约 4 个汉字)靠省略号和展开行补,时间列刚好放得下「11月15日」。
+ * 320~360px(WCAG 1.4.10 Reflow 的门槛)再挤一层:金额列让到 44%。
+ * 实测 12px 等宽数字:「−¥198,819.40」要 92px 文本 + 20px 内边距 = 112px,
+ * 在 258px 的表宽里就是 44%。金额绝不能被截断,所以优先保它。
+ * 时间列 29% = 75px:这一列的左内边距比别人多 4px(14 + 10),内容区只有 50px,
+ * 而实测「11月15日」本身就要 48px —— 给 26% 时只剩 40px,会把日期截成「11月…」。
+ * 星期这一档已经整块隐藏,剩下的宽度全给说明。
  */
 @media (max-width: 360px) {
+  /* 320px 上横向每一像素都要抠:内边距从 10px 收到 6px,
+     三列各多出 8px —— 说明列因此从「只剩 1 个字」变成 3 个字。 */
+  .balance-change-table th,
+  .balance-change-table td {
+    padding: 9px 6px;
+  }
   .balance-change-table thead th:nth-child(1) {
-    width: 26%;
+    width: 29%;
   }
   .balance-change-table thead th:nth-child(4) {
-    width: 26%;
+    width: 27%;
   }
   .balance-change-table thead th:nth-child(5) {
-    width: 48%;
+    width: 44%;
   }
 }
 
