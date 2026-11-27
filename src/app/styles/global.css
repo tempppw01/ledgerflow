@@ -14386,13 +14386,35 @@ body.categories-accounts-resizing {
   }
 }
 
-/* iOS Safari will auto-zoom when focused input font-size is < 16px. */
+/*
+ * iOS Safari 在聚焦 font-size < 16px 的控件时会**自动放大整页**,而且放大后不会自己弹回来 ——
+ * 用户得手动捏回去。这是移动端最常见的「一填表单页面就花了」的来源。
+ *
+ * 两道门,各管一件事:
+ *   · pointer: coarse 是**真正的原因**:只要设备是触屏就会放大,iPad 横屏(1024px)一样中招,
+ *     所以不能只看窗口宽度。这里必须 !important —— 裸元素选择器(0,0,1)赢不了任何组件类
+ *     (0,1,0),而全站有 19 个控件被自己的类压到 11~14px,旧规则对它们其实一直是失效的。
+ *   · max-width 只管「窄窗口」:可能只是桌面窗口被拉窄,不会触发放大,保持原样不动。
+ *
+ * 实测(390×844 + hasTouch,18 条路由 43 个可见控件):修之前 11px×3 / 12px×11 / 13px×3 /
+ * 14px×2 / 16px×24;修之后全部为 16px。且修之前**没有任何控件大于 16px**,
+ * 所以这条规则只会把过小的抬上来,不存在把大字压小的副作用。
+ */
 @media (max-width: 768px) {
   input,
   select,
   textarea,
   .chat-input-textarea {
     font-size: 16px;
+  }
+}
+
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea,
+  .chat-input-textarea {
+    font-size: 16px !important;
   }
 }
 

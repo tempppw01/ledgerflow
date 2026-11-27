@@ -15,6 +15,12 @@
  *   - 字号 < 11px 的纯文本节点
  *   - 没有可读名称(aria-label / 文本 / title 都空)的 button 与 a[href]
  *   - 每个路由新产生的 console error
+ *   - 触屏语义下 font-size < 16px 的表单控件(iOS 聚焦会自动放大整页)
+ *
+ * 为什么窄屏两档必须带 hasTouch:不带的话 Chromium 报 `pointer: fine`,
+ * 全站 `@media (pointer: coarse)` 里那一批「为触屏放大点按区域 / 抬字号」的规则
+ * **一条都不会生效** —— 于是这个审计一直在用一个「窄桌面窗口」冒充手机。
+ * 实测验证过:hasTouch:true 时 matchMedia('(pointer: coarse)') 才为 true。
  *
  * 已知误报(见文末 allowlist):
  *   - 交易页移动端的 .transaction-mobile-swipe:滑动手势的初始态,操作走「⋯」菜单
@@ -186,6 +192,8 @@ const AUDIT_FN = () => {
     skipLink: 0,
     mainLandmark: 0,
     smallTargets: [],
+    // 触屏语义下字号 < 16px 的表单控件(只在这两档窄屏 + hasTouch 时才可能有内容)
+    coarseControlFont: [],
     imageCount: 0,
     fieldCount: 0
   };
@@ -257,6 +265,36 @@ const AUDIT_FN = () => {
     ).trim();
     if (!name) {
       out.unnamedControls.push({ tag: el.tagName, cls: String(el.className).slice(0, 60) });
+    }
+  }
+
+  /*
+   * iOS Safari 在聚焦 font-size < 16px 的输入控件时会自动放大整页,放大后不回弹。
+   * 只在触屏语义下才可能发生(桌面浏览器不会),所以这里也只在 pointer: coarse 时检查 ——
+   * 否则会把「桌面故意用 12px 的密集筛选栏」也一并报出来,变成一条永远修不完的规则。
+   * checkbox/radio/range 这些不触发聚焦缩放,排除掉再判。
+   */
+  if (window.matchMedia('(pointer: coarse)').matches) {
+    for (const el of document.querySelectorAll('input, select, textarea')) {
+      if (!visible(el)) continue;
+      const kind = (el.getAttribute('type') || '').toLowerCase();
+      if (['checkbox', 'radio', 'range', 'color', 'hidden', 'file'].includes(kind)) continue;
+      const fontSize = parseFloat(getComputedStyle(el).fontSize);
+      if (fontSize > 0 && fontSize < 16) {
+        out.coarseControlFont.push({
+          tag: el.tagName,
+          fontSize,
+          cls: String(el.className).split(' ').filter(Boolean).slice(0, 2).join('.'),
+          name: (
+            el.getAttribute('aria-label') ||
+            el.getAttribute('placeholder') ||
+            el.textContent ||
+            ''
+          )
+            .trim()
+            .slice(0, 30)
+        });
+      }
     }
   }
 
@@ -468,7 +506,8 @@ for (const [label, viewport] of VIEWPORTS) {
   if (onlyDesktop && narrow) continue;
   if (onlyMobile && !narrow) continue;
 
-  const context = await browser.newContext({ viewport });
+  // hasTouch 必须跟着窄屏一起开:否则 pointer: coarse 的规则一条都不生效(见文件头说明)
+  const context = await browser.newContext({ viewport, hasTouch: narrow });
   const page = await context.newPage();
   const consoleErrors = [];
   page.on('console', (message) => {
@@ -519,7 +558,9 @@ for (const [label, viewport] of VIEWPORTS) {
       audit.autofocus ||
       audit.duplicateIds.length ||
       audit.mainLandmark !== 1 ||
-      (audit.navCount > 0 && audit.skipLink === 0)
+      (audit.navCount > 0 && audit.skipLink === 0) ||
+      // 触屏下 < 16px 的输入控件:iOS 会放大整页,属于真实可感的缺陷,直接致败
+      audit.coarseControlFont.length
     ) {
       problems.push({
         viewport: label,
@@ -531,6 +572,7 @@ for (const [label, viewport] of VIEWPORTS) {
         emptyMain: audit.emptyMain,
         mainTextLength: audit.mainTextLength,
         consoleErrors: newErrors,
+        coarseControlFont: audit.coarseControlFont,
         a11y: {
           lang: audit.lang,
           h1Count: audit.h1Count,
