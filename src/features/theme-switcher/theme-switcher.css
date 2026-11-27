@@ -128,7 +128,16 @@
     border-radius: 999px;
   }
 
-  .theme-switcher:not([data-expanded='true']) .theme-icon-btn:not(.active) {
+  /*
+   * 折叠成「只露当前项」时,**必须**给键盘焦点留一条出口。
+   *
+   * 上面桌面那条(第 57 行)带 `:not(:has(.theme-icon-btn:focus-visible))`,
+   * 所以 Tab 到隐藏项时它们会展开回 30px;这一段漏了同样的例外,于是 ≤768px 下
+   * 「深色 / 浅色」两个按钮是 0 宽、还能被 Tab 命中 —— 实测聚焦时 box 0x32,
+   * 键盘用户完全看不到焦点停在哪(2.4.7)。窄窗口的笔记本、外接键盘的手机都会踩到。
+   */
+  .theme-switcher:not([data-expanded='true']):not(:has(.theme-icon-btn:focus-visible))
+    .theme-icon-btn:not(.active) {
     width: 0;
     min-width: 0;
     max-width: 0;

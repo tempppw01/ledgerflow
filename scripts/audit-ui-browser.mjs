@@ -20,6 +20,7 @@
  *   - 表格格子里内容画到隔壁格子上
  *   - 触摸端「悬停粘住」:漏了 @media (hover: hover) 守卫,点过的控件一直亮着
  *   - 窄屏 @media 里写了 grid 专属属性但父级是 flex(声明等于没写,几何上看得出来)
+ *   - 键盘焦点不可见(2.4.7)或被 sticky/fixed 内容完全遮住(2.4.11)
  *   - placeholder 长到显示不全(只报告)
  *
  * 为什么窄屏两档必须带 hasTouch:不带的话 Chromium 报 `pointer: fine`,
@@ -689,6 +690,131 @@ const HOVER_PROPS = [
 ];
 
 /*
+ * 键盘焦点体检:WCAG 2.4.7(焦点可见)+ 2.2 的 2.4.11(焦点不被完全遮住)。
+ *
+ * 起因:主题切换器在 ≤768px 折叠成「只露当前项」,而非当前项是
+ * `width: 0; opacity: 0; pointer-events: none` 却**仍在 Tab 序列里** ——
+ * 键盘用户 Tab 到「深色 / 浅色」时,屏幕上什么都看不到(实测 box 0x32)。
+ * 2.5.8 的尺寸检查抓不到它:元素本来就是 0 宽,那条检查会当成「不可见、跳过」。
+ *
+ * 判据(两步,先便宜后昂贵):
+ *   1. Tab 后量当前焦点元素,肉眼不可见(宽或高 < 2px、opacity 0、visibility hidden)
+ *      或完全不在视口内 → **可疑**;
+ *   2. 可疑的等 320ms 再量一次(折叠展开是 width/transform 过渡,一按就量会抓到中间帧,
+ *      实测 1x22 —— 那不是稳定状态),仍然不可见才算问题。
+ *
+ * 2.4.11 另算:焦点元素 5 个采样点(四角+中心)全被 sticky/fixed 内容盖住 =
+ * 完全被遮住。用浏览器自己的命中测试判断,绘制顺序只有它知道。
+ * 吸顶元素先打一遍标记,只在焦点元素与吸顶区域有交叠时才做采样。
+ */
+async function findFocusProblems(page, maxTabs = 60, cap = 8) {
+  await page.evaluate(() => {
+    document.querySelectorAll('[data-lf-sticky]').forEach((el) => el.removeAttribute('data-lf-sticky'));
+    for (const el of document.querySelectorAll('body *')) {
+      const cs = getComputedStyle(el);
+      if (cs.position !== 'sticky' && cs.position !== 'fixed') continue;
+      if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+      const r = el.getBoundingClientRect();
+      if (r.width < 8 || r.height < 8) continue;
+      el.setAttribute('data-lf-sticky', '1');
+    }
+  });
+
+  const probe = () =>
+    page.evaluate(() => {
+      const el = document.activeElement;
+      if (!el || el === document.body || el === document.documentElement) return { skip: 'no-focus' };
+      const r = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      const desc = `${el.tagName.toLowerCase()}${
+        typeof el.className === 'string' && el.className
+          ? '.' + el.className.split(' ').filter(Boolean).slice(0, 2).join('.')
+          : ''
+      }`;
+      const base = {
+        sel: desc,
+        label: (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 30),
+        box: `${Math.round(r.width)}x${Math.round(r.height)}`,
+        top: Math.round(r.top)
+      };
+
+      const invisible =
+        r.width < 2 || r.height < 2 || cs.opacity === '0' || cs.visibility === 'hidden';
+      const offscreen =
+        r.bottom < 0 || r.top > window.innerHeight || r.right < 0 || r.left > window.innerWidth;
+      if (!invisible && !offscreen) {
+        // 不便宜就别做命中测试:先看焦点元素跟吸顶区域有没有交叠
+        const stickies = [...document.querySelectorAll('[data-lf-sticky]')];
+        const overlaps = stickies.some((s) => {
+          if (s.contains(el)) return false;
+          const sr = s.getBoundingClientRect();
+          return !(r.right < sr.left || r.left > sr.right || r.bottom < sr.top || r.top > sr.bottom);
+        });
+        if (!overlaps) return { ...base, ok: true };
+
+        const pts = [
+          [r.left + 3, r.top + 3],
+          [r.right - 3, r.top + 3],
+          [r.left + 3, r.bottom - 3],
+          [r.right - 3, r.bottom - 3],
+          [r.left + r.width / 2, r.top + r.height / 2]
+        ];
+        const coverers = new Set();
+        for (const [x, y] of pts) {
+          if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) {
+            coverers.add('(视口外采样点)');
+            continue;
+          }
+          const top = document.elementsFromPoint(x, y)[0];
+          if (!top || top === el || el.contains(top) || top.contains(el)) continue;
+          const root = top.closest('[data-lf-sticky]');
+          if (root && !root.contains(el)) {
+            coverers.add(
+              `${root.tagName.toLowerCase()}.${
+                typeof root.className === 'string' ? root.className.split(' ').filter(Boolean)[0] : ''
+              }`
+            );
+          }
+        }
+        if (coverers.size === pts.length) {
+          return { ...base, ok: false, kind: 'obscured', detail: `被 ${[...coverers].join(', ')} 完全盖住` };
+        }
+        return { ...base, ok: true };
+      }
+
+      return {
+        ...base,
+        ok: false,
+        kind: invisible ? 'invisible' : 'offscreen',
+        detail: invisible
+          ? `宽${Math.round(r.width)} 高${Math.round(r.height)} opacity=${cs.opacity} visibility=${cs.visibility}`
+          : `box 在视口外(top=${Math.round(r.top)}, bottom=${Math.round(r.bottom)})`,
+        opacity: cs.opacity,
+        visibility: cs.visibility
+      };
+    });
+
+  const out = [];
+  await page.evaluate(() => document.body.focus());
+
+  for (let i = 0; i < maxTabs; i += 1) {
+    await page.keyboard.press('Tab');
+    const first = await probe();
+    if (first.skip || first.ok) continue;
+
+    // 可疑 → 等过渡落定再确认一次,避免把动画中间帧当成缺陷
+    await page.waitForTimeout(320);
+    const second = await probe();
+    if (second.skip || second.ok) continue;
+    if (second.sel !== first.sel) continue; // 焦点已经跑到别处,这一帧不算
+
+    out.push({ tab: i + 1, ...second });
+    if (out.length >= cap) break;
+  }
+  return out;
+}
+
+/*
  * 「写了却一个字都不管用」的窄屏规则。
  *
  * 起因:今日财务看板在 ≤720px 想让摘要整行落到数值下面,写的是
@@ -898,6 +1024,7 @@ const smallTargetFindings = [];
 const longPlaceholderFindings = [];
 const touchHoverFindings = [];
 const inertGridFindings = [];
+const focusWalkFindings = [];
 const documentTitles = [];
 let checked = 0;
 
@@ -958,6 +1085,19 @@ for (const [label, viewport] of VIEWPORTS) {
       inertGridFindings.push({ viewport: label, route, items: inertHits });
     }
 
+    /*
+     * 键盘走一遍。三档视口都跑 —— 第一版只在桌面档跑,结果它**抓不到**自己刚修的
+     * 那个 bug:主题切换器的折叠例外是写在 @media (max-width: 768px) 里的,
+     * 只在窄档复现。「触屏没有 Tab 键」这个理由也不成立:窄视口不等于触屏,
+     * 而且外接键盘、开关控制、读屏器的虚拟光标都会产生真实焦点。
+     * 每条路由 60 次 Tab 实测约 130~190ms(可疑项才多等 320ms 落定),
+     * 69 个组合大约十几秒,可以接受。
+     */
+    const focusHits = await findFocusProblems(page);
+    if (focusHits.length) {
+      focusWalkFindings.push({ viewport: label, route, items: focusHits });
+    }
+
     if (audit.tinyText.length) {
       tinyTextFindings.push({ viewport: label, route, items: audit.tinyText });
     }
@@ -988,7 +1128,9 @@ for (const [label, viewport] of VIEWPORTS) {
       // 触摸端「悬停粘住」:漏了 @media (hover: hover) 守卫,点过的控件一直亮着
       hoverHits.length ||
       // 窄屏覆盖写了 grid 专属属性、父级却是 flex:这条声明等于没写
-      inertHits.length
+      inertHits.length ||
+      // 键盘焦点落到看不见的地方(2.4.7)/ 被吸顶内容完全盖住(2.4.11)
+      focusHits.length
     ) {
       problems.push({
         viewport: label,
@@ -1005,6 +1147,7 @@ for (const [label, viewport] of VIEWPORTS) {
         targetSize25x8: audit.targetSize25x8,
         touchHoverReactive: hoverHits,
         inertGridRules: inertHits,
+        focusWalk: focusHits,
         a11y: {
           lang: audit.lang,
           h1Count: audit.h1Count,
@@ -1051,13 +1194,14 @@ const report = {
   base,
   checked,
   problemCount: problems.length,
-  note: '字号 < 11px(tinyText)、触控目标 < 44px(smallTargets,只在触屏档位算)、placeholder 显示不全(longPlaceholders)只报告、不计入 problemCount —— 44px 是 AAA/平台指南线而不是 AA(2.5.8 只要求 24×24,那一项另算且致败),字号与 placeholder 是设计取舍/不违反 WCAG 条款。touchHoverReactive(触摸端悬停粘住)、inertGridRules(@media 里写了 grid 专属属性但父级是 flex,声明等于没写)是致败项',
+  note: '字号 < 11px(tinyText)、触控目标 < 44px(smallTargets,只在触屏档位算)、placeholder 显示不全(longPlaceholders)只报告、不计入 problemCount —— 44px 是 AAA/平台指南线而不是 AA(2.5.8 只要求 24×24,那一项另算且致败),字号与 placeholder 是设计取舍/不违反 WCAG 条款。touchHoverReactive(触摸端悬停粘住)、inertGridRules(@media 里写了 grid 专属属性但父级是 flex,声明等于没写)、focusWalk(键盘焦点不可见 2.4.7 / 被吸顶内容完全遮住 2.4.11,每条路由最多走 60 次 Tab)是致败项',
   problems,
   tinyText: tinyTextFindings,
   smallTargets: smallTargetFindings,
   longPlaceholders: longPlaceholderFindings,
   touchHoverReactive: touchHoverFindings,
   inertGridRules: inertGridFindings,
+  focusWalk: focusWalkFindings,
   documentTitles: summarizeTitles(documentTitles)
 };
 console.log(JSON.stringify(report, null, 2));
