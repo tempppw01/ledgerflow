@@ -80,6 +80,25 @@ body {
   box-shadow: 8px 0 20px color-mix(in srgb, var(--color-text) 8%, transparent);
 }
 
+/*
+ * 减少透明度(prefers-reduced-transparency: reduce)
+ *
+ * 系统里开了这一项的用户要的是**实心**表面:毛玻璃把背后的内容糊成一片,
+ * 文字压在上面更难读,有的人还会因此不适。这一项此前完全没被响应过 ——
+ * 全站 7 处 backdrop-filter 一处都没管。
+ *
+ * 两类分开处理,别一刀切:
+ *   · 常驻框架(侧栏 / 顶栏 / 聊天顶栏 / 吸顶小标题)→ 直接给不透明底色,模糊去掉
+ *   · 遮罩层(设置弹窗、筛选弹窗)→ 它本来就该"压暗背后的内容",
+ *     换成不透明会把上下文全遮掉;所以只去掉模糊,保留那层压暗
+ */
+@media (prefers-reduced-transparency: reduce) {
+  .sidebar {
+    backdrop-filter: none;
+    background: var(--color-bg-elevated);
+  }
+}
+
 .sidebar::after {
   content: '';
   position: absolute;
@@ -768,6 +787,16 @@ body {
   gap: var(--space-4);
 }
 
+/* 减少透明度:必须放在 .workspace-topbar 自己的规则**之后** —— 同为单类选择器,
+ * 放前面会被上面的 backdrop-filter 盖掉(实测就是这样漏掉的)。
+ * 说明见 .sidebar 那一段。 */
+@media (prefers-reduced-transparency: reduce) {
+  .workspace-topbar {
+    backdrop-filter: none;
+    background: var(--color-bg-elevated);
+  }
+}
+
 .topbar-left {
   display: flex;
   align-items: center;
@@ -895,6 +924,13 @@ body {
   padding: 32px;
   background: color-mix(in srgb, var(--color-bg) 62%, rgba(15, 23, 42, 0.58));
   backdrop-filter: blur(14px);
+}
+
+/* 遮罩层:只去掉模糊,保留压暗 —— 见 .sidebar 上方那段说明 */
+@media (prefers-reduced-transparency: reduce) {
+  .settings-overlay {
+    backdrop-filter: none;
+  }
 }
 
 .settings-overlay-dialog {

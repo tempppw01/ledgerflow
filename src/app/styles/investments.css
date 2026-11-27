@@ -3364,6 +3364,14 @@
   backdrop-filter: blur(14px);
 }
 
+/* 减少透明度:吸顶小标题换成实心底色并去掉模糊(说明见 global.css 的 .sidebar 段) */
+@media (prefers-reduced-transparency: reduce) {
+  .investments-support-sticky-title {
+    backdrop-filter: none;
+    background: var(--color-bg-elevated);
+  }
+}
+
 .investments-support-sticky-title span {
   color: var(--color-text-secondary);
   font-size: 12px;

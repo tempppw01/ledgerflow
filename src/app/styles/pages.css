@@ -1472,6 +1472,13 @@
   animation: transaction-filter-backdrop-in 160ms ease-out;
 }
 
+/* 遮罩层:只去掉模糊,保留压暗(说明见 global.css 的 .sidebar 段) */
+@media (prefers-reduced-transparency: reduce) {
+  .transaction-filter-dialog-backdrop {
+    backdrop-filter: none;
+  }
+}
+
 .transaction-filter-popover-panel {
   position: relative;
   inset: auto;

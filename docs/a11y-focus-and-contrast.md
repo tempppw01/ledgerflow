@@ -796,3 +796,51 @@ HANDOVER 里有说明),所以这处靠浏览器取证 + 全量闸门,没有单�
 反向验证:只把 `global.css` 的守卫去掉,审计立刻从 46 个组合 0 问题
 变成 **46/46 全部致败**(`exit=1`)—— 这一项不是空跑。
 
+## 12. 减少透明度:7 处毛玻璃此前完全没响应这个偏好(2026-11-27)
+
+系统里开了「减少透明度」(`prefers-reduced-transparency: reduce`)的用户要的是**实心**表面:
+毛玻璃把背后的内容糊成一片,文字压在上面更难读,对一部分人还会引起不适。
+改动前全站 `backdrop-filter` **7 处,响应这个偏好的规则 0 条**(只有 `prefers-reduced-motion` 被管过)。
+
+7 处按用途分两类,不能一刀切:
+
+| 类别 | 选择器 | 改法 |
+| --- | --- | --- |
+| 常驻框架 | `.sidebar`、`.workspace-topbar`、`.chat-input-bar`、`.chat-topbar`、`.investments-support-sticky-title` | `backdrop-filter: none` + 换成不透明底色(`--color-bg-elevated` / `--color-bg`) |
+| 遮罩层 | `.settings-overlay`、`.transaction-filter-dialog-backdrop` | **只去掉模糊**,保留那层压暗 |
+
+遮罩层为什么不一并做实心:它的职责就是"压暗背后的内容",换成不透明会把上下文全遮掉,
+反而比模糊更糟。所以只去掉模糊。
+
+**踩到的坑(值得记):** 第一版把 `.workspace-topbar` / `.chat-topbar` 的覆盖写进了
+「同类框架」那个共用块里,结果这两处**没生效**。原因是同为单类选择器(0,1,0),
+而它们的原始规则分别在本文件的第 776 行 / 第 4499 行,排在共用块**后面** ——
+同优先级下后写的赢,`backdrop-filter` 又被原规则盖了回去。
+修法:每个覆盖必须紧跟它自己的规则。实测确认:改前 `blur(10px) -> blur(10px)`(没动),
+改后 `blur(10px) -> none`。
+
+### 复测
+
+`page.emulateMedia` 不支持这一项,要用 CDP:
+`Emulation.setEmulatedMedia({ features: [{ name: 'prefers-reduced-transparency', value: 'reduce' }] })`
+—— 已先单独验证过它确实能把 `matchMedia` 翻成 `true`,否则"0 项失败"没有意义。
+
+两个主题各跑一遍(暗色 token 是另一套),7/7 通过:
+
+| 表面 | 亮色 | 暗色 |
+| --- | --- | --- |
+| `.sidebar` | `blur(8px)` → `none`,底 `rgb(255,255,255)` | → `none`,`rgb(26,26,26)` |
+| `.workspace-topbar` | `blur(10px)` → `none`,底 `rgb(255,255,255)` | → `none`,`rgb(26,26,26)` |
+| `.chat-input-bar` | `blur(12px)` → `none`,底 `rgb(243,245,249)` | → `none`,`rgb(20,20,20)` |
+| `.chat-topbar` | `blur(18px)` → `none`,底 `rgb(243,245,249)` | → `none`,`rgb(20,20,20)` |
+| `.investments-support-sticky-title` | `blur(14px)` → `none`,底 `rgb(255,255,255)` | → `none`,`rgb(26,26,26)` |
+| `.transaction-filter-dialog-backdrop` | `blur(5px)` → `none`,压暗层保留 `0.38` | 同左 |
+| `.settings-overlay` | `blur(14px)` → `none`,压暗层保留 `0.84` | 同左 |
+
+写这个校验脚本时也误报过一次:半透明判定只认 `rgba(...)`,而浏览器算出的是
+`color(srgb … / 0.38)` 这种写法,于是两个遮罩明明做对了却被报成失败。
+两处遮罩的判定已经改成按 `/ <alpha>` 取值。
+
+因为全部包在媒体查询里,默认(未开启该偏好)的渲染**按构造就完全没变** ——
+63 个组合的浏览器审计复跑仍是 0 问题。
+

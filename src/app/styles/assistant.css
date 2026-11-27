@@ -3813,6 +3813,14 @@
   backdrop-filter: blur(12px);
 }
 
+/* 减少透明度:常驻框架换成实心底色并去掉模糊(说明见 global.css 的 .sidebar 段) */
+@media (prefers-reduced-transparency: reduce) {
+  .chat-input-bar {
+    backdrop-filter: none;
+    background: var(--color-bg);
+  }
+}
+
 .chat-smart-command-row {
   display: flex;
   align-items: center;
@@ -4492,6 +4500,14 @@
   padding-inline: clamp(18px, 3vw, 48px);
   background: color-mix(in srgb, var(--color-bg) 88%, transparent);
   backdrop-filter: blur(18px);
+}
+
+/* 减少透明度:放在 .chat-topbar 自己的规则之后,理由同 global.css 的 .workspace-topbar */
+@media (prefers-reduced-transparency: reduce) {
+  .chat-topbar {
+    backdrop-filter: none;
+    background: var(--color-bg);
+  }
 }
 
 .chat-mode-switch {
