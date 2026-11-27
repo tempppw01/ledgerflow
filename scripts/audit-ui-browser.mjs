@@ -194,6 +194,8 @@ const AUDIT_FN = () => {
     smallTargets: [],
     // 触屏语义下字号 < 16px 的表单控件(只在这两档窄屏 + hasTouch 时才可能有内容)
     coarseControlFont: [],
+    // 单元格里的内容画到隔壁格子上(见下面判定处的说明)
+    cellOverflow: [],
     imageCount: 0,
     fieldCount: 0
   };
@@ -294,6 +296,67 @@ const AUDIT_FN = () => {
             .trim()
             .slice(0, 30)
         });
+      }
+    }
+  }
+
+  /*
+   * 「格子里的字画到隔壁格子上」——表格最常见的坏样子,而且单测完全看不见。
+   *
+   * 成因通常是三件事叠一起:table-layout: fixed 把列宽定死、窄屏又隐藏了几列,
+   * 而隐藏列的百分比宽度仍然被保留,于是可见列被挤得比内容还窄;
+   * 单元格自己的 overflow 又是 visible,内容就直接画到隔壁格子上了 ——
+   * 两组字叠在一起,日期还会被下一格标签的底色盖掉一半(看着像被截断)。
+   *
+   * 判据:单元格 overflow-x 是 visible 时,里面有子元素右边界越过该格的内容区右边界。
+   * 刻意排除的情况(否则全是误报):
+   *   · 绝对/固定定位的子元素 —— 下拉菜单、浮层本来就该溢出
+   *   · 子元素与自己所属格子之间有任何一层会裁剪(overflow-x 不是 visible)的祖先
+   */
+  out.cellOverflow = [];
+  for (const cell of document.querySelectorAll('td, th')) {
+    if (!visible(cell)) continue;
+    const cellStyle = getComputedStyle(cell);
+    if (cellStyle.overflowX !== 'visible') continue; // 自己会裁/会滚,不会画到隔壁
+    const box = cell.getBoundingClientRect();
+    const limit = box.right - (parseFloat(cellStyle.paddingRight) || 0);
+    /*
+     * 先看裸文本:金额这类直接写在 td 里的文字没有子元素可查,
+     * 但 scrollWidth 会如实变大。少了这一条,「金额悄悄溢出格子」永远查不出来。
+     */
+    if (cell.scrollWidth > cell.clientWidth + 1 && !cell.querySelector('*')) {
+      out.cellOverflow.push({
+        cell: cell.tagName + (cell.className ? '.' + String(cell.className).split(' ')[0] : ''),
+        child: '(裸文本)',
+        overBy: cell.scrollWidth - cell.clientWidth,
+        text: (cell.textContent || '').trim().slice(0, 24)
+      });
+      continue;
+    }
+    for (const child of cell.querySelectorAll('*')) {
+      if (!visible(child)) continue;
+      const childStyle = getComputedStyle(child);
+      if (childStyle.position === 'absolute' || childStyle.position === 'fixed') continue;
+      // 中间只要有一层会裁剪,这个子元素其实看不见那部分,不算
+      let clipped = false;
+      for (let p = child.parentElement; p && p !== cell; p = p.parentElement) {
+        if (getComputedStyle(p).overflowX !== 'visible') {
+          clipped = true;
+          break;
+        }
+      }
+      if (clipped) continue;
+      const r = child.getBoundingClientRect();
+      if (r.right > limit + 1) {
+        out.cellOverflow.push({
+          cell: cell.tagName + (cell.className ? '.' + String(cell.className).split(' ')[0] : ''),
+          child:
+            child.tagName.toLowerCase() +
+            (child.className ? '.' + String(child.className).split(' ')[0] : ''),
+          overBy: Math.round(r.right - limit),
+          text: (cell.textContent || '').trim().slice(0, 24)
+        });
+        break;
       }
     }
   }
@@ -560,7 +623,9 @@ for (const [label, viewport] of VIEWPORTS) {
       audit.mainLandmark !== 1 ||
       (audit.navCount > 0 && audit.skipLink === 0) ||
       // 触屏下 < 16px 的输入控件:iOS 会放大整页,属于真实可感的缺陷,直接致败
-      audit.coarseControlFont.length
+      audit.coarseControlFont.length ||
+      // 格子里的字画到隔壁格子上:两组字叠在一起,读不了,直接致败
+      audit.cellOverflow.length
     ) {
       problems.push({
         viewport: label,
@@ -573,6 +638,7 @@ for (const [label, viewport] of VIEWPORTS) {
         mainTextLength: audit.mainTextLength,
         consoleErrors: newErrors,
         coarseControlFont: audit.coarseControlFont,
+        cellOverflow: audit.cellOverflow,
         a11y: {
           lang: audit.lang,
           h1Count: audit.h1Count,

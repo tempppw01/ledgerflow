@@ -461,12 +461,75 @@
 }
 
 @media (max-width: 720px) {
-  /* 窄屏去掉次要两列,避免横向滚动:账户与变动后余额 */
-  .balance-change-table th:nth-child(2),
-  .balance-change-table td:nth-child(2),
-  .balance-change-table th:nth-child(6),
-  .balance-change-table td:nth-child(6) {
+  /*
+   * 窄屏去掉三列:账户、类型、变动后余额。
+   *
+   * 这里有两个都必须写对的点:
+   *
+   * ① `display: none` 只让格子不画出来,**列本身还在**,百分比宽度照样被
+   *    table-layout: fixed 保留着。所以必须同时把宽度清成 0 —— 而且**必须带上 thead**
+   *    才能和上面那条桌面规则同等特异性(`.balance-change-table thead th:nth-child(2)`
+   *    是 (0,2,2),少写一个 thead 就变成 (0,2,1),声明直接被忽略、列宽照旧)。
+   *    之前就是漏了这一步:14% + 17% 两列白白占掉 101px,把可见四列挤进 227px,
+   *    日期最后一个字被标签底色盖住、标签又整片压在说明上,两组字叠成一团。
+   *
+   * ② 类型列也去掉。320px 上时间 67 + 类型 56 + 金额 104 之后只剩 31px 给说明,
+   *    而说明是这一行最该看清的内容;金额更不能截断。类型在展开行里本来就有
+   *    (点一下右侧箭头即可),所以这里是「按重要性做减法」,不是丢信息。
+   *
+   * 分配:时间 26% / 说明 36% / 金额 38%,三列加起来正好 100%。
+   * 金额这一档在 390px 上拿到 124px 列宽 = 104px 文本 —— 实测 12px 等宽数字下
+   * 「−¥1,234,567.89」需要 103px,所以到百万级都不会被截断。320px 那一档见文末的 360px 断点。
+   * 时间列给 26% 是为了让「11月15日」完整显示(星期被省略号收掉)—— 少一个百分点就会
+   * 连「日」一起截成「11月15…」,日期单位没了读起来就费劲。
+   */
+  .balance-change-table thead th:nth-child(2),
+  .balance-change-table tbody td:nth-child(2),
+  .balance-change-table thead th:nth-child(3),
+  .balance-change-table tbody td:nth-child(3),
+  .balance-change-table thead th:nth-child(6),
+  .balance-change-table tbody td:nth-child(6) {
     display: none;
+    width: 0;
+  }
+
+  .balance-change-table thead th:nth-child(1) {
+    width: 26%;
+  }
+  .balance-change-table thead th:nth-child(4) {
+    width: 36%;
+  }
+  .balance-change-table thead th:nth-child(5) {
+    width: 38%;
+  }
+  /*
+   * 单条记录那天的「日期 + 星期」和时间折成两行,不再按内容撑到 116px 顶进隔壁格子;
+   * 列再窄时日期自己收省略号,而不是盖住别人的字。
+   *
+   * 这里必须多写一层 .balance-change-table:基础样式里的 .balance-change-time-with-day
+   * (display: inline-flex)在文件里**排在后面**,同为 (0,1,0) 特异性时后写的赢 ——
+   * 只写一个类名的话这段会被基础样式整个盖掉,折行和省略号都不会生效。
+   * 另外必须是块级 flex:inline-flex 会按 max-content 撑开,受不到单元格宽度约束。
+   */
+  .balance-change-table .balance-change-time-with-day {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 6px;
+    max-width: 100%;
+  }
+  .balance-change-table .balance-change-day-inline {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* 类型标签虽然这一档不显示,仍然留着兜底:任何宽度下都不许画到隔壁格子上 */
+  .balance-change-type {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .balance-change-metrics {
@@ -476,6 +539,24 @@
   .balance-change-pagination {
     flex-direction: column;
     align-items: stretch;
+  }
+}
+
+/*
+ * 320~360px(WCAG 1.4.10 Reflow 的门槛)再挤一层:金额列必须让到 48%。
+ * 实测 12px 等宽数字下「−¥1,234,567.89」要 103px 文本 + 20px 内边距 = 123px,
+ * 在 258px 的表宽里就是 48%。金额绝不能被截断,所以这里优先保它,
+ * 说明列缩到 26%(约 4 个汉字)靠省略号和展开行补,时间列刚好放得下「11月15日」。
+ */
+@media (max-width: 360px) {
+  .balance-change-table thead th:nth-child(1) {
+    width: 26%;
+  }
+  .balance-change-table thead th:nth-child(4) {
+    width: 26%;
+  }
+  .balance-change-table thead th:nth-child(5) {
+    width: 48%;
   }
 }
 
