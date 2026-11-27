@@ -4768,7 +4768,7 @@ export function RepaymentManagementPage() {
                       </div>
                       {!canSubmitDebt && missingDebtFields.length > 0 ? (
                         /*
-                         * 这行提示是**禁用按钮之外唯一的"为什么不能提交"**。
+                         * 缺项提示:**主动**告诉用户还差什么(按钮已经可点,不靠它拦提交)。
                          * 原来它既没有 id 也没被任何字段描述,逐字段 Tab 的读屏用户完全听不到;
                          * role="status" 让它在缺项变化时被播报一次(polite,不打断输入)。
                          */
@@ -4787,7 +4787,14 @@ export function RepaymentManagementPage() {
                       ) : null}
                       {debtFormError ? <p id={DEBT_FORM_ERROR_ID} className="debt-form-error" role="alert">{debtFormError}</p> : null}
                       <div className="debt-form-actions">
-                        <button type="submit" className="primary" disabled={!canSubmitDebt}>
+                        {/*
+                         * 按钮**保持可点**。原来这里是 disabled={!canSubmitDebt},
+                         * 但禁用按钮只会被读成"不可用"、**不说明为什么** —— 读屏用户
+                         * 和不清楚缺什么的人都拿不到信息。
+                         * 现在点击一定会走到 onAddDebt 的校验,给出**具体哪一项不对**,
+                         * 并把错误关联到出错的那个输入框(见 debtErrorProps)。
+                         */}
+                        <button type="submit" className="primary">
                           {addDebtSuccess
                             ? editingDebtId
                               ? tf('repayment.form.saved', '✔ 已更新')
@@ -4956,7 +4963,7 @@ export function RepaymentManagementPage() {
                     </div>
                     {debtFormError ? <p id={DEBT_FORM_ERROR_ID} className="debt-form-error" role="alert">{debtFormError}</p> : null}
                     <div className="debt-form-actions">
-                      <button type="submit" className="primary" disabled={!canSubmitSimpleDebt}>
+                      <button type="submit" className="primary">
                         {addDebtSuccess
                           ? tf('repayment.form.addedSuccess', '✔ 已添加')
                           : tf('repayment.form.addReminder', '添加还款提醒')}

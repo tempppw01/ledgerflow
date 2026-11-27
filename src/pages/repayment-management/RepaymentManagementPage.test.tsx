@@ -1068,7 +1068,37 @@ describe('RepaymentManagementPage', () => {
     expect(hint).toBeTruthy();
     expect(hint).toHaveAttribute('role', 'status');
     expect(hint?.textContent).toContain('还差');
-    // 按钮此时应当是禁用的 —— 提示就是它"为什么不能点"的解释
-    expect(screen.getByRole('button', { name: '+ 添加负债' })).toBeDisabled();
+    // 按钮**不再禁用**:提示是主动告知,拦截改由点击后的字段级错误负责
+    expect(screen.getByRole('button', { name: '+ 添加负债' })).not.toBeDisabled();
+  });
+
+  /*
+   * 禁用按钮 → 可点 + 字段级报错(2026-11-27 的行为变更)。
+   *
+   * 原来按钮是 disabled={!canSubmitDebt}:字段没填全时它灰着,读屏只会念"不可用",
+   * **不说明缺什么**。现在按钮可点,点了会走到 onAddDebt 的校验、给出具体哪一项不对,
+   * 并把错误关联到出错的输入框。
+   */
+  it('什么都不填直接提交:给出字段级错误,且不会新增负债', () => {
+    render(
+      <MemoryRouter initialEntries={['/repayment-management']}>
+        <Routes>
+          <Route path="/repayment-management" element={<RepaymentManagementPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '+ 新增' }));
+    const before = appPreferencesMock.state.addDebt.mock.calls.length;
+
+    fireEvent.click(screen.getByRole('button', { name: '+ 添加负债' }));
+
+    // 具体错误出现在字段旁,并关联到出错的输入框
+    const nameInput = screen.getByLabelText('负债名称');
+    expect(nameInput).toHaveAttribute('aria-invalid', 'true');
+    expect(nameInput).toHaveAttribute('aria-describedby', 'debt-form-error');
+    expect(document.getElementById('debt-form-error')?.textContent).toContain('负债名称');
+    // 关键:校验拦住了,没有把空数据写进去
+    expect(appPreferencesMock.state.addDebt.mock.calls.length).toBe(before);
   });
 });
