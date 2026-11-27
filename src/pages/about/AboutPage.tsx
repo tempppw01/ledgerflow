@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { APP_GITHUB_URL, APP_LOGO_URL, APP_VERSION } from '../../shared/config/app';
+import { formatIsoDay } from '../../shared/lib/i18nDate';
+import { RELEASE_HISTORY } from './recentReleases.generated';
 
 interface UpdateCheckResult {
   status: 'idle' | 'checking' | 'error' | 'up-to-date' | 'update-available';
@@ -33,7 +35,7 @@ function compareVersion(a: string, b: string) {
 }
 
 export function AboutPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [updateResult, setUpdateResult] = useState<UpdateCheckResult>({
     status: 'idle'
   });
@@ -139,6 +141,54 @@ export function AboutPage() {
             ) : null}
           </div>
         ) : null}
+      </section>
+
+      <section className="about-content-section about-releases" aria-labelledby="about-releases-heading">
+        <div className="about-releases-head">
+          <p className="about-section-label">{t('about.releases.label')}</p>
+          <h2 id="about-releases-heading">{t('about.releases.title')}</h2>
+          <p>{t('about.releases.intro', { total: RELEASE_HISTORY.length })}</p>
+          <a
+            className="about-releases-all"
+            href={`${APP_GITHUB_URL}/releases`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {t('about.releases.viewAll')}
+          </a>
+        </div>
+
+        <ol className="about-release-list">
+          {RELEASE_HISTORY.map((release) => (
+            <li key={release.version} className="about-release-item">
+              <div className="about-release-meta">
+                <span className="about-release-version">v{release.version}</span>
+                {release.version === APP_VERSION ? (
+                  <span className="about-release-badge">{t('about.releases.current')}</span>
+                ) : null}
+                {release.publishedOn ? (
+                  <time className="about-release-date" dateTime={release.publishedOn}>
+                    {formatIsoDay(release.publishedOn, i18n.language)}
+                  </time>
+                ) : null}
+              </div>
+              <div className="about-release-body">
+                <h3 className="about-release-title">{release.title}</h3>
+                {release.summary ? <p>{release.summary}</p> : null}
+                <a
+                  className="about-release-link"
+                  href={`${APP_GITHUB_URL}/releases/tag/v${release.version}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t('about.releases.openRelease', { version: release.version })}
+                </a>
+              </div>
+            </li>
+          ))}
+        </ol>
+
+        <p className="about-releases-footnote">{t('about.releases.source')}</p>
       </section>
 
       <section className="about-content-section about-foundation-grid">

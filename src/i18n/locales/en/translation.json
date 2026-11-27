@@ -702,6 +702,15 @@
     "home": {
       "title": "Project Home"
     },
+    "releases": {
+      "label": "Release history",
+      "title": "Recent Updates",
+      "intro": "The {{total}} most recent versions, each with a summary quoted from that version's release notes (written in Chinese).",
+      "current": "Current Version",
+      "viewAll": "View all versions on GitHub",
+      "openRelease": "Read the full notes for v{{version}}",
+      "source": "Summaries are quoted from each version's release notes (Chinese); dates come from the matching git tag. This list ships with the app and needs no network request."
+    },
     "openSource": {
       "title": "Built in the open",
       "description": "Source code, releases, and technical documentation are maintained openly on GitHub."

@@ -37,6 +37,7 @@ node ./node_modules/vitest/vitest.mjs run --config vitest.config.ts src/shared/s
 | `features/assistant/model/weeklyExpenseTrend.test.ts` | 「本周 / 上周」按本地日历日分桶(0–6 / 7–13 天),**不按行号切**;乱序 + 稀疏数据(本周 2 笔、上周 5 笔)也要算对 |
 | `features/investments/model/usExtendedSession.test.ts` | 美股盘前/盘后倒计时:盘前 04:00–09:30、盘后 16:00–20:00(美东);**周五收盘后的「距下个盘前」是 66 小时不是 18**;09:30 整点算盘前结束、16:00 整点算盘后开始;夏令时切换日 09:00 ET 仍是盘前 |
 | `features/investments/components/UsExtendedSessionStrip.test.tsx` | 盘前盘后条:状态写在文字里(进行中 / 距开始 / 距下个盘前),**不加 `aria-live` 也不加 `role="timer"`** —— 每秒播报倒计时会淹没读屏器 |
+| `shared/lib/i18nDate.test.ts`                 | `formatIsoDay` 把 `YYYY-MM-DD` 当**本地日**算:在 `America/New_York` 里直接 `new Date('2026-11-27')` 会渲染成 11 月 26 日(测试里带这条阳性对照),关于页的发布日期就用它 |
 
 ## 状态与分类身份
 
@@ -921,6 +922,56 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 - **把分类移入回收站时会清掉引用**:同用户的交易 `categoryId` 被置空、子分类提升为一级,
   所以不会产生「交易引用已删除分类」的悬垂引用。
 
+## 关于页「最近更新」的数据链(v0.52.0 新增)
+
+关于页要显示"最近哪些版本改了什么",而这件事天然有一个**没人看着就会烂**的地方:
+版本记录写在 `release-notes/`,页面用的是另一份数据。两边一漂移,页面就会**一本正经地
+显示上一个版本的内容** —— 界面上完全看不出错。所以这条链的每一段都有东西盯着:
+
+| 环节 | 谁在管 |
+| --- | --- |
+| `release-notes/RELEASE_NOTES_v*.md` → 结构化记录 | `scripts/lib/releaseHistory.mjs`(抽取规则写在它头部:标题取第一个 `## `、摘要取标题后第一段散文、日期取 tag) |
+| 结构化记录 → 提交进仓库的数据模块 | `node scripts/generate-release-history.mjs` → `src/pages/about/recentReleases.generated.ts`(**生成后要提交**) |
+| 数据模块 == 重新生成的结果 | `npm run check:release-history`(**CI 里跑**,逐字节比对,不一致非 0 退出) |
+| 数据讲得通(降序、非空、无残留 markdown、日期格式) | `src/pages/about/recentReleases.test.ts` |
+| **第一条就是当前版本** | 同上 —— `RELEASE_HISTORY[0].version === APP_VERSION` |
+| 页面渲染(10 条、只打一次「当前版本」、日期不被时区推到前一天、链接指向对应 tag) | `src/pages/about/AboutPage.test.tsx` |
+
+**为什么是"生成 + 提交"而不是运行时读文件**:`release-notes/` 被 `.dockerignore` 排除,
+镜像里根本没有那些 markdown(前端 `import` 会在 Docker 构建时失败);运行时去请求
+GitHub API 又会给"打开关于页"这件事加上网络依赖与限流。生成的数据随包发布,离线可用。
+
+**为什么闸门是"重新生成再比对"而不是抽几条核对**:这里真正的风险是**整体过期**
+(新增了版本却没重新生成、改了标题没同步),抽查只能证明抽到的那几条恰好对。
+
+破坏性验证(2026-11-28):
+
+| 状态 | 结果 |
+| --- | --- |
+| 把已生成数据里一条 `title` 改掉 | `npm run check:release-history` 退出码 **1**,打印第 39 行「已提交 / 应改为」两行差异 |
+| 还原 | 退出码 0 |
+
+**已知局限(不要当成已覆盖)**:
+
+- **日期只在"本机能取到 tag"时被真正核对**。CI 的 checkout 默认 `fetch-depth: 1`、不取 tag,
+  那里的日期一律**沿用已提交值**,所以"日期写错"只会在本地被抓到。
+- 发布流程是「写说明 → 提交 → 打 tag」,**生成数据时最新那条的 tag 还不存在**,
+  于是它先按当天日期写入;打完 tag 再跑一次生成器就会校准。生成器会把这种"先按当天"的
+  版本列出来提醒,闸门也会在同一次比对里发现差异。
+
+真机实测(1440 / 390 / 320,浅色 + 深色 + 英文界面,`.audit/verify-about-releases.mjs`,`problems 0`):
+
+| 量的是什么 | 结果 |
+| --- | --- |
+| 条数 / 「当前版本」标记 / `<time>` 数 | 10 / 1 / 10(与数据文件逐条对齐) |
+| 日期文本 | `v0.51.0 → 2026年11月27日`,`<time datetime="2026-11-27">`,**没有被时区推到 26 日** |
+| 对比度(浅色 / 深色) | 标题 15.47:1 / 15.9:1;摘要 5.54:1 / 10.84:1 |
+| 字号 | 版本 13px(等宽数字)· 标题 14px · 摘要 13px · 日期 12px · 标签 11px |
+| 横向溢出 | 1440 / 390 / 320 三档全 **0px** |
+| 英文界面 | 区块标签与标题跟着语言变(`Release history` / `Recent Updates`),**数据保持中文原文**并在说明里写清"发布说明是中文" |
+
+
+
 ## 可访问性与 i18n 的闸门(命令式,不在上面那套里)
 
 一张完整的表(之前被两段说明**从中间切开**,后半段丢了表头、渲染成纯文本 —— 已修):
@@ -939,6 +990,7 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 | `npm run check:dynamic-i18n`                   | 动态拼出来的 i18n 键必须存在(kind 从代码推导,新增 kind 不漏语言键;走到罕见状态才暴露的那类)              |
 | `npm run check:orphan-methods`                  | store 里声明的公开方法必须在别处被用到 —— 抓「声明了、实现是空壳、全项目没人调用」这类(类型检查与测试都发现不了) |
 | `npm run check:dead-exports`                    | 导出了却全仓没人引用(符号名与文件路径都查)—— 抓「功能删了、文件留下」这类死代码;只覆盖整个文件都没人用的情况 |
+| `npm run check:release-history`                | 关于页「最近更新」的数据模块必须与 `release-notes/` 重新生成的结果**逐字节一致**(加了新版本的说明却忘了重新生成 → 页面显示的是上一个版本) |
 | `node scripts/audit-jsx-hardcoded.mjs --count` | 硬编码中文的数量,只看数字(用于看趋势)                                                                      |
 
 ### 两条关于闸门本身的说明

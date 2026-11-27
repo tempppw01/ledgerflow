@@ -90,6 +90,9 @@ jobs:
           npm run check:r2-fetch
           npm run check:gate-exceptions
           npm run check:version-sync
+          # 关于页「最近更新」的数据模块必须与 release-notes/ 一致:
+          # 加了新版本的发布说明却忘了重新生成,页面会一本正经地显示上一个版本的内容。
+          npm run check:release-history
 
   docker-latest:
     needs: verify

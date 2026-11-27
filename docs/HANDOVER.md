@@ -261,7 +261,9 @@ npm run audit:demo-baseline                                 # 收工前确认基
 脚本里有一条**结构性保护**:目标指向演示账号时直接拒绝(id 与 email 双重比对)——
 让"误写演示库"这件事无法再发生。清理顺序也是写死的,不用每次重新推导。
 
-下面这**九个**已经在 CI 里跑(verify job 的 Static consistency gates 一步,2026-11-24 实测在 Linux CI 上通过):
+下面这些**已经在 CI 里跑**(verify job 的 `Static consistency gates` 一步共 11 条;
+最后一条 `check:jsx-hardcoded` 在前面的 `i18n gates` 一步里,是同一条命令的另一个名字 ——
+**不要**把它再往静态那步加一遍,2026-11-25 加过一次,同一个脚本在 CI 里跑了两遍):
 
 | 闸门 | 查什么 |
 | --- | --- |
@@ -274,6 +276,9 @@ npm run audit:demo-baseline                                 # 收工前确认基
 | `check:dead-exports` | 导出了却全仓没人引用(符号名与文件路径都查)—— 抓「功能删了、文件留下」这类死代码 |
 | `check:jsx-hardcoded` | JSX 文本节点里的硬编码中文(脚本本来就带 `--fail`,只是从没接进 CI)—— 抓「该走 i18n 却写死」 |
 | `check:r2-fetch` | 禁止 `fetch()` 直连 R2 公共域名(该域名不返回 CORS 头,曾把 PDF 导出整个搞挂;脚本里写着"给 CI 用"却从没接上) |
+| `check:gate-exceptions` | 各闸门 ALLOW / JUSTIFIED 里的例外条目是否还成立(例外会腐烂,而闸门自己从不检查清单) |
+| `check:version-sync` | `package.json` 的 version = `APP_VERSION`,且当前版本有对应的发布说明文件 |
+| `check:release-history` | 关于页「最近更新」的数据模块必须与 `release-notes/` 重新生成的结果逐字节一致(生成方式见 `docs/release-process.md` 第 3 步) |
 
 `audit:ledger-math` 与 `audit:ui` 不在 CI 里:前者要本地库,后者要 playwright 与 chromium。
 

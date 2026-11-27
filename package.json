@@ -48,7 +48,9 @@
     "check:jsx-hardcoded": "node scripts/audit-jsx-hardcoded.mjs --fail",
     "audit:demo-baseline": "node scripts/check-demo-baseline.mjs",
     "dev:test-user": "node scripts/dev-test-user.mjs",
-    "changelog": "node scripts/generate-changelog.mjs"
+    "changelog": "node scripts/generate-changelog.mjs",
+    "gen:release-history": "node scripts/generate-release-history.mjs",
+    "check:release-history": "node scripts/check-release-history.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

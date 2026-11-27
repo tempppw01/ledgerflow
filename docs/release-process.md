@@ -22,15 +22,23 @@
 # 1. 改版本号(package.json + src/shared/config/app.ts 的 APP_VERSION)
 # 2. 写仓库内的发布说明 —— 这一步不能省
 #    release-notes/RELEASE_NOTES_v0.36.0.md
-# 3. 提交(版本号 + 说明文件一起进)
-git add package.json src/shared/config/app.ts release-notes/RELEASE_NOTES_v0.36.0.md
+# 3. 重新生成「关于页 → 最近更新」的数据(**提交前**,否则 check:release-history 会红)
+#    npm run gen:release-history
+# 4. 提交(版本号 + 说明文件 + 生成的数据一起进)
+git add package.json src/shared/config/app.ts release-notes/RELEASE_NOTES_v0.36.0.md \
+        src/pages/about/recentReleases.generated.ts
 git commit -m "feat: ... (v0.36.0)"
 git push origin main
-# 4. 打 tag 并推送 —— 工作流会自动建 Release,不要手工 gh release create
+# 5. 打 tag 并推送 —— 工作流会自动建 Release,不要手工 gh release create
 git tag -a v0.36.0 -m "v0.36.0: ..."
 git push origin v0.36.0
 gh run watch   # 看 release 工作流是否变绿
 ```
+
+第 3 步的日期有个先有鸡还是先有蛋的地方:发布流程是「先写说明、后打 tag」,
+所以生成的那一刻最新版本的 tag 还不存在,它的日期会先按**当天**写入
+(生成器会把这个版本列出来提醒)。打完 tag 再跑一次 `npm run gen:release-history` 就能校准成
+tag 的真实日期 —— 不跑也不影响使用,`npm run check:release-history` 在本地会提示差异。
 
 手工 `gh release create --notes-file /tmp/xxx.md` 会**绕开**这条流水线:Release 建出来了,
 但工作流仍会因为没有仓库内说明文件而失败 —— 这正是 2026-11-21 那一批失败的原因。

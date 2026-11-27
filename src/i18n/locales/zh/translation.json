@@ -702,6 +702,15 @@
     "home": {
       "title": "项目主页"
     },
+    "releases": {
+      "label": "版本记录",
+      "title": "最近更新",
+      "intro": "下面是最近 {{total}} 个版本的中文说明,取自各版本的发布说明原文。",
+      "current": "当前版本",
+      "viewAll": "在 GitHub 查看全部版本",
+      "openRelease": "查看 v{{version}} 的完整说明",
+      "source": "说明文字为发布说明的原文摘要;日期取对应的 git tag。本列表随应用一起打包,不联网获取。"
+    },
     "openSource": {
       "title": "开放协作，持续改进",
       "description": "项目代码、版本发布和技术文档都在 GitHub 公开维护。"
