@@ -34,6 +34,12 @@ export const RELEASE_HISTORY_LIMIT = 10;
 // prettier-ignore
 export const RELEASE_HISTORY: readonly ReleaseHistoryEntry[] = [
   {
+    version: '0.52.3',
+    publishedOn: '2026-11-28',
+    title: '同一个页面,名字在三个地方不再各说各话;死代码闸门补上两个洞',
+    summary: '这一版还是「同一件事被两处分别计算」那条线,外加把一道闸门的洞补上。另外记了三件查证后没有改的事(避免以后重复怀疑)。'
+  },
+  {
     version: '0.52.2',
     publishedOn: '2026-11-28',
     title: '首屏少下 2.3 MB;投资页不再把同一轮行情打六遍',
@@ -86,11 +92,5 @@ export const RELEASE_HISTORY: readonly ReleaseHistoryEntry[] = [
     publishedOn: '2026-11-25',
     title: '修:备注里带换行的账单,整笔交易会静默消失',
     summary: '继续用"造真实形状的输入去撞"的办法。这轮撞的是 CSV 的几个脏情况…'
-  },
-  {
-    version: '0.50.53',
-    publishedOn: '2026-11-25',
-    title: '修:「上传微信账单失败」还有一个漏网的情况',
-    summary: '上次修完「wps 里日期是 Excel 序列号 → 解析 0 条」(v0.50.44),我验证用的是你发来的那份微信账单,它能正常导入。这轮我想做一次端到端验证,于是自己造了一份同结构的 xlsx(openpyxl 生成):前置 17 行、表头、6 条数据(含 1 笔中性交易)、日期同样是序列号。'
   }
 ];

@@ -7,6 +7,7 @@
 
 | 版本 | 说明 |
 | --- | --- |
+| [v0.52.3](release-notes/RELEASE_NOTES_v0.52.3.md) | 同一个页面,名字在三个地方不再各说各话;死代码闸门补上两个洞 |
 | [v0.52.2](release-notes/RELEASE_NOTES_v0.52.2.md) | 首屏少下 2.3 MB;投资页不再把同一轮行情打六遍 |
 | [v0.52.1](release-notes/RELEASE_NOTES_v0.52.1.md) | 投资页两处「说的和做的不一致」:简报的结论、快讯的 AI 解读 |
 | [v0.52.0](release-notes/RELEASE_NOTES_v0.52.0.md) | 新:关于页的「最近更新」—— 版本记录 + 中文说明 |

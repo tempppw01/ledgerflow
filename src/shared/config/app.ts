@@ -1,4 +1,4 @@
-export const APP_VERSION = '0.52.2';
+export const APP_VERSION = '0.52.3';
 export const APP_GITHUB_URL = 'https://github.com/tempppw01/ledgerflow';
 /*
  * 品牌图走同源小图(public/logo-128.png,8.7 KB),不再用 R2 上那张 1254×1254 / 2.3 MB 的原图。
