@@ -2356,18 +2356,24 @@
       "title": "Today’s market, in plain words",
       "aiAria": "Ask AI to review today’s market",
       "aiAction": "AI review",
-      "noPriceSignal": "No price signal yet — watch news momentum instead of chasing strength.",
-      "card": {
-        "sector": "Sector",
-        "sectorLoading": "Sector data is still loading.",
-        "avoid": "Avoid",
-        "noWeakSector": "No clearly weak sector right now.",
+      "lead": {
+        "unknown": "Market data has not arrived yet — no conclusions for now.",
+        "boardsOnly": "Sectors {up} up / {down} down; index data unavailable.",
+        "indexOnly": "Index {index}; sector data not in yet.",
+        "strong": "Index {index}, sectors {up} up / {down} down — broadly firm.",
+        "weak": "Index {index}, sectors {up} up / {down} down — broadly weak, mind your position.",
+        "mixed": "Index {index} but sectors {up} up / {down} down — the two point different ways.",
+        "quiet": "Index {index}, sectors {up} up / {down} down — nothing decisive either way."
+      },
+      "fact": {
+        "strongest": "Leading",
+        "weakest": "Lagging",
         "policy": "Policy",
         "news": "News",
-        "newsFallback": "A new story is shaping market attention.",
-        "newsLoading": "News is syncing — refresh in a moment.",
-        "sectorStrong": " — relatively strong today.",
-        "sectorWeak": " — weak today, do not rush in."
+        "boardsPending": "Sector data not in yet",
+        "allUp": "No sector is down",
+        "noClearLoser": "No clear laggard",
+        "newsPending": "News is syncing"
       },
       "regenerate": "Regenerate",
       "riskLabel": "risk",
@@ -2378,15 +2384,6 @@
         "collecting": "Collecting prices and news",
         "unavailable": "Local signals ready, AI unavailable"
       },
-      "line": {
-        "loading": "Quotes are still loading — no conclusions yet.",
-        "strong": "The index is strong today; enjoy it without chasing the heat.",
-        "warming": "The market is warming up; nothing to force today.",
-        "dumped": "The index took another hit — steadying yourself beats rushing to add.",
-        "weakening": "Sentiment is fading; today is for watching, not impulsive moves.",
-        "hesitant": "The index is undecided; watch your own holdings instead of every tick."
-      },
-      "subtitle": "Moves, sectors and news boiled down to a few lines — enough to act on.",
       "scoreLabel": "score"
     },
     "clock": {

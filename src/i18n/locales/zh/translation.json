@@ -705,11 +705,11 @@
     "releases": {
       "label": "版本记录",
       "title": "最近更新",
-      "intro": "下面是最近 {{total}} 个版本的中文说明,取自各版本的发布说明原文。",
+      "intro": "下面是最近 {{total}} 个版本的中文说明，取自各版本的发布说明原文。",
       "current": "当前版本",
       "viewAll": "在 GitHub 查看全部版本",
       "openRelease": "查看 v{{version}} 的完整说明",
-      "source": "说明文字为发布说明的原文摘要;日期取对应的 git tag。本列表随应用一起打包,不联网获取。"
+      "source": "说明文字为发布说明的原文摘要；日期取对应的 git tag。本列表随应用一起打包，不联网获取。"
     },
     "openSource": {
       "title": "开放协作，持续改进",
@@ -2356,18 +2356,24 @@
       "title": "今天的市场，说人话",
       "aiAria": "让 AI 复盘今日市场",
       "aiAction": "AI 复盘",
-      "noPriceSignal": "价格信号暂缺，先结合新闻热度观察，不做追涨判断。",
-      "card": {
-        "sector": "板块",
-        "sectorLoading": "板块数据还在加载。",
-        "avoid": "回避",
-        "noWeakSector": "暂时没有明显的弱势板块。",
+      "lead": {
+        "unknown": "行情数据还没到，先别下结论。",
+        "boardsOnly": "板块 {up} 涨 {down} 跌，大盘数据暂缺。",
+        "indexOnly": "大盘 {index}，板块数据还没到。",
+        "strong": "大盘 {index}，板块 {up} 涨 {down} 跌，整体偏强。",
+        "weak": "大盘 {index}，板块 {up} 涨 {down} 跌，整体偏弱，先看住仓位。",
+        "mixed": "大盘 {index}，板块却是 {up} 涨 {down} 跌 —— 指数和板块不在一个方向上。",
+        "quiet": "大盘 {index}，板块 {up} 涨 {down} 跌，涨跌都不明显。"
+      },
+      "fact": {
+        "strongest": "领涨",
+        "weakest": "领跌",
         "policy": "政策",
         "news": "资讯",
-        "newsFallback": "有一条新资讯正在影响市场关注。",
-        "newsLoading": "资讯正在同步，稍后刷新看看。",
-        "sectorStrong": "，今天相对有劲。",
-        "sectorWeak": "，今天偏弱，别急着接。"
+        "boardsPending": "板块数据还没到",
+        "allUp": "没有下跌的板块",
+        "noClearLoser": "没有明显领跌的板块",
+        "newsPending": "资讯正在同步"
       },
       "regenerate": "重新生成",
       "riskLabel": "风险",
@@ -2378,15 +2384,6 @@
         "collecting": "正在整理行情和新闻",
         "unavailable": "本地信号可用,AI 暂不可用"
       },
-      "line": {
-        "loading": "行情还在加载，先别急着下结论。",
-        "strong": "大盘今天挺有劲，热闹归热闹，别一上头就追。",
-        "warming": "大盘慢慢回暖，今天不是硬扛的一天。",
-        "dumped": "大盘又被砸了，先把节奏稳住比急着补仓更重要。",
-        "weakening": "市场有点泄气，今天更适合看，不适合冲动操作。",
-        "hesitant": "大盘还在犹豫，今天先看自己持仓，不用被每一根波动带着走。"
-      },
-      "subtitle": "把涨跌、板块和新闻拎成几句，够用就好。",
       "scoreLabel": "综合分"
     },
     "clock": {

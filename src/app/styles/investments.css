@@ -441,7 +441,13 @@
 
 .investments-core-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(220px, 0.8fr) minmax(220px, 0.8fr);
+  /*
+   * 两列,不是三列:
+   * 这个网格**只渲染两个面板**(今日持仓 + 今天的市场),原来写的三列是历史遗留
+   * (第三个"规则建议"面板早就删了) —— 实测 1440 视口下右侧空出 **286px**,
+   * 同时"今天的市场"被挤在 282px 里,一句话要换三行。
+   */
+  grid-template-columns: minmax(0, 1.45fr) minmax(240px, 0.8fr);
   gap: 0;
   padding: 18px 4px 20px;
   border-bottom: 1px solid color-mix(in srgb, var(--color-border-light) 82%, transparent);
@@ -660,26 +666,107 @@
   font-size: 16px !important;
 }
 
-.investments-plain-briefing-panel,
-.investments-rule-suggestions-panel {
+.investments-plain-briefing-panel {
   display: grid;
   align-content: start;
 }
 
-.investments-plain-briefing-lead {
+/*
+ * 「今天的市场,说人话」的正文:一句话读数 + 三条事实 + (AI 时)两条建议。
+ *
+ * 全部按"一行一条"的密度来 —— 这一块原来把新闻正文整段铺进来(实测一段 250 字),
+ * 把面板从 ~190px 撑到 482px。现在资讯只留标题,事实值最多两行。
+ */
+.investments-briefing-lead {
   display: block;
-  margin-top: 14px;
+  margin: 12px 0 0;
   color: var(--color-text-primary);
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 750;
-  line-height: 1.55;
+  line-height: 1.5;
 }
 
-.investments-market-ai-summary {
-  margin: 5px 0 0;
+.investments-briefing-summary {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 4px 0 0;
   color: var(--color-text-secondary);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.45;
+}
+
+.investments-briefing-facts {
+  display: grid;
+  gap: 5px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.investments-briefing-facts li {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+}
+
+.investments-briefing-fact-label {
+  color: var(--color-primary-text);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.investments-briefing-fact-value {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.investments-briefing-suggestions {
+  display: grid;
+  gap: 5px;
+  margin: 10px 0 0;
+  padding: 9px 0 0;
+  border-top: 1px dashed color-mix(in srgb, var(--color-border) 70%, transparent);
+  list-style: none;
+}
+
+.investments-briefing-suggestions li {
+  display: grid;
+  grid-template-columns: 6px minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.investments-briefing-suggestions strong {
+  margin-right: 6px;
+  color: var(--color-text-primary);
+  font-weight: 700;
+}
+
+.investments-briefing-suggestion-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-text-tertiary);
+}
+
+.investments-briefing-suggestions li.is-positive .investments-briefing-suggestion-dot {
+  background: var(--color-income);
+}
+
+.investments-briefing-suggestions li.is-warning .investments-briefing-suggestion-dot {
+  background: var(--color-warning);
 }
 
 .investments-market-insight-meta {
@@ -769,28 +856,6 @@
    */
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
-}
-
-.investments-plain-briefing-points {
-  display: grid;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.investments-plain-briefing-points p {
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.investments-plain-briefing-points span {
-  display: inline-block;
-  min-width: 28px;
-  margin-right: 6px;
-  color: var(--color-primary-text);
-  font-size: 11px;
-  font-weight: 750;
 }
 
 .investments-rule-suggestion-list {

@@ -51,6 +51,9 @@ function toLocaleLanguage(language: string | undefined): string {
 import { InvestmentChatPanel } from '../../features/assistant/investment-chat/InvestmentChatPanel';
 import { ChatSparklesIcon } from '../../features/assistant/ui/chatIcons';
 import { DatePicker } from '../../shared/ui/DatePicker';
+import { PlainMarketBriefingPanel, type MarketInsightStatus } from './PlainMarketBriefingPanel';
+import { isPolicySignal } from '../../features/investments/model/plainBriefing';
+import { formatMarketPercent } from './marketFormat';
 import {
   fetchEastmoneyFundSnapshot,
   fetchEastmoneyHoldingStockQuotes,
@@ -659,11 +662,6 @@ function compactMarketIndexName(name: string) {
   return name === '纳斯达克 100' ? '纳指100' : name;
 }
 
-function formatMarketPercent(value?: number | null) {
-  if (typeof value !== 'number') return '--';
-  return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
-}
-
 function formatMarketAmount(value: number | null | undefined, tf: TfFallback) {
   if (typeof value !== 'number' || value <= 0) return '--';
   const trillion = tf('investments.market.amount.trillion', '万亿');
@@ -703,12 +701,6 @@ function formatMarketClock(value: string | undefined, language?: string) {
   });
 }
 
-function isPolicySignalText(value: string) {
-  return /政策|监管|国务院|证监|央行|财政|税务|发改|工信|降准|降息|印花税|利率|补贴|新规|支持|刺激|稳增长|房地产|地产|集采|国产替代/.test(
-    value
-  );
-}
-
 function getMarketTone(value?: number | null) {
   if (typeof value !== 'number') return 'is-flat';
   if (value > 0) return 'is-positive';
@@ -730,26 +722,6 @@ function getMovementEmoji(value?: number | null) {
   if (value >= 0.5) return '🔥';
   if (value <= -0.5) return '💧';
   return '😐';
-}
-
-function getPlainMarketLine(change: number | null | undefined, tf: TfFallback) {
-  if (typeof change !== 'number')
-    return tf('investments.briefing.line.loading', '行情还在加载，先别急着下结论。');
-  if (change >= 1)
-    return tf('investments.briefing.line.strong', '大盘今天挺有劲，热闹归热闹，别一上头就追。');
-  if (change >= 0.25)
-    return tf('investments.briefing.line.warming', '大盘慢慢回暖，今天不是硬扛的一天。');
-  if (change <= -1)
-    return tf('investments.briefing.line.dumped', '大盘又被砸了，先把节奏稳住比急着补仓更重要。');
-  if (change <= -0.25)
-    return tf(
-      'investments.briefing.line.weakening',
-      '市场有点泄气，今天更适合看，不适合冲动操作。'
-    );
-  return tf(
-    'investments.briefing.line.hesitant',
-    '大盘还在犹豫，今天先看自己持仓，不用被每一根波动带着走。'
-  );
 }
 
 function getBoardHealth(change: number | null | undefined, tf: TfFallback) {
@@ -799,8 +771,6 @@ type WatchHoldingSnapshot = {
   marketChange: number | null;
   estimatedTodayProfit: number | null;
 };
-
-type MarketInsightStatus = 'disabled' | 'model-missing' | 'waiting' | 'loading' | 'ready' | 'error';
 
 function parseStoredPercent(value?: string) {
   const match = String(value || '')
@@ -1189,174 +1159,6 @@ function HoldingsTodayPanel({
             </div>
           </article>
         ))}
-      </div>
-    </section>
-  );
-}
-
-function PlainMarketBriefingPanel({
-  marketChange,
-  themeBoards,
-  news,
-  insight,
-  algorithmSignals,
-  insightStatus,
-  onRetryInsight,
-  onAskAi
-}: {
-  marketChange: number | null;
-  themeBoards: EastmoneyMarketBoard[];
-  news: EastmoneyMarketNewsItem[];
-  insight: InvestmentMarketInsight | null;
-  algorithmSignals: MarketAlgorithmSignals;
-  insightStatus: MarketInsightStatus;
-  onRetryInsight?: () => void;
-  onAskAi?: (prompt: string) => void;
-}) {
-  const tf = useTFallback();
-  const strongestTheme = [...themeBoards].sort(
-    (a, b) =>
-      (b.changePercent || Number.NEGATIVE_INFINITY) - (a.changePercent || Number.NEGATIVE_INFINITY)
-  )[0];
-  const weakestTheme = [...themeBoards].sort(
-    (a, b) =>
-      (a.changePercent || Number.POSITIVE_INFINITY) - (b.changePercent || Number.POSITIVE_INFINITY)
-  )[0];
-  const policyNews = news.find((item) => isPolicySignalText(`${item.title} ${item.summary}`));
-  const topNews = policyNews || news[0];
-
-  // 引脚上的「状态说明」只讲数据来源与刷新频率,分数拆成带标签的小块单独渲染。
-  //
-  // 以前把分数拼进同一句话,而综合分是 -100~100 的有符号值,于是出现过
-  // 「先用本地信号 · 配置 AI 后每 15 分钟更新 · 综合 -23 · 风险 96」——
-  // 光看这句,「-23」和前面的「更新」连读,像是在说「更新晚了 23 分钟」,
-  // 而实际上它是综合分的负数。风险分同理:后面紧跟的数字没有标签,只能猜。
-  const insightStatusLine =
-    insightStatus === 'ready' && insight
-      ? tf('investments.briefing.status.live', '结合行情、新闻和板块 · 每 15 分钟更新')
-      : insightStatus === 'disabled'
-        ? tf('investments.briefing.status.localOnly', '本地信号 · 配置 AI 后每 15 分钟更新')
-        : insightStatus === 'model-missing'
-          ? tf('investments.briefing.status.needModel', '本地信号可用 · 请先选择 AI 模型再生成简报')
-          : insightStatus === 'error'
-            ? tf('investments.briefing.status.unavailable', '本地信号可用,AI 暂不可用')
-            : tf('investments.briefing.status.collecting', '正在整理行情和新闻');
-  const scoreTone =
-    algorithmSignals.score >= 35
-      ? 'is-strong'
-      : algorithmSignals.score <= -35
-        ? 'is-weak'
-        : 'is-flat';
-  const riskTone =
-    algorithmSignals.riskScore >= 70
-      ? 'is-weak'
-      : algorithmSignals.riskScore <= 35
-        ? 'is-strong'
-        : 'is-flat';
-
-  return (
-    <section
-      className="panel investments-plain-briefing-panel"
-      aria-label={tf('investments.briefing.aria', '今日行情播报')}
-    >
-      <div className="investments-today-panel-head">
-        <div>
-          <h2>{tf('investments.briefing.title', '今天的市场，说人话')}</h2>
-        </div>
-        <div className="investments-panel-head-actions">
-          <button
-            type="button"
-            className="investments-ai-inline-btn"
-            onClick={() =>
-              onAskAi?.(
-                buildInvestmentMarketAskPrompt({
-                  marketChange,
-                  themes: themeBoards
-                    .slice()
-                    .sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0))
-                    .slice(0, 3)
-                    .map((item) => item.name),
-                  news: news[0]?.title
-                })
-              )
-            }
-            aria-label={tf('investments.briefing.aiAria', '让 AI 复盘今日市场')}
-          >
-            <ChatSparklesIcon className="chat-svg-icon" />
-            {tf('investments.briefing.aiAction', 'AI 复盘')}
-          </button>
-          <span aria-hidden="true">🗣️</span>
-        </div>
-      </div>
-      <strong className="investments-plain-briefing-lead">
-        {insight?.headline ||
-          (marketChange === null && news.length
-            ? tf(
-                'investments.briefing.noPriceSignal',
-                '价格信号暂缺，先结合新闻热度观察，不做追涨判断。'
-              )
-            : getPlainMarketLine(marketChange, tf))}
-      </strong>
-      {insight?.summary ? <p className="investments-market-ai-summary">{insight.summary}</p> : null}
-      <div className="investments-plain-briefing-points">
-        {insight?.points.length
-          ? insight.points.map((point) => (
-              <p key={`${point.label}-${point.text}`}>
-                <span>{point.label}</span>
-                {point.text}
-              </p>
-            ))
-          : [
-              {
-                label: tf('investments.briefing.card.sector', '板块'),
-                text: strongestTheme
-                  ? `${strongestTheme.name} ${formatMarketPercent(strongestTheme.changePercent)}${tf('investments.briefing.card.sectorStrong', '，今天相对有劲。')}`
-                  : tf('investments.briefing.card.sectorLoading', '板块数据还在加载。')
-              },
-              {
-                label: tf('investments.briefing.card.avoid', '回避'),
-                text:
-                  weakestTheme && weakestTheme.code !== strongestTheme?.code
-                    ? `${weakestTheme.name} ${formatMarketPercent(weakestTheme.changePercent)}${tf('investments.briefing.card.sectorWeak', '，今天偏弱，别急着接。')}`
-                    : tf('investments.briefing.card.noWeakSector', '暂时没有明显的弱势板块。')
-              },
-              {
-                label: policyNews
-                  ? tf('investments.briefing.card.policy', '政策')
-                  : tf('investments.briefing.card.news', '资讯'),
-                text: topNews
-                  ? topNews.summary ||
-                    tf('investments.briefing.card.newsFallback', '有一条新资讯正在影响市场关注。')
-                  : tf('investments.briefing.card.newsLoading', '资讯正在同步，稍后刷新看看。')
-              }
-            ].map((point) => (
-              <p key={point.label}>
-                <span>{point.label}</span>
-                {point.text}
-              </p>
-            ))}
-      </div>
-      <div className="investments-market-insight-footer">
-        <small className="investments-market-insight-meta">
-          <span className="investments-market-insight-status">{insightStatusLine}</span>
-          <span className={`investments-market-insight-signal ${scoreTone}`}>
-            {tf('investments.briefing.scoreLabel', '综合分')}
-            <strong>{algorithmSignals.score}</strong>
-          </span>
-          <span className={`investments-market-insight-signal ${riskTone}`}>
-            {tf('investments.briefing.riskLabel', '风险')}
-            <strong>{algorithmSignals.riskScore}</strong>
-          </span>
-        </small>
-        {insightStatus === 'error' && onRetryInsight ? (
-          <button
-            type="button"
-            className="investments-market-insight-retry"
-            onClick={onRetryInsight}
-          >
-            {tf('investments.briefing.regenerate', '重新生成')}
-          </button>
-        ) : null}
       </div>
     </section>
   );
@@ -4690,7 +4492,7 @@ export function InvestmentsPage() {
       stocks: item.stocks.slice(0, 4)
     }));
     const policySignals = marketNews
-      .filter((item) => isPolicySignalText(`${item.title} ${item.summary}`))
+      .filter((item) => isPolicySignal(`${item.title} ${item.summary}`))
       .slice(0, 5)
       .map((item) => ({
         time: formatMarketNewsTime(item.time, tf, language),
@@ -5730,7 +5532,7 @@ export function InvestmentsPage() {
                 themeBoards={marketThemeBoards}
                 news={marketNews}
                 insight={marketInsight}
-                algorithmSignals={marketAlgorithmSignals}
+                signals={marketAlgorithmSignals}
                 insightStatus={marketInsightStatus}
                 onRetryInsight={retryMarketInsight}
                 onAskAi={askInvestmentAi}
