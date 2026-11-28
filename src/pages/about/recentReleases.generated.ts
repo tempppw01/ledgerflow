@@ -34,6 +34,12 @@ export const RELEASE_HISTORY_LIMIT = 10;
 // prettier-ignore
 export const RELEASE_HISTORY: readonly ReleaseHistoryEntry[] = [
   {
+    version: '0.52.2',
+    publishedOn: '2026-11-28',
+    title: '首屏少下 2.3 MB;投资页不再把同一轮行情打六遍',
+    summary: '这一版没有新功能,全是「已经画在屏幕上、却在偷偷浪费或说错话」的东西。三条主线:品牌图不再为一个 32px 的图标去拉 2.3 MB 的原图、两个没人引用的资源不再被打进包里、投资页的行情兜底不再重复打上游(顺带修掉一个会把已有行情覆盖成「--」的真 bug)。'
+  },
+  {
     version: '0.52.1',
     publishedOn: '2026-11-28',
     title: '投资页两处「说的和做的不一致」:简报的结论、快讯的 AI 解读',
@@ -86,11 +92,5 @@ export const RELEASE_HISTORY: readonly ReleaseHistoryEntry[] = [
     publishedOn: '2026-11-25',
     title: '修:「上传微信账单失败」还有一个漏网的情况',
     summary: '上次修完「wps 里日期是 Excel 序列号 → 解析 0 条」(v0.50.44),我验证用的是你发来的那份微信账单,它能正常导入。这轮我想做一次端到端验证,于是自己造了一份同结构的 xlsx(openpyxl 生成):前置 17 行、表头、6 条数据(含 1 笔中性交易)、日期同样是序列号。'
-  },
-  {
-    version: '0.50.52',
-    publishedOn: '2026-11-25',
-    title: '修:新用户想导入账单,找不到入口',
-    summary: '本来想做「导入链路」的端到端验证:把一个新账号打开交易页看看。结果发现空状态的文案写着…'
   }
 ];
