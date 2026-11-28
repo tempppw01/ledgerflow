@@ -147,6 +147,7 @@
   },
   "nav": {
     "assistant": "AI Assistant",
+    "aiTools": "AI Tools",
     "incomeExpense": "Income & Expense",
     "assetsDebt": "Assets & Debt",
     "toolsInfo": "Tools & Insights",

@@ -147,6 +147,7 @@
   },
   "nav": {
     "assistant": "AI 助手",
+    "aiTools": "AI 工具",
     "incomeExpense": "收支管理",
     "assetsDebt": "资产负债",
     "toolsInfo": "工具资讯",

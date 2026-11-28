@@ -576,6 +576,16 @@ body {
   object-position: center;
 }
 
+/*
+ * CDN 图标失败时退回那个字形(见 widgets/layout/NavIcon.tsx)。
+ * 尺寸贴着 22px 的 .nav-icon-frame 走 —— 换成一个空框或者撑大布局都比这更糟。
+ */
+.nav-icon-fallback {
+  display: block;
+  font-size: 15px;
+  line-height: 1;
+}
+
 .button-with-icon {
   display: inline-flex;
   align-items: center;
@@ -22097,12 +22107,24 @@ select.debt-form-input {
   border: 1px solid var(--color-border-light);
   flex: none;
 }
-.settings-accent-swatch[data-accent-swatch='amber'] { background: #f59e0b; }
-.settings-accent-swatch[data-accent-swatch='blue'] { background: #3b82f6; }
-.settings-accent-swatch[data-accent-swatch='emerald'] { background: #10b981; }
-.settings-accent-swatch[data-accent-swatch='violet'] { background: #7c3aed; }
-.settings-accent-swatch[data-accent-swatch='rose'] { background: #f43f5e; }
-.settings-accent-swatch[data-accent-swatch='aurora'] { background: linear-gradient(135deg, #6366f1, #22d3ee); }
+.settings-accent-swatch[data-accent-swatch='amber'] {
+  background: #f59e0b;
+}
+.settings-accent-swatch[data-accent-swatch='blue'] {
+  background: #3b82f6;
+}
+.settings-accent-swatch[data-accent-swatch='emerald'] {
+  background: #10b981;
+}
+.settings-accent-swatch[data-accent-swatch='violet'] {
+  background: #7c3aed;
+}
+.settings-accent-swatch[data-accent-swatch='rose'] {
+  background: #f43f5e;
+}
+.settings-accent-swatch[data-accent-swatch='aurora'] {
+  background: linear-gradient(135deg, #6366f1, #22d3ee);
+}
 
 .settings-accent-option.is-active {
   border-color: var(--color-primary);

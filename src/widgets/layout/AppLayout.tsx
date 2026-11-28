@@ -42,8 +42,12 @@ import {
   WALLET_CARDS_ICON_URL
 } from '../../shared/config/brandAssets';
 import { formatCurrency } from '../../shared/lib/format';
-import { filterCountableTransactions, summarizeTransactions } from '../../shared/lib/transactionMetrics';
+import {
+  filterCountableTransactions,
+  summarizeTransactions
+} from '../../shared/lib/transactionMetrics';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
+import { NavIcon } from './NavIcon';
 import { ScrollProgressBar } from './ScrollProgressBar';
 
 type NavItem = {
@@ -79,7 +83,8 @@ function renderNavIcon(item: { icon: string; iconSrc?: string }, className: stri
   if (item.iconSrc) {
     return (
       <span className={`${className} nav-icon-frame`} aria-hidden="true">
-        <img className="nav-image-icon" src={item.iconSrc} alt="" />
+        {/* 图标文件在 CDN 上,失败时退回这一项自带的字形 —— 不能只留一个空框 */}
+        <NavIcon src={item.iconSrc} fallback={item.icon} />
       </span>
     );
   }
@@ -137,7 +142,12 @@ export function AppLayout() {
   const navSections: Array<{ title: string; items: NavItem[] }> = useMemo(
     () => [
       {
-        title: tFallback('nav.assistant', '智能助手'),
+        /*
+         * 组名不能和组内第一项同名:助手项的名字是**动态**的(getAssistantModeLabel),
+         * 默认模式下正好也叫「AI 助手」—— 实测渲染出来就是"AI 助手"标题下面再来一个"AI 助手"。
+         * 这组三项(助手 / 智能预算 / 全局记忆)的共同点是"AI 工具",组名用类别,项名留给具体的助手。
+         */
+        title: tFallback('nav.aiTools', 'AI 工具'),
         items: [
           {
             to: '/assistant',
@@ -509,7 +519,10 @@ export function AppLayout() {
         icon: '🧾',
         eyebrow: tf('navMobile.thisMonth', '本月动态'),
         title: tf('navMobile.noRecordsYet', '本月还没有新流水'),
-        description: tf('navMobile.addOneFirst', '先补一笔真实支收，再回来追问或复盘，会比固定提示更有参考价值。'),
+        description: tf(
+          'navMobile.addOneFirst',
+          '先补一笔真实支收，再回来追问或复盘，会比固定提示更有参考价值。'
+        ),
         actionLabel: tf('navMobile.quickAddOne', '去补一笔'),
         to: '/transactions?quickAdd=1&entry=layout'
       };
@@ -520,8 +533,15 @@ export function AppLayout() {
         tone: 'warning',
         icon: '⚠️',
         eyebrow: tf('navMobile.cashFlow', '资金提醒'),
-        title: tf('navMobile.monthlyBalanceNegative', '本月结余 {{amount}}').split('{{amount}}').join(formatCurrency(monthBalance)),
-        description: tf('navMobile.warningDescription', '本月已记录 {{count}} 笔，当前已经偏紧，先看看预算或高频支出会更稳。').split('{{count}}').join(String(monthTransactionCount)),
+        title: tf('navMobile.monthlyBalanceNegative', '本月结余 {{amount}}')
+          .split('{{amount}}')
+          .join(formatCurrency(monthBalance)),
+        description: tf(
+          'navMobile.warningDescription',
+          '本月已记录 {{count}} 笔，当前已经偏紧，先看看预算或高频支出会更稳。'
+        )
+          .split('{{count}}')
+          .join(String(monthTransactionCount)),
         actionLabel: tf('navMobile.openBudget', '去看预算'),
         to: '/smart-budget'
       };
@@ -532,8 +552,13 @@ export function AppLayout() {
         tone: 'focus',
         icon: '💸',
         eyebrow: tf('navMobile.incomeGap', '记录提醒'),
-        title: tf('navMobile.monthlyExpense', '本月支出 {{amount}}').split('{{amount}}').join(formatCurrency(monthExpense)),
-        description: tf('navMobile.incomeGapDescription', '支出已经开始累积，但收入侧还是空白，补齐之后月度结余会更准确。'),
+        title: tf('navMobile.monthlyExpense', '本月支出 {{amount}}')
+          .split('{{amount}}')
+          .join(formatCurrency(monthExpense)),
+        description: tf(
+          'navMobile.incomeGapDescription',
+          '支出已经开始累积，但收入侧还是空白，补齐之后月度结余会更准确。'
+        ),
         actionLabel: tf('navMobile.continueBookkeeping', '继续记账'),
         to: '/transactions?quickAdd=1&entry=layout'
       };
@@ -553,10 +578,20 @@ export function AppLayout() {
       tone: 'positive',
       icon: '✨',
       eyebrow: tf('navMobile.latestUpdate', '最近更新'),
-      title: tf('navMobile.monthlyRecords', '本月已记录 {{count}} 笔').split('{{count}}').join(String(monthTransactionCount)),
+      title: tf('navMobile.monthlyRecords', '本月已记录 {{count}} 笔')
+        .split('{{count}}')
+        .join(String(monthTransactionCount)),
       description: latestSummary
-        ? tf('navMobile.positiveDescriptionWithSummary', '{{summary}}。继续补齐，或者让 AI 直接帮你做一轮复盘。').split('{{summary}}').join(latestSummary)
-        : tf('navMobile.positiveDescriptionEmpty', '这个月已经有连续记录了，继续补齐，或者让 AI 帮你做一轮复盘。'),
+        ? tf(
+            'navMobile.positiveDescriptionWithSummary',
+            '{{summary}}。继续补齐，或者让 AI 直接帮你做一轮复盘。'
+          )
+            .split('{{summary}}')
+            .join(latestSummary)
+        : tf(
+            'navMobile.positiveDescriptionEmpty',
+            '这个月已经有连续记录了，继续补齐，或者让 AI 帮你做一轮复盘。'
+          ),
       actionLabel: defaultReviewAction,
       to: defaultReviewTo
     };
@@ -746,7 +781,6 @@ export function AppLayout() {
   };
 
   const closeSettingsOverlay = () => {
-
     setSettingsOverlayOpen(false);
   };
 
@@ -771,13 +805,13 @@ export function AppLayout() {
             </Link>
           ) : null}
           {/*
-            * WCAG 2.5.7(拖拽移动,AA):侧栏宽度原来只有拖拽和方向键改得了。
-            * 方向键解决的是 2.1.1,2.5.7 要的是**单指、非拖拽**的入口。
-            *
-            * 放在侧栏头部而不是那条 8px 的手柄上:手柄贴在侧栏右缘、浮在正文之上,
-            * 往它上面塞 24×24 的按钮会盖住正文;头部本来就有品牌名和折叠按钮,
-            * 是天然的落脚处。
-            */}
+           * WCAG 2.5.7(拖拽移动,AA):侧栏宽度原来只有拖拽和方向键改得了。
+           * 方向键解决的是 2.1.1,2.5.7 要的是**单指、非拖拽**的入口。
+           *
+           * 放在侧栏头部而不是那条 8px 的手柄上:手柄贴在侧栏右缘、浮在正文之上,
+           * 往它上面塞 24×24 的按钮会盖住正文;头部本来就有品牌名和折叠按钮,
+           * 是天然的落脚处。
+           */}
           {!collapsed ? (
             <span
               className="sidebar-width-actions"
@@ -1111,7 +1145,9 @@ export function AppLayout() {
                 <div>
                   <p className="mobile-nav-name">{user.displayName}</p>
                   <p className="mobile-nav-subtitle">
-                    {tf('layout.drawerSubtitle', '{{today}} · 让今天的账目保持清晰').split('{{today}}').join(todayLabel)}
+                    {tf('layout.drawerSubtitle', '{{today}} · 让今天的账目保持清晰')
+                      .split('{{today}}')
+                      .join(todayLabel)}
                   </p>
                 </div>
               </div>
@@ -1128,10 +1164,16 @@ export function AppLayout() {
             <section className="mobile-nav-summary-card">
               <h3>{monthLabel}</h3>
               <p>
-                {tf('layout.monthlyBalance', '结余 {{amount}}').split('{{amount}}').join(formatCurrency(monthBalance))}
+                {tf('layout.monthlyBalance', '结余 {{amount}}')
+                  .split('{{amount}}')
+                  .join(formatCurrency(monthBalance))}
               </p>
               <p>
-                {tf('layout.monthlyIncomeExpense', '收入 {{income}} · 支出 {{expense}}').split('{{income}}').join(formatCurrency(monthIncome)).split('{{expense}}').join(formatCurrency(monthExpense))}
+                {tf('layout.monthlyIncomeExpense', '收入 {{income}} · 支出 {{expense}}')
+                  .split('{{income}}')
+                  .join(formatCurrency(monthIncome))
+                  .split('{{expense}}')
+                  .join(formatCurrency(monthExpense))}
               </p>
             </section>
 
