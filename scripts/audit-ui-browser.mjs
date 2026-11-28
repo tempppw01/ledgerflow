@@ -138,6 +138,20 @@ function resolvePlaywright() {
   );
 }
 
+
+/*
+ * 「Failed to load resource: 500」这句话里没有 URL —— 报问题的人只能靠猜是哪个接口、
+ * 是页面代码还是上游数据源(2026-11-28 就为这个绕了两圈)。所以把失败请求单独记一份:
+ * 状态码 + 方法 + 路径,重复的合并成 ×N。
+ */
+function summarizeFailedRequests(entries) {
+  const counts = new Map();
+  for (const entry of entries) counts.set(entry, (counts.get(entry) || 0) + 1);
+  return [...counts.entries()]
+    .map(([entry, count]) => (count > 1 ? `${entry} \u00d7${count}` : entry))
+    .sort();
+}
+
 function isAllowedOverflow(className) {
   return ALLOWED_OVERFLOW_CLASSES.some((allowed) => className.includes(allowed));
 }
@@ -1104,6 +1118,8 @@ async function launchBrowser(chromium) {
 
 const browser = await launchBrowser(chromium);
 const problems = [];
+// 所有路由的失败请求(报告顶层汇总用;problems 里按路由各记一份)
+const allFailedRequests = [];
 const tinyTextFindings = [];
 const smallTargetFindings = [];
 const longPlaceholderFindings = [];
@@ -1129,11 +1145,50 @@ for (const [label, viewport] of VIEWPORTS) {
   });
   page.on('pageerror', (error) => consoleErrors.push(`pageerror: ${String(error).slice(0, 200)}`));
 
+  /*
+   * 失败请求的 URL(供 consoleErrors 里那条「Failed to load resource」定位)。
+   * 只记录、不直接当致败项 —— 4xx/5xx 浏览器一定会在 console 里报一条,
+   * 已经算问题;这里补的是**是哪一个接口**,不改变判定口径。
+   */
+  const failedRequests = [];
+  page.on('response', (response) => {
+    if (response.status() < 400) return;
+    const url = new URL(response.url());
+    failedRequests.push(
+      `${response.status()} ${response.request().method()} ${url.pathname}${url.search}`.slice(0, 160)
+    );
+  });
+  page.on('requestfailed', (request) => {
+    const failure = request.failure();
+    // 切路由时浏览器会主动取消在途请求,那不是缺陷
+    if (!failure || failure.errorText === 'net::ERR_ABORTED') return;
+    failedRequests.push(
+      `未完成 ${request.method()} ${new URL(request.url()).pathname} ${failure.errorText}`.slice(0, 160)
+    );
+  });
+
   await login(page);
 
   for (const route of ROUTES) {
     const errorsBefore = consoleErrors.length;
+    const failedBefore = failedRequests.length;
     await page.goto(`${base}${route}`, { waitUntil: 'domcontentloaded' });
+    /*
+     * 先等**应用外壳**渲染出来,再谈网络静默。
+     *
+     * goto 之后应用还要过一道数据门(登录态恢复 + 同步),那段时间 nav 与 main 都还不存在 ——
+     * 实测(2026-11-28)desktop 的 `/` 就是在这个窗口被量的:mainTextLength 0、navCount 0、
+     * mainLandmark 0,报出来的是「页面没有主区域」,而页面只是还没渲染完。
+     * 等不到就继续量:真的缺主区域仍然会被报出来,不能被这一步掩盖。
+     */
+    await page
+      .waitForFunction(
+        () => document.querySelectorAll('nav').length > 0 && !!document.querySelector('main'),
+        undefined,
+        { timeout: 15000 }
+      )
+      .catch(() => undefined);
+
     /*
      * 等页面「网络静默」再判定,最多 3 秒,之后再加 600ms 缓冲。
      *
@@ -1149,6 +1204,8 @@ for (const [label, viewport] of VIEWPORTS) {
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth
     );
     const newErrors = consoleErrors.slice(errorsBefore);
+    const newFailedRequests = summarizeFailedRequests(failedRequests.slice(failedBefore));
+    allFailedRequests.push(...failedRequests.slice(failedBefore));
     const overflowing = audit.overflowing.filter((item) => !isAllowedOverflow(item.cls));
     checked += 1;
 
@@ -1243,6 +1300,7 @@ for (const [label, viewport] of VIEWPORTS) {
         emptyMain: audit.emptyMain,
         mainTextLength: audit.mainTextLength,
         consoleErrors: newErrors,
+        failedRequests: newFailedRequests,
         coarseControlFont: audit.coarseControlFont,
         cellOverflow: audit.cellOverflow,
         targetSize25x8: audit.targetSize25x8,
@@ -1305,7 +1363,9 @@ const report = {
   inertGridRules: inertGridFindings,
   focusWalk: focusWalkFindings,
   overlappingLabels: overlapFindings,
-  documentTitles: summarizeTitles(documentTitles)
+  documentTitles: summarizeTitles(documentTitles),
+  // 失败请求的汇总(所有路由去重后),放在报告顶层便于一眼定位
+  failedRequestSummary: summarizeFailedRequests(allFailedRequests)
 };
 console.log(JSON.stringify(report, null, 2));
 process.exit(problems.length ? 1 : 0);
