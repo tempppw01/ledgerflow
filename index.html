@@ -4,17 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0f172a" />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="1254x1254"
-      href="https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/public/logo.png?v=2"
-    />
-    <link
-      rel="apple-touch-icon"
-      sizes="1254x1254"
-      href="https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/public/logo.png?v=2"
-    />
+    <!--
+      favicon / 桌面图标也走同源小图:原来两个都指向 R2 上那张 1254×1254 / 2.3 MB 的 PNG
+      (还声明 sizes="1254x1254"),等于为了一个标签页图标下一次 2.3 MB。
+    -->
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <title>LedgerFlow 记账软件</title>
   </head>
   <body>

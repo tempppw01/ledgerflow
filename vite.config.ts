@@ -2,7 +2,12 @@ import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-const appLogoUrl = 'https://pub-7c333d8dd649422b8c267f82f1a9b4c4.r2.dev/public/logo.png?v=2';
+/*
+ * PWA 图标同样用同源小图(public/pwa-*.png)。原来 manifest 里挂的是 R2 那张
+ * 1254×1254 / 2.3 MB 的 PNG 并标成 "any maskable" —— 安装时就要为一张图标下 2.3 MB。
+ */
+const appIcon192 = '/pwa-192.png';
+const appIcon512 = '/pwa-512.png';
 
 const apiProxyTarget = process.env.LEDGERFLOW_API_PROXY_TARGET || 'http://127.0.0.1:8787';
 
@@ -125,12 +130,8 @@ export default defineConfig({
         display: 'standalone',
         start_url: '/',
         icons: [
-          {
-            src: appLogoUrl,
-            sizes: '1254x1254',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }
+          { src: appIcon192, sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: appIcon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
         ]
       },
       workbox: {
