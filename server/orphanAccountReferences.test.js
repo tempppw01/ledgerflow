@@ -15,6 +15,10 @@ import { getRelationalBootstrap, replaceRelationalData } from './relationalDataR
  *   3. 下一次整份导入     → 这笔交易**从库里静默消失**
  *      (SqlDataSyncGate 有 500ms 防抖的自动整份同步,任何改动都会触发,不必手动恢复备份)
  *
+ * **2026-11-28 起,第 2 步在界面上已经做不到了**:逐个「彻底删除」与「清空回收站」都按下面
+ * 的方案 C 拒绝真删仍被交易的账户,并说明跳过了哪些。本文件因此只钉**服务端这一层**的行为:
+ * 只要 payload 里出现引用不到的账户,那一行就会被丢弃 —— 这条没变,任何调用方仍必须读 counts。
+ *
  * 根因不是疏忽,而是**数据模型冲突**:
  *   · `ledger_transactions.account_id` 与 `ledger_balance_changes.account_id` 都是 NOT NULL,
  *     也就是说「不属于任何账户的交易」在库里根本表示不了;
@@ -23,7 +27,8 @@ import { getRelationalBootstrap, replaceRelationalData } from './relationalDataR
  *
  * 所以下面这几条**不是在断言「这是对的」**,而是把这个现状钉住:
  * 一旦哪天真让它保留了(或改成别的语义),这些测试会失败 —— 那时请连同上一条链一起改。
- * 备选方案(需要一次产品决策,不在本轮擅自选):
+ * 备选方案(数据模型那一层仍需要一次产品决策;客户端已按 (C) 挡住,见上):
+ *   (C) 客户端拒绝彻底删除仍有交易的账户,让用户先处理 ← **已实现**(逐个删除 + 清空回收站)
  *   (A) 把两处 account_id 改成可空(SQLite 要重建表,MySQL 改列),导入时置空保留;
  *       代价:这类交易会「计入支出统计、却不在任何账户余额里」。
  *   (B) 客户端彻底删除账户时一并处理其交易(披露 + 立即,而不是静默 + 延迟)。

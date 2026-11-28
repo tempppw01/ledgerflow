@@ -1558,7 +1558,8 @@
     "subscription": {
       "unsetProvider": "Provider not set",
       "deletedAt": "Deleted {{date}}"
-    }
+    },
+    "clearBlocked": "Recycle bin emptied, but {{accounts}} account(s) with {{transactions}} transaction(s) were skipped - move those transactions to another account or delete them first."
   },
   "globalMemory": {
     "eyebrow": "Less repetition, more flow",

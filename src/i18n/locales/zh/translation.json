@@ -1558,7 +1558,8 @@
     "subscription": {
       "unsetProvider": "未设置服务商",
       "deletedAt": "删除于 {{date}}"
-    }
+    },
+    "clearBlocked": "回收站已清空，但有 {{accounts}} 个账户因名下还有 {{transactions}} 笔交易被跳过 —— 先把这些交易改到别的账户、或先删除它们，再清空回收站。"
   },
   "globalMemory": {
     "eyebrow": "陪你用得更顺手",

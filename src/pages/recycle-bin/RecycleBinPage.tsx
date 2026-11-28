@@ -196,8 +196,21 @@ export function RecycleBinPage() {
       return;
     }
 
-    clearRecycleBin();
+    /*
+     * 清空回收站也会跳过「名下还有交易的账户」(与逐个彻底删除同一条规则)——
+     * 跳过了就必须说出来,否则用户以为全清了,实际那几个账户还在,
+     * 而且它们引用着的交易也没了着落。
+     */
+    const result = clearRecycleBin();
     setPage(1);
+    if (result.blockedAccountCount > 0) {
+      window.alert(
+        t('recycleBin.clearBlocked', {
+          accounts: result.blockedAccountCount,
+          transactions: result.blockedTransactionCount
+        })
+      );
+    }
   };
 
   return (
@@ -207,9 +220,7 @@ export function RecycleBinPage() {
           <h2>{t('recycleBin.title')}</h2>
         </div>
         <div className="recycle-bin-header-actions">
-          <span className="metric-chip">
-            {t('recycleBin.count', { count: totalCount })}
-          </span>
+          <span className="metric-chip">{t('recycleBin.count', { count: totalCount })}</span>
           <button
             type="button"
             className="danger"
@@ -227,11 +238,7 @@ export function RecycleBinPage() {
           title={t('recycleBin.emptyTitle')}
           description={t('recycleBin.emptyDescription')}
           icon={
-            <img
-              className="recycle-bin-empty-illustration"
-              src={AWESOME_ILLUSTRATION_URL}
-              alt=""
-            />
+            <img className="recycle-bin-empty-illustration" src={AWESOME_ILLUSTRATION_URL} alt="" />
           }
         />
       ) : (
@@ -303,9 +310,7 @@ export function RecycleBinPage() {
               >
                 {t('recycleBin.previousPage')}
               </button>
-              <small className="muted">
-                {t('recycleBin.page', { page, total: totalPages })}
-              </small>
+              <small className="muted">{t('recycleBin.page', { page, total: totalPages })}</small>
               <button
                 type="button"
                 disabled={page === totalPages}

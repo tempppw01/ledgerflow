@@ -29,10 +29,6 @@ import { resolveSubscriptionStatus } from '../../features/subscriptions/model/su
 // 定义只有一份:分类学习的结构放在 shared/lib/categoryLearning.ts,这里直接引用。
 // (原来 store 里有一份同结构定义,再引入一份就会两处漂移。)
 
-
-
-
-
 interface RefundTransactionInput {
   transactionId: string;
   amount: number;
@@ -58,6 +54,19 @@ interface GenerateSubscriptionTransactionResult {
 export type PermanentlyDeleteAccountResult =
   | { ok: true }
   | { ok: false; reason: 'hasTransactions'; count: number };
+
+/**
+ * 清空回收站的结果。被交易挡住的账户会**跳过**(与「彻底删除账户」同一条规则),
+ * 数量交给界面去说明,不允许静默少清几个。
+ */
+export type ClearRecycleBinResult = {
+  /** 真正清掉的条目数(四类相加) */
+  clearedCount: number;
+  /** 被跳过的账户数 */
+  blockedAccountCount: number;
+  /** 这些账户名下挡着的交易数 */
+  blockedTransactionCount: number;
+};
 
 export interface FinanceDataSnapshot {
   transactions: TransactionItem[];
@@ -147,7 +156,7 @@ interface FinanceState {
   permanentlyDeleteSubscription: (id: string) => void;
   generateSubscriptionTransaction: (id: string) => GenerateSubscriptionTransactionResult;
   clearAllAccountBills: () => void;
-  clearRecycleBin: () => void;
+  clearRecycleBin: () => ClearRecycleBinResult;
   suggestCategoryByLearning: (input: CategoryLearningInput) => {
     categoryId: string;
     confidence: number;
@@ -159,6 +168,23 @@ interface FinanceState {
   undoLatestCategoryLearning: () => boolean;
   clearCategoryLearning: () => void;
   replaceAllData: (payload: FinanceDataSnapshot) => void;
+}
+
+/**
+ * 一个账户挡着多少笔交易 —— 「能不能彻底删掉这个账户」的唯一判据。
+ *
+ * `includeTrashed`:逐个删账户时算上**回收站里的交易**(那条路径不会顺手清掉它们,
+ * 留着就会出现指向已删账户的行);清空回收站时不算 —— 那一步本来就会把回收站里的
+ * 交易一起删掉,再拿它们当理由跳过账户只会让用户困惑(点第二次又突然能清了)。
+ */
+function countBlockingTransactions(
+  state: Pick<FinanceState, 'transactions' | 'trashedTransactions'>,
+  accountId: string,
+  includeTrashed: boolean
+): number {
+  const active = state.transactions.filter((item) => item.accountId === accountId).length;
+  if (!includeTrashed) return active;
+  return active + state.trashedTransactions.filter((item) => item.accountId === accountId).length;
 }
 
 const defaultCategories: Category[] = [
@@ -640,12 +666,11 @@ function buildTransactionBalanceChangeEntries(
       afterBalance,
       createdAt: tx.updatedAt || tx.date,
       note: tx.note,
-      remark:
-        isTransactionRefundLike(tx)
-          ? tx.refundOfTransactionId
-            ? '退款已关联原交易'
-            : '退款记录缺少原交易关联'
-          : undefined
+      remark: isTransactionRefundLike(tx)
+        ? tx.refundOfTransactionId
+          ? '退款已关联原交易'
+          : '退款记录缺少原交易关联'
+        : undefined
     });
     return entries;
   }, []);
@@ -994,8 +1019,7 @@ export const useFinanceStore = create<FinanceState>()(
            */
           const dependents = s.transactions.filter(
             (item) =>
-              item.id !== id &&
-              item.refundOfTransactionId === id && isTransactionRefundLike(item)
+              item.id !== id && item.refundOfTransactionId === id && isTransactionRefundLike(item)
           );
           const removingIds = new Set([id, ...dependents.map((item) => item.id)]);
           trashedRows = [target, ...dependents].map((item) => markTrashedAt(item));
@@ -1012,7 +1036,10 @@ export const useFinanceStore = create<FinanceState>()(
            * 真正该清掉的是**彻底删除**——那时才不可逆。
            */
           const subscriptions = s.subscriptions.map((item) => {
-            if (!item.lastGeneratedTransactionId || !removingIds.has(item.lastGeneratedTransactionId)) {
+            if (
+              !item.lastGeneratedTransactionId ||
+              !removingIds.has(item.lastGeneratedTransactionId)
+            ) {
               return item;
             }
             const reverted = {
@@ -1056,9 +1083,7 @@ export const useFinanceStore = create<FinanceState>()(
            */
           const dependents = s.trashedTransactions.filter(
             (item) =>
-              item.id !== id &&
-              item.refundOfTransactionId === id &&
-              isTransactionRefundLike(item)
+              item.id !== id && item.refundOfTransactionId === id && isTransactionRefundLike(item)
           );
           const restoringIds = new Set([id, ...dependents.map((item) => item.id)]);
           restoredRows = [target, ...dependents].map(clearTrashedAt);
@@ -1070,7 +1095,10 @@ export const useFinanceStore = create<FinanceState>()(
            * 推进用的是生成时同一个函数,结果确定(月末夹取也一样)。
            */
           const subscriptions = s.subscriptions.map((item) => {
-            if (!item.lastGeneratedTransactionId || !restoringIds.has(item.lastGeneratedTransactionId)) {
+            if (
+              !item.lastGeneratedTransactionId ||
+              !restoringIds.has(item.lastGeneratedTransactionId)
+            ) {
               return item;
             }
             const advanced = {
@@ -1096,9 +1124,7 @@ export const useFinanceStore = create<FinanceState>()(
           return {
             transactions,
             ...(subscriptionsChanged ? { subscriptions } : {}),
-            trashedTransactions: s.trashedTransactions.filter(
-              (item) => !restoringIds.has(item.id)
-            ),
+            trashedTransactions: s.trashedTransactions.filter((item) => !restoringIds.has(item.id)),
             ...rebuildStateSlices(s.accounts, transactions, s.balanceChangeEntries)
           };
         });
@@ -1537,11 +1563,9 @@ export const useFinanceStore = create<FinanceState>()(
          */
         let result: PermanentlyDeleteAccountResult = { ok: true };
         set((s) => {
-          const referencing = [...s.transactions, ...s.trashedTransactions].filter(
-            (item) => item.accountId === id
-          );
-          if (referencing.length > 0) {
-            result = { ok: false, reason: 'hasTransactions', count: referencing.length };
+          const blocking = countBlockingTransactions(s, id, true);
+          if (blocking > 0) {
+            result = { ok: false, reason: 'hasTransactions', count: blocking };
             return s;
           }
           return {
@@ -1762,12 +1786,39 @@ export const useFinanceStore = create<FinanceState>()(
         }));
       },
       clearRecycleBin: () => {
+        /*
+         * 与「彻底删除账户」同一条规则:**仍被交易引用的账户不能真删**。
+         *
+         * 这里原来是无条件把四个数组清空 —— 于是「逐个删」被挡住的东西,从
+         * 「清空回收站」这扇大门直接放走了:账户行真删之后,引用它的交易会在下一次
+         * 整份导入时被服务端静默丢掉(见 permanentlyDeleteAccount 的说明)。
+         * 现在跳过这些账户,并把数量交给界面说明;其余条目照常清掉。
+         */
+        const state = get();
+        const blocked = state.trashedAccounts
+          .map((item) => ({ id: item.id, count: countBlockingTransactions(state, item.id, false) }))
+          .filter((entry) => entry.count > 0);
+        const blockedIds = new Set(blocked.map((entry) => entry.id));
+
+        const clearedCount =
+          state.trashedTransactions.length +
+          state.trashedCategories.length +
+          state.trashedSubscriptions.length +
+          state.trashedAccounts.length -
+          blocked.length;
+
         set({
           trashedTransactions: [],
           trashedCategories: [],
-          trashedAccounts: [],
+          trashedAccounts: state.trashedAccounts.filter((item) => blockedIds.has(item.id)),
           trashedSubscriptions: []
         });
+
+        return {
+          clearedCount,
+          blockedAccountCount: blocked.length,
+          blockedTransactionCount: blocked.reduce((sum, entry) => sum + entry.count, 0)
+        };
       },
       suggestCategoryByLearning: (input) => {
         // 原来是 () => null 的空壳:管道(数据模型/备份/同步/设置页文案)都建好了,逻辑没写
