@@ -40,10 +40,5 @@ export function clearCache(): void {
   }
 }
 
-/** 判断缓存是否仍然有效 */
-export function isCacheValid(base: string): boolean {
-  return readCache(base) !== null;
-}
-
 /** 导出 TTL 常量供测试使用 */
 export { CACHE_TTL_MS };

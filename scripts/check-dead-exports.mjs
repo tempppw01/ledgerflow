@@ -11,14 +11,21 @@
  * 编译器一句话都不会说。更早的一次提交标题里就写着「并发现 13 个没人渲染的组件」,
  * 但没人清理,于是留到了现在。
  *
- * 判据(两遍,避免误判):
- *   1. 符号名在全仓只出现一次(即它自己的导出声明);
- *   2. **并且**文件名也没被任何 import 引用 —— 动态导入按路径写,不出现符号名。
+ * 判据(两遍,避免误判),**引用只算非测试代码**:
+ *   1. 符号名在非测试代码里只出现一次(即它自己的导出声明);
+ *   2. **并且**文件名也没被非测试代码 import 引用 —— 动态导入按路径写,不出现符号名。
  * 第一次只查了第 1 条,33 个里 25 个是误报(它们是按文件路径被 import 的)。
  *
- * 作用范围(如实说明):它抓的是**整个文件都没人引用**的情况。
- * 一个「活得很好」的文件里如果有个别导出没人用,这条闸门看不出来 —— 那是为避开大量误报做的取舍
- * (第一次只按符号名查,33 个里 25 个是误报:那些符号是按文件路径被 import 的)。
+ * 为什么把测试文件排除在「引用来源」之外(2026-11-28 补):测试文件也算引用,会放过
+ * 一整类死代码 —— **写好了、只有自己的测试在用、产品代码里没有任何入口**。
+ * 这类东西的测试永远绿,因为测的就是它自己。补上后立刻抓到两处:
+ * `AccountPresetPicker`(组件只有自己的测试渲染)与 `connectionClient`
+ * (「测试连接」的请求函数,全仓没有界面调用它)。
+ *
+ * 作用范围(如实说明):仍然抓不到「文件活得很好、里面个别导出没人用」的情况 ——
+ * 那要按导出逐个判定,历史上试过一次,33 个里 25 个是误报。这类靠评审加人工核查:
+ * 2026-11-28 这样查出的两处冗余导出(`isCacheValid`、`BUDGET_ACTION_LABEL`)
+ * 已删除,记录见 docs/verified-invariants.md。
  *
  * 用法:node scripts/check-dead-exports.mjs
  */
@@ -37,6 +44,14 @@ const ALLOW = new Map([
   [
     'src/shared/hooks/usePwaInstallPrompt.ts',
     '「添加到主屏幕」引导 hook:写完就没接过(唯一引用它的提交就是加它那次)。留着待决定是否启用,删掉会丢意图'
+  ],
+  [
+    'src/features/accounts/ui/AccountPresetPicker.tsx',
+    '账户预设选择器:产品代码里没有入口(只有自己的测试渲染它)。待决定「接上还是删掉」,见 docs/verified-invariants.md'
+  ],
+  [
+    'src/shared/api/connectionClient.ts',
+    '「测试连接」请求函数:全仓没有界面调用它(只有自己的测试在用)。同上,待决定'
   ]
 ]);
 
@@ -55,15 +70,30 @@ const sources = [
   ...walk(path.join(ROOT, 'server')),
   ...walk(path.join(ROOT, 'scripts'))
 ].map((file) => [path.relative(ROOT, file).split(path.sep).join('/'), readFileSync(file, 'utf8')]);
-const allText = sources.map(([, text]) => text).join('\n');
+/**
+ * 测试文件不算「引用来源」:只有自己的测试在用,等于产品代码里没有入口。
+ * (路径里带 /test/ 的辅助文件同理,它们只在测试里被 import。)
+ */
+const isTestFile = (rel) => /\.test\.(ts|tsx|js|mjs)$/.test(rel) || rel.split('/').includes('test');
+const prodText = sources
+  .filter(([rel]) => !isTestFile(rel))
+  // **闸门自己的文本不算引用来源**(2026-11-28 补):它的注释与 ALLOW 清单里会写到
+  // 被检查的符号名 —— 那样一来「在闸门里提一句」就等于给自己发豁免。实测:注释里写了
+  // isCacheValid / BUDGET_ACTION_LABEL 之后,这两个没人调用的导出就再也报不出来了。
+  .filter(([rel]) => rel !== 'scripts/check-dead-exports.mjs')
+  .map(([, text]) => text)
+  .join('\n');
 
-const EXPORT_RE = /^export\s+(?:async\s+)?(?:function|const|let|class|type|interface|enum)\s+([A-Za-z_$][\w$]*)/;
+const EXPORT_RE =
+  /^export\s+(?:async\s+)?(?:function|const|let|class|type|interface|enum)\s+([A-Za-z_$][\w$]*)/;
 const dead = [];
 
 for (const [rel, text] of sources) {
   // 只看实现代码;测试文件里的导出通常是给测试用的
   if (!rel.startsWith('src/')) continue;
   if (/\.test\.(ts|tsx)$/.test(rel)) continue;
+  // 类型声明文件声明的是全局类型,没有「被引用」这回事(.d.ts 里的 JSDOM 就属于这种)
+  if (rel.endsWith('.d.ts')) continue;
   if (ALLOW.has(rel)) continue;
 
   const base = path.basename(rel).replace(/\.(ts|tsx)$/, '');
@@ -72,8 +102,8 @@ for (const [rel, text] of sources) {
     if (!match) continue;
     const name = match[1];
 
-    const nameHits = (allText.match(new RegExp('\\b' + name + '\\b', 'g')) || []).length;
-    const fileHits = (allText.match(new RegExp('[/\'"]' + base + '[\'"]', 'g')) || []).length;
+    const nameHits = (prodText.match(new RegExp('\\b' + name + '\\b', 'g')) || []).length;
+    const fileHits = (prodText.match(new RegExp('[/\'"]' + base + '[\'"]', 'g')) || []).length;
     if (nameHits <= 1 && fileHits <= 1) dead.push({ file: rel, name });
   }
 }
