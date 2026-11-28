@@ -34,6 +34,12 @@ export const RELEASE_HISTORY_LIMIT = 10;
 // prettier-ignore
 export const RELEASE_HISTORY: readonly ReleaseHistoryEntry[] = [
   {
+    version: '0.52.4',
+    publishedOn: '2026-11-28',
+    title: '回收站两处漏网:清空不再绕过账户规则,恢复交易不再留下已删分类的引用',
+    summary: '两个改动属于同一类:界面上的承诺在某一条路径上没有兑现。一处是「账户还有交易就不能真删」这条规则漏了「清空回收站」这扇门;另一处是「删分类 → 相关交易归入未分类」这句承诺漏了「恢复交易」这条回程。'
+  },
+  {
     version: '0.52.3',
     publishedOn: '2026-11-28',
     title: '同一个页面,名字在三个地方不再各说各话;死代码闸门补上两个洞',
@@ -86,11 +92,5 @@ export const RELEASE_HISTORY: readonly ReleaseHistoryEntry[] = [
     publishedOn: '2026-11-25',
     title: '修:6 处无障碍问题,其中两处是功能坏了,不只是"体验不好"',
     summary: '这一轮不再修账务逻辑,而是对照 W3C WCAG 2.2 逐条实测"这个界面到底能不能用"。一共修了 6 项,但真正值得先说清楚的是其中两条 —— 它们不是"少个标签",而是功能对特定用户完全不可用。'
-  },
-  {
-    version: '0.50.54',
-    publishedOn: '2026-11-25',
-    title: '修:备注里带换行的账单,整笔交易会静默消失',
-    summary: '继续用"造真实形状的输入去撞"的办法。这轮撞的是 CSV 的几个脏情况…'
   }
 ];
