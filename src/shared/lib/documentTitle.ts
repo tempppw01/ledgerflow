@@ -97,7 +97,17 @@ export function resolvePageTitle(pathname: string, t: TitleTranslater): string {
  * 绝不把原始 key 露到界面上。
  */
 export function resolveDocumentTitle(pathname: string, t: TitleTranslater): string {
-  return join(resolvePageTitle(pathname, t), t('app.title', 'LedgerFlow 记账软件'));
+  return joinDocumentTitle(resolvePageTitle(pathname, t), t);
+}
+
+/**
+ * 「页面名 + 应用名」。给**已经有页面名**的场景用 —— 助手工作区就是:它的名字跟着当前
+ * 工作区变(AI 助手 / AI 信贷管家 / AI 投资助手),而模式存在 sessionStorage 里、**按
+ * 标签页各存一份**,所以两个标签页真的可以停在不同的工作区。标签标题不跟着走的话,
+ * 那两个标签会同名(WCAG 2.4.2 要的正是"能靠标题分清页面")。
+ */
+export function joinDocumentTitle(pageTitle: string, t: TitleTranslater): string {
+  return join(pageTitle, t('app.title', 'LedgerFlow 记账软件'));
 }
 
 function join(page: string, appName: string): string {
@@ -114,11 +124,12 @@ function join(page: string, appName: string): string {
  * 这是**唯一**写入 document.title 的地方(i18n 初始化里原先那次写入已删掉),
  * 否则语言切换时两处会抢着写,顺序一变标题就退回全站同一句。
  */
-export function useDocumentTitle(pathname: string): string {
+export function useDocumentTitle(pathname: string, pageTitleOverride?: string): string {
   const { t, i18n } = useTranslation();
-  const title = resolveDocumentTitle(pathname, (key, fallback) =>
-    t(key, { defaultValue: fallback })
-  );
+  const translate: TitleTranslater = (key, fallback) => t(key, { defaultValue: fallback });
+  const title = pageTitleOverride
+    ? joinDocumentTitle(pageTitleOverride, translate)
+    : resolveDocumentTitle(pathname, translate);
 
   useEffect(() => {
     if (typeof document !== 'undefined' && document.title !== title) {

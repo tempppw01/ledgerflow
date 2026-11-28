@@ -32,4 +32,11 @@ describe('顶栏标题的来源', () => {
   it('助手工作区的动态名字仍然单独处理(它不在路由表里)', () => {
     expect(source).toContain('return assistantWorkspaceTitle;');
   });
+
+  it('浏览器标签也跟着助手工作区的名字走(两个标签才分得清)', () => {
+    // 模式按标签页存在 sessionStorage 里,而路由表里 /assistant 只有一个名字,
+    // 所以这一处必须把当前工作区名传给 useDocumentTitle。
+    expect(source).toContain('isAssistantWorkspace ? assistantWorkspaceTitle : undefined');
+    expect(source).toContain('const isAssistantWorkspace = location.pathname.startsWith');
+  });
 });

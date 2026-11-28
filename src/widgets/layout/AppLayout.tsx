@@ -404,9 +404,15 @@ export function AppLayout() {
     [assistantWorkspaceMode, recycleBinIconUrl, t, tFallback]
   );
 
+  const isAssistantWorkspace = location.pathname.startsWith('/assistant');
+
   // WCAG 2.4.2(Page Titled,Level A):每个路由要有自己的文档标题。
   // 这里是唯一写入 document.title 的地方(原先 i18n 初始化里那次已删掉)。
-  useDocumentTitle(location.pathname);
+  //
+  // 助手工作区要额外把**当前工作区的名字**传进去:模式按标签页存在 sessionStorage 里,
+  // 两个标签可以停在不同的工作区,而路由表里 /assistant 只有一个名字(「AI 助手」)——
+  // 不传的话那两个标签会同名,恰好是这条准则要避免的。
+  useDocumentTitle(location.pathname, isAssistantWorkspace ? assistantWorkspaceTitle : undefined);
 
   /*
    * 顶栏这个 h1 就是**当前页面的名字**,所以它和 document.title 走同一张路由表
@@ -415,14 +421,14 @@ export function AppLayout() {
    * 「交易流水」,而 /settings 显示成页签名「账号设置」—— 文档标题一直是对的。
    */
   const currentWorkspaceTitle = useMemo(() => {
-    // 助手工作区的名字跟着当前工作区变(AI 助手 / AI 信用卡助手 / AI 投资助手),
+    // 助手工作区的名字跟着当前工作区变(AI 助手 / AI 信贷管家 / AI 投资助手),
     // 它是动态的,不在路由表里,所以单独走一条。
-    if (location.pathname.startsWith('/assistant')) {
+    if (isAssistantWorkspace) {
       return assistantWorkspaceTitle;
     }
 
     return resolvePageTitle(location.pathname, tFallback);
-  }, [assistantWorkspaceTitle, location.pathname, tFallback]);
+  }, [assistantWorkspaceTitle, isAssistantWorkspace, location.pathname, tFallback]);
   const isInvestmentsRoute = location.pathname.startsWith('/investments');
 
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() =>
