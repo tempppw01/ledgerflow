@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ROUTE_TITLES, resolveDocumentTitle } from './documentTitle';
+import { ROUTE_TITLES, resolveDocumentTitle, resolvePageTitle } from './documentTitle';
 import zh from '../../i18n/locales/zh/translation.json';
 import en from '../../i18n/locales/en/translation.json';
 
@@ -83,5 +83,56 @@ describe('resolveDocumentTitle', () => {
     const t = (key: string, fallback: string) => (key === 'app.title' ? '' : fallback);
     expect(resolveDocumentTitle('/', t)).toBe('数据概览');
     expect(resolveDocumentTitle('/', t)).not.toContain('·');
+  });
+});
+
+/*
+ * 顶栏那个 h1 用的就是这个函数(见 widgets/layout/workspaceTitle.test.ts)。
+ * 它原来是一段"按侧栏前缀猜"的独立逻辑,于是子路由会漂:
+ * /transactions/new 的顶栏写「交易流水」而浏览器标签写「记一笔」,/settings 的顶栏写
+ * 页签名「账号设置」而页面自己的 h2 写「设置」。现在两边同源。
+ */
+describe('resolvePageTitle', () => {
+  const appName = zhT('app.title', 'app.title');
+
+  it('只给页面名,不带应用名', () => {
+    expect(resolvePageTitle('/', zhT)).toBe('nav.dashboard#财务概览');
+    expect(resolvePageTitle('/', zhT)).not.toContain(appName);
+    expect(resolvePageTitle('/', zhT)).not.toContain('·');
+  });
+
+  it('子路由给的是"这一屏"的名字:记一笔 / 编辑流水,而不是它所属的工作区', () => {
+    expect(resolvePageTitle('/transactions/new', zhT)).toContain('docTitle.newTransaction#');
+    expect(resolvePageTitle('/transactions/abc-123', zhT)).toContain('docTitle.editTransaction#');
+    expect(resolvePageTitle('/transactions', zhT)).toContain('nav.transactions#');
+  });
+
+  it('设置页是「设置」这个页面名,不是页签名「账号设置」', () => {
+    expect(resolvePageTitle('/settings', zhT)).toContain('nav.settings#');
+    expect(resolvePageTitle('/settings/security', zhT)).toContain('nav.settings#');
+    expect(resolvePageTitle('/settings', zhT)).not.toContain('账号设置');
+  });
+
+  it('未命中的路径给「页面不存在」,与浏览器标签一致', () => {
+    expect(resolvePageTitle('/这条路径不存在', zhT)).toContain('docTitle.notFound#');
+  });
+
+  it('文档标题 = 页面名 + 应用名(两边不可能漂开)', () => {
+    const routes = [
+      '/',
+      '/transactions',
+      '/transactions/new',
+      '/transactions/abc-123',
+      '/settings',
+      '/settings/security',
+      '/investments/flow',
+      '/assistant',
+      '/这条路径不存在'
+    ];
+    for (const route of routes) {
+      expect(resolveDocumentTitle(route, zhT), route).toBe(
+        `${resolvePageTitle(route, zhT)} · ${appName}`
+      );
+    }
   });
 });

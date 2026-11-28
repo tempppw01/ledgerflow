@@ -13,7 +13,7 @@ import { LanguageSwitcher } from '../../features/language-switcher/LanguageSwitc
 import { useAuth } from '../../features/auth/ui/authContext';
 import { useMenuKeyboard } from '../../shared/lib/useMenuKeyboard';
 import { useDialogFocus } from '../../shared/lib/useDialogFocus';
-import { useDocumentTitle } from '../../shared/lib/documentTitle';
+import { resolvePageTitle, useDocumentTitle } from '../../shared/lib/documentTitle';
 import { SettingsPage } from '../../pages/settings/SettingsPage';
 import { APP_LOGO_URL } from '../../shared/config/app';
 import {
@@ -408,38 +408,21 @@ export function AppLayout() {
   // 这里是唯一写入 document.title 的地方(原先 i18n 初始化里那次已删掉)。
   useDocumentTitle(location.pathname);
 
+  /*
+   * 顶栏这个 h1 就是**当前页面的名字**,所以它和 document.title 走同一张路由表
+   * (resolvePageTitle)。2026-11-28 之前这里按侧栏导航前缀自己猜,子路由会漂:
+   * 「记一笔」(/transactions/new)与「编辑流水」(/transactions/:id)在顶栏都显示成
+   * 「交易流水」,而 /settings 显示成页签名「账号设置」—— 文档标题一直是对的。
+   */
   const currentWorkspaceTitle = useMemo(() => {
-    const pathname = location.pathname;
-
-    if (pathname === '/') {
-      return tFallback('nav.dashboard', '数据概览');
-    }
-
-    if (pathname.startsWith('/assistant')) {
+    // 助手工作区的名字跟着当前工作区变(AI 助手 / AI 信用卡助手 / AI 投资助手),
+    // 它是动态的,不在路由表里,所以单独走一条。
+    if (location.pathname.startsWith('/assistant')) {
       return assistantWorkspaceTitle;
     }
 
-    // 设置页是浮层 + 独立路由两种入口,不在侧边导航里,补一条显式标题映射。
-    if (pathname === '/settings' || pathname.startsWith('/settings/')) {
-      return tFallback('layout.accountSettings', '账号设置');
-    }
-
-    const navItems = navSections.flatMap((section) => section.items);
-    const matchedItem = navItems.find((item) => {
-      if (!item.to || item.to === '/') {
-        return false;
-      }
-
-      return pathname === item.to || pathname.startsWith(`${item.to}/`);
-    });
-
-    if (matchedItem) {
-      return matchedItem.label;
-    }
-
-    // 未命中的路径会落到 404 页面,顶栏标题同步提示,避免显示成默认工作台名称。
-    return tFallback('errors.notFoundTitle', '这个页面不存在');
-  }, [assistantWorkspaceTitle, location.pathname, navSections, tFallback]);
+    return resolvePageTitle(location.pathname, tFallback);
+  }, [assistantWorkspaceTitle, location.pathname, tFallback]);
   const isInvestmentsRoute = location.pathname.startsWith('/investments');
 
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() =>

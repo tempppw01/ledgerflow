@@ -69,24 +69,35 @@ function normalize(pathname: string): string {
 }
 
 /**
- * 把路径解析成标题。取不到页面名时**退回"页面不存在"(再退回应用名)**,
- * 绝不把原始 key 露到界面上。
+ * 只解析**页面名**本身 —— 顶栏那个 h1 用的就是它。
+ *
+ * 顶栏原先自己按侧栏导航前缀猜标题,于是子路由会漂:打开「记一笔」(/transactions/new)
+ * 时浏览器标签写「记一笔」、顶栏却写「交易流水」(编辑流水的路由同理);而 /settings
+ * 的顶栏写的是三个页签之一的「账号设置」,页面自己的 h2 却是「设置」。
+ * 现在两边都走这张路由表,漂不了。
  */
-export function resolveDocumentTitle(pathname: string, t: TitleTranslater): string {
-  const appName = t('app.title', 'LedgerFlow 记账软件');
+export function resolvePageTitle(pathname: string, t: TitleTranslater): string {
   const clean = normalize(pathname);
 
   for (const route of ROUTE_TITLES) {
     if (clean === route.path) {
-      return join(t(route.exactKey ?? route.key, route.exactFallback ?? route.fallback), appName);
+      return t(route.exactKey ?? route.key, route.exactFallback ?? route.fallback);
     }
     // 更深一层:必须按 / 边界匹配,否则 /transaction 会命中 /transactions
     if (route.path !== '/' && clean.startsWith(`${route.path}/`)) {
-      return join(t(route.key, route.fallback), appName);
+      return t(route.key, route.fallback);
     }
   }
 
-  return join(t('docTitle.notFound', '页面不存在'), appName);
+  return t('docTitle.notFound', '页面不存在');
+}
+
+/**
+ * 把路径解析成文档标题。取不到页面名时**退回"页面不存在"(再退回应用名)**,
+ * 绝不把原始 key 露到界面上。
+ */
+export function resolveDocumentTitle(pathname: string, t: TitleTranslater): string {
+  return join(resolvePageTitle(pathname, t), t('app.title', 'LedgerFlow 记账软件'));
 }
 
 function join(page: string, appName: string): string {
