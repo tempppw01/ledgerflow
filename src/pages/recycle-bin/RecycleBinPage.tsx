@@ -119,9 +119,18 @@ export function RecycleBinPage() {
 
   const handleRestore = (item: RecycleBinEntry) => {
     switch (item.kind) {
-      case 'transaction':
-        restoreTransaction(item.id);
+      case 'transaction': {
+        /*
+         * 恢复时 store 会把「分类已不在启用列表」的引用按“未分类”补回来
+         * (见 shared/store/restoreCategoryReference.test.ts),这里必须说出来 ——
+         * 用户点了恢复,却发现自己刚选的分类不见了,不说清就成了静默改口径。
+         */
+        const result = restoreTransaction(item.id);
+        if (result.uncategorizedCount > 0) {
+          window.alert(t('recycleBin.restoreUncategorized', { count: result.uncategorizedCount }));
+        }
         return;
+      }
       case 'category':
         restoreCategory(item.id);
         return;

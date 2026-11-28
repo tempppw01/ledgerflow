@@ -68,6 +68,20 @@ export type ClearRecycleBinResult = {
   blockedTransactionCount: number;
 };
 
+/**
+ * 恢复交易的结果。
+ *
+ * 恢复时若原分类**已不在启用列表**(被移入回收站或已彻底删除),这笔会按「未分类」恢复 ——
+ * 因为「不在启用分类里」的 id 会让列表、筛选、助手计数、首页占比四处口径互相矛盾
+ * (见 restoreCategoryReference.test.ts 的说明)。笔数交给界面说明,不允许静默改口径。
+ */
+export type RestoreTransactionResult = {
+  /** 真正恢复回来的流水数(退款/冲正一并回来的也算) */
+  restoredCount: number;
+  /** 其中因为原分类不在启用列表而按「未分类」恢复的笔数 */
+  uncategorizedCount: number;
+};
+
 export interface FinanceDataSnapshot {
   transactions: TransactionItem[];
   categories: Category[];
@@ -119,7 +133,7 @@ interface FinanceState {
     options?: { allowRefundOverflow?: boolean; skipCategoryLearning?: boolean }
   ) => void;
   removeTransaction: (id: string) => void;
-  restoreTransaction: (id: string) => void;
+  restoreTransaction: (id: string) => RestoreTransactionResult;
   permanentlyDeleteTransaction: (id: string) => void;
   refundTransaction: (input: RefundTransactionInput) => RefundTransactionResult;
   addCategory: (
@@ -1069,6 +1083,7 @@ export const useFinanceStore = create<FinanceState>()(
       },
       restoreTransaction: (id) => {
         let restoredRows: TransactionItem[] = [];
+        let uncategorizedCount = 0;
         set((s) => {
           const target = s.trashedTransactions.find((item) => item.id === id);
           if (!target) {
@@ -1086,7 +1101,27 @@ export const useFinanceStore = create<FinanceState>()(
               item.id !== id && item.refundOfTransactionId === id && isTransactionRefundLike(item)
           );
           const restoringIds = new Set([id, ...dependents.map((item) => item.id)]);
-          restoredRows = [target, ...dependents].map(clearTrashedAt);
+          /*
+           * 恢复时把「分类已不在启用列表」的引用清成 ''(=未分类)。
+           *
+           * 为什么必须清:删分类清掉的是**启用列表**里那些交易的引用(removeCategory 遍历的是
+           * s.transactions),回收站里那一份仍然指着它 —— 原样搬回启用列表,就会留下一个既不是 ''
+           * (未分类的正式表示)、也没有对应分类的 id。这个 id 会让同一份数据在四处口径互相矛盾:
+           * 列表/导出查不到就显示「未分类」,但「未分类」筛选、助手待分类计数都按 !categoryId 判断,
+           * 认不出它;首页分类占比还会按两个 key 分出两行同名的「未分类」。
+           *
+           * 与「删分类 → 这些交易归入未分类」是同一句承诺,只是换了一条路径。笔数交给界面说明。
+           */
+          const activeCategoryIds = new Set(s.categories.map((item) => item.id));
+          const restoredAt = new Date().toISOString();
+          restoredRows = [target, ...dependents].map((row) => {
+            const revived = clearTrashedAt(row);
+            if (!revived.categoryId || activeCategoryIds.has(revived.categoryId)) {
+              return revived;
+            }
+            uncategorizedCount += 1;
+            return { ...revived, categoryId: '', updatedAt: restoredAt };
+          });
           const transactions = ensureUniqueById([...s.transactions, ...restoredRows]);
           /*
            * 与 removeTransaction 对称:删除时把续费日退回了(并保留了 prev 快照与关联),
@@ -1131,6 +1166,7 @@ export const useFinanceStore = create<FinanceState>()(
         restoredRows.forEach((row) => {
           void syncChangeIfNeeded({ entity: 'transactions', action: 'insert', row });
         });
+        return { restoredCount: restoredRows.length, uncategorizedCount };
       },
       permanentlyDeleteTransaction: (id) => {
         /*

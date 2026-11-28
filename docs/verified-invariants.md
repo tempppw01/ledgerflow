@@ -41,19 +41,20 @@ node ./node_modules/vitest/vitest.mjs run --config vitest.config.ts src/shared/s
 
 ## 状态与分类身份
 
-| 测试                                                    | 保护的行为                                                                                                 |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `shared/lib/categoryLabels.test.ts`                     | 分类显示名:同名加「父 / 子」;`buildCategoryLabelIndex` 只给**能唯一确定分类**的名字(加前缀后仍重名的排除)  |
-| `features/dashboard/model/categoryBreakdown.test.ts`    | 分类聚合身份是 **id 不是名字**;未知分类显示「未分类」而不是内部 id                                         |
-| `financial-analysis/model/categoryAggregation.test.ts`  | 同名子分类不合并、金额与占比各自独立                                                                       |
-| `transactions/model/statusQuickFilter.test.ts`          | 缺省状态按「已完成」处理,与 `isBalanceAffectingStatus` 同一结论                                            |
-| `transactions/model/statusLabel.test.ts`                | 状态列显示同一套默认值:缺状态显示「已完成」而不是「-」(否则「筛得出来却看不出状态」)                       |
-| `store/uncategorizedCoherence.test.ts`                  | 「未分类」三处口径一致:数据用空串、筛选哨兵、助手计数                                                      |
-| `subscriptions/model/subscriptionStatus.test.ts`        | 逾期判定按**本地日历日**:到期当天是「即将到期」,次日才「逾期」,与时区无关                                  |
-| `store/defaultTransactionStatus.test.ts`                | 缺省状态 = 已完成:**写入侧也要落一个明确状态**(助手导入不传 status),筛选与显示共用同一个默认值             |
-| `store/trashRefundPair.test.ts`                         | 回收站里的「支出 + 退款」是一对:删除把退款一起移走,**恢复也必须一起回来**;只恢复一条会让余额少掉退款那一笔 |
-| `features/assistant/workbench/categoryFallback.test.ts` | 分类解析不出来时返回**空串**(走未分类),不许退回第一个分类(会静默归错类),也不许造 `cat-unknown`             |
-| `features/smart-budget/model/budgetZeroBudget.test.ts`  | 预算为 0 却有支出:既是「超支」也是「执行率无上限(`>999%`)」,不能显示成 0.0% —— 同一行不能自相矛盾          |
+| 测试                                                    | 保护的行为                                                                                                                                                                                                               |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `shared/lib/categoryLabels.test.ts`                     | 分类显示名:同名加「父 / 子」;`buildCategoryLabelIndex` 只给**能唯一确定分类**的名字(加前缀后仍重名的排除)                                                                                                                |
+| `features/dashboard/model/categoryBreakdown.test.ts`    | 分类聚合身份是 **id 不是名字**;未知分类显示「未分类」而不是内部 id                                                                                                                                                       |
+| `financial-analysis/model/categoryAggregation.test.ts`  | 同名子分类不合并、金额与占比各自独立                                                                                                                                                                                     |
+| `transactions/model/statusQuickFilter.test.ts`          | 缺省状态按「已完成」处理,与 `isBalanceAffectingStatus` 同一结论                                                                                                                                                          |
+| `transactions/model/statusLabel.test.ts`                | 状态列显示同一套默认值:缺状态显示「已完成」而不是「-」(否则「筛得出来却看不出状态」)                                                                                                                                     |
+| `store/uncategorizedCoherence.test.ts`                  | 「未分类」三处口径一致:数据用空串、筛选哨兵、助手计数                                                                                                                                                                    |
+| `store/restoreCategoryReference.test.ts`                | 恢复交易时,「原分类已不在启用列表」的引用要清成空串(=未分类):否则启用列表里留下一个既不是空串、也没有对应分类的 id,「未分类」筛选与助手的待分类计数都认不出它。`restoreTransaction` 返回恢复笔数与其中按未分类恢复的笔数 |
+| `subscriptions/model/subscriptionStatus.test.ts`        | 逾期判定按**本地日历日**:到期当天是「即将到期」,次日才「逾期」,与时区无关                                                                                                                                                |
+| `store/defaultTransactionStatus.test.ts`                | 缺省状态 = 已完成:**写入侧也要落一个明确状态**(助手导入不传 status),筛选与显示共用同一个默认值                                                                                                                           |
+| `store/trashRefundPair.test.ts`                         | 回收站里的「支出 + 退款」是一对:删除把退款一起移走,**恢复也必须一起回来**;只恢复一条会让余额少掉退款那一笔                                                                                                               |
+| `features/assistant/workbench/categoryFallback.test.ts` | 分类解析不出来时返回**空串**(走未分类),不许退回第一个分类(会静默归错类),也不许造 `cat-unknown`                                                                                                                           |
+| `features/smart-budget/model/budgetZeroBudget.test.ts`  | 预算为 0 却有支出:既是「超支」也是「执行率无上限(`>999%`)」,不能显示成 0.0% —— 同一行不能自相矛盾                                                                                                                        |
 
 ## 数据完整性
 
@@ -954,8 +955,27 @@ No such file or directory`,退出码 **127**,容器根本起不来。**CI 一直
   中途失败不会留下半写账本;
 - **读失败不会推空状态**:初始读取失败时 `ready` 不置真,而自动推送的 effect 开头就是
   `if (!ready) return`,所以「客户端拿空状态覆盖服务端账本」这条最可怕的路径是断的;
-- **把分类移入回收站时会清掉引用**:同用户的交易 `categoryId` 被置空、子分类提升为一级,
-  所以不会产生「交易引用已删除分类」的悬垂引用。
+- **把分类移入回收站时会清掉引用**(只清**启用列表**那一份):同用户的交易 `categoryId` 被置空、
+  子分类提升为一级。
+
+  2026-11-28 更正:这句话原先写得比事实宽。回收站里的交易不在 `s.transactions` 里,
+  `removeCategory` 遍历不到它们 —— 于是「删交易 → 删分类 → 恢复交易」三步下来,启用列表里会出现一笔
+  引用了**不在启用分类里**的 id 的交易(既不是空串、也没有对应分类)。服务端对这种分类有哨兵兜底
+  (`relationalDataRepository` 的 `uncategorizedCategoryId`),所以丢的是分类归属而不是交易本身,
+  但同一份数据在四处口径互相矛盾:列表/导出查不到就显示「未分类」,而「未分类」筛选、助手的
+  「待分类交易」计数都按 `!categoryId` 判断、认不出它;首页分类占比还会按两个 key 分出两行同名的
+  「未分类」。现在 `restoreTransaction` 恢复时按同一句承诺把这类引用清成空串,并把笔数交给
+  回收站页面说明(`recycleBin.restoreUncategorized`)—— 不让它静默改口径。
+
+  闸门:`store/restoreCategoryReference.test.ts`(7 条)、`pages/recycle-bin/RecycleBinPage.test.tsx`;
+  破坏性验证(2026-11-28,脚本 `.audit/destructive-category-refs.py`):
+
+  | 状态                    | 结果                                                                         |
+  | ----------------------- | ---------------------------------------------------------------------------- |
+  | 基线                    | 两个文件 **11 条全过**                                                       |
+  | 拆掉 store 里那段规范化 | store 测试 **3 条失败 / 4 条通过**(三条 `categoryId` 断言),页面测试 1 条失败 |
+  | 只拆掉页面上的说明      | 页面测试 1 条失败;而 store 测试 **7 条全过**(两层各管一段)                   |
+  | 还原                    | 逐字节一致(`restored identical: True`),再测又是 11 条全过                    |
 
 ## 关于页「最近更新」的数据链(v0.52.0 新增)
 
@@ -1417,6 +1437,12 @@ PLAYWRIGHT_MODULE=<path>/node_modules/playwright/index.mjs npm run audit:ui
   逐个彻底删除与清空回收站都按方案 C 拒绝真删仍被引用的账户并说明原因
   (2026-11-28;闸门 `store/clearRecycleBin.test.ts`、`pages/recycle-bin/RecycleBinPage.test.tsx`)。
 
+- **「删分类 → 相关交易归入未分类」这句承诺必须覆盖恢复路径**(2026-11-28):`removeCategory` 只清
+  **启用列表**里的引用,回收站里那一份仍指着那个已删分类;`restoreTransaction` 恢复时若原分类不在
+  启用列表里,就按未分类恢复,并把笔数返回给界面(回收站页面会说明)。不这么做的后果**不是丢交易**
+  (服务端有哨兵分类兜底),而是同一份数据在四处口径互相矛盾 —— 详见上面「实现细节与不变量」那一节。
+  闸门:`store/restoreCategoryReference.test.ts`、`pages/recycle-bin/RecycleBinPage.test.tsx`。
+
 - **「月收入」有两个来源,可能不一致**:登记月收入(`preferences.monthlyIncome`,还款管理用它算
   负债率、助手用它做上下文、投资页用它算可投资现金)与**预算方案里的那个数**
   (`recommendation.monthlyIncome`,是生成方案时的快照)。v0.50.27 之后向导会用登记值**预填**,
@@ -1429,6 +1455,10 @@ PLAYWRIGHT_MODULE=<path>/node_modules/playwright/index.mjs npm run audit:ui
   **与 `.editorconfig` 无关** —— 做过 A/B:把 `.editorconfig` 临时挪走,报错一字不差;
   也把 `docs/HANDOVER.md` 在 HEAD~1 的旧版取出来单独查过,同样是红的。
   这个脚本**不在 CI 里**(CI 只跑 eslint),所以一直没人发现。
+
+  **这个数字会随增删文件来回漂**(同一台机器上先后量到 349 / 341 / **358**),所以它只说明
+  "很大一批",不要拿它当清单用:`358` 是 2026-11-28 复测值,当时新写的文件都单独跑过
+  `prettier --write`。
 
   记在这里是因为**别顺手跑 `prettier --write .`**:那是一次 341 个文件的重排,会与正在编辑的工作区
   冲突,而且这是"要不要统一格式"的产品/团队决定 —— 要么全量重排一次并把 `format:check` 加进 CI,

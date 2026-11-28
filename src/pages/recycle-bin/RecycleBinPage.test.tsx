@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Account } from '../../entities/account/types';
 import type { TransactionItem } from '../../entities/transaction/types';
@@ -94,5 +94,71 @@ describe('回收站页面 · 清空', () => {
 
     expect(window.alert).not.toHaveBeenCalled();
     expect(useFinanceStore.getState().trashedAccounts).toEqual([]);
+  });
+});
+
+/**
+ * 恢复交易时如果原分类已不在启用列表,store 会按“未分类”恢复 —— 页面必须说出来。
+ * 不说的话,用户点完「恢复」只会看到自己刚选的分类消失。
+ */
+describe('回收站页面 · 恢复交易', () => {
+  function trashedTransaction(): TransactionItem {
+    return {
+      id: 'tx-1',
+      type: 'expense',
+      categoryId: 'cat-1',
+      accountId: 'acc-1',
+      amount: 12.5,
+      date: '2026-11-24',
+      note: '午餐',
+      tags: [],
+      status: 'completed',
+      trashedAt: '2026-11-25T00:00:00.000Z'
+    };
+  }
+
+  function restoreRow(): HTMLElement {
+    const row = screen.getByText('午餐').closest('article');
+    if (!row) throw new Error('找不到那笔交易的卡片');
+    return row as HTMLElement;
+  }
+
+  it('原分类还在回收站:弹说明,恢复回来的那笔归入未分类', () => {
+    resetStore({ trashedAccounts: [] });
+    useFinanceStore.setState({
+      categories: [],
+      trashedTransactions: [trashedTransaction()],
+      trashedCategories: [
+        {
+          id: 'cat-1',
+          name: '餐饮',
+          kind: 'expense',
+          sortOrder: 1,
+          trashedAt: '2026-11-25T00:00:00.000Z'
+        }
+      ]
+    });
+
+    render(<RecycleBinPage />);
+    fireEvent.click(within(restoreRow()).getByRole('button', { name: '恢复' }));
+
+    expect(window.alert).toHaveBeenCalledTimes(1);
+    const message = String(
+      (window.alert as unknown as { mock: { calls: string[][] } }).mock.calls[0][0]
+    );
+    expect(message).toContain('1 笔交易');
+    expect(useFinanceStore.getState().transactions[0]?.categoryId).toBe('');
+    expect(useFinanceStore.getState().trashedTransactions).toEqual([]);
+  });
+
+  it('原分类仍在启用列表:不弹说明,分类照旧保留', () => {
+    resetStore({ trashedAccounts: [] });
+    useFinanceStore.setState({ trashedTransactions: [trashedTransaction()] });
+
+    render(<RecycleBinPage />);
+    fireEvent.click(within(restoreRow()).getByRole('button', { name: '恢复' }));
+
+    expect(window.alert).not.toHaveBeenCalled();
+    expect(useFinanceStore.getState().transactions[0]?.categoryId).toBe('cat-1');
   });
 });

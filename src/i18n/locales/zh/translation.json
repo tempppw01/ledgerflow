@@ -1559,7 +1559,8 @@
       "unsetProvider": "未设置服务商",
       "deletedAt": "删除于 {{date}}"
     },
-    "clearBlocked": "回收站已清空，但有 {{accounts}} 个账户因名下还有 {{transactions}} 笔交易被跳过 —— 先把这些交易改到别的账户、或先删除它们，再清空回收站。"
+    "clearBlocked": "回收站已清空，但有 {{accounts}} 个账户因名下还有 {{transactions}} 笔交易被跳过 —— 先把这些交易改到别的账户、或先删除它们，再清空回收站。",
+    "restoreUncategorized": "已恢复 {{count}} 笔交易，但它们原本的分类已不在启用分类里（可能在回收站，也可能已被彽底删除），所以按“未分类”恢复。想保留分类的话，请先恢复该分类，再到流水里重新选一次。"
   },
   "globalMemory": {
     "eyebrow": "陪你用得更顺手",
