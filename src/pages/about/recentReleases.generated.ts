@@ -34,6 +34,12 @@ export const RELEASE_HISTORY_LIMIT = 10;
 // prettier-ignore
 export const RELEASE_HISTORY: readonly ReleaseHistoryEntry[] = [
   {
+    version: '0.52.1',
+    publishedOn: '2026-11-28',
+    title: '投资页两处「说的和做的不一致」:简报的结论、快讯的 AI 解读',
+    summary: '这一版修的都是同一类问题:界面上的一个元素,干的事和它看起来干的事不一样。「今天的市场,说人话」按涨跌幅阈值吐固定句子,数字与结论可以互相打脸;7×24 快讯顶上那个「AI 解读」按钮,无论列表里是哪一条,问的都是第一条。'
+  },
+  {
     version: '0.52.0',
     publishedOn: '2026-11-28',
     title: '新:关于页的「最近更新」—— 版本记录 + 中文说明',
@@ -86,11 +92,5 @@ export const RELEASE_HISTORY: readonly ReleaseHistoryEntry[] = [
     publishedOn: '2026-11-25',
     title: '修:新用户想导入账单,找不到入口',
     summary: '本来想做「导入链路」的端到端验证:把一个新账号打开交易页看看。结果发现空状态的文案写着…'
-  },
-  {
-    version: '0.50.51',
-    publishedOn: '2026-11-25',
-    title: '订阅生成支出:补上四条不变量,并修一处会误导人的提示',
-    summary: '「订阅 → 生成支出」这个函数有四个不变量,一条测试都没有(features/subscriptions/model 里测的是品牌图标与状态,不是它)…'
   }
 ];
