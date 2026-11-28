@@ -17,56 +17,56 @@ node ./node_modules/vitest/vitest.mjs run --config vitest.config.ts src/shared/s
 
 ## 金额
 
-| 测试                                                       | 保护的行为                                                                                                               |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `shared/lib/money.test.ts`                                 | 取整只有一个实现:`1.005 → 1.01`、负数 `.5` 远离零、幂等(含 `-0`)、非法值退化为 0、先求和再取整 == 先取整再求和           |
-| `store/refundInvariant.test.ts`                            | 退款总额不得超过原交易金额:创建时拒绝、**编辑时也拒绝**(否则账户净额凭空多钱);导入/恢复可走 `allowRefundOverflow` 逃生门 |
-| `store/refundInference.test.ts`                            | 缺 `adjustmentKind` 时的方向推断:明确写了就不推翻;**不能**因为 `status: 'refunded'` 就把原交易当成退款(会把余额算成两倍) |
-| `investments/model/investmentSimulator.invariants.test.ts` | 定投模拟全程不取整:投入 = 每期 × 期数、利润/收益率自洽、**线性**(金额翻倍则结果精确翻倍)、非法输入返回 null              |
+| 测试                                                       | 保护的行为                                                                                                                                                                       |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shared/lib/money.test.ts`                                 | 取整只有一个实现:`1.005 → 1.01`、负数 `.5` 远离零、幂等(含 `-0`)、非法值退化为 0、先求和再取整 == 先取整再求和                                                                   |
+| `store/refundInvariant.test.ts`                            | 退款总额不得超过原交易金额:创建时拒绝、**编辑时也拒绝**(否则账户净额凭空多钱);导入/恢复可走 `allowRefundOverflow` 逃生门                                                         |
+| `store/refundInference.test.ts`                            | 缺 `adjustmentKind` 时的方向推断:明确写了就不推翻;**不能**因为 `status: 'refunded'` 就把原交易当成退款(会把余额算成两倍)                                                         |
+| `investments/model/investmentSimulator.invariants.test.ts` | 定投模拟全程不取整:投入 = 每期 × 期数、利润/收益率自洽、**线性**(金额翻倍则结果精确翻倍)、非法输入返回 null                                                                      |
 | `shared/lib/expenseScope.contract.test.ts`                 | 「支出」口径**已统一**:`isExpenseLike` 与 `isActualExpenseType` 都是 支出+还款,**预算型不算支出**(2026-11-24 定案,依据是全项目 5 处不计入对 1 处计入)。谁再让两边不同,这里先翻红 |
-| `features/debt/model/creditDrafts.rounding.test.ts`       | 信用草稿金额解析走共享取整:`2675.675 → 2675.68`(解析器曾原样返回三位小数);口语单位(`1万5` / `1万零500`)组合后同样不留三位小数 |
-| `features/investments/model/monthlyCashflow.test.ts`      | 「本月可投资现金」一份实现:按月取、退款抵减、排除不计入余额的状态;**上个月的花销不能把它压成 0**(投资助手聊天面板曾用全部历史去减月收入,恒为 0) |
+| `features/debt/model/creditDrafts.rounding.test.ts`        | 信用草稿金额解析走共享取整:`2675.675 → 2675.68`(解析器曾原样返回三位小数);口语单位(`1万5` / `1万零500`)组合后同样不留三位小数                                                    |
+| `features/investments/model/monthlyCashflow.test.ts`       | 「本月可投资现金」一份实现:按月取、退款抵减、排除不计入余额的状态;**上个月的花销不能把它压成 0**(投资助手聊天面板曾用全部历史去减月收入,恒为 0)                                  |
 
 ## 日期
 
-| 测试                                          | 保护的行为                                                                                      |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `shared/lib/localDate.test.ts`                | 「今天」用本地日期(`toISOString` 在 UTC+8 清晨会给昨天);`daysSinceLocalDate` 一天 24 小时都稳定 |
-| `transactions/hooks/dateRangePresets.test.ts` | 本月/近 30 天/近 3 个月的边界(闰年、跨月、跨年),上个月最后一天不能落进本月                      |
-| `shared/lib/subscriptionSchedule.test.ts`     | 续费推进按 UTC 日历运算(负时区不会跳月)、纯日期进纯日期出、时区无关                             |
-| `features/assistant/model/weeklyExpenseTrend.test.ts` | 「本周 / 上周」按本地日历日分桶(0–6 / 7–13 天),**不按行号切**;乱序 + 稀疏数据(本周 2 笔、上周 5 笔)也要算对 |
-| `features/investments/model/usExtendedSession.test.ts` | 美股盘前/盘后倒计时:盘前 04:00–09:30、盘后 16:00–20:00(美东);**周五收盘后的「距下个盘前」是 66 小时不是 18**;09:30 整点算盘前结束、16:00 整点算盘后开始;夏令时切换日 09:00 ET 仍是盘前 |
-| `features/investments/components/UsExtendedSessionStrip.test.tsx` | 盘前盘后条:状态写在文字里(进行中 / 距开始 / 距下个盘前),**不加 `aria-live` 也不加 `role="timer"`** —— 每秒播报倒计时会淹没读屏器 |
-| `shared/lib/i18nDate.test.ts`                 | `formatIsoDay` 把 `YYYY-MM-DD` 当**本地日**算:在 `America/New_York` 里直接 `new Date('2026-11-27')` 会渲染成 11 月 26 日(测试里带这条阳性对照),关于页的发布日期就用它 |
+| 测试                                                              | 保护的行为                                                                                                                                                                             |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shared/lib/localDate.test.ts`                                    | 「今天」用本地日期(`toISOString` 在 UTC+8 清晨会给昨天);`daysSinceLocalDate` 一天 24 小时都稳定                                                                                        |
+| `transactions/hooks/dateRangePresets.test.ts`                     | 本月/近 30 天/近 3 个月的边界(闰年、跨月、跨年),上个月最后一天不能落进本月                                                                                                             |
+| `shared/lib/subscriptionSchedule.test.ts`                         | 续费推进按 UTC 日历运算(负时区不会跳月)、纯日期进纯日期出、时区无关                                                                                                                    |
+| `features/assistant/model/weeklyExpenseTrend.test.ts`             | 「本周 / 上周」按本地日历日分桶(0–6 / 7–13 天),**不按行号切**;乱序 + 稀疏数据(本周 2 笔、上周 5 笔)也要算对                                                                            |
+| `features/investments/model/usExtendedSession.test.ts`            | 美股盘前/盘后倒计时:盘前 04:00–09:30、盘后 16:00–20:00(美东);**周五收盘后的「距下个盘前」是 66 小时不是 18**;09:30 整点算盘前结束、16:00 整点算盘后开始;夏令时切换日 09:00 ET 仍是盘前 |
+| `features/investments/components/UsExtendedSessionStrip.test.tsx` | 盘前盘后条:状态写在文字里(进行中 / 距开始 / 距下个盘前),**不加 `aria-live` 也不加 `role="timer"`** —— 每秒播报倒计时会淹没读屏器                                                       |
+| `shared/lib/i18nDate.test.ts`                                     | `formatIsoDay` 把 `YYYY-MM-DD` 当**本地日**算:在 `America/New_York` 里直接 `new Date('2026-11-27')` 会渲染成 11 月 26 日(测试里带这条阳性对照),关于页的发布日期就用它                  |
 
 ## 状态与分类身份
 
-| 测试                                                   | 保护的行为                                                                                                |
-| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| `shared/lib/categoryLabels.test.ts`                    | 分类显示名:同名加「父 / 子」;`buildCategoryLabelIndex` 只给**能唯一确定分类**的名字(加前缀后仍重名的排除) |
-| `features/dashboard/model/categoryBreakdown.test.ts`   | 分类聚合身份是 **id 不是名字**;未知分类显示「未分类」而不是内部 id                                        |
-| `financial-analysis/model/categoryAggregation.test.ts` | 同名子分类不合并、金额与占比各自独立                                                                      |
-| `transactions/model/statusQuickFilter.test.ts`         | 缺省状态按「已完成」处理,与 `isBalanceAffectingStatus` 同一结论                                           |
-| `transactions/model/statusLabel.test.ts`               | 状态列显示同一套默认值:缺状态显示「已完成」而不是「-」(否则「筛得出来却看不出状态」)                       |
-| `store/uncategorizedCoherence.test.ts`                 | 「未分类」三处口径一致:数据用空串、筛选哨兵、助手计数                                                     |
-| `subscriptions/model/subscriptionStatus.test.ts`       | 逾期判定按**本地日历日**:到期当天是「即将到期」,次日才「逾期」,与时区无关                                 |
-| `store/defaultTransactionStatus.test.ts`               | 缺省状态 = 已完成:**写入侧也要落一个明确状态**(助手导入不传 status),筛选与显示共用同一个默认值             |
-| `store/trashRefundPair.test.ts`                        | 回收站里的「支出 + 退款」是一对:删除把退款一起移走,**恢复也必须一起回来**;只恢复一条会让余额少掉退款那一笔   |
-| `features/assistant/workbench/categoryFallback.test.ts` | 分类解析不出来时返回**空串**(走未分类),不许退回第一个分类(会静默归错类),也不许造 `cat-unknown`           |
-| `features/smart-budget/model/budgetZeroBudget.test.ts`  | 预算为 0 却有支出:既是「超支」也是「执行率无上限(`>999%`)」,不能显示成 0.0% —— 同一行不能自相矛盾         |
+| 测试                                                    | 保护的行为                                                                                                 |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `shared/lib/categoryLabels.test.ts`                     | 分类显示名:同名加「父 / 子」;`buildCategoryLabelIndex` 只给**能唯一确定分类**的名字(加前缀后仍重名的排除)  |
+| `features/dashboard/model/categoryBreakdown.test.ts`    | 分类聚合身份是 **id 不是名字**;未知分类显示「未分类」而不是内部 id                                         |
+| `financial-analysis/model/categoryAggregation.test.ts`  | 同名子分类不合并、金额与占比各自独立                                                                       |
+| `transactions/model/statusQuickFilter.test.ts`          | 缺省状态按「已完成」处理,与 `isBalanceAffectingStatus` 同一结论                                            |
+| `transactions/model/statusLabel.test.ts`                | 状态列显示同一套默认值:缺状态显示「已完成」而不是「-」(否则「筛得出来却看不出状态」)                       |
+| `store/uncategorizedCoherence.test.ts`                  | 「未分类」三处口径一致:数据用空串、筛选哨兵、助手计数                                                      |
+| `subscriptions/model/subscriptionStatus.test.ts`        | 逾期判定按**本地日历日**:到期当天是「即将到期」,次日才「逾期」,与时区无关                                  |
+| `store/defaultTransactionStatus.test.ts`                | 缺省状态 = 已完成:**写入侧也要落一个明确状态**(助手导入不传 status),筛选与显示共用同一个默认值             |
+| `store/trashRefundPair.test.ts`                         | 回收站里的「支出 + 退款」是一对:删除把退款一起移走,**恢复也必须一起回来**;只恢复一条会让余额少掉退款那一笔 |
+| `features/assistant/workbench/categoryFallback.test.ts` | 分类解析不出来时返回**空串**(走未分类),不许退回第一个分类(会静默归错类),也不许造 `cat-unknown`             |
+| `features/smart-budget/model/budgetZeroBudget.test.ts`  | 预算为 0 却有支出:既是「超支」也是「执行率无上限(`>999%`)」,不能显示成 0.0% —— 同一行不能自相矛盾          |
 
 ## 数据完整性
 
-| 测试                                           | 保护的行为                                                                                                         |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `shared/lib/backup.roundtrip.test.ts`          | 备份**全字段**往返:导出 → JSON → 解析逐字段相等(曾丢 `parentId`、持仓代码/份额、AI 消息字段等 10 个)               |
-| `store/importSnapshotInvariant.test.ts`        | 导入后:带 `trashedAt` 的行不留在主列表、同一 id 不重复(以回收站为准)、分类父子关系保留、余额按「影响余额的行」重算 |
-| `store/trashSymmetry.test.ts`                  | 删除/恢复/永久删除对称:往返字段不少、余额对称、重复操作是空操作、主列表已有同 id 时恢复不会让记录消失              |
-| `shared/lib/billImport.mergeInvariant.test.ts` | 重复导入不丢字段:来源里没有的字段(`status`/单号)不能把已有值覆盖成 `undefined`                                     |
-| `shared/lib/transactionMetrics.test.ts`        | 汇总口径:待支付/已关闭/失败/已删除不计入;过滤结果与账户余额判据逐行相等                                            |
+| 测试                                           | 保护的行为                                                                                                                                                                                                                                                       |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shared/lib/backup.roundtrip.test.ts`          | 备份**全字段**往返:导出 → JSON → 解析逐字段相等(曾丢 `parentId`、持仓代码/份额、AI 消息字段等 10 个)                                                                                                                                                             |
+| `store/importSnapshotInvariant.test.ts`        | 导入后:带 `trashedAt` 的行不留在主列表、同一 id 不重复(以回收站为准)、分类父子关系保留、余额按「影响余额的行」重算                                                                                                                                               |
+| `store/trashSymmetry.test.ts`                  | 删除/恢复/永久删除对称:往返字段不少、余额对称、重复操作是空操作、主列表已有同 id 时恢复不会让记录消失                                                                                                                                                            |
+| `shared/lib/billImport.mergeInvariant.test.ts` | 重复导入不丢字段:来源里没有的字段(`status`/单号)不能把已有值覆盖成 `undefined`                                                                                                                                                                                   |
+| `shared/lib/transactionMetrics.test.ts`        | 汇总口径:待支付/已关闭/失败/已删除不计入;过滤结果与账户余额判据逐行相等                                                                                                                                                                                          |
 | `store/subscriptionRenewalRevert.test.ts`      | 删掉「生成支出」写出的流水时续费日要**精确退回**:月末 1/31 →(生成)2/28 →(删除)必须回到 1/31,不能倒推成 1/28;再生成只推进一期。**回收站可逆**:删除时保留 `prev*` 快照与关联,恢复时把日期推回生成后的状态(否则再生成会为同一周期重复记一笔),**彻底删除**才清掉它们 |
-| `server/orphanAccountReferences.test.js`        | **记录现状(待决策)**:账户被彻底删除后,其交易在整份导入时被丢弃。根因是 `account_id NOT NULL`;四个备选方案写在测试文件顶部 |
-| `server/subscriptionPrevDate.test.js`           | v9 的 `prev_renewal_date` / `prev_expire_date` 在服务端三层都通:建表、迁移、写入与读回 |
+| `server/orphanAccountReferences.test.js`       | **记录现状(待决策)**:账户被彻底删除后,其交易在整份导入时被丢弃。根因是 `account_id NOT NULL`;四个备选方案写在测试文件顶部                                                                                                                                        |
+| `server/subscriptionPrevDate.test.js`          | v9 的 `prev_renewal_date` / `prev_expire_date` 在服务端三层都通:建表、迁移、写入与读回                                                                                                                                                                           |
 
 ## 数据出入口的闭环验证
 
@@ -207,13 +207,13 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 
 往一个临时用户推 5 笔病态数据(通过 `/api/data/import`,绕过客户端校验以便直接压服务端):
 
-| 用例 | 值 |
-| --- | --- |
-| 最早日期 | `1970-01-01` |
-| 最晚日期 | `2099-12-31` |
+| 用例     | 值                                                            |
+| -------- | ------------------------------------------------------------- |
+| 最早日期 | `1970-01-01`                                                  |
+| 最晚日期 | `2099-12-31`                                                  |
 | 上限金额 | `999999999.99`(与 `TransactionEditPage` 的 `MAX_AMOUNT` 一致) |
-| 零金额 | `0` |
-| 正常对照 | 一笔普通收入 |
+| 零金额   | `0`                                                           |
+| 正常对照 | 一笔普通收入                                                  |
 
 结果:
 
@@ -230,6 +230,7 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 写入,应用每次载入会按流水重建,不参与读数。
 
 ## 已复现、但**待决策**的问题
+
 这一节记的是**真问题**,不是「刻意设计」。它们卡在同一个地方:修法涉及产品语义,不该由改代码的人单方面定。
 
 ### 1. 整份快照同步会**静默删掉**另一个客户端的写入(2026-11-24 复现)
@@ -267,13 +268,13 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   原先 `transactionMetrics.isExpenseLike` 含 `budget` 而 `dashboard/model/utils.isActualExpenseType` 不含,
   首页一屏内两个数字自相矛盾。定案的依据不是偏好,而是**代码自己的一致行为**:
 
-  | 面 | 预算型算支出吗 |
-  | --- | --- |
-  | 首页「本月结余」(`isActualExpenseType`) | 不算 |
-  | 智能预算 · 已花费(`budgetDetail.ts:87`) | 不算 |
-  | 智能预算 · 洞察(`budgetInsights.ts:73`) | 不算 |
-  | 分类预算明细 | 不算 |
-  | 助手发给模型的账本合计 | 不算 |
+  | 面                                                       | 预算型算支出吗      |
+  | -------------------------------------------------------- | ------------------- |
+  | 首页「本月结余」(`isActualExpenseType`)                  | 不算                |
+  | 智能预算 · 已花费(`budgetDetail.ts:87`)                  | 不算                |
+  | 智能预算 · 洞察(`budgetInsights.ts:73`)                  | 不算                |
+  | 分类预算明细                                             | 不算                |
+  | 助手发给模型的账本合计                                   | 不算                |
   | `isExpenseLike`(经 `summarizeTransactions` 与财务分析页) | **算** ← 唯一的例外 |
 
   五比一,所以把那一处对齐到其余五处。注意**这不等于"预算型不影响余额"**:它照样写
@@ -309,6 +310,7 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   "有 N 笔不计收支的行被跳过"(现在只是静默跳过)。
 
 **没有倾向**:这是纯粹的产品口径问题,两种都能自洽,取决于你想要的账本长什么样。
+
 ## 核对结论与度量记录(已查完、有结论 —— 不是待决策)
 
 - **`npm run format:check` 全仓不过(349 个文件)—— 不要顺手跑 `npm run format`(2026-11-25 实测)**。
@@ -330,7 +332,7 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   这道闸门守的是"不许在别处重写已经共享出来的判断",其中一条判据是:
 
   ```js
-  /adjustmentKind\\s*[!=]==?\\s*'refund'/.test(text) && !/isTransactionRefundLike/.test(text)
+  /adjustmentKind\\s*[!=]==?\\s*'refund'/.test(text) && !/isTransactionRefundLike/.test(text);
   ```
 
   后半个条件对**整份文件全文**做正则 —— 于是**注释里提一句** `isTransactionRefundLike` 就算"引用了",
@@ -350,21 +352,21 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 - **发布链路的四道检查,其中"tag 与版本一致"做过真实弹测试(2026-11-25)**。
   发布出错一次就是"Release 写着 A 版本、内容却是 B 版本",而此前没有任何东西会拦。现在有四处把关:
 
-  | 检查 | 什么时候跑 | 查什么 |
-  | --- | --- | --- |
-  | `check:version-sync`(CI)| 每次推送 | `package.json` 的 version = `APP_VERSION`;当前版本有 `release-notes/RELEASE_NOTES_v<version>.md` |
-  | `check:docs`(CI)| 每次推送 | 文档里的 npm 脚本存在;compose 的环境变量都在 `.env.example` 里 |
-  | **`release.yml` 的 `Verify tag matches package.json version`** | **打 tag 时** | **tag(去 v)= version,且 = `APP_VERSION`** |
-  | `release.yml` 的 `Resolve release notes` | 打 tag 时 | 说明文件在 tag 指向的提交里(原本就有)|
+  | 检查                                                           | 什么时候跑    | 查什么                                                                                           |
+  | -------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------ |
+  | `check:version-sync`(CI)                                       | 每次推送      | `package.json` 的 version = `APP_VERSION`;当前版本有 `release-notes/RELEASE_NOTES_v<version>.md` |
+  | `check:docs`(CI)                                               | 每次推送      | 文档里的 npm 脚本存在;compose 的环境变量都在 `.env.example` 里                                   |
+  | **`release.yml` 的 `Verify tag matches package.json version`** | **打 tag 时** | **tag(去 v)= version,且 = `APP_VERSION`**                                                        |
+  | `release.yml` 的 `Resolve release notes`                       | 打 tag 时     | 说明文件在 tag 指向的提交里(原本就有)                                                            |
 
   **实弹验证(2026-11-25)**:推了一个**故意错的** `v0.50.99`(当时版本是 0.50.54)—— 结果:
 
-  | step | 结果 |
-  | --- | --- |
-  | Checkout release tag | success |
+  | step                                        | 结果                       |
+  | ------------------------------------------- | -------------------------- |
+  | Checkout release tag                        | success                    |
   | **Verify tag matches package.json version** | **failure** ← 新加的那一步 |
-  | Resolve release notes | **skipped** |
-  | **Publish GitHub Release** | **skipped** |
+  | Resolve release notes                       | **skipped**                |
+  | **Publish GitHub Release**                  | **skipped**                |
 
   并且 `gh release view v0.50.99` → **release not found**:链条停在该停的地方,**一个 Release 都没发**。
   测试用的 tag 随后本地与远端都删干净了。
@@ -383,8 +385,8 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   两个刻意的设计(改的时候别拆掉):
   · **样式全部内联** —— 崩溃时最可能的原因之一就是样式/资源没加载,崩溃页不能依赖应用的 CSS;
   · **文案不依赖 i18n 可用性** —— 先 `i18next.t(key)`,取不到(没 init / 缺键 / i18n 自己挂了)
-    就用写死的兜底。**不要**改回 `defaultValue` 选项:实测在没 init 的环境里它返回**空串**,
-    标题会是空的(这条是被测试逼出来的)。
+  就用写死的兜底。**不要**改回 `defaultValue` 选项:实测在没 init 的环境里它返回**空串**,
+  标题会是空的(这条是被测试逼出来的)。
 
   验证:新增 3 条测试(正常渲染 / 抛错显示兜底 / 记录日志);全量 **174 文件 1274 项**;
   **CI run 全绿** —— 其中 `verify` 1 分 43 秒、`docker-latest` **9 分 14 秒**(镜像里也确实打进去了)。
@@ -394,26 +396,26 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   投资层此前没查过。`src/features/investments/model/investmentSimulator.ts` 是定投推演,
   **不是只读代码,是拿手算用例跑了一遍**:
 
-  | 输入 | 手算 | 实际 |
-  | --- | --- | --- |
-  | 每期 1000、价格点 10 与 20、区间内每天都买 | shares = 1000/10 + 1000/20 = **150** | ✓ 150 |
-  | | investedAmount = **2000** | ✓ 2000 |
-  | | endingValue = 150 × 20 = **3000** | ✓ 3000 |
-  | | profit = **1000** | ✓ 1000 |
-  | | returnRate = **0.5** | ✓ 0.5 |
+  | 输入                                       | 手算                                 | 实际   |
+  | ------------------------------------------ | ------------------------------------ | ------ |
+  | 每期 1000、价格点 10 与 20、区间内每天都买 | shares = 1000/10 + 1000/20 = **150** | ✓ 150  |
+  |                                            | investedAmount = **2000**            | ✓ 2000 |
+  |                                            | endingValue = 150 × 20 = **3000**    | ✓ 3000 |
+  |                                            | profit = **1000**                    | ✓ 1000 |
+  |                                            | returnRate = **0.5**                 | ✓ 0.5  |
 
   顺带确认实现里的几处关键取舍都对:价格 `> 0` 过滤(挡掉除零)、**股数不取整**(取整会漂移)、
   没有匹配到交易日的窗口**跳过那一期**、`endingValue` 用区间内**最后一个**价格。
 
   **至此五个钱相关领域都有结论**:
 
-  | 领域 | 结论 |
-  | --- | --- |
-  | 交易(创建/编辑/导入)| 创建有统一兜底(`createTransactionRow`);导入的参数传递出过 2 个真 bug(已修)|
-  | 预算 | 智能预算核对干净(手工求和的候选点里,`budgetPlan` 的求和是"预算分配行",有理由)|
-  | 负债 | `creditDrafts` 的金额解析与取整干净,四个测试文件覆盖单位与取整 |
-  | 投资 | 定投推演**手算验证通过**(上表)|
-  | 助手 | 金额路径走共享 `roundMoney`,不自己解析文本 |
+  | 领域                 | 结论                                                                          |
+  | -------------------- | ----------------------------------------------------------------------------- |
+  | 交易(创建/编辑/导入) | 创建有统一兜底(`createTransactionRow`);导入的参数传递出过 2 个真 bug(已修)    |
+  | 预算                 | 智能预算核对干净(手工求和的候选点里,`budgetPlan` 的求和是"预算分配行",有理由) |
+  | 负债                 | `creditDrafts` 的金额解析与取整干净,四个测试文件覆盖单位与取整                |
+  | 投资                 | 定投推演**手算验证通过**(上表)                                                |
+  | 助手                 | 金额路径走共享 `roundMoney`,不自己解析文本                                    |
 
   **所以"再去找计算 bug"的期望产出很低** —— 真 bug 集中在**输入格式**与**跨入口参数传递**。
 
@@ -442,12 +444,12 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   这一层从没查过,而它会**创建交易**(「AI 识别账单、整理负债」),正是金额/分类类 bug 的高发区。
   抽样看了创建交易的入口 `agent/assistantAgentTools.ts` 与 `workbench/workbenchMapping.ts`:
 
-  | 关注点 | 结论 |
-  | --- | --- |
-  | 有没有把 AI 返回的文本自己解析成数字 | **没有** —— 工具参数声明成 `type: 'number'`,不走 `parseFloat` 那套 |
-  | 校验 | 有:`toNumber(item.amount)` → 判 `null`,再判 `Math.abs(amount) <= 0` |
-  | 取整 | **走共享**:`normalizeMoney` 是 `roundMoney` 的薄封装(`workbenchMapping.ts` 第 6 行 import),不是第二份实现 |
-  | 本地 `toNumber` 算不算重复 | 不算:它返回 `null`(无效),而共享的 `toSafeNumber` 返回**回落值** —— 契约不同 |
+  | 关注点                               | 结论                                                                                                      |
+  | ------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+  | 有没有把 AI 返回的文本自己解析成数字 | **没有** —— 工具参数声明成 `type: 'number'`,不走 `parseFloat` 那套                                        |
+  | 校验                                 | 有:`toNumber(item.amount)` → 判 `null`,再判 `Math.abs(amount) <= 0`                                       |
+  | 取整                                 | **走共享**:`normalizeMoney` 是 `roundMoney` 的薄封装(`workbenchMapping.ts` 第 6 行 import),不是第二份实现 |
+  | 本地 `toNumber` 算不算重复           | 不算:它返回 `null`(无效),而共享的 `toSafeNumber` 返回**回落值** —— 契约不同                               |
 
   **注意这是抽样,不是全审**(1.2 万行里只看了创建交易那条主路径)。要更彻底,可以按同样四个关注点
   扫 `agent/creditAgentTools.ts`(1507 行,写负债数据)与 `creditAssistant/parser.ts`(406 行,解析 AI 输出)。
@@ -455,11 +457,11 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 - **负债草稿与助手解析层:抽样核对干净,且测试很齐(2026-11-25 续查)**。
   接着按"助手层抽样"那四个关注点往下走了两步,结论是**没有 bug,代码质量高于预期**:
 
-  | 位置 | 结论 |
-  | --- | --- |
-  | `creditAssistant/parser.ts`(406 行)| **不做金额解析**,只做**正则字段提取**。流式预览因此天然安全:AI 输出还没写完时,正则匹配不到就是"没有该字段",不会崩。有 `parser.test.ts` |
+  | 位置                                             | 结论                                                                                                                                                                                                                          |
+  | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `creditAssistant/parser.ts`(406 行)              | **不做金额解析**,只做**正则字段提取**。流式预览因此天然安全:AI 输出还没写完时,正则匹配不到就是"没有该字段",不会崩。有 `parser.test.ts`                                                                                        |
   | `debt/model/creditDrafts.ts` 的 `positiveNumber` | 数值走 `isFinite && > 0`;字符串先剥 `[^0-9.-]`、再判 `parsed <= 0` 直接返回 undefined(负数被拒);**带中文单位会按「万」放大**(`1.5万 -> 15000`),注释写明。`integerPositive` 还专门处理了 `0.4 -> 0` 与 `repaymentDay=0` 的矛盾 |
-  | 该模块的测试 | **四个**测试文件:`.test` / `.rounding` / `.units` / `.periods` —— 正好覆盖单位与取整 |
+  | 该模块的测试                                     | **四个**测试文件:`.test` / `.rounding` / `.units` / `.periods` —— 正好覆盖单位与取整                                                                                                                                          |
 
   **数据点**:这一趟连续三处抽样(助手主路径、负债解析、负债草稿)都是干净的。这说明**钱与日期这两层在本仓库整体是被认真对待的** ——
   前面找到的真 bug 集中在**输入格式**(账单文件的 xlsx/csv)与**跨入口一致性**,而不是计算本身。
@@ -467,19 +469,19 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 - **文档层已全部核对过一遍(2026-11-25,结论与修法都在这里)**。
   这个会话把仓库里**所有**面向人的文档都读了一遍,并核对"文档说的事"与"仓库实际"是否一致:
 
-  | 文档 | 结论 |
-  | --- | --- |
-  | `docs/HANDOVER.md` | 标题版本停在 v0.50.4 → 已更新;内容逐节核对过 |
-  | `docs/release-process.md` | 「回填」一节过时(我自己删 Release 页面造成)→ 已更正 |
-  | `docs/i18n-hardcoded-audit.md` | 引用已删的组件 → 已在顶部加注"这些文件已被删除" |
-  | `docs/UI动画优化总结.md` | 引用的 `useUIAnimations.ts` 已不存在 → 已加注"历史记录,照抄会失败" |
-  | `docs/verification-recipes.md` | 闸门数写错(10 vs 实际 9)→ 已改;并新增"文档里的 npm 脚本是否存在"检查 |
-  | `docs/verified-invariants.md` | 本文档,持续补充 |
-  | `docs/pruned-releases.md` | 新写,内容与 GitHub 实际 Release 列表核对过 |
-  | `README.md` | 「功能亮点」是逐版本 changelog,停在 0.8.9 → 已加指路牌(不补写,避免编造)|
-  | `.env.example` | 与 `docker-compose.yml` **同步**(26 个变量一个不漏)|
-  | `CHANGELOG.md` | **当前**:到 v0.50.54(由 `generate-changelog.mjs` 从 release-notes 生成,不要手改)|
-  | `release-notes/` | **当前**:`0.50.x` 共 55 份(v0.50.0 – v0.50.54)|
+  | 文档                           | 结论                                                                             |
+  | ------------------------------ | -------------------------------------------------------------------------------- |
+  | `docs/HANDOVER.md`             | 标题版本停在 v0.50.4 → 已更新;内容逐节核对过                                     |
+  | `docs/release-process.md`      | 「回填」一节过时(我自己删 Release 页面造成)→ 已更正                              |
+  | `docs/i18n-hardcoded-audit.md` | 引用已删的组件 → 已在顶部加注"这些文件已被删除"                                  |
+  | `docs/UI动画优化总结.md`       | 引用的 `useUIAnimations.ts` 已不存在 → 已加注"历史记录,照抄会失败"               |
+  | `docs/verification-recipes.md` | 闸门数写错(10 vs 实际 9)→ 已改;并新增"文档里的 npm 脚本是否存在"检查             |
+  | `docs/verified-invariants.md`  | 本文档,持续补充                                                                  |
+  | `docs/pruned-releases.md`      | 新写,内容与 GitHub 实际 Release 列表核对过                                       |
+  | `README.md`                    | 「功能亮点」是逐版本 changelog,停在 0.8.9 → 已加指路牌(不补写,避免编造)          |
+  | `.env.example`                 | 与 `docker-compose.yml` **同步**(26 个变量一个不漏)                              |
+  | `CHANGELOG.md`                 | **当前**:到 v0.50.54(由 `generate-changelog.mjs` 从 release-notes 生成,不要手改) |
+  | `release-notes/`               | **当前**:`0.50.x` 共 55 份(v0.50.0 – v0.50.54)                                   |
 
   **六处更新、五处确认干净** —— 而**每一处都是"读一遍才发现"的**,不是猜的。
   共同规律仍然是那条:**"记录"和"实际"会各自漂移,而漂移的地方没人看**。
@@ -501,37 +503,37 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   光看代码或看退出码**不够** —— 这轮的教训具体是:
   · `audit:sums` 跑起来 exit 0,我据此推出"它永远不会失败";实测造一个违规文件后是 **exit 1**,推断错了;
   · `check-dynamic-i18n` 删掉一个**动态拼接**的键(两份语言都删)后,所有闸门与 1271 项测试**全过** ——
-    确认是真缺口,补上键族后才会失败;
+  确认是真缺口,补上键族后才会失败;
   · `check:shared-predicates` 的"注释压制"也是这么发现的。
   **做法**:造一个**最小的违规**放进去,跑闸门看它**是否失败**;再删掉确认它恢复通过。
   已按这个方法查过的对象(每一条都有实测结论):
 
-  | 对象 | 结果 |
-  | --- | --- |
-  | `audit:sums` | 会失败(exit 1、点名、写出两条修法)—— 我原本从"跑起来是 0"推断它不会失败,错了 |
-  | `check-dynamic-i18n` | **真缺口**:两份语言都删掉一个**动态拼接**的键后,所有闸门与 1271 项测试全过 → 已补键族 |
-  | `check:shared-predicates` | **真弱点**:注释里提一句共享名就把检查压掉 → 已改成先剥注释 |
-  | `check:date-usage` | **真缺口**:`tx.date.slice(0,10)` 拦住,而解构后的裸 `date.slice(0,10)` **放行**(同一个 bug)→ 已补判据 |
+  | 对象                      | 结果                                                                                                 |
+  | ------------------------- | ---------------------------------------------------------------------------------------------------- |
+  | `audit:sums`              | 会失败(exit 1、点名、写出两条修法)—— 我原本从"跑起来是 0"推断它不会失败,错了                         |
+  | `check-dynamic-i18n`      | **真缺口**:两份语言都删掉一个**动态拼接**的键后,所有闸门与 1271 项测试全过 → 已补键族                |
+  | `check:shared-predicates` | **真弱点**:注释里提一句共享名就把检查压掉 → 已改成先剥注释                                           |
+  | `check:date-usage`        | **真缺口**:`tx.date.slice(0,10)` 拦住,而解构后的裸 `date.slice(0,10)` **放行**(同一个 bug)→ 已补判据 |
 
   两个缺口的共同形状:**判据写的是"某一种写法",而同一个错误换个写法(解构、加注释)就绕过去了**。
   所以破坏性验证时不要只试"文档里写着的那种写法" —— 试**同义的另一种写法**。
 
   **2026-11-25:CI 里的闸门已全部核实过一遍**(每个都有下面之一:实测会拦 / 抓到过真问题 / 发现并修掉缺口):
 
-  | 关卡 | 依据 |
-  | --- | --- |
-  | `tsc --noEmit` / `npm run lint` | 本次加规则后立刻报出 62 条(扣掉误报剩 1 条真问题) |
-  | `npm test` / 服务端测试 | 本次多次因我改坏而失败(服务的 `toMysqlDate`、契约测试等) |
-  | `i18n:check` | 实测:去掉 zh 侧一个键 -> 失败;删掉 JSX 用到的 `accentLabel` -> 失败 |
-  | `i18n:check-jsx`(=`audit-jsx-hardcoded --fail`)| 实测:JSX 文本节点写死「今日财务雷达」-> exit 1 并点名文件:行;不带 `--fail` 则 0 |
-  | `check:dates` | 实测:两种写法都 exit 1(解构那条是这轮补上的缺口)|
-  | `check:money` | 实测:JSX 里写 `¥{value.toFixed(2)}` -> exit 1 |
-  | `check:shared-predicates` | 实测:注释可压制(已修);修后能报出真实的重复实现 |
-  | `check:docs` | 实测:抓到我自己写坏的表格 |
-  | `check:audit-routes` | 实测:加一条 `/probe-route` -> exit 1 并说明没被审计覆盖 |
-  | `audit:sums` | 实测:造违规文件 -> exit 1 并写出两条修法 |
-  | `check:dynamic-i18n` | 实测:动态键两份都删 -> 失败(这是这轮补的缺口)|
-  | `check:orphan-methods` / `check:dead-exports` / `check:r2-fetch` | 写它们时就各自证伪过一次(见本文档对应条目)|
+  | 关卡                                                             | 依据                                                                            |
+  | ---------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+  | `tsc --noEmit` / `npm run lint`                                  | 本次加规则后立刻报出 62 条(扣掉误报剩 1 条真问题)                               |
+  | `npm test` / 服务端测试                                          | 本次多次因我改坏而失败(服务的 `toMysqlDate`、契约测试等)                        |
+  | `i18n:check`                                                     | 实测:去掉 zh 侧一个键 -> 失败;删掉 JSX 用到的 `accentLabel` -> 失败             |
+  | `i18n:check-jsx`(=`audit-jsx-hardcoded --fail`)                  | 实测:JSX 文本节点写死「今日财务雷达」-> exit 1 并点名文件:行;不带 `--fail` 则 0 |
+  | `check:dates`                                                    | 实测:两种写法都 exit 1(解构那条是这轮补上的缺口)                                |
+  | `check:money`                                                    | 实测:JSX 里写 `¥{value.toFixed(2)}` -> exit 1                                   |
+  | `check:shared-predicates`                                        | 实测:注释可压制(已修);修后能报出真实的重复实现                                  |
+  | `check:docs`                                                     | 实测:抓到我自己写坏的表格                                                       |
+  | `check:audit-routes`                                             | 实测:加一条 `/probe-route` -> exit 1 并说明没被审计覆盖                         |
+  | `audit:sums`                                                     | 实测:造违规文件 -> exit 1 并写出两条修法                                        |
+  | `check:dynamic-i18n`                                             | 实测:动态键两份都删 -> 失败(这是这轮补的缺口)                                   |
+  | `check:orphan-methods` / `check:dead-exports` / `check:r2-fetch` | 写它们时就各自证伪过一次(见本文档对应条目)                                      |
 
   **顺带一个反例**:`check:jsx-hardcoded` 曾被"接进"CI —— 但它和 `i18n:check-jsx` 是**同一条命令**,
   于是同一个脚本跑了两遍(已撤)。"东西在、没接上"的反面是"**接上了,又接了一遍**":
@@ -547,10 +549,10 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 
   **实测证伪**:临时造一个"手工求交易金额、不引用共享汇总、也不在 JUSTIFIED 里"的文件 ——
 
-  | 状态 | 结果 |
-  | --- | --- |
+  | 状态     | 结果                                                                      |
+  | -------- | ------------------------------------------------------------------------- |
   | 假文件在 | **exit 1**,点名 `src/shared/lib/__probe-handrolled-sum.ts`,并写明两条修法 |
-  | 删掉后 | exit 0 |
+  | 删掉后   | exit 0                                                                    |
 
   所以:CI 里这道闸门**会拦住**新出现的口径漂移(它就是为那次"按月汇总忘了排退款、演示账本多算 ¥781.10"
   立的)。**记这条是为了省下重复推断** —— 也提醒:退出码要**实测**过才算结论,别从"跑起来是 0"推出"它不会失败"。
@@ -582,15 +584,15 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 - **`data/`(本机账本)的四个消费者都查过了 —— 只有 `.dockerignore` 曾漏掉(2026-11-25 已补)**。
   起因是查到 `.dockerignore` 漏了 `data/`。既然这一处漏了,就把**所有会扫仓库根目录的东西**逐个过一遍:
 
-  | 谁 | 会不会误吃 `data/` | 依据 |
-  | --- | --- | --- |
-  | `.gitignore` | **不会**(第 12 行就是 `data/`) | `git check-ignore -v` 实测命中;`git ls-files data/` 为空 |
-  | `vite.config.ts` | **不会**(`watch.ignored` 含 `**/data/**`) | 注释写明"它是本机运行时目录" |
-  | **`.dockerignore`** | **曾经会** —— 已补上 | `Dockerfile` 里是 `COPY . .` |
-  | `prettier`(无 `.prettierignore`) | 不会 | 只格式化已知扩展名,`.log` / `.sqlite` 被跳过 |
-  | `eslint` | 不会 | 只 lint `**/*.{ts,tsx,js}` |
-  | `vitest` | 不会 | `include: ['src/**/*.test.{ts,tsx}']` |
-  | `tsc` | 不会 | `data/` 里没有 `.ts` |
+  | 谁                               | 会不会误吃 `data/`                        | 依据                                                     |
+  | -------------------------------- | ----------------------------------------- | -------------------------------------------------------- |
+  | `.gitignore`                     | **不会**(第 12 行就是 `data/`)            | `git check-ignore -v` 实测命中;`git ls-files data/` 为空 |
+  | `vite.config.ts`                 | **不会**(`watch.ignored` 含 `**/data/**`) | 注释写明"它是本机运行时目录"                             |
+  | **`.dockerignore`**              | **曾经会** —— 已补上                      | `Dockerfile` 里是 `COPY . .`                             |
+  | `prettier`(无 `.prettierignore`) | 不会                                      | 只格式化已知扩展名,`.log` / `.sqlite` 被跳过             |
+  | `eslint`                         | 不会                                      | 只 lint `**/*.{ts,tsx,js}`                               |
+  | `vitest`                         | 不会                                      | `include: ['src/**/*.test.{ts,tsx}']`                    |
+  | `tsc`                            | 不会                                      | `data/` 里没有 `.ts`                                     |
 
   **所以"本机数据会不会被误用"这件事已经查完** —— 三处写死的忽略规则里 `.gitignore` 与 `vite.config.ts`
   都有、唯独 `.dockerignore` 缺一半,现在补齐了。**再核这类问题不用从头来**。
@@ -609,9 +611,9 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   `docker-compose.yml` 描述部署配置、`.env.example` 描述同一套变量 —— 这类"同一件事写两遍"
   最容易一边漏,所以逐条对过一次:
 
-  | 比较 | 结果 |
-  | --- | --- |
-  | compose 用到的 **26 个**变量 | `.env.example` **一个不漏** |
+  | 比较                               | 结果                                                                                             |
+  | ---------------------------------- | ------------------------------------------------------------------------------------------------ |
+  | compose 用到的 **26 个**变量       | `.env.example` **一个不漏**                                                                      |
   | 只在 `.env.example` 里的 **12 个** | 11 个 `VITE_*`(前端**构建期**变量)+ `LEDGERFLOW_API_PROXY_TARGET`(开发期)—— 本来就不经过 compose |
 
   顺带核过服务端:它读的 16 个环境变量里,compose 未设的 6 个全是开发/代理用途
@@ -625,7 +627,7 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   (AI 生成)会被切断。核实后**不成立**:
 
   · AI 请求走的是**流式**(`openaiCompatibleClient` 里 `stream: true` + 解码缓冲循环),
-    而 nginx 的 `proxy_read_timeout` 管的是**两次读取之间**的间隔 —— 模型逐块吐字时不会触发;
+  而 nginx 的 `proxy_read_timeout` 管的是**两次读取之间**的间隔 —— 模型逐块吐字时不会触发;
   · 客户端自己还有可配置超时(`getAiRequestTimeoutMs` / `getAiGenerationTimeoutMs`)与 abort 逻辑。
 
   这份配置其余部分也扎实,不必再挖:`resolver` + **变量式 `proxy_pass`**(域名请求时才解析,
@@ -659,8 +661,8 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 
   ```js
   if (LEDGERFLOW_COOKIE_SECURE === 'true') return true;
-  if (LEDGERFLOW_COOKIE_SECURE === 'false') return false;   // 显式设置直接返回
-  return xForwardedProto === 'https' || NODE_ENV === 'production';  // 只是兜底
+  if (LEDGERFLOW_COOKIE_SECURE === 'false') return false; // 显式设置直接返回
+  return xForwardedProto === 'https' || NODE_ENV === 'production'; // 只是兜底
   ```
 
   我一开始看到第三行,以为"谁设了 `NODE_ENV=production` 就会让 HTTP 部署的登录坏掉" —— **错了**:
@@ -688,27 +690,26 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   · `docker/start-ledgerflow.sh` 同时守护 API 与 nginx、`trap TERM INT`、子进程死了就**以它的状态码退出**;
   · `nginx.conf` 用 resolver + **变量式 `proxy_pass`**,避免启动阶段 DNS 未就绪就退出;`/cdn/` 走反代(R2);
   · 服务端**不读 `package.json`**(运行时镜像没 COPY 它);`root` 只用于默认数据目录,
-    而 Dockerfile 显式设了 `LEDGERFLOW_DATA_DIR` —— 不需要额外文件。
+  而 Dockerfile 显式设了 `LEDGERFLOW_DATA_DIR` —— 不需要额外文件。
 
 - **Windows 上 `docker build` 会产出「起不来」的镜像(2026-11-25,真 Linux 实测复现)**。
   仓库当时没有 `.gitattributes`,而本机开着仓库级 `core.autocrlf=true` —— Docker 的构建上下文取的正是
   工作区磁盘上的字节,于是镜像里的 `docker/start-ledgerflow.sh` 带 CRLF,首行成为 `#!/bin/sh\r`,
   Linux 上按 shebang exec 直接失败:`env: can't execute '/usr/local/bin/start-ledgerflow.sh':
-  No such file or directory`,退出码 **127**,容器根本起不来。**CI 一直是绿的**,因为它在 Linux 上检出、
+No such file or directory`,退出码 **127**,容器根本起不来。**CI 一直是绿的**,因为它在 Linux 上检出、
   天然就是 LF —— 这个缺陷只有 Windows 本地构建会中招。
 
   同一根因还有第二个、更隐蔽的后果:`nginx.conf` 也带 CRLF,而入口脚本用 awk 匹配
   `$0 == "  listen 80;"`;CRLF 下 `$0` 实际是 `"  listen 80;\r"`,**永不匹配**,于是 PORT 改写
   **静默失效** —— 脚本照样退出 0,容器只在 80 上监听。
 
-  | 检查项(真 Linux busybox,与 `node:24-alpine` 同类) | 修前 | 修后 |
-  | --- | --- | --- |
-  | 直接 exec 入口脚本 | `not found`,退出码 127 | 正常执行,退出码 0 |
-  | `PORT=8080` 后 `listen 8080;` 的出现次数 | **0**(而脚本退出码仍是 0) | **1** |
-  | 脚本 / `nginx.conf` 的行尾 | CRLF | LF |
+  | 检查项(真 Linux busybox,与 `node:24-alpine` 同类) | 修前                      | 修后              |
+  | ------------------------------------------------- | ------------------------- | ----------------- |
+  | 直接 exec 入口脚本                                | `not found`,退出码 127    | 正常执行,退出码 0 |
+  | `PORT=8080` 后 `listen 8080;` 的出现次数          | **0**(而脚本退出码仍是 0) | **1**             |
+  | 脚本 / `nginx.conf` 的行尾                        | CRLF                      | LF                |
 
   修法刻意分两层:**一层让仓库确定,一层让构建兜底**。
-
   1. 新增 `.gitattributes`:`* text=auto eol=lf`、二进制显式 `binary`、`*.sh text eol=lf`
      —— 所有平台的检出都统一 LF,不再取决于每台机器的 `core.autocrlf`;
   2. `Dockerfile` 的 RUN 里用 `tr -d '\r'` 规范化入口脚本与 `nginx.conf`(不用 `sed 's/\r$//'`,
@@ -725,10 +726,10 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 - **CI 卫生:concurrency 与 timeout 已补(2026-11-25,已跑通验证)**。
   完整读了一遍 `ci.yml`(99 行)后补上两条标准配置,并在 CI 上确认生效:
 
-  | 补了什么 | 为什么 |
-  | --- | --- |
+  | 补了什么                                                                | 为什么                                                                                             |
+  | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
   | `concurrency: {group: ci-\${{ github.ref }}, cancel-in-progress: true}` | 连推多次会同时起多个完整 run(实测页面上三个 in_progress),而且两个 docker 构建会同时往 `:latest` 推 |
-  | `verify: timeout-minutes: 20` / `docker-latest: 40` | 没有超时的话卡住的 job 会挂到 GitHub 默认上限(6 小时);实测 verify 不到十分钟、docker 十分钟上下 |
+  | `verify: timeout-minutes: 20` / `docker-latest: 40`                     | 没有超时的话卡住的 job 会挂到 GitHub 默认上限(6 小时);实测 verify 不到十分钟、docker 十分钟上下    |
 
   验证:改动本身是 CI 配置,所以最直接的验证就是**推上去看 run** —— YAML 被接受(新 run 正常启动)、
   `verify` **success**、`docker-latest` 在它之后启动(`needs:` 仍生效)。
@@ -737,9 +738,8 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   · docker 构建没配 `cache-from/cache-to`,每次冷构建 —— 这是它慢的主因;
   · 文档提交也会重建镜像。**但不要**用 `paths-ignore: docs/**` 省(原因见上面那条)。
 
-- **别用 `paths-ignore: docs/**` 去省 CI —— 那会删掉管文档的那道闸门(2026-11-25)**。
-  `docker-latest` 在**每次推送**都跑一次完整 Docker 构建(`npm ci` + `npm run build` + 镜像),doc-only
-  的提交也不例外 —— 一天二十几次推送就是二十几次构建,看着很像"该用 `paths-ignore` 省掉"。
+- **别用 `paths-ignore: docs/**`去省 CI —— 那会删掉管文档的那道闸门(2026-11-25)**。`docker-latest` 在**每次推送**都跑一次完整 Docker 构建(`npm ci`+`npm run build`+ 镜像),doc-only
+的提交也不例外 —— 一天二十几次推送就是二十几次构建,看着很像"该用`paths-ignore` 省掉"。
 
   **但不要那么做**:验证一下就知道,`check:docs`(校验表格列数、代码块成对、引用的测试文件存在)
   属于 `verify` job —— 而**文档改动恰恰是最容易弄坏它的**。2026-11-25 那天 CI 红了三次,其中
@@ -754,10 +754,10 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   20 分钟后**又犯了一次**(为验证 pre-commit hook 注入的坏表格忘了还原就提交)。
   两次的结果都记录在 CI 里:
 
-  | 提交 | verify job |
-  | --- | --- |
-  | `f1f4b3d`(坏表格那次)| **failure** —— CI 拦住了 |
-  | `5f37f54` / `bd29e93`(修复)| success |
+  | 提交                        | verify job               |
+  | --------------------------- | ------------------------ |
+  | `f1f4b3d`(坏表格那次)       | **failure** —— CI 拦住了 |
+  | `5f37f54` / `bd29e93`(修复) | success                  |
 
   两条结论:
   1. **本地没有任何东西会拦住你** —— 仓库配了 husky + lint-staged,但 `.husky/pre-commit` 长期缺失;
@@ -771,13 +771,13 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   另一条判据:**改过行为的地方,要搜一遍谁在用它** —— 接口兼容、测试也过,但**调用方可能已经变了味**。
   这次把本会话改过行为的地方逐个搜完,4 个目标里 **1 个是真问题**:
 
-  | 改了什么 | 搜到什么 | 结论 |
-  | --- | --- | --- |
-  | 解析器加了「按每行推断分类」 | 有**两个**调用方,只给其中一个传了 `categories` | **真问题**:同一份账单从交易页导入会推断分类,从数据与备份页导入全落默认分类 → 已修 |
-  | `updateTransaction` 改成「分类变了就记学习规则」 | `recategorizeByAi` 也在用它改 categoryId | **真问题**:AI 猜的/兜底猜的分类被当成"用户修正"记进规则 → 已加 `skipCategoryLearning` |
-  | `balance-changes.css` 改 `table-layout: fixed` | 无快照、无测试断言该表宽度 | 干净 |
-  | `EmptyState` 的渲染条件加了 `secondaryActions?.length` 这一项 | 9 个调用方 | 干净(条件是**严格超集**,且 `secondaryActions` 是新增 prop,现有调用方不可能改变行为)|
-  | `App.tsx` 主题色改从 store 读 | 只有我改的那处 + 一句注释 | 干净(没有地方假设恒为 amber)|
+  | 改了什么                                                      | 搜到什么                                       | 结论                                                                                  |
+  | ------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------- |
+  | 解析器加了「按每行推断分类」                                  | 有**两个**调用方,只给其中一个传了 `categories` | **真问题**:同一份账单从交易页导入会推断分类,从数据与备份页导入全落默认分类 → 已修     |
+  | `updateTransaction` 改成「分类变了就记学习规则」              | `recategorizeByAi` 也在用它改 categoryId       | **真问题**:AI 猜的/兜底猜的分类被当成"用户修正"记进规则 → 已加 `skipCategoryLearning` |
+  | `balance-changes.css` 改 `table-layout: fixed`                | 无快照、无测试断言该表宽度                     | 干净                                                                                  |
+  | `EmptyState` 的渲染条件加了 `secondaryActions?.length` 这一项 | 9 个调用方                                     | 干净(条件是**严格超集**,且 `secondaryActions` 是新增 prop,现有调用方不可能改变行为)   |
+  | `App.tsx` 主题色改从 store 读                                 | 只有我改的那处 + 一句注释                      | 干净(没有地方假设恒为 amber)                                                          |
 
   **注意前两条的共同点**:都是**接口兼容**的改动(可选参数、新 prop),类型检查不会报、测试也全过 ——
   只有**去搜调用方**才发现。以后再改一个被多处调用的函数,先搜一遍。
@@ -813,21 +813,21 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   导入是用户报 bug 最多的地方,所以专门造各种"真实但脏"的输入去撞。结论:**两种形状会坏(已修)**,
   其余本来就对。要改解析器时,先看这张表,别重复撞已经覆盖的。
 
-  | 形状 | 结果 | 守着它的测试 |
-  | --- | --- | --- |
-  | xlsx 里日期是序列号,**不写** `t`(微信官方导出) | 已修(v0.50.44) | `billImport.excelDate.test.ts` |
-  | xlsx 里日期是序列号,**写了 `t="n"`**(openpyxl / LibreOffice 另存) | **已修(v0.50.53)** —— 整份 0 条 | `billImport.xlsxFixture.test.ts`(真实 xlsx fixture) |
-  | CSV 引号字段内**带换行** | **已修(v0.50.54)** —— 整笔交易静默消失 | `billImport.csvVariants.test.ts` |
-  | CSV 引号字段内带逗号 | 本来就对 | 同上 |
-  | CRLF(Windows 上 Excel 另存) | 本来就对(备注不残留 `\r`) | 同上 |
-  | UTF-8 BOM | 本来就对(代码里剥了 `\uFEFF`) | — |
-  | 金额带 `¥` / 千分位(含逗号时必须加引号) | 本来就对 | `billImport.csvVariants2.test.ts` |
-  | 日期是斜杠格式 `2026/11/24` | 本来就对 | 同上 |
-  | 表头前后多余空行 / 行尾空格 | 本来就对 | 同上 |
-  | **GBK 编码**(Excel 另存「CSV(逗号分隔)」) | 本来就对(中文不乱码) | `billImport.csvVariants3.test.ts`(真实 GBK 字节 fixture) |
-  | 表头在第 40 行 | 本来就对(`findHeaderIndex` 扫前 80 行) | 同上 |
-  | 金额 0 | 跳过(不是交易) | 同上 |
-  | 金额负数 | **按绝对值记入**(银行流水用负数表流出,方向由收/支列决定)`Math.abs` 是有意的 | 同上 |
+  | 形状                                                              | 结果                                                                        | 守着它的测试                                             |
+  | ----------------------------------------------------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------- |
+  | xlsx 里日期是序列号,**不写** `t`(微信官方导出)                    | 已修(v0.50.44)                                                              | `billImport.excelDate.test.ts`                           |
+  | xlsx 里日期是序列号,**写了 `t="n"`**(openpyxl / LibreOffice 另存) | **已修(v0.50.53)** —— 整份 0 条                                             | `billImport.xlsxFixture.test.ts`(真实 xlsx fixture)      |
+  | CSV 引号字段内**带换行**                                          | **已修(v0.50.54)** —— 整笔交易静默消失                                      | `billImport.csvVariants.test.ts`                         |
+  | CSV 引号字段内带逗号                                              | 本来就对                                                                    | 同上                                                     |
+  | CRLF(Windows 上 Excel 另存)                                       | 本来就对(备注不残留 `\r`)                                                   | 同上                                                     |
+  | UTF-8 BOM                                                         | 本来就对(代码里剥了 `\uFEFF`)                                               | —                                                        |
+  | 金额带 `¥` / 千分位(含逗号时必须加引号)                           | 本来就对                                                                    | `billImport.csvVariants2.test.ts`                        |
+  | 日期是斜杠格式 `2026/11/24`                                       | 本来就对                                                                    | 同上                                                     |
+  | 表头前后多余空行 / 行尾空格                                       | 本来就对                                                                    | 同上                                                     |
+  | **GBK 编码**(Excel 另存「CSV(逗号分隔)」)                         | 本来就对(中文不乱码)                                                        | `billImport.csvVariants3.test.ts`(真实 GBK 字节 fixture) |
+  | 表头在第 40 行                                                    | 本来就对(`findHeaderIndex` 扫前 80 行)                                      | 同上                                                     |
+  | 金额 0                                                            | 跳过(不是交易)                                                              | 同上                                                     |
+  | 金额负数                                                          | **按绝对值记入**(银行流水用负数表流出,方向由收/支列决定)`Math.abs` 是有意的 | 同上                                                     |
 
   **还有两个坑是"我的 fixture 写错了",别再犯**:含逗号的金额字段必须加引号(不加会把列切开);
   负数**不是**应该被跳过。
@@ -836,13 +836,13 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   用户报过「备注过长撑破界面」(已修:余额变动页改 `table-layout: fixed` + 各列定宽)。
   之后把全项目的 `<table>` 过了一遍,共 **6 个文件**渲染表格:
 
-  | 表格 | 布局 | 结论 |
-  | --- | --- | --- |
-  | `balance-change-table` | fixed | 已修 |
-  | 交易流水表(`transaction-table-wrap`) | auto + `<colgroup>` 列宽 | **实测不会被撑开**(见下) |
-  | `exchange-table` | auto | 汇率名是受控短文本,不动 |
-  | `sb-category-table` | auto | 分类名是受控短文本,不动 |
-  | `chat-md-table` | auto | 渲染 AI 回复里的表格,外层自带滚动 |
+  | 表格                                 | 布局                     | 结论                              |
+  | ------------------------------------ | ------------------------ | --------------------------------- |
+  | `balance-change-table`               | fixed                    | 已修                              |
+  | 交易流水表(`transaction-table-wrap`) | auto + `<colgroup>` 列宽 | **实测不会被撑开**(见下)          |
+  | `exchange-table`                     | auto                     | 汇率名是受控短文本,不动           |
+  | `sb-category-table`                  | auto                     | 分类名是受控短文本,不动           |
+  | `chat-md-table`                      | auto                     | 渲染 AI 回复里的表格,外层自带滚动 |
 
   交易流水表是**实测**过的:临时账号导入一条 180 字符无空格的备注,测量结果
   外层可见宽 1042 / 表格宽 1048(**只差 6px,是边框**)、页面横向溢出 0 ——
@@ -874,7 +874,7 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 
   已经排除的两个常见原因:
   · **没有测试绑固定端口** —— 所有用例都是 `server.listen(0, '127.0.0.1', …)`(临时端口),
-    不会和开发服务器撞;
+  不会和开发服务器撞;
   · **没有"listen 之前读端口"的写法** —— 三个用了本地服务端的用例文件都是 `await listen` 之后才读 `address().port`。
 
   当时的机器状态:同时开着 dev 服务(5333)、preview(5444)、API(8799)与浏览器自动化 ——
@@ -887,7 +887,6 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
   `server/orphanAccountReferences.test.js` 顶部。
 
   这条的**两段文案**值得逐字记下来,因为它决定用户有没有机会知道后果:
-
   1. 移入回收站时的确认(`categoriesAccounts.confirm.accountUsage`):
      「该账户下存在 {count} 条交易记录,**移入回收站后仅移除账户本身,交易仍会保留**。是否继续?」
      —— 这一步**是准确的**,交易确实保留(已验)。
@@ -928,14 +927,14 @@ for (const t of db.prepare("SELECT name FROM sqlite_master WHERE type='table'").
 版本记录写在 `release-notes/`,页面用的是另一份数据。两边一漂移,页面就会**一本正经地
 显示上一个版本的内容** —— 界面上完全看不出错。所以这条链的每一段都有东西盯着:
 
-| 环节 | 谁在管 |
-| --- | --- |
-| `release-notes/RELEASE_NOTES_v*.md` → 结构化记录 | `scripts/lib/releaseHistory.mjs`(抽取规则写在它头部:标题取第一个 `## `、摘要取标题后第一段散文、日期取 tag) |
-| 结构化记录 → 提交进仓库的数据模块 | `node scripts/generate-release-history.mjs` → `src/pages/about/recentReleases.generated.ts`(**生成后要提交**) |
-| 数据模块 == 重新生成的结果 | `npm run check:release-history`(**CI 里跑**,逐字节比对,不一致非 0 退出) |
-| 数据讲得通(降序、非空、无残留 markdown、日期格式) | `src/pages/about/recentReleases.test.ts` |
-| **第一条就是当前版本** | 同上 —— `RELEASE_HISTORY[0].version === APP_VERSION` |
-| 页面渲染(10 条、只打一次「当前版本」、日期不被时区推到前一天、链接指向对应 tag) | `src/pages/about/AboutPage.test.tsx` |
+| 环节                                                                            | 谁在管                                                                                                        |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `release-notes/RELEASE_NOTES_v*.md` → 结构化记录                                | `scripts/lib/releaseHistory.mjs`(抽取规则写在它头部:标题取第一个 `## `、摘要取标题后第一段散文、日期取 tag)   |
+| 结构化记录 → 提交进仓库的数据模块                                               | `node scripts/generate-release-history.mjs` → `src/pages/about/recentReleases.generated.ts`(**生成后要提交**) |
+| 数据模块 == 重新生成的结果                                                      | `npm run check:release-history`(**CI 里跑**,逐字节比对,不一致非 0 退出)                                       |
+| 数据讲得通(降序、非空、无残留 markdown、日期格式)                               | `src/pages/about/recentReleases.test.ts`                                                                      |
+| **第一条就是当前版本**                                                          | 同上 —— `RELEASE_HISTORY[0].version === APP_VERSION`                                                          |
+| 页面渲染(10 条、只打一次「当前版本」、日期不被时区推到前一天、链接指向对应 tag) | `src/pages/about/AboutPage.test.tsx`                                                                          |
 
 **为什么是"生成 + 提交"而不是运行时读文件**:`release-notes/` 被 `.dockerignore` 排除,
 镜像里根本没有那些 markdown(前端 `import` 会在 Docker 构建时失败);运行时去请求
@@ -946,10 +945,10 @@ GitHub API 又会给"打开关于页"这件事加上网络依赖与限流。生�
 
 破坏性验证(2026-11-28):
 
-| 状态 | 结果 |
-| --- | --- |
+| 状态                            | 结果                                                                                 |
+| ------------------------------- | ------------------------------------------------------------------------------------ |
 | 把已生成数据里一条 `title` 改掉 | `npm run check:release-history` 退出码 **1**,打印第 39 行「已提交 / 应改为」两行差异 |
-| 还原 | 退出码 0 |
+| 还原                            | 退出码 0                                                                             |
 
 **已知局限(不要当成已覆盖)**:
 
@@ -961,16 +960,14 @@ GitHub API 又会给"打开关于页"这件事加上网络依赖与限流。生�
 
 真机实测(1440 / 390 / 320,浅色 + 深色 + 英文界面,`.audit/verify-about-releases.mjs`,`problems 0`):
 
-| 量的是什么 | 结果 |
-| --- | --- |
-| 条数 / 「当前版本」标记 / `<time>` 数 | 10 / 1 / 10(与数据文件逐条对齐) |
-| 日期文本 | 当时的首条 `v0.51.0 → 2026年11月27日`,`<time datetime="2026-11-27">`,**没有被时区推到 26 日**(v0.52.0 发布后首条变成 v0.52.0,规则不变) |
-| 对比度(浅色 / 深色) | 标题 15.47:1 / 15.9:1;摘要 5.54:1 / 10.84:1 |
-| 字号 | 版本 13px(等宽数字)· 标题 14px · 摘要 13px · 日期 12px · 标签 11px |
-| 横向溢出 | 1440 / 390 / 320 三档全 **0px** |
-| 英文界面 | 区块标签与标题跟着语言变(`Release history` / `Recent Updates`),**数据保持中文原文**并在说明里写清"发布说明是中文" |
-
-
+| 量的是什么                            | 结果                                                                                                                                   |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 条数 / 「当前版本」标记 / `<time>` 数 | 10 / 1 / 10(与数据文件逐条对齐)                                                                                                        |
+| 日期文本                              | 当时的首条 `v0.51.0 → 2026年11月27日`,`<time datetime="2026-11-27">`,**没有被时区推到 26 日**(v0.52.0 发布后首条变成 v0.52.0,规则不变) |
+| 对比度(浅色 / 深色)                   | 标题 15.47:1 / 15.9:1;摘要 5.54:1 / 10.84:1                                                                                            |
+| 字号                                  | 版本 13px(等宽数字)· 标题 14px · 摘要 13px · 日期 12px · 标签 11px                                                                     |
+| 横向溢出                              | 1440 / 390 / 320 三档全 **0px**                                                                                                        |
+| 英文界面                              | 区块标签与标题跟着语言变(`Release history` / `Recent Updates`),**数据保持中文原文**并在说明里写清"发布说明是中文"                      |
 
 ## 「今天的市场,说人话」:结论必须由当前数据推出来(v0.52.1)
 
@@ -982,20 +979,20 @@ GitHub API 又会给"打开关于页"这件事加上网络依赖与限流。生�
 句子由组件按语言组装。规矩三条:数据缺了如实说缺什么、正负号不许自相矛盾、
 结论要么由指数要么由板块支撑。
 
-| 测试 | 保护的行为 |
-| --- | --- |
-| `features/investments/model/plainBriefing.test.ts` | 全涨时**不给**"最弱"(那条 +4.78% 的回归用例);样本为 0 时是 `unknown` 而不是"中性";指数跌而板块普遍涨 → `mixed`(背离);政策判定只认标题 |
+| 测试                                                  | 保护的行为                                                                                                                                                                  |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `features/investments/model/plainBriefing.test.ts`    | 全涨时**不给**"最弱"(那条 +4.78% 的回归用例);样本为 0 时是 `unknown` 而不是"中性";指数跌而板块普遍涨 → `mixed`(背离);政策判定只认标题                                       |
 | `pages/investments/PlainMarketBriefingPanel.test.tsx` | 全涨时页面出现「没有下跌的板块」且**不出现**「偏弱」;没有指数就不提大盘;AI 简报的 `suggestions` 真的渲染出来(AI 要点最多 3 条、建议最多 2 条);「AI 复盘」把当前行情交给助手 |
 
 **同一份数据下的实测(1440 / 390 / 320,深浅两主题,`.audit/verify-briefing.mjs`,`problems 0`)**:
 
-| 量的是什么 | 重构前 | 重构后 |
-| --- | --- | --- |
-| 面板**内容**高度(桌面) | 355.3px | **173.1px** |
-| 面板内容高度(390 / 320) | 265.9px | **186.1px / 227px** |
-| 今日看板网格右侧空列(1440) | **282.2px** | **0px** |
-| 资讯那一条 | 铺整段新闻正文(实测一段 250 字) | 只留标题,最多两行 |
-| 「领跌」那条 | `油气资源 +4.78%,今天偏弱,别急着接` | `没有下跌的板块` |
+| 量的是什么                 | 重构前                              | 重构后              |
+| -------------------------- | ----------------------------------- | ------------------- |
+| 面板**内容**高度(桌面)     | 355.3px                             | **173.1px**         |
+| 面板内容高度(390 / 320)    | 265.9px                             | **186.1px / 227px** |
+| 今日看板网格右侧空列(1440) | **282.2px**                         | **0px**             |
+| 资讯那一条                 | 铺整段新闻正文(实测一段 250 字)     | 只留标题,最多两行   |
+| 「领跌」那条               | `油气资源 +4.78%,今天偏弱,别急着接` | `没有下跌的板块`    |
 
 **量高度时踩到的坑(写下来免得下次误判)**:今日看板是 `align-items: stretch` 的网格,
 两个面板的**盒子**永远一样高(由今天持仓面板的 482.1px 撑出来)—— 只看盒子会得出
@@ -1003,26 +1000,75 @@ GitHub API 又会给"打开关于页"这件事加上网络依赖与限流。生�
 同理,桌面这一行的行高由同行的持仓面板决定,所以**看板整体高度不变**,省下来的是
 面板自身的内容与移动端的页面高度。
 
+## 7×24 快讯的「AI 解读」：问的必须是点下去的那一条（v0.52.1)
 
+面板上原来**只有一个**「AI 解读」按钮，而它的提示词里写死了 news[0]——
+列表里想看第 5 条，或者切到「上市公司」分类，发出去的仍然是第一条的标题与摘要；
+而列表本身没有任何解读入口（整行是一个 <a>，点哪儿都是跳东方财富）。
+读代码看不出来：变量名叫 news，实际只用了第一个元素。
+
+现在两件事分开：
+
+- **每一条快讯自己有一个「AI 解读」按钮**，绑定这一条的标题/摘要/关联标的。
+  按钮不能放进 <a> 里（交互元素不能嵌套），所以行结构从“一个链接”改成
+  <article> = 元信息行（时间 + 按钮） + 正文链接：点按钮不会跳走，点正文照旧跳原文。
+- **顶部按钮改成“批量挑重点”**：一次最多 5 条，摘要裁到 60 字（不然一条 250 字的正文
+  会把“哪几条重要”淹掉），并明确要求“都不重要就直接说都不重要”——
+  没有这句，模型会给每条都硬凑出一个影响。
+
+| 测试                                              | 保护的行为                                                                                                                                                                                                                              |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| pages/investments/InvestmentsPage.newsAi.test.tsx | 列表有几条就有几个解读入口；点第 3 条时发给 AI 的是第 3 条的标题与关联标的、**且不含**第 1 条的标题；悬浮助手的聚焦标签变成「正在看：第 3 条的标题」；顶部按钮带 3/5 条与“都不重要”那句话；切到「焦点」分类后带的是当前分类的名字与条数 |
+| pages/investments/investmentAi.test.ts            | 提示词本身：最多 5 条（9 条只进 5 条）、长摘要裁到 60 字 + …、空标题不占位、全空返回空串、分类名只在传入时出现                                                                                                                          |
+
+**证伪（把 bug 放回去，闸门必须变红）** —— 四次都实测过：
+
+| 放回去的 bug                                 | 结果                                                          |
+| -------------------------------------------- | ------------------------------------------------------------- |
+| 单条入口重新读 news[0]（标题/摘要/聚焦标签） | InvestmentsPage.newsAi.test.tsx 5 个里红 1 个（点第三条那条） |
+| 顶部批量改成 news.slice(0, 1)                | 红 2 个                                                       |
+| 删掉“都不重要就直接说都不重要”这句要求       | investmentAi.test.ts 红 1 个                                  |
+| 把摘要裁剪上限从 60 改成 4000                | 红 1 个                                                       |
+
+**真机实测（.audit/verify-news-ai.mjs,1440 与 390,problems 0)**:
+
+| 量的是什么              | 实测                                                                        |
+| ----------------------- | --------------------------------------------------------------------------- |
+| 快讯条数 / 解读入口数   | 8 条 / **8 个**（桌面与移动一样）                                           |
+| 点第 3 条之后的聚焦标签 | 正在看：中东部晴朗干燥格局持续,本月底至下月初迎大回暖（第三条，不是第一条） |
+| 按钮触达尺寸            | 桌面 **24px** / 移动 **44px**，与时间药丸重叠 **0px**                       |
+| 按钮是否被塞进 <a>      | 否（点按钮不跳转，正文链接仍是 target="\_blank" 的原文链接）                |
+
+**踩到的坑**:
+
+- getByRole('button', { name: '解读最近几条' }) 取不到顶部按钮 —— 它有 aria-label,
+  可访问名字就变成了 让 AI 解读最近几条快讯，可见文字不再参与命名；
+  查按钮要按 aria-label 查、再单独断言可见文字。
+- 分类胶囊是 role="tab" 不是 button。
+- 提示词里同样有一份**编号的要求清单**，所以用 /^\d+\. / 数新闻条数会把
+  “1. 先判断…”也数进去（9 = 5 条新闻 + 4 条要求）；数条数要带上新闻标题的前缀。
+- 裁剪用的是真的省略号字符 …(U+2026)，不是三个点 —— 写成 '...' 的断言永远不会命中。
+
+## 可访问性与 i18n 的闸门(命令式,不在上面那套里)
 
 一张完整的表(之前被两段说明**从中间切开**,后半段丢了表头、渲染成纯文本 —— 已修):
 
-| 命令                                           | 作用                                                                                                        |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `npm run i18n:check`                           | i18n key 缺失/单边/写死属性;命中即非 0 退出                                                                 |
-| `npm run i18n:check-jsx`                       | JSX 文本节点里的硬编码中文;命中即非 0 退出                                                                  |
-| `npm run check:dates`                          | 禁止按 UTC 取日(`date.slice(0, 10)`、两个 `slice(0, 10)` 直接比);命中即非 0 退出                        |
-| `npm run check:shared-predicates`              | 共享判断不许在别处手写:退款/冲正、是否计入余额的状态、金额取整、支出口径;按「文件+上一行+本行」精确豁免    |
-| `npm run check:money`                          | 金额格式与取整的既有闸门                                                                                    |
-| `npm run audit:ledger-math`                    | **账目口径体检**(需本地库):逐月收支、账户余额、余额变动链、退款关联、分类父子、订阅→生成交易、净值恒等式  |
-| `npm run audit:sums`                           | 手工求和的候选点;被点名却未引用共享汇总的文件必须写明理由,否则非 0 退出                                     |
-| `npm run check:docs`                           | 本文档自身的引用体检:测试文件必须存在、表格列数一致、**表格不能被正文从中间切断**                          |
-| `npm run check:audit-routes`                   | 界面审计覆盖的路径必须与 `src/app/router/router.tsx` 对齐(有页面没跑过即失败)                              |
-| `npm run check:dynamic-i18n`                   | 动态拼出来的 i18n 键必须存在(kind 从代码推导,新增 kind 不漏语言键;走到罕见状态才暴露的那类)              |
-| `npm run check:orphan-methods`                  | store 里声明的公开方法必须在别处被用到 —— 抓「声明了、实现是空壳、全项目没人调用」这类(类型检查与测试都发现不了) |
-| `npm run check:dead-exports`                    | 导出了却全仓没人引用(符号名与文件路径都查)—— 抓「功能删了、文件留下」这类死代码;只覆盖整个文件都没人用的情况 |
+| 命令                                           | 作用                                                                                                                                      |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run i18n:check`                           | i18n key 缺失/单边/写死属性;命中即非 0 退出                                                                                               |
+| `npm run i18n:check-jsx`                       | JSX 文本节点里的硬编码中文;命中即非 0 退出                                                                                                |
+| `npm run check:dates`                          | 禁止按 UTC 取日(`date.slice(0, 10)`、两个 `slice(0, 10)` 直接比);命中即非 0 退出                                                          |
+| `npm run check:shared-predicates`              | 共享判断不许在别处手写:退款/冲正、是否计入余额的状态、金额取整、支出口径;按「文件+上一行+本行」精确豁免                                   |
+| `npm run check:money`                          | 金额格式与取整的既有闸门                                                                                                                  |
+| `npm run audit:ledger-math`                    | **账目口径体检**(需本地库):逐月收支、账户余额、余额变动链、退款关联、分类父子、订阅→生成交易、净值恒等式                                  |
+| `npm run audit:sums`                           | 手工求和的候选点;被点名却未引用共享汇总的文件必须写明理由,否则非 0 退出                                                                   |
+| `npm run check:docs`                           | 本文档自身的引用体检:测试文件必须存在、表格列数一致、**表格不能被正文从中间切断**                                                         |
+| `npm run check:audit-routes`                   | 界面审计覆盖的路径必须与 `src/app/router/router.tsx` 对齐(有页面没跑过即失败)                                                             |
+| `npm run check:dynamic-i18n`                   | 动态拼出来的 i18n 键必须存在(kind 从代码推导,新增 kind 不漏语言键;走到罕见状态才暴露的那类)                                               |
+| `npm run check:orphan-methods`                 | store 里声明的公开方法必须在别处被用到 —— 抓「声明了、实现是空壳、全项目没人调用」这类(类型检查与测试都发现不了)                          |
+| `npm run check:dead-exports`                   | 导出了却全仓没人引用(符号名与文件路径都查)—— 抓「功能删了、文件留下」这类死代码;只覆盖整个文件都没人用的情况                              |
 | `npm run check:release-history`                | 关于页「最近更新」的数据模块必须与 `release-notes/` 重新生成的结果**逐字节一致**(加了新版本的说明却忘了重新生成 → 页面显示的是上一个版本) |
-| `node scripts/audit-jsx-hardcoded.mjs --count` | 硬编码中文的数量,只看数字(用于看趋势)                                                                      |
+| `node scripts/audit-jsx-hardcoded.mjs --count` | 硬编码中文的数量,只看数字(用于看趋势)                                                                                                     |
 
 ### 三条关于闸门本身的说明
 
@@ -1042,7 +1088,7 @@ GitHub API 又会给"打开关于页"这件事加上网络依赖与限流。生�
 - `t('key', { count })`(react-i18next)配 **`{{count}}`** —— 自动插值,如 `recycleBin.clearConfirm`、
   `dataSync.syncFailure`、`dataSync.syncDroppedRecords`;
 - `tf('key', '兜底文案')`(本项目自己的 key+兜底 helper)**不接受插值参数**,所以配 **`{count}`**
-  + 代码里 `.replace('{count}', ...)` —— 如 `dataBackup.snapshot.synced`、`txPage.confirm.refundCascade`。
+  - 代码里 `.replace('{count}', ...)` —— 如 `dataBackup.snapshot.synced`、`txPage.confirm.refundCascade`。
 
 风险很实际:译者按错的那套写,占位符就会原样显示给用户(我在 `syncDroppedRecords` 上就踩过一次)。
 改文案时先看**调用点用的是 `t` 还是 `tf`**,再决定花括号的个数。
@@ -1065,16 +1111,16 @@ GitHub API 又会给"打开关于页"这件事加上网络依赖与限流。生�
 它比对 `src/app/router/router.tsx` 与审计脚本的 `ROUTES`,有页面没覆盖就非 0 退出
 (审计里多出来的路径只提示,不失败,因为可能故意放一条不存在路径去验 404 页)。
 
-| 检查项                                 | 为什么单元测试抓不到                                             |
-| -------------------------------------- | ---------------------------------------------------------------- |
-| 整页横向溢出                           | 取决于布局,与 props 无关                                         |
-| 元素越过视口右边界且不在横向滚动容器内 | 这类元素**既不滚动也点不到**,`overflow-x: hidden` 会把它静静裁掉 |
-| 没有可读名称的 button / a              | 无障碍问题,只在 DOM 里                                           |
-| 每个路由新产生的 console error         | 只有真跑起来才有                                                 |
-| 字号 < 11px 的纯文本节点               | 只报告不计失败,看趋势                                            |
-| `touchHoverReactive`:触屏点过之后一直亮 | `:hover` 漏了 `@media (hover: hover)` 守卫,**只有触摸端**才复现  |
+| 检查项                                                      | 为什么单元测试抓不到                                             |
+| ----------------------------------------------------------- | ---------------------------------------------------------------- |
+| 整页横向溢出                                                | 取决于布局,与 props 无关                                         |
+| 元素越过视口右边界且不在横向滚动容器内                      | 这类元素**既不滚动也点不到**,`overflow-x: hidden` 会把它静静裁掉 |
+| 没有可读名称的 button / a                                   | 无障碍问题,只在 DOM 里                                           |
+| 每个路由新产生的 console error                              | 只有真跑起来才有                                                 |
+| 字号 < 11px 的纯文本节点                                    | 只报告不计失败,看趋势                                            |
+| `touchHoverReactive`:触屏点过之后一直亮                     | `:hover` 漏了 `@media (hover: hover)` 守卫,**只有触摸端**才复现  |
 | `inertGridRules`:`@media` 里写 grid 专属属性、父级却是 flex | 声明无效**不体现在 computed style** 上,只有父级布局 + 几何能证明 |
-| `focusWalk`:Tab 到看不见 / 被吸顶盖住的地方 | 焦点可见性(2.4.7)与遮挡(2.4.11)是运行时几何,不存在于源码里 |
+| `focusWalk`:Tab 到看不见 / 被吸顶盖住的地方                 | 焦点可见性(2.4.7)与遮挡(2.4.11)是运行时几何,不存在于源码里       |
 
 发现过的问题:`/balance-changes` 整页被内容最小宽度顶到 545px、右半侧被裁(见 v0.48.0 说明)。
 

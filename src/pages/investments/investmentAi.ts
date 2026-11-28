@@ -890,6 +890,53 @@ export function buildInvestmentNewsAskPrompt(input: {
   }${input.stocks?.length ? `。关联标的：${input.stocks.slice(0, 4).join('、')}` : ''}。这条消息会影响哪些板块或我的持仓？是实质性催化还是短期情绪？我该怎么应对？`;
 }
 
+/** 一次放进提示词的快讯条数上限:再多只是把上下文塞满,模型反而抓不住重点。 */
+export const INVESTMENT_NEWS_DIGEST_LIMIT = 5;
+
+/** 摘要进提示词前先裁到这个长度 —— 一条 250 字的正文会把"哪几条重要"这件事淹掉。 */
+const INVESTMENT_NEWS_DIGEST_SUMMARY_MAX = 60;
+
+/**
+ * 一次解读**多条**快讯。
+ *
+ * 原来 7×24 面板上的「AI 解读」永远只把 `news[0]` 发出去:用户点的是"解读快讯",
+ * 实际只解读列表第一条(切了分类、想看的是别的新闻也都一样)。现在面板每一行都有自己的
+ * 解读入口(解读这一条),顶上那个按钮改成**批量挑重点**。
+ *
+ * "如果都不重要就直接说都不重要"是刻意写进去的:没有这句,模型会把每条都硬凑出一个影响。
+ */
+export function buildInvestmentNewsDigestPrompt(input: {
+  items: Array<{ title: string; summary?: string; stocks?: string[] }>;
+  categoryLabel?: string;
+}) {
+  const items = input.items
+    .filter((item) => (item.title || '').trim())
+    .slice(0, INVESTMENT_NEWS_DIGEST_LIMIT);
+  if (items.length === 0) return '';
+
+  const lines = items.map((item, index) => {
+    const summary = (item.summary || '').trim().replace(/\s+/g, ' ');
+    const clipped =
+      summary.length > INVESTMENT_NEWS_DIGEST_SUMMARY_MAX
+        ? `${summary.slice(0, INVESTMENT_NEWS_DIGEST_SUMMARY_MAX)}…`
+        : summary;
+    const stocks = item.stocks?.length ? `(关联:${item.stocks.slice(0, 3).join('、')})` : '';
+    return `${index + 1}. ${item.title.trim()}${clipped ? ` —— ${clipped}` : ''}${stocks}`;
+  });
+
+  return [
+    `我刚看到 ${items.length} 条${input.categoryLabel ? `「${input.categoryLabel}」` : ''}市场快讯,请帮我挑重点:`,
+    lines.join('\n'),
+    '',
+    '要求:',
+    '1. 先判断这几条里**真正会影响 A 股或我的持仓**的(最多 3 条),逐条说清是什么在影响、偏向哪类板块;',
+    '2. 只讲消息本身和它的影响,不要复述全文,也不要罗列与市场无关的消息;',
+    '3. **如果都不重要就直接说都不重要**,不要硬凑影响;',
+    '4. 最后用一句大白话给今天的注意事项。'
+  ].join('\n');
+}
+
+
 export function createInvestmentAiMessage(input: {
   id: string;
   role: InvestmentAiMessage['role'];

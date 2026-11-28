@@ -102,10 +102,12 @@ import { useAppPreferences } from '../../shared/store/useAppPreferences';
 import { useFinanceStore } from '../../shared/store/useFinanceStore';
 import { Toast, type ToastVariant } from '../../shared/ui/Toast';
 import {
+  INVESTMENT_NEWS_DIGEST_LIMIT,
   buildInvestmentHoldingAskPrompt,
   buildInvestmentMarketInsightPrompt,
   buildInvestmentMarketAskPrompt,
   buildInvestmentNewsAskPrompt,
+  buildInvestmentNewsDigestPrompt,
   buildInvestmentWatchAskPrompt,
   extractInvestmentMarketInsight,
   type InvestmentMarketInsight
@@ -793,8 +795,7 @@ function getWatchHoldingSnapshot(
    * 这里原来**只认净值** —— 个股没有净值,于是加了美股/港股个股、填了持有份额,
    * 市值也永远算不出来(整条快照直接返回 null,界面上就是看不到)。
    */
-  const unitPrice =
-    Number.isFinite(netValue) && netValue > 0 ? netValue : Number(item.lastPrice);
+  const unitPrice = Number.isFinite(netValue) && netValue > 0 ? netValue : Number(item.lastPrice);
   if (!Number.isFinite(unitPrice) || unitPrice <= 0) return null;
 
   const currentValue = roundMoney(item.holdingShares * unitPrice);
@@ -4044,11 +4045,19 @@ function MarketNewsPanel({
   error: string;
   onSelectCategory: (categoryId: string) => void;
   onRefresh: () => void;
-  onAskAi?: (prompt: string) => void;
+  onAskAi?: (prompt: string, focus?: { type: 'news'; label: string }) => void;
 }) {
   const tf = useTFallback();
   const { i18n: languageSource } = useTranslation();
   const language = languageSource.resolvedLanguage || languageSource.language;
+  const digestLimit = INVESTMENT_NEWS_DIGEST_LIMIT;
+  const digestItems = news.slice(0, digestLimit);
+  const selectedCategory = EASTMONEY_MARKET_NEWS_CATEGORIES.find(
+    (item) => item.id === selectedCategoryId
+  );
+  const categoryLabel = selectedCategory
+    ? tf(NEWS_CATEGORY_KEYS[selectedCategory.id] || '', selectedCategory.label)
+    : undefined;
   return (
     <section
       className={`panel investments-market-news-panel ${status === 'loading' ? 'is-loading' : ''}`}
@@ -4062,24 +4071,34 @@ function MarketNewsPanel({
           </h3>
         </div>
         <div className="investments-panel-head-actions">
-          <button
-            type="button"
-            className="investments-ai-inline-btn"
-            onClick={() =>
-              onAskAi?.(
-                buildInvestmentNewsAskPrompt({
-                  title:
-                    news[0]?.title || tf('investments.news.fallbackTitle', '今天最重要的市场消息'),
-                  summary: news[0]?.summary,
-                  stocks: news[0]?.stocks
-                })
-              )
-            }
-            aria-label={tf('investments.news.aiAria', '让 AI 解读最新快讯')}
-          >
-            <ChatSparklesIcon className="chat-svg-icon" />
-            {tf('investments.news.aiAction', 'AI 解读')}
-          </button>
+          {digestItems.length ? (
+            <button
+              type="button"
+              className="investments-ai-inline-btn"
+              onClick={() => {
+                const prompt = buildInvestmentNewsDigestPrompt({
+                  items: digestItems.map((item) => ({
+                    title: item.title,
+                    summary: item.summary,
+                    stocks: item.stocks
+                  })),
+                  categoryLabel
+                });
+                if (!prompt) return;
+                onAskAi?.(prompt, {
+                  type: 'news',
+                  label: tf('investments.news.focusDigest', '最近 {count} 条快讯').replace(
+                    '{count}',
+                    String(digestItems.length)
+                  )
+                });
+              }}
+              aria-label={tf('investments.news.aiDigestAria', '让 AI 解读最近几条快讯')}
+            >
+              <ChatSparklesIcon className="chat-svg-icon" />
+              {tf('investments.news.aiDigestAction', '解读最近几条')}
+            </button>
+          ) : null}
           <button type="button" onClick={onRefresh} disabled={status === 'loading'}>
             {status === 'loading'
               ? tf('investments.refreshing', '刷新中')
@@ -4124,29 +4143,59 @@ function MarketNewsPanel({
           aria-label={tf('investments.tab.news', '市场快讯')}
         >
           {news.slice(0, 8).map((item) => (
-            <a
-              key={item.id}
-              className="investments-market-news-item"
-              href={item.link}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <span className="investments-market-news-time">
-                {formatMarketNewsTime(item.time, tf, language)}
-              </span>
-              <strong>{item.title}</strong>
-              {item.summary ? <p>{item.summary}</p> : null}
-              {item.stocks.length ? (
-                <div
-                  className="investments-market-news-tags"
-                  aria-label={tf('investments.news.tagsAria', '关联代码')}
+            /*
+             * 每一行都有自己的「AI 解读」,绑定这一条的标题/摘要/关联标的。
+             * 原来整行是一个 <a>、解读入口只有面板顶上那一个 —— 而那个按钮**永远**
+             * 只把 news[0] 发出去,想看的是第 5 条也只能解读第一条。
+             * 按钮不能放进 <a> 里(交互元素不能嵌套),所以这里拆成"行容器 + 链接 + 按钮"。
+             */
+            <article key={item.id} className="investments-market-news-item">
+              <div className="investments-market-news-meta">
+                <span className="investments-market-news-time">
+                  {formatMarketNewsTime(item.time, tf, language)}
+                </span>
+                <button
+                  type="button"
+                  className="investments-market-news-ai"
+                  onClick={() =>
+                    onAskAi?.(
+                      buildInvestmentNewsAskPrompt({
+                        title: item.title,
+                        summary: item.summary,
+                        stocks: item.stocks
+                      }),
+                      { type: 'news', label: item.title }
+                    )
+                  }
+                  aria-label={tf('investments.news.aiItemAria', 'AI 解读：{title}').replace(
+                    '{title}',
+                    item.title
+                  )}
                 >
-                  {item.stocks.map((stock) => (
-                    <em key={stock}>{stock}</em>
-                  ))}
-                </div>
-              ) : null}
-            </a>
+                  <ChatSparklesIcon className="chat-svg-icon" />
+                  {tf('investments.news.aiAction', 'AI 解读')}
+                </button>
+              </div>
+              <a
+                className="investments-market-news-link"
+                href={item.link}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <strong>{item.title}</strong>
+                {item.summary ? <p>{item.summary}</p> : null}
+                {item.stocks.length ? (
+                  <div
+                    className="investments-market-news-tags"
+                    aria-label={tf('investments.news.tagsAria', '关联代码')}
+                  >
+                    {item.stocks.map((stock) => (
+                      <em key={stock}>{stock}</em>
+                    ))}
+                  </div>
+                ) : null}
+              </a>
+            </article>
           ))}
         </div>
       )}

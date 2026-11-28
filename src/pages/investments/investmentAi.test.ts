@@ -11,8 +11,10 @@ import {
   buildInvestmentHoldingAskPrompt,
   buildInvestmentMarketInsightPrompt,
   buildInvestmentMarketAskPrompt,
+  buildInvestmentNewsDigestPrompt,
   buildInvestmentWatchlistReviewPrompt,
   extractInvestmentAnalysis,
+  INVESTMENT_NEWS_DIGEST_LIMIT,
   extractInvestmentMarketInsight,
   getInvestmentAssistantDisplayText,
   stripInvestmentAnalysisJson,
@@ -342,5 +344,75 @@ describe('investment prompt builders', () => {
       '回调多少再考虑?',
       '适合定投吗?'
     ]);
+  });
+});
+
+describe('快讯批量解读提示词', () => {
+  const item = (index: number, summary = '摘要') => ({
+    title: `快讯第 ${index} 条`,
+    summary,
+    stocks: index === 1 ? ['宁德时代'] : []
+  });
+
+  /** Only the numbered NEWS lines, never the numbered requirement lines. */
+  const newsLines = (prompt: string) =>
+    prompt.split('\n').filter((line) => /^\d+\. 快讯第/.test(line));
+
+  it('最多只带 5 条快讯进提示词', () => {
+    const prompt = buildInvestmentNewsDigestPrompt({
+      items: Array.from({ length: 9 }, (_, index) => item(index + 1))
+    });
+
+    expect(newsLines(prompt)).toHaveLength(INVESTMENT_NEWS_DIGEST_LIMIT);
+    expect(prompt).toContain('5. 快讯第 5 条');
+    expect(prompt).not.toContain('快讯第 6 条');
+    expect(prompt).not.toContain('快讯第 9 条');
+    expect(prompt).toContain('我刚看到 5 条市场快讯');
+  });
+
+  it('长摘要裁到 60 字,不让一条正文淹掉重点', () => {
+    const unit = '测试句子。';
+    const long = unit.repeat(40);
+    // the builder clips with a real ellipsis character (U+2026), not three dots
+    const clipped = long.slice(0, 60) + '…';
+    const prompt = buildInvestmentNewsDigestPrompt({ items: [item(2, long)] });
+
+    expect(prompt).toContain(clipped);
+    expect(prompt).not.toContain(long);
+    const line = newsLines(prompt)[0] ?? '';
+    const summaryPart = line.split(' —— ')[1] ?? '';
+    expect(summaryPart).toBe(clipped);
+    expect(summaryPart).toHaveLength(61);
+    expect(summaryPart.endsWith('…')).toBe(true);
+  });
+
+  it('把“都不重要就直接说都不重要”写进要求里', () => {
+    const prompt = buildInvestmentNewsDigestPrompt({ items: [item(1)] });
+
+    expect(prompt).toContain('如果都不重要就直接说都不重要');
+    expect(prompt).toContain('最多 3 条');
+    expect(prompt).toContain('不要硬凑影响');
+  });
+
+  it('标题空白的条目不占位,全空就直接返回空字符串', () => {
+    const prompt = buildInvestmentNewsDigestPrompt({
+      items: [{ title: '   ', summary: '没有标题' }, item(1)]
+    });
+
+    expect(newsLines(prompt)).toHaveLength(1);
+    expect(prompt).toContain('1. 快讯第 1 条');
+    expect(prompt).toContain('我刚看到 1 条市场快讯');
+
+    expect(buildInvestmentNewsDigestPrompt({ items: [] })).toBe('');
+    expect(buildInvestmentNewsDigestPrompt({ items: [{ title: '' }] })).toBe('');
+  });
+
+  it('分类名称只在传入时出现', () => {
+    expect(buildInvestmentNewsDigestPrompt({ items: [item(1)] })).toContain(
+      '我刚看到 1 条市场快讯'
+    );
+    expect(buildInvestmentNewsDigestPrompt({ items: [item(1)], categoryLabel: '焦点' })).toContain(
+      '我刚看到 1 条「焦点」市场快讯'
+    );
   });
 });

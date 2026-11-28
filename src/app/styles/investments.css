@@ -3330,6 +3330,25 @@
   gap: 6px;
   min-width: 0;
   padding: 0 0 18px 22px;
+}
+
+/*
+ * 一行 = 元信息(时间 + 这一条的「AI 解读」) + 正文链接。
+ * 按钮不能塞进 <a> 里(交互元素不嵌套),所以两件事必须分开定位:
+ * 链接自己保留整块可点区域,按钮只占右上角那一小块。
+ */
+.investments-market-news-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.investments-market-news-link {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
   color: inherit;
   text-decoration: none;
 }
@@ -3356,12 +3375,55 @@
 }
 
 @media (hover: hover) {
-  .investments-market-news-item:hover strong {
+  .investments-market-news-link:hover strong {
     text-decoration: underline;
   }
 }
-.investments-market-news-item:focus-visible strong {
+.investments-market-news-link:focus-visible strong {
   text-decoration: underline;
+}
+
+/*
+ * 每一条快讯的「AI 解读」入口。做成小药丸(而不是又一个链接),
+ * 免得跟"点标题跳东方财富"这件事抢注意力。
+ */
+.investments-market-news-ai {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 34%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary) 9%, transparent);
+  color: var(--color-primary);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.investments-market-news-ai .chat-svg-icon {
+  width: 12px;
+  height: 12px;
+}
+
+@media (hover: hover) {
+  .investments-market-news-ai:hover {
+    background: color-mix(in srgb, var(--color-primary) 17%, transparent);
+    border-color: color-mix(in srgb, var(--color-primary) 52%, transparent);
+  }
+}
+
+.investments-market-news-ai:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .investments-market-news-time {
@@ -8327,6 +8389,11 @@
   .investments-market-news-head button {
     min-height: 44px;
     padding-inline: 14px;
+  }
+
+  .investments-market-news-ai {
+    min-height: 44px;
+    padding-inline: 12px;
   }
 
   /* Wrap the news categories so the tail is not hidden behind an unmarked scroll rail. */
