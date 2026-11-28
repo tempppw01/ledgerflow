@@ -349,11 +349,11 @@ export const EASTMONEY_MARKET_THEMES: EastmoneyMarketTheme[] = [
  * 来的是外部数据(服务端转发 Yahoo),这里逐字段校验:时段只认 pre/post、价格与涨跌幅必须是有限数、
  * ETF 代码必须非空 —— 任何一项不对就返回 null,**界面宁可不显示,也不显示可疑的数字**。
  */
-function toNullableExtendedQuote(value: unknown): GlobalMarketQuote["extended"] {
-  if (!value || typeof value !== "object") return null;
+function toNullableExtendedQuote(value: unknown): GlobalMarketQuote['extended'] {
+  if (!value || typeof value !== 'object') return null;
   const raw = value as Record<string, unknown>;
-  const session = raw.session === "pre" ? "pre" : raw.session === "post" ? "post" : null;
-  const symbol = String(raw.symbol || "").trim();
+  const session = raw.session === 'pre' ? 'pre' : raw.session === 'post' ? 'post' : null;
+  const symbol = String(raw.symbol || '').trim();
   const price = toNullableNumber(raw.price);
   const changePercent = toNullableNumber(raw.changePercent);
   const change = toNullableNumber(raw.change);
@@ -366,7 +366,7 @@ function toNullableExtendedQuote(value: unknown): GlobalMarketQuote["extended"] 
     change: change ?? 0,
     changePercent,
     previousClose: previousClose ?? 0,
-    updatedAt: String(raw.updatedAt || "").trim()
+    updatedAt: String(raw.updatedAt || '').trim()
   };
 }
 
@@ -394,8 +394,23 @@ function stripFastNewsSummaryTitle(title: string, summary: string) {
 
 const marketQuoteCache = new Map<string, EastmoneyMarketQuote>();
 
+/**
+ * 单指数兜底请求的冷却窗口(毫秒)。
+ *
+ * 批量查询失败时会退化成 5 次单指数请求 —— 这一步本来是为了救「批量被拒、单个
+ * 还能用」的部分故障,但行情源整体不可用时(最常见的情况)它是白打上游:页面
+ * 每 10 秒轮询一次,每一轮都要重放这 5 次。
+ * 所以「整批失败」这个信号出现后 60 秒内不再重复兜底:部分故障仍有第一次机会,
+ * 整体故障时退回每轮 1 次批量请求,缓存里的上一笔行情继续显示。
+ * 只有「批量请求本身抛错」才计入冷却;批量成功但少了几条属于数据缺口,那条路径
+ * 每次都照补(行情源是活的,补几条很便宜)。
+ */
+const MARKET_QUOTE_FAN_OUT_COOLDOWN_MS = 60_000;
+let marketQuoteFanOutCooldownUntil = 0;
+
 export function clearEastmoneyMarketQuoteCache() {
   marketQuoteCache.clear();
+  marketQuoteFanOutCooldownUntil = 0;
 }
 
 function parseMarketQuote(
@@ -438,8 +453,9 @@ async function fetchMarketQuotePayload(secids: string) {
   return body.data || {};
 }
 
-export async function fetchEastmoneyMarketQuotes(): Promise<EastmoneyMarketQuote[]> {
+async function loadEastmoneyMarketQuotes(): Promise<EastmoneyMarketQuote[]> {
   const bySecId = new Map<string, EastmoneyMarketQuote>();
+  let batchFailed = false;
 
   try {
     const payload = await fetchMarketQuotePayload(
@@ -454,17 +470,26 @@ export async function fetchEastmoneyMarketQuotes(): Promise<EastmoneyMarketQuote
     });
   } catch {
     // Individual requests below and the in-memory cache can still recover a partial outage.
+    batchFailed = true;
   }
 
   const missingIndexes = EASTMONEY_MARKET_INDEXES.filter((item) => !bySecId.has(item.secId));
-  const recovered = await Promise.allSettled(
-    missingIndexes.map(async (index) => {
-      const payload = await fetchMarketQuotePayload(index.secId);
-      const item = payload.data?.diff?.find((entry) => String(entry.f12 || '') === index.code);
-      if (!item) throw new Error(`Missing quote for ${index.code}`);
-      return parseMarketQuote(item, index);
-    })
-  );
+  const now = Date.now();
+  const fanOutAllowed =
+    missingIndexes.length > 0 && (!batchFailed || now >= marketQuoteFanOutCooldownUntil);
+  if (batchFailed && fanOutAllowed) {
+    marketQuoteFanOutCooldownUntil = now + MARKET_QUOTE_FAN_OUT_COOLDOWN_MS;
+  }
+  const recovered = fanOutAllowed
+    ? await Promise.allSettled(
+        missingIndexes.map(async (index) => {
+          const payload = await fetchMarketQuotePayload(index.secId);
+          const item = payload.data?.diff?.find((entry) => String(entry.f12 || '') === index.code);
+          if (!item) throw new Error(`Missing quote for ${index.code}`);
+          return parseMarketQuote(item, index);
+        })
+      )
+    : [];
 
   recovered.forEach((result) => {
     if (result.status === 'fulfilled' && result.value.secId)
@@ -477,6 +502,26 @@ export async function fetchEastmoneyMarketQuotes(): Promise<EastmoneyMarketQuote
     marketQuoteCache.set(index.secId, quote);
     return [quote];
   });
+}
+
+let marketQuoteInFlight: Promise<EastmoneyMarketQuote[]> | null = null;
+
+/**
+ * 同一时刻只打一轮行情请求。
+ *
+ * 页面挂载时 StrictMode 会把 effect 跑两遍,切换指数或离开再回来也会再要一次:
+ * 两次都在途时各自打一轮上游(一次访问能到 12 次 quotes 请求),而**后发的空结果
+ * 还会把先取回来的行情覆盖成「--」** —— 因为缓存要等第一轮兜底回来才有值。
+ * 在途请求共享同一个 Promise 就能同时消掉这两个问题:第二个调用等第一轮的结果。
+ */
+export function fetchEastmoneyMarketQuotes(): Promise<EastmoneyMarketQuote[]> {
+  if (marketQuoteInFlight) return marketQuoteInFlight;
+
+  const request = loadEastmoneyMarketQuotes().finally(() => {
+    if (marketQuoteInFlight === request) marketQuoteInFlight = null;
+  });
+  marketQuoteInFlight = request;
+  return request;
 }
 
 export async function fetchEastmoneyIndexTrend(

@@ -446,3 +446,181 @@ describe('fetchGlobalMarketOverview 的字段映射', () => {
     expect(overview.quotes[0].extended).toBeNull();
   });
 });
+
+describe('行情源整体故障时的兜底节流', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    clearEastmoneyMarketQuoteCache();
+  });
+
+  const okJson = (diff: unknown[]) =>
+    new Response(JSON.stringify({ data: { data: { diff } } }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  const serverError = () => new Response('{"ok":false}', { status: 500 });
+
+  // 批量请求的 secids 用 encodeURIComponent 拼过,逗号会变成 %2C;单只请求没有逗号。
+  const isBatchUrl = (url: string) => url.includes('%2C');
+
+  /** 单只指数请求按 URL 里的 secId 回一条行情,保证兜底确实能救回数据 */
+  function singleQuoteResponse(url: string) {
+    const secId = /secids=([0-9]+\.[0-9]+)/.exec(url)?.[1] || '';
+    const [market, code] = secId.split('.');
+    return okJson([{ f12: code, f13: Number(market), f14: code, f2: 100, f3: 0.25 }]);
+  }
+
+  function mockFetch(respondBatch: (call: number) => Response) {
+    const calls: string[] = [];
+    let batchCall = 0;
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      calls.push(url);
+      if (isBatchUrl(url)) {
+        batchCall += 1;
+        return respondBatch(batchCall);
+      }
+      return singleQuoteResponse(url);
+    });
+    return { fetchMock, calls };
+  }
+
+  it('整批失败后 60 秒内不再重复兜底,缓存里的行情照常返回', async () => {
+    let now = 1_700_000_000_000;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+    const { calls } = mockFetch(() => serverError());
+
+    // 第一个周期:批量失败 → 兜底,单只请求把 5 条全救回来
+    const first = await fetchEastmoneyMarketQuotes();
+    expect(calls.filter(isBatchUrl)).toHaveLength(1);
+    expect(calls).toHaveLength(6);
+    expect(first.map((quote) => quote.secId)).toEqual([
+      '1.000001',
+      '0.399001',
+      '0.399006',
+      '1.000688',
+      '1.000300'
+    ]);
+
+    // 10 秒后的下一个轮询周期:只打批量,不再重放 5 次兜底
+    calls.length = 0;
+    now += 10_000;
+    const second = await fetchEastmoneyMarketQuotes();
+    expect(calls.filter(isBatchUrl)).toHaveLength(1);
+    expect(calls).toHaveLength(1);
+    // 兜底被跳过,但缓存里的行情还在,界面不会因此变空
+    expect(second.map((quote) => quote.secId)).toEqual(first.map((quote) => quote.secId));
+
+    // 冷却结束后再给兜底一次机会(部分故障仍能靠它恢复)
+    calls.length = 0;
+    now += 60_000;
+    await fetchEastmoneyMarketQuotes();
+    expect(calls).toHaveLength(6);
+  });
+
+  it('批量成功但少几条时不受节流影响,该补还是补', async () => {
+    let now = 1_700_000_000_000;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+    // 第一次整批失败,把冷却期打开
+    const { calls } = mockFetch((call) =>
+      call === 1
+        ? serverError()
+        : okJson([
+            { f12: '399001', f13: 0, f14: '深证成指', f2: 14600, f3: -1.2 },
+            { f12: '399006', f13: 0, f14: '创业板指', f2: 3751, f3: -2.38 },
+            { f12: '000688', f13: 1, f14: '科创50', f2: 900, f3: 0.4 },
+            { f12: '000300', f13: 1, f14: '沪深300', f2: 4200, f3: 0.2 }
+          ])
+    );
+    await fetchEastmoneyMarketQuotes();
+    expect(calls).toHaveLength(6);
+
+    // 紧接着一次批量「成功但缺了上证指数」:路径不同,不受冷却限制
+    calls.length = 0;
+    now += 5_000;
+    const quotes = await fetchEastmoneyMarketQuotes();
+    expect(calls.filter(isBatchUrl)).toHaveLength(1);
+    expect(calls).toHaveLength(2);
+    expect(quotes.map((quote) => quote.secId)).toContain('1.000001');
+  });
+
+  it('行情源正常时批量一次就够,不触发任何兜底', async () => {
+    const { calls } = mockFetch(() =>
+      okJson([
+        { f12: '000001', f13: 1, f14: '上证指数', f2: 3900, f3: 0.5 },
+        { f12: '399001', f13: 0, f14: '深证成指', f2: 14600, f3: -1.2 },
+        { f12: '399006', f13: 0, f14: '创业板指', f2: 3751, f3: -2.38 },
+        { f12: '000688', f13: 1, f14: '科创50', f2: 900, f3: 0.4 },
+        { f12: '000300', f13: 1, f14: '沪深300', f2: 4200, f3: 0.2 }
+      ])
+    );
+
+    const quotes = await fetchEastmoneyMarketQuotes();
+
+    expect(calls).toHaveLength(1);
+    expect(quotes).toHaveLength(5);
+  });
+});
+
+describe('并发请求同一轮行情(StrictMode 双挂载)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    clearEastmoneyMarketQuoteCache();
+  });
+
+  const okJson = (diff: unknown[]) =>
+    new Response(JSON.stringify({ data: { data: { diff } } }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+  const isBatchUrl = (url: string) => url.includes('%2C');
+
+  function singleQuoteResponse(url: string) {
+    const secId = /secids=([0-9]+\.[0-9]+)/.exec(url)?.[1] || '';
+    const [market, code] = secId.split('.');
+    return okJson([{ f12: code, f13: Number(market), f14: code, f2: 100, f3: 0.25 }]);
+  }
+
+  it('两个并发调用共用一轮上游请求,结果也一致', async () => {
+    const calls: string[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      calls.push(url);
+      if (isBatchUrl(url)) return new Response('{"ok":false}', { status: 500 });
+      return singleQuoteResponse(url);
+    });
+
+    const [first, second] = await Promise.all([
+      fetchEastmoneyMarketQuotes(),
+      fetchEastmoneyMarketQuotes()
+    ]);
+
+    // 一轮 = 1 次批量 + 5 次兜底;第二个调用等第一个的结果,不另开一轮
+    expect(calls).toHaveLength(6);
+    expect(first).toHaveLength(5);
+    expect(second).toBe(first);
+  });
+
+  it('上一轮结束后不再复用旧结果,下一个周期正常发起', async () => {
+    let now = 1_700_000_000_000;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+    const calls: string[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      calls.push(url);
+      if (isBatchUrl(url)) return new Response('{"ok":false}', { status: 500 });
+      return singleQuoteResponse(url);
+    });
+
+    await fetchEastmoneyMarketQuotes();
+    expect(calls).toHaveLength(6);
+
+    // 在途标记已经清掉:下一次调用会真的再打一轮(只是兜底被冷却挡住)
+    calls.length = 0;
+    now += 1_000;
+    const next = await fetchEastmoneyMarketQuotes();
+    expect(calls).toHaveLength(1);
+    expect(next).toHaveLength(5);
+  });
+});
